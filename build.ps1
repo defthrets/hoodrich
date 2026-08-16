@@ -1,5 +1,5 @@
 <#
-  Trapline build script.
+  Hoodrich build script.
 
   Uses the self-contained Roslyn compiler in tools\ rather than `dotnet build`,
   because the machine's .NET 8 SDK is broken (Microsoft.NETCore.App\8.0.28 is a
@@ -7,7 +7,7 @@
   This path needs no SDK, no Visual Studio and no admin rights.
 
   Usage:
-    .\build.ps1                 # build to .\build\Trapline.dll
+    .\build.ps1                 # build to .\build\Hoodrich.dll
     .\build.ps1 -Deploy         # build, then copy dll + data into the game's scripts\
     .\build.ps1 -Configuration Debug
 #>
@@ -24,9 +24,9 @@ $root = $PSScriptRoot
 
 $csc = Join-Path $root 'tools\roslyn\tasks\net472\csc.exe'
 $refDir = Join-Path $root 'tools\refasm\build\.NETFramework\v4.8'
-$srcDir = Join-Path $root 'src\Trapline'
+$srcDir = Join-Path $root 'src\Hoodrich'
 $outDir = Join-Path $root 'build'
-$outDll = Join-Path $outDir 'Trapline.dll'
+$outDll = Join-Path $outDir 'Hoodrich.dll'
 
 if (-not (Test-Path $csc)) { throw "Compiler missing: $csc  (see tools\README.md)" }
 if (-not (Test-Path $refDir)) { throw "net48 reference assemblies missing: $refDir" }
@@ -37,7 +37,7 @@ if (-not (Test-Path $shvdn)) { throw "ScriptHookVDotNet3.dll not found under: $G
 New-Item -ItemType Directory -Force $outDir | Out-Null
 
 # --- references -------------------------------------------------------------
-# Deliberately minimal. Trapline has ZERO external runtime dependencies: only the
+# Deliberately minimal. Hoodrich has ZERO external runtime dependencies: only the
 # BCL and SHVDN. No Newtonsoft, no LemonUI, no NativeUI -- nothing that can lose a
 # version fight with another mod in scripts\.
 $refNames = @(
@@ -103,13 +103,13 @@ if ($Deploy) {
     if ($running) { throw "GTA V is running - close it before deploying (the dll is locked)." }
 
     Copy-Item $outDll $scripts -Force
-    if (Test-Path (Join-Path $outDir 'Trapline.pdb')) {
-        Copy-Item (Join-Path $outDir 'Trapline.pdb') $scripts -Force
+    if (Test-Path (Join-Path $outDir 'Hoodrich.pdb')) {
+        Copy-Item (Join-Path $outDir 'Hoodrich.pdb') $scripts -Force
     }
 
     # Config + data: never clobber the player's edited copies.
     $dataSrc = Join-Path $root 'data'
-    $dataDst = Join-Path $scripts 'Trapline'
+    $dataDst = Join-Path $scripts 'Hoodrich'
     New-Item -ItemType Directory -Force $dataDst | Out-Null
     Get-ChildItem $dataSrc -Recurse -File | ForEach-Object {
         $rel = $_.FullName.Substring($dataSrc.Length).TrimStart('\')
@@ -123,8 +123,8 @@ if ($Deploy) {
         }
     }
 
-    $iniSrc = Join-Path $root 'Trapline.ini'
-    $iniDst = Join-Path $scripts 'Trapline.ini'
+    $iniSrc = Join-Path $root 'Hoodrich.ini'
+    $iniDst = Join-Path $scripts 'Hoodrich.ini'
     if ((Test-Path $iniSrc) -and -not (Test-Path $iniDst)) { Copy-Item $iniSrc $iniDst }
 
     Write-Host "Deployed to $scripts" -ForegroundColor Green

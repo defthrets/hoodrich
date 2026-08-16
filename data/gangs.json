@@ -1,22 +1,21 @@
 {
   "_comment": [
-    "Trapline gang definitions. Edited here, reloaded on script start (Insert reloads SHVDN).",
+    "Hoodrich gang definitions. Edited here, reloaded on script start (Insert reloads SHVDN).",
     "",
     "id                 stable key used in save files; never change it once you have a save",
     "tag                4-character label drawn on the wheel",
     "relationshipGroup  vanilla ped relationship group. Membership is detected by THIS, not by",
-    "                   ped model, so every gang ped the game spawns is recognised. If the group",
-    "                   does not exist, Trapline creates it (and then nothing will match it).",
+    "                   ped model, so every gang ped the game spawns is recognised.",
     "colour             [r,g,b] used for the wheel tint and the gang panel",
-    "blipColour         game blip colour index",
-    "rivals             gang ids this gang is at war with. Dealing on a rival's turf gets you jumped.",
-    "turf               GET_NAME_OF_ZONE codes this gang claims",
+    "rivals             gang ids this gang is at war with. Dealing on a rival's turf gets you",
+    "                   jumped, and their supply contact will not deal with you at all.",
+    "turf               GET_NAME_OF_ZONE codes this gang claims. Every code below is a real",
+    "                   zone from the game's own popzone table, so they all match something.",
     "joinRespect        respect needed before they will take you on",
     "",
-    "IMPORTANT -- the turf zone codes below are a best-effort starting map. An unrecognised",
-    "code simply never matches, which quietly costs that gang some territory. To build an",
-    "accurate map, stand somewhere in game, open the wheel, and pick Turf > Log zone. The exact",
-    "code is written to scripts\\Trapline.log and shown on screen. Paste it into the right list."
+    "To retune territory: stand somewhere in game, open the wheel, Turf > Log zone. The exact",
+    "code is shown on screen and written to scripts\\Hoodrich.log. Turf > Dossier dumps the",
+    "whole current map. Zones not listed here are neutral ground."
   ],
   "gangs": [
     {
@@ -28,8 +27,8 @@
       "blipColour": 2,
       "drugs": ["weed", "crack"],
       "rivals": ["ballas", "vagos"],
-      "turf": ["DAVIS", "STRAW", "CHAMH", "RANCHO"],
-      "turfHint": "Davis, Strawberry, Chamberlain Hills",
+      "turf": ["DAVIS", "CHAMH", "STRAW"],
+      "turfHint": "Davis, Chamberlain Hills, Strawberry",
       "joinRespect": 0
     },
     {
@@ -41,8 +40,8 @@
       "blipColour": 27,
       "drugs": ["crack", "weed"],
       "rivals": ["families", "vagos"],
-      "turf": ["GRAPES", "SANDY", "GREATC"],
-      "turfHint": "Grove Street, Forum Drive, South Rancho",
+      "turf": ["RANCHO", "MURRI", "ZQ_UAR"],
+      "turfHint": "Rancho, Murrieta Heights, Davis Quartz",
       "joinRespect": 0
     },
     {
@@ -52,10 +51,10 @@
       "relationshipGroup": "AMBIENT_GANG_MEXICAN",
       "colour": [235, 195, 40],
       "blipColour": 5,
-      "drugs": ["meth", "weed"],
+      "drugs": ["coke", "meth"],
       "rivals": ["families", "ballas"],
-      "turf": ["EBURO", "BOULE", "LAMESA"],
-      "turfHint": "El Burro Heights, Rancho, La Mesa",
+      "turf": ["EBURO", "LMESA", "TATAMO"],
+      "turfHint": "El Burro Heights, La Mesa, Tataviam Mountains",
       "joinRespect": 0
     },
     {
@@ -67,8 +66,8 @@
       "blipColour": 3,
       "drugs": ["meth", "coke"],
       "rivals": ["vagos", "families"],
-      "turf": ["CYPRE", "ELYSIAN", "TEXTI"],
-      "turfHint": "Cypress Flats, El Burro",
+      "turf": ["CYPRE", "TEXTI", "ELYSIAN"],
+      "turfHint": "Cypress Flats, Textile City, Elysian Island",
       "joinRespect": 250
     },
     {
@@ -80,8 +79,8 @@
       "blipColour": 40,
       "drugs": ["meth", "heroin"],
       "rivals": ["families", "vagos"],
-      "turf": ["SANDY", "GRAPES", "HARMO"],
-      "turfHint": "Sandy Shores, Grapeseed, Blaine County",
+      "turf": ["SLAB", "SANDY", "GRAPES", "HARMO", "ALAMO"],
+      "turfHint": "Stab City, Sandy Shores, Grapeseed",
       "joinRespect": 250
     },
     {
@@ -91,10 +90,23 @@
       "relationshipGroup": "AMBIENT_GANG_WEICHENG",
       "colour": [220, 60, 60],
       "blipColour": 1,
-      "drugs": ["heroin", "coke"],
-      "rivals": ["marabunta"],
-      "turf": ["MIRR", "LEGSQU", "DELPE"],
-      "turfHint": "Mirror Park, Little Seoul",
+      "drugs": ["ecstasy", "heroin"],
+      "rivals": ["marabunta", "armenians"],
+      "turf": ["KOREAT", "MIRR", "HAWICK"],
+      "turfHint": "Little Seoul, Mirror Park, Hawick",
+      "joinRespect": 900
+    },
+    {
+      "id": "armenians",
+      "name": "Armenian Mob",
+      "tag": "ARM",
+      "relationshipGroup": "AMBIENT_GANG_ARMENIAN",
+      "colour": [150, 40, 60],
+      "blipColour": 76,
+      "drugs": ["heroin"],
+      "rivals": ["triads"],
+      "turf": ["ALTA", "BURTON", "PBOX"],
+      "turfHint": "Alta, Burton, Pillbox Hill",
       "joinRespect": 900
     }
   ]

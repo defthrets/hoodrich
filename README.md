@@ -1,4 +1,4 @@
-# Trapline
+# Hoodrich
 
 A drug-dealing and gang mod for GTA V, driven entirely from a custom radial wheel that
 replaces the vanilla weapon wheel.
@@ -25,26 +25,26 @@ lose a version fight with it.
 .\build.ps1 -Deploy
 ```
 
-That drops `Trapline.dll` into `scripts\`, `Trapline.ini` next to it, and the data files
-into `scripts\Trapline\`. Existing config and data are never overwritten.
+That drops `Hoodrich.dll` into `scripts\`, `Hoodrich.ini` next to it, and the data files
+into `scripts\Hoodrich\`. Existing config and data are never overwritten.
 
-To uninstall: delete `scripts\Trapline.dll`. Your save in `scripts\Trapline\save.json`
+To uninstall: delete `scripts\Hoodrich.dll`. Your save in `scripts\Hoodrich\save.json`
 survives, so reinstalling picks up where you left off.
 
 ## Controls
 
-By default Trapline **takes over the weapon wheel button** (`Mode=Replace` in the ini).
+By default Hoodrich **takes over the weapon wheel button** (`Mode=Replace` in the ini).
 The vanilla weapon wheel is suppressed while the mod is loaded.
 
 | Input | Action |
 |---|---|
-| Hold weapon-wheel button | Open the Trapline wheel |
+| Hold weapon-wheel button | Open the Hoodrich wheel |
 | Mouse / right stick | Point at a segment |
 | Release | Pick the highlighted segment |
 | LMB / RT | Pick without releasing (the only way into a submenu) |
 | RMB / LT | Back out one page, or close at the root |
 
-Prefer to keep your weapon wheel? Set `Mode=Separate` in `Trapline.ini` and the wheel
+Prefer to keep your weapon wheel? Set `Mode=Separate` in `Hoodrich.ini` and the wheel
 moves to its own key (`Key=B` by default).
 
 ## What works right now (0.2.0)
@@ -54,11 +54,25 @@ Six wheel pages, and a supply chain you have to actually work.
 **Supply → Cut → Sell.** You cannot buy street-ready product. You buy **bulk** from a
 contact, and bulk is worthless until you cut and bag it.
 
-- **Supply** — four contacts (Dock Foreman, The Mob, an out-of-town crew, a corner
-  connect), each with their own price, weight limit, rank gate and operating hours. The
-  mob only answers at night; the docks only in daylight. Calling one arranges a **meet**:
-  a blip appears, you drive there, the contact spawns when you get close, and you trade
-  face to face. No fixed map coordinates are hardcoded anywhere.
+- **Supply** — the **dock worker** is your one-stop shop: he can get you anything in the
+  catalogue, at full price, in daylight hours only. Everyone else is a **gang contact** who
+  carries one product and sells it 30% under the odds:
+
+  | Contact | Product | Price | Rank |
+  |---|---|---|---|
+  | Dock Worker | everything | x1.00 | — |
+  | Families Plug | Weed | x0.70 | — |
+  | Wei Cheng Contact | Ecstasy | x0.70 | Soldier |
+  | Lost MC Cook | Meth | x0.70 | Soldier |
+  | Vagos Connection | Cocaine | x0.70 | Enforcer |
+  | Armenian Connection | Heroin | x0.70 | Enforcer |
+
+  Standing matters: run with a gang and their contact takes another **10%** off; reach 100
+  rep with them without joining and it is **5%**. A gang at war with your crew **will not
+  deal with you at any price** — which is the real cost of picking a side.
+
+  Calling a contact arranges a **meet**: a blip appears, you drive there, the contact spawns
+  when you get close, and you trade face to face. No map coordinates are hardcoded anywhere.
 - **Cut** — turn bulk into street units at a purity you choose (100 / 75 / 50 / 33%).
   This is the greed dial: cutting to 50% doubles your units, but each is worth less and
   buyers get a chance to clock it, refuse the sale, and occasionally swing at you.
@@ -91,13 +105,13 @@ Turf **capture** is the next milestone; the `Claim` item is present but disabled
 
 The shipped zone codes are best-effort. To correct them, stand anywhere in game and pick
 **Turf → Log zone** on the wheel: the exact `GET_NAME_OF_ZONE` code is printed on screen
-and written to `scripts\Trapline.log`. Paste it into the right gang's `turf` list in
-`scripts\Trapline\gangs.json`. **Turf → Dossier** dumps the whole current map to the log.
+and written to `scripts\Hoodrich.log`. Paste it into the right gang's `turf` list in
+`scripts\Hoodrich\gangs.json`. **Turf → Dossier** dumps the whole current map to the log.
 
 ## Layout
 
 ```
-src/Trapline/
+src/Hoodrich/
   Main.cs              script entry point; single owner of the tick loop
   Core/                Paths, Log, IniFile, Json (hand-rolled), JsonFile, Settings
   UI/                  Draw (native primitives), Palette, RadialMenu, WheelController, Notify
@@ -108,11 +122,11 @@ src/Trapline/
   Territory/TurfWatch  zone ownership, spotting, rival aggression
   Dealing/StreetDeal   buyer selection and the hand-to-hand deal
   State/               PlayerState, SaveGame
-data/                  shipped data files, copied to scripts\Trapline\ on deploy
+data/                  shipped data files, copied to scripts\Hoodrich\ on deploy
 tools/                 self-contained Roslyn compiler + net48 reference assemblies
 ```
 
-Data files, all live-editable in `scripts\Trapline\`:
+Data files, all live-editable in `scripts\Hoodrich\`:
 
 | File | What it controls |
 |---|---|
@@ -129,22 +143,22 @@ is broken — `Microsoft.NETCore.App\8.0.28` is a partial install (3 files again
 drives a Roslyn `csc.exe` pulled into `tools\`, which needs no SDK, no Visual Studio and
 no admin rights.
 
-`Trapline.csproj` is kept in sync for whenever the SDK gets repaired, but `build.ps1` is
+`Hoodrich.csproj` is kept in sync for whenever the SDK gets repaired, but `build.ps1` is
 the authoritative build.
 
 ```powershell
-.\build.ps1                    # -> build\Trapline.dll
+.\build.ps1                    # -> build\Hoodrich.dll
 .\build.ps1 -Configuration Debug
 .\build.ps1 -Deploy            # build + install (refuses while GTA V is running)
 ```
 
 ## Tuning
 
-Everything in `Trapline.ini` is live-reloaded at script start (SHVDN reloads scripts with
+Everything in `Hoodrich.ini` is live-reloaded at script start (SHVDN reloads scripts with
 Insert). Two knobs worth knowing:
 
 - `RenderMode` — `Wedge` draws true arc segments from a streamed texture; `Node` uses
   plain rectangles and needs no textures at all. `Auto` picks Wedge and falls back.
 - `TimeScale` — how far time slows while the wheel is open. `1.0` turns it off.
 
-Product prices, tiers and heat live in `scripts\Trapline\drugs.json`.
+Product prices, tiers and heat live in `scripts\Hoodrich\drugs.json`.

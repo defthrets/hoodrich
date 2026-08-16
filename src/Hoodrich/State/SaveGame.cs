@@ -1,0 +1,58 @@
+using System;
+using Hoodrich.Core;
+using Hoodrich.Gangs;
+
+namespace Hoodrich.State
+{
+    /// <summary>
+    /// Reads and writes the single save document.
+    ///
+    /// Kept separate from the systems it persists so that each of them owns only its own
+    /// serialisation, and there is exactly one place that knows the file layout and the
+    /// migration rules between versions.
+    /// </summary>
+    internal static class SaveGame
+    {
+        public static void Load(PlayerState state, Affiliation affiliation)
+        {
+            var doc = JsonFile.Read(Paths.SaveFile);
+            if (doc == null)
+            {
+                Log.Info("No save found; starting fresh at rank 0.");
+                return;
+            }
+
+            var version = doc["version"].AsString("0.1.0");
+            if (version != Build.Version)
+            {
+                Log.Info("Save was written by " + version + "; migrating to " + Build.Version + ".");
+            }
+
+            state.LoadFrom(doc);
+            affiliation.LoadFrom(doc["affiliation"]);
+            state.MarkSaved();
+        }
+
+        public static bool Save(PlayerState state, Affiliation affiliation, bool force = false)
+        {
+            if (!state.IsDirty && !force) return false;
+
+            try
+            {
+                var doc = state.ToJson()
+                    .Set("version", Build.Version)
+                    .Set("affiliation", affiliation.ToJson());
+
+                if (!JsonFile.Write(Paths.SaveFile, doc)) return false;
+
+                state.MarkSaved();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Save failed.", ex);
+                return false;
+            }
+        }
+    }
+}

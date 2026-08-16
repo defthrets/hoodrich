@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "Trapline product catalogue. Edit freely - the mod reloads this on startup.",
+    "Hoodrich product catalogue. Edit freely - the mod reloads this on startup.",
     "id        stable key used in save files; never change it once you have a save",
     "name      full name shown in notifications",
     "tag       short label drawn on the wheel (keep it to 4 characters)",
@@ -11,6 +11,7 @@
   "drugs": [
     { "id": "weed",   "name": "Marijuana", "tag": "WEED", "basePrice": 10,  "tier": 1, "heatFactor": 0.5 },
     { "id": "crack",  "name": "Crack",     "tag": "CRK",  "basePrice": 25,  "tier": 2, "heatFactor": 1.0 },
+    { "id": "ecstasy","name": "Ecstasy",   "tag": "PILL", "basePrice": 35,  "tier": 2, "heatFactor": 0.8 },
     { "id": "meth",   "name": "Meth",      "tag": "METH", "basePrice": 28,  "tier": 2, "heatFactor": 1.1 },
     { "id": "heroin", "name": "Heroin",    "tag": "H",    "basePrice": 45,  "tier": 3, "heatFactor": 1.4 },
     { "id": "coke",   "name": "Cocaine",   "tag": "COKE", "basePrice": 100, "tier": 3, "heatFactor": 1.6 }
