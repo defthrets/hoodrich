@@ -1,9 +1,13 @@
 using System;
+using System.Collections.Generic;
 using GTA;
 using Trapline.Core;
 using Trapline.Dealing;
 using Trapline.Economy;
+using Trapline.Gangs;
 using Trapline.State;
+using Trapline.Supply;
+using Trapline.Territory;
 using Trapline.UI;
 
 namespace Trapline.Wheel
@@ -11,93 +15,142 @@ namespace Trapline.Wheel
     /// <summary>
     /// Builds wheel pages from live game state.
     ///
-    /// Pages are rebuilt every time the wheel opens rather than cached, so prices, stock and
-    /// rank gating are always current. Items the player cannot use yet are shown disabled with
-    /// a reason rather than hidden, so the wheel layout stays in the same place every time --
-    /// muscle memory is the entire point of a radial menu.
+    /// Pages are rebuilt every time the wheel opens rather than cached, so prices, stock, turf
+    /// and rank gating are always current. Items the player cannot use are shown disabled with
+    /// a reason rather than hidden, so segment positions never move -- muscle memory is the
+    /// entire point of a radial menu.
     /// </summary>
     internal sealed class WheelPages
     {
         /// <summary>Grams moved in a single hand-to-hand sale.</summary>
         private const float DealSize = 5f;
 
-        private readonly Settings _cfg;
+        /// <summary>Purity options offered when cutting, high to low.</summary>
+        private static readonly float[] PurityOptions = { 1.0f, 0.75f, 0.5f, 0.33f };
+
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
         private readonly Pricing _pricing;
         private readonly StreetDeal _deal;
+        private readonly Cutting _cutting;
+        private readonly GangRegistry _gangs;
+        private readonly Affiliation _crew;
+        private readonly TurfWatch _turf;
+        private readonly SupplierManager _suppliers;
 
-        public WheelPages(Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal)
+        public WheelPages(PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
+                          Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
+                          SupplierManager suppliers)
         {
-            _cfg = cfg;
             _state = state;
             _drugs = drugs;
             _pricing = pricing;
             _deal = deal;
+            _cutting = cutting;
+            _gangs = gangs;
+            _crew = crew;
+            _turf = turf;
+            _suppliers = suppliers;
         }
+
+        private Stash Stash => _state.Stash;
+
+        // ---- root --------------------------------------------------------------
 
         public WheelPage BuildRoot()
         {
-            var held = _state.Inventory.Total;
+            var packaged = Stash.TotalPackaged;
+            var bulk = Stash.TotalBulk;
+
             var page = new WheelPage("Trapline",
-                _state.RankName + "  ·  " + _state.Respect.ToString("F0") + " respect");
+                _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated");
+
+            page.Add("Sell", "$", null, enabled: false); // replaced below; keeps ordering obvious
+            page.Items.Clear();
 
             page.AddSub("Sell", "$", BuildSellPage,
                 detail: "Hand-to-hand to someone on foot",
-                value: held > 0.005f ? held.ToString("0.#") + "g held" : "",
-                enabled: held > 0.005f && !_deal.IsBusy,
-                disabledReason: _deal.IsBusy ? "Already mid-deal" : "You are holding nothing");
+                value: packaged > 0.005f ? packaged.ToString("0.#") + "g bagged" : "",
+                enabled: packaged > 0.005f && !_deal.IsBusy && !_cutting.IsBusy,
+                disabledReason: _deal.IsBusy ? "Already mid-deal"
+                    : _cutting.IsBusy ? "You are cutting"
+                    : bulk > 0.005f ? "All you have is bulk -- cut it first"
+                    : "You are holding nothing");
 
-            page.AddSub("Resupply", "+", BuildResupplyPage,
-                detail: "Call the plug for a drop",
+            page.AddSub("Cut", "/", BuildCutPage,
+                detail: "Bag bulk into street units",
+                value: bulk > 0.005f ? bulk.ToString("0.#") + "g bulk" : "",
+                enabled: bulk > 0.005f && !_cutting.IsBusy && !_deal.IsBusy,
+                disabledReason: _cutting.IsBusy ? "Already cutting"
+                    : _deal.IsBusy ? "Already mid-deal"
+                    : "No bulk to cut -- buy some first");
+
+            page.AddSub("Supply", "+", BuildSupplyPage,
+                detail: SupplyDetail(),
                 value: "$" + Game.Player.Money.ToString("N0"),
-                enabled: !_deal.IsBusy,
-                disabledReason: "Already mid-deal");
+                enabled: !_deal.IsBusy && !_cutting.IsBusy,
+                disabledReason: "Busy");
+
+            page.AddSub("Gang", "^", BuildGangPage,
+                detail: _crew.IsAffiliated ? "Your crew and your standing" : "Pick who you run with",
+                value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
+
+            page.AddSub("Turf", "#", BuildTurfPage,
+                detail: _turf.StatusLine,
+                value: _turf.ZoneName);
 
             page.Add("Status", "*", ShowStatus,
                 detail: _pricing.PriceContext(),
                 value: "Heat " + _state.Notoriety.ToString("F0") + "%");
 
-            page.Add("Crew", "^", null,
-                detail: "Recruit and command your people",
-                enabled: false, disabledReason: "Not in this build yet");
-
-            page.Add("Turf", "#", null,
-                detail: "Claim and hold territory",
-                enabled: false, disabledReason: "Not in this build yet");
-
-            page.Add("Stash", "=", null,
-                detail: "Bank product off your person",
-                enabled: false, disabledReason: "Not in this build yet");
-
             return page;
+        }
+
+        private string SupplyDetail()
+        {
+            if (_suppliers.TradablePed != null) return "Your contact is right here";
+            if (_suppliers.HasMeet) return _suppliers.ActiveMeet.Name + " -- " +
+                                          _suppliers.MeetDistance.ToString("0") + "m away";
+            return "Call a contact for bulk weight";
         }
 
         // ---- sell --------------------------------------------------------------
 
         private WheelPage BuildSellPage()
         {
-            var page = new WheelPage("Sell", "Facing a buyer on foot");
-            var held = _state.Inventory.Held(_drugs);
+            var page = new WheelPage("Sell", "Face a buyer on foot");
+            page.PanelTitle = "This block";
+            page.Row("Zone", _turf.ZoneName);
+            page.Row("Status", _turf.StatusLine, TurfTint());
+            page.Row("Turf price", "x" + _pricing.TurfMultiplier.ToString("0.00"));
+            page.Row("Heat per sale", "x" + _turf.TurfHeatMultiplier.ToString("0.0"),
+                     _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : Palette.Cash);
+            page.Row("Lookouts", _crew.NearbyAllies.ToString(),
+                     _crew.NearbyAllies > 0 ? Palette.Cash : Palette.TextDim);
 
+            var held = Stash.WithPackaged(_drugs);
             if (held.Count == 0)
             {
-                page.Add("Nothing", "-", null, detail: "You are holding nothing",
-                         enabled: false, disabledReason: "You are holding nothing");
+                page.Add("Nothing", "-", null, detail: "Nothing bagged",
+                         enabled: false, disabledReason: "Nothing bagged");
                 return page;
             }
 
             foreach (var drug in held)
             {
                 var product = drug;
-                var stock = _state.Inventory.Get(product.Id);
+                var stock = Stash.PackagedOf(product.Id);
+                var purity = Stash.PurityOf(product.Id);
                 var amount = Math.Min(DealSize, stock);
-                var value = _pricing.SaleValue(product, amount);
+                var value = _pricing.SaleValue(product, amount, purity);
+                var risk = Pricing.BadCutChance(purity);
 
                 page.Add(product.Tag, product.Tier >= 3 ? "!" : "o",
                     () => Sell(product, amount),
-                    detail: "$" + _pricing.StreetPrice(product).ToString("0") + "/g · " + _pricing.PriceContext(),
-                    value: amount.ToString("0.#") + "g for $" + value.ToString("N0"));
+                    detail: (purity * 100f).ToString("0") + "% pure" +
+                            (risk > 0.01f ? "  ~ " + (risk * 100f).ToString("0") + "% knockback" : ""),
+                    value: amount.ToString("0.#") + "g for $" + value.ToString("N0"),
+                    enabled: true);
             }
 
             return page;
@@ -106,37 +159,173 @@ namespace Trapline.Wheel
         private void Sell(DrugDef product, float grams)
         {
             var failure = _deal.TrySell(product, grams);
-            if (failure != null) Notify.Ticker("~o~Trapline:~s~ " + failure);
+            if (failure != null) Notify.Problem(failure);
         }
 
-        // ---- resupply ----------------------------------------------------------
+        // ---- cut ---------------------------------------------------------------
 
-        private WheelPage BuildResupplyPage()
+        private WheelPage BuildCutPage()
         {
-            var page = new WheelPage("Resupply", "Wholesale, paid up front");
+            var page = new WheelPage("Cut", "Bulk into street units");
+            page.PanelTitle = "Cutting";
+            page.Row("Bulk held", Stash.TotalBulk.ToString("0.#") + "g");
+            page.Row("Bagged", Stash.TotalPackaged.ToString("0.#") + "g");
+            page.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
 
-            foreach (var drug in _drugs.All)
+            var blocker = _cutting.WhyCannotCut();
+            page.Row("Ready", blocker == null ? "yes" : "no",
+                     blocker == null ? Palette.Cash : Palette.Warn);
+
+            var bulk = Stash.WithBulk(_drugs);
+            if (bulk.Count == 0)
+            {
+                page.Add("Nothing", "-", null, detail: "No bulk on you",
+                         enabled: false, disabledReason: "No bulk on you");
+                return page;
+            }
+
+            foreach (var drug in bulk)
             {
                 var product = drug;
+                var have = Stash.BulkOf(product.Id);
 
-                // Rank gates what the plug will front you, and how much of it.
-                var requiredRank = Math.Max(0, product.Tier - 1);
-                var lot = LotSizeFor(product);
-                var cost = _pricing.PurchaseCost(product, lot);
+                page.AddSub(product.Tag, product.Tier >= 3 ? "!" : "o",
+                    () => BuildPurityPage(product),
+                    detail: "Choose how hard to step on it",
+                    value: have.ToString("0.#") + "g bulk",
+                    enabled: blocker == null,
+                    disabledReason: blocker ?? "");
+            }
 
-                var rankOk = _state.Rank >= requiredRank;
+            return page;
+        }
+
+        private WheelPage BuildPurityPage(DrugDef product)
+        {
+            var have = Stash.BulkOf(product.Id);
+            var batch = Math.Min(have, 50f);
+
+            var page = new WheelPage(product.Name, "Cutting " + batch.ToString("0") + "g");
+            page.PanelTitle = product.Name + " batch";
+            page.Row("Bulk on hand", have.ToString("0.#") + "g");
+            page.Row("Batch size", batch.ToString("0") + "g");
+            page.Row("Base price", "$" + product.BasePrice.ToString("0") + "/g");
+
+            foreach (var p in PurityOptions)
+            {
+                var purity = p;
+                var yield = Cutting.Yield(batch, purity);
+                var gross = _pricing.SaleValue(product, yield, purity);
+                var risk = Pricing.BadCutChance(purity);
+                var fits = Stash.FreeSpace >= yield - batch - 0.001f;
+
+                page.Add((purity * 100f).ToString("0") + "%",
+                    risk > 0.2f ? "!" : "o",
+                    () => Cut(product, batch, purity),
+                    detail: risk < 0.01f
+                        ? "Clean. Buyers never blink."
+                        : (risk * 100f).ToString("0") + "% chance of a knockback",
+                    value: yield.ToString("0") + "g  ~$" + gross.ToString("N0"),
+                    enabled: fits,
+                    disabledReason: "No room for " + yield.ToString("0") + "g");
+            }
+
+            return page;
+        }
+
+        private void Cut(DrugDef product, float grams, float purity)
+        {
+            var failure = _cutting.TryStart(product, grams, purity);
+            if (failure != null) Notify.Problem(failure);
+        }
+
+        // ---- supply ------------------------------------------------------------
+
+        private WheelPage BuildSupplyPage()
+        {
+            // Standing in front of a contact: trade.
+            var ped = _suppliers.TradablePed;
+            if (ped != null && _suppliers.ActiveMeet != null) return BuildBuyPage(_suppliers.ActiveMeet);
+
+            // Meet arranged but not there yet.
+            if (_suppliers.HasMeet)
+            {
+                var def = _suppliers.ActiveMeet;
+                var page = new WheelPage("Supply", "Meet is on");
+                page.PanelTitle = def.Name;
+                page.Row("Distance", _suppliers.MeetDistance.ToString("0") + "m");
+                page.Row("Sells", string.Join(", ", def.Drugs.ToArray()).ToUpperInvariant());
+                page.Row("Price", "x" + def.PriceMultiplier.ToString("0.00"));
+                page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g");
+
+                page.Add("Go to meet", ">", () => Notify.Ticker("Marked on your map."),
+                         detail: "Follow the yellow blip", value: _suppliers.MeetDistance.ToString("0") + "m");
+                page.Add("Call off", "x", () => _suppliers.CancelMeet("You called it off."),
+                         detail: "Cancel the meet");
+                return page;
+            }
+
+            // Nobody arranged: pick a contact.
+            var list = new WheelPage("Supply", "Call a contact");
+            list.PanelTitle = "Your connects";
+            list.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
+            list.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
+            list.Row("Rank", _state.RankName);
+
+            var hour = Pricing.ClockHour;
+            foreach (var s in _suppliers.All)
+            {
+                var def = s;
+                var rankOk = _state.Rank >= def.MinRank;
+                var openNow = def.IsOpenAt(hour);
+
+                var reason = !rankOk
+                    ? "Need rank " + PlayerState.RankNames[Math.Min(def.MinRank, PlayerState.RankNames.Length - 1)]
+                    : !openNow ? "Works " + def.OpenHour + ":00-" + def.CloseHour + ":00"
+                    : "";
+
+                list.Add(def.Tag, "o", () => Call(def),
+                    detail: def.Blurb,
+                    value: "x" + def.PriceMultiplier.ToString("0.00") + "  " + def.MaxOrderGrams.ToString("0") + "g max",
+                    enabled: reason.Length == 0,
+                    disabledReason: reason);
+            }
+
+            return list;
+        }
+
+        private void Call(SupplierDef def)
+        {
+            var failure = _suppliers.ArrangeMeet(def, _state);
+            if (failure != null) Notify.Problem(failure);
+        }
+
+        private WheelPage BuildBuyPage(SupplierDef def)
+        {
+            var page = new WheelPage(def.Name, "Buying bulk");
+            page.PanelTitle = def.Name;
+            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
+            page.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
+            page.Row("Price", "x" + def.PriceMultiplier.ToString("0.00"));
+
+            foreach (var id in def.Drugs)
+            {
+                var product = _drugs.Get(id);
+                if (product == null) continue;
+
+                var lot = LotSizeFor(def, product);
+                var cost = _pricing.PurchaseCost(product, lot, def.PriceMultiplier);
+
                 var canAfford = Game.Player.Money >= cost;
-                var fits = _state.Inventory.FreeSpace >= lot - 0.001f;
+                var fits = Stash.FreeSpace >= lot - 0.001f;
 
-                var reason =
-                    !rankOk ? "Need rank " + PlayerState.RankNames[Math.Min(requiredRank, PlayerState.RankNames.Length - 1)]
-                    : !canAfford ? "Short $" + (cost - Game.Player.Money).ToString("N0")
-                    : !fits ? "No room -- sell some first"
+                var reason = !canAfford ? "Short $" + (cost - Game.Player.Money).ToString("N0")
+                    : !fits ? "No room -- sell or drop some"
                     : "";
 
                 page.Add(product.Tag, product.Tier >= 3 ? "!" : "o",
-                    () => Buy(product, lot, cost),
-                    detail: "$" + _pricing.WholesalePrice(product).ToString("0") + "/g wholesale",
+                    () => Buy(def, product, lot, cost),
+                    detail: "$" + _pricing.WholesalePrice(product, def.PriceMultiplier).ToString("0") + "/g bulk",
                     value: lot.ToString("0") + "g for $" + cost.ToString("N0"),
                     enabled: reason.Length == 0,
                     disabledReason: reason);
@@ -145,46 +334,170 @@ namespace Trapline.Wheel
             return page;
         }
 
-        /// <summary>Higher rank means the plug will move more weight at a time.</summary>
-        private float LotSizeFor(DrugDef product)
+        /// <summary>Rank raises how much weight a contact will move at once, up to their cap.</summary>
+        private float LotSizeFor(SupplierDef def, DrugDef product)
         {
-            var baseLot = 10f + _state.Rank * 10f;
-            // Heavier tiers move in smaller lots so the cash outlay stays comparable.
-            return Math.Max(2f, baseLot / product.Tier);
+            var baseLot = 20f + _state.Rank * 20f;
+            var scaled = Math.Max(5f, baseLot / product.Tier);
+            return Math.Min(def.MaxOrderGrams, scaled);
         }
 
-        private void Buy(DrugDef product, float grams, int cost)
+        private void Buy(SupplierDef def, DrugDef product, float grams, int cost)
         {
             if (Game.Player.Money < cost)
             {
-                Notify.Ticker("~o~Trapline:~s~ not enough cash.");
+                Notify.Problem("not enough cash.");
                 return;
             }
 
-            var accepted = _state.Inventory.Add(product.Id, grams);
+            var accepted = Stash.AddBulk(product.Id, grams);
             if (accepted <= 0f)
             {
-                Notify.Ticker("~o~Trapline:~s~ you cannot carry any more.");
+                Notify.Problem("you cannot carry any more.");
                 return;
             }
 
-            // Charge only for what actually fit.
             var charged = (int)Math.Round(cost * (accepted / grams));
             Game.Player.Money -= charged;
             _state.Touch();
 
-            Notify.Ticker("~y~-$" + charged.ToString("N0") + "~s~  picked up " +
-                                     accepted.ToString("0.#") + "g " + product.Name);
-            Log.Info("Bought " + accepted.ToString("0.##") + "g " + product.Id + " for $" + charged + ".");
+            Notify.Ticker("~y~-$" + charged.ToString("N0") + "~s~  " + accepted.ToString("0.#") +
+                          "g bulk " + product.Name);
+            Log.Info("Bought " + accepted.ToString("0.##") + "g bulk " + product.Id +
+                     " from " + def.Id + " for $" + charged + ".");
+        }
+
+        // ---- gang --------------------------------------------------------------
+
+        private WheelPage BuildGangPage()
+        {
+            var page = new WheelPage("Gang",
+                _crew.IsAffiliated ? "Running with " + _crew.Current.Name : "Running solo");
+
+            var standing = _crew.CurrentStanding;
+
+            page.PanelTitle = _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated";
+            page.Row("Affiliation", _crew.IsAffiliated ? _crew.Current.Name : "none",
+                     _crew.IsAffiliated ? _crew.Current.Colour : (System.Drawing.Color?)Palette.TextDim);
+            page.Row("Rank", _state.RankName);
+            page.Row("Respect", _state.Respect.ToString("N0"));
+            page.Row("Gang rep", standing == null ? "-" : standing.Rep.ToString("N0"),
+                     standing == null ? Palette.TextDim
+                        : standing.Rep < 0 ? Palette.Danger : Palette.Cash);
+            page.Row("Kills for them", standing == null ? "-" : standing.Kills.ToString("N0"));
+            page.Row("Money made", standing == null ? "-" : "$" + standing.MoneyEarned.ToString("N0"),
+                     Palette.Cash);
+            page.Row("Deals", standing == null ? "-" : standing.Deals.ToString("N0"));
+            page.Row("Lookouts near", _crew.NearbyAllies.ToString(),
+                     _crew.NearbyAllies > 0 ? Palette.Cash : Palette.TextDim);
+            page.Row("Their turf", _crew.IsAffiliated ? _crew.Current.TurfHint : "-");
+
+            foreach (var g in _gangs.All)
+            {
+                var gang = g;
+                var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
+                var theirStanding = _crew.StandingFor(gang.Id);
+
+                var reason = mine ? "" :
+                    theirStanding.Rep <= -50f ? "They want you dead"
+                    : _state.Respect < gang.JoinRespect
+                        ? "Need " + gang.JoinRespect.ToString("F0") + " respect"
+                        : "";
+
+                page.Add(gang.Tag, mine ? "*" : "o",
+                    mine ? (Action)(() => _crew.Leave()) : () => Join(gang),
+                    detail: mine ? "Your crew -- pick to walk away" : gang.TurfHint,
+                    value: mine ? "AFFILIATED" : "rep " + theirStanding.Rep.ToString("0"),
+                    enabled: mine || reason.Length == 0,
+                    disabledReason: reason);
+
+                page.Items[page.Items.Count - 1].Tint = gang.Colour;
+            }
+
+            return page;
+        }
+
+        private void Join(GangDef gang)
+        {
+            var failure = _crew.Join(gang, _state.Respect);
+            if (failure != null) Notify.Problem(failure);
+        }
+
+        // ---- turf --------------------------------------------------------------
+
+        private WheelPage BuildTurfPage()
+        {
+            var page = new WheelPage("Turf", _turf.StatusLine);
+
+            page.PanelTitle = _turf.ZoneName;
+            page.Row("Zone code", _turf.ZoneCode);
+            page.Row("Claimed by", _turf.Owner == null ? "nobody" : _turf.Owner.Name,
+                     _turf.Owner?.Colour ?? (System.Drawing.Color?)Palette.TextDim);
+            page.Row("To you", _turf.Status.ToString(), TurfTint());
+            page.Row("Price here", "x" + _turf.TurfPriceMultiplier.ToString("0.00"),
+                     _turf.TurfPriceMultiplier > 1.05f ? Palette.Cash : Palette.Text);
+            page.Row("Heat here", "x" + _turf.TurfHeatMultiplier.ToString("0.0"),
+                     _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : Palette.Cash);
+            page.Row("Seen dealing", _turf.IsExposed ? "yes" : "no",
+                     _turf.IsExposed ? Palette.Warn : Palette.TextDim);
+
+            page.Add("Log zone", "=", LogZone,
+                detail: "Writes this zone code to Trapline.log",
+                value: _turf.ZoneCode);
+
+            page.Add("Dossier", "*", ShowTurfDossier,
+                detail: "Who claims what, in the log",
+                value: "");
+
+            page.Add("Claim", "#", null,
+                detail: "Take this block by force",
+                enabled: false, disabledReason: "Turf wars are the next build");
+
+            return page;
+        }
+
+        private System.Drawing.Color TurfTint()
+        {
+            switch (_turf.Status)
+            {
+                case TurfStatus.Home: return Palette.Cash;
+                case TurfStatus.Hostile: return Palette.Danger;
+                case TurfStatus.Foreign: return Palette.Warn;
+                default: return Palette.TextDim;
+            }
+        }
+
+        /// <summary>
+        /// Prints the current zone code so the turf map can be filled in accurately from
+        /// inside the game rather than guessed at in a text editor.
+        /// </summary>
+        private void LogZone()
+        {
+            var owner = _turf.Owner == null ? "unclaimed" : _turf.Owner.Id;
+            Log.Info("ZONE  code=\"" + _turf.ZoneCode + "\"  name=\"" + _turf.ZoneName +
+                     "\"  owner=" + owner);
+            Notify.Ticker("~y~" + _turf.ZoneCode + "~s~ (" + _turf.ZoneName + ") -> " + owner +
+                          "  logged");
+        }
+
+        private void ShowTurfDossier()
+        {
+            foreach (var g in _gangs.All)
+            {
+                Log.Info("TURF  " + g.Id.PadRight(12) + " " + string.Join(", ", g.Turf.ToArray()));
+            }
+            Notify.Ticker("Turf map written to Trapline.log.");
         }
 
         // ---- status ------------------------------------------------------------
 
         private void ShowStatus()
         {
-            var inv = _state.Inventory;
             var worth = 0;
-            foreach (var d in _drugs.All) worth += _pricing.SaleValue(d, inv.Get(d.Id));
+            foreach (var d in _drugs.All)
+            {
+                worth += _pricing.SaleValue(d, Stash.PackagedOf(d.Id), Stash.PurityOf(d.Id));
+            }
 
             var next = _state.Rank >= PlayerState.RankNames.Length - 1
                 ? "max rank"
@@ -192,7 +505,9 @@ namespace Trapline.Wheel
 
             Notify.Ticker(
                 "~y~" + _state.RankName + "~s~  " + next + "\n" +
-                "Holding " + inv.Total.ToString("0.#") + "g worth ~g~$" + worth.ToString("N0") + "~s~\n" +
+                Stash.TotalBulk.ToString("0.#") + "g bulk  ·  " +
+                Stash.TotalPackaged.ToString("0.#") + "g bagged (~g~$" + worth.ToString("N0") + "~s~)\n" +
+                (_crew.IsAffiliated ? _crew.Current.Name : "Solo") + "  ·  " + _turf.StatusLine + "\n" +
                 "Deals " + _state.TotalDealsMade + "  ·  Heat " + _state.Notoriety.ToString("F0") + "%  ·  " +
                 _pricing.PriceContext());
         }

@@ -1,16 +1,18 @@
 using System;
 using GTA.Native;
 using Trapline.Core;
+using Trapline.Gangs;
 using Trapline.State;
+using Trapline.Territory;
 
 namespace Trapline.Economy
 {
     /// <summary>
     /// Works out what product is worth right now.
     ///
-    /// The model is deliberately transparent: street price is the base price walked through a
-    /// small number of named multipliers, each of which the player can feel. Night is the big
-    /// one, because it is the lever that makes dealing after dark the interesting choice.
+    /// The model is deliberately transparent: a base price walked through a handful of named
+    /// multipliers, each of which the player can feel and reason about. Night is the loudest,
+    /// then purity, then whose block you are standing on.
     /// </summary>
     internal sealed class Pricing
     {
@@ -21,8 +23,18 @@ namespace Trapline.Economy
         private const float NightFloorMultiplier = 1.4f;
         private const float NightPeakMultiplier = 3.0f;
 
+        /// <summary>
+        /// Price floor for worthless product. At 100% purity this is 1.0; at the 20% floor it
+        /// is 0.48, so cutting 1g into 5g grosses far more but each unit is near-garbage.
+        /// </summary>
+        private const float PurityFloor = 0.35f;
+
         private readonly Settings _cfg;
         private readonly PlayerState _state;
+
+        /// <summary>Assigned by Main after construction; both are optional for pricing to work.</summary>
+        public TurfWatch Turf;
+        public Affiliation Crew;
 
         public Pricing(Settings cfg, PlayerState state)
         {
@@ -54,8 +66,8 @@ namespace Trapline.Economy
 
                 // Re-base onto a linear axis so the midnight wrap stops being a special case.
                 var h = hour < NightEndHour ? hour + 24 : hour;
-                var start = NightStartHour;
-                var end = NightEndHour + 24;
+                const int start = NightStartHour;
+                const int end = NightEndHour + 24;
                 var peak = NightPeakHour < NightEndHour ? NightPeakHour + 24 : NightPeakHour;
 
                 float t;
@@ -78,51 +90,83 @@ namespace Trapline.Economy
         /// <summary>Higher rank means better connections and a better take.</summary>
         public float RankMultiplier => 1f + _state.Rank * 0.06f;
 
-        /// <summary>
-        /// Heat cuts into the street price: when rivals and police are watching, buyers get
-        /// jumpy and haggle harder.
-        /// </summary>
+        /// <summary>Heat makes buyers jumpy and they haggle harder.</summary>
         public float NotorietyMultiplier => 1f - Math.Min(0.35f, _state.Notoriety / 100f * 0.35f);
 
-        /// <summary>Per-gram street price for a single sale, before per-deal haggling.</summary>
-        public float StreetPrice(DrugDef drug)
+        /// <summary>Cut product is worth less per gram, but never nothing.</summary>
+        public static float PurityMultiplier(float purity)
+        {
+            purity = purity < Stash.MinPurity ? Stash.MinPurity : purity > Stash.MaxPurity ? Stash.MaxPurity : purity;
+            return PurityFloor + (1f - PurityFloor) * purity;
+        }
+
+        public float TurfMultiplier => Turf == null ? 1f : Turf.TurfPriceMultiplier;
+
+        public float LookoutMultiplier => Crew == null ? 1f : Crew.LookoutMultiplier;
+
+        /// <summary>Per-gram street price for packaged product of a given purity.</summary>
+        public float StreetPrice(DrugDef drug, float purity)
         {
             if (drug == null) return 0f;
-            return drug.BasePrice * NightMultiplier * RankMultiplier * NotorietyMultiplier;
+
+            return drug.BasePrice
+                   * NightMultiplier
+                   * RankMultiplier
+                   * NotorietyMultiplier
+                   * PurityMultiplier(purity)
+                   * TurfMultiplier
+                   * LookoutMultiplier;
         }
 
         /// <summary>
-        /// Per-gram wholesale price the player PAYS a supplier. Based on the undiscounted base
-        /// price, so buying stock is not made cheap simply by it being 2am.
+        /// Per-gram wholesale price for BULK. Based on the undiscounted base price so buying
+        /// stock is not made cheap simply by it being 2am.
         /// </summary>
-        public float WholesalePrice(DrugDef drug)
+        public float WholesalePrice(DrugDef drug, float supplierMultiplier = 1f)
         {
             if (drug == null) return 0f;
             var discount = 1f - _cfg.BulkPurchaseDiscountPercent / 100f;
-            return Math.Max(0.5f, drug.BasePrice * discount);
+            return Math.Max(0.5f, drug.BasePrice * discount * supplierMultiplier);
         }
 
-        /// <summary>What the player nets selling <paramref name="grams"/> in one transaction.</summary>
-        public int SaleValue(DrugDef drug, float grams)
+        public int SaleValue(DrugDef drug, float grams, float purity)
         {
             if (drug == null || grams <= 0f) return 0;
-            return Math.Max(1, (int)Math.Round(StreetPrice(drug) * grams));
+            return Math.Max(1, (int)Math.Round(StreetPrice(drug, purity) * grams));
         }
 
-        /// <summary>What buying <paramref name="grams"/> costs.</summary>
-        public int PurchaseCost(DrugDef drug, float grams)
+        public int PurchaseCost(DrugDef drug, float grams, float supplierMultiplier = 1f)
         {
             if (drug == null || grams <= 0f) return 0;
-            return Math.Max(1, (int)Math.Round(WholesalePrice(drug) * grams));
+            return Math.Max(1, (int)Math.Round(WholesalePrice(drug, supplierMultiplier) * grams));
         }
 
-        /// <summary>Short human-readable reason the current price is what it is, for the wheel hub.</summary>
+        /// <summary>
+        /// Chance a buyer notices the product is stepped on. Heavily cut product gets you
+        /// refused, and sometimes gets you a problem.
+        /// </summary>
+        public static float BadCutChance(float purity)
+        {
+            if (purity >= 0.9f) return 0f;
+            return Math.Min(0.45f, (0.9f - purity) * 0.6f);
+        }
+
+        /// <summary>Short human-readable reason the current price is what it is.</summary>
         public string PriceContext()
         {
-            if (!IsNight) return "daytime rates";
+            var parts = IsNight ? "night x" + NightMultiplier.ToString("0.0") : "daytime";
 
-            var m = NightMultiplier;
-            return "night rates x" + m.ToString("0.0");
+            if (Turf != null && Math.Abs(TurfMultiplier - 1f) > 0.01f)
+            {
+                parts += "  turf x" + TurfMultiplier.ToString("0.00");
+            }
+
+            if (Crew != null && Crew.NearbyAllies > 0)
+            {
+                parts += "  " + Crew.NearbyAllies + " watching";
+            }
+
+            return parts;
         }
     }
 }

@@ -1,0 +1,76 @@
+{
+  "_comment": [
+    "Trapline supply contacts. These are who you buy BULK from; bulk cannot be sold until it",
+    "has been cut and bagged (wheel > Cut).",
+    "",
+    "Contacts have no fixed map position on purpose. Calling one arranges a meet at a spot",
+    "chosen near you at runtime and puts a blip on it, so nothing here depends on hardcoded",
+    "coordinates that could drop a ped through the map.",
+    "",
+    "kind             Docks | Mob | Gang | Street (flavour, and it gates nothing on its own)",
+    "models           ped models tried IN ORDER. The first one actually present in your install",
+    "                 is used, so a wrong or DLC-only name costs flavour, not the feature.",
+    "priceMultiplier  applied to the wholesale price. Below 1.0 is a better deal.",
+    "minRank          player rank index 0-4 (Pee-Wee, Soldier, Enforcer, Shotcaller, OG)",
+    "maxOrderGrams    largest single order this contact will move",
+    "openHour/closeHour  operating hours, 0-24. Wraps midnight when open > close."
+  ],
+  "suppliers": [
+    {
+      "id": "docks",
+      "name": "Dock Foreman",
+      "tag": "DOCK",
+      "kind": "Docks",
+      "blurb": "Skims containers. Cheap, daylight only.",
+      "models": ["s_m_y_dockwork_01", "s_m_m_dockwork_01", "s_m_y_construct_01", "a_m_m_business_01"],
+      "drugs": ["weed", "coke"],
+      "priceMultiplier": 0.85,
+      "minRank": 0,
+      "maxOrderGrams": 120,
+      "openHour": 6,
+      "closeHour": 20
+    },
+    {
+      "id": "mob",
+      "name": "The Mob",
+      "tag": "MOB",
+      "kind": "Mob",
+      "blurb": "Weight, no questions. Costs you.",
+      "models": ["g_m_m_armboss_01", "g_m_m_armgoon_01", "a_m_m_eastsa_02", "a_m_y_business_01"],
+      "drugs": ["coke", "heroin", "meth"],
+      "priceMultiplier": 1.15,
+      "minRank": 2,
+      "maxOrderGrams": 250,
+      "openHour": 20,
+      "closeHour": 5
+    },
+    {
+      "id": "gangsters",
+      "name": "Out-of-town Crew",
+      "tag": "CREW",
+      "kind": "Gang",
+      "blurb": "Mid price. They ask who you run with.",
+      "models": ["g_m_y_mexgoon_01", "g_m_y_lost_01", "a_m_y_stwhi_01", "a_m_m_soucent_01"],
+      "drugs": ["crack", "meth", "weed"],
+      "priceMultiplier": 1.0,
+      "minRank": 1,
+      "maxOrderGrams": 150,
+      "openHour": 0,
+      "closeHour": 24
+    },
+    {
+      "id": "street",
+      "name": "Corner Connect",
+      "tag": "CNCT",
+      "kind": "Street",
+      "blurb": "Small weight, always picks up.",
+      "models": ["a_m_y_soucent_01", "a_m_m_soucent_02", "a_m_y_downtown_01"],
+      "drugs": ["weed", "crack"],
+      "priceMultiplier": 1.25,
+      "minRank": 0,
+      "maxOrderGrams": 40,
+      "openHour": 0,
+      "closeHour": 24
+    }
+  ]
+}

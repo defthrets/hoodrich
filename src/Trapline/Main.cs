@@ -4,7 +4,10 @@ using GTA.Native;
 using Trapline.Core;
 using Trapline.Dealing;
 using Trapline.Economy;
+using Trapline.Gangs;
 using Trapline.State;
+using Trapline.Supply;
+using Trapline.Territory;
 using Trapline.UI;
 using Trapline.Wheel;
 
@@ -14,8 +17,8 @@ namespace Trapline
     /// Script entry point and the single owner of the update loop.
     ///
     /// Trapline deliberately exposes ONE Script subclass. SHVDN instantiates every Script it
-    /// finds and ticks them in an unspecified order; keeping a single entry point means
-    /// subsystem update order is ours to define, and there is exactly one place that has to be
+    /// finds and ticks them in an unspecified order; a single entry point means subsystem
+    /// update order is ours to define, and there is exactly one place that has to be
     /// exception-safe.
     /// </summary>
     public sealed class Main : Script
@@ -29,11 +32,16 @@ namespace Trapline
         /// <summary>Consecutive tick failures before the script parks itself.</summary>
         private const int MaxConsecutiveFailures = 10;
 
-        private readonly Settings _cfg;
+        private readonly Core.Settings _cfg;
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
+        private readonly GangRegistry _gangs;
+        private readonly Affiliation _crew;
+        private readonly TurfWatch _turf;
         private readonly Pricing _pricing;
         private readonly StreetDeal _deal;
+        private readonly Cutting _cutting;
+        private readonly SupplierManager _suppliers;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
 
@@ -51,13 +59,25 @@ namespace Trapline
                 // Fully qualified: Script exposes an inherited `Settings` property that would
                 // otherwise win name resolution over Trapline.Core.Settings.
                 _cfg = Core.Settings.Load();
+
                 _drugs = Drugs.Load();
-                _state = PlayerState.LoadOrNew(_cfg);
-                _pricing = new Pricing(_cfg, _state);
-                _deal = new StreetDeal(_cfg, _state, _pricing);
+                _gangs = GangRegistry.Load();
+                _suppliers = SupplierManager.Load();
+
+                _state = new PlayerState();
+                _crew = new Affiliation(_gangs);
+                SaveGame.Load(_state, _crew);
+
+                _turf = new TurfWatch(_gangs, _crew, _state);
+
+                _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew };
+                _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew };
+                _cutting = new Cutting(_state.Stash, _state);
+
+                var pages = new WheelPages(_state, _drugs, _pricing, _deal, _cutting,
+                                           _gangs, _crew, _turf, _suppliers);
 
                 _menu = new RadialMenu(_cfg);
-                var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal);
                 _wheel = new WheelController(_cfg, _menu, pages.BuildRoot);
 
                 Interval = 0;
@@ -88,8 +108,17 @@ namespace Trapline
 
                 _wheel.Update(available);
 
-                if (available) _deal.Update();
-                else if (_deal.IsBusy) _deal.Update(); // let an in-flight deal abort cleanly
+                if (available)
+                {
+                    _crew.Update();
+                    _turf.Update();
+                    _suppliers.Update();
+                    _cutting.Update();
+                }
+
+                // In-flight deals keep ticking even when unavailable so they can abort cleanly.
+                _deal.Update();
+                _cutting.Draw();
 
                 SlowTick();
 
@@ -107,7 +136,7 @@ namespace Trapline
                 {
                     _parked = true;
                     Log.Error("Too many consecutive failures; Trapline is parked for this session.");
-                    Notify.Ticker("~r~Trapline disabled.~s~ See scripts\\Trapline.log.");
+                    Notify.Failure("disabled for this session. See scripts\\Trapline.log.");
                 }
             }
         }
@@ -120,23 +149,23 @@ namespace Trapline
             var elapsedSeconds = (now - _lastSlowTick) / 1000f;
             _lastSlowTick = now;
 
-            if (_state.Notoriety > 0f && !_deal.IsBusy)
+            // Heat only cools while you are not actively drawing attention.
+            if (_state.Notoriety > 0f && !_deal.IsBusy && !_turf.IsExposed)
             {
                 _state.AddNotoriety(-NotorietyDecayPerSecond * Math.Min(elapsedSeconds, 5f));
             }
 
             _deal.PruneCooldowns();
+            _turf.Prune();
 
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {
                 _lastSave = now;
-                _state.Save();
+                SaveGame.Save(_state, _crew);
             }
         }
 
-        /// <summary>
-        /// True when the player is in normal control and the wheel should be usable.
-        /// </summary>
+        /// <summary>True when the player is in normal control and the mod should be live.</summary>
         private bool IsPlayable()
         {
             try
@@ -167,7 +196,7 @@ namespace Trapline
 
             try
             {
-                _state?.Save(true);
+                SaveGame.Save(_state, _crew, true);
                 Log.Info("Trapline unloaded cleanly.");
             }
             catch (Exception ex)
@@ -176,18 +205,18 @@ namespace Trapline
             }
         }
 
-        /// <summary>Puts back anything global we changed: time scale and timecycle.</summary>
+        /// <summary>
+        /// Puts back everything global we changed: time scale, timecycle, gang relationships,
+        /// and any spawned supplier. A mod that leaves the world altered after unloading is
+        /// worse than one that never loaded.
+        /// </summary>
         private void TryRestore()
         {
-            try
-            {
-                _wheel?.RestoreWorld();
-            }
-            catch
-            {
-                // Last-ditch: force the time scale back by hand.
-                try { Game.TimeScale = 1f; } catch { /* nothing more we can do */ }
-            }
+            try { _wheel?.RestoreWorld(); }
+            catch { try { Game.TimeScale = 1f; } catch { /* nothing more we can do */ } }
+
+            try { _crew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _suppliers?.RestoreWorld(); } catch { /* teardown */ }
         }
     }
 }

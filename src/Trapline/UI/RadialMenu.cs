@@ -278,6 +278,50 @@ namespace Trapline.UI
             }
 
             DrawHub(cx, cy, rInner, page, t);
+            DrawPanel(page, t);
+        }
+
+        /// <summary>
+        /// Stat block to the right of the wheel. Only drawn for pages that supply rows, and
+        /// only once the open animation has settled so it does not pop in mid-slide.
+        /// </summary>
+        private void DrawPanel(WheelPage page, float t)
+        {
+            if (page.Panel.Count == 0 || t < 0.9f) return;
+
+            const float rowHeight = 0.032f;
+            const float padding = 0.018f;
+
+            var width = 0.235f;
+            var height = padding * 2f + rowHeight * (page.Panel.Count + (string.IsNullOrEmpty(page.PanelTitle) ? 0 : 1));
+
+            var left = 0.5f + _cfg.OuterRadius / Draw.Aspect + 0.045f;
+            var cx = left + width * 0.5f;
+            var cy = 0.5f;
+            var top = cy - height * 0.5f;
+
+            Draw.Rect(cx, cy, width, height, Palette.Alpha(Palette.Hub, 225));
+            Draw.Rect(cx, top + 0.0015f, width, 0.003f, Palette.Accent);
+
+            var y = top + padding * 0.6f;
+
+            if (!string.IsNullOrEmpty(page.PanelTitle))
+            {
+                Draw.Text(page.PanelTitle.ToUpperInvariant(), left + padding * 0.5f, y, 0.30f,
+                          Palette.Accent, Draw.FontChaletComprimeCologne, centre: false);
+                y += rowHeight;
+            }
+
+            foreach (var row in page.Panel)
+            {
+                Draw.Text(row.Label, left + padding * 0.5f, y, 0.28f, Palette.TextDim,
+                          Draw.FontChaletComprimeCologne, centre: false);
+
+                Draw.TextRight(row.Value, left + width - padding * 0.5f, y, 0.28f,
+                               row.Tint ?? Palette.Text);
+
+                y += rowHeight;
+            }
         }
 
         /// <summary>Node-mode segment: an axis-aligned card centred on the segment's mid angle.</summary>

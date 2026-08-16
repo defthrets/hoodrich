@@ -37,6 +37,16 @@ namespace Trapline.UI
         public bool IsSubmenu => Submenu != null;
     }
 
+    /// <summary>One label/value line in a page's side panel.</summary>
+    internal struct PanelRow
+    {
+        public string Label;
+        public string Value;
+
+        /// <summary>Overrides the value colour; null uses the default.</summary>
+        public Color? Tint;
+    }
+
     /// <summary>A ring of items plus the header shown while it is open.</summary>
     internal sealed class WheelPage
     {
@@ -44,10 +54,23 @@ namespace Trapline.UI
         public string Subtitle = "";
         public readonly List<WheelItem> Items = new List<WheelItem>();
 
+        /// <summary>
+        /// Optional stat block drawn beside the wheel. The hub is far too small for a dossier,
+        /// so pages that are mostly about reading numbers (Gang, Turf) put them here.
+        /// </summary>
+        public string PanelTitle = "";
+        public readonly List<PanelRow> Panel = new List<PanelRow>();
+
         public WheelPage(string title, string subtitle = "")
         {
             Title = title;
             Subtitle = subtitle;
+        }
+
+        public WheelPage Row(string label, string value, Color? tint = null)
+        {
+            Panel.Add(new PanelRow { Label = label, Value = value, Tint = tint });
+            return this;
         }
 
         public WheelPage Add(WheelItem item)

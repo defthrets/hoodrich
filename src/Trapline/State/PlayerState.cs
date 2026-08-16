@@ -1,5 +1,4 @@
 using System;
-using GTA;
 using Trapline.Core;
 using Trapline.Economy;
 using Trapline.UI;
@@ -7,10 +6,8 @@ using Trapline.UI;
 namespace Trapline.State
 {
     /// <summary>
-    /// Everything Trapline persists about the player between sessions.
-    ///
-    /// Cash is deliberately NOT stored here -- the game already owns the player's money and
-    /// duplicating it would drift. Only Trapline's own progression lives in this file.
+    /// Trapline's own progression. Cash is deliberately NOT stored here -- the game already
+    /// owns the player's money and duplicating it would drift.
     /// </summary>
     internal sealed class PlayerState
     {
@@ -19,7 +16,7 @@ namespace Trapline.State
 
         public static readonly string[] RankNames = { "Pee-Wee", "Soldier", "Enforcer", "Shotcaller", "OG" };
 
-        public readonly Inventory Inventory = new Inventory();
+        public readonly Stash Stash = new Stash();
 
         public float Respect;
 
@@ -31,8 +28,12 @@ namespace Trapline.State
 
         private bool _dirty;
 
+        public bool IsDirty => _dirty;
+
         /// <summary>Marks the state as needing a save on the next autosave tick.</summary>
         public void Touch() => _dirty = true;
+
+        public void MarkSaved() => _dirty = false;
 
         public int Rank
         {
@@ -75,7 +76,7 @@ namespace Trapline.State
             var after = Rank;
             if (after > before)
             {
-                Notify.Ticker("~y~Rank up:~s~ " + RankName);
+                Notify.Important("~y~Rank up:~s~ " + RankName);
                 Log.Info("Rank up to " + after + " (" + RankName + ") at " + Respect.ToString("F0") + " respect.");
             }
             else if (after < before)
@@ -92,54 +93,39 @@ namespace Trapline.State
 
         // ---- persistence -------------------------------------------------------
 
-        public static PlayerState LoadOrNew(Settings cfg)
+        public Json ToJson()
         {
-            var state = new PlayerState { Respect = cfg.StartingRespect };
+            return Json.Object()
+                .Set("respect", Math.Round(Respect, 2))
+                .Set("notoriety", Math.Round(Notoriety, 2))
+                .Set("totalDeals", TotalDealsMade)
+                .Set("totalEarned", TotalEarned)
+                .Set("stash", Stash.ToJson());
+        }
 
-            var doc = JsonFile.Read(Paths.SaveFile);
-            if (doc == null)
-            {
-                Log.Info("No save found; starting fresh at rank 0.");
-                return state;
-            }
+        public void LoadFrom(Json doc)
+        {
+            if (doc == null || doc.IsNull) return;
 
             try
             {
-                state.Respect = Math.Max(0f, doc["respect"].AsFloat(state.Respect));
-                state.Notoriety = Math.Min(100f, Math.Max(0f, doc["notoriety"].AsFloat(0f)));
-                state.TotalDealsMade = Math.Max(0, doc["totalDeals"].AsInt(0));
-                state.TotalEarned = Math.Max(0L, doc["totalEarned"].AsLong(0));
-                state.Inventory.LoadFrom(doc["inventory"]);
+                Respect = Math.Max(0f, doc["respect"].AsFloat(Respect));
+                Notoriety = Math.Min(100f, Math.Max(0f, doc["notoriety"].AsFloat(0f)));
+                TotalDealsMade = Math.Max(0, doc["totalDeals"].AsInt(0));
+                TotalEarned = Math.Max(0L, doc["totalEarned"].AsLong(0));
 
-                Log.Info("Save loaded: rank " + state.Rank + " (" + state.RankName + "), " +
-                         state.Respect.ToString("F0") + " respect, " +
-                         state.Inventory.Total.ToString("F1") + "g held.");
+                // "inventory" is the 0.1.0 key; migrate it so old saves keep their product.
+                Stash.LoadFrom(doc.Has("stash") ? doc["stash"] : doc["inventory"]);
+
+                Log.Info("State loaded: rank " + Rank + " (" + RankName + "), " +
+                         Respect.ToString("F0") + " respect, " +
+                         Stash.TotalBulk.ToString("F1") + "g bulk / " +
+                         Stash.TotalPackaged.ToString("F1") + "g packaged.");
             }
             catch (Exception ex)
             {
                 Log.Error("Save file was unreadable; continuing with defaults.", ex);
             }
-
-            return state;
-        }
-
-        /// <summary>Writes the save. <paramref name="force"/> bypasses the dirty check.</summary>
-        public bool Save(bool force = false)
-        {
-            if (!_dirty && !force) return false;
-
-            var doc = Json.Object()
-                .Set("version", Build.Version)
-                .Set("respect", Math.Round(Respect, 2))
-                .Set("notoriety", Math.Round(Notoriety, 2))
-                .Set("totalDeals", TotalDealsMade)
-                .Set("totalEarned", TotalEarned)
-                .Set("inventory", Inventory.ToJson());
-
-            if (!JsonFile.Write(Paths.SaveFile, doc)) return false;
-
-            _dirty = false;
-            return true;
         }
     }
 }

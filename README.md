@@ -47,21 +47,52 @@ The vanilla weapon wheel is suppressed while the mod is loaded.
 Prefer to keep your weapon wheel? Set `Mode=Separate` in `Trapline.ini` and the wheel
 moves to its own key (`Key=B` by default).
 
-## What works right now (0.1.0)
+## What works right now (0.2.0)
 
-A complete economic loop:
+Six wheel pages, and a supply chain you have to actually work.
 
-- **Resupply** — buy wholesale from the plug. Lot size scales with rank; tier-2 and
-  tier-3 product is rank-gated.
-- **Sell** — hand-to-hand to any ambient ped on foot in front of you, with a handshake
-  animation and a proper deal state machine (walk away mid-deal and it aborts).
-- **Pricing** — base price walked through named multipliers: night rates ramp to 3x at
-  2am, rank improves your take, heat cuts into it.
-- **Progression** — respect, five ranks (Pee-Wee to OG), notoriety that decays over time.
-- **Persistence** — atomic JSON saves in `scripts\Trapline\save.json`.
+**Supply → Cut → Sell.** You cannot buy street-ready product. You buy **bulk** from a
+contact, and bulk is worthless until you cut and bag it.
 
-Wheel segments for **Crew**, **Turf** and **Stash** are present but disabled — they are
-the next milestone, and they hold their positions now so the muscle memory does not move.
+- **Supply** — four contacts (Dock Foreman, The Mob, an out-of-town crew, a corner
+  connect), each with their own price, weight limit, rank gate and operating hours. The
+  mob only answers at night; the docks only in daylight. Calling one arranges a **meet**:
+  a blip appears, you drive there, the contact spawns when you get close, and you trade
+  face to face. No fixed map coordinates are hardcoded anywhere.
+- **Cut** — turn bulk into street units at a purity you choose (100 / 75 / 50 / 33%).
+  This is the greed dial: cutting to 50% doubles your units, but each is worth less and
+  buyers get a chance to clock it, refuse the sale, and occasionally swing at you.
+  Cutting takes real time and pins you in place, so *where* you do it matters.
+- **Sell** — hand-to-hand to any ped on foot in front of you, with a handshake animation
+  and a deal state machine that aborts if you walk off.
+
+**Gangs.** The `Gang` page shows a live dossier — affiliation, rank, respect, gang rep,
+kills for them, money made for them, deals closed, lookouts nearby — and lets you join or
+walk out. Affiliating makes that gang respect you globally, so their people **back you up
+in a fight**, and each one standing near you while you deal adds a lookout bonus to the
+price. Walking out costs you rep with the crew you left.
+
+**Turf.** Territory keys off GTA's own zone codes, so every neighbourhood in the map is
+already a claimable block. Where you post up decides everything:
+
+| Block | Price | Heat | What happens |
+|---|---|---|---|
+| Your gang's | x1.00 | x0.4 | Quiet. Your people back you up. |
+| Unclaimed | x1.05 | x1.0 | Occasional stick-up if you linger |
+| Rival's | **x1.35** | **x2.0** | They clock you dealing and come for you |
+
+Rival aggression is targeted — specific peds who can actually *see* you get tasked onto
+you, gated on line of sight and scaled by your heat. Nothing flips a whole faction to
+hate-on-sight, so the rest of the world stays playable.
+
+Turf **capture** is the next milestone; the `Claim` item is present but disabled.
+
+### Fixing the turf map
+
+The shipped zone codes are best-effort. To correct them, stand anywhere in game and pick
+**Turf → Log zone** on the wheel: the exact `GET_NAME_OF_ZONE` code is printed on screen
+and written to `scripts\Trapline.log`. Paste it into the right gang's `turf` list in
+`scripts\Trapline\gangs.json`. **Turf → Dossier** dumps the whole current map to the log.
 
 ## Layout
 
@@ -70,13 +101,25 @@ src/Trapline/
   Main.cs              script entry point; single owner of the tick loop
   Core/                Paths, Log, IniFile, Json (hand-rolled), JsonFile, Settings
   UI/                  Draw (native primitives), Palette, RadialMenu, WheelController, Notify
-  Wheel/WheelPages.cs  builds wheel pages from live game state
-  Economy/             Drugs catalogue, Inventory, Pricing
+  Wheel/WheelPages.cs  builds all six wheel pages from live game state
+  Economy/             Drugs catalogue, Stash (bulk + packaged), Cutting, Pricing
+  Supply/              supply contacts and the meet system
+  Gangs/               gang definitions, registry, affiliation and backup
+  Territory/TurfWatch  zone ownership, spotting, rival aggression
   Dealing/StreetDeal   buyer selection and the hand-to-hand deal
-  State/PlayerState    respect, rank, notoriety, save/load
+  State/               PlayerState, SaveGame
 data/                  shipped data files, copied to scripts\Trapline\ on deploy
 tools/                 self-contained Roslyn compiler + net48 reference assemblies
 ```
+
+Data files, all live-editable in `scripts\Trapline\`:
+
+| File | What it controls |
+|---|---|
+| `drugs.json` | product catalogue: prices, tiers, heat |
+| `gangs.json` | gangs, colours, rivalries, **turf zone codes** |
+| `suppliers.json` | contacts, prices, models, rank gates, hours |
+| `save.json` | your progression (written by the mod) |
 
 ## Building
 

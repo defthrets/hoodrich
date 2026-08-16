@@ -5,7 +5,9 @@ using GTA.Math;
 using GTA.Native;
 using Trapline.Core;
 using Trapline.Economy;
+using Trapline.Gangs;
 using Trapline.State;
+using Trapline.Territory;
 using Trapline.UI;
 
 namespace Trapline.Dealing
@@ -31,25 +33,31 @@ namespace Trapline.Dealing
         private const string AnimPlayer = "givetake1_a";
         private const string AnimBuyer = "givetake1_b";
 
-        private readonly Settings _cfg;
         private readonly PlayerState _state;
         private readonly Pricing _pricing;
+        private readonly Random _rng = new Random();
 
         private readonly Dictionary<int, int> _recentBuyers = new Dictionary<int, int>();
+
+        /// <summary>Assigned by Main after construction.</summary>
+        public TurfWatch Turf;
+        public Affiliation Crew;
 
         private Ped _buyer;
         private DrugDef _product;
         private float _grams;
+        private float _purity;
         private int _payout;
         private int _startedAt;
         private bool _animsRequested;
 
-        public StreetDeal(Settings cfg, PlayerState state, Pricing pricing)
+        public StreetDeal(PlayerState state, Pricing pricing)
         {
-            _cfg = cfg;
             _state = state;
             _pricing = pricing;
         }
+
+        private Stash Stash => _state.Stash;
 
         public bool IsBusy => _buyer != null;
 
@@ -118,6 +126,9 @@ namespace Trapline.Dealing
             var pedType = Function.Call<int>(Hash.GET_PED_TYPE, ped.Handle);
             if (NonBuyerPedTypes.Contains(pedType)) return false;
 
+            // Never try to sell to a member of the gang whose block you are standing on.
+            if (Crew != null && Crew.IsRival(ped)) return false;
+
             if (_recentBuyers.TryGetValue(ped.Handle, out var last) && now - last < BuyerCooldownMs) return false;
 
             return true;
@@ -126,14 +137,22 @@ namespace Trapline.Dealing
         // ---- selling -----------------------------------------------------------
 
         /// <summary>
-        /// Attempts to start a sale. Returns a player-facing reason on failure, or null on success.
+        /// Attempts to start a sale of PACKAGED product. Returns a player-facing reason on
+        /// failure, or null on success.
         /// </summary>
         public string TrySell(DrugDef product, float grams)
         {
             if (IsBusy) return "Already mid-deal.";
             if (product == null) return "No product selected.";
             if (grams <= 0f) return "Nothing to sell.";
-            if (!_state.Inventory.Has(product.Id, grams)) return "Not holding that much " + product.Name + ".";
+
+            if (!Stash.HasPackaged(product.Id, grams))
+            {
+                var bulk = Stash.BulkOf(product.Id);
+                return bulk > 0.005f
+                    ? "That is still bulk. Cut it before you can sell it."
+                    : "Not holding that much " + product.Name + ".";
+            }
 
             var buyer = FindBuyer();
             if (buyer == null) return "No buyer nearby. Find someone on foot and face them.";
@@ -144,7 +163,8 @@ namespace Trapline.Dealing
             _buyer = buyer;
             _product = product;
             _grams = grams;
-            _payout = _pricing.SaleValue(product, grams);
+            _purity = Stash.PurityOf(product.Id);
+            _payout = _pricing.SaleValue(product, grams, _purity);
             _startedAt = Game.GameTime;
             _animsRequested = false;
 
@@ -209,15 +229,26 @@ namespace Trapline.Dealing
         {
             var product = _product;
             var grams = _grams;
+            var purity = _purity;
             var payout = _payout;
             var buyer = _buyer;
 
             Reset();
 
-            var sold = _state.Inventory.Remove(product.Id, grams);
+            if (buyer != null && buyer.Exists()) _recentBuyers[buyer.Handle] = Game.GameTime;
+
+            // The buyer inspects it. Heavily stepped-on product gets knocked back.
+            var badCutChance = Pricing.BadCutChance(purity);
+            if (badCutChance > 0f && _rng.NextDouble() < badCutChance)
+            {
+                RefuseBadCut(buyer, product, purity);
+                return;
+            }
+
+            var sold = Stash.RemovePackaged(product.Id, grams);
             if (sold <= 0f)
             {
-                Notify.Ticker("~r~Trapline:~s~ the product was gone before the handoff.");
+                Notify.Problem("the product was gone before the handoff.");
                 return;
             }
 
@@ -225,18 +256,59 @@ namespace Trapline.Dealing
             var actualPayout = Math.Max(1, (int)Math.Round(payout * (sold / grams)));
             Game.Player.Money += actualPayout;
 
-            var respect = 1f + product.Tier * 0.5f;
-            _state.AddRespect(respect);
-            _state.AddNotoriety(product.HeatFactor * 1.5f);
+            _state.AddRespect(1f + product.Tier * 0.5f);
+            _state.AddNotoriety(product.HeatFactor * 1.5f * (Turf == null ? 1f : Turf.TurfHeatMultiplier));
             _state.TotalDealsMade++;
             _state.TotalEarned += actualPayout;
             _state.Touch();
 
-            if (buyer != null && buyer.Exists()) _recentBuyers[buyer.Handle] = Game.GameTime;
+            // Dealing is what gets you noticed on someone else's block.
+            Turf?.MarkExposed();
 
-            Notify.Ticker("~g~+$" + actualPayout + "~s~  " + sold.ToString("0.#") + "g " + product.Name);
-            Log.Info("Sold " + sold.ToString("0.##") + "g " + product.Id + " for $" + actualPayout +
+            if (Crew != null && Crew.IsAffiliated)
+            {
+                var standing = Crew.CurrentStanding;
+                standing.MoneyEarned += actualPayout;
+                standing.Deals++;
+                standing.Rep = Math.Min(1000f, standing.Rep + 0.5f);
+            }
+
+            Notify.Ticker("~g~+$" + actualPayout.ToString("N0") + "~s~  " + sold.ToString("0.#") + "g " +
+                          product.Name + " @ " + (purity * 100f).ToString("0") + "%");
+
+            Log.Info("Sold " + sold.ToString("0.##") + "g " + product.Id + " at " +
+                     purity.ToString("0.00") + " purity for $" + actualPayout +
                      " (" + _pricing.PriceContext() + ").");
+        }
+
+        /// <summary>
+        /// The buyer refuses. Bad product costs you respect, and sometimes the buyer takes it
+        /// personally -- which on the wrong block is how a sale turns into a fight.
+        /// </summary>
+        private void RefuseBadCut(Ped buyer, DrugDef product, float purity)
+        {
+            _state.AddRespect(-2f);
+            _state.AddNotoriety(2f);
+            _state.Touch();
+
+            Notify.Problem("they clocked the cut on your " + product.Name.ToLowerInvariant() +
+                           " (" + (purity * 100f).ToString("0") + "%). No sale.");
+
+            // A quarter of the time they do more than walk away.
+            if (buyer == null || !buyer.Exists() || !buyer.IsAlive) return;
+            if (_rng.NextDouble() > 0.25) return;
+
+            try
+            {
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, buyer.Handle, 46, true);
+                Function.Call(Hash.TASK_COMBAT_PED, buyer.Handle, Game.Player.Character.Handle, 0, 16);
+                Function.Call(Hash.SET_PED_KEEP_TASK, buyer.Handle, true);
+                Notify.Important("~r~They are not happy about it.~s~");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not anger the buyer: " + ex.Message);
+            }
         }
 
         private void Abort(string reason)
@@ -250,6 +322,7 @@ namespace Trapline.Dealing
             _buyer = null;
             _product = null;
             _grams = 0f;
+            _purity = 1f;
             _payout = 0;
             _animsRequested = false;
         }

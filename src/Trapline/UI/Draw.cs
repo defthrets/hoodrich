@@ -170,6 +170,33 @@ namespace Trapline.UI
             Function.Call(Hash.END_TEXT_COMMAND_DISPLAY_TEXT, x, y);
         }
 
+        /// <summary>
+        /// Draws text right-aligned to <paramref name="rightX"/>.
+        ///
+        /// GTA has no "draw at this right edge" call, so this uses the wrap region: justify
+        /// right, wrap from 0 to rightX, and emit at x = 0. The wrap end becomes the right edge.
+        /// </summary>
+        public static void TextRight(string text, float rightX, float y, float scale, Color c,
+                                     int font = FontChaletComprimeCologne, bool shadow = true)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            Function.Call(Hash.SET_TEXT_FONT, font);
+            Function.Call(Hash.SET_TEXT_SCALE, scale, scale);
+            Function.Call(Hash.SET_TEXT_COLOUR, (int)c.R, (int)c.G, (int)c.B, (int)c.A);
+            Function.Call(Hash.SET_TEXT_CENTRE, false);
+            Function.Call(Hash.SET_TEXT_JUSTIFICATION, 2);
+            Function.Call(Hash.SET_TEXT_WRAP, 0f, rightX);
+            if (shadow) Function.Call(Hash.SET_TEXT_DROP_SHADOW);
+
+            Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_TEXT, "STRING");
+            AddLongString(text);
+            Function.Call(Hash.END_TEXT_COMMAND_DISPLAY_TEXT, 0f, y);
+
+            // Justification is sticky across draws; put it back for the next caller.
+            Function.Call(Hash.SET_TEXT_JUSTIFICATION, 0);
+        }
+
         /// <summary>Measures rendered text width as a normalized screen fraction.</summary>
         public static float MeasureText(string text, float scale, int font = FontChaletComprimeCologne)
         {
