@@ -9,6 +9,7 @@ using Hoodrich.State;
 using Hoodrich.Supply;
 using Hoodrich.Territory;
 using Hoodrich.UI;
+using Hoodrich.Weapons;
 using Hoodrich.Wheel;
 
 namespace Hoodrich
@@ -42,6 +43,7 @@ namespace Hoodrich
         private readonly StreetDeal _deal;
         private readonly Cutting _cutting;
         private readonly SupplierManager _suppliers;
+        private readonly WeaponRegistry _weapons;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
 
@@ -63,6 +65,7 @@ namespace Hoodrich
                 _drugs = Drugs.Load();
                 _gangs = GangRegistry.Load();
                 _suppliers = SupplierManager.Load();
+                _weapons = WeaponRegistry.Load();
 
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
@@ -75,7 +78,7 @@ namespace Hoodrich
                 _cutting = new Cutting(_state.Stash, _state);
 
                 var pages = new WheelPages(_state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _suppliers);
+                                           _gangs, _crew, _turf, _suppliers, _weapons);
 
                 _menu = new RadialMenu(_cfg);
                 _wheel = new WheelController(_cfg, _menu, pages.BuildRoot);

@@ -16,7 +16,15 @@ param(
     [ValidateSet('Release', 'Debug')]
     [string]$Configuration = 'Release',
     [switch]$Deploy,
-    [string]$GtaDir = 'C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V'
+
+    # Which install(s) -Deploy writes to. Hoodrich is a pure SHVDN script with no asset
+    # dependencies, and both editions ship the same ScriptHookVDotNet3.dll, so one build
+    # runs on both.
+    [ValidateSet('Legacy', 'Enhanced', 'Both')]
+    [string]$Target = 'Both',
+
+    [string]$GtaDir = 'C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V',
+    [string]$EnhancedDir = 'C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V Enhanced'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -95,12 +103,19 @@ if ($exit -ne 0) { throw "Compilation failed (csc exit $exit)." }
 Write-Host ("OK  {0:N0} bytes in {1:N1}s" -f (Get-Item $outDll).Length, $sw.Elapsed.TotalSeconds) -ForegroundColor Green
 
 # --- deploy -----------------------------------------------------------------
-if ($Deploy) {
-    $scripts = Join-Path $GtaDir 'scripts'
-    if (-not (Test-Path $scripts)) { throw "scripts folder not found: $scripts" }
+function Deploy-To([string]$gameDir, [string]$label) {
+    if (-not (Test-Path $gameDir)) {
+        Write-Host "skip $label - not installed at $gameDir" -ForegroundColor DarkGray
+        return
+    }
 
-    $running = Get-Process GTA5, GTA5_Enhanced -ErrorAction SilentlyContinue
-    if ($running) { throw "GTA V is running - close it before deploying (the dll is locked)." }
+    $scripts = Join-Path $gameDir 'scripts'
+    if (-not (Test-Path $scripts)) {
+        Write-Host "skip $label - no scripts folder (ScriptHookVDotNet not installed?)" -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "$label -> $scripts" -ForegroundColor Cyan
 
     Copy-Item $outDll $scripts -Force
     if (Test-Path (Join-Path $outDir 'Hoodrich.pdb')) {
@@ -116,7 +131,7 @@ if ($Deploy) {
         $dst = Join-Path $dataDst $rel
         New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null
         if (Test-Path $dst) {
-            Write-Host "  keep   $rel (already present)" -ForegroundColor DarkGray
+            Write-Host "  keep   $rel" -ForegroundColor DarkGray
         } else {
             Copy-Item $_.FullName $dst
             Write-Host "  new    $rel" -ForegroundColor DarkGray
@@ -126,6 +141,14 @@ if ($Deploy) {
     $iniSrc = Join-Path $root 'Hoodrich.ini'
     $iniDst = Join-Path $scripts 'Hoodrich.ini'
     if ((Test-Path $iniSrc) -and -not (Test-Path $iniDst)) { Copy-Item $iniSrc $iniDst }
+}
 
-    Write-Host "Deployed to $scripts" -ForegroundColor Green
+if ($Deploy) {
+    $running = Get-Process GTA5, GTA5_Enhanced -ErrorAction SilentlyContinue
+    if ($running) { throw "GTA V is running - close it before deploying (the dll is locked)." }
+
+    if ($Target -in 'Legacy', 'Both')   { Deploy-To $GtaDir      'Legacy' }
+    if ($Target -in 'Enhanced', 'Both') { Deploy-To $EnhancedDir 'Enhanced' }
+
+    Write-Host "Deploy complete." -ForegroundColor Green
 }

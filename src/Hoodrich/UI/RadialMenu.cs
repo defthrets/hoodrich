@@ -274,7 +274,15 @@ namespace Hoodrich.UI
                     DrawCard(cx, cy, (rInner + rOuter) * 0.5f, mid, rOuter - rInner, step, fill, hovered);
                 }
 
-                DrawSegmentLabel(cx, cy, (rInner + rOuter) * 0.5f, mid, item, hovered, t);
+                DrawSegmentLabel(cx, cy, (rInner + rOuter) * 0.5f, mid, item, fill, t);
+            }
+
+            // Hairline ring on the outer edge, as the vanilla wheel has. Drawn after the
+            // segments so a hovered wedge reaching past it still reads as breaking the line.
+            if (_wedgeMode)
+            {
+                Draw.Arc(_cfg.WheelTextureDict, _cfg.WheelTexture, cx, cy, rOuter,
+                         0f, 360f, 0.0022f, Palette.Alpha(Palette.Ring, (int)(Palette.Ring.A * t)), 96);
             }
 
             DrawHub(cx, cy, rInner, page, t);
@@ -341,8 +349,12 @@ namespace Hoodrich.UI
             Draw.RectUniform(px, py, w * scale * 0.97f, h * scale * 0.9f, Palette.Alpha(fill, fill.A));
         }
 
+        /// <summary>Weapon art is wider than it is tall; these are height-relative.</summary>
+        private const float IconWidth = 0.115f;
+        private const float IconHeight = 0.056f;
+
         private static void DrawSegmentLabel(float cx, float cy, float rMid, float midAngleDeg,
-                                             WheelItem item, bool hovered, float t)
+                                             WheelItem item, Color fill, float t)
         {
             if (t < 0.75f) return; // Hold the text back until the ring has nearly finished opening.
 
@@ -350,17 +362,24 @@ namespace Hoodrich.UI
             var px = cx + Draw.ToX(rMid * (float)Math.Sin(rad));
             var py = cy - rMid * (float)Math.Cos(rad);
 
-            var colour = !item.Enabled
-                ? Palette.TextDisabled
-                : hovered ? Palette.TextOnHover : Palette.Text;
+            // Contrast against whatever the wedge actually is: gang tints run from pale yellow
+            // to deep maroon, so a fixed dark-on-hover rule would lose half of them.
+            var colour = !item.Enabled ? Palette.TextDisabled : Palette.TextOn(fill);
 
-            if (!string.IsNullOrEmpty(item.Symbol))
+            if (item.HasIcon)
+            {
+                // The game's weapon art is a white silhouette, so it is tinted the same colour the
+                // label uses -- dark when it sits on a highlighted wedge, white otherwise.
+                Draw.Sprite(item.IconDict, item.IconTexture, px, py - 0.030f,
+                            Draw.ToX(IconWidth), IconHeight, 0f, colour);
+            }
+            else if (!string.IsNullOrEmpty(item.Symbol))
             {
                 Draw.Text(item.Symbol, px, py - 0.042f, 0.62f, colour, Draw.FontChaletComprimeCologne);
             }
 
-            Draw.Text(item.Label.ToUpperInvariant(), px, py + 0.004f, 0.34f, colour,
-                         Draw.FontChaletComprimeCologne);
+            Draw.Text(item.Label.ToUpperInvariant(), px, py + 0.010f, 0.34f, colour,
+                      Draw.FontChaletComprimeCologne);
         }
 
         private void DrawHub(float cx, float cy, float rInner, WheelPage page, float t)

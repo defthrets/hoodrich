@@ -13,6 +13,22 @@ namespace Hoodrich.UI
         /// <summary>Text glyph drawn above the label. Text symbols only, never emoji.</summary>
         public string Symbol = "";
 
+        /// <summary>
+        /// Streamed texture dictionary and texture for a real game sprite drawn in place of
+        /// <see cref="Symbol"/> -- this is how weapons show their own art. Both are the weapon's
+        /// model name.
+        /// </summary>
+        public string IconDict = "";
+        public string IconTexture = "";
+
+        /// <summary>
+        /// Whether the icon is resident right now. Evaluated per frame rather than at page-build
+        /// time, because the dict often arrives a frame or two after the wheel opens.
+        /// </summary>
+        public Func<bool> IconReady;
+
+        public bool HasIcon => !string.IsNullOrEmpty(IconDict) && IconReady != null && IconReady();
+
         /// <summary>Detail line shown in the hub while this item is hovered.</summary>
         public string Detail = "";
 

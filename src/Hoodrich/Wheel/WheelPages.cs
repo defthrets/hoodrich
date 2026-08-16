@@ -9,6 +9,7 @@ using Hoodrich.State;
 using Hoodrich.Supply;
 using Hoodrich.Territory;
 using Hoodrich.UI;
+using Hoodrich.Weapons;
 
 namespace Hoodrich.Wheel
 {
@@ -37,10 +38,11 @@ namespace Hoodrich.Wheel
         private readonly Affiliation _crew;
         private readonly TurfWatch _turf;
         private readonly SupplierManager _suppliers;
+        private readonly WeaponRegistry _weapons;
 
         public WheelPages(PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
-                          SupplierManager suppliers)
+                          SupplierManager suppliers, WeaponRegistry weapons)
         {
             _state = state;
             _drugs = drugs;
@@ -51,6 +53,7 @@ namespace Hoodrich.Wheel
             _crew = crew;
             _turf = turf;
             _suppliers = suppliers;
+            _weapons = weapons;
         }
 
         private Stash Stash => _state.Stash;
@@ -59,14 +62,25 @@ namespace Hoodrich.Wheel
 
         public WheelPage BuildRoot()
         {
+            // Opening the wheel is the cue to start streaming weapon art, so it is resident by
+            // the time the player flicks into the weapons page rather than popping in under them.
+            _weapons.PrewarmCarried();
+
             var packaged = Stash.TotalPackaged;
             var bulk = Stash.TotalBulk;
 
             var page = new WheelPage("Hoodrich",
                 _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated");
 
-            page.Add("Sell", "$", null, enabled: false); // replaced below; keeps ordering obvious
-            page.Items.Clear();
+            // Weapons sit at index 0 -- straight up, the easiest flick on the wheel. Hoodrich
+            // took the weapon-wheel button, so getting a gun back has to be the fastest thing
+            // on here, not something buried behind the business menu.
+            var slots = _weapons.OccupiedSlots();
+            page.AddSub("Weapons", "^", BuildWeaponsPage,
+                detail: "Change weapon",
+                value: CurrentWeaponName(),
+                enabled: slots.Count > 0,
+                disabledReason: "You are not carrying anything");
 
             page.AddSub("Sell", "$", BuildSellPage,
                 detail: "Hand-to-hand to someone on foot",
@@ -112,6 +126,82 @@ namespace Hoodrich.Wheel
             if (_suppliers.HasMeet) return _suppliers.ActiveMeet.Name + " -- " +
                                           _suppliers.MeetDistance.ToString("0") + "m away";
             return "Call a contact for bulk weight";
+        }
+
+        // ---- weapons -----------------------------------------------------------
+
+        private string CurrentWeaponName()
+        {
+            var def = _weapons.Get(WeaponRegistry.CurrentWeaponHash());
+            return def == null ? "Unarmed" : def.Name;
+        }
+
+        /// <summary>
+        /// The eight vanilla wheel slots, minus any the player has nothing in. Slot positions are
+        /// not held stable here the way the business pages are: an empty Sniper wedge would be
+        /// dead space on the one page that needs to be fast.
+        /// </summary>
+        private WheelPage BuildWeaponsPage()
+        {
+            var page = new WheelPage("Weapons", CurrentWeaponName());
+            var currentHash = WeaponRegistry.CurrentWeaponHash();
+
+            page.Add("Unarmed", "-", () => Equip(WeaponRegistry.UnarmedHash, "Unarmed"),
+                detail: "Put it away",
+                value: currentHash == WeaponRegistry.UnarmedHash ? "EQUIPPED" : "");
+
+            foreach (var slot in _weapons.OccupiedSlots())
+            {
+                var name = slot;
+                var carried = _weapons.CarriedInSlot(name);
+
+                // Show the slot's own equipped weapon in the hub if it holds one.
+                var equipped = carried.Find(w => w.Hash == currentHash);
+
+                page.AddSub(name, "o", () => BuildWeaponSlotPage(name),
+                    detail: carried.Count + (carried.Count == 1 ? " weapon" : " weapons"),
+                    value: equipped != null ? equipped.Name : "");
+            }
+
+            return page;
+        }
+
+        private WheelPage BuildWeaponSlotPage(string slot)
+        {
+            var carried = _weapons.CarriedInSlot(slot);
+            var currentHash = WeaponRegistry.CurrentWeaponHash();
+
+            var page = new WheelPage(slot, CurrentWeaponName());
+
+            foreach (var w in carried)
+            {
+                var def = w;
+                var ammo = WeaponRegistry.AmmoFor(def.Hash);
+                var isMelee = string.Equals(slot, "Melee", StringComparison.OrdinalIgnoreCase);
+                var equipped = def.Hash == currentHash;
+
+                var item = new WheelItem
+                {
+                    Label = def.Name,
+                    Symbol = "o",
+                    IconDict = def.Icon,
+                    IconTexture = def.Icon,
+                    IconReady = () => _weapons.IconReady(def),
+                    Detail = equipped ? "In your hands" : "Equip",
+                    Value = isMelee ? (equipped ? "EQUIPPED" : "") : ammo.ToString("N0") + " rounds",
+                    OnSelect = () => Equip(def.Hash, def.Name)
+                };
+
+                page.Add(item);
+            }
+
+            return page;
+        }
+
+        private void Equip(int hash, string name)
+        {
+            WeaponRegistry.Equip(hash);
+            Log.Debug("Equipped " + name + ".");
         }
 
         // ---- sell --------------------------------------------------------------
