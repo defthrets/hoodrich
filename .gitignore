@@ -1,0 +1,13 @@
+# Build output
+build/
+bin/
+obj/
+
+# Self-contained compiler toolchain (~42 MB) - restore with tools/README.md
+tools/roslyn/
+tools/refasm/
+tools/*.zip
+
+# Local runtime artefacts
+*.log
+*.user
