@@ -512,17 +512,6 @@ namespace Hoodrich.Wheel
                 value: "$" + Game.Player.Money.ToString("N0"));
             page.WithIcon(Icons.Money);
 
-            // Bagging up is done at the counter in the stash house, so this is a signpost
-            // rather than an action -- the wheel should not be able to do it from a street.
-            page.Add("Bag it up", "/", null,
-                detail: bulk > 0.005f
-                    ? "Take it to the kitchen at Aunt Denise's"
-                    : "Nothing to work -- go and re-up first",
-                value: bulk > 0.005f ? bulk.ToString("0.#") + "g waiting" : "",
-                enabled: false,
-                disabledReason: bulk > 0.005f ? "At the stash house kitchen" : "Nothing to work");
-            page.WithIcon(Icons.Weed);
-
             if (_postUp.IsPosted)
             {
                 page.Add("Pack up", "x", () => _postUp.Stop("You packed up."),

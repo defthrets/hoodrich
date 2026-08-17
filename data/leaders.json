@@ -20,7 +20,7 @@
       "gang": "families",
       "name": "Stretch",
       "zone": "CHAMH",
-      "x": -187.163, "y": -1700.884, "heading": 328,
+      "x": -160.738, "y": -1637.779, "heading": 2,
       "awayFromHour": 3, "awayToHour": 8,
       "models": ["ig_stretch", "csb_stretch", "g_m_y_famdnf_01", "a_m_m_soucent_01"]
     },

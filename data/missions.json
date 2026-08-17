@@ -1,0 +1,82 @@
+{
+  "_comment": [
+    "Work Lamar puts your way. Edited here, reloaded on script start.",
+    "",
+    "id          stable key; never change it once a save references it",
+    "kind        RideOut | DriveBy",
+    "name        the choice he offers you, in his words",
+    "brief       what he says when he explains it",
+    "done        what he says when you come back paid",
+    "targetGang  whose people you are going after -- their models and colours are used",
+    "zone        GET_NAME_OF_ZONE code the job happens in. A zone, not a coordinate: the mod",
+    "            already knows where every zone is and finds its own patch of pavement, so a",
+    "            job can never be authored into a wall.",
+    "targets     how many of them are waiting",
+    "homies      how many of yours ride out with you",
+    "payMin/payMax  cash, rolled between the two",
+    "rep         standing with your own gang for finishing it",
+    "minRank     rank before he will offer it at all"
+  ],
+  "missions": [
+    {
+      "id": "rideout_rancho",
+      "kind": "RideOut",
+      "name": "Go see about some Ballas.",
+      "brief": "Couple of Ballas been standing on Rancho like they pay rent. Take some of the homies, go tell 'em with your hands. No guns -- I want 'em walking home embarrassed, not carried home.",
+      "done": "That's what I'm talking about. Word travels.",
+      "targetGang": "ballas",
+      "zone": "RANCHO",
+      "targets": 3,
+      "homies": 2,
+      "payMin": 700,
+      "payMax": 1300,
+      "rep": 40,
+      "minRank": 0
+    },
+    {
+      "id": "rideout_murrieta",
+      "kind": "RideOut",
+      "name": "Somebody needs a talking to.",
+      "brief": "Murrieta Heights. Some of theirs been running their mouth about the set. Roll over there with the homies and shut it.",
+      "done": "Good. They'll think twice now.",
+      "targetGang": "ballas",
+      "zone": "MURRI",
+      "targets": 4,
+      "homies": 2,
+      "payMin": 900,
+      "payMax": 1600,
+      "rep": 45,
+      "minRank": 1
+    },
+    {
+      "id": "driveby_rancho",
+      "kind": "DriveBy",
+      "name": "Take a car through Rancho.",
+      "brief": "Get a car, take a couple homies, and put some rounds through that corner on Rancho. Don't stop, don't get out, and don't come back with the same car.",
+      "done": "Heard that from three blocks away. That's the point.",
+      "targetGang": "ballas",
+      "zone": "RANCHO",
+      "targets": 4,
+      "homies": 2,
+      "payMin": 1200,
+      "payMax": 2200,
+      "rep": 55,
+      "minRank": 1
+    },
+    {
+      "id": "driveby_lamesa",
+      "kind": "DriveBy",
+      "name": "The Vagos need reminding.",
+      "brief": "La Mesa. Vagos been getting comfortable. Drive through, make some noise, get gone before the law shows up.",
+      "done": "That'll hold 'em for a while.",
+      "targetGang": "vagos",
+      "zone": "LMESA",
+      "targets": 4,
+      "homies": 2,
+      "payMin": 1400,
+      "payMax": 2400,
+      "rep": 55,
+      "minRank": 2
+    }
+  ]
+}

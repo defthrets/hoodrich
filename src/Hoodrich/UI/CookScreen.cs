@@ -192,7 +192,7 @@ namespace Hoodrich.UI
         {
             if (!IsOpen || _rows.Count == 0) return;
 
-            var height = 0.150f + _rows.Count * RowHeight;
+            var height = 0.186f + _rows.Count * RowHeight;
 
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
@@ -266,9 +266,10 @@ namespace Hoodrich.UI
 
             Hud.Text(note, x, y, 0.26f, fits ? Palette.TextDim : Palette.Danger,
                      Hud.FontBody, centre: false);
+            y += 0.026f;
 
             Hud.Text("UP / DOWN  PRODUCT     LEFT / RIGHT  HOW FAR     ENTER  START     BACKSPACE  LEAVE",
-                     x, top + height - 0.022f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
+                     x, top + height - 0.020f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
 
         private static string PurityWord(float purity)

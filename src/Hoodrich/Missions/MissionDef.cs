@@ -1,0 +1,114 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using Hoodrich.Core;
+
+namespace Hoodrich.Missions
+{
+    /// <summary>What kind of work it is, which decides how it plays out.</summary>
+    internal enum MissionKind
+    {
+        /// <summary>Ride out with the homies and put hands on somebody.</summary>
+        RideOut,
+
+        /// <summary>Take a car past a rival corner and shoot it up.</summary>
+        DriveBy
+    }
+
+    /// <summary>One job Lamar can put your way.</summary>
+    internal sealed class MissionDef
+    {
+        public string Id = "";
+        public MissionKind Kind = MissionKind.RideOut;
+
+        /// <summary>Short name, shown as the choice in his dialogue.</summary>
+        public string Name = "";
+
+        /// <summary>What he says when he explains it.</summary>
+        public string Brief = "";
+
+        /// <summary>Line when it lands.</summary>
+        public string Done = "";
+
+        /// <summary>Gang whose people you are going after.</summary>
+        public string TargetGang = "";
+
+        /// <summary>
+        /// Zone the job happens in. A zone rather than a coordinate on purpose: the mod already
+        /// knows where every zone is, and a job that finds its own patch of pavement cannot be
+        /// authored into a wall.
+        /// </summary>
+        public string Zone = "";
+
+        public int Targets = 3;
+        public int PayMin = 600;
+        public int PayMax = 1200;
+        public float Rep = 40f;
+        public int MinRank;
+
+        /// <summary>Homies who ride with you.</summary>
+        public int Homies = 2;
+
+        public override string ToString() => Id;
+    }
+
+    /// <summary>The work Lamar has going, loaded from missions.json.</summary>
+    internal sealed class MissionBook
+    {
+        private readonly List<MissionDef> _all = new List<MissionDef>();
+
+        public IReadOnlyList<MissionDef> All => _all;
+
+        public MissionDef Get(string id)
+        {
+            return _all.Find(m => string.Equals(m.Id, id, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public static MissionBook Load()
+        {
+            var missions = new MissionBook();
+
+            var doc = JsonFile.Read(Path.Combine(Paths.Data, "missions.json"));
+            if (doc == null)
+            {
+                Log.Warn("No missions.json; Lamar will have nothing to offer.");
+                return missions;
+            }
+
+            foreach (var node in doc["missions"].Items)
+            {
+                var id = node["id"].AsString("");
+                if (string.IsNullOrEmpty(id)) continue;
+
+                var def = new MissionDef
+                {
+                    Id = id,
+                    Name = node["name"].AsString(id),
+                    Brief = node["brief"].AsString(""),
+                    Done = node["done"].AsString(""),
+                    TargetGang = node["targetGang"].AsString(""),
+                    Zone = node["zone"].AsString(""),
+                    Targets = Math.Max(1, node["targets"].AsInt(3)),
+                    PayMin = Math.Max(0, node["payMin"].AsInt(600)),
+                    PayMax = Math.Max(0, node["payMax"].AsInt(1200)),
+                    Rep = Math.Max(0f, node["rep"].AsFloat(40f)),
+                    MinRank = Math.Max(0, node["minRank"].AsInt(0)),
+                    Homies = Math.Max(0, node["homies"].AsInt(2))
+                };
+
+                var kind = node["kind"].AsString(def.Kind.ToString());
+                try { def.Kind = (MissionKind)Enum.Parse(typeof(MissionKind), kind, true); }
+                catch { Log.Warn("Unknown mission kind '" + kind + "' on " + id + "."); }
+
+                if (def.PayMax < def.PayMin) def.PayMax = def.PayMin;
+
+                _allAdd(missions, def);
+            }
+
+            Log.Info("Missions loaded: " + missions._all.Count + ".");
+            return missions;
+        }
+
+        private static void _allAdd(MissionBook m, MissionDef def) => m._all.Add(def);
+    }
+}

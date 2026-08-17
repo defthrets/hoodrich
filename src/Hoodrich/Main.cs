@@ -6,6 +6,7 @@ using Hoodrich.Dealing;
 using Hoodrich.Economy;
 using Hoodrich.Gangs;
 using Hoodrich.Locations;
+using Hoodrich.Missions;
 using Hoodrich.State;
 using Hoodrich.Supply;
 using Hoodrich.Territory;
@@ -59,6 +60,10 @@ namespace Hoodrich
         private readonly StashHouse _stash;
         private readonly SleepSpot _sleep;
         private readonly Kitchen _kitchen;
+        private readonly MissionBook _missions;
+        private readonly Fixer _fixer;
+        private readonly FixerTalk _fixerTalk;
+        private readonly MissionRunner _jobs;
         private readonly CookScreen _cook;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
@@ -84,6 +89,7 @@ namespace Hoodrich
                 _delivery = new Delivery();
                 _weapons = WeaponRegistry.Load();
                 _zoneMap = ZoneMap.Load();
+                _missions = MissionBook.Load();
 
                 // Everything the save writes into has to exist before the save is read.
                 _state = new PlayerState();
@@ -107,6 +113,11 @@ namespace Hoodrich
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
+                _jobs = new MissionRunner(_state, _crew, _gangs, _zoneMap);
+
+                _fixer = new Fixer(_crew);
+
+
                 _talk = new Conversation();
 
                 _info = new InfoPanel();
@@ -114,6 +125,10 @@ namespace Hoodrich
                 _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing, _cfg);
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
+
+                _fixerTalk = new FixerTalk(_fixer, _missions, _jobs, _crew, _state);
+                _fixer.Talk = _talk;
+                _fixer.TalkBuilder = () => _fixerTalk.Root();
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
                                            _gangs, _crew, _turf, _dealers, _weapons, _market, _stash, _postUp, _leaders);
@@ -208,6 +223,7 @@ namespace Hoodrich
                     {
                         _talk.Close();
                         _leaders.ReleaseFromTalk();
+                        _fixer.ReleaseFromTalk();
                     }
                     else
                     {
@@ -238,6 +254,9 @@ namespace Hoodrich
                     _sleep.RestoreOnLoad();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
+                    _fixer.Update();
+                    _fixer.UpdatePrompt();
+                    _jobs.Update();
                     UpdateLoan();
                 }
 
@@ -251,6 +270,7 @@ namespace Hoodrich
                 _stash.Draw();
                 _sleep.Draw();
                 _kitchen.Draw();
+                _jobs.Draw();
 
                 SlowTick();
 
@@ -405,6 +425,8 @@ namespace Hoodrich
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
+            try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
+            try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }
         }
     }
