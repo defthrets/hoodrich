@@ -32,6 +32,12 @@ namespace Hoodrich.UI
         public static readonly Color Hub = Color.FromArgb(200, 8, 9, 11);
         public static readonly Color HubEdge = Color.FromArgb(120, 255, 255, 255);
 
+        /// <summary>Solid header strip on a panel, the way GTA's own menus title a column.</summary>
+        public static readonly Color PanelHeader = Color.FromArgb(235, 22, 24, 26);
+
+        /// <summary>Alternating row wash. GTA menus stripe their lists very faintly.</summary>
+        public static readonly Color PanelRowAlt = Color.FromArgb(26, 255, 255, 255);
+
         public static readonly Color Text = Color.FromArgb(245, 255, 255, 255);
         public static readonly Color TextDim = Color.FromArgb(190, 176, 179, 181);
 

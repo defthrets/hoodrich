@@ -309,26 +309,42 @@ namespace Hoodrich.UI
             var top = cy - height * 0.5f;
 
             Draw.Rect(cx, cy, width, height, Palette.Alpha(Palette.Hub, 225));
-            Draw.Rect(cx, top + 0.0015f, width, 0.003f, Palette.Accent);
 
             var y = top + padding * 0.6f;
 
+            // Header strip, the way GTA's own menus title a column.
             if (!string.IsNullOrEmpty(page.PanelTitle))
             {
+                Draw.Rect(cx, top + rowHeight * 0.5f, width, rowHeight, Palette.PanelHeader);
+                Draw.Rect(cx, top + rowHeight - 0.0015f, width, 0.003f, Palette.Accent);
+
                 Draw.Text(page.PanelTitle.ToUpperInvariant(), left + padding * 0.5f, y, 0.30f,
-                          Palette.Accent, Draw.FontChaletComprimeCologne, centre: false);
+                          Palette.Accent, Draw.FontLabel, centre: false);
                 y += rowHeight;
             }
 
+            var index = 0;
             foreach (var row in page.Panel)
             {
-                Draw.Text(row.Label, left + padding * 0.5f, y, 0.28f, Palette.TextDim,
-                          Draw.FontChaletComprimeCologne, centre: false);
+                // A blank label AND value is a deliberate spacer between groups of rows.
+                var isSpacer = string.IsNullOrEmpty(row.Label) && string.IsNullOrEmpty(row.Value);
 
-                Draw.TextRight(row.Value, left + width - padding * 0.5f, y, 0.28f,
-                               row.Tint ?? Palette.Text);
+                if (!isSpacer && (index & 1) == 1)
+                {
+                    Draw.Rect(cx, y + rowHeight * 0.34f, width, rowHeight, Palette.PanelRowAlt);
+                }
+
+                if (!isSpacer)
+                {
+                    Draw.Text(row.Label, left + padding * 0.5f, y, 0.28f, Palette.TextDim,
+                              Draw.FontBody, centre: false);
+
+                    Draw.TextRight(row.Value, left + width - padding * 0.5f, y, 0.28f,
+                                   row.Tint ?? Palette.Text, Draw.FontBody);
+                }
 
                 y += rowHeight;
+                index++;
             }
         }
 
@@ -375,11 +391,10 @@ namespace Hoodrich.UI
             }
             else if (!string.IsNullOrEmpty(item.Symbol))
             {
-                Draw.Text(item.Symbol, px, py - 0.042f, 0.62f, colour, Draw.FontChaletComprimeCologne);
+                Draw.Text(item.Symbol, px, py - 0.042f, 0.62f, colour, Draw.FontLabel);
             }
 
-            Draw.Text(item.Label.ToUpperInvariant(), px, py + 0.010f, 0.34f, colour,
-                      Draw.FontChaletComprimeCologne);
+            Draw.Text(item.Label.ToUpperInvariant(), px, py + 0.010f, 0.34f, colour, Draw.FontLabel);
         }
 
         private void DrawHub(float cx, float cy, float rInner, WheelPage page, float t)
@@ -399,9 +414,11 @@ namespace Hoodrich.UI
 
             var item = HoveredItem;
 
-            // Title line: page name, or a breadcrumb once nested.
+            // Title line: page name, or a breadcrumb once nested. Condensed, like the vanilla
+            // wheel's category label.
             var title = _stack.Count > 1 ? "< " + page.Title : page.Title;
-            Draw.Text(title.ToUpperInvariant(), cx, cy - rInner * 0.72f, 0.32f, Palette.Accent);
+            Draw.Text(title.ToUpperInvariant(), cx, cy - rInner * 0.72f, 0.32f, Palette.Accent,
+                      Draw.FontLabel);
 
             if (item != null)
             {
@@ -409,23 +426,27 @@ namespace Hoodrich.UI
                     ? item.DisabledReason
                     : item.Detail;
 
-                Draw.Text(item.Label.ToUpperInvariant(), cx, cy - rInner * 0.18f, 0.40f, Palette.Text);
+                // The item's own name gets the standard HUD face, the way the vanilla wheel
+                // sets the selected weapon's name -- it is the thing you actually read.
+                Draw.Text(item.Label.ToUpperInvariant(), cx, cy - rInner * 0.18f, 0.40f,
+                          Palette.Text, Draw.FontBody);
 
                 if (!string.IsNullOrEmpty(item.Value))
                 {
                     Draw.Text(item.Value, cx, cy + rInner * 0.16f, 0.36f,
-                                 item.Enabled ? Palette.Cash : Palette.TextDisabled);
+                              item.Enabled ? Palette.Cash : Palette.TextDisabled, Draw.FontLabel);
                 }
 
                 if (!string.IsNullOrEmpty(detail))
                 {
                     Draw.Text(detail, cx, cy + rInner * 0.46f, 0.26f,
-                                 item.Enabled ? Palette.TextDim : Palette.Warn);
+                              item.Enabled ? Palette.TextDim : Palette.Warn, Draw.FontBody);
                 }
             }
             else if (!string.IsNullOrEmpty(page.Subtitle))
             {
-                Draw.Text(page.Subtitle, cx, cy - rInner * 0.08f, 0.28f, Palette.TextDim);
+                Draw.Text(page.Subtitle, cx, cy - rInner * 0.08f, 0.28f, Palette.TextDim,
+                          Draw.FontBody);
             }
         }
 

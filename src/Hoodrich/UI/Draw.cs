@@ -141,19 +141,35 @@ namespace Hoodrich.UI
 
         // ---- text --------------------------------------------------------------
 
-        public const int FontStandard = 0;
+        /// <summary>
+        /// The game's built-in font slots. Hoodrich only ever uses fonts the game already
+        /// ships, which is what makes it read as stock rather than as an overlay.
+        ///
+        /// 0 Chalet London Nineteen Sixty -- the standard HUD/menu face. Body text, values,
+        ///   descriptions: anything meant to be READ.
+        /// 4 Chalet Comprime Cologne Sixty -- condensed. Labels, titles and anything that has
+        ///   to fit a tight space, exactly as the vanilla weapon wheel uses it.
+        /// 7 Pricedown -- the GTA logo face. Reserved; too loud for HUD use.
+        /// </summary>
+        public const int FontChaletLondon = 0;
         public const int FontCursive = 1;
         public const int FontRockstarTag = 2;
         public const int FontHandwritten = 3;
         public const int FontChaletComprimeCologne = 4;
         public const int FontPricedown = 7;
 
+        /// <summary>Body text: panel rows, descriptions, the hub's weapon/item name.</summary>
+        public const int FontBody = FontChaletLondon;
+
+        /// <summary>Condensed: wedge labels, page titles, the footer hint.</summary>
+        public const int FontLabel = FontChaletComprimeCologne;
+
         /// <summary>
         /// Draws a single line of text. <paramref name="scale"/> is the game's text scale
         /// (0.35 is roughly HUD-caption sized).
         /// </summary>
         public static void Text(string text, float x, float y, float scale, Color c,
-                                int font = FontChaletComprimeCologne, bool centre = true,
+                                int font = FontLabel, bool centre = true,
                                 bool shadow = true, bool outline = false)
         {
             if (string.IsNullOrEmpty(text)) return;
@@ -177,7 +193,7 @@ namespace Hoodrich.UI
         /// right, wrap from 0 to rightX, and emit at x = 0. The wrap end becomes the right edge.
         /// </summary>
         public static void TextRight(string text, float rightX, float y, float scale, Color c,
-                                     int font = FontChaletComprimeCologne, bool shadow = true)
+                                     int font = FontBody, bool shadow = true)
         {
             if (string.IsNullOrEmpty(text)) return;
 

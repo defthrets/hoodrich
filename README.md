@@ -49,23 +49,28 @@ moves to its own key (`Key=B` by default).
 
 ## Menu structure
 
-Three wedges at the root — 120° each, so the whole mod is one flick from centre. Every
-tab owns its own sub-tabs rather than spilling onto the root.
+Four wedges at the root — 90° each. Every tab owns its own sub-tabs rather than spilling
+onto the root, and each one has a single job: **Gangs is where you do things, Reputation
+is where you read the numbers those things produced.**
 
 ```
-Weapons ── Melee · Handguns · SMGs · Shotguns · Rifles · Sniper · Heavy · Thrown
-                └── each weapon, with the game's own icon and its ammo
+Weapons ─── Melee · Handguns · SMGs · Shotguns · Rifles · Sniper · Heavy · Thrown
+                 └── each weapon, with the game's own icon and its ammo
 
-Drugs ──── Supply ── your contacts ── their stock
-       ├── Cut ───── product ─────── purity (100 / 75 / 50 / 33%)
-       ├── Sell ──── what you have bagged
-       ├── Status ── the books: every product's bulk and street-ready weight,
-       │             plus where every supply line stands right now
-       └── Stash     (next build)
+Drugs ───── Supply ── your contacts ── their stock
+        ├── Cut ───── product ─────── purity (100 / 75 / 50 / 33%)
+        ├── Sell ──── what you have bagged
+        ├── Status ── the books: every product's bulk and street-ready weight,
+        │             plus where every supply line stands right now
+        └── Stash     (next build)
 
-Gangs ──── Turf ──── this block: who claims it, what it pays, what it costs
-       └── one wedge per gang
-             └── Join or Leave · Their plug · Their turf · Dossier
+Gangs ───── Turf ──── this block: who claims it, what it pays, what it costs
+        └── one wedge per gang
+              └── Join or Leave · Their plug · Their turf · Dossier
+
+Reputation  Rank ──── the ladder: what you have passed, where you are,
+        │            and what the next rung actually unlocks
+        └── one wedge per gang: your rep, kills, deals and earnings with each
 ```
 
 **Drugs → Status** is the import board. The panel lists every contact and its live state —

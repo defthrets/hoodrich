@@ -11,8 +11,8 @@ namespace Hoodrich.State
     /// </summary>
     internal sealed class PlayerState
     {
-        /// <summary>Respect thresholds for ranks 0..4.</summary>
-        private static readonly float[] RankThresholds = { 0f, 250f, 900f, 2400f, 6000f };
+        /// <summary>Respect needed to reach each rank, 0..4. Read by the Reputation page.</summary>
+        public static readonly float[] RankThresholds = { 0f, 250f, 900f, 2400f, 6000f };
 
         public static readonly string[] RankNames = { "Pee-Wee", "Soldier", "Enforcer", "Shotcaller", "OG" };
 

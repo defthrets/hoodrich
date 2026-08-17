@@ -272,7 +272,7 @@ namespace Hoodrich.UI
                 ? select + " SELECT     " + back + " BACK"
                 : select + " SELECT     " + back + " CLOSE";
 
-            Draw.Text(hint, 0.5f, 0.5f + _cfg.OuterRadius + 0.045f, 0.30f, Palette.TextDim);
+            Draw.Text(hint, 0.5f, 0.5f + _cfg.OuterRadius + 0.045f, 0.30f, Palette.TextDim, Draw.FontLabel);
         }
     }
 }

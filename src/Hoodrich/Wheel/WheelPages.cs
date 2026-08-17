@@ -72,9 +72,9 @@ namespace Hoodrich.Wheel
             var page = new WheelPage("Hoodrich",
                 _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated");
 
-            // Three wedges at 120 degrees each -- the whole mod is one flick from centre, and
-            // every top-level tab owns its own sub-tabs rather than spilling onto the root:
-            // product and its paperwork live under Drugs, everything territorial under Gangs.
+            // Four wedges at 90 degrees each. Every top-level tab owns its own sub-tabs rather
+            // than spilling onto the root: product and its paperwork under Drugs, everything
+            // territorial under Gangs, and your own standing under Reputation.
             //
             // Weapons sits at index 0 -- straight up, the easiest flick on the wheel. Hoodrich
             // took the weapon-wheel button, so getting a gun back has to be the fastest thing
@@ -94,6 +94,10 @@ namespace Hoodrich.Wheel
             page.AddSub("Gangs", "%", BuildGangsPage,
                 detail: _crew.IsAffiliated ? "Crews and turf" : "Pick who you run with",
                 value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
+
+            page.AddSub("Reputation", "*", BuildReputationPage,
+                detail: RankProgressLabel(),
+                value: _state.RankName);
 
             return page;
         }
@@ -636,26 +640,17 @@ namespace Hoodrich.Wheel
             var page = new WheelPage("Gangs",
                 _crew.IsAffiliated ? "Running with " + _crew.Current.Name : "Running solo");
 
-            var standing = _crew.CurrentStanding;
-
+            // Operational context only. The standing numbers -- rep, kills, money made for
+            // each crew -- all live on the Reputation page so they are in one place.
             page.PanelTitle = _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated";
             page.Row("Affiliation", _crew.IsAffiliated ? _crew.Current.Name : "none",
                      _crew.IsAffiliated ? _crew.Current.Colour : (System.Drawing.Color?)Palette.TextDim);
             page.Row("Rank", _state.RankName);
-            page.Row("Respect", _state.Respect.ToString("N0") + "  (" + RankProgressLabel() + ")");
-            page.Row("Heat", _state.Notoriety.ToString("F0") + "%",
-                     _state.Notoriety > 50f ? Palette.Danger
-                        : _state.Notoriety > 20f ? Palette.Warn : (System.Drawing.Color?)null);
-            page.Row("Gang rep", standing == null ? "-" : standing.Rep.ToString("N0"),
-                     standing == null ? Palette.TextDim
-                        : standing.Rep < 0 ? Palette.Danger : Palette.Cash);
-            page.Row("Kills for them", standing == null ? "-" : standing.Kills.ToString("N0"));
-            page.Row("Money made", standing == null ? "-" : "$" + standing.MoneyEarned.ToString("N0"),
-                     Palette.Cash);
-            page.Row("Deals", standing == null ? "-" : standing.Deals.ToString("N0"));
+            page.Row("Respect", _state.Respect.ToString("N0"));
             page.Row("Lookouts near", _crew.NearbyAllies.ToString(),
                      _crew.NearbyAllies > 0 ? Palette.Cash : Palette.TextDim);
             page.Row("Standing on", _turf.ZoneName, TurfTint());
+            page.Row("This block", _turf.StatusLine, TurfTint());
 
             // Turf leads: "whose block am I on" is the question you ask most, and it is
             // territorial, so it belongs here rather than on the root.
@@ -873,6 +868,135 @@ namespace Hoodrich.Wheel
                 Log.Info("TURF  " + g.Id.PadRight(12) + " " + string.Join(", ", g.Turf.ToArray()));
             }
             Notify.Ticker("Turf map written to Hoodrich.log.");
+        }
+
+        // ---- reputation ---------------------------------------------------------
+
+        /// <summary>
+        /// Everything about where you stand: your own rank ladder, and your standing with every
+        /// crew in the city.
+        ///
+        /// Gangs is for doing things -- joining, buying, checking whose block you are on.
+        /// Reputation is for reading the numbers those actions produced, all in one ring, so
+        /// you never have to walk seven gang pages to compare where you are welcome.
+        /// </summary>
+        private WheelPage BuildReputationPage()
+        {
+            var page = new WheelPage("Reputation", RankProgressLabel());
+
+            var totalKills = 0;
+            var totalGangDeals = 0;
+            long gangEarnings = 0;
+            foreach (var s in _crew.AllStandings)
+            {
+                totalKills += s.Kills;
+                totalGangDeals += s.Deals;
+                gangEarnings += s.MoneyEarned;
+            }
+
+            page.PanelTitle = _state.RankName;
+            page.Row("Respect", _state.Respect.ToString("N0"));
+            page.Row("Next rank", RankProgressLabel(),
+                     _state.Rank >= PlayerState.RankNames.Length - 1 ? Palette.Cash
+                                                                     : (System.Drawing.Color?)null);
+            page.Row("Heat", _state.Notoriety.ToString("F0") + "%",
+                     _state.Notoriety > 50f ? Palette.Danger
+                        : _state.Notoriety > 20f ? Palette.Warn : Palette.Cash);
+            page.Row("", "");
+            page.Row("Crew", _crew.IsAffiliated ? _crew.Current.Name : "solo",
+                     _crew.IsAffiliated ? _crew.Current.Colour : (System.Drawing.Color?)Palette.TextDim);
+            page.Row("Deals closed", _state.TotalDealsMade.ToString("N0"));
+            page.Row("Total earned", "$" + _state.TotalEarned.ToString("N0"), Palette.Cash);
+            page.Row("", "");
+            page.Row("Rival kills", totalKills.ToString("N0"));
+            page.Row("Deals for crews", totalGangDeals.ToString("N0"));
+            page.Row("Earned for crews", "$" + gangEarnings.ToString("N0"), Palette.Cash);
+
+            page.AddSub("Rank", "*", BuildRankPage,
+                detail: RankProgressLabel(),
+                value: _state.RankName);
+
+            // Every crew's standing, readable by flicking round the ring.
+            foreach (var g in _gangs.All)
+            {
+                var gang = g;
+                var standing = _crew.StandingFor(gang.Id);
+                var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
+
+                var detail = standing.Kills + " kills  ·  " + standing.Deals + " deals  ·  $" +
+                             standing.MoneyEarned.ToString("N0") + " earned";
+
+                page.Add(gang.Tag, mine ? "*" : "o", null,
+                    detail: detail,
+                    value: mine ? "YOUR CREW  rep " + standing.Rep.ToString("0")
+                                : RelationLabel(gang) + (standing.Rep != 0f
+                                    ? "  rep " + standing.Rep.ToString("0") : ""));
+
+                page.Items[page.Items.Count - 1].Tint = gang.Colour;
+            }
+
+            return page;
+        }
+
+        /// <summary>
+        /// The rank ladder. Wedges are the ranks themselves rather than actions, so the ring
+        /// reads as a progression bar: what you have passed, where you are, and what the next
+        /// rung actually buys you.
+        /// </summary>
+        private WheelPage BuildRankPage()
+        {
+            var page = new WheelPage("Rank", RankProgressLabel());
+            var current = _state.Rank;
+
+            page.PanelTitle = "Progression";
+            page.Row("Rank", _state.RankName);
+            page.Row("Respect", _state.Respect.ToString("N0"));
+            page.Row("Next rank", RankProgressLabel());
+            page.Row("Carry limit", Stash.Capacity.ToString("0") + "g");
+
+            for (var i = 0; i < PlayerState.RankNames.Length; i++)
+            {
+                var rank = i;
+                var threshold = PlayerState.RankThresholds[rank];
+                var reached = current >= rank;
+                var isCurrent = current == rank;
+
+                var detail = isCurrent
+                    ? "You are here -- " + RankProgressLabel()
+                    : reached ? "Passed" : "Needs " + threshold.ToString("N0") + " respect";
+
+                page.Add(PlayerState.RankNames[rank],
+                    isCurrent ? "*" : reached ? "o" : "-",
+                    null,
+                    detail: detail + ".  " + RankUnlocks(rank),
+                    value: reached ? (isCurrent ? "CURRENT" : "passed")
+                                   : threshold.ToString("N0") + " respect",
+                    enabled: reached,
+                    disabledReason: "Needs " + threshold.ToString("N0") + " respect.  " + RankUnlocks(rank));
+            }
+
+            return page;
+        }
+
+        /// <summary>
+        /// What a rank buys you, derived from the live data rather than hardcoded, so editing
+        /// suppliers.json keeps this honest.
+        /// </summary>
+        private string RankUnlocks(int rank)
+        {
+            var opened = new List<string>();
+            foreach (var s in _suppliers.All)
+            {
+                if (s.MinRank == rank && rank > 0) opened.Add(s.Tag);
+            }
+
+            // LotSizeFor()'s base, before the per-product tier divide.
+            var lot = 20f + rank * 20f;
+            var text = "Lots up to " + lot.ToString("0") + "g";
+
+            if (opened.Count > 0) text += ";  " + string.Join(", ", opened.ToArray()) + " take your call";
+
+            return text;
         }
 
         // ---- shared readouts ----------------------------------------------------
