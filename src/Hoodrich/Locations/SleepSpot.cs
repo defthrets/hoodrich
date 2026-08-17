@@ -5,6 +5,7 @@ using GTA;
 using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
+using Hoodrich.State;
 using Hoodrich.UI;
 
 namespace Hoodrich.Locations
@@ -35,10 +36,53 @@ namespace Hoodrich.Locations
         private bool _sleeping;
 
         private readonly Action _save;
+        private readonly PlayerState _state;
 
-        public SleepSpot(Action save)
+        /// <summary>Only ever restores a position once, on the session it loaded into.</summary>
+        private bool _restored;
+
+        public SleepSpot(PlayerState state, Action save)
         {
+            _state = state;
             _save = save;
+        }
+
+        /// <summary>Where the bed is, so callers do not need the coordinate.</summary>
+        public Vector3 Position => Bed;
+
+        /// <summary>
+        /// Puts the player back at the bed if that is where they last slept.
+        ///
+        /// GTA restores Franklin at whichever house it considers his, which after the story is
+        /// the one in the hills. Only runs in the first minute of a game process -- reloading
+        /// scripts with Insert mid-session must never yank the player across the map.
+        /// </summary>
+        public void RestoreOnLoad()
+        {
+            if (_restored) return;
+            _restored = true;
+
+            if (_state == null || !_state.SleptAtStashHouse) return;
+            if (Game.GameTime > 60000) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            // Already there: nothing to do, and no reason to interrupt anybody.
+            if (player.Position.DistanceTo(Bed) < 25f) return;
+
+            try
+            {
+                player.Position = Bed;
+                player.Heading = 200f;
+
+                Notify.Ticker("~g~Woke up at the stash house.~s~");
+                Log.Info("Restored the player to the stash house bed on load.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not restore the sleep position: " + ex.Message);
+            }
         }
 
         public float DistanceTo()
@@ -59,7 +103,7 @@ namespace Hoodrich.Locations
             if (player == null || !player.Exists() || !player.IsAlive) return;
             if (player.IsInVehicle()) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to sleep. Six hours pass and the game saves.");
+            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to sleep.");
 
             if (!Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return;
 
@@ -84,6 +128,9 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.ADD_TO_CLOCK_TIME, HoursSlept, 0, 0);
 
                 player.Health = player.MaxHealth;
+
+                // Remembered so a load puts you back here rather than in the hills.
+                if (_state != null) _state.SleptAtStashHouse = true;
 
                 _save?.Invoke();
 

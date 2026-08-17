@@ -28,9 +28,6 @@ namespace Hoodrich.Wheel
         /// <summary>Grams moved in a single hand-to-hand sale.</summary>
         private const float DealSize = 5f;
 
-        /// <summary>Purity options offered when cutting, high to low.</summary>
-        private static readonly float[] PurityOptions = { 1.0f, 0.75f, 0.5f, 0.33f };
-
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
         private readonly Pricing _pricing;
@@ -515,11 +512,15 @@ namespace Hoodrich.Wheel
                 value: "$" + Game.Player.Money.ToString("N0"));
             page.WithIcon(Icons.Money);
 
-            page.AddSub("Bag it up", "/", BuildCutPage,
-                detail: "Break the weight down into what you can sell",
+            // Bagging up is done at the counter in the stash house, so this is a signpost
+            // rather than an action -- the wheel should not be able to do it from a street.
+            page.Add("Bag it up", "/", null,
+                detail: bulk > 0.005f
+                    ? "Take it to the kitchen at Aunt Denise's"
+                    : "Nothing to work -- go and re-up first",
                 value: bulk > 0.005f ? bulk.ToString("0.#") + "g waiting" : "",
-                enabled: bulk > 0.005f,
-                disabledReason: "Nothing to work -- go and re-up first");
+                enabled: false,
+                disabledReason: bulk > 0.005f ? "At the stash house kitchen" : "Nothing to work");
             page.WithIcon(Icons.Weed);
 
             if (_postUp.IsPosted)
@@ -859,85 +860,6 @@ namespace Hoodrich.Wheel
         }
 
         // ---- cut ---------------------------------------------------------------
-
-        private WheelPage BuildCutPage()
-        {
-            var page = new WheelPage("Bag it up", "Pick what you are working");
-
-            var blocker = _cutting.WhyCannotCut();
-
-            page.PanelTitle = "On you";
-            page.Row("Weight to work", Stash.TotalBulk.ToString("0.#") + "g", Palette.Warn);
-            page.Row("Already bagged", Stash.TotalPackaged.ToString("0.#") + "g", Palette.Cash);
-            page.Row("Can you now", blocker == null ? "yes" : blocker,
-                     blocker == null ? Palette.Cash : (Color?)Palette.Warn);
-
-            var bulk = Stash.WithBulk(_drugs);
-            if (bulk.Count == 0)
-            {
-                page.Add("Nothing", "-", null, detail: "No weight on you",
-                         enabled: false, disabledReason: "No weight on you");
-                return page;
-            }
-
-            foreach (var drug in bulk)
-            {
-                var product = drug;
-                var have = Stash.BulkOf(product.Id);
-
-                page.AddSub(product.Name, product.Tag,
-                    () => BuildPurityPage(product),
-                    detail: product.SplitVerb + " it -- then choose how far to stretch it",
-                    value: have.ToString("0.#") + "g waiting",
-                    enabled: blocker == null,
-                    disabledReason: blocker ?? "");
-                page.WithIcon(Icons.ForDrug(product.Id));
-            }
-
-            return page;
-        }
-
-        private WheelPage BuildPurityPage(DrugDef product)
-        {
-            var have = Stash.BulkOf(product.Id);
-            var batch = Math.Min(have, 50f);
-
-            var page = new WheelPage(product.Name, "How far do you stretch it");
-
-            page.PanelTitle = "Working " + batch.ToString("0") + "g";
-            page.Row("Weight on you", have.ToString("0.#") + "g");
-            page.Row("Stretch it further", "more units, cheaper each", Palette.TextDim);
-            page.Row("Keep it clean", "fewer units, better each", Palette.TextDim);
-
-            foreach (var p in PurityOptions)
-            {
-                var purity = p;
-                var yield = Cutting.Yield(batch, purity);
-                var gross = _pricing.SaleValue(product, yield, purity);
-                var risk = Pricing.BadCutChance(purity);
-                var fits = Stash.FreeSpace >= yield - batch - 0.001f;
-
-                page.Add(PurityWord(purity),
-                    risk > 0.2f ? "!" : "o",
-                    () => Cut(product, batch, purity),
-                    detail: risk < 0.01f
-                        ? "Nobody is going to complain about this"
-                        : risk < 0.2f ? "The odd buyer might notice"
-                        : "Expect people to hand it back",
-                    value: yield.ToString("0") + "g  ~$" + gross.ToString("N0"),
-                    enabled: fits,
-                    disabledReason: "No room for " + yield.ToString("0") + "g");
-                page.WithIcon(Icons.ForDrug(product.Id));
-            }
-
-            return page;
-        }
-
-        private void Cut(DrugDef product, float grams, float purity)
-        {
-            var failure = _cutting.TryStart(product, grams, purity);
-            if (failure != null) Notify.Problem(failure);
-        }
 
         // ---- supply ------------------------------------------------------------
 

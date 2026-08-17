@@ -36,6 +36,15 @@ namespace Hoodrich.State
         /// </summary>
         public bool DocksUnlocked;
 
+        /// <summary>
+        /// True when the last thing you did was sleep at the stash house.
+        ///
+        /// The game puts Franklin back at whichever house it thinks is his, which after the
+        /// story is the one in the hills -- so sleeping at Aunt Denise's and loading back in
+        /// dropped you across the map from everything the mod is about.
+        /// </summary>
+        public bool SleptAtStashHouse;
+
         private bool _dirty;
 
         public bool IsDirty => _dirty;
@@ -112,6 +121,7 @@ namespace Hoodrich.State
                 .Set("totalEarned", TotalEarned)
                 .Set("gramsSold", Math.Round(GramsSold, 2))
                 .Set("docksUnlocked", DocksUnlocked)
+                .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("stash", Stash.ToJson());
         }
 
@@ -127,6 +137,7 @@ namespace Hoodrich.State
                 TotalEarned = Math.Max(0L, doc["totalEarned"].AsLong(0));
                 GramsSold = Math.Max(0f, doc["gramsSold"].AsFloat(0f));
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
+                SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
 
                 // "inventory" is the 0.1.0 key; migrate it so old saves keep their product.
                 Stash.LoadFrom(doc.Has("stash") ? doc["stash"] : doc["inventory"]);

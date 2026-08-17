@@ -58,6 +58,8 @@ namespace Hoodrich
         private readonly StashScreen _stashScreen;
         private readonly StashHouse _stash;
         private readonly SleepSpot _sleep;
+        private readonly Kitchen _kitchen;
+        private readonly CookScreen _cook;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
 
@@ -87,7 +89,7 @@ namespace Hoodrich
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
                 _stash = new StashHouse(_cfg);
-                _sleep = new SleepSpot(() => SaveGame.Save(_state, _crew, _market, _stash, true));
+                _sleep = new SleepSpot(_state, () => SaveGame.Save(_state, _crew, _market, _stash, true));
                 _market = new Market(_cfg);
 
                 SaveGame.Load(_state, _crew, _market, _stash);
@@ -100,6 +102,8 @@ namespace Hoodrich
                 _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market };
                 _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
                 _cutting = new Cutting(_state.Stash, _state);
+                _cook = new CookScreen();
+                _kitchen = new Kitchen(OpenKitchen, () => _cutting.IsBusy);
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
@@ -166,6 +170,20 @@ namespace Hoodrich
                     }
                 }
 
+                // Working product owns the screen while the choice is being made.
+                if (_cook.IsOpen)
+                {
+                    if (!available || !_kitchen.InReach) _cook.Close();
+                    else
+                    {
+                        _cook.Update();
+                        _cook.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 // A popup readout owns the screen the same way a conversation does: the wheel
                 // would fight it for the same buttons.
                 if (_info.IsOpen)
@@ -216,6 +234,8 @@ namespace Hoodrich
                     _market.Update(_drugs);
                     _stash.Update();
                     _sleep.Update();
+                    _kitchen.Update();
+                    _sleep.RestoreOnLoad();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
                     UpdateLoan();
@@ -230,6 +250,7 @@ namespace Hoodrich
                 _leaders.Draw();
                 _stash.Draw();
                 _sleep.Draw();
+                _kitchen.Draw();
 
                 SlowTick();
 
@@ -319,6 +340,13 @@ namespace Hoodrich
             // the map and is often still zero, so a player standing 30m above sea level was
             // "30 metres away" from somebody they were stood next to.
             return _leaders.DistanceTo(subject) > 8f;
+        }
+
+        /// <summary>Opens the kitchen screen with everything it needs to start a batch.</summary>
+        private void OpenKitchen()
+        {
+            _cook.Open(_state.Stash, _drugs, _pricing,
+                       (drug, grams, purity) => _cutting.TryStart(drug, grams, purity));
         }
 
         /// <summary>True when the player is in normal control and the mod should be live.</summary>

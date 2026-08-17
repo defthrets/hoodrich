@@ -463,14 +463,56 @@ namespace Hoodrich.Dealing
 
             if (_animRequested && Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, AnimDict))
             {
+                // Wait for him to actually reach the mark. Firing the clips the moment the
+                // dictionary loads is what had the two of them miming at each other across a
+                // metre of pavement.
+                if (player.Position.DistanceTo(_customer.Position) > HandoffDistance + 0.7f) return;
+
                 _animRequested = false;
-                PlayAnim(player, AnimPlayer);
-                PlayAnim(_customer, AnimBuyer);
+                PlayHandoff(player, _customer);
             }
 
             if (Game.GameTime - _dealStartedAt < DealDurationMs) return;
 
             CompleteSale(player);
+        }
+
+        /// <summary>
+        /// Plays the handoff as ONE scene with two parts in it.
+        ///
+        /// The give and take clips are a matched pair authored around a single origin: played
+        /// separately on two peds who happen to be standing near each other, each plays in its
+        /// own space and the hands never meet. A synchronized scene puts both on the same
+        /// origin instead, so the game lines them up the way the animator did -- which is the
+        /// difference between two people trading and two people miming.
+        /// </summary>
+        private static void PlayHandoff(Ped player, Ped buyer)
+        {
+            try
+            {
+                // Origin midway between them, facing the way the player is, so the pair lands
+                // on the pavement they are actually standing on.
+                var mid = (player.Position + buyer.Position) * 0.5f;
+
+                var scene = Function.Call<int>(Hash.CREATE_SYNCHRONIZED_SCENE,
+                                               mid.X, mid.Y, mid.Z,
+                                               0f, 0f, player.Heading, 2);
+
+                Function.Call(Hash.SET_SYNCHRONIZED_SCENE_LOOPED, scene, false);
+
+                Function.Call(Hash.TASK_SYNCHRONIZED_SCENE, player.Handle, scene,
+                              AnimDict, AnimPlayer, 4f, -4f, 0, 0, 1000f, 0);
+
+                Function.Call(Hash.TASK_SYNCHRONIZED_SCENE, buyer.Handle, scene,
+                              AnimDict, AnimBuyer, 4f, -4f, 0, 0, 1000f, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Synchronized handoff failed, falling back: " + ex.Message);
+
+                PlayAnim(player, AnimPlayer);
+                PlayAnim(buyer, AnimBuyer);
+            }
         }
 
         private static void PlayAnim(Ped ped, string anim)
