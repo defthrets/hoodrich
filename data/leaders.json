@@ -23,8 +23,8 @@
       "x": -160.738,
       "y": -1637.779,
       "heading": 2,
-      "awayFromHour": 3,
-      "awayToHour": 8,
+      "awayFromHour": 0,
+      "awayToHour": 0,
       "models": [
         "ig_stretch",
         "csb_stretch",

@@ -8,17 +8,17 @@
     "tier      1 = low risk street weight, 3 = brings heat. Gates resupply by rank.",
     "heatFactor how much attention one sale attracts, relative to 1.0",
     "",
-    "Prices are per GRAM and are meant to sit where the real ones do, so a gram and an",
-    "eighth both come out at numbers that look right: weed at 20 a gram is 50 for an",
-    "eighth once the bulk discount is applied, coke at 200 is about 450. Buying weight",
-    "off a supplier costs a fraction of these -- that spread is the whole business."
+    "Prices are per GRAM (per PILL for ecstasy) and sit roughly where the real ones do: weed",
+    "about fifteen a gram, a crack rock about twenty five, pills twenty each, meth fifty,",
+    "heroin a hundred and twenty, coke a hundred and fifty. Buying weight off a supplier",
+    "costs half of that -- the spread is the whole business."
   ],
   "drugs": [
-    { "id": "weed",   "name": "Marijuana", "tag": "WEED", "basePrice": 20,  "tier": 1, "heatFactor": 0.5 },
-    { "id": "crack",  "name": "Crack",     "tag": "CRK",  "basePrice": 60,  "tier": 2, "heatFactor": 1.0 },
-    { "id": "ecstasy","name": "Ecstasy",   "tag": "PILL", "basePrice": 80,  "tier": 2, "heatFactor": 0.8 },
-    { "id": "meth",   "name": "Meth",      "tag": "METH", "basePrice": 100, "tier": 2, "heatFactor": 1.1 },
-    { "id": "heroin", "name": "Heroin",    "tag": "H",    "basePrice": 150, "tier": 3, "heatFactor": 1.4 },
-    { "id": "coke",   "name": "Cocaine",   "tag": "COKE", "basePrice": 200, "tier": 3, "heatFactor": 1.6 }
+    { "id": "weed",   "name": "Marijuana", "tag": "WEED", "basePrice": 15,  "tier": 1, "heatFactor": 0.5 },
+    { "id": "crack",  "name": "Crack",     "tag": "CRK",  "basePrice": 25,  "tier": 2, "heatFactor": 1.0 },
+    { "id": "ecstasy","name": "Ecstasy",   "tag": "PILL", "basePrice": 20,  "tier": 2, "heatFactor": 0.8 },
+    { "id": "meth",   "name": "Meth",      "tag": "METH", "basePrice": 50, "tier": 2, "heatFactor": 1.1 },
+    { "id": "heroin", "name": "Heroin",    "tag": "H",    "basePrice": 120, "tier": 3, "heatFactor": 1.4 },
+    { "id": "coke",   "name": "Cocaine",   "tag": "COKE", "basePrice": 150, "tier": 3, "heatFactor": 1.6 }
   ]
 }

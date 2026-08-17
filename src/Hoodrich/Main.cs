@@ -60,6 +60,7 @@ namespace Hoodrich
         private readonly StashHouse _stash;
         private readonly SleepSpot _sleep;
         private readonly Kitchen _kitchen;
+        private readonly Dog _chop;
         private readonly MissionBook _missions;
         private readonly Fixer _fixer;
         private readonly FixerTalk _fixerTalk;
@@ -110,6 +111,7 @@ namespace Hoodrich
                 _cutting = new Cutting(_state.Stash, _state);
                 _cook = new CookScreen();
                 _kitchen = new Kitchen(OpenKitchen, () => _cutting.IsBusy);
+                _chop = new Dog();
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
@@ -251,6 +253,7 @@ namespace Hoodrich
                     _stash.Update();
                     _sleep.Update();
                     _kitchen.Update();
+                    _chop.Update();
                     _sleep.RestoreOnLoad();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
@@ -426,6 +429,7 @@ namespace Hoodrich
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
+            try { _chop?.RestoreWorld(); } catch { /* teardown */ }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }
         }

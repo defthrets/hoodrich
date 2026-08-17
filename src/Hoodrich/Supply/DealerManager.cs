@@ -89,14 +89,31 @@ namespace Hoodrich.Supply
 
         // ---- loading -----------------------------------------------------------
 
+        /// <summary>
+        /// Loads the contacts.
+        ///
+        /// dealers.json is AUTHORITATIVE, not a patch. The built-ins used to be seeded first and
+        /// then merely overridden, which meant deleting somebody from the file did nothing at
+        /// all -- Lil' Marcus and five other corner dealers kept turning up weeks after they
+        /// were removed, because nothing had actually removed them. The defaults are now only a
+        /// fallback for when there is no usable file at all.
+        /// </summary>
         public static DealerManager Load(Settings cfg)
         {
             var mgr = new DealerManager { _cfg = cfg };
-            mgr.AddDefaults();
 
             var path = Path.Combine(Paths.Data, "dealers.json");
             var doc = JsonFile.Read(path);
-            if (doc != null) mgr.ApplyOverrides(doc);
+
+            var list = doc == null ? null : (doc.Kind == JsonKind.Array ? doc : doc["dealers"]);
+            var hasFile = list != null && list.Kind == JsonKind.Array;
+
+            if (hasFile) mgr.ApplyOverrides(doc);
+            else
+            {
+                Log.Warn("No usable dealers.json; falling back to the built-in contacts.");
+                mgr.AddDefaults();
+            }
 
             Log.Info("Dealers loaded: " + mgr._defs.Count + ".");
             return mgr;

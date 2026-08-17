@@ -45,6 +45,7 @@ namespace Hoodrich.Economy
                 {
                     new Clip("anim@amb@business@weed@weed_sorting_seated@", "sorting_base_inspector"),
                     new Clip("anim@amb@business@weed@weed_inspecting_lo_med_hi@", "weed_inspecting_hi_base_inspector"),
+                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer")
                 },
                 ["coke"] = new[]
                 {
@@ -72,11 +73,18 @@ namespace Hoodrich.Economy
                 },
             };
 
-        /// <summary>Anything without its own hands ends up here.</summary>
+        /// <summary>
+        /// Anything without its own hands ends up here.
+        ///
+        /// All of these are people working at a surface with both hands, because that is what
+        /// this is: standing at a counter over the product. The old fallback had the player
+        /// rummaging in a bin, which reads as looking for something rather than making it.
+        /// </summary>
         private static readonly Clip[] Fallback =
         {
             new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
-            new Clip("amb@prop_human_bum_bin@idle_a", "idle_a"),
+            new Clip("amb@prop_human_bum_shopping_cart@male@base", "base"),
+            new Clip("anim@heists@prison_heiststation@cop_reactions", "cop_a_idle")
         };
 
         private string _playingDict;

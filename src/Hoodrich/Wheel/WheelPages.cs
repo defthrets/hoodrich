@@ -1147,10 +1147,19 @@ namespace Hoodrich.Wheel
             // Where you are and who is around you -- the things that change what happens if you
             // pull something out here.
             page.PanelTitle = _crew.IsAffiliated ? _crew.Current.Name : "Not with anybody";
+
+            if (_crew.IsAffiliated)
+            {
+                var mine = _crew.CurrentStanding;
+
+                page.Row("Your rep", mine == null ? "0" : mine.Rep.ToString("0"),
+                         mine != null && mine.Rep < 0 ? Palette.Danger : Palette.Cash);
+                page.Row("Bodies for them", mine == null ? "0" : mine.Kills.ToString("N0"));
+                page.Row("Beefing with", RivalNames(_crew.Current), Palette.Danger);
+            }
+
             page.Row("You are on", _turf.ZoneName, TurfTint());
             page.Row("Whose block", TurfWord(), TurfTint());
-            page.Row("Gang around", _crew.NearbyAllies > 0 ? "yes" : "no",
-                     _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim);
 
             page.AddSub("This block", "#", BuildTurfPage,
                 detail: TurfWord(),

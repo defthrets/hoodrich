@@ -109,7 +109,7 @@ namespace Hoodrich.Dealing
         private const float DriveByShootRange = 45f;
 
         /// <summary>If they never reach you at all, they stop trying.</summary>
-        private const int DriveByFindTimeoutMs = 60000;
+        private const int DriveByFindTimeoutMs = 150000;
 
         /// <summary>How far a rival can be and still notice you working their block.</summary>
         private const float RivalNoticeRange = 28f;
@@ -593,6 +593,11 @@ namespace Hoodrich.Dealing
             {
                 Notify.Failure("a cop watched that.");
                 Wanted(1);
+
+                // The patrol has to actually react. Left in its parked task it sat there while
+                // the stars appeared, which reads as the game punishing you rather than as
+                // being caught by the two men who were plainly watching.
+                BreakOffPatrol(player);
             }
             else if (_cornerHeat >= _cfg.PostUpHeatBeforePolice * HeatForWanted)
             {
@@ -959,24 +964,28 @@ namespace Hoodrich.Dealing
         private const int PatrolGapMinMs = 50 * 1000;
         private const int PatrolGapMaxMs = 210 * 1000;
 
-        /// <summary>How long they sit there before losing interest.</summary>
-        private const int PatrolWatchMs = 60000;
+        /// <summary>How long they sit at the kerb before moving on.</summary>
+        private const int PatrolWatchMs = 10000;
 
-        /// <summary>Not so close it is comedy, not so far they cannot see you.</summary>
-        private const float PatrolMinDistance = 22f;
-        private const float PatrolMaxDistance = 40f;
+        /// <summary>Where they set off from, so they arrive rather than appear.</summary>
+        private const float PatrolStartDistance = 180f;
+
+        /// <summary>How close to you they try to stop.</summary>
+        private const float PatrolMaxDistance = 30f;
+
+        /// <summary>Give up on the drive-in after this, rather than idling forever.</summary>
+        private const int PatrolArriveTimeoutMs = 60000;
 
         /// <summary>Shuffled per call, so the same cruiser is not always the one that shows up.</summary>
-
-
         private static readonly string[] PatrolCars = { "police", "police2", "police3", "sheriff", "police4" };
-
-
 
         private Vehicle _patrolCar;
         private readonly List<Ped> _patrolCops = new List<Ped>();
         private int _patrolUntil;
         private int _nextPatrolAt;
+        private int _patrolArrivedAt;
+        private int _patrolDispatchedAt;
+        private Vector3 _patrolStop;
 
         /// <summary>
         /// A patrol pulling over to sit on the corner for a minute.
@@ -998,21 +1007,22 @@ namespace Hoodrich.Dealing
 
             try
             {
+                // Started well down the road and driven in, rather than dropped at the kerb.
+                // A car that simply exists beside you reads as a spawn; one that comes round
+                // the corner, slows, and pulls in reads as a patrol.
                 var angle = _rng.NextDouble() * Math.PI * 2.0;
-                var distance = PatrolMinDistance +
-                               (float)_rng.NextDouble() * (PatrolMaxDistance - PatrolMinDistance);
 
-                var near = player.Position + new Vector3(
-                    (float)Math.Cos(angle) * distance, (float)Math.Sin(angle) * distance, 0f);
+                var far = player.Position + new Vector3(
+                    (float)Math.Cos(angle) * PatrolStartDistance,
+                    (float)Math.Sin(angle) * PatrolStartDistance, 0f);
 
-                var kerb = World.GetNextPositionOnStreet(near);
+                var start = World.GetNextPositionOnStreet(far);
+                if (start == Vector3.Zero) { SchedulePatrol(); return; }
 
-                // No road, no patrol -- and crucially no notification either. Announcing a car
-                // that failed to spawn is worse than no car at all.
-                if (kerb == Vector3.Zero) { SchedulePatrol(); return; }
-                if (kerb.DistanceTo(player.Position) > PatrolMaxDistance * 1.6f) { SchedulePatrol(); return; }
+                _patrolStop = World.GetNextPositionOnStreet(player.Position.Around(PatrolMaxDistance));
+                if (_patrolStop == Vector3.Zero) { SchedulePatrol(); return; }
 
-                _patrolCar = World.CreateVehicle(carModel.Value, kerb);
+                _patrolCar = World.CreateVehicle(carModel.Value, start);
                 if (_patrolCar == null || !_patrolCar.Exists()) { SchedulePatrol(); return; }
 
                 _patrolCar.IsPersistent = true;
@@ -1024,11 +1034,21 @@ namespace Hoodrich.Dealing
                     if (cop != null) _patrolCops.Add(cop);
                 }
 
-                _patrolUntil = Game.GameTime + PatrolWatchMs;
+                // Drive mode 786603 obeys the road: lights, lanes, junctions.
+                var driver = _patrolCops.Count > 0 ? _patrolCops[0] : null;
+                if (driver != null)
+                {
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, _patrolCar.Handle,
+                                  _patrolStop.X, _patrolStop.Y, _patrolStop.Z,
+                                  17f, 0, _patrolCar.Model.Hash, 786603, 4f, true);
+                }
+
+                _patrolUntil = 0;
+                _patrolArrivedAt = 0;
+                _patrolDispatchedAt = Game.GameTime;
                 SchedulePatrol();
 
-                Notify.Problem("cops nearby. Be careful.");
-                Log.Info("Patrol parked up near the pitch.");
+                Log.Info("Patrol dispatched from " + start + " towards " + _patrolStop + ".");
             }
             catch (Exception ex)
             {
@@ -1041,27 +1061,41 @@ namespace Hoodrich.Dealing
         }
 
         /// <summary>Sets when the next patrol is due, somewhere in the window.</summary>
-
-
         private void SchedulePatrol()
-
-
         {
-
-
             _nextPatrolAt = Game.GameTime + PatrolGapMinMs + _rng.Next(PatrolGapMaxMs - PatrolGapMinMs);
-
-
         }
-
-
-
         private void TickPatrol(Ped player)
         {
             if (_patrolCar == null || !_patrolCar.Exists()) return;
+
+            // Still driving in. They are announced when they actually arrive, not when they
+            // were dispatched -- a warning about a car that is 180m away is a warning about
+            // nothing.
+            if (_patrolArrivedAt == 0)
+            {
+                var reached = _patrolCar.Position.DistanceTo(_patrolStop) < 12f ||
+                              (_patrolCar.Speed < 1.5f &&
+                               player.Position.DistanceTo(_patrolCar.Position) < PatrolMaxDistance * 1.6f);
+
+                if (!reached)
+                {
+                    // Never got here: send them away rather than leave a car circling.
+                    if (Game.GameTime - _patrolDispatchedAt > PatrolArriveTimeoutMs) ReleasePatrol();
+                    return;
+                }
+
+                _patrolArrivedAt = Game.GameTime;
+                _patrolUntil = Game.GameTime + PatrolWatchMs;
+
+                Notify.Problem("cops nearby. Be careful.");
+                Log.Info("Patrol pulled up.");
+                return;
+            }
+
             if (Game.GameTime < _patrolUntil) return;
 
-            // Minute is up and nothing happened, so they move on.
+            // Ten seconds is up and nothing happened, so they move on.
             foreach (var cop in _patrolCops)
             {
                 if (cop == null || !cop.Exists() || !cop.IsAlive) continue;
@@ -1222,6 +1256,40 @@ namespace Hoodrich.Dealing
         }
 
 
+
+        /// <summary>
+        /// The parked patrol stops being scenery and comes for you.
+        ///
+        /// Clearing their tasks first is the important part: a ped left in a vehicle idle will
+        /// happily keep idling while its own wanted response never starts, which looked like
+        /// two officers ignoring a hand-to-hand a car length away.
+        /// </summary>
+        private void BreakOffPatrol(Ped player)
+        {
+            if (_patrolCops.Count == 0) return;
+
+            foreach (var cop in _patrolCops)
+            {
+                if (cop == null || !cop.Exists() || !cop.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, cop.Handle);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, cop.Handle, false);
+                    Function.Call(Hash.TASK_COMBAT_PED, cop.Handle, player.Handle, 0, 16);
+                }
+                catch { /* the wanted system takes it from here */ }
+            }
+
+            // They are the law''s problem now, not ours; the stars drive the rest.
+            _patrolCops.Clear();
+
+            try { if (_patrolCar != null && _patrolCar.Exists()) _patrolCar.MarkAsNoLongerNeeded(); }
+            catch { /* teardown */ }
+
+            _patrolCar = null;
+            _patrolArrivedAt = 0;
+        }
 
         /// <summary>Lets the patrol go without ceremony, on teardown.</summary>
         private void ReleasePatrol()
@@ -1579,7 +1647,7 @@ namespace Hoodrich.Dealing
             var label = State == PostState.Questioned ? "BEING SEARCHED"
                 : State == PostState.Investigated ? "PATROL INCOMING"
                 : _product == null ? "POSTED UP"
-                : "POSTED UP  ·  " + _product.Name.ToUpperInvariant();
+                : "POSTED UP  ·  SELLING " + _product.Name.ToUpperInvariant();
 
             Hud.Text(label, x, y - 0.042f, 0.34f,
                      State == PostState.Posted ? Palette.Text : Palette.Danger, Hud.FontLabel);

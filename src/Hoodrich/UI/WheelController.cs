@@ -21,6 +21,9 @@ namespace Hoodrich.UI
         private const int HudWeaponWheel = 19;
         private const int HudWeaponWheelStats = 20;
 
+        /// <summary>Anything shorter than this is a tap, not an attempt to open the wheel.</summary>
+        private const int TapMs = 220;
+
         /// <summary>Mouse deltas are per-frame, so they are integrated into a virtual stick.</summary>
         private const float MouseGain = 2.6f;
 
@@ -33,6 +36,9 @@ namespace Hoodrich.UI
         private bool _timeScaleApplied;
         private bool _timecycleApplied;
         private bool _wasHeld;
+
+        /// <summary>When the weapon button went down, so a tap can be told from a hold.</summary>
+        private int _heldSince;
 
         public WheelController(Settings cfg, RadialMenu menu, Func<WheelPage> rootBuilder)
         {
@@ -126,8 +132,27 @@ namespace Hoodrich.UI
 
             if (_cfg.HoldToOpen)
             {
-                if (held && !_menu.IsOpen) OpenWheel();
-                else if (!held && _menu.IsOpen) CommitAndClose();
+                if (held && !_menu.IsOpen)
+                {
+                    _heldSince = Game.GameTime;
+                    OpenWheel();
+                }
+                else if (!held && _menu.IsOpen)
+                {
+                    // A TAP is the game's own holster, not a menu action. Holding the weapon
+                    // button and letting go immediately is how everyone puts a gun away, and
+                    // taking that over to open a business menu made the mod fight muscle memory.
+                    if (Game.GameTime - _heldSince < TapMs && _menu.Depth <= 1)
+                    {
+                        _menu.Close();
+                        RestoreTimeAndBlur();
+                        Holster();
+                    }
+                    else
+                    {
+                        CommitAndClose();
+                    }
+                }
             }
             else
             {
@@ -210,6 +235,28 @@ namespace Hoodrich.UI
             {
                 Function.Call(Hash.SET_TRANSITION_TIMECYCLE_MODIFIER, _cfg.TimecycleModifier, 0.35f);
                 _timecycleApplied = true;
+            }
+        }
+
+        /// <summary>
+        /// Puts the gun away, the way the button always did.
+        ///
+        /// Switching to unarmed IS the holster: the game plays its own animation off the back
+        /// of the weapon change, so there is nothing to script.
+        /// </summary>
+        private static void Holster()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return;
+
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, player.Handle,
+                              Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_UNARMED"), true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not holster: " + ex.Message);
             }
         }
 

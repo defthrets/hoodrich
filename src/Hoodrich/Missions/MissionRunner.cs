@@ -522,11 +522,15 @@ namespace Hoodrich.Missions
         {
             if (!IsRunning) return;
 
-            const float x = 0.018f;
-            const float y = 0.20f;
+            // Centred at the top: it belongs to the job, not to the corner of the screen.
+            const float width = 0.26f;
+            const float y = 0.075f;
 
-            Hud.RectFrom(x - 0.004f, y - 0.008f, 0.215f, 0.052f, Color.FromArgb(190, 12, 13, 15));
-            Hud.RectFrom(x - 0.004f, y - 0.008f, 0.215f, 0.0025f, Palette.Accent);
+            var left = 0.5f - width * 0.5f;
+            var x = left + 0.010f;
+
+            Hud.RectFrom(left, y - 0.008f, width, 0.052f, Color.FromArgb(200, 12, 13, 15));
+            Hud.RectFrom(left, y - 0.008f, width, 0.0025f, Palette.Accent);
 
             Hud.Text(_def.Name.ToUpperInvariant(), x, y, 0.28f, Palette.Text,
                      Hud.FontLabel, centre: false);

@@ -1,264 +1,187 @@
 # Hoodrich
 
-A drug-dealing and gang mod for GTA V, driven entirely from a custom radial wheel that
-replaces the vanilla weapon wheel.
+A drug-dealing and gang mod for GTA V, built from scratch, driven from a custom radial wheel
+that replaces the weapon wheel.
 
-Written from scratch. No decompiled code from any other mod, no licence server, no
-Patreon check, and **zero external runtime dependencies** — the built assembly references
-only the .NET Framework BCL and `ScriptHookVDotNet3.dll`. Nothing else in `scripts\` can
-lose a version fight with it.
+You run with the Families. You buy weight, you take it home and bag it up, you post up on a
+corner and let the trade come to you, and you try to be gone before the police or somebody
+else's people decide you have been there long enough.
+
+Zero external dependencies. One DLL, some JSON, ScriptHookVDotNet. Nothing else to install.
 
 ---
 
-## Requirements
+## What is in it
 
-Hoodrich is a pure script mod. It adds **no game assets** — no RPF edits, no add-on
-models, no `dlclist.xml` entry, nothing that needs OpenIV.
+### The wheel
 
-| Component | Needed | Notes |
-|---|---|---|
-| **GTA V** | Legacy **or** Enhanced | One build runs on both. See below. |
-| **ScriptHookV** | yes | Alexander Blade's, matching your game build |
-| **ScriptHookVDotNet** | **3.9.0.x** | `ScriptHookVDotNet3.dll` + `ScriptHookVDotNet.asi` in the game root |
-| **.NET Framework** | 4.8 | ships with Windows 10/11 |
-| ASI loader | yes | `dinput8.dll` on Legacy, `xinput1_4.dll` on Enhanced |
+Holding the weapon-wheel button opens Hoodrich instead. **Tapping** it still holsters your
+weapon, because that is what that button has always done and the mod should not fight muscle
+memory.
 
-**Runtime dependencies: none.** The assembly references only `mscorlib`, `System.Core`,
-`System.Drawing`, `System.Windows.Forms` and `ScriptHookVDotNet3`. No Newtonsoft, no
-LemonUI, no NativeUI, no `iFruitAddon2`, no helper dll — INI and JSON parsing are
-hand-rolled. A shared `scripts\` folder is one assembly-resolution namespace, and this
-mod deliberately brings nothing into it that could lose a version fight with another mod.
+Four wedges: **Weapons**, **Dealing**, **Gangs**, **Inventory**. Weapons hands the button back
+to the game for a few seconds so you get the real weapon wheel, selection and all.
 
-### Legacy and Enhanced
+The wheel is a gateway and nothing more. It says "re-up" and "post up", not "turf price x1.05" —
+every number lives on a readout screen you open deliberately.
 
-Both editions ship the **identical** `ScriptHookVDotNet3.dll` (3.9.0.0, byte for byte),
-and Hoodrich has no asset dependencies, so **one build serves both** — it is not a port
-and there is no separate Enhanced release. Only the ASI loader differs, and that is
-ScriptHookV's problem rather than this mod's.
+### Dealing
 
-If a mod offers you `[Enhanced]` and `[Legacy]` builds, that usually refers to the SHVDN
-**API** version, not the game edition.
+Buy **weight** off Stretch or, later, the docks. Weight cannot be sold. Take it to the kitchen
+counter at Aunt Denise's, pick what you are working and how far you stretch it, and you get
+street-ready product at a purity you chose. Cut it hard and you get more units that are worth
+less each and get handed back more often.
 
-## Install
+Then **post up**. You do not pick customers, you pick a **spot**:
 
-### From a build
+- A dead alley has no footfall, so no sales and no heat
+- A busy pavement pushes buyers at you and stacks heat with every one of them
+- Buyers ask for a gram or an eighth, and prices are roughly what these things really cost
+- Too much heat and a patrol comes to ask what you are standing there for
 
-```powershell
-.\build.ps1 -Deploy
-```
+You are never locked in place. Walk the block; go too far and you have stopped working it.
 
-Deploys to **both** installs by default. Restrict it if you want:
+### The police
 
-```powershell
-.\build.ps1 -Deploy -Target Legacy
-```
+- A cruiser sets off from a few streets away at a random point in a 50–210 second window,
+  drives in on normal traffic rules, pulls in near you and sits for ten seconds
+- Serving where a uniform can see you is **one star**, and that patrol drops what it is doing
+  and comes for you
+- A corner that has got hot enough draws a star on its own
+- Stay put while an officer is on you and you get searched, cleaned out and fined
 
-`-Target` accepts `Legacy`, `Enhanced` or `Both`. Point it elsewhere with `-GtaDir` /
-`-EnhancedDir`. It refuses to deploy while GTA V is running, because the dll is locked.
+### The other gangs
 
-### By hand
+- Deal on somebody's block and the ones who see you come and put hands on you — unarmed, because
+  on foot it is a beating
+- Work one pitch long enough and a carload turns up: one pass, three seconds of shooting from
+  alongside you, then gone. Only if the car stalls do they get out, and their weapons are taken
+  off them first
+- Turf follows the vanilla map. Grove Street is in Davis and Davis is Ballas
 
-Copy into your game folder:
+### Stretch
 
-| From | To |
+The Families' leader, on his corner in Chamberlain Hills, marked with a weed leaf. Walk up,
+press **D-pad right**, and talk to him properly — a panel with lines and choices, not a menu.
+
+He puts you on, sells you weight, tells you which blocks are safe, and once you have moved
+enough of it he tells you where it really comes from. That is what opens the docks.
+
+### The docks
+
+Phone the dock worker and he **drives out to you** in the same blacked-out Astron every time.
+Real phone animation, real drive on real roads, spawned far enough out that you never see the
+car appear. He pulls up, gets out, sells you anything in weight at the best price in the mod,
+then walks back to the car and leaves.
+
+### Lamar
+
+In the courtyard on Chamberlain, marked with a skull. He has **work** — three jobs at a time out
+of a bigger pool, one running at once, and he pays you himself when you come back.
+
+- **Ride out** — take homies, go put hands on some Ballas
+- **Drive-by** — same corner, everyone armed, from a car
+
+Homies are real: they ride with you in your ped group, they fight, they can die, and losing one
+costs rep off the payout.
+
+### The stash house
+
+Aunt Denise's on Forum Drive is yours from the start. No property to buy.
+
+- **Inventory** at the house opens a two-column transfer screen — what is on you, what is at
+  home, d-pad left and right to move it
+- **The kitchen counter** is the only place product gets worked
+- **The bed** sleeps six hours, heals you, saves the game, and a load puts you back there
+- **Chop** is in the yard
+- Denise is kept quiet while you are in there
+
+### Reputation
+
+Earned four ways, not one:
+
+| | |
 |---|---|
-| `build\Hoodrich.dll` | `scripts\Hoodrich.dll` |
-| `Hoodrich.ini` | `scripts\Hoodrich.ini` |
-| `data\*.json` | `scripts\Hoodrich\` |
+| Standing on your own blocks | a slow drip |
+| Every sale | a nudge |
+| Every purchase | a nudge |
+| A rival dropped while working a corner | 12 |
+| A job finished for Lamar | 40 |
 
-### What lands where
+---
 
-```
-scripts\
-  Hoodrich.dll          the mod
-  Hoodrich.ini          settings
-  Hoodrich.log          written at runtime; read this first if anything misbehaves
-  Hoodrich\
-    drugs.json          product catalogue
-    gangs.json          gangs, colours, rivalries, turf zone codes
-    dealers.json        who you buy from, and what they say
-    weapons.json        weapon table for the weapon wheel
-    save.json           your progression (written by the mod)
-```
+## Installing
 
-Data files are **never overwritten** on redeploy, so your edits survive. The consequence
-is that `Hoodrich.ini` also survives — after an update that adds settings, the deploy
-warns you the on-disk ini is missing sections. Every setting has a working code default,
-so a stale ini is safe; it just means the new options are not documented on disk. Copy
-`Hoodrich.ini` over yours to refresh it.
+**Requirements**
 
-### Uninstall
+- GTA V (Legacy or Enhanced — one build runs on both)
+- [ScriptHookV](http://www.dev-c.com/gtav/scripthookv/)
+- [ScriptHookVDotNet 3](https://github.com/scripthookvdotnet/scripthookvdotnet/releases)
+- .NET Framework 4.8
 
-Delete `scripts\Hoodrich.dll`. That is the whole mod — nothing else it writes affects the
-game. Your save in `scripts\Hoodrich\save.json` survives, so reinstalling picks up where
-you left off; delete the `scripts\Hoodrich\` folder too for a clean slate.
+**Steps**
 
-Everything the mod changes at runtime (time scale, timecycle, gang relationship groups,
-spawned dealers and war peds, blips) is put back when the script unloads or errors out.
+1. Install ScriptHookV and ScriptHookVDotNet 3 if you have not already
+2. Copy `Hoodrich.dll` and `Hoodrich.ini` into `Grand Theft Auto V\scripts\`
+3. Copy the `data` folder in as `Grand Theft Auto V\scripts\Hoodrich\`
+4. Launch the game
 
-## Controls
+The mod reads its data from `scripts\Hoodrich\`, not from `scripts\`. Files in the wrong place
+are silently ignored.
 
-By default Hoodrich **takes over the weapon wheel button** (`Mode=Replace` in the ini).
-The vanilla weapon wheel is suppressed while the mod is loaded.
+**Open All Interiors** is recommended — the stash house is only reachable with it.
 
-| Input | Action |
+---
+
+## Configuring
+
+`Hoodrich.ini` holds the settings; the JSON in `scripts\Hoodrich\` holds the content.
+
+| File | What it decides |
 |---|---|
-| Hold weapon-wheel button | Open the Hoodrich wheel |
-| Mouse / right stick | Point at a segment |
-| Release | Pick the highlighted segment |
-| LMB / RT | Pick without releasing (the only way into a submenu) |
-| RMB / LT | Back out one page, or close at the root |
+| `gangs.json` | who exists, their colours, their turf, who they are at war with |
+| `drugs.json` | the catalogue and street prices |
+| `dealers.json` | suppliers. **Authoritative** — deleting somebody removes them |
+| `leaders.json` | where each leader stands, facing which way, and their hours |
+| `missions.json` | the work Lamar hands out |
+| `zones.json` | zone geometry, generated from the game's own bounds |
 
-Prefer to keep your weapon wheel? Set `Mode=Separate` in `Hoodrich.ini` and the wheel
-moves to its own key (`Key=B` by default).
+Coordinates in `leaders.json` and `missions.json` take an optional `z`. Leave it at zero and the
+ground is found automatically; set it when the spot is on a raised walkway, where "the ground" is
+a floor below where you meant.
 
-## Menu structure
-
-Four wedges at the root — 90° each. Every tab owns its own sub-tabs rather than spilling
-onto the root, and each one has a single job: **Gangs is where you do things, Reputation
-is where you read the numbers those things produced.**
-
-```
-Weapons ─── Melee · Handguns · SMGs · Shotguns · Rifles · Sniper · Heavy · Thrown
-                 └── each weapon, with the game's own icon and its ammo
-
-Drugs ───── Supply ── your contacts ── their stock
-        ├── Cut ───── product ─────── purity (100 / 75 / 50 / 33%)
-        ├── Sell ──── what you have bagged
-        ├── Status ── the books: every product's bulk and street-ready weight,
-        │             plus where every supply line stands right now
-        └── Stash     (next build)
-
-Gangs ───── Turf ──── this block: who claims it, what it pays, what it costs
-        └── one wedge per gang
-              └── Join or Leave · Their plug · Their turf · Dossier
-
-Reputation  Rank ──── the ladder: what you have passed, where you are,
-        │            and what the next rung actually unlocks
-        └── one wedge per gang: your rep, kills, deals and earnings with each
-```
-
-**Drugs → Status** is the import board. The panel lists every contact and its live state —
-`inbound 340m`, `HERE NOW`, `at war with the families`, `works 5:00-21:00`, `ready to
-call` — then totals for bulk, ready-to-sell, free space, street value, price context and
-heat. The wedges are the products themselves: flick round the ring and each one reads out
-its own bulk, its cut weight and purity, and what that's worth right now.
-
-`Weapons` sits at index 0, straight up: Hoodrich took the weapon-wheel button, so getting
-a gun back has to be the fastest thing on the wheel.
-
-## What works right now (0.2.0)
-
-Six wheel pages, and a supply chain you have to actually work.
-
-**Supply → Cut → Sell.** You cannot buy street-ready product. You buy **bulk** from a
-contact, and bulk is worthless until you cut and bag it.
-
-- **Supply** — the **dock worker** is your one-stop shop: he can get you anything in the
-  catalogue, at full price, in daylight hours only. Everyone else is a **gang contact** who
-  carries one product and sells it 30% under the odds:
-
-  | Contact | Product | Price | Rank |
-  |---|---|---|---|
-  | Dock Worker | everything | x1.00 | — |
-  | Families Plug | Weed | x0.70 | — |
-  | Wei Cheng Contact | Ecstasy | x0.70 | Soldier |
-  | Lost MC Cook | Meth | x0.70 | Soldier |
-  | Vagos Connection | Cocaine | x0.70 | Enforcer |
-  | Armenian Connection | Heroin | x0.70 | Enforcer |
-
-  Standing matters: run with a gang and their contact takes another **10%** off; reach 100
-  rep with them without joining and it is **5%**. A gang at war with your crew **will not
-  deal with you at any price** — which is the real cost of picking a side.
-
-  Calling a contact arranges a **meet**: a blip appears, you drive there, the contact spawns
-  when you get close, and you trade face to face. No map coordinates are hardcoded anywhere.
-- **Cut** — turn bulk into street units at a purity you choose (100 / 75 / 50 / 33%).
-  This is the greed dial: cutting to 50% doubles your units, but each is worth less and
-  buyers get a chance to clock it, refuse the sale, and occasionally swing at you.
-  Cutting takes real time and pins you in place, so *where* you do it matters.
-- **Sell** — hand-to-hand to any ped on foot in front of you, with a handshake animation
-  and a deal state machine that aborts if you walk off.
-
-**Gangs.** The `Gang` page shows a live dossier — affiliation, rank, respect, gang rep,
-kills for them, money made for them, deals closed, lookouts nearby — and lets you join or
-walk out. Affiliating makes that gang respect you globally, so their people **back you up
-in a fight**, and each one standing near you while you deal adds a lookout bonus to the
-price. Walking out costs you rep with the crew you left.
-
-**Turf.** Territory keys off GTA's own zone codes, so every neighbourhood in the map is
-already a claimable block. Where you post up decides everything:
-
-| Block | Price | Heat | What happens |
-|---|---|---|---|
-| Your gang's | x1.00 | x0.4 | Quiet. Your people back you up. |
-| Unclaimed | x1.05 | x1.0 | Occasional stick-up if you linger |
-| Rival's | **x1.35** | **x2.0** | They clock you dealing and come for you |
-
-Rival aggression is targeted — specific peds who can actually *see* you get tasked onto
-you, gated on line of sight and scaled by your heat. Nothing flips a whole faction to
-hate-on-sight, so the rest of the world stays playable.
-
-Turf **capture** is the next milestone; the `Claim` item is present but disabled.
-
-### Fixing the turf map
-
-The shipped zone codes are best-effort. To correct them, stand anywhere in game and pick
-**Turf → Log zone** on the wheel: the exact `GET_NAME_OF_ZONE` code is printed on screen
-and written to `scripts\Hoodrich.log`. Paste it into the right gang's `turf` list in
-`scripts\Hoodrich\gangs.json`. **Turf → Dossier** dumps the whole current map to the log.
-
-## Layout
-
-```
-src/Hoodrich/
-  Main.cs              script entry point; single owner of the tick loop
-  Core/                Paths, Log, IniFile, Json (hand-rolled), JsonFile, Settings
-  UI/                  Draw (native primitives), Palette, RadialMenu, WheelController, Notify
-  Wheel/WheelPages.cs  builds all six wheel pages from live game state
-  Economy/             Drugs catalogue, Stash (bulk + packaged), Cutting, Pricing
-  Supply/              supply contacts and the meet system
-  Gangs/               gang definitions, registry, affiliation and backup
-  Territory/TurfWatch  zone ownership, spotting, rival aggression
-  Dealing/StreetDeal   buyer selection and the hand-to-hand deal
-  State/               PlayerState, SaveGame
-data/                  shipped data files, copied to scripts\Hoodrich\ on deploy
-tools/                 self-contained Roslyn compiler + net48 reference assemblies
-```
-
-Data files, all live-editable in `scripts\Hoodrich\`:
-
-| File | What it controls |
-|---|---|
-| `drugs.json` | product catalogue: prices, tiers, heat |
-| `gangs.json` | gangs, colours, rivalries, **turf zone codes** |
-| `suppliers.json` | contacts, prices, models, rank gates, hours |
-| `save.json` | your progression (written by the mod) |
+---
 
 ## Building
 
-`build.ps1` deliberately does **not** use `dotnet build`. The .NET 8 SDK on this machine
-is broken — `Microsoft.NETCore.App\8.0.28` is a partial install (3 files against 8.0.19's
-184), so every `dotnet` invocation dies on a missing `hostpolicy.dll`. The build instead
-drives a Roslyn `csc.exe` pulled into `tools\`, which needs no SDK, no Visual Studio and
-no admin rights.
-
-`Hoodrich.csproj` is kept in sync for whenever the SDK gets repaired, but `build.ps1` is
-the authoritative build.
+The build is self-contained. It does not need the .NET SDK — a Roslyn compiler lives in `tools\`.
 
 ```powershell
-.\build.ps1                    # -> build\Hoodrich.dll
-.\build.ps1 -Configuration Debug
-.\build.ps1 -Deploy            # build + install (refuses while GTA V is running)
+.\build.ps1                                    # build to .\build\Hoodrich.dll
+.\build.ps1 -Deploy -Target Both               # build and install to both editions
+.\build.ps1 -Deploy -Target Both -FreshData    # also overwrite the installed JSON
 ```
 
-## Tuning
+Without `-FreshData` the installed data files are left alone, and any that differ from source
+are called out loudly — a build whose data does not match itself is worse than an overwrite.
 
-Everything in `Hoodrich.ini` is live-reloaded at script start (SHVDN reloads scripts with
-Insert). Two knobs worth knowing:
+`tools\make_map.ps1` draws every zone as a labelled SVG you can paint gang colours onto;
+`tools\read_map.ps1` reads it back into `gangs.json`.
 
-- `RenderMode` — `Wedge` draws true arc segments from a streamed texture; `Node` uses
-  plain rectangles and needs no textures at all. `Auto` picks Wedge and falls back.
-- `TimeScale` — how far time slows while the wheel is open. `1.0` turns it off.
+---
 
-Product prices, tiers and heat live in `scripts\Hoodrich\drugs.json`.
+## Notes
+
+- **One `Script` subclass.** SHVDN ticks scripts in an unspecified order, so Hoodrich has a
+  single entry point and defines its own update order. One place to be exception-safe.
+- **No external runtime dependencies.** `scripts\` is one shared assembly-resolution namespace,
+  so a mod that drags in libraries can break its neighbours. The INI and JSON parsers are
+  hand-rolled for that reason.
+- **Everything fails soft.** A missing model, a texture that is not in this install, a native
+  that behaves differently between editions — each is caught and degraded, never thrown.
+- **The world gets put back.** Time scale, timecycle, relationships, every spawned ped and car
+  are restored on unload, including after a crash.
+
+## Licence
+
+Personal project. GTA V and its assets belong to Rockstar Games.

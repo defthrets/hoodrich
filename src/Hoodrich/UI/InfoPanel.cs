@@ -67,7 +67,7 @@ namespace Hoodrich.UI
         /// monitor apart and read as unrelated. This is a narrow column with the value directly
         /// under its label's eye line, which is how a stat block is meant to work.
         /// </summary>
-        private const float PanelWidth = 0.215f;
+        private const float PanelWidth = 0.235f;
 
         private const float RowHeight = 0.0225f;
         private const float SectionGap = 0.014f;
@@ -171,9 +171,9 @@ namespace Hoodrich.UI
             var bodyHeight = visible * RowHeight + _sections.Count * SectionGap;
             var height = 0.052f + bodyHeight + 0.024f;
 
-            // Down the left, vertically centred: out of the way of the minimap and of whatever
-            // the player is looking at.
-            const float x = 0.035f;
+            // Centred. A readout in the corner competes with the minimap and the wanted stars
+            // and reads as a notification; in the middle it reads as a screen you opened.
+            var x = 0.5f - PanelWidth * 0.5f;
             var top = Math.Max(0.06f, 0.5f - height * 0.5f);
 
             Hud.RectFrom(x, top, PanelWidth, height, Color.FromArgb(228, 12, 13, 15));

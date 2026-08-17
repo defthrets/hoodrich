@@ -82,7 +82,8 @@ namespace Hoodrich.UI
     /// </summary>
     internal sealed class Conversation
     {
-        private const float PanelX = 0.045f;
+        /// <summary>Centred: a conversation is a screen you are in, not a corner notification.</summary>
+        private static float PanelX => 0.5f - PanelWidth * 0.5f;
         private const float PanelWidth = 0.42f;
         private const float LineHeight = 0.030f;
         private const float ChoiceHeight = 0.032f;
