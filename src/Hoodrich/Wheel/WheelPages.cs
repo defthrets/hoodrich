@@ -5,6 +5,7 @@ using Hoodrich.Core;
 using Hoodrich.Dealing;
 using Hoodrich.Economy;
 using Hoodrich.Gangs;
+using Hoodrich.Locations;
 using Hoodrich.State;
 using Hoodrich.Supply;
 using Hoodrich.Territory;
@@ -40,11 +41,14 @@ namespace Hoodrich.Wheel
         private readonly DealerManager _dealers;
         private readonly Core.Settings _cfg;
         private readonly Market _market;
+        private readonly TurfWar _war;
+        private readonly GangDen _den;
         private readonly WeaponRegistry _weapons;
 
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
-                          DealerManager suppliers, WeaponRegistry weapons, Market market)
+                          DealerManager suppliers, WeaponRegistry weapons, Market market,
+                          TurfWar war, GangDen den)
         {
             _cfg = cfg;
             _state = state;
@@ -58,6 +62,8 @@ namespace Hoodrich.Wheel
             _dealers = suppliers;
             _weapons = weapons;
             _market = market;
+            _war = war;
+            _den = den;
         }
 
         private Stash Stash => _state.Stash;
@@ -165,11 +171,128 @@ namespace Hoodrich.Wheel
                 detail: "What you hold and what is inbound",
                 value: _dealers.HasMeet ? _dealers.MeetDealer.Tag + " inbound" : "no orders");
 
-            page.Add("Stash", "=", null,
-                detail: "Bank product off your person",
-                enabled: false, disabledReason: "Not in this build yet");
+            page.AddSub("Stash", "=", BuildStashPage,
+                detail: _den.IsPlayerAtDen
+                    ? "Move product in and out of the den"
+                    : _den.HasDen ? "Your den is " + _den.Distance.ToString("0") + "m away"
+                                  : "Stand on your crew's turf to find your den",
+                value: _den.HasDen ? _den.Stash.Total.ToString("0.#") + "g stashed" : "",
+                enabled: _den.IsPlayerAtDen,
+                disabledReason: _den.HasDen ? "Get to the den" : "No den yet");
 
             return page;
+        }
+
+        /// <summary>
+        /// The den stash. Product parked here is off your person, so a death or a bust cannot
+        /// touch it -- which makes the trip out to the den the price of keeping it safe.
+        /// </summary>
+        private WheelPage BuildStashPage()
+        {
+            var den = _den.Stash;
+            var page = new WheelPage("Stash", _crew.IsAffiliated ? _crew.Current.Name + " den" : "Den");
+
+            page.PanelTitle = "Den stash";
+            page.Row("Stashed bulk", den.TotalBulk.ToString("0.#") + "g");
+            page.Row("Stashed bagged", den.TotalPackaged.ToString("0.#") + "g", Palette.Cash);
+            page.Row("Den space", den.FreeSpace.ToString("0") + "g");
+            page.Row("", "");
+            page.Row("On you", Stash.Total.ToString("0.#") + "g");
+            page.Row("Your space", Stash.FreeSpace.ToString("0") + "g");
+
+            page.Add("Deposit all", "v", DepositAll,
+                detail: "Everything you are carrying, into the den",
+                value: Stash.Total.ToString("0.#") + "g",
+                enabled: Stash.Total > 0.005f,
+                disabledReason: "You are carrying nothing");
+
+            page.Add("Withdraw all", "^", WithdrawAll,
+                detail: "As much as you can carry, out of the den",
+                value: den.Total.ToString("0.#") + "g",
+                enabled: den.Total > 0.005f && Stash.FreeSpace > 0.005f,
+                disabledReason: den.Total <= 0.005f ? "The den is empty" : "You are full");
+
+            foreach (var d in _drugs.All)
+            {
+                var drug = d;
+                var carried = Stash.BulkOf(drug.Id) + Stash.PackagedOf(drug.Id);
+                var stashed = den.BulkOf(drug.Id) + den.PackagedOf(drug.Id);
+                if (carried <= 0.005f && stashed <= 0.005f) continue;
+
+                page.Add(drug.Tag, drug.Tier >= 3 ? "!" : "o", () => DepositOne(drug),
+                    detail: "Deposit your " + drug.Name + "  ·  " + stashed.ToString("0.#") + "g in the den",
+                    value: carried > 0.005f ? carried.ToString("0.#") + "g on you" : "none on you",
+                    enabled: carried > 0.005f,
+                    disabledReason: "None on you");
+            }
+
+            return page;
+        }
+
+        private void DepositAll()
+        {
+            var moved = 0f;
+            foreach (var d in _drugs.All) moved += MoveDrug(Stash, _den.Stash, d.Id);
+
+            _state.Touch();
+            Notify.Ticker(moved > 0.005f
+                ? "~g~Stashed " + moved.ToString("0.#") + "g.~s~"
+                : "~o~Nothing moved.~s~");
+        }
+
+        private void WithdrawAll()
+        {
+            var moved = 0f;
+            foreach (var d in _drugs.All) moved += MoveDrug(_den.Stash, Stash, d.Id);
+
+            _state.Touch();
+            Notify.Ticker(moved > 0.005f
+                ? "~g~Took " + moved.ToString("0.#") + "g out.~s~"
+                : "~o~No room for any of it.~s~");
+        }
+
+        private void DepositOne(DrugDef drug)
+        {
+            var moved = MoveDrug(Stash, _den.Stash, drug.Id);
+            _state.Touch();
+
+            Notify.Ticker(moved > 0.005f
+                ? "~g~Stashed " + moved.ToString("0.#") + "g " + drug.Name + ".~s~"
+                : "~o~No room in the den.~s~");
+        }
+
+        /// <summary>
+        /// Moves one product between two stashes, preserving purity. Only ever removes what the
+        /// destination actually accepted, so nothing can be lost to a full container.
+        /// </summary>
+        private static float MoveDrug(Stash from, Stash to, string drugId)
+        {
+            var moved = 0f;
+
+            var bulk = from.BulkOf(drugId);
+            if (bulk > 0.005f)
+            {
+                var accepted = to.AddBulk(drugId, bulk);
+                if (accepted > 0.005f)
+                {
+                    from.RemoveBulk(drugId, accepted);
+                    moved += accepted;
+                }
+            }
+
+            var packaged = from.PackagedOf(drugId);
+            if (packaged > 0.005f)
+            {
+                var purity = from.PurityOf(drugId);
+                var accepted = to.AddPackaged(drugId, packaged, purity);
+                if (accepted > 0.005f)
+                {
+                    from.RemovePackaged(drugId, accepted);
+                    moved += accepted;
+                }
+            }
+
+            return moved;
         }
 
         /// <summary>
@@ -832,6 +955,20 @@ namespace Hoodrich.Wheel
                     enabled: false, disabledReason: "No contact");
             }
 
+            // Borrowing. Only your own crew will front you anything.
+            var loan = _crew.Loan;
+            var theirLoan = loan != null && loan.IsActive &&
+                            string.Equals(loan.GangId, gang.Id, StringComparison.OrdinalIgnoreCase);
+
+            page.AddSub("Loan", "$", () => BuildLoanPage(gang),
+                detail: theirLoan
+                    ? "Owe $" + loan.TotalOwed.ToString("N0") + "  ·  vig due in " + loan.DaysLeft + "d"
+                    : mine ? "Borrow against your standing" : "They will not front you anything",
+                value: theirLoan ? "$" + loan.TotalOwed.ToString("N0") + " OWED" : "",
+                enabled: mine || theirLoan,
+                disabledReason: loan != null && loan.IsActive ? "You already owe " + loan.GangId
+                                                              : "Not your crew");
+
             page.Add("Their turf", "#", () => LogGangTurf(gang),
                 detail: "Write their claimed zones to the log",
                 value: gang.Turf.Count + " zones");
@@ -840,6 +977,130 @@ namespace Hoodrich.Wheel
                 detail: "Full standing with this crew");
 
             return page;
+        }
+
+        /// <summary>
+        /// Borrowing from the crew, and the vig that follows. The offer scales with rank,
+        /// because a Pee-Wee has nothing to lend against.
+        /// </summary>
+        private WheelPage BuildLoanPage(GangDef gang)
+        {
+            var loan = _crew.Loan;
+            var active = loan != null && loan.IsActive &&
+                         string.Equals(loan.GangId, gang.Id, StringComparison.OrdinalIgnoreCase);
+
+            var page = new WheelPage("Loan", gang.Name);
+            page.PanelTitle = active ? "Outstanding" : "Terms";
+
+            if (active)
+            {
+                page.Row("Principal", "$" + loan.Principal.ToString("N0"));
+                page.Row("Vig due", "$" + loan.Vig.ToString("N0"), Palette.Warn);
+                page.Row("Total owed", "$" + loan.TotalOwed.ToString("N0"), Palette.Danger);
+                page.Row("Due in", loan.DaysLeft + " days",
+                         loan.DaysLeft <= 1 ? Palette.Danger : (System.Drawing.Color?)null);
+                page.Row("Missed", loan.MissedPeriods + " / " + _cfg.LoanDefaultAfterMissed,
+                         loan.MissedPeriods > 0 ? Palette.Danger : Palette.TextDim);
+                page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
+
+                page.Add("Pay vig", "$", PayVig,
+                    detail: "Clears this period and resets the clock. Principal stays.",
+                    value: "$" + loan.Vig.ToString("N0"),
+                    enabled: Game.Player.Money >= loan.Vig,
+                    disabledReason: "Short $" + (loan.Vig - Game.Player.Money).ToString("N0"));
+
+                page.Add("Pay it off", "*", PayOff,
+                    detail: "Clear the whole debt and be done",
+                    value: "$" + loan.TotalOwed.ToString("N0"),
+                    enabled: Game.Player.Money >= loan.TotalOwed,
+                    disabledReason: "Short $" + (loan.TotalOwed - Game.Player.Money).ToString("N0"));
+
+                return page;
+            }
+
+            var cap = MaxLoanFor();
+            page.Row("Your limit", "$" + cap.ToString("N0"), Palette.Cash);
+            page.Row("Vig", _cfg.LoanVigPercent.ToString("0") + "% per " + _cfg.LoanPeriodDays + " days");
+            page.Row("Default after", _cfg.LoanDefaultAfterMissed + " missed periods", Palette.Warn);
+            page.Row("Rank", _state.RankName);
+
+            if (cap < 100)
+            {
+                page.Add("Nothing", "-", null,
+                    detail: "You are not worth lending to yet",
+                    enabled: false, disabledReason: "Rank up first");
+                return page;
+            }
+
+            foreach (var fraction in new[] { 0.25f, 0.5f, 1f })
+            {
+                var amount = (int)Math.Round(cap * fraction / 100f) * 100;
+                if (amount < 100) continue;
+
+                var vig = Math.Max(1, (int)Math.Round(amount * _cfg.LoanVigPercent / 100f));
+
+                page.Add("$" + (amount / 1000f).ToString("0.#") + "k", "$",
+                    () => Borrow(gang, amount),
+                    detail: "Vig $" + vig.ToString("N0") + " every " + _cfg.LoanPeriodDays + " days",
+                    value: "$" + amount.ToString("N0"));
+            }
+
+            return page;
+        }
+
+        /// <summary>Lending limit, scaled by rank and by how they feel about you.</summary>
+        private int MaxLoanFor()
+        {
+            if (!_crew.IsAffiliated) return 0;
+
+            var rankScale = (_state.Rank + 1) / (float)PlayerState.RankNames.Length;
+            var standing = _crew.CurrentStanding;
+            var repScale = standing == null ? 1f : 1f + Math.Max(-0.5f, Math.Min(0.5f, standing.Rep / 400f));
+
+            return (int)(_cfg.MaxLoanAmount * rankScale * repScale);
+        }
+
+        private void Borrow(GangDef gang, int amount)
+        {
+            if (_crew.Loan != null && _crew.Loan.IsActive)
+            {
+                Notify.Problem("you already owe somebody.");
+                return;
+            }
+
+            _crew.Loan = GangLoan.Open(gang.Id, amount, _cfg.LoanVigPercent, _cfg.LoanPeriodDays);
+            Game.Player.Money += amount;
+            _state.Touch();
+
+            Notify.Important("~g~+$" + amount.ToString("N0") + "~s~ from " + gang.Name +
+                             ". Vig due in " + _cfg.LoanPeriodDays + " days.");
+            Log.Info("Borrowed $" + amount + " from " + gang.Id + ".");
+        }
+
+        private void PayVig()
+        {
+            var loan = _crew.Loan;
+            if (loan == null || !loan.PayVig(_cfg.LoanPeriodDays)) Notify.Problem("not enough cash.");
+            else _state.Touch();
+        }
+
+        private void PayOff()
+        {
+            var loan = _crew.Loan;
+            if (loan == null) return;
+
+            if (!loan.PayOff())
+            {
+                Notify.Problem("not enough cash.");
+                return;
+            }
+
+            // Clearing a debt is remembered.
+            var standing = _crew.StandingFor(loan.GangId);
+            standing.Rep = Math.Min(1000f, standing.Rep + 25f);
+
+            _crew.Loan = null;
+            _state.Touch();
         }
 
         private DealerDef FindPlugFor(GangDef gang)
@@ -902,11 +1163,73 @@ namespace Hoodrich.Wheel
                 detail: "Who claims what, in the log",
                 value: "");
 
-            page.Add("Claim", "#", null,
-                detail: "Take this block by force",
-                enabled: false, disabledReason: "Turf wars are the next build");
+            var claimBlocker =
+                _war.IsActive ? "You are already in a war"
+                : !_crew.IsAffiliated ? "You need a crew behind you"
+                : _turf.Owner == null ? "Nobody holds this block"
+                : _turf.Status == TurfStatus.Home ? "This is already your block"
+                : "";
+
+            page.AddSub("Claim", "#", BuildClaimPage,
+                detail: claimBlocker.Length == 0
+                    ? "Take " + _turf.ZoneName + " off " + _turf.Owner.Name
+                    : "Take this block by force",
+                value: claimBlocker.Length == 0
+                    ? _war.DefenderReinforcements(_turf.ZoneCode) + " defenders"
+                    : "",
+                enabled: claimBlocker.Length == 0,
+                disabledReason: claimBlocker);
 
             return page;
+        }
+
+        /// <summary>
+        /// How hard to go in. A war is decided by reinforcements, so the only question is
+        /// whether you brought more than they have -- and each tier costs far more than the last.
+        /// </summary>
+        private WheelPage BuildClaimPage()
+        {
+            var zone = _turf.ZoneCode;
+            var defenders = _war.DefenderReinforcements(zone);
+            var recommended = _war.RecommendedStrength(zone);
+
+            var page = new WheelPage("Claim", _turf.ZoneName + " -- " + _turf.Owner.Name);
+
+            page.PanelTitle = _turf.ZoneName;
+            page.Row("Held by", _turf.Owner.Name, _turf.Owner.Colour);
+            page.Row("Block value", _territoryValue(zone) + " / " + _cfg.MaxTurfValue);
+            page.Row("Defenders", defenders.ToString("N0"), Palette.Danger);
+            page.Row("Suggested", recommended.ToString(), Palette.Warn);
+            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
+
+            foreach (AttackStrength strength in Enum.GetValues(typeof(AttackStrength)))
+            {
+                var s = strength;
+                var cost = _war.AttackCost(s);
+                var mine = _war.AttackerReinforcements(s);
+                var canAfford = Game.Player.Money >= cost;
+
+                page.Add(s.ToString(), s == recommended ? "*" : "o",
+                    () => Claim(s),
+                    detail: mine + " of yours against " + defenders + " of theirs" +
+                            (mine >= defenders ? "  ·  should hold" : "  ·  you will be outnumbered"),
+                    value: "$" + cost.ToString("N0"),
+                    enabled: canAfford,
+                    disabledReason: "Short $" + (cost - Game.Player.Money).ToString("N0"));
+            }
+
+            return page;
+        }
+
+        private int _territoryValue(string zone) => _war.DefenderReinforcements(zone) > 0
+            ? (int)Math.Round((_war.DefenderReinforcements(zone) - _cfg.BaseKillsBeforeWarVictory)
+                              / Math.Max(0.01f, _cfg.ExtraKillsPerTurfValue))
+            : 0;
+
+        private void Claim(AttackStrength strength)
+        {
+            var failure = _war.TryStart(_turf.ZoneCode, _turf.ZoneName, _turf.Owner, strength);
+            if (failure != null) Notify.Problem(failure);
         }
 
         private System.Drawing.Color TurfTint()

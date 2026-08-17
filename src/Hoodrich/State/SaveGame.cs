@@ -2,6 +2,8 @@ using System;
 using Hoodrich.Core;
 using Hoodrich.Economy;
 using Hoodrich.Gangs;
+using Hoodrich.Locations;
+using Hoodrich.Territory;
 
 namespace Hoodrich.State
 {
@@ -14,7 +16,8 @@ namespace Hoodrich.State
     /// </summary>
     internal static class SaveGame
     {
-        public static void Load(PlayerState state, Affiliation affiliation, Market market)
+        public static void Load(PlayerState state, Affiliation affiliation, Market market,
+                                TerritoryState territory, GangDen den)
         {
             var doc = JsonFile.Read(Paths.SaveFile);
             if (doc == null)
@@ -32,10 +35,13 @@ namespace Hoodrich.State
             state.LoadFrom(doc);
             affiliation.LoadFrom(doc["affiliation"]);
             market.LoadFrom(doc["market"]);
+            territory.LoadFrom(doc["territory"]);
+            den.LoadFrom(doc["dens"]);
             state.MarkSaved();
         }
 
-        public static bool Save(PlayerState state, Affiliation affiliation, Market market, bool force = false)
+        public static bool Save(PlayerState state, Affiliation affiliation, Market market,
+                                TerritoryState territory, GangDen den, bool force = false)
         {
             if (!state.IsDirty && !force) return false;
 
@@ -44,7 +50,9 @@ namespace Hoodrich.State
                 var doc = state.ToJson()
                     .Set("version", Build.Version)
                     .Set("affiliation", affiliation.ToJson())
-                    .Set("market", market.ToJson());
+                    .Set("market", market.ToJson())
+                    .Set("territory", territory.ToJson())
+                    .Set("dens", den.ToJson());
 
                 if (!JsonFile.Write(Paths.SaveFile, doc)) return false;
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 namespace Hoodrich.Core
@@ -117,6 +118,58 @@ namespace Hoodrich.Core
         /// <summary>Chance a dealer simply has nothing when he posts up.</summary>
         public float DealerDryChancePercent = 20f;
 
+        // ---- turf wars ---------------------------------------------------------
+
+        /// <summary>Ceiling on how developed a zone can get. Drives payout and defender numbers.</summary>
+        public int MaxTurfValue = 10;
+
+        /// <summary>Minutes between value-creep passes over every owned zone.</summary>
+        public float TurfUpgradeMinutes = 12f;
+
+        /// <summary>Reinforcements both sides get before any bonuses.</summary>
+        public int BaseKillsBeforeWarVictory = 10;
+
+        /// <summary>Extra reinforcements per point of zone value.</summary>
+        public float ExtraKillsPerTurfValue = 1.5f;
+
+        public int BaseCostToTakeTurf = 2000;
+
+        /// <summary>Added on top at maximum intensity; the curve between is quadratic.</summary>
+        public int MaxExtraCostToTakeTurf = 30000;
+
+        public int RewardForTakingTurf = 5000;
+
+        /// <summary>How many fighters each side fields at once.</summary>
+        public int WarMaxConcurrentPerSide = 6;
+
+        public int WarMemberHealth = 200;
+        public int WarMemberArmor = 50;
+        public int WarMemberAccuracy = 35;
+
+        /// <summary>Weapons war spawns are armed with, picked at random.</summary>
+        public readonly List<string> WarWeapons = new List<string>
+        {
+            "WEAPON_PISTOL", "WEAPON_COMBATPISTOL", "WEAPON_MICROSMG",
+            "WEAPON_PUMPSHOTGUN", "WEAPON_ASSAULTRIFLE"
+        };
+
+        // ---- gang loans --------------------------------------------------------
+
+        /// <summary>Largest loan, before rank scaling.</summary>
+        public int MaxLoanAmount = 25000;
+
+        /// <summary>Interest charged per period, as a percent of the principal.</summary>
+        public float LoanVigPercent = 15f;
+
+        /// <summary>In-game days between vig payments.</summary>
+        public int LoanPeriodDays = 7;
+
+        /// <summary>Missed periods before the crew stops asking nicely.</summary>
+        public int LoanDefaultAfterMissed = 3;
+
+        /// <summary>How much the vig grows each time it is missed.</summary>
+        public float LoanVigGrowthPercent = 25f;
+
         public static Settings Load()
         {
             var s = new Settings();
@@ -174,6 +227,31 @@ namespace Hoodrich.Core
                 Math.Max(0f, ini.GetFloat("Supply", "DealerRestockMinutes", s.DealerRestockMinutes));
             s.DealerDryChancePercent =
                 Clamp(ini.GetFloat("Supply", "DealerDryChancePercent", s.DealerDryChancePercent), 0f, 100f);
+
+            s.MaxTurfValue = Math.Max(1, ini.GetInt("TurfWars", "MaxTurfValue", s.MaxTurfValue));
+            s.TurfUpgradeMinutes = Math.Max(0f, ini.GetFloat("TurfWars", "TurfUpgradeMinutes", s.TurfUpgradeMinutes));
+            s.BaseKillsBeforeWarVictory =
+                Math.Max(1, ini.GetInt("TurfWars", "BaseKillsBeforeWarVictory", s.BaseKillsBeforeWarVictory));
+            s.ExtraKillsPerTurfValue =
+                Math.Max(0f, ini.GetFloat("TurfWars", "ExtraKillsPerTurfValue", s.ExtraKillsPerTurfValue));
+            s.BaseCostToTakeTurf = Math.Max(0, ini.GetInt("TurfWars", "BaseCostToTakeTurf", s.BaseCostToTakeTurf));
+            s.MaxExtraCostToTakeTurf =
+                Math.Max(0, ini.GetInt("TurfWars", "MaxExtraCostToTakeTurf", s.MaxExtraCostToTakeTurf));
+            s.RewardForTakingTurf = Math.Max(0, ini.GetInt("TurfWars", "RewardForTakingTurf", s.RewardForTakingTurf));
+            s.WarMaxConcurrentPerSide =
+                (int)Clamp(ini.GetInt("TurfWars", "WarMaxConcurrentPerSide", s.WarMaxConcurrentPerSide), 1f, 20f);
+            s.WarMemberHealth = Math.Max(50, ini.GetInt("TurfWars", "WarMemberHealth", s.WarMemberHealth));
+            s.WarMemberArmor = Math.Max(0, ini.GetInt("TurfWars", "WarMemberArmor", s.WarMemberArmor));
+            s.WarMemberAccuracy =
+                (int)Clamp(ini.GetInt("TurfWars", "WarMemberAccuracy", s.WarMemberAccuracy), 1f, 100f);
+
+            s.MaxLoanAmount = Math.Max(0, ini.GetInt("Loans", "MaxLoanAmount", s.MaxLoanAmount));
+            s.LoanVigPercent = Clamp(ini.GetFloat("Loans", "LoanVigPercent", s.LoanVigPercent), 0f, 100f);
+            s.LoanPeriodDays = Math.Max(1, ini.GetInt("Loans", "LoanPeriodDays", s.LoanPeriodDays));
+            s.LoanDefaultAfterMissed =
+                Math.Max(1, ini.GetInt("Loans", "LoanDefaultAfterMissed", s.LoanDefaultAfterMissed));
+            s.LoanVigGrowthPercent =
+                Clamp(ini.GetFloat("Loans", "LoanVigGrowthPercent", s.LoanVigGrowthPercent), 0f, 200f);
 
             // An inner radius at or past the outer one would render nothing at all.
             if (s.InnerRadius >= s.OuterRadius - 0.02f)

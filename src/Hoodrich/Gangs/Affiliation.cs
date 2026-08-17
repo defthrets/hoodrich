@@ -66,6 +66,9 @@ namespace Hoodrich.Gangs
         /// <summary>The gang the player currently runs with, or null.</summary>
         public GangDef Current { get; private set; }
 
+        /// <summary>The one loan the player can have running, or null.</summary>
+        public GangLoan Loan;
+
         public bool IsAffiliated => Current != null;
 
         /// <summary>Allies seen within <see cref="AllyScanRadius"/> on the last scan.</summary>
@@ -387,6 +390,7 @@ namespace Hoodrich.Gangs
                     .Set("timeMs", s.TimeAffiliatedMs));
             }
             obj.Set("standings", arr);
+            if (Loan != null && Loan.IsActive) obj.Set("loan", Loan.ToJson());
             return obj;
         }
 
@@ -410,6 +414,8 @@ namespace Hoodrich.Gangs
                     TimeAffiliatedMs = Math.Max(0L, item["timeMs"].AsLong(0))
                 };
             }
+
+            Loan = GangLoan.FromJson(node["loan"]);
 
             var current = node["current"].AsString("");
             if (!string.IsNullOrEmpty(current)) RestoreAffiliation(current);

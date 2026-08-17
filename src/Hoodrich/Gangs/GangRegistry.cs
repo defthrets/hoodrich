@@ -193,53 +193,61 @@ namespace Hoodrich.Gangs
                 new[] { "weed", "crack" },
                 new[] { "ballas", "vagos" },
                 new[] { "DAVIS", "CHAMH", "STRAW" },
-                "Davis, Chamberlain Hills, Strawberry"));
+                "Davis, Chamberlain Hills, Strawberry",
+                new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01", "a_m_y_soucent_01" }));
 
             Register(Make("ballas", "Ballas", "BALL", "AMBIENT_GANG_BALLAS",
                 Color.FromArgb(145, 70, 190), 27,
                 new[] { "crack", "weed" },
                 new[] { "families", "vagos" },
                 new[] { "RANCHO", "MURRI", "ZQ_UAR" },
-                "Rancho, Murrieta Heights, Davis Quartz"));
+                "Rancho, Murrieta Heights, Davis Quartz",
+                new[] { "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01", "a_m_m_soucent_02" }));
 
             Register(Make("vagos", "Los Santos Vagos", "VAGO", "AMBIENT_GANG_MEXICAN",
                 Color.FromArgb(235, 195, 40), 5,
                 new[] { "coke", "meth" },
                 new[] { "families", "ballas" },
                 new[] { "EBURO", "LMESA", "TATAMO" },
-                "El Burro Heights, La Mesa, Tataviam Mountains"));
+                "El Burro Heights, La Mesa, Tataviam Mountains",
+                new[] { "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03", "a_m_y_mexthug_01" }));
 
             Register(Make("marabunta", "Marabunta Grande", "MARA", "AMBIENT_GANG_MARABUNTE",
                 Color.FromArgb(70, 200, 200), 3,
                 new[] { "meth", "coke" },
                 new[] { "vagos", "families" },
                 new[] { "CYPRE", "TEXTI", "ELYSIAN" },
-                "Cypress Flats, Textile City, Elysian Island"));
+                "Cypress Flats, Textile City, Elysian Island",
+                new[] { "g_m_y_salvaboss_01", "g_m_y_salvagoon_01", "g_m_y_salvagoon_02", "a_m_y_mexthug_01" }));
 
             Register(Make("lost", "The Lost MC", "LOST", "AMBIENT_GANG_LOST",
                 Color.FromArgb(200, 200, 200), 40,
                 new[] { "meth", "heroin" },
                 new[] { "families", "vagos" },
                 new[] { "SLAB", "SANDY", "GRAPES", "HARMO", "ALAMO" },
-                "Stab City, Sandy Shores, Grapeseed"));
+                "Stab City, Sandy Shores, Grapeseed",
+                new[] { "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03", "a_m_m_hillbilly_01" }));
 
             Register(Make("triads", "Wei Cheng Triads", "TRI", "AMBIENT_GANG_WEICHENG",
                 Color.FromArgb(220, 60, 60), 1,
                 new[] { "ecstasy", "heroin" },
                 new[] { "marabunta", "armenians" },
                 new[] { "KOREAT", "MIRR", "HAWICK" },
-                "Little Seoul, Mirror Park, Hawick"));
+                "Little Seoul, Mirror Park, Hawick",
+                new[] { "g_m_m_chiboss_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02", "a_m_y_ktown_01" }));
 
             Register(Make("armenians", "Armenian Mob", "ARM", "AMBIENT_GANG_ARMENIAN",
                 Color.FromArgb(150, 40, 60), 76,
                 new[] { "heroin" },
                 new[] { "triads" },
                 new[] { "ALTA", "BURTON", "PBOX" },
-                "Alta, Burton, Pillbox Hill"));
+                "Alta, Burton, Pillbox Hill",
+                new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_y_armgoon_02", "a_m_m_eastsa_02" }));
         }
 
         private static GangDef Make(string id, string name, string tag, string relGroup, Color colour,
-                                    int blipColour, string[] drugs, string[] rivals, string[] turf, string turfHint)
+                                    int blipColour, string[] drugs, string[] rivals, string[] turf,
+                                    string turfHint, string[] memberModels)
         {
             var g = new GangDef
             {
@@ -254,6 +262,7 @@ namespace Hoodrich.Gangs
             g.Drugs.AddRange(drugs);
             g.Rivals.AddRange(rivals);
             g.Turf.AddRange(turf);
+            g.MemberModels.AddRange(memberModels);
             return g;
         }
     }

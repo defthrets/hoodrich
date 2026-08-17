@@ -5,6 +5,7 @@ using Hoodrich.Core;
 using Hoodrich.Dealing;
 using Hoodrich.Economy;
 using Hoodrich.Gangs;
+using Hoodrich.Locations;
 using Hoodrich.State;
 using Hoodrich.Supply;
 using Hoodrich.Territory;
@@ -47,6 +48,9 @@ namespace Hoodrich
         private readonly Market _market;
         private readonly Bust _bust;
         private readonly DeadDrop _deadDrop;
+        private readonly TerritoryState _territory;
+        private readonly TurfWar _war;
+        private readonly GangDen _den;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
 
@@ -70,16 +74,18 @@ namespace Hoodrich
                 _dealers = DealerManager.Load(_cfg);
                 _weapons = WeaponRegistry.Load();
 
+                // Everything the save writes into has to exist before the save is read.
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
-                SaveGame.Load(_state, _crew, _market);
-
-                _turf = new TurfWatch(_gangs, _crew, _state);
-
+                _territory = new TerritoryState(_cfg);
+                _den = new GangDen(_crew);
                 _market = new Market(_cfg);
 
-                _bust = new Bust(_cfg, _state) { Turf = _turf };
+                SaveGame.Load(_state, _crew, _market, _territory, _den);
 
+                _turf = new TurfWatch(_gangs, _crew, _state) { Territory = _territory };
+                _war = new TurfWar(_cfg, _state, _crew, _territory);
+                _bust = new Bust(_cfg, _state) { Turf = _turf };
                 _deadDrop = new DeadDrop(_cfg, _state);
 
                 _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market };
@@ -87,7 +93,7 @@ namespace Hoodrich
                 _cutting = new Cutting(_state.Stash, _state);
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons, _market);
+                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _den);
 
                 _menu = new RadialMenu(_cfg);
                 _wheel = new WheelController(_cfg, _menu, pages.BuildRoot);
@@ -130,12 +136,18 @@ namespace Hoodrich
                     _bust.Update();
                     _deadDrop.Update();
                     _market.Update(_drugs);
+                    _war.Update();
+                    _den.Update(_turf.ZoneCode);
+                    _territory.UpgradeTick();
+                    UpdateLoan();
                 }
 
                 // In-flight deals keep ticking even when unavailable so they can abort cleanly.
                 _deal.Update();
                 _cutting.Draw();
                 _bust.Draw();
+                _war.Draw();
+                _den.Draw();
 
                 SlowTick();
 
@@ -178,8 +190,32 @@ namespace Hoodrich
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {
                 _lastSave = now;
-                SaveGame.Save(_state, _crew, _market);
+                SaveGame.Save(_state, _crew, _market, _territory, _den);
             }
+        }
+
+        /// <summary>
+        /// Ticks the gang loan. Defaulting is the crew deciding you are a problem: the debt is
+        /// written off, your standing with them is destroyed, and you are out.
+        /// </summary>
+        private void UpdateLoan()
+        {
+            var loan = _crew.Loan;
+            if (loan == null || !loan.IsActive) return;
+
+            if (!loan.Update(_cfg.LoanPeriodDays, _cfg.LoanDefaultAfterMissed, _cfg.LoanVigGrowthPercent)) return;
+
+            var gang = _crew.GangById(loan.GangId);
+            var standing = _crew.StandingFor(loan.GangId);
+            standing.Rep = -100f;
+
+            if (gang != null && _crew.IsAffiliated && _crew.Current.Id == gang.Id) _crew.Leave();
+
+            _crew.Loan = null;
+            _state.AddRespect(-40f);
+            _state.Touch();
+
+            Notify.Failure((gang == null ? "They" : gang.Name) + " wrote your debt off. You are done with them.");
         }
 
         /// <summary>True when the player is in normal control and the mod should be live.</summary>
@@ -213,7 +249,7 @@ namespace Hoodrich
 
             try
             {
-                SaveGame.Save(_state, _crew, _market, true);
+                SaveGame.Save(_state, _crew, _market, _territory, _den, true);
                 Log.Info("Hoodrich unloaded cleanly.");
             }
             catch (Exception ex)
@@ -235,6 +271,8 @@ namespace Hoodrich
             try { _crew?.RestoreWorld(); } catch { /* teardown */ }
             try { _dealers?.RestoreWorld(); } catch { /* teardown */ }
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
+            try { _war?.RestoreWorld(); } catch { /* teardown */ }
+            try { _den?.RestoreWorld(); } catch { /* teardown */ }
         }
     }
 }

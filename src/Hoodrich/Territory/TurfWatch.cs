@@ -56,6 +56,9 @@ namespace Hoodrich.Territory
         private const int AggroCooldownMs = 60_000;
 
         private readonly GangRegistry _gangs;
+
+        /// <summary>Assigned by Main. Zones taken in a war override the starting map.</summary>
+        public TerritoryState Territory;
         private readonly Affiliation _affiliation;
         private readonly PlayerState _state;
         private readonly Random _rng = new Random();
@@ -186,7 +189,11 @@ namespace Hoodrich.Territory
                     try { _zoneName = World.GetZoneLocalizedName(pos); }
                     catch { _zoneName = code; }
 
-                    _owner = _gangs.OwnerOfZone(code);
+                    // Conquest first, then the starting map from gangs.json.
+                    var captured = Territory == null ? null : Territory.OwnerOverride(code);
+                    _owner = !string.IsNullOrEmpty(captured)
+                        ? _gangs.Get(captured)
+                        : _gangs.OwnerOfZone(code);
                     _status = Classify(_owner);
                     AnnounceZone();
                 }

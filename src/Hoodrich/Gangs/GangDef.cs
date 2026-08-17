@@ -49,6 +49,13 @@ namespace Hoodrich.Gangs
         /// <summary>Products this gang moves. Affiliating unlocks better prices on these.</summary>
         public readonly List<string> Drugs = new List<string>();
 
+        /// <summary>
+        /// Models used ONLY when the mod has to spawn members itself, which is turf wars and
+        /// nothing else. Everywhere else membership is read from the relationship group, so an
+        /// ambient ped in a model we never listed still counts as one of theirs.
+        /// </summary>
+        public readonly List<string> MemberModels = new List<string>();
+
         /// <summary>Gang ids this gang is at war with.</summary>
         public readonly List<string> Rivals = new List<string>();
 
