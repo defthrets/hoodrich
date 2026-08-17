@@ -50,7 +50,7 @@ namespace Hoodrich
         private readonly DeadDrop _deadDrop;
         private readonly TerritoryState _territory;
         private readonly TurfWar _war;
-        private readonly GangDen _den;
+        private readonly HideoutManager _hideouts;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
 
@@ -78,10 +78,10 @@ namespace Hoodrich
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
                 _territory = new TerritoryState(_cfg);
-                _den = new GangDen(_crew);
+                _hideouts = new HideoutManager(_cfg, _territory);
                 _market = new Market(_cfg);
 
-                SaveGame.Load(_state, _crew, _market, _territory, _den);
+                SaveGame.Load(_state, _crew, _market, _territory, _hideouts);
 
                 _turf = new TurfWatch(_gangs, _crew, _state) { Territory = _territory };
                 _war = new TurfWar(_cfg, _state, _crew, _territory);
@@ -93,7 +93,7 @@ namespace Hoodrich
                 _cutting = new Cutting(_state.Stash, _state);
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _den);
+                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts);
 
                 _menu = new RadialMenu(_cfg);
                 _wheel = new WheelController(_cfg, _menu, pages.BuildRoot);
@@ -137,7 +137,7 @@ namespace Hoodrich
                     _deadDrop.Update();
                     _market.Update(_drugs);
                     _war.Update();
-                    _den.Update(_turf.ZoneCode);
+                    _hideouts.Update(_turf);
                     _territory.UpgradeTick();
                     UpdateLoan();
                 }
@@ -147,7 +147,7 @@ namespace Hoodrich
                 _cutting.Draw();
                 _bust.Draw();
                 _war.Draw();
-                _den.Draw();
+                _hideouts.Draw();
 
                 SlowTick();
 
@@ -190,7 +190,7 @@ namespace Hoodrich
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {
                 _lastSave = now;
-                SaveGame.Save(_state, _crew, _market, _territory, _den);
+                SaveGame.Save(_state, _crew, _market, _territory, _hideouts);
             }
         }
 
@@ -249,7 +249,7 @@ namespace Hoodrich
 
             try
             {
-                SaveGame.Save(_state, _crew, _market, _territory, _den, true);
+                SaveGame.Save(_state, _crew, _market, _territory, _hideouts, true);
                 Log.Info("Hoodrich unloaded cleanly.");
             }
             catch (Exception ex)
@@ -272,7 +272,7 @@ namespace Hoodrich
             try { _dealers?.RestoreWorld(); } catch { /* teardown */ }
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
-            try { _den?.RestoreWorld(); } catch { /* teardown */ }
+            try { _hideouts?.RestoreWorld(); } catch { /* teardown */ }
         }
     }
 }

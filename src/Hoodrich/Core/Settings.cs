@@ -170,6 +170,23 @@ namespace Hoodrich.Core
         /// <summary>How much the vig grows each time it is missed.</summary>
         public float LoanVigGrowthPercent = 25f;
 
+        // ---- hideouts ----------------------------------------------------------
+
+        /// <summary>Base price of a place on a block, before turf value.</summary>
+        public int HideoutBasePrice = 15000;
+
+        /// <summary>Added per point of the block's value -- good turf costs more to buy into.</summary>
+        public int HideoutPricePerTurfValue = 2000;
+
+        /// <summary>How many places you can hold at once.</summary>
+        public int MaxHideouts = 2;
+
+        /// <summary>Grams each hideout's stash holds.</summary>
+        public float HideoutStashCapacity = 5000f;
+
+        /// <summary>Fraction of the purchase price returned when you sell one back.</summary>
+        public float HideoutSellbackPercent = 60f;
+
         public static Settings Load()
         {
             var s = new Settings();
@@ -252,6 +269,15 @@ namespace Hoodrich.Core
                 Math.Max(1, ini.GetInt("Loans", "LoanDefaultAfterMissed", s.LoanDefaultAfterMissed));
             s.LoanVigGrowthPercent =
                 Clamp(ini.GetFloat("Loans", "LoanVigGrowthPercent", s.LoanVigGrowthPercent), 0f, 200f);
+
+            s.HideoutBasePrice = Math.Max(0, ini.GetInt("Hideouts", "HideoutBasePrice", s.HideoutBasePrice));
+            s.HideoutPricePerTurfValue =
+                Math.Max(0, ini.GetInt("Hideouts", "HideoutPricePerTurfValue", s.HideoutPricePerTurfValue));
+            s.MaxHideouts = (int)Clamp(ini.GetInt("Hideouts", "MaxHideouts", s.MaxHideouts), 1f, 20f);
+            s.HideoutStashCapacity =
+                Math.Max(1f, ini.GetFloat("Hideouts", "HideoutStashCapacity", s.HideoutStashCapacity));
+            s.HideoutSellbackPercent =
+                Clamp(ini.GetFloat("Hideouts", "HideoutSellbackPercent", s.HideoutSellbackPercent), 0f, 100f);
 
             // An inner radius at or past the outer one would render nothing at all.
             if (s.InnerRadius >= s.OuterRadius - 0.02f)

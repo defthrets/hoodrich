@@ -42,13 +42,13 @@ namespace Hoodrich.Wheel
         private readonly Core.Settings _cfg;
         private readonly Market _market;
         private readonly TurfWar _war;
-        private readonly GangDen _den;
+        private readonly HideoutManager _hideouts;
         private readonly WeaponRegistry _weapons;
 
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
-                          TurfWar war, GangDen den)
+                          TurfWar war, HideoutManager hideouts)
         {
             _cfg = cfg;
             _state = state;
@@ -63,7 +63,7 @@ namespace Hoodrich.Wheel
             _weapons = weapons;
             _market = market;
             _war = war;
-            _den = den;
+            _hideouts = hideouts;
         }
 
         private Stash Stash => _state.Stash;
@@ -172,45 +172,91 @@ namespace Hoodrich.Wheel
                 value: _dealers.HasMeet ? _dealers.MeetDealer.Tag + " inbound" : "no orders");
 
             page.AddSub("Stash", "=", BuildStashPage,
-                detail: _den.IsPlayerAtDen
-                    ? "Move product in and out of the den"
-                    : _den.HasDen ? "Your den is " + _den.Distance.ToString("0") + "m away"
-                                  : "Stand on your crew's turf to find your den",
-                value: _den.HasDen ? _den.Stash.Total.ToString("0.#") + "g stashed" : "",
-                enabled: _den.IsPlayerAtDen,
-                disabledReason: _den.HasDen ? "Get to the den" : "No den yet");
+                detail: StashDetail(),
+                value: StashValue(),
+                enabled: _hideouts.AtPlayer != null,
+                disabledReason: _hideouts.OwnedCount > 0 ? "Get to a hideout" : "You do not own anywhere");
 
             return page;
         }
 
+        private string StashDetail()
+        {
+            var here = _hideouts.AtPlayer;
+            if (here != null)
+            {
+                return here.Owned ? "Move product in and out" : "For sale -- $" + here.Price.ToString("N0");
+            }
+
+            var nearest = _hideouts.NearestOwned;
+            if (nearest != null)
+            {
+                return nearest.ZoneName + " -- " + _hideouts.DistanceTo(nearest).ToString("0") + "m away";
+            }
+
+            return "Buy somewhere on a block to bank product";
+        }
+
+        private string StashValue()
+        {
+            var total = 0f;
+            foreach (var h in _hideouts.All) if (h.Owned) total += h.Stash.Total;
+
+            return _hideouts.OwnedCount > 0
+                ? total.ToString("0.#") + "g in " + _hideouts.OwnedCount + " place" +
+                  (_hideouts.OwnedCount == 1 ? "" : "s")
+                : "";
+        }
+
         /// <summary>
-        /// The den stash. Product parked here is off your person, so a death or a bust cannot
-        /// touch it -- which makes the trip out to the den the price of keeping it safe.
+        /// The hideout you are standing in: buy it, or move product through it.
+        ///
+        /// Product banked here is off your person, so neither a death nor a bust can touch it.
+        /// The trip out here is the price of keeping it safe.
         /// </summary>
         private WheelPage BuildStashPage()
         {
-            var den = _den.Stash;
-            var page = new WheelPage("Stash", _crew.IsAffiliated ? _crew.Current.Name + " den" : "Den");
+            var here = _hideouts.AtPlayer;
+            if (here == null)
+            {
+                var empty = new WheelPage("Stash", "Nowhere to stash");
+                empty.Add("Nothing here", "-", null,
+                    detail: "Stand in a hideout you own",
+                    enabled: false, disabledReason: "Not at a hideout");
+                return empty;
+            }
 
-            page.PanelTitle = "Den stash";
+            if (!here.Owned) return BuildBuyHideoutPage(here);
+
+            var den = here.Stash;
+            var page = new WheelPage("Stash", here.ZoneName);
+
+            page.PanelTitle = here.ZoneName;
             page.Row("Stashed bulk", den.TotalBulk.ToString("0.#") + "g");
             page.Row("Stashed bagged", den.TotalPackaged.ToString("0.#") + "g", Palette.Cash);
-            page.Row("Den space", den.FreeSpace.ToString("0") + "g");
+            page.Row("Space here", den.FreeSpace.ToString("0") + "g");
             page.Row("", "");
             page.Row("On you", Stash.Total.ToString("0.#") + "g");
             page.Row("Your space", Stash.FreeSpace.ToString("0") + "g");
+            page.Row("Places owned", _hideouts.OwnedCount + " / " + _cfg.MaxHideouts);
 
-            page.Add("Deposit all", "v", DepositAll,
-                detail: "Everything you are carrying, into the den",
+            page.Add("Deposit all", "v", () => DepositAll(here),
+                detail: "Everything you are carrying, into this place",
                 value: Stash.Total.ToString("0.#") + "g",
                 enabled: Stash.Total > 0.005f,
                 disabledReason: "You are carrying nothing");
 
-            page.Add("Withdraw all", "^", WithdrawAll,
-                detail: "As much as you can carry, out of the den",
+            page.Add("Withdraw all", "^", () => WithdrawAll(here),
+                detail: "As much as you can carry, out of this place",
                 value: den.Total.ToString("0.#") + "g",
                 enabled: den.Total > 0.005f && Stash.FreeSpace > 0.005f,
-                disabledReason: den.Total <= 0.005f ? "The den is empty" : "You are full");
+                disabledReason: den.Total <= 0.005f ? "This place is empty" : "You are full");
+
+            page.Add("Sell up", "x", () => SellHideout(here),
+                detail: "Sell this place back. Empty it first.",
+                value: "+$" + ((int)(here.Price * _cfg.HideoutSellbackPercent / 100f)).ToString("N0"),
+                enabled: den.IsEmpty,
+                disabledReason: "Empty it first");
 
             foreach (var d in _drugs.All)
             {
@@ -219,8 +265,8 @@ namespace Hoodrich.Wheel
                 var stashed = den.BulkOf(drug.Id) + den.PackagedOf(drug.Id);
                 if (carried <= 0.005f && stashed <= 0.005f) continue;
 
-                page.Add(drug.Tag, drug.Tier >= 3 ? "!" : "o", () => DepositOne(drug),
-                    detail: "Deposit your " + drug.Name + "  ·  " + stashed.ToString("0.#") + "g in the den",
+                page.Add(drug.Tag, drug.Tier >= 3 ? "!" : "o", () => DepositOne(here, drug),
+                    detail: "Deposit your " + drug.Name + "  ·  " + stashed.ToString("0.#") + "g here",
                     value: carried > 0.005f ? carried.ToString("0.#") + "g on you" : "none on you",
                     enabled: carried > 0.005f,
                     disabledReason: "None on you");
@@ -229,10 +275,55 @@ namespace Hoodrich.Wheel
             return page;
         }
 
-        private void DepositAll()
+        /// <summary>A place that is for sale, and what it would cost you.</summary>
+        private WheelPage BuildBuyHideoutPage(Hideout hideout)
+        {
+            var page = new WheelPage("For sale", hideout.ZoneName);
+
+            page.PanelTitle = hideout.ZoneName;
+            page.Row("Price", "$" + hideout.Price.ToString("N0"), Palette.Warn);
+            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
+            page.Row("Holds", _cfg.HideoutStashCapacity.ToString("N0") + "g");
+            page.Row("Places owned", _hideouts.OwnedCount + " / " + _cfg.MaxHideouts,
+                     _hideouts.AtCap ? Palette.Danger : (System.Drawing.Color?)null);
+            page.Row("Block", _turf.StatusLine, TurfTint());
+
+            var reason = _hideouts.AtCap ? "You already hold " + _cfg.MaxHideouts
+                : Game.Player.Money < hideout.Price
+                    ? "Short $" + (hideout.Price - Game.Player.Money).ToString("N0")
+                    : "";
+
+            page.Add("Buy it", "$", () => BuyHideout(hideout),
+                detail: "Product banked here survives death and arrest",
+                value: "$" + hideout.Price.ToString("N0"),
+                enabled: reason.Length == 0,
+                disabledReason: reason);
+
+            page.Add("Walk away", "x", null,
+                detail: "It will still be here",
+                enabled: false, disabledReason: "Back out to leave");
+
+            return page;
+        }
+
+        private void BuyHideout(Hideout hideout)
+        {
+            var failure = _hideouts.Buy(hideout);
+            if (failure != null) Notify.Problem(failure);
+            else _state.Touch();
+        }
+
+        private void SellHideout(Hideout hideout)
+        {
+            var failure = _hideouts.Sell(hideout);
+            if (failure != null) Notify.Problem(failure);
+            else _state.Touch();
+        }
+
+        private void DepositAll(Hideout hideout)
         {
             var moved = 0f;
-            foreach (var d in _drugs.All) moved += MoveDrug(Stash, _den.Stash, d.Id);
+            foreach (var d in _drugs.All) moved += MoveDrug(Stash, hideout.Stash, d.Id);
 
             _state.Touch();
             Notify.Ticker(moved > 0.005f
@@ -240,10 +331,10 @@ namespace Hoodrich.Wheel
                 : "~o~Nothing moved.~s~");
         }
 
-        private void WithdrawAll()
+        private void WithdrawAll(Hideout hideout)
         {
             var moved = 0f;
-            foreach (var d in _drugs.All) moved += MoveDrug(_den.Stash, Stash, d.Id);
+            foreach (var d in _drugs.All) moved += MoveDrug(hideout.Stash, Stash, d.Id);
 
             _state.Touch();
             Notify.Ticker(moved > 0.005f
@@ -251,9 +342,9 @@ namespace Hoodrich.Wheel
                 : "~o~No room for any of it.~s~");
         }
 
-        private void DepositOne(DrugDef drug)
+        private void DepositOne(Hideout hideout, DrugDef drug)
         {
-            var moved = MoveDrug(Stash, _den.Stash, drug.Id);
+            var moved = MoveDrug(Stash, hideout.Stash, drug.Id);
             _state.Touch();
 
             Notify.Ticker(moved > 0.005f
