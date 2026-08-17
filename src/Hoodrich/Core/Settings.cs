@@ -187,6 +187,26 @@ namespace Hoodrich.Core
         /// <summary>Fraction of the purchase price returned when you sell one back.</summary>
         public float HideoutSellbackPercent = 60f;
 
+        // ---- posting up --------------------------------------------------------
+
+        /// <summary>Chance EACH passer-by decides to buy. Busy pavements compound this.</summary>
+        public float PostUpApproachChance = 20f;
+
+        /// <summary>Grams moved in one street sale.</summary>
+        public float PostUpDealGrams = 1.5f;
+
+        /// <summary>Extra heat per sale for every person who can see it happen.</summary>
+        public float PostUpHeatPerWitness = 0.15f;
+
+        /// <summary>Corner heat that brings a patrol over to ask questions.</summary>
+        public float PostUpHeatBeforePolice = 12f;
+
+        /// <summary>Seconds from a cop reaching you to being searched. Your window to walk.</summary>
+        public float PostUpSearchSeconds = 6f;
+
+        /// <summary>Fine when a search finds product on you.</summary>
+        public int PostUpFine = 2500;
+
         public static Settings Load()
         {
             var s = new Settings();
@@ -278,6 +298,17 @@ namespace Hoodrich.Core
                 Math.Max(1f, ini.GetFloat("Hideouts", "HideoutStashCapacity", s.HideoutStashCapacity));
             s.HideoutSellbackPercent =
                 Clamp(ini.GetFloat("Hideouts", "HideoutSellbackPercent", s.HideoutSellbackPercent), 0f, 100f);
+
+            s.PostUpApproachChance =
+                Clamp(ini.GetFloat("PostUp", "PostUpApproachChance", s.PostUpApproachChance), 0f, 100f);
+            s.PostUpDealGrams = Math.Max(0.1f, ini.GetFloat("PostUp", "PostUpDealGrams", s.PostUpDealGrams));
+            s.PostUpHeatPerWitness =
+                Math.Max(0f, ini.GetFloat("PostUp", "PostUpHeatPerWitness", s.PostUpHeatPerWitness));
+            s.PostUpHeatBeforePolice =
+                Math.Max(1f, ini.GetFloat("PostUp", "PostUpHeatBeforePolice", s.PostUpHeatBeforePolice));
+            s.PostUpSearchSeconds =
+                Clamp(ini.GetFloat("PostUp", "PostUpSearchSeconds", s.PostUpSearchSeconds), 1f, 60f);
+            s.PostUpFine = Math.Max(0, ini.GetInt("PostUp", "PostUpFine", s.PostUpFine));
 
             // An inner radius at or past the outer one would render nothing at all.
             if (s.InnerRadius >= s.OuterRadius - 0.02f)

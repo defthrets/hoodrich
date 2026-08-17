@@ -25,6 +25,16 @@ namespace Hoodrich.Economy
         /// <summary>Relative contribution to police/rival attention per sale.</summary>
         public float HeatFactor = 1f;
 
+        /// <summary>
+        /// What the street actually calls breaking this down into sellable amounts. Weed gets
+        /// bagged up, powder gets cut, rock gets rocked up, pills get counted out -- calling
+        /// all of it "cutting" was wrong for most of the catalogue.
+        /// </summary>
+        public string SplitVerb = "Cut";
+
+        /// <summary>What one sellable unit is called, for the wheel.</summary>
+        public string UnitName = "grams";
+
         public override string ToString() => Id;
     }
 
@@ -84,6 +94,8 @@ namespace Hoodrich.Economy
                 def.BasePrice = Math.Max(0.01f, node["basePrice"].AsFloat(def.BasePrice));
                 def.Tier = Math.Max(1, node["tier"].AsInt(def.Tier));
                 def.HeatFactor = Math.Max(0f, node["heatFactor"].AsFloat(def.HeatFactor));
+                def.SplitVerb = node["splitVerb"].AsString(def.SplitVerb);
+                def.UnitName = node["unitName"].AsString(def.UnitName);
 
                 if (existing == null)
                 {
@@ -113,12 +125,12 @@ namespace Hoodrich.Economy
 
         private void AddDefaults()
         {
-            Register(new DrugDef { Id = "weed", Name = "Marijuana", Tag = "WEED", BasePrice = 10f, Tier = 1, HeatFactor = 0.5f });
-            Register(new DrugDef { Id = "crack", Name = "Crack", Tag = "CRK", BasePrice = 25f, Tier = 2, HeatFactor = 1.0f });
-            Register(new DrugDef { Id = "ecstasy", Name = "Ecstasy", Tag = "PILL", BasePrice = 35f, Tier = 2, HeatFactor = 0.8f });
-            Register(new DrugDef { Id = "meth", Name = "Meth", Tag = "METH", BasePrice = 28f, Tier = 2, HeatFactor = 1.1f });
-            Register(new DrugDef { Id = "heroin", Name = "Heroin", Tag = "H", BasePrice = 45f, Tier = 3, HeatFactor = 1.4f });
-            Register(new DrugDef { Id = "coke", Name = "Cocaine", Tag = "COKE", BasePrice = 100f, Tier = 3, HeatFactor = 1.6f });
+            Register(new DrugDef { Id = "weed", Name = "Marijuana", Tag = "WEED", BasePrice = 10f, Tier = 1, HeatFactor = 0.5f, SplitVerb = "Bag up", UnitName = "baggies" });
+            Register(new DrugDef { Id = "crack", Name = "Crack", Tag = "CRK", BasePrice = 25f, Tier = 2, HeatFactor = 1.0f, SplitVerb = "Rock up", UnitName = "rocks" });
+            Register(new DrugDef { Id = "ecstasy", Name = "Ecstasy", Tag = "PILL", BasePrice = 35f, Tier = 2, HeatFactor = 0.8f, SplitVerb = "Count out", UnitName = "pills" });
+            Register(new DrugDef { Id = "meth", Name = "Meth", Tag = "METH", BasePrice = 28f, Tier = 2, HeatFactor = 1.1f, SplitVerb = "Break down", UnitName = "shards" });
+            Register(new DrugDef { Id = "heroin", Name = "Heroin", Tag = "H", BasePrice = 45f, Tier = 3, HeatFactor = 1.4f, SplitVerb = "Cut", UnitName = "bags" });
+            Register(new DrugDef { Id = "coke", Name = "Cocaine", Tag = "COKE", BasePrice = 100f, Tier = 3, HeatFactor = 1.6f, SplitVerb = "Cut", UnitName = "grams" });
         }
 
         /// <summary>Writes the current catalogue out as a starting point for player edits.</summary>

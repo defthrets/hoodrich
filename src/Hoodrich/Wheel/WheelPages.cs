@@ -43,6 +43,7 @@ namespace Hoodrich.Wheel
         private readonly Market _market;
         private readonly TurfWar _war;
         private readonly HideoutManager _hideouts;
+        private readonly PostUp _postUp;
         private readonly WeaponRegistry _weapons;
 
         /// <summary>Set by Main. Hands the player back the game's own weapon wheel.</summary>
@@ -51,7 +52,7 @@ namespace Hoodrich.Wheel
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
-                          TurfWar war, HideoutManager hideouts)
+                          TurfWar war, HideoutManager hideouts, PostUp postUp)
         {
             _cfg = cfg;
             _state = state;
@@ -67,6 +68,7 @@ namespace Hoodrich.Wheel
             _market = market;
             _war = war;
             _hideouts = hideouts;
+            _postUp = postUp;
         }
 
         private Stash Stash => _state.Stash;
@@ -155,18 +157,27 @@ namespace Hoodrich.Wheel
                 detail: SupplyDetail(),
                 value: "$" + Game.Player.Money.ToString("N0"));
 
-            page.AddSub("Cut", "/", BuildCutPage,
-                detail: "Bag bulk into street units",
+            page.AddSub("Prep", "/", BuildCutPage,
+                detail: "Break weight down into sellable amounts",
                 value: bulk > 0.005f ? bulk.ToString("0.#") + "g bulk" : "",
                 enabled: bulk > 0.005f,
-                disabledReason: "No bulk to cut -- buy some first");
+                disabledReason: "Nothing to work -- buy some weight first");
 
-            page.AddSub("Sell", "$", BuildSellPage,
-                detail: "Hand-to-hand to someone on foot",
-                value: packaged > 0.005f ? packaged.ToString("0.#") + "g bagged" : "",
-                enabled: packaged > 0.005f,
-                disabledReason: bulk > 0.005f ? "All you have is bulk -- cut it first"
-                                              : "You are holding nothing");
+            if (_postUp.IsPosted)
+            {
+                page.Add("Pack up", "x", () => _postUp.Stop("You packed up."),
+                    detail: "Stop dealing and move on",
+                    value: _postUp.Footfall + " passing");
+            }
+            else
+            {
+                page.AddSub("Sell", "$", BuildSellPage,
+                    detail: "Post up on a corner and let it come to you",
+                    value: packaged > 0.005f ? packaged.ToString("0.#") + "g ready" : "",
+                    enabled: packaged > 0.005f,
+                    disabledReason: bulk > 0.005f ? "All you have is weight -- prep it first"
+                                                  : "You are holding nothing");
+            }
 
             return page;
         }
@@ -574,8 +585,8 @@ namespace Hoodrich.Wheel
 
         private WheelPage BuildSellPage()
         {
-            var page = new WheelPage("Sell", "Face a buyer on foot");
-            page.PanelTitle = "This block";
+            var page = new WheelPage("Post up", "Pick what you are moving");
+            page.PanelTitle = "This spot";
             page.Row("Zone", _turf.ZoneName);
             page.Row("Status", _turf.StatusLine, TurfTint());
             page.Row("Turf price", "x" + _pricing.TurfMultiplier.ToString("0.00"));
@@ -583,12 +594,16 @@ namespace Hoodrich.Wheel
                      _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : Palette.Cash);
             page.Row("Lookouts", _crew.NearbyAllies.ToString(),
                      _crew.NearbyAllies > 0 ? Palette.Cash : Palette.TextDim);
+            page.Row("", "");
+            page.Row("Passing now", _postUp.Footfall.ToString(),
+                     _postUp.Footfall == 0 ? Palette.Warn : Palette.Cash);
+            page.Row("Busier is", "faster and hotter", Palette.TextDim);
 
             var held = Stash.WithPackaged(_drugs);
             if (held.Count == 0)
             {
-                page.Add("Nothing", "-", null, detail: "Nothing bagged",
-                         enabled: false, disabledReason: "Nothing bagged");
+                page.Add("Nothing", "-", null, detail: "Nothing ready to sell",
+                         enabled: false, disabledReason: "Nothing ready to sell");
                 return page;
             }
 
@@ -597,19 +612,28 @@ namespace Hoodrich.Wheel
                 var product = drug;
                 var stock = Stash.PackagedOf(product.Id);
                 var purity = Stash.PurityOf(product.Id);
-                var amount = Math.Min(DealSize, stock);
-                var value = _pricing.SaleValue(product, amount, purity);
+                var value = _pricing.SaleValue(product, _cfg.PostUpDealGrams, purity);
                 var risk = Pricing.BadCutChance(purity);
 
                 page.Add(product.Tag, product.Tier >= 3 ? "!" : "o",
-                    () => Sell(product, amount),
+                    () => PostUpWith(product),
                     detail: (purity * 100f).ToString("0") + "% pure" +
                             (risk > 0.01f ? "  ~ " + (risk * 100f).ToString("0") + "% knockback" : ""),
-                    value: amount.ToString("0.#") + "g for $" + value.ToString("N0"),
+                    value: stock.ToString("0.#") + "g  ·  $" + value.ToString("N0") + " a sale",
                     enabled: true);
             }
 
             return page;
+        }
+
+        /// <summary>
+        /// Posts up with a product. You do not choose buyers any more -- you choose a spot,
+        /// and the footfall there decides both how fast it moves and how hot it gets.
+        /// </summary>
+        private void PostUpWith(DrugDef product)
+        {
+            var failure = _postUp.Start(product);
+            if (failure != null) Notify.Problem(failure);
         }
 
         private void Sell(DrugDef product, float grams)

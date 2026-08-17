@@ -61,7 +61,7 @@ namespace Hoodrich.Economy
         /// <summary>Returns a player-facing refusal, or null if cutting started.</summary>
         public string TryStart(DrugDef product, float bulkGrams, float targetPurity)
         {
-            if (IsBusy) return "Already cutting.";
+            if (IsBusy) return "Already working.";
             if (product == null) return "Nothing selected.";
             if (bulkGrams <= 0f) return "Nothing to cut.";
 
@@ -87,9 +87,52 @@ namespace Hoodrich.Economy
             _durationMs = Math.Min(MaxDurationMs, BaseDurationMs + (int)(bulkGrams * MsPerGram));
             _startPosition = Game.Player.Character.Position;
 
-            Notify.Ticker("Cutting " + bulkGrams.ToString("0") + "g " + product.Name +
-                          " to " + (targetPurity * 100f).ToString("0") + "%...");
+            Notify.Ticker(product.SplitVerb + " " + bulkGrams.ToString("0") + "g " + product.Name +
+                          " at " + (targetPurity * 100f).ToString("0") + "%...");
+            PlayWorkScenario();
             return null;
+        }
+
+        /// <summary>
+        /// Crouches the player over the work so it reads as an activity rather than a menu
+        /// wait. Scenarios are tried in order; if none take, the batch still runs -- the
+        /// animation is flavour, never a dependency.
+        /// </summary>
+        private static readonly string[] WorkScenarios =
+        {
+            "WORLD_HUMAN_CROUCH_INSPECT", "WORLD_HUMAN_DRUG_DEALER", "WORLD_HUMAN_STAND_IMPATIENT"
+        };
+
+        private void PlayWorkScenario()
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            foreach (var scenario in WorkScenarios)
+            {
+                try
+                {
+                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, player.Handle, scenario, 0, true);
+                    return;
+                }
+                catch
+                {
+                    // Try the next one.
+                }
+            }
+        }
+
+        private void ClearWorkScenario()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player != null && player.Exists()) player.Task.ClearAll();
+            }
+            catch
+            {
+                // Nothing to do.
+            }
         }
 
         /// <summary>Why the player cannot start cutting right now, or null if they can.</summary>
@@ -151,14 +194,22 @@ namespace Hoodrich.Economy
 
             _state.Touch();
 
-            Notify.Ticker("~g~" + made.ToString("0") + "g~s~ " + product.Name + " bagged at " +
+            ClearWorkScenario();
+
+            
+
+            Notify.Ticker("~g~" + made.ToString("0") + "~s~ " + product.UnitName + " of " + product.Name + " at " +
                           (purity * 100f).ToString("0") + "%");
             Log.Info("Cut " + taken.ToString("0.#") + "g bulk " + product.Id + " -> " +
                      made.ToString("0.#") + "g at " + purity.ToString("0.00") + " purity.");
         }
 
         private void Cancel(string reason)
+
         {
+
+            ClearWorkScenario();
+
             _product = null;
             Notify.Problem(reason);
         }

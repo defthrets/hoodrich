@@ -48,6 +48,7 @@ namespace Hoodrich
         private readonly Market _market;
         private readonly Bust _bust;
         private readonly DeadDrop _deadDrop;
+        private readonly PostUp _postUp;
         private readonly TerritoryState _territory;
         private readonly TurfWar _war;
         private readonly HideoutManager _hideouts;
@@ -91,9 +92,10 @@ namespace Hoodrich
                 _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market };
                 _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
                 _cutting = new Cutting(_state.Stash, _state);
+                _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts);
+                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts, _postUp);
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
 
@@ -150,8 +152,10 @@ namespace Hoodrich
 
                 // In-flight deals keep ticking even when unavailable so they can abort cleanly.
                 _deal.Update();
+                _postUp.Update();
                 _cutting.Draw();
                 _bust.Draw();
+                _postUp.Draw();
                 _war.Draw();
                 _hideouts.Draw();
 
@@ -191,6 +195,8 @@ namespace Hoodrich
             }
 
             _deal.PruneCooldowns();
+
+            _postUp.Prune();
             _turf.Prune();
 
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
@@ -278,6 +284,7 @@ namespace Hoodrich
             try { _dealers?.RestoreWorld(); } catch { /* teardown */ }
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
+            try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { _hideouts?.RestoreWorld(); } catch { /* teardown */ }
         }
     }
