@@ -59,6 +59,9 @@ namespace Hoodrich.Wheel
         /// </summary>
         public InfoPanel Info;
 
+        /// <summary>Set by Main. The dock worker's run out to you.</summary>
+        public Delivery Delivery;
+
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
@@ -922,6 +925,39 @@ namespace Hoodrich.Wheel
         /// </summary>
         private WheelPage BuildSupplyPage()
         {
+            // A delivery outranks everything: he drove out here for you.
+            if (Delivery.IsActive)
+            {
+                if (Delivery.State == DeliveryState.Waiting && Delivery.Distance <= 4f)
+                {
+                    return BuildDealerPage(Delivery.Def);
+                }
+
+                var run = new WheelPage("Supply", Delivery.Status);
+                run.PanelTitle = Delivery.Def.Name;
+                run.Row("Where", Delivery.State == DeliveryState.Calling
+                                 ? "on the phone"
+                                 : Delivery.Distance.ToString("0") + "m away");
+                run.Row("Carries", Carries(Delivery.Def));
+                run.Row("Price", Multiplier(1f / Math.Max(0.01f, Delivery.Def.PriceMultiplier)));
+
+                run.Add("Waiting on him", ">", null,
+                    detail: Delivery.State == DeliveryState.Waiting
+                        ? "He is parked up. Walk over to the car."
+                        : "Follow the blip. He is driving to you.",
+                    value: Delivery.Distance.ToString("0") + "m",
+                    enabled: false,
+                    disabledReason: "He is on his way");
+                run.WithIcon(Icons.Garage);
+
+                run.Add("Call it off", "x", () => Delivery.Cancel("Told him not to bother."),
+                    detail: "Send him back",
+                    value: "");
+                run.WithIcon(Icons.Warning);
+
+                return run;
+            }
+
             // Standing in front of someone: talk and trade.
             var here = _dealers.InReach;
             if (here != null) return BuildDealerPage(here);
@@ -992,8 +1028,29 @@ namespace Hoodrich.Wheel
                 : string.Join(", ", def.Drugs.ToArray()).ToUpperInvariant();
         }
 
+        /// <summary>
+        /// Phones a contact out.
+        ///
+        /// The docks deliver: that is what moving real weight buys you, so he drives to wherever
+        /// you are standing rather than naming a spot for you to drive to. Everyone else still
+        /// picks a rendezvous, because making you travel is the whole shape of the early game.
+        /// </summary>
         private void Call(DealerDef def)
         {
+            if (def.Kind == DealerKind.Docks && Delivery != null)
+            {
+                var refusal = _dealers.RefusalReason(def, _state, _crew);
+                if (refusal != null)
+                {
+                    Notify.Problem(refusal.ToLowerInvariant() + ".");
+                    return;
+                }
+
+                var failed = Delivery.Call(def);
+                if (failed != null) Notify.Problem(failed);
+                return;
+            }
+
             var failure = _dealers.ArrangeMeet(def, _state, _crew);
             if (failure != null) Notify.Problem(failure);
         }
@@ -1120,11 +1177,16 @@ namespace Hoodrich.Wheel
 
             _crew.CreditPurchase();
 
-
-
-            Notify.Ticker("~y~-$" + charged.ToString("N0") + "~s~  " + accepted.ToString("0.#") +                          "g bulk " + product.Name);
+            Notify.Ticker("~y~-$" + charged.ToString("N0") + "~s~  " + accepted.ToString("0.#") +
+                          "g bulk " + product.Name);
             Log.Info("Bought " + accepted.ToString("0.##") + "g bulk " + product.Id +
                      " from " + def.Id + " for $" + charged + ".");
+
+            // He drove out here for one job. Once it is done he walks back to the car and goes.
+            if (Delivery != null && Delivery.IsActive && Delivery.Def != null && Delivery.Def.Id == def.Id)
+            {
+                Delivery.Finish();
+            }
         }
 
         // ---- gangs -------------------------------------------------------------

@@ -44,6 +44,7 @@ namespace Hoodrich
         private readonly StreetDeal _deal;
         private readonly Cutting _cutting;
         private readonly DealerManager _dealers;
+        private readonly Delivery _delivery;
         private readonly WeaponRegistry _weapons;
         private readonly Market _market;
         private readonly Bust _bust;
@@ -76,6 +77,7 @@ namespace Hoodrich
                 _drugs = Drugs.Load();
                 _gangs = GangRegistry.Load();
                 _dealers = DealerManager.Load(_cfg);
+                _delivery = new Delivery();
                 _weapons = WeaponRegistry.Load();
                 _zoneMap = ZoneMap.Load();
 
@@ -110,6 +112,7 @@ namespace Hoodrich
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
                 pages.Info = _info;
+                pages.Delivery = _delivery;
 
                 
 
@@ -187,6 +190,7 @@ namespace Hoodrich
                     _turf.Update();
                     _dealers.Update(_turf, _crew, _state);
                     _dealers.GreetIfNeeded();
+                    _delivery.Update();
                     _cutting.Update();
                     _bust.Update();
                     _deadDrop.Update();
@@ -348,6 +352,7 @@ namespace Hoodrich
 
             try { _crew?.RestoreWorld(); } catch { /* teardown */ }
             try { _dealers?.RestoreWorld(); } catch { /* teardown */ }
+            try { _delivery?.RestoreWorld(); } catch { /* teardown */ }
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
