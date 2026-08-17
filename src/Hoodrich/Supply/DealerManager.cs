@@ -31,6 +31,7 @@ namespace Hoodrich.Supply
 
         private readonly List<DealerDef> _defs = new List<DealerDef>();
         private readonly Random _rng = new Random();
+        private Settings _cfg;
 
         /// <summary>Chosen corner per zone, so a dealer keeps his pitch for the session.</summary>
         private readonly Dictionary<string, Vector3> _pitches =
@@ -88,9 +89,9 @@ namespace Hoodrich.Supply
 
         // ---- loading -----------------------------------------------------------
 
-        public static DealerManager Load()
+        public static DealerManager Load(Settings cfg)
         {
-            var mgr = new DealerManager();
+            var mgr = new DealerManager { _cfg = cfg };
             mgr.AddDefaults();
 
             var path = Path.Combine(Paths.Data, "dealers.json");
@@ -266,6 +267,85 @@ namespace Hoodrich.Supply
             def.Drugs.Add(drug);
             // Zones left empty: a gang dealer stands wherever his crew holds turf.
             _defs.Add(def);
+        }
+
+        // ---- what they actually have on them -----------------------------------
+
+        /// <summary>Per dealer, per product, grams on hand. Depletes as you buy.</summary>
+        private readonly Dictionary<string, Dictionary<string, float>> _stock =
+            new Dictionary<string, Dictionary<string, float>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Dealers who simply have nothing this visit.</summary>
+        private readonly HashSet<string> _dry = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private int _lastRestock;
+
+        private Dictionary<string, float> StockFor(string dealerId)
+        {
+            if (!_stock.TryGetValue(dealerId, out var s))
+            {
+                s = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+                _stock[dealerId] = s;
+            }
+            return s;
+        }
+
+        /// <summary>Grams of a product this dealer can sell right now.</summary>
+        public float StockOf(DealerDef def, string drugId)
+        {
+            if (def == null || string.IsNullOrEmpty(drugId)) return 0f;
+            if (_dry.Contains(def.Id)) return 0f;
+
+            var s = StockFor(def.Id);
+            if (!s.TryGetValue(drugId, out var grams))
+            {
+                // First time we have been asked: he is holding a full load.
+                grams = _cfg.DealerMaxStockGrams;
+                s[drugId] = grams;
+            }
+            return grams;
+        }
+
+        public bool IsDry(DealerDef def) => def != null && _dry.Contains(def.Id);
+
+        /// <summary>Deducts what was bought. Returns how much he could actually supply.</summary>
+        public float TakeStock(DealerDef def, string drugId, float grams)
+        {
+            if (def == null || grams <= 0f) return 0f;
+
+            var have = StockOf(def, drugId);
+            var taken = Math.Min(have, grams);
+            if (taken <= 0f) return 0f;
+
+            StockFor(def.Id)[drugId] = have - taken;
+            return taken;
+        }
+
+        /// <summary>Tops every dealer back up over time, so a cleaned-out corner recovers.</summary>
+        private void RestockTick()
+        {
+            if (_cfg.DealerRestockMinutes <= 0f) return;
+
+            var now = Game.GameTime;
+            var intervalMs = (int)(_cfg.DealerRestockMinutes * 60_000f);
+            if (_lastRestock != 0 && now - _lastRestock < intervalMs) return;
+
+            _lastRestock = now;
+
+            foreach (var kv in _stock)
+            {
+                var s = kv.Value;
+                var keys = new List<string>(s.Keys);
+                foreach (var drug in keys)
+                {
+                    // A third of a full load per interval.
+                    s[drug] = Math.Min(_cfg.DealerMaxStockGrams, s[drug] + _cfg.DealerMaxStockGrams / 3f);
+                }
+            }
+
+            // A dry dealer gets another roll next time he is seen.
+            _dry.Clear();
+            Log.Debug("Dealers restocked.");
         }
 
         public DealerDef Get(string id) =>
@@ -447,6 +527,8 @@ namespace Hoodrich.Supply
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;
 
+            RestockTick();
+
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
@@ -531,6 +613,14 @@ namespace Hoodrich.Supply
                 _liveDef = def;
                 _liveZone = zone;
                 _greeted = false;
+
+                // Some days he just has nothing. Rolled once, the first time he posts up.
+                if (!_stock.ContainsKey(def.Id) &&
+                    _rng.NextDouble() * 100.0 < _cfg.DealerDryChancePercent)
+                {
+                    _dry.Add(def.Id);
+                    Log.Debug("Dealer " + def.Id + " is dry today.");
+                }
 
                 CreateBlip(def, route);
                 Log.Info("Dealer " + def.Id + (route ? " arrived at the meet." : " posted up in " + zone + "."));

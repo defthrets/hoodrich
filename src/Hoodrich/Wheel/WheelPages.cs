@@ -39,11 +39,12 @@ namespace Hoodrich.Wheel
         private readonly TurfWatch _turf;
         private readonly DealerManager _dealers;
         private readonly Core.Settings _cfg;
+        private readonly Market _market;
         private readonly WeaponRegistry _weapons;
 
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
-                          DealerManager suppliers, WeaponRegistry weapons)
+                          DealerManager suppliers, WeaponRegistry weapons, Market market)
         {
             _cfg = cfg;
             _state = state;
@@ -56,6 +57,7 @@ namespace Hoodrich.Wheel
             _turf = turf;
             _dealers = suppliers;
             _weapons = weapons;
+            _market = market;
         }
 
         private Stash Stash => _state.Stash;
@@ -217,10 +219,14 @@ namespace Hoodrich.Wheel
                     ? ready.ToString("0.#") + "g ready"
                     : bulk > 0.005f ? bulk.ToString("0.#") + "g bulk" : "none";
 
+                var market = _market == null ? "" : "  ·  mkt " + _market.TrendLabel(drug.Id);
+
+                
+
                 var detail = !holding
-                    ? "Not holding any"
+                    ? "Not holding any" + market
                     : bulk.ToString("0.#") + "g bulk  ·  " + ready.ToString("0.#") + "g cut" +
-                      (ready > 0.005f ? " @ " + (purity * 100f).ToString("0") + "%" : "");
+                      (ready > 0.005f ? " @ " + (purity * 100f).ToString("0") + "%" : "") + market;
 
                 page.Add(drug.Tag, drug.Tier >= 3 ? "!" : "o", null,
                     detail: detail,
@@ -625,20 +631,27 @@ namespace Hoodrich.Wheel
             foreach (var s in stock)
             {
                 var product = s;
-                var lot = LotSizeFor(def, product);
+
+                // He can only sell what he is actually holding.
+                var onHand = _dealers.StockOf(def, product.Id);
+                var lot = Math.Min(LotSizeFor(def, product), onHand);
                 var cost = _pricing.PurchaseCost(product, lot, mult);
 
+                var hasStock = onHand > 0.5f;
                 var canAfford = Game.Player.Money >= cost;
                 var fits = Stash.FreeSpace >= lot - 0.001f;
 
-                var reason = !canAfford ? "Short $" + (cost - Game.Player.Money).ToString("N0")
+                var reason = !hasStock
+                    ? (_dealers.IsDry(def) ? "He is dry today" : "He is out of " + product.Name)
+                    : !canAfford ? "Short $" + (cost - Game.Player.Money).ToString("N0")
                     : !fits ? "No room -- sell or drop some"
                     : "";
 
                 page.Add(product.Tag, product.Tier >= 3 ? "!" : "o",
                     () => Buy(def, product, lot, cost),
-                    detail: "$" + _pricing.WholesalePrice(product, mult).ToString("0") + "/g bulk",
-                    value: lot.ToString("0") + "g for $" + cost.ToString("N0"),
+                    detail: "$" + _pricing.WholesalePrice(product, mult).ToString("0") + "/g bulk" +
+                            (hasStock ? "  ·  he has " + onHand.ToString("0") + "g" : ""),
+                    value: hasStock ? lot.ToString("0") + "g for $" + cost.ToString("N0") : "NONE",
                     enabled: reason.Length == 0,
                     disabledReason: reason);
             }
@@ -662,7 +675,15 @@ namespace Hoodrich.Wheel
                 return;
             }
 
-            var accepted = Stash.AddBulk(product.Id, grams);
+            // Take it off him first: he cannot sell what he does not have.
+            var supplied = _dealers.TakeStock(def, product.Id, grams);
+            if (supplied <= 0f)
+            {
+                Notify.Problem("he has none of that on him.");
+                return;
+            }
+
+            var accepted = Stash.AddBulk(product.Id, supplied);
             if (accepted <= 0f)
             {
                 Notify.Problem("you cannot carry any more.");

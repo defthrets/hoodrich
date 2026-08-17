@@ -76,6 +76,47 @@ namespace Hoodrich.Core
         /// <summary>Grams that must be sold before a corner dealer will name his source.</summary>
         public float DocksUnlockGrams = 50f;
 
+        // ---- market ------------------------------------------------------------
+
+        /// <summary>Minutes between street-price drift steps. 0 freezes the market.</summary>
+        public float MarketDriftIntervalMinutes = 5f;
+
+        /// <summary>How far either side of the base price a product can wander, as a percent.</summary>
+        public float MarketMaxSwingPercent = 45f;
+
+        // ---- risk --------------------------------------------------------------
+
+        /// <summary>Base chance a completed sale draws police attention.</summary>
+        public float PoliceBustChancePercent = 12f;
+
+        /// <summary>How long an undercover buyer takes to call it in -- your window to react.</summary>
+        public float UndercoverCallSeconds = 6f;
+
+        /// <summary>Get this far from the deal before the call lands and you are clear.</summary>
+        public float UndercoverEscapeDistance = 40f;
+
+        public int BustWantedStars = 2;
+
+        /// <summary>Percent of product dropped as a recoverable bag when you die.</summary>
+        public float LoseOnDeathPercent = 100f;
+
+        /// <summary>Percent of product the police keep when you are arrested. Not recoverable.</summary>
+        public float LoseOnArrestPercent = 100f;
+
+        /// <summary>Minutes a dropped bag survives before someone else takes it. 0 = forever.</summary>
+        public float DeadDropDespawnMinutes = 10f;
+
+        // ---- dealer stock ------------------------------------------------------
+
+        /// <summary>Grams of each product a dealer holds when fully stocked.</summary>
+        public float DealerMaxStockGrams = 120f;
+
+        /// <summary>Minutes between restock steps; each tops a dealer up by a third of a load.</summary>
+        public float DealerRestockMinutes = 10f;
+
+        /// <summary>Chance a dealer simply has nothing when he posts up.</summary>
+        public float DealerDryChancePercent = 20f;
+
         public static Settings Load()
         {
             var s = new Settings();
@@ -108,6 +149,31 @@ namespace Hoodrich.Core
             s.BulkSaleDiscountPercent =
                 Clamp(ini.GetFloat("Economy", "BulkSaleDiscountPercent", s.BulkSaleDiscountPercent), 0f, 90f);
             s.DocksUnlockGrams = Math.Max(0f, ini.GetFloat("Economy", "DocksUnlockGrams", s.DocksUnlockGrams));
+            s.MarketDriftIntervalMinutes =
+                Math.Max(0f, ini.GetFloat("Economy", "MarketDriftIntervalMinutes", s.MarketDriftIntervalMinutes));
+            s.MarketMaxSwingPercent =
+                Clamp(ini.GetFloat("Economy", "MarketMaxSwingPercent", s.MarketMaxSwingPercent), 0f, 80f);
+
+            s.PoliceBustChancePercent =
+                Clamp(ini.GetFloat("Risk", "PoliceBustChancePercent", s.PoliceBustChancePercent), 0f, 100f);
+            s.UndercoverCallSeconds =
+                Clamp(ini.GetFloat("Risk", "UndercoverCallSeconds", s.UndercoverCallSeconds), 1f, 60f);
+            s.UndercoverEscapeDistance =
+                Clamp(ini.GetFloat("Risk", "UndercoverEscapeDistance", s.UndercoverEscapeDistance), 5f, 300f);
+            s.BustWantedStars = (int)Clamp(ini.GetInt("Risk", "BustWantedStars", s.BustWantedStars), 1f, 5f);
+            s.LoseOnDeathPercent =
+                Clamp(ini.GetFloat("Risk", "LoseOnDeathPercent", s.LoseOnDeathPercent), 0f, 100f);
+            s.LoseOnArrestPercent =
+                Clamp(ini.GetFloat("Risk", "LoseOnArrestPercent", s.LoseOnArrestPercent), 0f, 100f);
+            s.DeadDropDespawnMinutes =
+                Math.Max(0f, ini.GetFloat("Risk", "DeadDropDespawnMinutes", s.DeadDropDespawnMinutes));
+
+            s.DealerMaxStockGrams =
+                Math.Max(1f, ini.GetFloat("Supply", "DealerMaxStockGrams", s.DealerMaxStockGrams));
+            s.DealerRestockMinutes =
+                Math.Max(0f, ini.GetFloat("Supply", "DealerRestockMinutes", s.DealerRestockMinutes));
+            s.DealerDryChancePercent =
+                Clamp(ini.GetFloat("Supply", "DealerDryChancePercent", s.DealerDryChancePercent), 0f, 100f);
 
             // An inner radius at or past the outer one would render nothing at all.
             if (s.InnerRadius >= s.OuterRadius - 0.02f)

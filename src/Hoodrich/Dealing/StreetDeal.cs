@@ -42,6 +42,7 @@ namespace Hoodrich.Dealing
         /// <summary>Assigned by Main after construction.</summary>
         public TurfWatch Turf;
         public Affiliation Crew;
+        public Bust Bust;
 
         private Ped _buyer;
         private DrugDef _product;
@@ -264,7 +265,14 @@ namespace Hoodrich.Dealing
             _state.Touch();
 
             // Dealing is what gets you noticed on someone else's block.
+
             Turf?.MarkExposed();
+
+            
+
+            // ...and what occasionally gets you noticed by the police.
+
+            Bust?.OnSale(buyer, product);
 
             if (Crew != null && Crew.IsAffiliated)
             {

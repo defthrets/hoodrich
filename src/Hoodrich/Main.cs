@@ -44,6 +44,9 @@ namespace Hoodrich
         private readonly Cutting _cutting;
         private readonly DealerManager _dealers;
         private readonly WeaponRegistry _weapons;
+        private readonly Market _market;
+        private readonly Bust _bust;
+        private readonly DeadDrop _deadDrop;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
 
@@ -64,21 +67,27 @@ namespace Hoodrich
 
                 _drugs = Drugs.Load();
                 _gangs = GangRegistry.Load();
-                _dealers = DealerManager.Load();
+                _dealers = DealerManager.Load(_cfg);
                 _weapons = WeaponRegistry.Load();
 
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
-                SaveGame.Load(_state, _crew);
+                SaveGame.Load(_state, _crew, _market);
 
                 _turf = new TurfWatch(_gangs, _crew, _state);
 
-                _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew };
-                _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew };
+                _market = new Market(_cfg);
+
+                _bust = new Bust(_cfg, _state) { Turf = _turf };
+
+                _deadDrop = new DeadDrop(_cfg, _state);
+
+                _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market };
+                _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
                 _cutting = new Cutting(_state.Stash, _state);
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons);
+                                           _gangs, _crew, _turf, _dealers, _weapons, _market);
 
                 _menu = new RadialMenu(_cfg);
                 _wheel = new WheelController(_cfg, _menu, pages.BuildRoot);
@@ -118,11 +127,15 @@ namespace Hoodrich
                     _dealers.Update(_turf, _crew, _state);
                     _dealers.GreetIfNeeded();
                     _cutting.Update();
+                    _bust.Update();
+                    _deadDrop.Update();
+                    _market.Update(_drugs);
                 }
 
                 // In-flight deals keep ticking even when unavailable so they can abort cleanly.
                 _deal.Update();
                 _cutting.Draw();
+                _bust.Draw();
 
                 SlowTick();
 
@@ -165,7 +178,7 @@ namespace Hoodrich
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {
                 _lastSave = now;
-                SaveGame.Save(_state, _crew);
+                SaveGame.Save(_state, _crew, _market);
             }
         }
 
@@ -200,7 +213,7 @@ namespace Hoodrich
 
             try
             {
-                SaveGame.Save(_state, _crew, true);
+                SaveGame.Save(_state, _crew, _market, true);
                 Log.Info("Hoodrich unloaded cleanly.");
             }
             catch (Exception ex)
@@ -221,6 +234,7 @@ namespace Hoodrich
 
             try { _crew?.RestoreWorld(); } catch { /* teardown */ }
             try { _dealers?.RestoreWorld(); } catch { /* teardown */ }
+            try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
         }
     }
 }

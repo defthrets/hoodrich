@@ -35,6 +35,7 @@ namespace Hoodrich.Economy
         /// <summary>Assigned by Main after construction; both are optional for pricing to work.</summary>
         public TurfWatch Turf;
         public Affiliation Crew;
+        public Market Market;
 
         public Pricing(Settings cfg, PlayerState state)
         {
@@ -115,7 +116,8 @@ namespace Hoodrich.Economy
                    * NotorietyMultiplier
                    * PurityMultiplier(purity)
                    * TurfMultiplier
-                   * LookoutMultiplier;
+                   * LookoutMultiplier
+                   * (Market == null ? 1f : Market.Multiplier(drug.Id));
         }
 
         /// <summary>
