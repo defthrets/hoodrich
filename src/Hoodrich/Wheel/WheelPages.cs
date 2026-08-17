@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Color = System.Drawing.Color;
 using GTA;
 using Hoodrich.Core;
 using Hoodrich.Dealing;
@@ -50,6 +51,15 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main. Hands the player back the game's own weapon wheel.</summary>
         public Action ShowVanillaWheel;
 
+        /// <summary>
+        /// Set by Main. Where the numbers live.
+        ///
+        /// The wheel says "sell" and "re-up"; multipliers, heat percentages and per-crew
+        /// standings go here, on a screen you can actually read, instead of crowding the ring
+        /// with figures nobody can parse while holding a button down.
+        /// </summary>
+        public InfoPanel Info;
+
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
@@ -75,6 +85,211 @@ namespace Hoodrich.Wheel
 
         private Stash Stash => _state.Stash;
 
+        // ---- the numbers, on their own screen -----------------------------------
+
+        /// <summary>Everything about you: rank, heat, money made, who rates you.</summary>
+        private void ShowStatus()
+        {
+            var sections = new List<InfoSection>();
+
+            var you = new InfoSection { Title = "You" };
+            you.Row("Rank", _state.RankName);
+            you.Row("Respect", _state.Respect.ToString("N0"), null, RankProgressLabel());
+            you.Row("Heat", _state.Notoriety.ToString("F0") + "%", HeatTint(),
+                    _state.Notoriety > 50f ? "Police are paying attention"
+                    : _state.Notoriety > 20f ? "You have been noticed"
+                    : "Nobody is looking at you");
+            you.Row("Crew", _crew.IsAffiliated ? _crew.Current.Name : "riding solo",
+                    _crew.IsAffiliated ? _crew.Current.Colour : (Color?)Palette.TextDim);
+            sections.Add(you);
+
+            var trade = new InfoSection { Title = "Trade" };
+            trade.Row("Deals closed", _state.TotalDealsMade.ToString("N0"));
+            trade.Row("Moved", _state.GramsSold.ToString("0.#") + "g");
+            trade.Row("Total earned", "$" + _state.TotalEarned.ToString("N0"), Palette.Cash);
+            sections.Add(trade);
+
+            var crews = new InfoSection { Title = "How the crews see you" };
+            foreach (var g in _gangs.All)
+            {
+                var standing = _crew.StandingFor(g.Id);
+                var mine = _crew.IsAffiliated && _crew.Current.Id == g.Id;
+
+                var value = standing.Rep.ToString("0");
+                if (standing.Kills > 0) value += "  ·  " + standing.Kills + " kills";
+                if (standing.MoneyEarned > 0) value += "  ·  $" + standing.MoneyEarned.ToString("N0");
+
+                crews.Row(mine ? g.Name + " (yours)" : g.Name, value,
+                          mine ? g.Colour
+                               : standing.Rep < 0f ? Palette.Danger
+                               : standing.Rep > 0f ? Palette.Cash : (Color?)Palette.TextDim);
+            }
+            sections.Add(crews);
+
+            var ranks = new InfoSection { Title = "The ladder" };
+            for (var i = 0; i < PlayerState.RankNames.Length; i++)
+            {
+                var reached = _state.Rank >= i;
+                ranks.Row(PlayerState.RankNames[i],
+                          _state.Rank == i ? "you are here"
+                          : reached ? "passed"
+                          : PlayerState.RankThresholds[i].ToString("N0") + " respect",
+                          _state.Rank == i ? Palette.Cash
+                          : reached ? Palette.TextDim : (Color?)Palette.TextDim,
+                          RankUnlocks(i));
+            }
+            sections.Add(ranks);
+
+            Info?.Open("Status", _state.RankName, sections);
+        }
+
+        /// <summary>Prices, heat and what the block is doing to both.</summary>
+        private void ShowTradeNumbers()
+        {
+            var sections = new List<InfoSection>();
+
+            var holding = new InfoSection { Title = "Holding" };
+            holding.Row("Bulk", Stash.TotalBulk.ToString("0.#") + "g", null,
+                        "Has to be prepped before you can sell it");
+            holding.Row("Ready to sell", Stash.TotalPackaged.ToString("0.#") + "g", Palette.Cash);
+            holding.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
+            holding.Row("Street value", "$" + PackagedValue().ToString("N0"), Palette.Cash);
+            sections.Add(holding);
+
+            var block = new InfoSection { Title = "This block" };
+            block.Row("Where", _turf.ZoneName, TurfTint());
+            block.Row("Whose", _turf.Owner == null ? "nobody's" : _turf.Owner.Name,
+                      _turf.Owner?.Colour ?? (Color?)Palette.TextDim);
+            block.Row("To you", TurfWord(), TurfTint());
+            block.Row("Pays", Multiplier(_turf.TurfPriceMultiplier),
+                      _turf.TurfPriceMultiplier > 1.05f ? Palette.Cash : (Color?)Palette.Text);
+            block.Row("Attention", Multiplier(_turf.TurfHeatMultiplier),
+                      _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : (Color?)Palette.Cash);
+            block.Row("Lookouts", _crew.NearbyAllies.ToString(), null,
+                      _crew.NearbyAllies > 0 ? "Your people are nearby" : "You are on your own here");
+            sections.Add(block);
+
+            var contacts = new InfoSection { Title = "Your contacts" };
+            foreach (var s in _dealers.All)
+            {
+                contacts.Row(s.Name, ImportStatus(s), ImportTint(s));
+            }
+            sections.Add(contacts);
+
+            var market = new InfoSection { Title = "The market" };
+            market.Row("Right now", _pricing.PriceContext());
+            foreach (var drug in _drugs.All)
+            {
+                // Quoted at full purity: what the street pays for the real thing, before
+                // whatever the player has done to it.
+                market.Row(drug.Name, "$" + _pricing.StreetPrice(drug, 1f).ToString("N0") + " a gram");
+            }
+            sections.Add(market);
+
+            Info?.Open("The numbers", DrugsSummary(), sections);
+        }
+
+        /// <summary>A multiplier written the way a person would say it.</summary>
+        private static string Multiplier(float m)
+        {
+            if (m >= 1.30f) return "much better than normal";
+            if (m >= 1.05f) return "better than normal";
+            if (m <= 0.70f) return "much worse than normal";
+            if (m <= 0.95f) return "worse than normal";
+            return "normal";
+        }
+
+        private string TurfWord()
+        {
+            switch (_turf.Status)
+            {
+                case TurfStatus.Home: return "your block";
+                case TurfStatus.Hostile: return "enemy block -- dangerous";
+                case TurfStatus.Foreign: return "somebody else's block";
+                default: return "nobody's block";
+            }
+        }
+
+        private Color HeatTint()
+        {
+            return _state.Notoriety > 50f ? Palette.Danger
+                 : _state.Notoriety > 20f ? Palette.Warn
+                 : Palette.Cash;
+        }
+
+        /// <summary>How busy the pavement is, without making the player read a count.</summary>
+        private string FootfallWord()
+        {
+            var n = _postUp.Footfall;
+            if (n == 0) return "dead out here";
+            if (n <= 2) return "quiet";
+            if (n <= 5) return "steady";
+            return "busy -- and hot";
+        }
+
+        /// <summary>Purity as a dealer would describe it, not as a percentage.</summary>
+        private static string PurityWord(float purity)
+        {
+            if (purity >= 0.95f) return "untouched";
+            if (purity >= 0.75f) return "barely stepped on";
+            if (purity >= 0.50f) return "cut half and half";
+            return "stepped on hard";
+        }
+
+        private static Icon DrugIcon(DrugDef drug) => Icons.ForDrug(drug?.Id);
+
+        private static string DrugNames(GangDef gang)
+        {
+            if (gang.Drugs.Count == 0) return "whatever they can get";
+
+            var names = new List<string>();
+            foreach (var id in gang.Drugs) names.Add(id);
+            return string.Join(", ", names.ToArray());
+        }
+
+        private string RivalNames(GangDef gang)
+        {
+            if (gang.Rivals.Count == 0) return "nobody";
+
+            var names = new List<string>();
+            foreach (var id in gang.Rivals)
+            {
+                var rival = _gangs.Get(id);
+                names.Add(rival == null ? id : rival.Name);
+            }
+            return string.Join(", ", names.ToArray());
+        }
+
+        /// <summary>Everything you have done for one crew, and what they hold.</summary>
+        private void ShowCrewDetail(GangDef gang)
+        {
+            var standing = _crew.StandingFor(gang.Id);
+            var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
+
+            var sections = new List<InfoSection>();
+
+            var you = new InfoSection { Title = "You and them" };
+            you.Row("Where you stand", mine ? "one of theirs" : RelationLabel(gang),
+                    mine ? gang.Colour : standing.Rep < 0 ? Palette.Danger : (Color?)Palette.Text);
+            you.Row("Rep with them", standing.Rep.ToString("N0"),
+                    standing.Rep < 0 ? Palette.Danger : Palette.Cash);
+            you.Row("Bodies for them", standing.Kills.ToString("N0"));
+            you.Row("Deals done", standing.Deals.ToString("N0"));
+            you.Row("Money made them", "$" + standing.MoneyEarned.ToString("N0"), Palette.Cash);
+            sections.Add(you);
+
+            var them = new InfoSection { Title = "Them" };
+            them.Row("Blocks", gang.TurfHint);
+            them.Row("Product", DrugNames(gang));
+            them.Row("Beefing with", RivalNames(gang));
+            them.Row("To get in", gang.JoinRespect > 0
+                ? gang.JoinRespect.ToString("F0") + " respect"
+                : "just ask their leader");
+            sections.Add(them);
+
+            Info?.Open(gang.Name, mine ? "Your crew" : RelationLabel(gang), sections);
+        }
+
         // ---- root --------------------------------------------------------------
 
         public WheelPage BuildRoot()
@@ -99,20 +314,26 @@ namespace Hoodrich.Wheel
             page.Add("Weapons", "^", () => ShowVanillaWheel?.Invoke(),
                 detail: "Opens the game's own weapon wheel",
                 value: CurrentWeaponName());
+            page.WithIcon(Icons.Guns);
 
             page.AddSub("Drugs", "$", BuildDrugsPage,
-                detail: "Sell, cut and resupply",
+                detail: "Re-up, bag up, and go to work",
                 value: DrugsSummary(),
                 enabled: !_deal.IsBusy && !_cutting.IsBusy,
                 disabledReason: _deal.IsBusy ? "Already mid-deal" : "You are cutting");
+            page.WithIcon(Icons.Weed);
 
-            page.AddSub("Gangs", "%", BuildGangsPage,
-                detail: _crew.IsAffiliated ? "Crews and turf" : "Pick who you run with",
+            page.AddSub("Crew", "%", BuildGangsPage,
+                detail: _crew.IsAffiliated ? "Your people and your blocks" : "Nobody has put you on yet",
                 value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
+            page.WithIcon(Icons.Mask);
 
-            page.AddSub("Reputation", "*", BuildReputationPage,
-                detail: RankProgressLabel(),
+            // Not a page of wedges: a readout belongs on a readout screen, not on a ring you
+            // have to hold a button to keep open.
+            page.Add("Status", "*", ShowStatus,
+                detail: "How you are doing and who rates you",
                 value: _state.RankName);
+            page.WithIcon(Icons.Tattoo);
 
             return page;
         }
@@ -148,38 +369,49 @@ namespace Hoodrich.Wheel
             var bulk = Stash.TotalBulk;
 
             var page = new WheelPage("Drugs", DrugsSummary());
-            page.PanelTitle = "Holding";
-            page.Row("Bulk", bulk.ToString("0.#") + "g");
-            page.Row("Bagged", packaged.ToString("0.#") + "g");
-            page.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
-            page.Row("Street value", "$" + PackagedValue().ToString("N0"), Palette.Cash);
-            page.Row("Prices", _pricing.PriceContext());
 
-            page.AddSub("Buy", "+", BuildSupplyPage,
+            // Two lines, in the words you would use out loud. Grams, multipliers and market
+            // prices are a screenful on their own -- they live behind The numbers.
+            page.PanelTitle = "On you";
+            page.Row("Ready to sell", packaged > 0.005f ? packaged.ToString("0.#") + "g" : "nothing",
+                     packaged > 0.005f ? Palette.Cash : (Color?)Palette.TextDim);
+            page.Row("Still to prep", bulk > 0.005f ? bulk.ToString("0.#") + "g" : "nothing",
+                     bulk > 0.005f ? Palette.Warn : (Color?)Palette.TextDim);
+
+            page.AddSub("Re-up", "+", BuildSupplyPage,
                 detail: SupplyDetail(),
                 value: "$" + Game.Player.Money.ToString("N0"));
+            page.WithIcon(Icons.Money);
 
-            page.AddSub("Prep", "/", BuildCutPage,
-                detail: "Break weight down into sellable amounts",
-                value: bulk > 0.005f ? bulk.ToString("0.#") + "g bulk" : "",
+            page.AddSub("Bag it up", "/", BuildCutPage,
+                detail: "Break the weight down into what you can sell",
+                value: bulk > 0.005f ? bulk.ToString("0.#") + "g waiting" : "",
                 enabled: bulk > 0.005f,
-                disabledReason: "Nothing to work -- buy some weight first");
+                disabledReason: "Nothing to work -- go and re-up first");
+            page.WithIcon(Icons.Weed);
 
             if (_postUp.IsPosted)
             {
                 page.Add("Pack up", "x", () => _postUp.Stop("You packed up."),
                     detail: "Stop dealing and move on",
                     value: _postUp.Footfall + " passing");
+                page.WithIcon(Icons.Tick);
             }
             else
             {
-                page.AddSub("Sell", "$", BuildSellPage,
-                    detail: "Post up on a corner and let it come to you",
+                page.AddSub("Post up", "$", BuildSellPage,
+                    detail: "Stand on a corner and let it come to you",
                     value: packaged > 0.005f ? packaged.ToString("0.#") + "g ready" : "",
                     enabled: packaged > 0.005f,
-                    disabledReason: bulk > 0.005f ? "All you have is weight -- prep it first"
+                    disabledReason: bulk > 0.005f ? "All you have is weight -- bag it up first"
                                                   : "You are holding nothing");
+                page.WithIcon(Icons.Cash);
             }
+
+            page.Add("The numbers", "=", ShowTradeNumbers,
+                detail: "Prices, heat, and what this block is doing to both",
+                value: "");
+            page.WithIcon(Icons.Health);
 
             return page;
         }
@@ -269,11 +501,12 @@ namespace Hoodrich.Wheel
                 var stashed = den.BulkOf(drug.Id) + den.PackagedOf(drug.Id);
                 if (carried <= 0.005f && stashed <= 0.005f) continue;
 
-                page.Add(drug.Tag, drug.Tier >= 3 ? "!" : "o", () => DepositOne(here, drug),
-                    detail: "Deposit your " + drug.Name + "  ·  " + stashed.ToString("0.#") + "g here",
+                page.Add(drug.Name, drug.Tag, () => DepositOne(here, drug),
+                    detail: "Leave your " + drug.Name + " here  ·  " + stashed.ToString("0.#") + "g already stashed",
                     value: carried > 0.005f ? carried.ToString("0.#") + "g on you" : "none on you",
                     enabled: carried > 0.005f,
                     disabledReason: "None on you");
+                page.WithIcon(Icons.ForDrug(drug.Id));
             }
 
             return page;
@@ -388,78 +621,6 @@ namespace Hoodrich.Wheel
             }
 
             return moved;
-        }
-
-        /// <summary>
-        /// The books: every product's bulk and street-ready weight, and where every supply
-        /// line currently stands.
-        ///
-        /// Segments are the products themselves rather than actions, so flicking round the ring
-        /// reads each one out in the hub; the standing board lives in the side panel where there
-        /// is room for it.
-        /// </summary>
-        private WheelPage BuildDrugStatusPage()
-        {
-            var page = new WheelPage("Status", DrugsSummary());
-
-            page.PanelTitle = "Imports";
-
-            // Where every supply line stands right now.
-            foreach (var s in _dealers.All)
-            {
-                page.Row(s.Tag, ImportStatus(s), ImportTint(s));
-            }
-
-            page.Row("", "");
-            page.Row("Bulk", Stash.TotalBulk.ToString("0.#") + "g");
-            page.Row("Ready to sell", Stash.TotalPackaged.ToString("0.#") + "g",
-                     Stash.TotalPackaged > 0.005f ? Palette.Cash : Palette.TextDim);
-            page.Row("Free space", Stash.FreeSpace.ToString("0") + "g",
-                     Stash.FreeSpace < 20f ? Palette.Warn : (System.Drawing.Color?)null);
-            page.Row("Street value", "$" + PackagedValue().ToString("N0"), Palette.Cash);
-
-            // Both of these move the street price, so they belong on the product board.
-            page.Row("Prices", _pricing.PriceContext());
-            page.Row("Heat", _state.Notoriety.ToString("F0") + "%",
-                     _state.Notoriety > 50f ? Palette.Danger
-                        : _state.Notoriety > 20f ? Palette.Warn : (System.Drawing.Color?)null);
-
-            // Every product in the catalogue, held or not, so the board never goes blank.
-            foreach (var d in _drugs.All)
-            {
-                var drug = d;
-                var bulk = Stash.BulkOf(drug.Id);
-                var ready = Stash.PackagedOf(drug.Id);
-                var purity = Stash.PurityOf(drug.Id);
-                var holding = bulk > 0.005f || ready > 0.005f;
-
-                var value = ready > 0.005f
-                    ? ready.ToString("0.#") + "g ready"
-                    : bulk > 0.005f ? bulk.ToString("0.#") + "g bulk" : "none";
-
-                var market = _market == null ? "" : "  ·  mkt " + _market.TrendLabel(drug.Id);
-
-                
-
-                var detail = !holding
-                    ? "Not holding any" + market
-                    : bulk.ToString("0.#") + "g bulk  ·  " + ready.ToString("0.#") + "g cut" +
-                      (ready > 0.005f ? " @ " + (purity * 100f).ToString("0") + "%" : "") + market;
-
-                page.Add(drug.Tag, drug.Tier >= 3 ? "!" : "o", null,
-                    detail: detail,
-                    value: value,
-                    enabled: holding,
-                    disabledReason: "Not holding any " + drug.Name);
-
-                if (holding && ready > 0.005f)
-                {
-                    page.Items[page.Items.Count - 1].Value =
-                        ready.ToString("0.#") + "g = $" + _pricing.SaleValue(drug, ready, purity).ToString("N0");
-                }
-            }
-
-            return page;
         }
 
         /// <summary>One-line state of a supply line, for the import board.</summary>
@@ -588,18 +749,13 @@ namespace Hoodrich.Wheel
         private WheelPage BuildSellPage()
         {
             var page = new WheelPage("Post up", "Pick what you are moving");
-            page.PanelTitle = "This spot";
-            page.Row("Zone", _turf.ZoneName);
-            page.Row("Status", _turf.StatusLine, TurfTint());
-            page.Row("Turf price", "x" + _pricing.TurfMultiplier.ToString("0.00"));
-            page.Row("Heat per sale", "x" + _turf.TurfHeatMultiplier.ToString("0.0"),
-                     _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : Palette.Cash);
-            page.Row("Lookouts", _crew.NearbyAllies.ToString(),
-                     _crew.NearbyAllies > 0 ? Palette.Cash : Palette.TextDim);
-            page.Row("", "");
-            page.Row("Passing now", _postUp.Footfall.ToString(),
+
+            page.PanelTitle = _turf.ZoneName;
+            page.Row("This spot", TurfWord(), TurfTint());
+            page.Row("Foot traffic", FootfallWord(),
                      _postUp.Footfall == 0 ? Palette.Warn : Palette.Cash);
-            page.Row("Busier is", "faster and hotter", Palette.TextDim);
+            page.Row("Your people", _crew.NearbyAllies > 0 ? "nearby" : "not around",
+                     _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim);
 
             var held = Stash.WithPackaged(_drugs);
             if (held.Count == 0)
@@ -617,12 +773,13 @@ namespace Hoodrich.Wheel
                 var value = _pricing.SaleValue(product, _cfg.PostUpDealGrams, purity);
                 var risk = Pricing.BadCutChance(purity);
 
-                page.Add(product.Tag, product.Tier >= 3 ? "!" : "o",
+                page.Add(product.Name, product.Tag,
                     () => PostUpWith(product),
-                    detail: (purity * 100f).ToString("0") + "% pure" +
-                            (risk > 0.01f ? "  ~ " + (risk * 100f).ToString("0") + "% knockback" : ""),
+                    detail: PurityWord(purity) +
+                            (risk > 0.15f ? " -- buyers will notice" : ""),
                     value: stock.ToString("0.#") + "g  ·  $" + value.ToString("N0") + " a sale",
                     enabled: true);
+                page.WithIcon(DrugIcon(product));
             }
 
             return page;
@@ -648,21 +805,21 @@ namespace Hoodrich.Wheel
 
         private WheelPage BuildCutPage()
         {
-            var page = new WheelPage("Cut", "Bulk into street units");
-            page.PanelTitle = "Cutting";
-            page.Row("Bulk held", Stash.TotalBulk.ToString("0.#") + "g");
-            page.Row("Bagged", Stash.TotalPackaged.ToString("0.#") + "g");
-            page.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
+            var page = new WheelPage("Bag it up", "Pick what you are working");
 
             var blocker = _cutting.WhyCannotCut();
-            page.Row("Ready", blocker == null ? "yes" : "no",
-                     blocker == null ? Palette.Cash : Palette.Warn);
+
+            page.PanelTitle = "On you";
+            page.Row("Weight to work", Stash.TotalBulk.ToString("0.#") + "g", Palette.Warn);
+            page.Row("Already bagged", Stash.TotalPackaged.ToString("0.#") + "g", Palette.Cash);
+            page.Row("Can you now", blocker == null ? "yes" : blocker,
+                     blocker == null ? Palette.Cash : (Color?)Palette.Warn);
 
             var bulk = Stash.WithBulk(_drugs);
             if (bulk.Count == 0)
             {
-                page.Add("Nothing", "-", null, detail: "No bulk on you",
-                         enabled: false, disabledReason: "No bulk on you");
+                page.Add("Nothing", "-", null, detail: "No weight on you",
+                         enabled: false, disabledReason: "No weight on you");
                 return page;
             }
 
@@ -671,12 +828,13 @@ namespace Hoodrich.Wheel
                 var product = drug;
                 var have = Stash.BulkOf(product.Id);
 
-                page.AddSub(product.Tag, product.Tier >= 3 ? "!" : "o",
+                page.AddSub(product.Name, product.Tag,
                     () => BuildPurityPage(product),
-                    detail: "Choose how hard to step on it",
-                    value: have.ToString("0.#") + "g bulk",
+                    detail: product.SplitVerb + " it -- then choose how far to stretch it",
+                    value: have.ToString("0.#") + "g waiting",
                     enabled: blocker == null,
                     disabledReason: blocker ?? "");
+                page.WithIcon(Icons.ForDrug(product.Id));
             }
 
             return page;
@@ -687,11 +845,12 @@ namespace Hoodrich.Wheel
             var have = Stash.BulkOf(product.Id);
             var batch = Math.Min(have, 50f);
 
-            var page = new WheelPage(product.Name, "Cutting " + batch.ToString("0") + "g");
-            page.PanelTitle = product.Name + " batch";
-            page.Row("Bulk on hand", have.ToString("0.#") + "g");
-            page.Row("Batch size", batch.ToString("0") + "g");
-            page.Row("Base price", "$" + product.BasePrice.ToString("0") + "/g");
+            var page = new WheelPage(product.Name, "How far do you stretch it");
+
+            page.PanelTitle = "Working " + batch.ToString("0") + "g";
+            page.Row("Weight on you", have.ToString("0.#") + "g");
+            page.Row("Stretch it further", "more units, cheaper each", Palette.TextDim);
+            page.Row("Keep it clean", "fewer units, better each", Palette.TextDim);
 
             foreach (var p in PurityOptions)
             {
@@ -701,15 +860,17 @@ namespace Hoodrich.Wheel
                 var risk = Pricing.BadCutChance(purity);
                 var fits = Stash.FreeSpace >= yield - batch - 0.001f;
 
-                page.Add((purity * 100f).ToString("0") + "%",
+                page.Add(PurityWord(purity),
                     risk > 0.2f ? "!" : "o",
                     () => Cut(product, batch, purity),
                     detail: risk < 0.01f
-                        ? "Clean. Buyers never blink."
-                        : (risk * 100f).ToString("0") + "% chance of a knockback",
+                        ? "Nobody is going to complain about this"
+                        : risk < 0.2f ? "The odd buyer might notice"
+                        : "Expect people to hand it back",
                     value: yield.ToString("0") + "g  ~$" + gross.ToString("N0"),
                     enabled: fits,
                     disabledReason: "No room for " + yield.ToString("0") + "g");
+                page.WithIcon(Icons.ForDrug(product.Id));
             }
 
             return page;
@@ -878,13 +1039,14 @@ namespace Hoodrich.Wheel
                     : !fits ? "No room -- sell or drop some"
                     : "";
 
-                page.Add(product.Tag, product.Tier >= 3 ? "!" : "o",
+                page.Add(product.Name, product.Tag,
                     () => Buy(def, product, lot, cost),
-                    detail: "$" + _pricing.WholesalePrice(product, mult).ToString("0") + "/g bulk" +
+                    detail: "$" + _pricing.WholesalePrice(product, mult).ToString("0") + " a gram" +
                             (hasStock ? "  ·  he has " + onHand.ToString("0") + "g" : ""),
-                    value: hasStock ? lot.ToString("0") + "g for $" + cost.ToString("N0") : "NONE",
+                    value: hasStock ? lot.ToString("0") + "g for $" + cost.ToString("N0") : "none left",
                     enabled: reason.Length == 0,
                     disabledReason: reason);
+                page.WithIcon(Icons.ForDrug(product.Id));
             }
 
             return page;
@@ -940,44 +1102,45 @@ namespace Hoodrich.Wheel
         /// </summary>
         private WheelPage BuildGangsPage()
         {
-            var page = new WheelPage("Gangs",
+            var page = new WheelPage("Crew",
                 _crew.IsAffiliated ? "Running with " + _crew.Current.Name : "Running solo");
 
-            // Operational context only. The standing numbers -- rep, kills, money made for
-            // each crew -- all live on the Reputation page so they are in one place.
-            page.PanelTitle = _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated";
-            page.Row("Affiliation", _crew.IsAffiliated ? _crew.Current.Name : "none",
-                     _crew.IsAffiliated ? _crew.Current.Colour : (System.Drawing.Color?)Palette.TextDim);
-            page.Row("Rank", _state.RankName);
-            page.Row("Respect", _state.Respect.ToString("N0"));
-            page.Row("Lookouts near", _crew.NearbyAllies.ToString(),
-                     _crew.NearbyAllies > 0 ? Palette.Cash : Palette.TextDim);
-            page.Row("Standing on", _turf.ZoneName, TurfTint());
-            page.Row("This block", _turf.StatusLine, TurfTint());
+            // Where you are and who is around you -- the things that change what happens if you
+            // pull something out here. Rep, kills and money made are a readout, not a heads-up,
+            // so they sit behind Status.
+            page.PanelTitle = _crew.IsAffiliated ? _crew.Current.Name : "Nobody";
+            page.Row("You are on", _turf.ZoneName, TurfTint());
+            page.Row("Whose block", TurfWord(), TurfTint());
+            page.Row("Your people", _crew.NearbyAllies > 0 ? "nearby" : "not around",
+                     _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim);
 
             // Only YOUR crew belongs here. Listing all seven turned the wheel into a directory,
             // and joining is something you do by finding a leader in the world, not by picking
-            // a wedge. Standing with the other crews is a readout, and lives on Reputation.
-            page.AddSub("Turf", "#", BuildTurfPage,
-                detail: _turf.StatusLine,
+            // a wedge.
+            page.AddSub("This block", "#", BuildTurfPage,
+                detail: TurfWord(),
                 value: _turf.ZoneName);
+            page.WithIcon(Icons.Garage);
 
             if (_crew.IsAffiliated)
             {
                 var mine = _crew.Current;
 
                 page.AddSub("My crew", "*", () => BuildGangPage(mine),
-                    detail: mine.TurfHint,
+                    detail: "They run " + mine.TurfHint,
                     value: mine.Name);
                 page.Items[page.Items.Count - 1].Tint = mine.Colour;
+                page.WithIcon(Icons.Mask);
 
                 page.Add("Homies", "^", null,
                     detail: "Pick up a homie to run with you",
                     enabled: false, disabledReason: "Not in this build yet");
+                page.WithIcon(Icons.Clothes);
 
                 page.Add("Activities", "!", null,
                     detail: "Work the crew puts your way",
                     enabled: false, disabledReason: "Not in this build yet");
+                page.WithIcon(Icons.Warning);
             }
             else
             {
@@ -1024,40 +1187,29 @@ namespace Hoodrich.Wheel
             var page = new WheelPage(gang.Name, mine ? "Your crew" : RelationLabel(gang));
 
             page.PanelTitle = gang.Name;
-            page.Row("Standing", mine ? "your crew" : RelationLabel(gang),
-                     mine ? gang.Colour : atWar ? Palette.Danger : (System.Drawing.Color?)null);
-            page.Row("Rep", standing.Rep.ToString("N0"),
-                     standing.Rep < 0 ? Palette.Danger : Palette.Cash);
-            page.Row("Kills for them", standing.Kills.ToString("N0"));
-            page.Row("Money made", "$" + standing.MoneyEarned.ToString("N0"), Palette.Cash);
-            page.Row("Deals", standing.Deals.ToString("N0"));
-            page.Row("They move", string.Join(", ", gang.Drugs.ToArray()).ToUpperInvariant());
-            page.Row("Turf", gang.TurfHint);
-            page.Row("At war with", gang.Rivals.Count == 0 ? "nobody"
-                                                           : string.Join(", ", gang.Rivals.ToArray()));
+            page.Row("They run", gang.TurfHint);
+            page.Row("They move", DrugNames(gang));
+            page.Row("Beefing with", RivalNames(gang));
+            page.Row("With you", mine ? "your crew" : RelationLabel(gang),
+                     mine ? gang.Colour : atWar ? Palette.Danger : (Color?)null);
 
             // Join / leave.
             if (mine)
             {
-                page.Add("Leave", "x", () => _crew.Leave(),
-                    detail: "Walk away. Costs you rep with them.",
-                    value: "-25 rep");
+                page.Add("Walk away", "x", () => _crew.Leave(),
+                    detail: "Leave the crew. They will not forget it.",
+                    value: "");
+                page.WithIcon(Icons.Warning);
             }
             else
             {
-                var reason = atWar ? "At war with " + _crew.Current.Name
-                    : standing.Rep <= -50f ? "They want you dead"
-                    : _state.Respect < gang.JoinRespect
-                        ? "Need " + gang.JoinRespect.ToString("F0") + " respect"
-                        : "";
-
-                page.Add("Join", "+", () => Join(gang),
-                    detail: _crew.IsAffiliated
-                        ? "Switch crews -- " + _crew.Current.Name + " will remember"
-                        : "Run with " + gang.Name,
-                    value: gang.JoinRespect > 0 ? gang.JoinRespect.ToString("F0") + " respect" : "free",
-                    enabled: reason.Length == 0,
-                    disabledReason: reason);
+                // Joining is a conversation with the man himself, never a wedge.
+                page.Add("Not your crew", "-", null,
+                    detail: "Find their leader on the map and ask him yourself",
+                    value: "",
+                    enabled: false,
+                    disabledReason: "Go and talk to them");
+                page.WithIcon(Icons.Locked);
             }
 
             // Their supply contact, if they have one.
@@ -1070,17 +1222,19 @@ namespace Hoodrich.Wheel
                     ? "everything"
                     : string.Join(", ", plug.Drugs.ToArray()).ToUpperInvariant();
 
-                page.Add("Their plug", "+", () => Call(plug),
+                page.Add("Call the plug", "+", () => Call(plug),
                     detail: plug.BuyLine,
-                    value: carries + "  x" + mult.ToString("0.00"),
+                    value: carries + "  ·  " + Multiplier(1f / Math.Max(0.01f, mult)),
                     enabled: refusal == null,
                     disabledReason: refusal ?? "");
+                page.WithIcon(Icons.Money);
             }
             else
             {
-                page.Add("Their plug", "+", null,
-                    detail: "They have no contact you can call",
+                page.Add("Call the plug", "+", null,
+                    detail: "They have nobody you can call",
                     enabled: false, disabledReason: "No contact");
+                page.WithIcon(Icons.Locked);
             }
 
             // Borrowing. Only your own crew will front you anything.
@@ -1088,21 +1242,21 @@ namespace Hoodrich.Wheel
             var theirLoan = loan != null && loan.IsActive &&
                             string.Equals(loan.GangId, gang.Id, StringComparison.OrdinalIgnoreCase);
 
-            page.AddSub("Loan", "$", () => BuildLoanPage(gang),
+            page.AddSub("Borrow money", "$", () => BuildLoanPage(gang),
                 detail: theirLoan
-                    ? "Owe $" + loan.TotalOwed.ToString("N0") + "  ·  vig due in " + loan.DaysLeft + "d"
-                    : mine ? "Borrow against your standing" : "They will not front you anything",
-                value: theirLoan ? "$" + loan.TotalOwed.ToString("N0") + " OWED" : "",
+                    ? "You owe $" + loan.TotalOwed.ToString("N0") + ", due in " + loan.DaysLeft + " days"
+                    : mine ? "They will front you against your name"
+                           : "They will not front you anything",
+                value: theirLoan ? "$" + loan.TotalOwed.ToString("N0") + " owed" : "",
                 enabled: mine || theirLoan,
                 disabledReason: loan != null && loan.IsActive ? "You already owe " + loan.GangId
                                                               : "Not your crew");
+            page.WithIcon(Icons.Cash);
 
-            page.Add("Their turf", "#", () => LogGangTurf(gang),
-                detail: "Write their claimed zones to the log",
-                value: gang.Turf.Count + " zones");
-
-            page.Add("Dossier", "*", () => ShowGangDossier(gang, standing, mine),
-                detail: "Full standing with this crew");
+            page.Add("How you stand", "*", () => ShowCrewDetail(gang),
+                detail: "What you have done for them, and what they hold",
+                value: "");
+            page.WithIcon(Icons.Tattoo);
 
             return page;
         }
@@ -1117,46 +1271,52 @@ namespace Hoodrich.Wheel
             var active = loan != null && loan.IsActive &&
                          string.Equals(loan.GangId, gang.Id, StringComparison.OrdinalIgnoreCase);
 
-            var page = new WheelPage("Loan", gang.Name);
-            page.PanelTitle = active ? "Outstanding" : "Terms";
+            var page = new WheelPage("Borrow money", gang.Name);
 
             if (active)
             {
-                page.Row("Principal", "$" + loan.Principal.ToString("N0"));
-                page.Row("Vig due", "$" + loan.Vig.ToString("N0"), Palette.Warn);
-                page.Row("Total owed", "$" + loan.TotalOwed.ToString("N0"), Palette.Danger);
-                page.Row("Due in", loan.DaysLeft + " days",
-                         loan.DaysLeft <= 1 ? Palette.Danger : (System.Drawing.Color?)null);
-                page.Row("Missed", loan.MissedPeriods + " / " + _cfg.LoanDefaultAfterMissed,
-                         loan.MissedPeriods > 0 ? Palette.Danger : Palette.TextDim);
-                page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
+                page.PanelTitle = "What you owe";
+                page.Row("Owed", "$" + loan.TotalOwed.ToString("N0"), Palette.Danger);
+                page.Row("Due", loan.DaysLeft <= 0 ? "now" : "in " + loan.DaysLeft + " days",
+                         loan.DaysLeft <= 1 ? Palette.Danger : (Color?)null);
+                page.Row("You have", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
 
-                page.Add("Pay vig", "$", PayVig,
-                    detail: "Clears this period and resets the clock. Principal stays.",
+                if (loan.MissedPeriods > 0)
+                {
+                    page.Row("Missed payments", loan.MissedPeriods.ToString(), Palette.Danger);
+                }
+
+                page.Add("Pay the vig", "$", PayVig,
+                    detail: "Buys you another " + _cfg.LoanPeriodDays + " days. You still owe the rest.",
                     value: "$" + loan.Vig.ToString("N0"),
                     enabled: Game.Player.Money >= loan.Vig,
-                    disabledReason: "Short $" + (loan.Vig - Game.Player.Money).ToString("N0"));
+                    disabledReason: "You are $" + (loan.Vig - Game.Player.Money).ToString("N0") + " short");
+                page.WithIcon(Icons.Money);
 
-                page.Add("Pay it off", "*", PayOff,
-                    detail: "Clear the whole debt and be done",
+                page.Add("Clear it", "*", PayOff,
+                    detail: "Pay the lot and be done with them",
                     value: "$" + loan.TotalOwed.ToString("N0"),
                     enabled: Game.Player.Money >= loan.TotalOwed,
-                    disabledReason: "Short $" + (loan.TotalOwed - Game.Player.Money).ToString("N0"));
+                    disabledReason: "You are $" + (loan.TotalOwed - Game.Player.Money).ToString("N0") + " short");
+                page.WithIcon(Icons.Tick);
 
                 return page;
             }
 
             var cap = MaxLoanFor();
-            page.Row("Your limit", "$" + cap.ToString("N0"), Palette.Cash);
-            page.Row("Vig", _cfg.LoanVigPercent.ToString("0") + "% per " + _cfg.LoanPeriodDays + " days");
-            page.Row("Default after", _cfg.LoanDefaultAfterMissed + " missed periods", Palette.Warn);
-            page.Row("Rank", _state.RankName);
+
+            page.PanelTitle = "What they will do";
+            page.Row("They will lend", "up to $" + cap.ToString("N0"), Palette.Cash);
+            page.Row("You pay back", _cfg.LoanVigPercent.ToString("0") + "% on top, every " +
+                                     _cfg.LoanPeriodDays + " days");
+            page.Row("Miss it", "they write you off", Palette.Warn);
 
             if (cap < 100)
             {
                 page.Add("Nothing", "-", null,
                     detail: "You are not worth lending to yet",
-                    enabled: false, disabledReason: "Rank up first");
+                    enabled: false, disabledReason: "Make a name first");
+                page.WithIcon(Icons.Locked);
                 return page;
             }
 
@@ -1169,8 +1329,9 @@ namespace Hoodrich.Wheel
 
                 page.Add("$" + (amount / 1000f).ToString("0.#") + "k", "$",
                     () => Borrow(gang, amount),
-                    detail: "Vig $" + vig.ToString("N0") + " every " + _cfg.LoanPeriodDays + " days",
+                    detail: "Costs you $" + vig.ToString("N0") + " every " + _cfg.LoanPeriodDays + " days",
                     value: "$" + amount.ToString("N0"));
+                page.WithIcon(Icons.Cash);
             }
 
             return page;
@@ -1243,53 +1404,23 @@ namespace Hoodrich.Wheel
             return null;
         }
 
-        private void LogGangTurf(GangDef gang)
-        {
-            Log.Info("TURF  " + gang.Id.PadRight(12) + " " + string.Join(", ", gang.Turf.ToArray()));
-            Notify.Ticker("~y~" + gang.Name + "~s~ holds " + gang.Turf.Count + " zones -- written to the log.");
-        }
-
-        private void ShowGangDossier(GangDef gang, GangStanding standing, bool mine)
-        {
-            Notify.Ticker(
-                "~y~" + gang.Name + "~s~  " + (mine ? "your crew" : RelationLabel(gang)) + "\n" +
-                "Rep " + standing.Rep.ToString("N0") + "  ·  " + standing.Kills + " kills  ·  " +
-                standing.Deals + " deals\n" +
-                "Made ~g~$" + standing.MoneyEarned.ToString("N0") + "~s~ under them\n" +
-                gang.TurfHint);
-        }
-
-        private void Join(GangDef gang)
-        {
-            var failure = _crew.Join(gang, _state.Respect);
-            if (failure != null) Notify.Problem(failure);
-        }
-
         // ---- turf --------------------------------------------------------------
 
         private WheelPage BuildTurfPage()
         {
-            var page = new WheelPage("Turf", _turf.StatusLine);
+            var page = new WheelPage("This block", _turf.ZoneName);
 
             page.PanelTitle = _turf.ZoneName;
-            page.Row("Zone code", _turf.ZoneCode);
-            page.Row("Claimed by", _turf.Owner == null ? "nobody" : _turf.Owner.Name,
-                     _turf.Owner?.Colour ?? (System.Drawing.Color?)Palette.TextDim);
-            page.Row("To you", _turf.Status.ToString(), TurfTint());
-            page.Row("Price here", "x" + _turf.TurfPriceMultiplier.ToString("0.00"),
-                     _turf.TurfPriceMultiplier > 1.05f ? Palette.Cash : Palette.Text);
-            page.Row("Heat here", "x" + _turf.TurfHeatMultiplier.ToString("0.0"),
-                     _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : Palette.Cash);
-            page.Row("Seen dealing", _turf.IsExposed ? "yes" : "no",
-                     _turf.IsExposed ? Palette.Warn : Palette.TextDim);
+            page.Row("Whose", _turf.Owner == null ? "nobody's" : _turf.Owner.Name,
+                     _turf.Owner?.Colour ?? (Color?)Palette.TextDim);
+            page.Row("To you", TurfWord(), TurfTint());
+            page.Row("Been clocked", _turf.IsExposed ? "yes -- they have seen you" : "not yet",
+                     _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim);
 
-            page.Add("Log zone", "=", LogZone,
-                detail: "Writes this zone code to Hoodrich.log",
-                value: _turf.ZoneCode);
-
-            page.Add("Dossier", "*", ShowTurfDossier,
-                detail: "Who claims what, in the log",
+            page.Add("The numbers", "=", ShowTradeNumbers,
+                detail: "What this block pays and what it costs you",
                 value: "");
+            page.WithIcon(Icons.Health);
 
             var claimBlocker =
                 _war.IsActive ? "You are already in a war"
@@ -1298,15 +1429,16 @@ namespace Hoodrich.Wheel
                 : _turf.Status == TurfStatus.Home ? "This is already your block"
                 : "";
 
-            page.AddSub("Claim", "#", BuildClaimPage,
+            page.AddSub("Take it", "#", BuildClaimPage,
                 detail: claimBlocker.Length == 0
                     ? "Take " + _turf.ZoneName + " off " + _turf.Owner.Name
                     : "Take this block by force",
                 value: claimBlocker.Length == 0
-                    ? _war.DefenderReinforcements(_turf.ZoneCode) + " defenders"
+                    ? _war.DefenderReinforcements(_turf.ZoneCode) + " to fight"
                     : "",
                 enabled: claimBlocker.Length == 0,
                 disabledReason: claimBlocker);
+            page.WithIcon(Icons.Warning);
 
             return page;
         }
@@ -1371,114 +1503,7 @@ namespace Hoodrich.Wheel
             }
         }
 
-        /// <summary>
-        /// Prints the current zone code so the turf map can be filled in accurately from
-        /// inside the game rather than guessed at in a text editor.
-        /// </summary>
-        private void LogZone()
-        {
-            var owner = _turf.Owner == null ? "unclaimed" : _turf.Owner.Id;
-            Log.Info("ZONE  code=\"" + _turf.ZoneCode + "\"  name=\"" + _turf.ZoneName +
-                     "\"  owner=" + owner);
-            Notify.Ticker("~y~" + _turf.ZoneCode + "~s~ (" + _turf.ZoneName + ") -> " + owner +
-                          "  logged");
-        }
-
-        private void ShowTurfDossier()
-        {
-            foreach (var g in _gangs.All)
-            {
-                Log.Info("TURF  " + g.Id.PadRight(12) + " " + string.Join(", ", g.Turf.ToArray()));
-            }
-            Notify.Ticker("Turf map written to Hoodrich.log.");
-        }
-
         // ---- reputation ---------------------------------------------------------
-
-        /// <summary>
-        /// Everything about where you stand: your own rank ladder, and your standing with every
-        /// crew in the city.
-        ///
-        /// Gangs is for doing things -- joining, buying, checking whose block you are on.
-        /// Reputation is for reading the numbers those actions produced, all in one ring, so
-        /// you never have to walk seven gang pages to compare where you are welcome.
-        /// </summary>
-        private WheelPage BuildReputationPage()
-        {
-            var page = new WheelPage("Reputation", RankProgressLabel());
-
-            var totalKills = 0;
-            var totalGangDeals = 0;
-            long gangEarnings = 0;
-            foreach (var s in _crew.AllStandings)
-            {
-                totalKills += s.Kills;
-                totalGangDeals += s.Deals;
-                gangEarnings += s.MoneyEarned;
-            }
-
-            page.PanelTitle = _state.RankName;
-            page.Row("Respect", _state.Respect.ToString("N0"));
-            page.Row("Next rank", RankProgressLabel(),
-                     _state.Rank >= PlayerState.RankNames.Length - 1 ? Palette.Cash
-                                                                     : (System.Drawing.Color?)null);
-            page.Row("Heat", _state.Notoriety.ToString("F0") + "%",
-                     _state.Notoriety > 50f ? Palette.Danger
-                        : _state.Notoriety > 20f ? Palette.Warn : Palette.Cash);
-            page.Row("", "");
-            page.Row("Crew", _crew.IsAffiliated ? _crew.Current.Name : "solo",
-                     _crew.IsAffiliated ? _crew.Current.Colour : (System.Drawing.Color?)Palette.TextDim);
-            page.Row("Deals closed", _state.TotalDealsMade.ToString("N0"));
-            page.Row("Total earned", "$" + _state.TotalEarned.ToString("N0"), Palette.Cash);
-            page.Row("", "");
-            page.Row("Rival kills", totalKills.ToString("N0"));
-            page.Row("Deals for crews", totalGangDeals.ToString("N0"));
-            page.Row("Earned for crews", "$" + gangEarnings.ToString("N0"), Palette.Cash);
-
-            // Standing with every crew goes in the PANEL, not on the ring. Seven wedges of
-            // pure readout was noise: the wheel is for picking things, the panel is for reading.
-            page.Row("", "");
-            foreach (var g in _gangs.All)
-            {
-                var standing = _crew.StandingFor(g.Id);
-                var mine = _crew.IsAffiliated && _crew.Current.Id == g.Id;
-
-                var value = standing.Rep.ToString("0");
-                if (standing.Kills > 0) value += "  ·  " + standing.Kills + "k";
-                if (standing.MoneyEarned > 0) value += "  ·  $" + standing.MoneyEarned.ToString("N0");
-
-                page.Row(mine ? g.Tag + "  (yours)" : g.Tag, value,
-                         mine ? g.Colour
-                              : standing.Rep < 0f ? Palette.Danger
-                              : standing.Rep > 0f ? Palette.Cash : (System.Drawing.Color?)Palette.TextDim);
-            }
-
-            // The ring itself is the rank ladder: what you passed, where you are, what is next.
-            var current = _state.Rank;
-
-            for (var i = 0; i < PlayerState.RankNames.Length; i++)
-            {
-                var rank = i;
-                var threshold = PlayerState.RankThresholds[rank];
-                var reached = current >= rank;
-                var isCurrent = current == rank;
-
-                var detail = isCurrent
-                    ? "You are here -- " + RankProgressLabel()
-                    : reached ? "Passed" : "Needs " + threshold.ToString("N0") + " respect";
-
-                page.Add(PlayerState.RankNames[rank],
-                    isCurrent ? "*" : reached ? "o" : "-",
-                    null,
-                    detail: detail + ".  " + RankUnlocks(rank),
-                    value: reached ? (isCurrent ? "CURRENT" : "passed")
-                                   : threshold.ToString("N0") + " respect",
-                    enabled: reached,
-                    disabledReason: "Needs " + threshold.ToString("N0") + " respect.  " + RankUnlocks(rank));
-            }
-
-            return page;
-        }
 
         /// <summary>
         /// What a rank buys you, derived from the live data rather than hardcoded, so editing

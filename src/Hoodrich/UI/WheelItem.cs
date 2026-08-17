@@ -95,6 +95,25 @@ namespace Hoodrich.UI
             return this;
         }
 
+        /// <summary>
+        /// Gives the item just added a real game sprite instead of its text glyph.
+        ///
+        /// Readiness is checked per frame rather than here, because a texture dictionary
+        /// usually arrives a frame or two after the wheel opens -- evaluating it at build time
+        /// would leave every icon permanently missing on the first open.
+        /// </summary>
+        public WheelPage WithIcon(Icon icon)
+        {
+            if (Items.Count == 0 || !icon.IsSet) return this;
+
+            var item = Items[Items.Count - 1];
+            item.IconDict = icon.Dict;
+            item.IconTexture = icon.Texture;
+            item.IconReady = () => Draw.EnsureTextureDict(icon.Dict);
+
+            return this;
+        }
+
         public WheelPage Add(string label, string symbol, Action onSelect, string detail = "",
                              string value = "", bool enabled = true, string disabledReason = "")
         {

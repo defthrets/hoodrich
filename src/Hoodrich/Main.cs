@@ -55,6 +55,7 @@ namespace Hoodrich
         private readonly GangLeaders _leaders;
         private readonly LeaderTalk _leaderTalk;
         private readonly Conversation _talk;
+        private readonly InfoPanel _info;
         private readonly TerritoryState _territory;
         private readonly TurfWar _war;
         private readonly HideoutManager _hideouts;
@@ -105,6 +106,8 @@ namespace Hoodrich
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
                 _talk = new Conversation();
+
+                _info = new InfoPanel();
                 _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs);
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
@@ -113,6 +116,7 @@ namespace Hoodrich
                                            _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts, _postUp, _leaders);
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
+                pages.Info = _info;
 
                 
 
@@ -146,6 +150,51 @@ namespace Hoodrich
                 Draw.BeginFrame();
 
                 var available = IsPlayable();
+
+                // A popup readout owns the screen the same way a conversation does: the wheel would
+
+
+                // fight it for the same buttons.
+
+
+                if (_info.IsOpen)
+
+
+                {
+
+
+                    if (!available) _info.Close();
+
+
+                    else
+
+
+                    {
+
+
+                        _info.Update();
+
+
+                        _info.Draw();
+
+
+                        SlowTick();
+
+
+                        _failures = 0;
+
+
+                        return;
+
+
+                    }
+
+
+                }
+
+
+                
+
 
                 // A conversation owns the screen while it is up: the wheel would fight it for
                 // the same buttons, and you cannot be talking to a man and shopping at once.
