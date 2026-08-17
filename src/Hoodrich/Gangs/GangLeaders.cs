@@ -484,22 +484,36 @@ namespace Hoodrich.Gangs
         /// to disable, and a prompt you cannot answer is worse than no prompt -- so the enabled
         /// and disabled paths are both checked, and E is accepted as well.
         /// </summary>
-        private static bool WantsToTalk()
+        private bool WantsToTalk()
         {
+            // Level-read rather than JUST_PRESSED: the cellphone controls report their edge
+            // inconsistently depending on whether the phone is considered active, which is why
+            // the prompt appeared but the press did nothing. The edge is tracked here instead.
+            var down = false;
+
             try
             {
-                if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.PhoneRight)) return true;
-                if (Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0, (int)Control.PhoneRight)) return true;
-                if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, (int)Control.PhoneRight)) return true;
-                if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return true;
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 2, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 2, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Right)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E);
             }
             catch
             {
                 // A control that cannot be read is simply not pressed.
             }
 
-            return false;
+            var pressed = down && !_talkHeld;
+            _talkHeld = down;
+
+            return pressed;
         }
+
+        /// <summary>Edge state for <see cref="WantsToTalk"/>.</summary>
+        private bool _talkHeld;
 
         /// <summary>
         /// Offers the conversation and starts it on D-pad right. Runs every frame rather than
@@ -518,9 +532,30 @@ namespace Hoodrich.Gangs
 
             if (!WantsToTalk()) return;
 
-            var root = TalkBuilder?.Invoke(def);
-            if (root == null) return;
+            if (TalkBuilder == null)
+            {
+                Log.Warn("Nobody built " + def.Name + " a conversation; nothing to say.");
+                return;
+            }
 
+            DialogueNode root;
+            try
+            {
+                root = TalkBuilder(def);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Building " + def.Name + "'s conversation threw.", ex);
+                return;
+            }
+
+            if (root == null)
+            {
+                Log.Warn(def.Name + " has no opening line; check his gang id in leaders.json.");
+                return;
+            }
+
+            Log.Info("Talking to " + def.Name + ".");
             Talk.Open(root, def);
         }
 

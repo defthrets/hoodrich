@@ -52,15 +52,13 @@ namespace Hoodrich.UI
         private int _vanillaMinUntil;
 
         /// <summary>
-        /// Closes our wheel and gives the player the REAL weapon wheel.
+        /// Hands the weapon button back to the game for a few seconds.
         ///
-        /// Hoodrich normally suppresses it by disabling its control, so handing it back is a
-        /// matter of not doing that and forcing it open -- the player is still holding the
-        /// button, so it appears under their thumb as though it always had.
-        ///
-        /// The handoff lasts until they LET GO, not for a fixed time. A timer expired while the
-        /// wheel was still open, which snatched it back mid-selection and left its looping
-        /// audio without the close event that stops it.
+        /// Forcing the wheel open with HUD_FORCE_WEAPON_WHEEL draws it but leaves it dead: the
+        /// game only runs its selection logic while the player is genuinely holding the weapon
+        /// control, so the wheel appeared and could not be scrolled or picked from. Rather than
+        /// fight that, Hoodrich simply stops suppressing the button and tells the player to
+        /// hold it -- from there the wheel is entirely the game's own, selection included.
         /// </summary>
         public void ShowVanillaWheel()
         {
@@ -71,40 +69,41 @@ namespace Hoodrich.UI
             RestoreTimeAndBlur();
 
             _vanillaMode = true;
-
-            // Selection happens on RELEASE, so by the time we get here the button is already up.
-            // The wheel therefore has to be held open on a timer rather than by the player.
+            _vanillaUsed = false;
             _vanillaMinUntil = Game.GameTime + _cfg.VanillaWheelSeconds * 1000;
         }
+
+        /// <summary>True once the player has actually taken up the offer this handoff.</summary>
+        private bool _vanillaUsed;
 
         private void EndVanillaMode()
         {
             _vanillaMode = false;
-
-            // Release it explicitly. Forcing it open and then simply walking away is what
-            // leaves the wheel and its sound stuck on.
-            try { Function.Call(Hash.HUD_FORCE_WEAPON_WHEEL, false); }
-            catch { /* teardown */ }
+            _vanillaUsed = false;
         }
 
         public void Update(bool available)
         {
             if (_vanillaMode)
             {
-                // Hands off: no suppression at all, and hold the real wheel open so the player
-                // can pick from it without having to keep the button down.
-                Function.Call(Hash.HUD_FORCE_WEAPON_WHEEL, true);
+                // Hands entirely off: the button is not disabled, nothing is hidden, and the
+                // wheel is not forced. The game gets its own input and behaves exactly as it
+                // does without the mod loaded.
+                var holding = Game.IsControlPressed(Control.SelectWeapon);
 
-                var expired = Game.GameTime >= _vanillaMinUntil;
+                if (holding) _vanillaUsed = true;
 
-                // Holding the button again means they want it up for longer; let them.
-                if (Game.IsControlPressed(Control.SelectWeapon))
+                if (!holding && !_vanillaUsed)
                 {
-                    _vanillaMinUntil = Game.GameTime + 400;
-                    expired = false;
+                    Help.ShowThisFrame("Hold ~INPUT_SELECT_WEAPON~ for your weapons.");
                 }
 
-                if (!available || expired)
+                // It ends when they let go of a wheel they actually opened, or when they never
+                // reached for it -- so it neither snatches the wheel away mid-selection nor
+                // leaves the button un-suppressed indefinitely.
+                var finished = _vanillaUsed ? !holding : Game.GameTime >= _vanillaMinUntil;
+
+                if (!available || finished)
                 {
                     EndVanillaMode();
 

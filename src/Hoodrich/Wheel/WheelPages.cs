@@ -92,11 +92,9 @@ namespace Hoodrich.Wheel
 
             var you = new InfoSection { Title = "You" };
             you.Row("Rank", _state.RankName);
-            you.Row("Respect", _state.Respect.ToString("N0"), null, RankProgressLabel());
-            you.Row("Heat", _state.Notoriety.ToString("F0") + "%", HeatTint(),
-                    _state.Notoriety > 50f ? "Police are paying attention"
-                    : _state.Notoriety > 20f ? "You have been noticed"
-                    : "Nobody is looking at you");
+            you.Row("Next", RankProgressLabel());
+            you.Row("Respect", _state.Respect.ToString("N0"));
+            you.Row("Heat", HeatWord(), HeatTint());
             you.Row("Running with", _crew.IsAffiliated ? _crew.Current.Name : "nobody",
                     _crew.IsAffiliated ? _crew.Current.Colour : (Color?)Palette.TextDim);
             sections.Add(you);
@@ -132,9 +130,7 @@ namespace Hoodrich.Wheel
                           _state.Rank == i ? "you are here"
                           : reached ? "passed"
                           : PlayerState.RankThresholds[i].ToString("N0") + " respect",
-                          _state.Rank == i ? Palette.Cash
-                          : reached ? Palette.TextDim : (Color?)Palette.TextDim,
-                          RankUnlocks(i));
+                          _state.Rank == i ? Palette.Cash : (Color?)Palette.TextDim);
             }
             sections.Add(ranks);
 
@@ -147,25 +143,13 @@ namespace Hoodrich.Wheel
             var sections = new List<InfoSection>();
 
             var holding = new InfoSection { Title = "Holding" };
-            holding.Row("Bulk", Stash.TotalBulk.ToString("0.#") + "g", null,
-                        "Has to be prepped before you can sell it");
             holding.Row("Ready to sell", Stash.TotalPackaged.ToString("0.#") + "g", Palette.Cash);
+            holding.Row("Still to bag", Stash.TotalBulk.ToString("0.#") + "g", Palette.Warn);
             holding.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
-            holding.Row("Street value", "$" + PackagedValue().ToString("N0"), Palette.Cash);
+            holding.Row("Worth", "$" + PackagedValue().ToString("N0"), Palette.Cash);
             sections.Add(holding);
 
-            var block = new InfoSection { Title = "This block" };
-            block.Row("Where", _turf.ZoneName, TurfTint());
-            block.Row("Whose", _turf.Owner == null ? "nobody's" : _turf.Owner.Name,
-                      _turf.Owner?.Colour ?? (Color?)Palette.TextDim);
-            block.Row("To you", TurfWord(), TurfTint());
-            block.Row("Pays", Multiplier(_turf.TurfPriceMultiplier),
-                      _turf.TurfPriceMultiplier > 1.05f ? Palette.Cash : (Color?)Palette.Text);
-            block.Row("Attention", Multiplier(_turf.TurfHeatMultiplier),
-                      _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : (Color?)Palette.Cash);
-            block.Row("Lookouts", _crew.NearbyAllies.ToString(), null,
-                      _crew.NearbyAllies > 0 ? "Some of them are around" : "You are on your own here");
-            sections.Add(block);
+            sections.Add(BlockSection());
 
             var contacts = new InfoSection { Title = "Your contacts" };
             foreach (var s in _dealers.All)
@@ -174,17 +158,66 @@ namespace Hoodrich.Wheel
             }
             sections.Add(contacts);
 
-            var market = new InfoSection { Title = "The market" };
-            market.Row("Right now", _pricing.PriceContext());
+            var market = new InfoSection { Title = "Street prices" };
             foreach (var drug in _drugs.All)
             {
                 // Quoted at full purity: what the street pays for the real thing, before
                 // whatever the player has done to it.
-                market.Row(drug.Name, "$" + _pricing.StreetPrice(drug, 1f).ToString("N0") + " a gram");
+                market.Row(drug.Name, "$" + _pricing.StreetPrice(drug, 1f).ToString("N0") + "/g");
             }
             sections.Add(market);
 
-            Info?.Open("The numbers", DrugsSummary(), sections);
+            Info?.Open("The numbers", _pricing.PriceContext(), sections);
+        }
+
+        /// <summary>
+        /// What standing here actually means: who owns it, what it pays, what it costs you in
+        /// attention, and whether anybody has you marked.
+        /// </summary>
+        private InfoSection BlockSection()
+        {
+            var block = new InfoSection { Title = "This block" };
+
+            block.Row("Where", _turf.ZoneName, TurfTint());
+            block.Row("Whose", _turf.Owner == null ? "nobody's" : _turf.Owner.Name,
+                      _turf.Owner?.Colour ?? (Color?)Palette.TextDim);
+            block.Row("To you", TurfWord(), TurfTint());
+            block.Row("Pays", Multiplier(_turf.TurfPriceMultiplier),
+                      _turf.TurfPriceMultiplier > 1.05f ? Palette.Cash : (Color?)Palette.Text);
+            block.Row("Draws heat", Multiplier(_turf.TurfHeatMultiplier),
+                      _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : (Color?)Palette.Cash);
+            block.Row("Gang around", _crew.NearbyAllies > 0 ? _crew.NearbyAllies + " of yours" : "none",
+                      _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim);
+            block.Row("Foot traffic", FootfallWord(),
+                      _postUp.Footfall == 0 ? Palette.Warn : (Color?)Palette.Cash);
+            block.Row("Been clocked", _turf.IsExposed ? "yes" : "not yet",
+                      _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim);
+
+            return block;
+        }
+
+        /// <summary>The block on its own, from the This block page.</summary>
+        private void ShowBlockNumbers()
+        {
+            var sections = new List<InfoSection> { BlockSection() };
+
+            var risk = new InfoSection { Title = "If you work here" };
+            risk.Row("Selling", _turf.Status == TurfStatus.Hostile ? "they will jump you"
+                              : _turf.Status == TurfStatus.Home ? "safe enough"
+                              : "nobody minds much",
+                     TurfTint());
+            risk.Row("Your heat", HeatWord(), HeatTint());
+            sections.Add(risk);
+
+            Info?.Open(_turf.ZoneName, TurfWord(), sections);
+        }
+
+        /// <summary>Heat in words, since a percentage tells the player nothing on its own.</summary>
+        private string HeatWord()
+        {
+            if (_state.Notoriety > 50f) return "police are on you";
+            if (_state.Notoriety > 20f) return "you have been noticed";
+            return "nobody is looking";
         }
 
         /// <summary>A multiplier written the way a person would say it.</summary>
@@ -1417,7 +1450,7 @@ namespace Hoodrich.Wheel
             page.Row("Been clocked", _turf.IsExposed ? "yes -- they have seen you" : "not yet",
                      _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim);
 
-            page.Add("The numbers", "=", ShowTradeNumbers,
+            page.Add("The numbers", "=", ShowBlockNumbers,
                 detail: "What this block pays and what it costs you",
                 value: "");
             page.WithIcon(Icons.Health);

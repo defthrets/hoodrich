@@ -59,16 +59,25 @@ namespace Hoodrich.UI
     /// </summary>
     internal sealed class InfoPanel
     {
-        private const float PanelWidth = 0.40f;
-        private const float RowHeight = 0.026f;
-        private const float SectionGap = 0.020f;
-        private const float Pad = 0.016f;
+        /// <summary>
+        /// A card down the left, not a screen.
+        ///
+        /// The first version was 40% of the screen wide and centred, with labels and values
+        /// pushed to opposite edges -- so a two-word label and a one-word value sat half a
+        /// monitor apart and read as unrelated. This is a narrow column with the value directly
+        /// under its label's eye line, which is how a stat block is meant to work.
+        /// </summary>
+        private const float PanelWidth = 0.215f;
+
+        private const float RowHeight = 0.0225f;
+        private const float SectionGap = 0.014f;
+        private const float Pad = 0.012f;
 
         /// <summary>Ignore input briefly, or the button that opened this closes it.</summary>
         private const int OpenGraceMs = 220;
 
         /// <summary>Rows visible at once before it scrolls.</summary>
-        private const int MaxVisibleRows = 22;
+        private const int MaxVisibleRows = 26;
 
         private string _title = "";
         private string _subtitle = "";
@@ -160,24 +169,27 @@ namespace Hoodrich.UI
             var visible = Math.Min(total, MaxVisibleRows);
 
             var bodyHeight = visible * RowHeight + _sections.Count * SectionGap;
-            var height = 0.062f + bodyHeight + 0.028f;
+            var height = 0.052f + bodyHeight + 0.024f;
 
-            var x = 0.5f - PanelWidth * 0.5f;
-            var top = 0.5f - height * 0.5f;
+            // Down the left, vertically centred: out of the way of the minimap and of whatever
+            // the player is looking at.
+            const float x = 0.035f;
+            var top = Math.Max(0.06f, 0.5f - height * 0.5f);
 
-            Hud.Rect(x, top, PanelWidth, height, Color.FromArgb(215, 12, 13, 15));
-            Hud.Rect(x, top, PanelWidth, 0.0035f, Palette.Accent);
+            Hud.Rect(x, top, PanelWidth, height, Color.FromArgb(220, 12, 13, 15));
+            Hud.Rect(x, top, PanelWidth, 0.0030f, Palette.Accent);
 
-            var y = top + 0.014f;
+            var y = top + 0.012f;
 
-            Hud.Text(_title.ToUpperInvariant(), x + Pad, y, 0.40f, Palette.Text, Hud.FontLabel);
+            Hud.Text(_title.ToUpperInvariant(), x + Pad, y, 0.34f, Palette.Text, Hud.FontLabel);
+            y += 0.024f;
+
             if (!string.IsNullOrEmpty(_subtitle))
             {
-                Hud.TextRight(_subtitle, x + PanelWidth - Pad, y + 0.004f, 0.30f,
-                              Palette.TextDim, Hud.FontBody);
+                Hud.Text(_subtitle, x + Pad, y, 0.27f, Palette.TextDim, Hud.FontBody);
             }
 
-            y += 0.044f;
+            y += 0.022f;
 
             // Flattened once, so scrolling is a plain row offset rather than section bookkeeping.
             var index = 0;
@@ -189,9 +201,9 @@ namespace Hoodrich.UI
                 {
                     if (index++ >= _scroll && drawn < MaxVisibleRows)
                     {
-                        Hud.Text(section.Title.ToUpperInvariant(), x + Pad, y, 0.28f,
-                                 Palette.TextDim, Hud.FontLabel);
-                        y += RowHeight;
+                        Hud.Text(section.Title.ToUpperInvariant(), x + Pad, y, 0.24f,
+                                 Palette.Accent, Hud.FontLabel);
+                        y += RowHeight * 0.9f;
                         drawn++;
                     }
                 }
@@ -203,16 +215,10 @@ namespace Hoodrich.UI
 
                     if (!row.IsSpacer)
                     {
-                        Hud.Text(row.Label, x + Pad, y, 0.32f, Palette.TextDim, Hud.FontBody);
-                        Hud.TextRight(row.Value, x + PanelWidth - Pad, y, 0.32f, row.Colour, Hud.FontBody);
-
-                        if (!string.IsNullOrEmpty(row.Note))
-                        {
-                            Hud.Text(row.Note, x + Pad + 0.010f, y + 0.016f, 0.26f,
-                                     Palette.TextDim, Hud.FontBody);
-                            y += 0.016f;
-                            // The note borrows the next row's space rather than its own slot.
-                        }
+                        // Label left, value hard right in a narrow column -- close enough
+                        // together to read as one line.
+                        Hud.Text(row.Label, x + Pad, y, 0.28f, Palette.TextDim, Hud.FontBody);
+                        Hud.TextRight(row.Value, x + PanelWidth - Pad, y, 0.28f, row.Colour, Hud.FontBody);
                     }
 
                     y += RowHeight;
@@ -222,11 +228,8 @@ namespace Hoodrich.UI
                 y += SectionGap;
             }
 
-            var hint = total > MaxVisibleRows
-                ? "UP / DOWN  SCROLL      ENTER  CLOSE"
-                : "ENTER OR BACKSPACE  CLOSE";
-
-            Hud.Text(hint, x + Pad, top + height - 0.022f, 0.27f, Palette.TextDim, Hud.FontLabel);
+            var hint = total > MaxVisibleRows ? "UP / DOWN SCROLL   ENTER CLOSE" : "ENTER CLOSE";
+            Hud.Text(hint, x + Pad, top + height - 0.018f, 0.24f, Palette.TextDim, Hud.FontLabel);
         }
     }
 }

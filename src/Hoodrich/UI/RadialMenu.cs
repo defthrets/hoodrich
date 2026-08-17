@@ -214,8 +214,12 @@ namespace Hoodrich.UI
 
             const float cx = 0.5f;
             const float cy = 0.5f;
-            var rInner = _cfg.InnerRadius * t;
-            var rOuter = _cfg.OuterRadius * t;
+
+            // The open animation fades rather than grows. Scaling the radii meant every frame
+            // of it drew a smaller, part-formed ring, and a screenshot or a stutter caught
+            // mid-animation showed a slice that looked broken rather than one that looked new.
+            var rInner = _cfg.InnerRadius;
+            var rOuter = _cfg.OuterRadius;
 
             Draw.SetDrawOrder(7);
             Draw.Rect(0.5f, 0.5f, 1f, 1f, Palette.Alpha(Palette.Backdrop, (int)(Palette.Backdrop.A * t)));
