@@ -40,6 +40,17 @@ namespace Hoodrich.Missions
         /// </summary>
         public string Zone = "";
 
+        /// <summary>
+        /// Exact spot, when one is given. Zero falls back to the zone centre.
+        ///
+        /// A zone centre is the middle of a neighbourhood, which is not the same as the corner
+        /// somebody actually stands on -- and for a big zone it can be a block away from the
+        /// gang whose block it is meant to be.
+        /// </summary>
+        public float X;
+        public float Y;
+        public float Z;
+
         public int Targets = 3;
         public int PayMin = 600;
         public int PayMax = 1200;
@@ -88,6 +99,9 @@ namespace Hoodrich.Missions
                     Done = node["done"].AsString(""),
                     TargetGang = node["targetGang"].AsString(""),
                     Zone = node["zone"].AsString(""),
+                    X = node["x"].AsFloat(),
+                    Y = node["y"].AsFloat(),
+                    Z = node["z"].AsFloat(),
                     Targets = Math.Max(1, node["targets"].AsInt(3)),
                     PayMin = Math.Max(0, node["payMin"].AsInt(600)),
                     PayMax = Math.Max(0, node["payMax"].AsInt(1200)),

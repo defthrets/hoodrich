@@ -39,6 +39,9 @@ namespace Hoodrich.Missions
     internal sealed class MissionRunner
     {
         private const float ArriveRange = 60f;
+
+        /// <summary>Targets are placed this far out, so the ground is streamed before they land.</summary>
+        private const float PreSpawnRange = 200f;
         private const float TargetSpread = 9f;
         private const int UpdateIntervalMs = 500;
 
@@ -58,6 +61,14 @@ namespace Hoodrich.Missions
 
         private readonly List<Ped> _homies = new List<Ped>();
         private readonly List<Ped> _targets = new List<Ped>();
+
+        /// <summary>
+        /// Every blip the job created.
+        ///
+        /// A blip attached to a ped is not cleaned up by letting go of the ped: it survives, and
+        /// the minimap keeps showing homies who are no longer anything to do with you.
+        /// </summary>
+        private readonly List<Blip> _blips = new List<Blip>();
 
         private MissionDef _def;
         private Vector3 _site;
@@ -124,7 +135,10 @@ namespace Hoodrich.Missions
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
 
-            var site = _zones.GroundedCentre(def.Zone);
+            var site = Math.Abs(def.X) > 0.01f || Math.Abs(def.Y) > 0.01f
+                ? new Vector3(def.X, def.Y, def.Z)
+                : _zones.GroundedCentre(def.Zone);
+
             if (site == Vector3.Zero) return "Nobody could tell you where that is.";
 
             _def = def;
@@ -202,6 +216,7 @@ namespace Hoodrich.Missions
                         blip.Color = BlipColor.Green;
                         blip.Scale = 0.6f;
                         blip.Name = "Homie";
+                        _blips.Add(blip);
                     }
                 }
                 catch (Exception ex)
@@ -224,6 +239,21 @@ namespace Hoodrich.Missions
 
                     var spot = World.GetNextPositionOnSidewalk(near);
                     if (spot == Vector3.Zero) spot = near;
+
+                    // Pavement lookups return a position, not a height, and a ped created above
+                    // the ground falls to it -- which is what the drop from the sky was.
+                    try
+                    {
+                        if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 15f),
+                                                  out var groundZ, GetGroundHeightMode.Normal) && groundZ > 0f)
+                        {
+                            spot.Z = groundZ;
+                        }
+                    }
+                    catch
+                    {
+                        // Keep what the pavement gave us.
+                    }
 
                     var ped = World.CreatePed(model, spot);
                     model.MarkAsNoLongerNeeded();
@@ -266,6 +296,14 @@ namespace Hoodrich.Missions
             switch (State)
             {
                 case MissionState.Travel:
+                    // Put them in place well before you can see them. Spawning at the arrival
+                    // radius is what had them appearing in mid-air and falling in as you pulled
+                    // up: a ped created on unstreamed ground has nothing to stand on yet.
+                    if (_targets.Count == 0 && player.Position.DistanceTo(_site) <= PreSpawnRange)
+                    {
+                        SpawnTargets(player);
+                    }
+
                     if (player.Position.DistanceTo(_site) <= ArriveRange) BeginWork(player);
                     return;
 
@@ -275,16 +313,16 @@ namespace Hoodrich.Missions
             }
         }
 
-        private void BeginWork(Ped player)
+        /// <summary>
+        /// Puts them on the corner before you can see it.
+        ///
+        /// They stand about doing nothing until you actually turn up -- a corner full of men
+        /// already swinging at thin air before you arrive is worse than one that is empty.
+        /// </summary>
+        private void SpawnTargets(Ped player)
         {
-            State = MissionState.Work;
-
             var gang = _gangs.Get(_def.TargetGang);
-            if (gang == null)
-            {
-                Fail("Nobody knew who you were supposed to be looking for.");
-                return;
-            }
+            if (gang == null) return;
 
             for (var i = 0; i < _def.Targets; i++)
             {
@@ -306,7 +344,8 @@ namespace Hoodrich.Missions
                                       Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_PISTOL"), 150, false, true);
                     }
 
-                    Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16);
+                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle,
+                                  "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
 
                     var blip = ped.AddBlip();
                     if (blip != null && blip.Exists())
@@ -314,12 +353,31 @@ namespace Hoodrich.Missions
                         blip.Color = BlipColor.Red;
                         blip.Scale = 0.7f;
                         blip.Name = gang.Name;
+                        _blips.Add(blip);
                     }
                 }
                 catch (Exception ex)
                 {
                     Log.Debug("Could not set up a target: " + ex.Message);
                 }
+            }
+
+            Log.Info("Mission " + _def.Id + ": " + _targets.Count + " waiting at " + _site + ".");
+        }
+
+        private void BeginWork(Ped player)
+        {
+            State = MissionState.Work;
+
+            // Late arrival: they were never placed, so place them now rather than fail.
+            if (_targets.Count == 0) SpawnTargets(player);
+
+            foreach (var ped in _targets)
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                try { Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16); }
+                catch { /* the game's AI takes over */ }
             }
 
             if (_targets.Count == 0)
@@ -406,6 +464,7 @@ namespace Hoodrich.Missions
         private void Clear()
         {
             ClearSiteBlip();
+            ClearBlips();
 
             foreach (var ped in _targets)
             {
@@ -433,6 +492,17 @@ namespace Hoodrich.Missions
 
             _def = null;
             State = MissionState.None;
+        }
+
+        /// <summary>Removes every blip the job made, which peds do not do for you.</summary>
+        private void ClearBlips()
+        {
+            foreach (var blip in _blips)
+            {
+                try { if (blip != null && blip.Exists()) blip.Delete(); }
+                catch { /* teardown */ }
+            }
+            _blips.Clear();
         }
 
         private void ClearSiteBlip()

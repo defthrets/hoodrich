@@ -305,6 +305,11 @@ namespace Hoodrich.UI
             Function.Call(Hash.SET_TEXT_SCALE, scale, scale);
             Function.Call(Hash.SET_TEXT_COLOUR, (int)c.R, (int)c.G, (int)c.B, (int)c.A);
             Function.Call(Hash.SET_TEXT_CENTRE, centre);
+
+            // Never inherit somebody else''s wrap region.
+            Function.Call(Hash.SET_TEXT_JUSTIFICATION, centre ? 0 : 1);
+            Function.Call(Hash.SET_TEXT_WRAP, 0f, 1f);
+
             if (shadow) Function.Call(Hash.SET_TEXT_DROP_SHADOW);
             if (outline) Function.Call(Hash.SET_TEXT_OUTLINE);
 
@@ -336,8 +341,12 @@ namespace Hoodrich.UI
             AddLongString(text);
             Function.Call(Hash.END_TEXT_COMMAND_DISPLAY_TEXT, 0f, y);
 
-            // Justification is sticky across draws; put it back for the next caller.
+            // Justification AND the wrap region are sticky across draws. Leaving the wrap set
+            // is what made every panel look broken: the next left-aligned label inherited a
+            // region ending at this right edge and got re-flowed inside it, which reads as text
+            // wandering out of its box for no reason.
             Function.Call(Hash.SET_TEXT_JUSTIFICATION, 0);
+            Function.Call(Hash.SET_TEXT_WRAP, 0f, 1f);
         }
 
         /// <summary>Measures rendered text width as a normalized screen fraction.</summary>

@@ -103,7 +103,7 @@ namespace Hoodrich.Dealing
         private const int BuyerReplyDelayMs = 1000;
 
         /// <summary>How long they get to shoot from the car before they get out and fight.</summary>
-        private const int DriveByShootMs = 14000;
+        private const int DriveByShootMs = 7000;
 
         /// <summary>How far a rival can be and still notice you working their block.</summary>
         private const float RivalNoticeRange = 28f;
@@ -623,6 +623,8 @@ namespace Hoodrich.Dealing
 
                     _rivals.Add(ped);
 
+                    // On foot it is a beating, not a shootout.
+                    Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
                     Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16);
 
@@ -779,28 +781,28 @@ namespace Hoodrich.Dealing
 
             if (!_driveByBailed)
             {
+                // The whole thing is one pass: they come past, they shoot, they are gone. A
+                // carload that circles the block indefinitely is a siege, not a drive-by.
                 var stalled = _driveByCar.Speed < 1.5f &&
                               player.Position.DistanceTo(_driveByCar.Position) < 35f &&
-                              elapsed > 6000;
+                              elapsed > 5000;
 
                 if (!stalled && elapsed < DriveByShootMs) return;
 
                 _driveByBailed = true;
 
-                foreach (var ped in _rivals)
+                if (stalled)
                 {
-                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
-                    if (!ped.IsInVehicle()) continue;
-
-                    try
-                    {
-                        Function.Call(Hash.TASK_LEAVE_VEHICLE, ped.Handle, _driveByCar.Handle, 0);
-                        Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16);
-                    }
-                    catch { /* he will be dealt with by the game's own AI */ }
+                    // Boxed in or stopped, so they finish it on foot -- with their hands. Men
+                    // spilling out of a stalled car with rifles is a shootout, and the drive-by
+                    // was supposed to be the drive-by.
+                    BailOutAndBrawl(player);
+                    Log.Info("Drive-by stalled after " + (elapsed / 1000) + "s; they got out.");
+                    return;
                 }
 
-                Log.Info("Drive-by turned into a fight after " + (elapsed / 1000) + "s.");
+                DriveOff();
+                Log.Info("Drive-by finished its pass after " + (elapsed / 1000) + "s.");
                 return;
             }
 
@@ -811,10 +813,77 @@ namespace Hoodrich.Dealing
                 if (ped != null && ped.Exists() && ped.IsAlive) standing++;
             }
 
-            if (standing == 0 && _driveByCar.Exists())
+            if (standing == 0 && _driveByCar != null && _driveByCar.Exists())
             {
                 try { _driveByCar.MarkAsNoLongerNeeded(); } catch { }
                 _driveByCar = null;
+            }
+        }
+
+        /// <summary>They made their point; now they leave at speed and stop being ours.</summary>
+        private void DriveOff()
+        {
+            try
+            {
+                if (_driveByDriver != null && _driveByDriver.Exists() && _driveByCar != null && _driveByCar.Exists())
+                {
+                    // Flee mission: away, fast, and not coming back round.
+                    Function.Call(Hash.TASK_VEHICLE_MISSION_PED_TARGET, _driveByDriver.Handle,
+                                  _driveByCar.Handle, Game.Player.Character.Handle, 8, 40f, 786603, 60f, 0f, true);
+                }
+
+                foreach (var ped in _rivals)
+                {
+                    if (ped == null || !ped.Exists()) continue;
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                    ped.MarkAsNoLongerNeeded();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Drive-by could not leave cleanly: " + ex.Message);
+            }
+
+            _rivals.Clear();
+
+            try { if (_driveByCar != null && _driveByCar.Exists()) _driveByCar.MarkAsNoLongerNeeded(); }
+            catch { /* teardown */ }
+
+            _driveByCar = null;
+            _driveByDriver = null;
+
+            Notify.Ticker("~o~They rolled off.~s~");
+        }
+
+        /// <summary>
+        /// Out of the car and onto you, with their hands.
+        ///
+        /// Guns are for the pass. Once they are on foot this is a beating, so every weapon is
+        /// taken off them first -- otherwise a stalled car turns a drive-by into a firefight
+        /// nobody asked for.
+        /// </summary>
+        private void BailOutAndBrawl(Ped player)
+        {
+            foreach (var ped in _rivals)
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true);
+                    Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle,
+                                  Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_UNARMED"), true);
+
+                    if (ped.IsInVehicle())
+                    {
+                        Function.Call(Hash.TASK_LEAVE_VEHICLE, ped.Handle, _driveByCar.Handle, 0);
+                    }
+
+                    Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16);
+                }
+                catch { /* the game's own AI takes it from here */ }
             }
         }
 
@@ -916,11 +985,14 @@ namespace Hoodrich.Dealing
                     (float)Math.Cos(angle) * distance, (float)Math.Sin(angle) * distance, 0f);
 
                 var kerb = World.GetNextPositionOnStreet(near);
-                if (kerb == Vector3.Zero) return;
-                if (kerb.DistanceTo(player.Position) > PatrolMaxDistance * 1.6f) return;
+
+                // No road, no patrol -- and crucially no notification either. Announcing a car
+                // that failed to spawn is worse than no car at all.
+                if (kerb == Vector3.Zero) { SchedulePatrol(); return; }
+                if (kerb.DistanceTo(player.Position) > PatrolMaxDistance * 1.6f) { SchedulePatrol(); return; }
 
                 _patrolCar = World.CreateVehicle(carModel.Value, kerb);
-                if (_patrolCar == null || !_patrolCar.Exists()) return;
+                if (_patrolCar == null || !_patrolCar.Exists()) { SchedulePatrol(); return; }
 
                 _patrolCar.IsPersistent = true;
                 _patrolCar.IsEngineRunning = true;
@@ -934,7 +1006,7 @@ namespace Hoodrich.Dealing
                 _patrolUntil = Game.GameTime + PatrolWatchMs;
                 SchedulePatrol();
 
-                Notify.Problem("a patrol just pulled up. Sit tight or serve in front of them.");
+                Notify.Problem("cops nearby. Be careful.");
                 Log.Info("Patrol parked up near the pitch.");
             }
             catch (Exception ex)

@@ -29,7 +29,7 @@ namespace Hoodrich.Missions
         private const float TalkRange = 3.0f;
         private const int UpdateIntervalMs = 700;
 
-        /// <summary>Gang skull, same mark the leaders use.</summary>
+        /// <summary>Skull: he is the one who sends you at people.</summary>
         private const int Sprite = 84;
 
         private static readonly string[] Models =
@@ -236,11 +236,65 @@ namespace Hoodrich.Missions
             return pressed;
         }
 
+        /// <summary>Ambient lines, so walking up to him and leaving are things you hear.</summary>
+
+
+        private static readonly string[] HelloLines = { "GENERIC_HOWS_IT_GOING", "GENERIC_HI", "CHAT_STATE" };
+
+
+        private static readonly string[] ByeLines = { "GENERIC_BYE", "GENERIC_THANKS" };
+
+
+
+        private static void Say(Ped ped, string[] lines)
+
+
+        {
+
+
+            if (ped == null || !ped.Exists() || lines.Length == 0) return;
+
+
+        
+
+
+            try
+
+
+            {
+
+
+                var line = lines[new Random().Next(lines.Length)];
+
+
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle, line, "SPEECH_PARAMS_FORCE");
+
+
+            }
+
+
+            catch
+
+
+            {
+
+
+                // A missing line costs nothing.
+
+
+            }
+
+
+        }
+
+
+
         public void HoldForTalk()
         {
             if (_ped == null || !_ped.Exists() || _held) return;
 
             _held = true;
+            Say(_ped, HelloLines);
 
             try
             {
@@ -261,9 +315,8 @@ namespace Hoodrich.Missions
 
             _held = false;
 
-            try
-            {
-                _ped.Task.ClearAll();
+            Say(_ped, ByeLines);
+            try            {                _ped.Task.ClearAll();
                 Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _ped.Handle,
                               "WORLD_HUMAN_STAND_MOBILE", 0, true);
                 _ped.Heading = Heading;

@@ -20,51 +20,96 @@
       "gang": "families",
       "name": "Stretch",
       "zone": "CHAMH",
-      "x": -160.738, "y": -1637.779, "heading": 2,
-      "awayFromHour": 3, "awayToHour": 8,
-      "models": ["ig_stretch", "csb_stretch", "g_m_y_famdnf_01", "a_m_m_soucent_01"]
+      "x": -160.738,
+      "y": -1637.779,
+      "heading": 2,
+      "awayFromHour": 3,
+      "awayToHour": 8,
+      "models": [
+        "ig_stretch",
+        "csb_stretch",
+        "g_m_y_famdnf_01",
+        "a_m_m_soucent_01"
+      ],
+      "z": 34.029
     },
     {
       "gang": "ballas",
       "name": "OG Reese",
       "zone": "RANCHO",
-      "x": 373.0, "y": -1828.0, "heading": 180,
-      "models": ["g_m_y_ballaorig_01", "g_m_y_ballaeast_01", "a_m_m_soucent_02"]
+      "x": 373.0,
+      "y": -1828.0,
+      "heading": 180,
+      "models": [
+        "g_m_y_ballaorig_01",
+        "g_m_y_ballaeast_01",
+        "a_m_m_soucent_02"
+      ]
     },
     {
       "gang": "vagos",
       "name": "El Tio",
       "zone": "EBURO",
-      "x": 1387.0, "y": -1522.0, "heading": 100,
-      "models": ["g_m_y_mexgoon_02", "g_m_y_mexgoon_01", "a_m_y_mexthug_01"]
+      "x": 1387.0,
+      "y": -1522.0,
+      "heading": 100,
+      "models": [
+        "g_m_y_mexgoon_02",
+        "g_m_y_mexgoon_01",
+        "a_m_y_mexthug_01"
+      ]
     },
     {
       "gang": "marabunta",
       "name": "Chavo",
       "zone": "CYPRE",
-      "x": 823.0, "y": -2160.0, "heading": 270,
-      "models": ["g_m_y_salvagoon_01", "g_m_y_salvaboss_01", "a_m_y_mexthug_01"]
+      "x": 823.0,
+      "y": -2160.0,
+      "heading": 270,
+      "models": [
+        "g_m_y_salvagoon_01",
+        "g_m_y_salvaboss_01",
+        "a_m_y_mexthug_01"
+      ]
     },
     {
       "gang": "lost",
       "name": "Bull",
       "zone": "SLAB",
-      "x": 86.0, "y": 3667.0, "heading": 180,
-      "models": ["g_m_y_lost_02", "g_m_y_lost_01", "a_m_m_hillbilly_01"]
+      "x": 86.0,
+      "y": 3667.0,
+      "heading": 180,
+      "models": [
+        "g_m_y_lost_02",
+        "g_m_y_lost_01",
+        "a_m_m_hillbilly_01"
+      ]
     },
     {
       "gang": "triads",
       "name": "Uncle Wei",
       "zone": "KOREAT",
-      "x": -680.0, "y": -885.0, "heading": 0,
-      "models": ["g_m_m_chiboss_01", "g_m_m_chigoon_01", "a_m_y_ktown_01"]
+      "x": -680.0,
+      "y": -885.0,
+      "heading": 0,
+      "models": [
+        "g_m_m_chiboss_01",
+        "g_m_m_chigoon_01",
+        "a_m_y_ktown_01"
+      ]
     },
     {
       "gang": "armenians",
       "name": "Sarkis",
       "zone": "ALTA",
-      "x": 280.0, "y": -350.0, "heading": 250,
-      "models": ["g_m_m_armboss_01", "g_m_m_armgoon_01", "a_m_m_eastsa_02"]
+      "x": 280.0,
+      "y": -350.0,
+      "heading": 250,
+      "models": [
+        "g_m_m_armboss_01",
+        "g_m_m_armgoon_01",
+        "a_m_m_eastsa_02"
+      ]
     }
   ]
 }

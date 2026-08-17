@@ -33,6 +33,14 @@ namespace Hoodrich.Gangs
         public float SpotX;
         public float SpotY;
 
+        /// <summary>
+        /// Exact height, when the spot is not on the ground.
+        ///
+        /// Probing for ground height finds the ground -- which is a floor below a man standing
+        /// on a raised walkway, and puts him in the alley underneath. Zero means probe.
+        /// </summary>
+        public float SpotZ;
+
         public float Heading;
 
         /// <summary>
@@ -138,6 +146,7 @@ namespace Hoodrich.Gangs
 
                 def.SpotX = node["x"].AsFloat();
                 def.SpotY = node["y"].AsFloat();
+                def.SpotZ = node["z"].AsFloat();
                 def.Heading = node["heading"].AsFloat();
                 def.AwayFromHour = node["awayFromHour"].AsInt(0);
                 def.AwayToHour = node["awayToHour"].AsInt(0);
@@ -187,19 +196,23 @@ namespace Hoodrich.Gangs
             {
                 // An authored spot is a specific yard or wall, so it is used as given --
                 // snapping it to the nearest pavement would put him back on the kerb.
-                spot = new Vector3(def.SpotX, def.SpotY, 0f);
+                spot = new Vector3(def.SpotX, def.SpotY, def.SpotZ);
 
-                try
+                // An authored height is taken as read. Only guess when there is nothing to use.
+                if (Math.Abs(def.SpotZ) < 0.01f)
                 {
-                    if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, 1000f), out var groundZ,
-                                              GetGroundHeightMode.Normal))
+                    try
                     {
-                        spot.Z = groundZ;
+                        if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, 1000f), out var groundZ,
+                                                  GetGroundHeightMode.Normal))
+                        {
+                            spot.Z = groundZ;
+                        }
                     }
-                }
-                catch
-                {
-                    // Unstreamed. Spawning resolves the height again once the player is close.
+                    catch
+                    {
+                        // Unstreamed. Spawning resolves the height again once the player is close.
+                    }
                 }
             }
             else
@@ -220,6 +233,9 @@ namespace Hoodrich.Gangs
         {
             var spot = SpotFor(def);
             if (spot == Vector3.Zero) return spot;
+
+            // An authored height is deliberate; never second-guess it.
+            if (Math.Abs(def.SpotZ) > 0.01f) return spot;
 
             try
             {
@@ -318,8 +334,8 @@ namespace Hoodrich.Gangs
 
         // ---- map markers -------------------------------------------------------
 
-        /// <summary>Gang skull, the sprite the game uses for its own gang markers.</summary>
-        private const int GangIconSprite = 84;
+        /// <summary>Weed leaf: what he is there for is product, not violence.</summary>
+        private const int GangIconSprite = 496;
 
         /// <summary>
         /// Marks the one leader worth finding, attached to the MAN rather than to a coordinate
@@ -611,11 +627,48 @@ namespace Hoodrich.Gangs
         /// Stops him and turns him to face you, for as long as the conversation lasts. Called
         /// when the dialogue opens; <see cref="StandAtSpot"/> puts him back on his mark afterwards.
         /// </summary>
+        /// <summary>Ambient lines, so walking up and walking off are things you hear.</summary>
+
+        private static readonly string[] HelloLines = { "GENERIC_HOWS_IT_GOING", "GENERIC_HI", "CHAT_STATE" };
+
+        private static readonly string[] ByeLines = { "GENERIC_BYE", "GENERIC_THANKS" };
+
+
+        private static void Say(Ped ped, string[] lines)
+
+        {
+
+            if (ped == null || !ped.Exists() || lines.Length == 0) return;
+
+        
+
+            try
+
+            {
+
+                var line = lines[new Random().Next(lines.Length)];
+
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle, line, "SPEECH_PARAMS_FORCE");
+
+            }
+
+            catch
+
+            {
+
+                // A missing line costs nothing.
+
+            }
+
+        }
+
+
         public void HoldForTalk()
         {
             if (_livePed == null || !_livePed.Exists() || _held) return;
 
             _held = true;
+            Say(_livePed, HelloLines);
 
             try
             {
@@ -634,9 +687,9 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>Puts him back on his corner once you have finished with him.</summary>
-        public void ReleaseFromTalk()
-        {
-            if (!_held) return;
+        public void ReleaseFromTalk()        {            if (!_held) return;
+            
+            Say(_livePed, ByeLines);
             StandAtSpot();
         }
 

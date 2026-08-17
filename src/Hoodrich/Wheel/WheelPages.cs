@@ -1169,14 +1169,12 @@ namespace Hoodrich.Wheel
                 page.Items[page.Items.Count - 1].Tint = mine.Colour;
                 page.WithIcon(Icons.Mask);
 
-                page.Add("Ride with somebody", "^", null,
-                    detail: "Pick up one of theirs to run with you",
-                    enabled: false, disabledReason: "Not in this build yet");
-                page.WithIcon(Icons.Clothes);
-
+                // Work comes from Lamar in person, so the wheel points at him rather than
+                // pretending to hand out jobs itself.
                 page.Add("Work", "!", null,
-                    detail: "Jobs they put your way",
-                    enabled: false, disabledReason: "Not in this build yet");
+                    detail: "Lamar has the jobs. He is marked on your map.",
+                    value: "",
+                    enabled: false, disabledReason: "Go and see Lamar");
                 page.WithIcon(Icons.Warning);
             }
 
