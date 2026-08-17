@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
@@ -13,34 +14,91 @@ namespace Hoodrich.Core
     {
         private static string _scripts;
 
-        /// <summary>The game's scripts\ folder.</summary>
+        /// <summary>
+        /// The game's scripts\ folder.
+        ///
+        /// Assembly.Location is NOT usable here: SHVDN shadow-copies scripts into the .NET
+        /// download cache, so it reports somewhere under AppData\Local\assembly\dl3. Trusting
+        /// it meant the ini, the drug catalogue and the weapon table were all silently "not
+        /// found" while the mod ran happily on built-in defaults.
+        ///
+        /// So instead of trusting any one API, several candidates are tested against the files
+        /// we know we shipped, and the first that actually holds them wins.
+        /// </summary>
         public static string Scripts
         {
             get
             {
                 if (_scripts != null) return _scripts;
 
-                string dir = null;
-                try
+                var candidates = new List<string>();
+
+                // SHVDN builds its script AppDomain with the scripts folder as the base.
+                TryAdd(candidates, SafeGet(() => AppDomain.CurrentDomain.BaseDirectory));
+
+                var cwd = SafeGet(Directory.GetCurrentDirectory);
+                if (!string.IsNullOrEmpty(cwd))
+                {
+                    TryAdd(candidates, Path.Combine(cwd, "scripts"));
+                    TryAdd(candidates, cwd);
+                }
+
+                // Last resort, and only because an unshadowed load would still be correct.
+                TryAdd(candidates, SafeGet(() =>
                 {
                     var loc = Assembly.GetExecutingAssembly().Location;
-                    if (!string.IsNullOrEmpty(loc)) dir = Path.GetDirectoryName(loc);
-                }
-                catch
+                    return string.IsNullOrEmpty(loc) ? null : Path.GetDirectoryName(loc);
+                }));
+
+                // Prefer wherever our files actually are.
+                foreach (var dir in candidates)
                 {
-                    // Assembly loaded from bytes; fall through to the CWD probe.
+                    if (LooksLikeOurFolder(dir)) { _scripts = dir; return _scripts; }
                 }
 
-                if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
-                {
-                    var cwd = Directory.GetCurrentDirectory();
-                    var probe = Path.Combine(cwd, "scripts");
-                    dir = Directory.Exists(probe) ? probe : cwd;
-                }
-
-                _scripts = dir;
+                _scripts = candidates.Count > 0 ? candidates[0] : cwd ?? ".";
                 return _scripts;
             }
+        }
+
+        /// <summary>True when this folder holds the files the deploy puts down.</summary>
+        private static bool LooksLikeOurFolder(string dir)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return false;
+                if (File.Exists(Path.Combine(dir, "Hoodrich.ini"))) return true;
+
+                var data = Path.Combine(dir, "Hoodrich");
+                return Directory.Exists(data) &&
+                       (File.Exists(Path.Combine(data, "weapons.json")) ||
+                        File.Exists(Path.Combine(data, "gangs.json")));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void TryAdd(List<string> list, string dir)
+        {
+            if (string.IsNullOrEmpty(dir)) return;
+
+            try
+            {
+                dir = Path.GetFullPath(dir.TrimEnd(Path.DirectorySeparatorChar));
+                if (Directory.Exists(dir) && !list.Contains(dir)) list.Add(dir);
+            }
+            catch
+            {
+                // Unusable path; skip it.
+            }
+        }
+
+        private static string SafeGet(Func<string> get)
+        {
+            try { return get(); }
+            catch { return null; }
         }
 
         /// <summary>scripts\Hoodrich\ — the shipped data files. Read-only as far as we care.</summary>

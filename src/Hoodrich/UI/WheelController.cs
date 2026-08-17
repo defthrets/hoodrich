@@ -45,28 +45,58 @@ namespace Hoodrich.UI
 
         // ---- per-frame ---------------------------------------------------------
 
-        /// <summary>While this is in the future, the vanilla wheel is handed back to the player.</summary>
-        private int _vanillaUntil;
+        /// <summary>True while the player has the game's own weapon wheel instead of ours.</summary>
+        private bool _vanillaMode;
+
+        /// <summary>Hold the handoff at least this long, so it cannot end on the same frame.</summary>
+        private int _vanillaMinUntil;
 
         /// <summary>
-        /// Closes our wheel and gives the player the REAL weapon wheel for a moment.
+        /// Closes our wheel and gives the player the REAL weapon wheel.
         ///
         /// Hoodrich normally suppresses it by disabling its control, so handing it back is a
-        /// matter of not doing that for a beat and forcing it open -- the player is still
-        /// holding the button, so it appears under their thumb as though it always had.
+        /// matter of not doing that and forcing it open -- the player is still holding the
+        /// button, so it appears under their thumb as though it always had.
+        ///
+        /// The handoff lasts until they LET GO, not for a fixed time. A timer expired while the
+        /// wheel was still open, which snatched it back mid-selection and left its looping
+        /// audio without the close event that stops it.
         /// </summary>
         public void ShowVanillaWheel()
         {
             CloseWheel();
-            _vanillaUntil = Game.GameTime + 2500;
+            _vanillaMode = true;
+            _vanillaMinUntil = Game.GameTime + 250;
+        }
+
+        private void EndVanillaMode()
+        {
+            _vanillaMode = false;
+
+            // Release it explicitly. Forcing it open and then simply walking away is what
+            // leaves the wheel and its sound stuck on.
+            try { Function.Call(Hash.HUD_FORCE_WEAPON_WHEEL, false); }
+            catch { /* teardown */ }
         }
 
         public void Update(bool available)
         {
-            if (Game.GameTime < _vanillaUntil)
+            if (_vanillaMode)
             {
-                // Hands off: no suppression, and force the real wheel up.
+                // Hands off: no suppression at all, and hold the real wheel open.
                 Function.Call(Hash.HUD_FORCE_WEAPON_WHEEL, true);
+
+                // The control is not disabled right now, so read it directly.
+                var stillHolding = Game.IsControlPressed(Control.SelectWeapon);
+
+                if (!available || (!stillHolding && Game.GameTime >= _vanillaMinUntil))
+                {
+                    EndVanillaMode();
+
+                    // Do not let the same button press fall straight back into our wheel.
+                    _wasHeld = true;
+                }
+
                 return;
             }
 
@@ -191,6 +221,8 @@ namespace Hoodrich.UI
         /// </summary>
         public void RestoreWorld()
         {
+            if (_vanillaMode) EndVanillaMode();
+
             if (_timeScaleApplied)
             {
                 Game.TimeScale = 1f;

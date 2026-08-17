@@ -125,7 +125,11 @@ namespace Hoodrich.Gangs
 
                 try
                 {
-                    if (!Function.Call<bool>(Hash.DOES_RELATIONSHIP_GROUP_EXIST, g.RelationshipGroup))
+                    g.GroupHash = Function.Call<int>(Hash.GET_HASH_KEY, g.RelationshipGroup);
+
+                    // This native takes a HASH. Handing it the name marshals a pointer, which
+                    // never matches, so every vanilla gang group looked missing.
+                    if (!Function.Call<bool>(Hash.DOES_RELATIONSHIP_GROUP_EXIST, g.GroupHash))
                     {
                         // ADD_RELATIONSHIP_GROUP writes the new hash through a pointer arg.
                         var created = new OutputArgument();
@@ -133,7 +137,6 @@ namespace Hoodrich.Gangs
                         Log.Info("Created missing relationship group '" + g.RelationshipGroup + "' for " + g.Name + ".");
                     }
 
-                    g.GroupHash = Function.Call<int>(Hash.GET_HASH_KEY, g.RelationshipGroup);
                 }
                 catch (Exception ex)
                 {
