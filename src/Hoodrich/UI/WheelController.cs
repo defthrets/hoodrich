@@ -64,9 +64,17 @@ namespace Hoodrich.UI
         /// </summary>
         public void ShowVanillaWheel()
         {
-            CloseWheel();
+            // Deliberately does NOT call CloseWheel(): the commit path closes the wheel straight
+            // after this returns, and CloseWheel -> RestoreWorld would cancel the handoff on the
+            // very same frame it was requested. That is why nothing appeared.
+            _menu.Close();
+            RestoreTimeAndBlur();
+
             _vanillaMode = true;
-            _vanillaMinUntil = Game.GameTime + 250;
+
+            // Selection happens on RELEASE, so by the time we get here the button is already up.
+            // The wheel therefore has to be held open on a timer rather than by the player.
+            _vanillaMinUntil = Game.GameTime + _cfg.VanillaWheelSeconds * 1000;
         }
 
         private void EndVanillaMode()
@@ -83,13 +91,20 @@ namespace Hoodrich.UI
         {
             if (_vanillaMode)
             {
-                // Hands off: no suppression at all, and hold the real wheel open.
+                // Hands off: no suppression at all, and hold the real wheel open so the player
+                // can pick from it without having to keep the button down.
                 Function.Call(Hash.HUD_FORCE_WEAPON_WHEEL, true);
 
-                // The control is not disabled right now, so read it directly.
-                var stillHolding = Game.IsControlPressed(Control.SelectWeapon);
+                var expired = Game.GameTime >= _vanillaMinUntil;
 
-                if (!available || (!stillHolding && Game.GameTime >= _vanillaMinUntil))
+                // Holding the button again means they want it up for longer; let them.
+                if (Game.IsControlPressed(Control.SelectWeapon))
+                {
+                    _vanillaMinUntil = Game.GameTime + 400;
+                    expired = false;
+                }
+
+                if (!available || expired)
                 {
                     EndVanillaMode();
 
@@ -222,6 +237,12 @@ namespace Hoodrich.UI
         public void RestoreWorld()
         {
             if (_vanillaMode) EndVanillaMode();
+            RestoreTimeAndBlur();
+        }
+
+        /// <summary>Undoes only the world effects, leaving any vanilla-wheel handoff alone.</summary>
+        private void RestoreTimeAndBlur()
+        {
 
             if (_timeScaleApplied)
             {

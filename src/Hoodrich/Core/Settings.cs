@@ -65,6 +65,9 @@ namespace Hoodrich.Core
         public float MouseSensitivity = 1.0f;
         public bool PlaySounds = true;
 
+        /// <summary>Seconds the game's own weapon wheel is held open after picking Weapons.</summary>
+        public int VanillaWheelSeconds = 5;
+
         /// <summary>Texture used to fill wedges. Overridable so a missing texture is a config fix, not a rebuild.</summary>
         public string WheelTextureDict = "commonmenu";
         public string WheelTexture = "gradient_bgd";
@@ -241,6 +244,7 @@ namespace Hoodrich.Core
             s.DeadZone = Clamp(ini.GetFloat("Wheel", "DeadZone", s.DeadZone), 0f, 0.9f);
             s.MouseSensitivity = Clamp(ini.GetFloat("Wheel", "MouseSensitivity", s.MouseSensitivity), 0.1f, 5f);
             s.PlaySounds = ini.GetBool("Wheel", "PlaySounds", s.PlaySounds);
+            s.VanillaWheelSeconds = (int)Clamp(ini.GetInt("Wheel", "VanillaWheelSeconds", s.VanillaWheelSeconds), 1f, 30f);
             s.WheelTextureDict = ini.GetString("Wheel", "TextureDict", s.WheelTextureDict);
             s.WheelTexture = ini.GetString("Wheel", "Texture", s.WheelTexture);
 

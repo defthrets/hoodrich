@@ -50,6 +50,9 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main. Hands the player back the game's own weapon wheel.</summary>
         public Action ShowVanillaWheel;
 
+        /// <summary>Set by Main; lets the Turf page hand over to the block editor.</summary>
+        public Territory.TurfEditor TurfEditor;
+
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
@@ -1264,6 +1267,11 @@ namespace Hoodrich.Wheel
             return null;
         }
 
+        private void StartTurfEdit()
+        {
+            TurfEditor?.Start();
+        }
+
         private void LogGangTurf(GangDef gang)
         {
             Log.Info("TURF  " + gang.Id.PadRight(12) + " " + string.Join(", ", gang.Turf.ToArray()));
@@ -1311,6 +1319,16 @@ namespace Hoodrich.Wheel
             page.Add("Dossier", "*", ShowTurfDossier,
                 detail: "Who claims what, in the log",
                 value: "");
+
+            // The shipped block shapes are placed from map coordinates, so they land in the
+            // right neighbourhood but not always on the right streets. This is how you fix one.
+            page.Add("Edit blocks", "+", StartTurfEdit,
+                detail: _crew.IsAffiliated
+                    ? "Move your crew's map shading onto the right streets"
+                    : "Join a crew first",
+                value: "",
+                enabled: _crew.IsAffiliated && TurfEditor != null,
+                disabledReason: _crew.IsAffiliated ? "" : "You need a crew behind you");
 
             var claimBlocker =
                 _war.IsActive ? "You are already in a war"

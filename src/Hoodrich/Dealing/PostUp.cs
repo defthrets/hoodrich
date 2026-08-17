@@ -50,7 +50,13 @@ namespace Hoodrich.Dealing
         private const int ScanIntervalMs = 2600;
         private const float FootfallRadius = 18f;
         private const float ApproachRange = 22f;
-        private const float LeashDistance = 6f;
+
+        /// <summary>
+        /// How far you can drift from the pitch before you stop working it. Generous on purpose:
+        /// being frozen to one tile made the whole thing feel like a menu, and left the player
+        /// stuck in the scenario when stock ran out.
+        /// </summary>
+        private const float LeashDistance = 20f;
         private const int DealDurationMs = 2600;
         private const float CopArriveRange = 3.5f;
         private const float CopScanRange = 160f;
@@ -93,6 +99,9 @@ namespace Hoodrich.Dealing
 
         private int _sales;
         private int _earned;
+
+        /// <summary>True while the idle pose is still applied and has not been walked out of.</summary>
+        private bool _posing;
 
         public PostUp(Settings cfg, PlayerState state, Pricing pricing)
         {
@@ -160,6 +169,7 @@ namespace Hoodrich.Dealing
             State = PostState.Idle;
             _product = null;
             _cornerHeat = 0f;
+            _posing = false;
 
             try
             {
@@ -179,8 +189,14 @@ namespace Hoodrich.Dealing
             }
         }
 
+        /// <summary>
+        /// Idles the player into a dealing pose. Cleared as soon as they move, so posting up
+        /// never takes control away -- you can walk the block, you just cannot leave it.
+        /// </summary>
         private void PlayPostScenario(Ped player)
         {
+            _posing = true;
+
             foreach (var scenario in PostScenarios)
             {
                 try
@@ -219,6 +235,14 @@ namespace Hoodrich.Dealing
             {
                 Stop("You left the corner.");
                 return;
+            }
+
+            // The pose is a look, not a cage. The moment the player moves, drop it so they can
+            // walk the block; they stay posted until they actually leave it.
+            if (_posing && player.Velocity.Length() > 0.6f)
+            {
+                _posing = false;
+                try { player.Task.ClearAll(); } catch { }
             }
 
             switch (State)
@@ -389,8 +413,7 @@ namespace Hoodrich.Dealing
 
             ReleaseCustomer();
             State = PostState.Posted;
-            PlayPostScenario(player);
-
+            
             if (product == null) return;
 
             var grams = Math.Min(_cfg.PostUpDealGrams, Stash.PackagedOf(product.Id));

@@ -50,7 +50,9 @@ namespace Hoodrich
         private readonly DeadDrop _deadDrop;
         private readonly PostUp _postUp;
         private readonly ZoneMap _zoneMap;
+        private readonly TurfAreas _turfAreas;
         private readonly TurfBlips _turfBlips;
+        private readonly TurfEditor _turfEditor;
         private readonly GangLeaders _leaders;
         private readonly TerritoryState _territory;
         private readonly TurfWar _war;
@@ -78,6 +80,7 @@ namespace Hoodrich
                 _dealers = DealerManager.Load(_cfg);
                 _weapons = WeaponRegistry.Load();
                 _zoneMap = ZoneMap.Load();
+                _turfAreas = TurfAreas.Load();
 
                 // Everything the save writes into has to exist before the save is read.
                 _state = new PlayerState();
@@ -97,11 +100,15 @@ namespace Hoodrich
                 _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
                 _cutting = new Cutting(_state.Stash, _state);
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
-                _turfBlips = new TurfBlips(_cfg, _gangs, _zoneMap, _territory);
+                _turfBlips = new TurfBlips(_cfg, _gangs, _zoneMap, _turfAreas, _territory);
+                _turfEditor = new TurfEditor(_turfAreas, _gangs, _crew, _turf);
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts, _postUp, _leaders);
+                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts, _postUp, _leaders)
+                {
+                    TurfEditor = _turfEditor
+                };
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
 
@@ -154,6 +161,7 @@ namespace Hoodrich
                     _hideouts.Update(_turf);
                     _territory.UpgradeTick();
                     _leaders.Update();
+                    _turfEditor.Update();
                     _turfBlips.Refresh();
                     UpdateLoan();
                 }
@@ -165,6 +173,7 @@ namespace Hoodrich
                 _bust.Draw();
                 _postUp.Draw();
                 _leaders.Draw();
+                _turfEditor.Draw();
                 _war.Draw();
                 _hideouts.Draw();
 
@@ -295,6 +304,7 @@ namespace Hoodrich
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
+            try { _turfEditor?.Stop(true); } catch { /* teardown */ }
             try { _turfBlips?.RestoreWorld(); } catch { /* teardown */ }
             try { _hideouts?.RestoreWorld(); } catch { /* teardown */ }
         }
