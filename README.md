@@ -12,24 +12,89 @@ lose a version fight with it.
 
 ## Requirements
 
-| Component | Version here |
-|---|---|
-| GTA V | Legacy, `C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V` |
-| ScriptHookV | installed |
-| ScriptHookVDotNet | 3.9.0.x (`ScriptHookVDotNet3.dll` in the game root) |
-| .NET Framework | 4.8 (ships with Windows 11) |
+Hoodrich is a pure script mod. It adds **no game assets** — no RPF edits, no add-on
+models, no `dlclist.xml` entry, nothing that needs OpenIV.
+
+| Component | Needed | Notes |
+|---|---|---|
+| **GTA V** | Legacy **or** Enhanced | One build runs on both. See below. |
+| **ScriptHookV** | yes | Alexander Blade's, matching your game build |
+| **ScriptHookVDotNet** | **3.9.0.x** | `ScriptHookVDotNet3.dll` + `ScriptHookVDotNet.asi` in the game root |
+| **.NET Framework** | 4.8 | ships with Windows 10/11 |
+| ASI loader | yes | `dinput8.dll` on Legacy, `xinput1_4.dll` on Enhanced |
+
+**Runtime dependencies: none.** The assembly references only `mscorlib`, `System.Core`,
+`System.Drawing`, `System.Windows.Forms` and `ScriptHookVDotNet3`. No Newtonsoft, no
+LemonUI, no NativeUI, no `iFruitAddon2`, no helper dll — INI and JSON parsing are
+hand-rolled. A shared `scripts\` folder is one assembly-resolution namespace, and this
+mod deliberately brings nothing into it that could lose a version fight with another mod.
+
+### Legacy and Enhanced
+
+Both editions ship the **identical** `ScriptHookVDotNet3.dll` (3.9.0.0, byte for byte),
+and Hoodrich has no asset dependencies, so **one build serves both** — it is not a port
+and there is no separate Enhanced release. Only the ASI loader differs, and that is
+ScriptHookV's problem rather than this mod's.
+
+If a mod offers you `[Enhanced]` and `[Legacy]` builds, that usually refers to the SHVDN
+**API** version, not the game edition.
 
 ## Install
+
+### From a build
 
 ```powershell
 .\build.ps1 -Deploy
 ```
 
-That drops `Hoodrich.dll` into `scripts\`, `Hoodrich.ini` next to it, and the data files
-into `scripts\Hoodrich\`. Existing config and data are never overwritten.
+Deploys to **both** installs by default. Restrict it if you want:
 
-To uninstall: delete `scripts\Hoodrich.dll`. Your save in `scripts\Hoodrich\save.json`
-survives, so reinstalling picks up where you left off.
+```powershell
+.\build.ps1 -Deploy -Target Legacy
+```
+
+`-Target` accepts `Legacy`, `Enhanced` or `Both`. Point it elsewhere with `-GtaDir` /
+`-EnhancedDir`. It refuses to deploy while GTA V is running, because the dll is locked.
+
+### By hand
+
+Copy into your game folder:
+
+| From | To |
+|---|---|
+| `build\Hoodrich.dll` | `scripts\Hoodrich.dll` |
+| `Hoodrich.ini` | `scripts\Hoodrich.ini` |
+| `data\*.json` | `scripts\Hoodrich\` |
+
+### What lands where
+
+```
+scripts\
+  Hoodrich.dll          the mod
+  Hoodrich.ini          settings
+  Hoodrich.log          written at runtime; read this first if anything misbehaves
+  Hoodrich\
+    drugs.json          product catalogue
+    gangs.json          gangs, colours, rivalries, turf zone codes
+    dealers.json        who you buy from, and what they say
+    weapons.json        weapon table for the weapon wheel
+    save.json           your progression (written by the mod)
+```
+
+Data files are **never overwritten** on redeploy, so your edits survive. The consequence
+is that `Hoodrich.ini` also survives — after an update that adds settings, the deploy
+warns you the on-disk ini is missing sections. Every setting has a working code default,
+so a stale ini is safe; it just means the new options are not documented on disk. Copy
+`Hoodrich.ini` over yours to refresh it.
+
+### Uninstall
+
+Delete `scripts\Hoodrich.dll`. That is the whole mod — nothing else it writes affects the
+game. Your save in `scripts\Hoodrich\save.json` survives, so reinstalling picks up where
+you left off; delete the `scripts\Hoodrich\` folder too for a clean slate.
+
+Everything the mod changes at runtime (time scale, timecycle, gang relationship groups,
+spawned dealers and war peds, blips) is put back when the script unloads or errors out.
 
 ## Controls
 

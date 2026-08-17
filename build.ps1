@@ -138,9 +138,30 @@ function Deploy-To([string]$gameDir, [string]$label) {
         }
     }
 
+    # The ini is never overwritten, because it is the one file players hand-edit. That
+    # silently leaves new settings undocumented on disk after an update, so say so.
     $iniSrc = Join-Path $root 'Hoodrich.ini'
     $iniDst = Join-Path $scripts 'Hoodrich.ini'
-    if ((Test-Path $iniSrc) -and -not (Test-Path $iniDst)) { Copy-Item $iniSrc $iniDst }
+
+    if (Test-Path $iniSrc) {
+        if (-not (Test-Path $iniDst)) {
+            Copy-Item $iniSrc $iniDst
+            Write-Host "  new    Hoodrich.ini" -ForegroundColor DarkGray
+        } else {
+            $srcSections = (Select-String -Path $iniSrc -Pattern '^\[(.+)\]').Matches.Groups |
+                Where-Object { $_.Name -eq '1' } | ForEach-Object { $_.Value }
+            $dstSections = (Select-String -Path $iniDst -Pattern '^\[(.+)\]').Matches.Groups |
+                Where-Object { $_.Name -eq '1' } | ForEach-Object { $_.Value }
+
+            $missing = $srcSections | Where-Object { $dstSections -notcontains $_ }
+            if ($missing) {
+                Write-Host "  STALE  Hoodrich.ini is missing [$($missing -join '] [')]" -ForegroundColor Yellow
+                Write-Host "         Defaults still apply. Copy Hoodrich.ini over it to get the new options." -ForegroundColor DarkGray
+            } else {
+                Write-Host "  keep   Hoodrich.ini" -ForegroundColor DarkGray
+            }
+        }
+    }
 }
 
 if ($Deploy) {
