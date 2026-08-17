@@ -62,6 +62,9 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main. The dock worker's run out to you.</summary>
         public Delivery Delivery;
 
+        /// <summary>Set by Main. Moving product between your pockets and the house.</summary>
+        public StashScreen StashScreen;
+
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
@@ -97,6 +100,14 @@ namespace Hoodrich.Wheel
         /// </summary>
         private void ShowInventory()
         {
+            // In the house, your inventory IS the transfer screen: two containers side by side
+            // rather than a list of what you happen to be carrying.
+            if (_stash.AtDoor && StashScreen != null)
+            {
+                OpenStashScreen();
+                return;
+            }
+
             var sections = new List<InfoSection>();
 
             var ready = new InfoSection { Title = "Ready to sell" };
@@ -452,8 +463,8 @@ namespace Hoodrich.Wheel
             // What you are carrying, rather than how you are doing -- the stats moved under
             // Gangs, because who rates you is a gang question.
             page.Add("Inventory", "*", ShowInventory,
-                detail: "Everything you are carrying",
-                value: CarriedSummary());
+                detail: _stash.AtDoor ? "Move product between your pockets and the house" : "Everything you are carrying",
+                value: _stash.AtDoor ? "at the house" : CarriedSummary());
             page.WithIcon(Icons.Stash);
 
             return page;
@@ -581,36 +592,33 @@ namespace Hoodrich.Wheel
             page.Row("Room here", den.FreeSpace.ToString("0") + "g");
             page.Row("On you", Stash.Total.ToString("0.#") + "g");
 
+            // Item by item, on its own screen. Doing this on the wheel meant one wedge per
+            // product per direction, which is a lot of flicking to move two things.
+            page.Add("Move product", "=", OpenStashScreen,
+                detail: "Pockets on the left, house on the right",
+                value: "");
+            page.WithIcon(Icons.Stash);
+
             page.Add("Leave it all", "v", DepositAll,
                 detail: "Everything you are carrying, into the house",
                 value: Stash.Total.ToString("0.#") + "g",
                 enabled: Stash.Total > 0.005f,
                 disabledReason: "You are carrying nothing");
-            page.WithIcon(Icons.Stash);
+            page.WithIcon(Icons.Cash);
 
             page.Add("Take it all", "^", WithdrawAll,
                 detail: "As much as you can carry, out of the house",
                 value: den.Total.ToString("0.#") + "g",
                 enabled: den.Total > 0.005f && Stash.FreeSpace > 0.005f,
                 disabledReason: den.Total <= 0.005f ? "There is nothing here" : "You are full");
-            page.WithIcon(Icons.Cash);
-
-            foreach (var d in _drugs.All)
-            {
-                var drug = d;
-                var carried = Stash.BulkOf(drug.Id) + Stash.PackagedOf(drug.Id);
-                var stashed = den.BulkOf(drug.Id) + den.PackagedOf(drug.Id);
-                if (carried <= 0.005f && stashed <= 0.005f) continue;
-
-                page.Add(drug.Name, drug.Tag, () => DepositOne(drug),
-                    detail: "Leave your " + drug.Name + " here  ·  " + stashed.ToString("0.#") + "g already here",
-                    value: carried > 0.005f ? carried.ToString("0.#") + "g on you" : "none on you",
-                    enabled: carried > 0.005f,
-                    disabledReason: "None on you");
-                page.WithIcon(Icons.ForDrug(drug.Id));
-            }
+            page.WithIcon(Icons.Tick);
 
             return page;
+        }
+
+        private void OpenStashScreen()
+        {
+            StashScreen?.Open(Stash, _stash.Stash, _drugs, () => _state.Touch());
         }
         private void DepositAll()
         {
@@ -634,15 +642,6 @@ namespace Hoodrich.Wheel
                 : "~o~No room for any of it.~s~");
         }
 
-        private void DepositOne(DrugDef drug)
-        {
-            var moved = MoveDrug(Stash, _stash.Stash, drug.Id);
-            _state.Touch();
-
-            Notify.Ticker(moved > 0.005f
-                ? "~g~Stashed " + moved.ToString("0.#") + "g " + drug.Name + ".~s~"
-                : "~o~No room in the den.~s~");
-        }
 
         /// <summary>
         /// Moves one product between two stashes, preserving purity. Only ever removes what the

@@ -55,6 +55,7 @@ namespace Hoodrich
         private readonly LeaderTalk _leaderTalk;
         private readonly Conversation _talk;
         private readonly InfoPanel _info;
+        private readonly StashScreen _stashScreen;
         private readonly StashHouse _stash;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
@@ -103,6 +104,7 @@ namespace Hoodrich
                 _talk = new Conversation();
 
                 _info = new InfoPanel();
+                _stashScreen = new StashScreen();
                 _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing, _cfg);
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
@@ -113,6 +115,7 @@ namespace Hoodrich
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
                 pages.Info = _info;
                 pages.Delivery = _delivery;
+                pages.StashScreen = _stashScreen;
 
                 
 
@@ -146,6 +149,20 @@ namespace Hoodrich
                 Draw.BeginFrame();
 
                 var available = IsPlayable();
+
+                // Moving product owns the screen outright, the same as any other full UI.
+                if (_stashScreen.IsOpen)
+                {
+                    if (!available || !_stash.AtDoor) _stashScreen.Close();
+                    else
+                    {
+                        _stashScreen.Update();
+                        _stashScreen.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
 
                 // A popup readout owns the screen the same way a conversation does: the wheel
                 // would fight it for the same buttons.
