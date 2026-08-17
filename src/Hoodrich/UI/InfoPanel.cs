@@ -176,17 +176,17 @@ namespace Hoodrich.UI
             const float x = 0.035f;
             var top = Math.Max(0.06f, 0.5f - height * 0.5f);
 
-            Hud.Rect(x, top, PanelWidth, height, Color.FromArgb(220, 12, 13, 15));
-            Hud.Rect(x, top, PanelWidth, 0.0030f, Palette.Accent);
+            Hud.RectFrom(x, top, PanelWidth, height, Color.FromArgb(228, 12, 13, 15));
+            Hud.RectFrom(x, top, PanelWidth, 0.0030f, Palette.Accent);
 
             var y = top + 0.012f;
 
-            Hud.Text(_title.ToUpperInvariant(), x + Pad, y, 0.34f, Palette.Text, Hud.FontLabel);
+            Hud.Text(_title.ToUpperInvariant(), x + Pad, y, 0.34f, Palette.Text, Hud.FontLabel, centre: false);
             y += 0.024f;
 
             if (!string.IsNullOrEmpty(_subtitle))
             {
-                Hud.Text(_subtitle, x + Pad, y, 0.27f, Palette.TextDim, Hud.FontBody);
+                Hud.Text(_subtitle, x + Pad, y, 0.27f, Palette.TextDim, Hud.FontBody, centre: false);
             }
 
             y += 0.022f;
@@ -202,7 +202,7 @@ namespace Hoodrich.UI
                     if (index++ >= _scroll && drawn < MaxVisibleRows)
                     {
                         Hud.Text(section.Title.ToUpperInvariant(), x + Pad, y, 0.24f,
-                                 Palette.Accent, Hud.FontLabel);
+                                 Palette.Accent, Hud.FontLabel, centre: false);
                         y += RowHeight * 0.9f;
                         drawn++;
                     }
@@ -217,7 +217,7 @@ namespace Hoodrich.UI
                     {
                         // Label left, value hard right in a narrow column -- close enough
                         // together to read as one line.
-                        Hud.Text(row.Label, x + Pad, y, 0.28f, Palette.TextDim, Hud.FontBody);
+                        Hud.Text(row.Label, x + Pad, y, 0.28f, Palette.TextDim, Hud.FontBody, centre: false);
                         Hud.TextRight(row.Value, x + PanelWidth - Pad, y, 0.28f, row.Colour, Hud.FontBody);
                     }
 
@@ -229,7 +229,7 @@ namespace Hoodrich.UI
             }
 
             var hint = total > MaxVisibleRows ? "UP / DOWN SCROLL   ENTER CLOSE" : "ENTER CLOSE";
-            Hud.Text(hint, x + Pad, top + height - 0.018f, 0.24f, Palette.TextDim, Hud.FontLabel);
+            Hud.Text(hint, x + Pad, top + height - 0.018f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
     }
 }

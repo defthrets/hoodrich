@@ -408,7 +408,8 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
-                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, h, "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
+
+                Wander();
 
                 var gang = _gangs.Get(def.GangId);
                 if (gang != null && gang.GroupHash != 0)
@@ -430,6 +431,90 @@ namespace Hoodrich.Gangs
             {
                 try { model.Value.MarkAsNoLongerNeeded(); } catch { }
             }
+        }
+
+        /// <summary>How far he will drift from his spot while nobody is talking to him.</summary>
+        private const float WanderRadius = 35f;
+
+        /// <summary>True while he has been stopped to talk.</summary>
+        private bool _held;
+
+        /// <summary>
+        /// Sets him wandering his own corner.
+        ///
+        /// Standing rooted to one tile made him read as a shop counter rather than a man on his
+        /// block. He walks his own patch instead -- bounded to the spot so he never wanders off
+        /// his gang's streets and out of the story.
+        /// </summary>
+        private void Wander()
+        {
+            if (_livePed == null || !_livePed.Exists()) return;
+
+            _held = false;
+
+            try
+            {
+                var spot = _spots.TryGetValue(_liveDef?.GangId ?? "", out var s) ? s : _livePed.Position;
+
+                _livePed.Task.ClearAll();
+                Function.Call(Hash.TASK_WANDER_IN_AREA, _livePed.Handle,
+                              spot.X, spot.Y, spot.Z, WanderRadius, 3f, 8f);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Leader could not be set wandering: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Stops him and turns him to face you, for as long as the conversation lasts. Called
+        /// when the dialogue opens; <see cref="Wander"/> puts him back to work afterwards.
+        /// </summary>
+        public void HoldForTalk()
+        {
+            if (_livePed == null || !_livePed.Exists() || _held) return;
+
+            _held = true;
+
+            try
+            {
+                var player = Game.Player.Character;
+
+                _livePed.Task.ClearAll();
+                if (player != null && player.Exists())
+                {
+                    Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _livePed.Handle, player.Handle, -1);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Leader could not be held: " + ex.Message);
+            }
+        }
+
+        /// <summary>Puts him back to wandering once you have finished with him.</summary>
+        public void ReleaseFromTalk()
+        {
+            if (!_held) return;
+            Wander();
+        }
+
+        /// <summary>
+        /// Flat distance to the live leader, or a large number when he is not around. Used to
+        /// decide whether the player has walked out of a conversation.
+        /// </summary>
+        public float DistanceTo(LeaderDef def)
+        {
+            if (def == null || _liveDef == null || _livePed == null || !_livePed.Exists()) return 9999f;
+            if (!string.Equals(def.GangId, _liveDef.GangId, StringComparison.OrdinalIgnoreCase)) return 9999f;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return 9999f;
+
+            var dx = player.Position.X - _livePed.Position.X;
+            var dy = player.Position.Y - _livePed.Position.Y;
+
+            return (float)Math.Sqrt(dx * dx + dy * dy);
         }
 
         private static Model? ResolveModel(LeaderDef def)
@@ -556,6 +641,8 @@ namespace Hoodrich.Gangs
             }
 
             Log.Info("Talking to " + def.Name + ".");
+
+            HoldForTalk();
             Talk.Open(root, def);
         }
 

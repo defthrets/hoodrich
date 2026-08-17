@@ -66,13 +66,37 @@ namespace Hoodrich.Dealing
         private const string AnimPlayer = "givetake1_a";
         private const string AnimBuyer = "givetake1_b";
 
-        /// <summary>Scenarios tried, in order, to make the player look like they are working.</summary>
-        private static readonly string[] PostScenarios =
-        {
-            "WORLD_HUMAN_DRUG_DEALER", "WORLD_HUMAN_STAND_IMPATIENT", "WORLD_HUMAN_SMOKING"
-        };
+        /// <summary>How close the two of you stand for the handoff to look like a handoff.</summary>
+        private const float HandoffDistance = 0.9f;
+
+        /// <summary>A sale this close to a uniform is a sale a uniform saw.</summary>
+        private const float CopWitnessRange = 25f;
+
+        /// <summary>Corner heat at which the police stop needing to see anything.</summary>
+        private const float HeatForWanted = 0.85f;
+
+        /// <summary>Working a corner this long starts attracting the wrong kind of attention.</summary>
+        private const int DriveByAfterMs = 5 * 60 * 1000;
+
+        /// <summary>Chance per scan of a rival car coming past, once you have been here a while.</summary>
+        private const float DriveByChancePercent = 4f;
+
+        /// <summary>How far a rival can be and still notice you working their block.</summary>
+        private const float RivalNoticeRange = 28f;
 
         private static readonly string[] CopModels = { "s_m_y_cop_01", "s_f_y_cop_01", "s_m_y_swat_01" };
+
+        /// <summary>Said by whoever just bought from you.</summary>
+        private static readonly string[] BuyerLines =
+        {
+            "SPEECH_BUY_DRUGS", "GENERIC_THANKS", "GENERIC_BYE"
+        };
+
+        /// <summary>Said by the player once the handoff lands.</summary>
+        private static readonly string[] SellerLines =
+        {
+            "GENERIC_BYE", "GENERIC_THANKS", "GENERIC_HOWS_IT_GOING"
+        };
 
         private readonly Settings _cfg;
         private readonly PlayerState _state;
@@ -101,8 +125,14 @@ namespace Hoodrich.Dealing
         private int _sales;
         private int _earned;
 
-        /// <summary>True while the idle pose is still applied and has not been walked out of.</summary>
-        private bool _posing;
+        /// <summary>When this pitch started, for the drive-by clock.</summary>
+        private int _postedAt;
+
+        /// <summary>Rival cars sent so far, so one pitch cannot spawn a convoy.</summary>
+        private int _driveBys;
+
+        private readonly List<Ped> _rivals = new List<Ped>();
+        private Vehicle _driveByCar;
 
         public PostUp(Settings cfg, PlayerState state, Pricing pricing)
         {
@@ -147,9 +177,10 @@ namespace Hoodrich.Dealing
             _sales = 0;
             _earned = 0;
             _lastScan = 0;
+            _postedAt = Game.GameTime;
+            _driveBys = 0;
             State = PostState.Posted;
 
-            PlayPostScenario(player);
 
             Notify.Ticker("~g~Posted up.~s~ Moving " + product.Name.ToLowerInvariant() +
                           ". Busy pavement sells faster and burns hotter.");
@@ -170,45 +201,12 @@ namespace Hoodrich.Dealing
             State = PostState.Idle;
             _product = null;
             _cornerHeat = 0f;
-            _posing = false;
-
-            try
-            {
-                var player = Game.Player.Character;
-                if (player != null && player.Exists()) player.Task.ClearAll();
-            }
-            catch
-            {
-                // Nothing to do.
-            }
 
             if (!string.IsNullOrEmpty(reason)) Notify.Ticker("~o~" + reason + "~s~");
 
             if (sales > 0)
             {
                 Notify.Ticker("~g~" + sales + " sold~s~ for $" + earned.ToString("N0") + ".");
-            }
-        }
-
-        /// <summary>
-        /// Idles the player into a dealing pose. Cleared as soon as they move, so posting up
-        /// never takes control away -- you can walk the block, you just cannot leave it.
-        /// </summary>
-        private void PlayPostScenario(Ped player)
-        {
-            _posing = true;
-
-            foreach (var scenario in PostScenarios)
-            {
-                try
-                {
-                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, player.Handle, scenario, 0, true);
-                    return;
-                }
-                catch
-                {
-                    // Try the next one.
-                }
             }
         }
 
@@ -238,14 +236,6 @@ namespace Hoodrich.Dealing
                 return;
             }
 
-            // The pose is a look, not a cage. Released on INPUT rather than on movement: the
-            // scenario task is what stops the player moving, so waiting for velocity to rise
-            // waits forever -- which is exactly how the player ended up welded to the corner.
-            if (_posing && WantsToMove())
-            {
-                _posing = false;
-                try { player.Task.ClearAll(); } catch { }
-            }
 
             switch (State)
             {
@@ -273,33 +263,9 @@ namespace Hoodrich.Dealing
             if (State == PostState.Posted && Footfall > 0) RollCustomer(player);
 
             if (State != PostState.Investigated && State != PostState.Questioned) RollPolice(player);
-        }
 
-        /// <summary>
-        /// True the moment the player asks to move, aim, jump or run. Reading the stick rather
-        /// than the ped is the whole point: a ped inside a scenario reports no velocity no
-        /// matter how hard you push, so input is the only honest signal that they want out.
-        /// </summary>
-        private static bool WantsToMove()
-        {
-            try
-            {
-                var x = Game.GetControlValueNormalized(Control.MoveLeftRight);
-                var y = Game.GetControlValueNormalized(Control.MoveUpDown);
-
-                if (Math.Abs(x) > 0.15f || Math.Abs(y) > 0.15f) return true;
-
-                return Game.IsControlPressed(Control.Jump)
-                    || Game.IsControlPressed(Control.Sprint)
-                    || Game.IsControlPressed(Control.Aim)
-                    || Game.IsControlPressed(Control.Attack)
-                    || Game.IsControlPressed(Control.Duck);
-            }
-            catch
-            {
-                // If the controls cannot be read, let them out rather than trap them.
-                return true;
-            }
+            RollRivals(player);
+            RollDriveBy(player);
         }
 
         /// <summary>How many people are actually walking past. Drives sales AND heat.</summary>
@@ -392,13 +358,38 @@ namespace Hoodrich.Dealing
 
             try
             {
+                // The give/take pair is authored for two people almost touching and facing each
+                // other. Left where they happened to stop, the hands passed through empty air a
+                // metre apart -- so the buyer is walked onto the mark and both are turned in.
                 Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _customer.Handle, player.Handle, DealDurationMs);
+                Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, player.Handle, _customer.Handle, DealDurationMs);
+
+                var mark = MarkInFrontOf(player);
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _customer.Handle,
+                              mark.X, mark.Y, mark.Z, 1f, 1500, HeadingFrom(_customer.Position, player.Position), 0.1f);
+
                 Function.Call(Hash.REQUEST_ANIM_DICT, AnimDict);
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not start the handoff: " + ex.Message);
             }
+        }
+
+        /// <summary>The spot a buyer should stand on to be within arm's reach of the player.</summary>
+        private static Vector3 MarkInFrontOf(Ped player)
+        {
+            var heading = player.Heading * (float)Math.PI / 180f;
+
+            return player.Position + new Vector3(
+                -(float)Math.Sin(heading) * HandoffDistance,
+                (float)Math.Cos(heading) * HandoffDistance,
+                0f);
+        }
+
+        private static float HeadingFrom(Vector3 from, Vector3 to)
+        {
+            return (float)(Math.Atan2(to.X - from.X, to.Y - from.Y) * 180.0 / Math.PI);
         }
 
         private void TickDeal(Ped player)
@@ -496,11 +487,274 @@ namespace Hoodrich.Dealing
             {
                 try { Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, customer.Handle, false); }
                 catch { }
+
+                Say(customer, BuyerLines);
             }
+
+            Say(player, SellerLines);
 
             Notify.Ticker("~g~+$" + payout.ToString("N0") + "~s~  " + sold.ToString("0.#") + "g");
 
+            // Doing it in front of a uniform is its own problem, regardless of how quiet the
+            // corner has been up to now.
+            if (CopIsWatching(player))
+            {
+                Notify.Failure("a cop watched that.");
+                Wanted(1);
+            }
+            else if (_cornerHeat >= _cfg.PostUpHeatBeforePolice * HeatForWanted)
+            {
+                // Word gets round without anybody having to see it.
+                Notify.Failure("this corner is too hot now.");
+                Wanted(1);
+            }
+
             if (Stash.PackagedOf(product.Id) < 0.05f) Stop("That is the last of it.");
+        }
+
+        // ---- the other gangs ---------------------------------------------------
+
+        /// <summary>
+        /// Rivals who can see you working their block come and do something about it.
+        ///
+        /// Only once you have actually been seen dealing -- standing on somebody's corner is
+        /// rude, selling on it is the problem -- and only for gangs at war with yours.
+        /// </summary>
+        private void RollRivals(Ped player)
+        {
+            if (_sales == 0 || Crew == null) return;
+            if (Turf == null || !Turf.IsExposed) return;
+            if (Turf.Status != TurfStatus.Hostile) return;
+
+            try
+            {
+                foreach (var ped in World.GetNearbyPeds(player, RivalNoticeRange))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (ped.IsInCombat || _rivals.Contains(ped)) continue;
+                    if (!Crew.IsRival(ped)) continue;
+
+                    if (!Function.Call<bool>(Hash.HAS_ENTITY_CLEAR_LOS_TO_ENTITY, ped.Handle, player.Handle, 17)) continue;
+
+                    _rivals.Add(ped);
+
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
+                    Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16);
+
+                    Notify.Failure("you have been seen selling on their block.");
+
+                    // One is enough to start it; the game's own gang AI brings the rest.
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Rival scan failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// A car full of somebody else's people, after you have been working long enough for
+        /// word to travel. Rare per check, but near-certain if you never move.
+        /// </summary>
+        private void RollDriveBy(Ped player)
+        {
+            if (Game.GameTime - _postedAt < DriveByAfterMs) return;
+            if (_driveBys >= 2) return;
+            if (_driveByCar != null && _driveByCar.Exists()) return;
+            if (_rng.NextDouble() * 100.0 > DriveByChancePercent) return;
+
+            var gang = PickRivalGang();
+            if (gang == null) return;
+
+            SpawnDriveBy(player, gang);
+        }
+
+        /// <summary>Whoever has a reason to come for you. Falls back to any gang but your own.</summary>
+        private GangDef PickRivalGang()
+        {
+            if (Crew == null) return null;
+
+            // On somebody's turf it is them; otherwise it is whoever your lot are at war with.
+            if (Turf != null && Turf.Status == TurfStatus.Hostile && Turf.Owner != null) return Turf.Owner;
+
+            return Crew.IsAffiliated ? FirstRivalOf(Crew.Current) : null;
+        }
+
+        /// <summary>The first gang your lot are at war with that still exists in the registry.</summary>
+        private GangDef FirstRivalOf(GangDef gang)
+        {
+            if (gang == null || Crew == null) return null;
+
+            foreach (var id in gang.Rivals)
+            {
+                var rival = Crew.GangById(id);
+                if (rival != null) return rival;
+            }
+
+            return null;
+        }
+
+        private void SpawnDriveBy(Ped player, GangDef gang)
+        {
+            Model? carModel = null;
+
+            foreach (var name in new[] { "baller", "buccaneer", "primo", "manana" })
+            {
+                var m = new Model(name);
+                if (!m.IsValid || !m.IsInCdImage || !m.Request(1200)) continue;
+                carModel = m;
+                break;
+            }
+
+            if (carModel == null) return;
+
+            try
+            {
+                // Well behind the player, on a road, so it arrives rather than appears.
+                var behind = player.Position - player.ForwardVector * 70f;
+                var spawn = World.GetNextPositionOnStreet(behind);
+                if (spawn == Vector3.Zero) return;
+
+                _driveByCar = World.CreateVehicle(carModel.Value, spawn);
+                if (_driveByCar == null || !_driveByCar.Exists()) return;
+
+                _driveByCar.IsPersistent = true;
+
+                for (var seat = -1; seat <= 1; seat++)
+                {
+                    var shooter = SpawnGangster(gang, _driveByCar, seat);
+                    if (shooter == null) continue;
+
+                    _rivals.Add(shooter);
+
+                    if (seat == -1)
+                    {
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, shooter.Handle, _driveByCar.Handle,
+                                      player.Position.X, player.Position.Y, player.Position.Z,
+                                      18f, 0, _driveByCar.Model.Hash, 786603, 8f, true);
+                    }
+                    else
+                    {
+                        Function.Call(Hash.TASK_DRIVE_BY, shooter.Handle, player.Handle, 0,
+                                      player.Position.X, player.Position.Y, player.Position.Z,
+                                      35f, 100, true, unchecked((uint)0));
+                    }
+                }
+
+                _driveBys++;
+                Notify.Failure("that is not your car coming.");
+                Log.Info("Drive-by from " + gang.Id + " after " +
+                         ((Game.GameTime - _postedAt) / 1000) + "s posted up.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Drive-by failed: " + ex.Message);
+            }
+            finally
+            {
+                try { carModel.Value.MarkAsNoLongerNeeded(); } catch { }
+            }
+        }
+
+        private Ped SpawnGangster(GangDef gang, Vehicle car, int seat)
+        {
+            foreach (var name in gang.MemberModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1000)) continue;
+
+                    var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
+                                                    car.Handle, 4, model.Hash, seat, true, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (handle == 0) continue;
+
+                    var ped = (Ped)Entity.FromHandle(handle);
+                    if (ped == null || !ped.Exists()) continue;
+
+                    ped.IsPersistent = true;
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
+                    if (gang.GroupHash != 0)
+                    {
+                        Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
+                    }
+
+                    Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
+                                  Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_MICROSMG"), 200, false, true);
+
+                    return ped;
+                }
+                catch
+                {
+                    // Try the next model.
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Ambient speech, so a sale is something you hear as well as read.</summary>
+        private void Say(Ped ped, string[] lines)
+        {
+            if (ped == null || !ped.Exists() || lines.Length == 0) return;
+
+            try
+            {
+                var line = lines[_rng.Next(lines.Length)];
+
+                // Speech param SPEECH_PARAMS_FORCE gets a line out even when the ped is mid
+                // task; the empty voice name makes the game use the ped's own voice.
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle, line, "SPEECH_PARAMS_FORCE");
+            }
+            catch
+            {
+                // A missing line costs nothing.
+            }
+        }
+
+        /// <summary>True when a uniform is close enough to have seen the handoff.</summary>
+        private static bool CopIsWatching(Ped player)
+        {
+            try
+            {
+                foreach (var ped in World.GetNearbyPeds(player, CopWitnessRange))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                    var type = Function.Call<int>(Hash.GET_PED_TYPE, ped.Handle);
+                    if (type != 6 && type != 27) continue;
+
+                    // Behind a wall does not count as watching.
+                    if (!Function.Call<bool>(Hash.HAS_ENTITY_CLEAR_LOS_TO_ENTITY, ped.Handle, player.Handle, 17)) continue;
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Cop witness scan failed: " + ex.Message);
+            }
+
+            return false;
+        }
+
+        /// <summary>Raises the wanted level, never lowers it.</summary>
+        private static void Wanted(int stars)
+        {
+            try
+            {
+                if (Game.Player.Wanted.WantedLevel >= stars) return;
+
+                Game.Player.Wanted.SetWantedLevel(stars, false);
+                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not set the wanted level: " + ex.Message);
+            }
         }
 
         // ---- the police --------------------------------------------------------
@@ -717,8 +971,36 @@ namespace Hoodrich.Dealing
         {
             ReleaseCustomer();
             ReleaseCop();
+            ReleaseRivals();
             State = PostState.Idle;
             _product = null;
+        }
+
+        /// <summary>
+        /// Lets go of anyone sent after you. They are left alive and in the world -- a fight
+        /// that vanishes mid-punch is worse than one that finishes -- but stop being ours.
+        /// </summary>
+        private void ReleaseRivals()
+        {
+            foreach (var ped in _rivals)
+            {
+                try
+                {
+                    if (ped == null || !ped.Exists()) continue;
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                    ped.MarkAsNoLongerNeeded();
+                }
+                catch { /* teardown */ }
+            }
+            _rivals.Clear();
+
+            try
+            {
+                if (_driveByCar != null && _driveByCar.Exists()) _driveByCar.MarkAsNoLongerNeeded();
+            }
+            catch { /* teardown */ }
+
+            _driveByCar = null;
         }
 
         // ---- hud ---------------------------------------------------------------
@@ -750,8 +1032,17 @@ namespace Hoodrich.Dealing
             Hud.Text(label, x, y - 0.042f, 0.34f,
                      State == PostState.Posted ? Palette.Text : Palette.Danger, Hud.FontLabel);
 
+            // What is left is the number that decides whether you stay, so it goes first and
+            // turns amber as it runs down.
+            var left = _product == null ? 0f : Stash.PackagedOf(_product.Id);
+            var lots = _cfg.PostUpDealGrams > 0.01f ? (int)(left / _cfg.PostUpDealGrams) : 0;
+
+            Hud.Text(left.ToString("0.#") + "g left  ·  " + lots + " more sale" + (lots == 1 ? "" : "s"),
+                     x, y + 0.024f, 0.30f,
+                     left < _cfg.PostUpDealGrams * 2f ? Palette.Warn : Palette.Cash, Hud.FontBody);
+
             Hud.Text(Footfall + " passing  ·  " + _sales + " sold  ·  $" + _earned.ToString("N0"),
-                     x, y + 0.024f, 0.28f, Palette.TextDim, Hud.FontBody);
+                     x, y + 0.048f, 0.28f, Palette.TextDim, Hud.FontBody);
         }
     }
 }

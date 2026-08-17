@@ -147,56 +147,31 @@ namespace Hoodrich
 
                 var available = IsPlayable();
 
-                // A popup readout owns the screen the same way a conversation does: the wheel would
-
-
-                // fight it for the same buttons.
-
-
+                // A popup readout owns the screen the same way a conversation does: the wheel
+                // would fight it for the same buttons.
                 if (_info.IsOpen)
-
-
                 {
-
-
                     if (!available) _info.Close();
-
-
                     else
-
-
                     {
-
-
                         _info.Update();
-
-
                         _info.Draw();
-
-
                         SlowTick();
-
-
                         _failures = 0;
-
-
                         return;
-
-
                     }
-
-
                 }
-
-
-                
 
 
                 // A conversation owns the screen while it is up: the wheel would fight it for
                 // the same buttons, and you cannot be talking to a man and shopping at once.
                 if (_talk.IsOpen)
                 {
-                    if (!available || WalkedAwayFromTalk()) _talk.Close();
+                    if (!available || WalkedAwayFromTalk())
+                    {
+                        _talk.Close();
+                        _leaders.ReleaseFromTalk();
+                    }
                     else
                     {
                         _talk.Update();
@@ -318,7 +293,11 @@ namespace Hoodrich
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return true;
 
-            return player.Position.DistanceTo(_leaders.SpotFor(subject)) > 8f;
+            // Measured to the MAN, on the ground plane. Measuring to his authored spot closed
+            // the conversation the instant it opened: that spot's height is probed from across
+            // the map and is often still zero, so a player standing 30m above sea level was
+            // "30 metres away" from somebody they were stood next to.
+            return _leaders.DistanceTo(subject) > 8f;
         }
 
         /// <summary>True when the player is in normal control and the mod should be live.</summary>

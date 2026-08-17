@@ -85,6 +85,67 @@ namespace Hoodrich.Wheel
 
         // ---- the numbers, on their own screen -----------------------------------
 
+        /// <summary>
+        /// What you are carrying.
+        ///
+        /// Product for now, item by item with what it is worth. Written as a general inventory
+        /// rather than a drug list so that anything else worth carrying later -- burners,
+        /// phones, whatever the missions want -- has somewhere obvious to go.
+        /// </summary>
+        private void ShowInventory()
+        {
+            var sections = new List<InfoSection>();
+
+            var ready = new InfoSection { Title = "Ready to sell" };
+            var bagged = 0;
+
+            foreach (var drug in _drugs.All)
+            {
+                var have = Stash.PackagedOf(drug.Id);
+                if (have <= 0.005f) continue;
+
+                var purity = Stash.PurityOf(drug.Id);
+                ready.Row(drug.Name,
+                          have.ToString("0.#") + "g  ·  $" + _pricing.SaleValue(drug, have, purity).ToString("N0"),
+                          Palette.Cash);
+                bagged++;
+            }
+
+            if (bagged == 0) ready.Row("Nothing bagged up", "", Palette.TextDim);
+            sections.Add(ready);
+
+            var weight = new InfoSection { Title = "Still to bag up" };
+            var raw = 0;
+
+            foreach (var drug in _drugs.All)
+            {
+                var have = Stash.BulkOf(drug.Id);
+                if (have <= 0.005f) continue;
+
+                weight.Row(drug.Name, have.ToString("0.#") + "g", Palette.Warn);
+                raw++;
+            }
+
+            if (raw == 0) weight.Row("No weight on you", "", Palette.TextDim);
+            sections.Add(weight);
+
+            var pockets = new InfoSection { Title = "Pockets" };
+            pockets.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
+            pockets.Row("Carrying", Stash.Total.ToString("0.#") + "g");
+            pockets.Row("Room left", Stash.FreeSpace.ToString("0") + "g",
+                        Stash.FreeSpace < 20f ? Palette.Warn : (Color?)null);
+            sections.Add(pockets);
+
+            Info?.Open("Inventory", CarriedSummary(), sections);
+        }
+
+        /// <summary>One line for the wheel: what is on you right now.</summary>
+        private string CarriedSummary()
+        {
+            var total = Stash.Total;
+            return total <= 0.005f ? "empty" : total.ToString("0.#") + "g";
+        }
+
         /// <summary>Everything about you: rank, heat, money made, who rates you.</summary>
         private void ShowStatus()
         {
@@ -361,12 +422,12 @@ namespace Hoodrich.Wheel
                 value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
             page.WithIcon(Icons.Mask);
 
-            // Not a page of wedges: a readout belongs on a readout screen, not on a ring you
-            // have to hold a button to keep open.
-            page.Add("Status", "*", ShowStatus,
-                detail: "How you are doing and who rates you",
-                value: _state.RankName);
-            page.WithIcon(Icons.Tattoo);
+            // What you are carrying, rather than how you are doing -- the stats moved under
+            // Gangs, because who rates you is a gang question.
+            page.Add("Inventory", "*", ShowInventory,
+                detail: "Everything you are carrying",
+                value: CarriedSummary());
+            page.WithIcon(Icons.Clothes);
 
             return page;
         }
@@ -1176,6 +1237,7 @@ namespace Hoodrich.Wheel
                     enabled: false, disabledReason: "Not in this build yet");
                 page.WithIcon(Icons.Warning);
             }
+
             else
             {
                 // Joining is a conversation, not a wedge. Even standing in front of the man the
@@ -1191,6 +1253,12 @@ namespace Hoodrich.Wheel
                     disabledReason: leader != null ? "Talk to him" : "Go and find one");
                 page.WithIcon(Icons.Locked);
             }
+
+            // Standing is a gang question, so the readout lives here rather than on the root.
+            page.Add("How you stand", "*", ShowStatus,
+                detail: "Your rank, your heat, and what every gang thinks of you",
+                value: _state.RankName);
+            page.WithIcon(Icons.Tattoo);
 
             return page;
         }

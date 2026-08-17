@@ -75,6 +75,18 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
+        /// Filled rectangle placed by its TOP-LEFT corner.
+        ///
+        /// DRAW_RECT is centre-anchored, which is convenient for a wheel and wrong for a panel:
+        /// laying a card out from a left edge and then handing those numbers to Rect draws the
+        /// box half off the side of the screen while the text inside it sits where intended.
+        /// </summary>
+        public static void RectFrom(float left, float top, float w, float h, Color c)
+        {
+            Rect(left + w * 0.5f, top + h * 0.5f, w, h, c);
+        }
+
+        /// <summary>
         /// Rectangle sized in height-fractions on both axes, so it keeps its shape at any aspect.
         /// </summary>
         public static void RectUniform(float x, float y, float w, float h, Color c)

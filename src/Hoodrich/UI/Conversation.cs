@@ -240,18 +240,18 @@ namespace Hoodrich.UI
             var total = 0.048f + bodyHeight + 0.012f + choiceHeight + 0.030f;
             var top = 0.92f - total;
 
-            Hud.Rect(PanelX, top, PanelWidth, total, Color.FromArgb(205, 12, 13, 15));
-            Hud.Rect(PanelX, top, PanelWidth, 0.0035f, _node.SpeakerColour);
+            Hud.RectFrom(PanelX, top, PanelWidth, total, Color.FromArgb(228, 12, 13, 15));
+            Hud.RectFrom(PanelX, top, PanelWidth, 0.0035f, _node.SpeakerColour);
 
             var y = top + 0.012f;
 
             Hud.Text(_node.Speaker.ToUpperInvariant(), PanelX + 0.014f, y, 0.36f,
-                         _node.SpeakerColour, Hud.FontLabel);
+                         _node.SpeakerColour, Hud.FontLabel, centre: false);
             y += 0.034f;
 
             foreach (var line in _wrapped)
             {
-                Hud.Text(line, PanelX + 0.014f, y, BodyScale, Palette.Text, Hud.FontBody);
+                Hud.Text(line, PanelX + 0.014f, y, BodyScale, Palette.Text, Hud.FontBody, centre: false);
                 y += LineHeight;
             }
 
@@ -264,7 +264,7 @@ namespace Hoodrich.UI
 
                 if (picked)
                 {
-                    Hud.Rect(PanelX, y - 0.004f, PanelWidth, ChoiceHeight, Color.FromArgb(230, 240, 242, 240));
+                    Hud.RectFrom(PanelX, y - 0.004f, PanelWidth, ChoiceHeight, Color.FromArgb(235, 240, 242, 240));
                 }
 
                 var colour = !choice.Enabled ? Palette.TextDisabled
@@ -272,7 +272,7 @@ namespace Hoodrich.UI
                            : Palette.TextDim;
 
                 Hud.Text(picked ? "> " + choice.Label : "  " + choice.Label,
-                             PanelX + 0.014f, y, ChoiceScale, colour, Hud.FontBody);
+                             PanelX + 0.014f, y, ChoiceScale, colour, Hud.FontBody, centre: false);
 
                 var note = !choice.Enabled ? choice.DisabledReason : picked ? choice.Detail : "";
                 if (!string.IsNullOrEmpty(note))
@@ -287,7 +287,7 @@ namespace Hoodrich.UI
             }
 
             Hud.Text("D-PAD / ARROWS  CHOOSE      ENTER  SAY IT      BACKSPACE  WALK OFF",
-                         PanelX + 0.014f, y + 0.004f, 0.28f, Palette.TextDim, Hud.FontLabel);
+                         PanelX + 0.014f, y + 0.004f, 0.28f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
 
         /// <summary>
