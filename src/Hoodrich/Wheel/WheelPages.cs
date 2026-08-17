@@ -72,9 +72,9 @@ namespace Hoodrich.Wheel
             var page = new WheelPage("Hoodrich",
                 _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated");
 
-            // Four wedges at 90 degrees each -- big targets, impossible to mis-flick. Every
-            // top-level tab owns its own sub-tabs rather than spilling onto the root:
-            // dealing lives under Drugs, and everything territorial lives under Gangs.
+            // Three wedges at 120 degrees each -- the whole mod is one flick from centre, and
+            // every top-level tab owns its own sub-tabs rather than spilling onto the root:
+            // product and its paperwork live under Drugs, everything territorial under Gangs.
             //
             // Weapons sits at index 0 -- straight up, the easiest flick on the wheel. Hoodrich
             // took the weapon-wheel button, so getting a gun back has to be the fastest thing
@@ -94,10 +94,6 @@ namespace Hoodrich.Wheel
             page.AddSub("Gangs", "%", BuildGangsPage,
                 detail: _crew.IsAffiliated ? "Crews and turf" : "Pick who you run with",
                 value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
-
-            page.Add("Status", "*", ShowStatus,
-                detail: _pricing.PriceContext(),
-                value: "Heat " + _state.Notoriety.ToString("F0") + "%");
 
             return page;
         }
@@ -157,11 +153,118 @@ namespace Hoodrich.Wheel
                 disabledReason: bulk > 0.005f ? "All you have is bulk -- cut it first"
                                               : "You are holding nothing");
 
+            page.AddSub("Status", "*", BuildDrugStatusPage,
+                detail: "What you hold and what is inbound",
+                value: _suppliers.HasMeet ? _suppliers.ActiveMeet.Tag + " inbound" : "no orders");
+
             page.Add("Stash", "=", null,
                 detail: "Bank product off your person",
                 enabled: false, disabledReason: "Not in this build yet");
 
             return page;
+        }
+
+        /// <summary>
+        /// The books: every product's bulk and street-ready weight, and where every supply
+        /// line currently stands.
+        ///
+        /// Segments are the products themselves rather than actions, so flicking round the ring
+        /// reads each one out in the hub; the standing board lives in the side panel where there
+        /// is room for it.
+        /// </summary>
+        private WheelPage BuildDrugStatusPage()
+        {
+            var page = new WheelPage("Status", DrugsSummary());
+
+            page.PanelTitle = "Imports";
+
+            // Where every supply line stands right now.
+            foreach (var s in _suppliers.All)
+            {
+                page.Row(s.Tag, ImportStatus(s), ImportTint(s));
+            }
+
+            page.Row("", "");
+            page.Row("Bulk", Stash.TotalBulk.ToString("0.#") + "g");
+            page.Row("Ready to sell", Stash.TotalPackaged.ToString("0.#") + "g",
+                     Stash.TotalPackaged > 0.005f ? Palette.Cash : Palette.TextDim);
+            page.Row("Free space", Stash.FreeSpace.ToString("0") + "g",
+                     Stash.FreeSpace < 20f ? Palette.Warn : (System.Drawing.Color?)null);
+            page.Row("Street value", "$" + PackagedValue().ToString("N0"), Palette.Cash);
+
+            // Both of these move the street price, so they belong on the product board.
+            page.Row("Prices", _pricing.PriceContext());
+            page.Row("Heat", _state.Notoriety.ToString("F0") + "%",
+                     _state.Notoriety > 50f ? Palette.Danger
+                        : _state.Notoriety > 20f ? Palette.Warn : (System.Drawing.Color?)null);
+
+            // Every product in the catalogue, held or not, so the board never goes blank.
+            foreach (var d in _drugs.All)
+            {
+                var drug = d;
+                var bulk = Stash.BulkOf(drug.Id);
+                var ready = Stash.PackagedOf(drug.Id);
+                var purity = Stash.PurityOf(drug.Id);
+                var holding = bulk > 0.005f || ready > 0.005f;
+
+                var value = ready > 0.005f
+                    ? ready.ToString("0.#") + "g ready"
+                    : bulk > 0.005f ? bulk.ToString("0.#") + "g bulk" : "none";
+
+                var detail = !holding
+                    ? "Not holding any"
+                    : bulk.ToString("0.#") + "g bulk  ·  " + ready.ToString("0.#") + "g cut" +
+                      (ready > 0.005f ? " @ " + (purity * 100f).ToString("0") + "%" : "");
+
+                page.Add(drug.Tag, drug.Tier >= 3 ? "!" : "o", null,
+                    detail: detail,
+                    value: value,
+                    enabled: holding,
+                    disabledReason: "Not holding any " + drug.Name);
+
+                if (holding && ready > 0.005f)
+                {
+                    page.Items[page.Items.Count - 1].Value =
+                        ready.ToString("0.#") + "g = $" + _pricing.SaleValue(drug, ready, purity).ToString("N0");
+                }
+            }
+
+            return page;
+        }
+
+        /// <summary>One-line state of a supply line, for the import board.</summary>
+        private string ImportStatus(SupplierDef def)
+        {
+            var isActive = _suppliers.HasMeet &&
+                           string.Equals(_suppliers.ActiveMeet.Id, def.Id, StringComparison.OrdinalIgnoreCase);
+
+            if (isActive)
+            {
+                return _suppliers.TradablePed != null
+                    ? "HERE NOW"
+                    : "inbound " + _suppliers.MeetDistance.ToString("0") + "m";
+            }
+
+            // Another meet is already running, so nothing else can be called yet.
+            if (_suppliers.HasMeet) return "waiting";
+
+            var refusal = _suppliers.RefusalReason(def, _state, _crew);
+            if (refusal != null) return refusal.ToLowerInvariant();
+
+            return "ready to call";
+        }
+
+        private System.Drawing.Color? ImportTint(SupplierDef def)
+        {
+            var isActive = _suppliers.HasMeet &&
+                           string.Equals(_suppliers.ActiveMeet.Id, def.Id, StringComparison.OrdinalIgnoreCase);
+
+            if (isActive) return _suppliers.TradablePed != null ? Palette.Cash : Palette.Warn;
+            if (_suppliers.HasMeet) return Palette.TextDim;
+
+            return _suppliers.RefusalReason(def, _state, _crew) != null
+                ? Palette.TextDim
+                : (System.Drawing.Color?)null;
         }
 
         private int PackagedValue()
@@ -539,7 +642,10 @@ namespace Hoodrich.Wheel
             page.Row("Affiliation", _crew.IsAffiliated ? _crew.Current.Name : "none",
                      _crew.IsAffiliated ? _crew.Current.Colour : (System.Drawing.Color?)Palette.TextDim);
             page.Row("Rank", _state.RankName);
-            page.Row("Respect", _state.Respect.ToString("N0"));
+            page.Row("Respect", _state.Respect.ToString("N0") + "  (" + RankProgressLabel() + ")");
+            page.Row("Heat", _state.Notoriety.ToString("F0") + "%",
+                     _state.Notoriety > 50f ? Palette.Danger
+                        : _state.Notoriety > 20f ? Palette.Warn : (System.Drawing.Color?)null);
             page.Row("Gang rep", standing == null ? "-" : standing.Rep.ToString("N0"),
                      standing == null ? Palette.TextDim
                         : standing.Rep < 0 ? Palette.Danger : Palette.Cash);
@@ -769,27 +875,15 @@ namespace Hoodrich.Wheel
             Notify.Ticker("Turf map written to Hoodrich.log.");
         }
 
-        // ---- status ------------------------------------------------------------
+        // ---- shared readouts ----------------------------------------------------
 
-        private void ShowStatus()
+        /// <summary>Progress toward the next rank, phrased for a panel row.</summary>
+        private string RankProgressLabel()
         {
-            var worth = 0;
-            foreach (var d in _drugs.All)
-            {
-                worth += _pricing.SaleValue(d, Stash.PackagedOf(d.Id), Stash.PurityOf(d.Id));
-            }
-
-            var next = _state.Rank >= PlayerState.RankNames.Length - 1
+            return _state.Rank >= PlayerState.RankNames.Length - 1
                 ? "max rank"
-                : (_state.RankProgress * 100f).ToString("F0") + "% to " + PlayerState.RankNames[_state.Rank + 1];
-
-            Notify.Ticker(
-                "~y~" + _state.RankName + "~s~  " + next + "\n" +
-                Stash.TotalBulk.ToString("0.#") + "g bulk  ·  " +
-                Stash.TotalPackaged.ToString("0.#") + "g bagged (~g~$" + worth.ToString("N0") + "~s~)\n" +
-                (_crew.IsAffiliated ? _crew.Current.Name : "Solo") + "  ·  " + _turf.StatusLine + "\n" +
-                "Deals " + _state.TotalDealsMade + "  ·  Heat " + _state.Notoriety.ToString("F0") + "%  ·  " +
-                _pricing.PriceContext());
+                : (_state.RankProgress * 100f).ToString("F0") + "% to " +
+                  PlayerState.RankNames[_state.Rank + 1];
         }
     }
 }

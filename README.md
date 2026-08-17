@@ -49,8 +49,8 @@ moves to its own key (`Key=B` by default).
 
 ## Menu structure
 
-Four wedges at the root — 90° each, impossible to mis-flick. Every tab owns its own
-sub-tabs rather than spilling onto the root.
+Three wedges at the root — 120° each, so the whole mod is one flick from centre. Every
+tab owns its own sub-tabs rather than spilling onto the root.
 
 ```
 Weapons ── Melee · Handguns · SMGs · Shotguns · Rifles · Sniper · Heavy · Thrown
@@ -59,14 +59,20 @@ Weapons ── Melee · Handguns · SMGs · Shotguns · Rifles · Sniper · Heav
 Drugs ──── Supply ── your contacts ── their stock
        ├── Cut ───── product ─────── purity (100 / 75 / 50 / 33%)
        ├── Sell ──── what you have bagged
+       ├── Status ── the books: every product's bulk and street-ready weight,
+       │             plus where every supply line stands right now
        └── Stash     (next build)
 
 Gangs ──── Turf ──── this block: who claims it, what it pays, what it costs
        └── one wedge per gang
              └── Join or Leave · Their plug · Their turf · Dossier
-
-Status ─── one-shot readout of rank, holdings, crew, block and heat
 ```
+
+**Drugs → Status** is the import board. The panel lists every contact and its live state —
+`inbound 340m`, `HERE NOW`, `at war with the families`, `works 5:00-21:00`, `ready to
+call` — then totals for bulk, ready-to-sell, free space, street value, price context and
+heat. The wedges are the products themselves: flick round the ring and each one reads out
+its own bulk, its cut weight and purity, and what that's worth right now.
 
 `Weapons` sits at index 0, straight up: Hoodrich took the weapon-wheel button, so getting
 a gun back has to be the fastest thing on the wheel.
