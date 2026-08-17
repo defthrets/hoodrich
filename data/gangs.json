@@ -53,8 +53,8 @@
       "blipColour": 5,
       "drugs": ["coke", "meth"],
       "rivals": ["families", "ballas"],
-      "turf": ["EBURO", "LMESA", "TATAMO"],
-      "turfHint": "El Burro Heights, La Mesa, Tataviam Mountains",
+      "turf": ["EBURO", "LMESA"],
+      "turfHint": "El Burro Heights, La Mesa",
       "joinRespect": 0
     },
     {
@@ -79,7 +79,7 @@
       "blipColour": 40,
       "drugs": ["meth", "heroin"],
       "rivals": ["families", "vagos"],
-      "turf": ["SLAB", "SANDY", "GRAPES", "HARMO", "ALAMO"],
+      "turf": ["SLAB", "SANDY", "GRAPES", "HARMO"],
       "turfHint": "Stab City, Sandy Shores, Grapeseed",
       "joinRespect": 250
     },

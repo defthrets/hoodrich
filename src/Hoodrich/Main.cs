@@ -52,8 +52,9 @@ namespace Hoodrich
         private readonly ZoneMap _zoneMap;
         private readonly TurfAreas _turfAreas;
         private readonly TurfBlips _turfBlips;
-        private readonly TurfEditor _turfEditor;
         private readonly GangLeaders _leaders;
+        private readonly LeaderTalk _leaderTalk;
+        private readonly Conversation _talk;
         private readonly TerritoryState _territory;
         private readonly TurfWar _war;
         private readonly HideoutManager _hideouts;
@@ -101,14 +102,15 @@ namespace Hoodrich
                 _cutting = new Cutting(_state.Stash, _state);
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
                 _turfBlips = new TurfBlips(_cfg, _gangs, _zoneMap, _turfAreas, _territory);
-                _turfEditor = new TurfEditor(_turfAreas, _gangs, _crew, _turf);
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
+                _talk = new Conversation();
+                _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs);
+                _leaders.Talk = _talk;
+                _leaders.TalkBuilder = def => _leaderTalk.Root(def);
+
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts, _postUp, _leaders)
-                {
-                    TurfEditor = _turfEditor
-                };
+                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts, _postUp, _leaders);
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
 
@@ -145,6 +147,21 @@ namespace Hoodrich
 
                 var available = IsPlayable();
 
+                // A conversation owns the screen while it is up: the wheel would fight it for
+                // the same buttons, and you cannot be talking to a man and shopping at once.
+                if (_talk.IsOpen)
+                {
+                    if (!available || WalkedAwayFromTalk()) _talk.Close();
+                    else
+                    {
+                        _talk.Update();
+                        _talk.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 _wheel.Update(available);
 
                 if (available)
@@ -161,7 +178,7 @@ namespace Hoodrich
                     _hideouts.Update(_turf);
                     _territory.UpgradeTick();
                     _leaders.Update();
-                    _turfEditor.Update();
+                    _leaders.UpdatePrompt();
                     _turfBlips.Refresh();
                     UpdateLoan();
                 }
@@ -173,7 +190,6 @@ namespace Hoodrich
                 _bust.Draw();
                 _postUp.Draw();
                 _leaders.Draw();
-                _turfEditor.Draw();
                 _war.Draw();
                 _hideouts.Draw();
 
@@ -248,6 +264,21 @@ namespace Hoodrich
             Notify.Failure((gang == null ? "They" : gang.Name) + " wrote your debt off. You are done with them.");
         }
 
+        /// <summary>
+        /// Ends a conversation you have walked out of. Talking is a thing done at arm's length,
+        /// so a dialogue box that follows you down the street would be a bug, not a feature.
+        /// </summary>
+        private bool WalkedAwayFromTalk()
+        {
+            var subject = _talk.Subject as LeaderDef;
+            if (subject == null) return false;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return true;
+
+            return player.Position.DistanceTo(_leaders.SpotFor(subject)) > 8f;
+        }
+
         /// <summary>True when the player is in normal control and the mod should be live.</summary>
         private bool IsPlayable()
         {
@@ -304,7 +335,6 @@ namespace Hoodrich
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
-            try { _turfEditor?.Stop(true); } catch { /* teardown */ }
             try { _turfBlips?.RestoreWorld(); } catch { /* teardown */ }
             try { _hideouts?.RestoreWorld(); } catch { /* teardown */ }
         }

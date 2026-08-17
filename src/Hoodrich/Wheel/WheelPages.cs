@@ -50,9 +50,6 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main. Hands the player back the game's own weapon wheel.</summary>
         public Action ShowVanillaWheel;
 
-        /// <summary>Set by Main; lets the Turf page hand over to the block editor.</summary>
-        public Territory.TurfEditor TurfEditor;
-
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
@@ -984,41 +981,20 @@ namespace Hoodrich.Wheel
             }
             else
             {
-                // Joining happens face to face. The wheel only offers it when you are actually
-                // standing in front of the man; otherwise it tells you to go and find one.
+                // Joining is a conversation, not a wedge. Even standing in front of the man the
+                // wheel does not offer it -- you press D-pad right and ask him yourself.
                 var leader = _leaders.InReach;
-                if (leader != null)
-                {
-                    var gang = _gangs.Get(leader.GangId);
-                    var needed = gang == null ? 0f : gang.JoinRespect;
-                    var ready = _state.Respect >= needed;
 
-                    page.Add("Sign on", "+", () => JoinWith(leader),
-                        detail: ready
-                            ? leader.Name + " will put you to work"
-                            : "He wants " + needed.ToString("F0") + " respect first",
-                        value: gang == null ? leader.Name : gang.Name,
-                        enabled: ready,
-                        disabledReason: "Need " + needed.ToString("F0") + " respect");
-
-                    page.Items[page.Items.Count - 1].Tint = gang?.Colour;
-                }
-                else
-                {
-                    page.Add("No crew", "-", null,
-                        detail: "Gang leaders are marked on your map. Go and talk to one.",
-                        value: "SOLO",
-                        enabled: false, disabledReason: "Go and find one");
-                }
+                page.Add("No crew", "-", null,
+                    detail: leader != null
+                        ? "Press D-pad right to talk to " + leader.Name
+                        : "Gang leaders are marked on your map. Go and talk to one.",
+                    value: leader != null ? leader.Name.ToUpperInvariant() : "SOLO",
+                    enabled: false,
+                    disabledReason: leader != null ? "Talk to him" : "Go and find one");
             }
 
             return page;
-        }
-
-        private void JoinWith(LeaderDef leader)
-        {
-            var failure = _leaders.Join(leader, _drugs);
-            if (failure != null) Notify.Problem(failure);
         }
 
         /// <summary>How this gang currently reads to the player, in two words.</summary>
@@ -1267,11 +1243,6 @@ namespace Hoodrich.Wheel
             return null;
         }
 
-        private void StartTurfEdit()
-        {
-            TurfEditor?.Start();
-        }
-
         private void LogGangTurf(GangDef gang)
         {
             Log.Info("TURF  " + gang.Id.PadRight(12) + " " + string.Join(", ", gang.Turf.ToArray()));
@@ -1319,16 +1290,6 @@ namespace Hoodrich.Wheel
             page.Add("Dossier", "*", ShowTurfDossier,
                 detail: "Who claims what, in the log",
                 value: "");
-
-            // The shipped block shapes are placed from map coordinates, so they land in the
-            // right neighbourhood but not always on the right streets. This is how you fix one.
-            page.Add("Edit blocks", "+", StartTurfEdit,
-                detail: _crew.IsAffiliated
-                    ? "Move your crew's map shading onto the right streets"
-                    : "Join a crew first",
-                value: "",
-                enabled: _crew.IsAffiliated && TurfEditor != null,
-                disabledReason: _crew.IsAffiliated ? "" : "You need a crew behind you");
 
             var claimBlocker =
                 _war.IsActive ? "You are already in a war"

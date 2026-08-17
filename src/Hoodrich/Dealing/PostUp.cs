@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using Control = GTA.Control;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -237,9 +238,10 @@ namespace Hoodrich.Dealing
                 return;
             }
 
-            // The pose is a look, not a cage. The moment the player moves, drop it so they can
-            // walk the block; they stay posted until they actually leave it.
-            if (_posing && player.Velocity.Length() > 0.6f)
+            // The pose is a look, not a cage. Released on INPUT rather than on movement: the
+            // scenario task is what stops the player moving, so waiting for velocity to rise
+            // waits forever -- which is exactly how the player ended up welded to the corner.
+            if (_posing && WantsToMove())
             {
                 _posing = false;
                 try { player.Task.ClearAll(); } catch { }
@@ -271,6 +273,33 @@ namespace Hoodrich.Dealing
             if (State == PostState.Posted && Footfall > 0) RollCustomer(player);
 
             if (State != PostState.Investigated && State != PostState.Questioned) RollPolice(player);
+        }
+
+        /// <summary>
+        /// True the moment the player asks to move, aim, jump or run. Reading the stick rather
+        /// than the ped is the whole point: a ped inside a scenario reports no velocity no
+        /// matter how hard you push, so input is the only honest signal that they want out.
+        /// </summary>
+        private static bool WantsToMove()
+        {
+            try
+            {
+                var x = Game.GetControlValueNormalized(Control.MoveLeftRight);
+                var y = Game.GetControlValueNormalized(Control.MoveUpDown);
+
+                if (Math.Abs(x) > 0.15f || Math.Abs(y) > 0.15f) return true;
+
+                return Game.IsControlPressed(Control.Jump)
+                    || Game.IsControlPressed(Control.Sprint)
+                    || Game.IsControlPressed(Control.Aim)
+                    || Game.IsControlPressed(Control.Attack)
+                    || Game.IsControlPressed(Control.Duck);
+            }
+            catch
+            {
+                // If the controls cannot be read, let them out rather than trap them.
+                return true;
+            }
         }
 
         /// <summary>How many people are actually walking past. Drives sales AND heat.</summary>

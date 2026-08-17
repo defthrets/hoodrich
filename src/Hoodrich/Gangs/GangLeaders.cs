@@ -24,6 +24,16 @@ namespace Hoodrich.Gangs
 
         public readonly List<string> Models = new List<string>();
 
+        /// <summary>
+        /// Exactly where he stands, from leaders.json. Zero means fall back to the pavement
+        /// nearest the zone centre, which is how a leader ends up in the middle of the road.
+        /// Ground height is probed at runtime so there is no Z to author wrongly.
+        /// </summary>
+        public float SpotX;
+        public float SpotY;
+
+        public float Heading;
+
         /// <summary>Said when you walk up unaffiliated.</summary>
         public string Greeting = "";
 
@@ -66,7 +76,6 @@ namespace Hoodrich.Gangs
         private LeaderDef _liveDef;
         private Ped _livePed;
         private int _lastUpdate;
-        private bool _greeted;
 
         public GangLeaders(Settings cfg, GangRegistry gangs, ZoneMap zones, Affiliation crew, PlayerState state)
         {
@@ -77,6 +86,51 @@ namespace Hoodrich.Gangs
             _state = state;
 
             AddDefaults();
+            ApplyPlacements();
+        }
+
+        /// <summary>
+        /// Overlays leaders.json onto the built-in cast: where each man stands and which way he
+        /// faces. The lines stay in code because they are written to fit the gang, but a spot is
+        /// a coordinate somebody will want to move without rebuilding the mod.
+        /// </summary>
+        private void ApplyPlacements()
+        {
+            var doc = JsonFile.Read(System.IO.Path.Combine(Paths.Data, "leaders.json"));
+            if (doc == null)
+            {
+                Log.Warn("No leaders.json; leaders fall back to standing at their zone centre.");
+                return;
+            }
+
+            var placed = 0;
+
+            foreach (var node in doc["leaders"].Items)
+            {
+                var def = Get(node["gang"].AsString(""));
+                if (def == null) continue;
+
+                var name = node["name"].AsString("");
+                if (!string.IsNullOrEmpty(name)) def.Name = name;
+
+                var zone = node["zone"].AsString("");
+                if (!string.IsNullOrEmpty(zone)) def.HomeZone = zone;
+
+                def.SpotX = node["x"].AsFloat();
+                def.SpotY = node["y"].AsFloat();
+                def.Heading = node["heading"].AsFloat();
+
+                var models = node["models"].AsStringList();
+                if (models != null && models.Count > 0)
+                {
+                    def.Models.Clear();
+                    def.Models.AddRange(models);
+                }
+
+                placed++;
+            }
+
+            Log.Info("Leader placements loaded: " + placed + ".");
         }
 
         public IReadOnlyList<LeaderDef> All => _defs;
@@ -105,8 +159,60 @@ namespace Hoodrich.Gangs
             if (def == null) return Vector3.Zero;
             if (_spots.TryGetValue(def.GangId, out var v)) return v;
 
-            var spot = _zones.GroundedCentre(def.HomeZone);
+            Vector3 spot;
+
+            if (Math.Abs(def.SpotX) > 0.01f || Math.Abs(def.SpotY) > 0.01f)
+            {
+                // An authored spot is a specific yard or wall, so it is used as given --
+                // snapping it to the nearest pavement would put him back on the kerb.
+                spot = new Vector3(def.SpotX, def.SpotY, 0f);
+
+                try
+                {
+                    if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, 1000f), out var groundZ,
+                                              GetGroundHeightMode.Normal))
+                    {
+                        spot.Z = groundZ;
+                    }
+                }
+                catch
+                {
+                    // Unstreamed. Spawning resolves the height again once the player is close.
+                }
+            }
+            else
+            {
+                spot = _zones.GroundedCentre(def.HomeZone);
+            }
+
             _spots[def.GangId] = spot;
+            return spot;
+        }
+
+        /// <summary>
+        /// Ground height only resolves once the terrain around a spot is streamed in, which it
+        /// is not when the blip is first placed from across the map. Re-probing just before he
+        /// spawns is what stops him standing in mid-air or buried in the pavement.
+        /// </summary>
+        private Vector3 ResolveSpotNow(LeaderDef def)
+        {
+            var spot = SpotFor(def);
+            if (spot == Vector3.Zero) return spot;
+
+            try
+            {
+                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 20f), out var groundZ,
+                                          GetGroundHeightMode.Normal) && groundZ > 0f)
+                {
+                    spot.Z = groundZ;
+                    _spots[def.GangId] = spot;
+                }
+            }
+            catch
+            {
+                // Keep whatever we had.
+            }
+
             return spot;
         }
 
@@ -279,13 +385,11 @@ namespace Hoodrich.Gangs
             if (_liveDef != null && _liveDef.GangId != nearest.GangId) Despawn();
 
             if (_livePed == null && nearestDistance <= SpawnRange) Spawn(nearest);
-
-            GreetIfNeeded();
         }
 
         private void Spawn(LeaderDef def)
         {
-            var spot = SpotFor(def);
+            var spot = ResolveSpotNow(def);
             if (spot == Vector3.Zero) return;
 
             var model = ResolveModel(def);
@@ -297,6 +401,9 @@ namespace Hoodrich.Gangs
                 if (_livePed == null || !_livePed.Exists()) return;
 
                 var h = _livePed.Handle;
+
+                if (Math.Abs(def.Heading) > 0.01f) _livePed.Heading = def.Heading;
+
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
@@ -312,8 +419,6 @@ namespace Hoodrich.Gangs
                 _livePed.BlockPermanentEvents = true;
 
                 _liveDef = def;
-                _greeted = false;
-
                 Log.Info("Leader " + def.Name + " (" + def.GangId + ") spawned in " + def.HomeZone + ".");
             }
             catch (Exception ex)
@@ -359,18 +464,39 @@ namespace Hoodrich.Gangs
 
             _livePed = null;
             _liveDef = null;
-            _greeted = false;
         }
 
-        private void GreetIfNeeded()
+        /// <summary>
+        /// Set by Main. Walking up no longer dumps a subtitle at you -- he waits, and you
+        /// choose to start the conversation, which is what makes it a conversation.
+        /// </summary>
+        public Conversation Talk;
+
+        /// <summary>Builds what he has to say. Set by Main alongside <see cref="Talk"/>.</summary>
+        public Func<LeaderDef, DialogueNode> TalkBuilder;
+
+        /// <summary>
+        /// Offers the conversation and starts it on D-pad right. Runs every frame rather than
+        /// on the slow tick, because a prompt that appears 800ms after you arrive feels broken.
+        /// </summary>
+        public void UpdatePrompt()
         {
-            if (_greeted || InReach == null) return;
-            _greeted = true;
+            if (Talk == null || Talk.IsOpen) return;
 
-            var mine = _crew.IsAffiliated &&
-                       string.Equals(_crew.Current.Id, _liveDef.GangId, StringComparison.OrdinalIgnoreCase);
+            var def = InReach;
+            if (def == null) return;
 
-            Dialogue.Say(_liveDef.Name, mine ? _liveDef.Already : _liveDef.Greeting);
+            var gang = _gangs.Get(def.GangId);
+            var name = gang == null ? def.Name : def.Name;
+
+            Help.ShowThisFrame("Press ~INPUT_PHONE_RIGHT~ to talk to " + name + ".");
+
+            if (!Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)GTA.Control.PhoneRight)) return;
+
+            var root = TalkBuilder?.Invoke(def);
+            if (root == null) return;
+
+            Talk.Open(root, def);
         }
 
         // ---- joining -----------------------------------------------------------

@@ -34,6 +34,9 @@ namespace Hoodrich.Economy
         private int _durationMs;
         private Vector3 _startPosition;
 
+        /// <summary>Real hands on the product. Retried until the clip streams in.</summary>
+        private readonly PrepAnimation _anim = new PrepAnimation();
+
         public Cutting(Stash stash, PlayerState state)
         {
             _stash = stash;
@@ -90,6 +93,7 @@ namespace Hoodrich.Economy
             Notify.Ticker(product.SplitVerb + " " + bulkGrams.ToString("0") + "g " + product.Name +
                           " at " + (targetPurity * 100f).ToString("0") + "%...");
             PlayWorkScenario();
+            _anim.Start(Game.Player.Character, product.Id);
             return null;
         }
 
@@ -124,6 +128,8 @@ namespace Hoodrich.Economy
 
         private void ClearWorkScenario()
         {
+            try { _anim.Stop(Game.Player.Character); } catch { /* teardown */ }
+
             try
             {
                 var player = Game.Player.Character;
@@ -170,6 +176,10 @@ namespace Hoodrich.Economy
                 Cancel("You walked away from the batch.");
                 return;
             }
+
+            // The clip's dictionary streams in asynchronously, so the first attempt usually
+            // loses the race. Keep asking until the player is visibly working.
+            if (!_anim.IsPlaying) _anim.Start(player, _product.Id);
 
             if (Game.GameTime - _startedAt >= _durationMs) Complete();
         }

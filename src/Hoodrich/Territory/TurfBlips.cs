@@ -10,16 +10,13 @@ namespace Hoodrich.Territory
     /// <summary>
     /// Gang turf, shaded on the map in each gang's colour.
     ///
-    /// Drawn as rotated rectangles over the blocks a gang actually runs (ADD_BLIP_FOR_AREA),
-    /// not as a circle around a whole zone. A zone like Davis is most of the south side, so a
-    /// zone-sized circle claimed streets no gang has ever stood on and bled across its
-    /// neighbours. Blocks come from turf.json and are rotated onto the Los Santos street grid.
+    /// Drawn from the game's own zone bounds: every zone is a union of boxes, and shading
+    /// those boxes puts the boundary exactly where the map's boundary is. A single rectangle
+    /// or circle over the middle of a zone is what left the minimap under overlapping washes
+    /// of colour that stopped nowhere in particular.
     ///
     /// Each claimed zone also gets one small icon blip at its centre, so the shading reads as
     /// somebody's turf rather than as an unexplained wash of colour.
-    ///
-    /// A zone with no authored block still falls back to a circle, so adding turf to
-    /// gangs.json never leaves it invisible.
     ///
     /// Rebuilt whenever ownership changes, so a zone taken in a turf war immediately changes
     /// colour.
@@ -69,23 +66,20 @@ namespace Hoodrich.Territory
             {
                 foreach (var code in ClaimedBy(gang))
                 {
-                    var drewBlock = false;
+                    var drewShape = false;
 
-                    foreach (var area in _areas.ForGang(gang.Id))
+                    foreach (var box in _areas.BoxesFor(gang.Id, code))
                     {
-                        if (!string.Equals(area.Zone, code, StringComparison.OrdinalIgnoreCase)) continue;
-
-                        AddArea(area, gang);
-                        drewBlock = true;
+                        AddBox(box, gang);
+                        drewShape = true;
                     }
 
                     var zone = _zones.Get(code);
                     if (zone == null) continue;
 
-                    // Nothing authored for this zone: shade the whole thing rather than nothing.
-                    if (!drewBlock) AddRadius(zone, gang);
-
-                    AddIcon(zone, gang);
+                    // A zone with no boxes gets nothing rather than a blob: an honest gap
+                    // beats shading streets that are not anybody's.
+                    if (drewShape) AddIcon(zone, gang);
                 }
             }
 
@@ -117,16 +111,14 @@ namespace Hoodrich.Territory
             return codes;
         }
 
-        /// <summary>A shaded, rotated rectangle over one block.</summary>
-        private void AddArea(TurfArea area, GangDef gang)
+        /// <summary>One box of a hood's real footprint.</summary>
+        private void AddBox(TurfBox box, GangDef gang)
         {
             try
             {
                 var handle = Function.Call<int>(Hash.ADD_BLIP_FOR_AREA,
-                    area.X, area.Y, 0f, area.Width, area.Height);
+                    box.X, box.Y, 0f, box.Width, box.Height);
                 if (handle == 0) return;
-
-                Function.Call(Hash.SET_BLIP_ROTATION, handle, (int)Math.Round(area.Rotation));
                 Function.Call(Hash.SET_BLIP_COLOUR, handle, gang.BlipColour);
                 Function.Call(Hash.SET_BLIP_ALPHA, handle, _cfg.TurfBlipAlpha);
 
@@ -137,28 +129,7 @@ namespace Hoodrich.Territory
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not shade block " + area.Name + ": " + ex.Message);
-            }
-        }
-
-        /// <summary>Fallback for a claimed zone nobody has drawn blocks for yet.</summary>
-        private void AddRadius(ZoneInfo zone, GangDef gang)
-        {
-            try
-            {
-                var handle = Function.Call<int>(Hash.ADD_BLIP_FOR_RADIUS,
-                    zone.Centre.X, zone.Centre.Y, zone.Centre.Z, zone.Radius);
-                if (handle == 0) return;
-
-                Function.Call(Hash.SET_BLIP_COLOUR, handle, gang.BlipColour);
-                Function.Call(Hash.SET_BLIP_ALPHA, handle, _cfg.TurfBlipAlpha);
-                Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, handle, true);
-
-                _blips.Add(new Blip(handle));
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not shade " + zone.Code + ": " + ex.Message);
+                Log.Debug("Could not shade part of " + box.Zone + ": " + ex.Message);
             }
         }
 
@@ -197,10 +168,7 @@ namespace Hoodrich.Territory
             }
             parts.Sort(StringComparer.Ordinal);
 
-            // The editor changes rectangles without changing who owns what, so its revision
-            // has to be part of the signature or a nudged block would not redraw.
-            return string.Join("|", parts.ToArray()) +
-                   "|a" + _cfg.TurfBlipAlpha + "|r" + _areas.Revision;
+            return string.Join("|", parts.ToArray()) + "|a" + _cfg.TurfBlipAlpha;
         }
 
         public void Clear()
