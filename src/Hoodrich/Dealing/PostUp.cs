@@ -102,8 +102,14 @@ namespace Hoodrich.Dealing
         /// <summary>Beat between your line and the buyer's answer, so they do not overlap.</summary>
         private const int BuyerReplyDelayMs = 1000;
 
-        /// <summary>How long they get to shoot from the car before they get out and fight.</summary>
-        private const int DriveByShootMs = 7000;
+        /// <summary>How long they shoot for once they are alongside you.</summary>
+        private const int DriveByShootMs = 3000;
+
+        /// <summary>Close enough to be shooting at you rather than still driving over.</summary>
+        private const float DriveByShootRange = 45f;
+
+        /// <summary>If they never reach you at all, they stop trying.</summary>
+        private const int DriveByFindTimeoutMs = 60000;
 
         /// <summary>How far a rival can be and still notice you working their block.</summary>
         private const float RivalNoticeRange = 28f;
@@ -163,6 +169,7 @@ namespace Hoodrich.Dealing
         private Ped _driveByDriver;
         private int _driveByStartedAt;
         private bool _driveByBailed;
+        private int _driveByInRangeAt;
 
         /// <summary>Buyer waiting to answer, and when.</summary>
         private Ped _pendingSpeaker;
@@ -722,6 +729,7 @@ namespace Hoodrich.Dealing
                 _driveBys++;
                 _driveByStartedAt = Game.GameTime;
                 _driveByBailed = false;
+                _driveByInRangeAt = 0;
 
                 Notify.Failure("that is not your car coming.");
                 Log.Info("Drive-by from " + gang.Id + " after " +
@@ -778,16 +786,29 @@ namespace Hoodrich.Dealing
             if (_driveByCar == null || !_driveByCar.Exists()) return;
 
             var elapsed = Game.GameTime - _driveByStartedAt;
+            var distance = player.Position.DistanceTo(_driveByCar.Position);
+
+            // The shooting clock starts when they are actually ON you, not when they set off.
+            // Timing it from the spawn spent most of the window on the drive over, so the pass
+            // itself was over before it looked like anything.
+            if (_driveByInRangeAt == 0 && distance <= DriveByShootRange)
+            {
+                _driveByInRangeAt = Game.GameTime;
+            }
 
             if (!_driveByBailed)
             {
                 // The whole thing is one pass: they come past, they shoot, they are gone. A
                 // carload that circles the block indefinitely is a siege, not a drive-by.
-                var stalled = _driveByCar.Speed < 1.5f &&
-                              player.Position.DistanceTo(_driveByCar.Position) < 35f &&
-                              elapsed > 5000;
+                var stalled = _driveByCar.Speed < 1.5f && distance < 35f && elapsed > 5000;
 
-                if (!stalled && elapsed < DriveByShootMs) return;
+                var shooting = _driveByInRangeAt > 0 &&
+                               Game.GameTime - _driveByInRangeAt >= DriveByShootMs;
+
+                // Never found you at all: give up rather than circle forever.
+                var gaveUp = _driveByInRangeAt == 0 && elapsed > DriveByFindTimeoutMs;
+
+                if (!stalled && !shooting && !gaveUp) return;
 
                 _driveByBailed = true;
 
@@ -802,7 +823,7 @@ namespace Hoodrich.Dealing
                 }
 
                 DriveOff();
-                Log.Info("Drive-by finished its pass after " + (elapsed / 1000) + "s.");
+                Log.Info("Drive-by finished its pass after " + (elapsed / 1000) + "s in the area.");
                 return;
             }
 
@@ -1531,6 +1552,7 @@ namespace Hoodrich.Dealing
             _driveByCar = null;
             _driveByDriver = null;
             _driveByBailed = false;
+            _driveByInRangeAt = 0;
         }
 
         // ---- hud ---------------------------------------------------------------
