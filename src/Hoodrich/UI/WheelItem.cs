@@ -117,8 +117,16 @@ namespace Hoodrich.UI
 
             var item = Items[Items.Count - 1];
             item.IconDict = icon.Dict;
-            item.IconTexture = icon.Texture;
-            item.IconReady = () => Draw.EnsureTextureDict(icon.Dict);
+
+            // Resolved per frame rather than here: the dictionary is usually still streaming
+            // when the page is built, and an unloaded dictionary answers "no" to every name.
+            item.IconReady = () =>
+            {
+                if (!Draw.EnsureTextureDict(icon.Dict)) return false;
+
+                if (string.IsNullOrEmpty(item.IconTexture)) item.IconTexture = icon.Resolve();
+                return !string.IsNullOrEmpty(item.IconTexture);
+            };
 
             return this;
         }

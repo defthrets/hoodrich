@@ -72,6 +72,31 @@ namespace Hoodrich.Dealing
         /// <summary>A sale this close to a uniform is a sale a uniform saw.</summary>
         private const float CopWitnessRange = 25f;
 
+        /// <summary>
+
+
+        /// How fast a pitch warms up, on top of the product and the crowd.
+
+
+        ///
+
+
+        /// A corner that took an age to get warm meant the police half of the mechanic almost never
+
+
+        /// fired -- you ran out of product before you ran out of welcome, so the decision the whole
+
+
+        /// thing is built on never got asked.
+
+
+        /// </summary>
+
+
+        private const float HeatRate = 1.25f;
+
+
+
         /// <summary>Corner heat at which the police stop needing to see anything.</summary>
         private const float HeatForWanted = 0.85f;
 
@@ -82,12 +107,7 @@ namespace Hoodrich.Dealing
         private const float DriveByChancePercent = 4f;
 
         /// <summary>Beat between your line and the buyer's answer, so they do not overlap.</summary>
-
         private const int BuyerReplyDelayMs = 1000;
-
-
-        
-
 
         /// <summary>How far a rival can be and still notice you working their block.</summary>
         private const float RivalNoticeRange = 28f;
@@ -141,8 +161,6 @@ namespace Hoodrich.Dealing
 
         private readonly List<Ped> _rivals = new List<Ped>();
         private Vehicle _driveByCar;
-
-        
 
         /// <summary>Buyer waiting to answer, and when.</summary>
         private Ped _pendingSpeaker;
@@ -506,7 +524,8 @@ namespace Hoodrich.Dealing
 
             // Heat is per-sale AND scaled by how public the spot is.
             var crowdFactor = 1f + Footfall * _cfg.PostUpHeatPerWitness;
-            var heat = product.HeatFactor * crowdFactor * (Turf == null ? 1f : Turf.TurfHeatMultiplier);
+            var heat = product.HeatFactor * crowdFactor * HeatRate *
+                       (Turf == null ? 1f : Turf.TurfHeatMultiplier);
 
             _cornerHeat += heat;
             _state.AddNotoriety(heat * 0.5f);

@@ -8,6 +8,8 @@
     "          to get wrong. Leave both at 0 and he falls back to the nearest pavement to the",
     "          zone centre, which is how he ended up standing in the middle of the road.",
     "heading   which way he faces, degrees",
+    "awayFromHour / awayToHour   hours he is not on the corner at all, 0-24. Wraps midnight.",
+    "          Leave both at 0 and he is there around the clock.",
     "models    tried in order; the first one the install actually has is used",
     "",
     "The spots below are placed by eye and are worth checking in game -- he should be off the",
@@ -18,7 +20,8 @@
       "gang": "families",
       "name": "Uncle Dee",
       "zone": "CHAMH",
-      "x": -172.0, "y": -1614.0, "heading": 320,
+      "x": -187.163, "y": -1700.884, "heading": 328,
+      "awayFromHour": 3, "awayToHour": 8,
       "models": ["g_m_y_famdnf_01", "g_m_y_famca_01", "a_m_m_soucent_01"]
     },
     {

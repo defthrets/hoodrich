@@ -57,6 +57,7 @@ namespace Hoodrich
         private readonly InfoPanel _info;
         private readonly StashScreen _stashScreen;
         private readonly StashHouse _stash;
+        private readonly SleepSpot _sleep;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
 
@@ -86,6 +87,7 @@ namespace Hoodrich
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
                 _stash = new StashHouse(_cfg);
+                _sleep = new SleepSpot(() => SaveGame.Save(_state, _crew, _market, _stash, true));
                 _market = new Market(_cfg);
 
                 SaveGame.Load(_state, _crew, _market, _stash);
@@ -213,6 +215,7 @@ namespace Hoodrich
                     _deadDrop.Update();
                     _market.Update(_drugs);
                     _stash.Update();
+                    _sleep.Update();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
                     UpdateLoan();
@@ -226,6 +229,7 @@ namespace Hoodrich
                 _postUp.Draw();
                 _leaders.Draw();
                 _stash.Draw();
+                _sleep.Draw();
 
                 SlowTick();
 

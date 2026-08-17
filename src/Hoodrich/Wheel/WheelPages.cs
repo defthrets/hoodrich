@@ -446,7 +446,7 @@ namespace Hoodrich.Wheel
                 value: CurrentWeaponName());
             page.WithIcon(Icons.Guns);
 
-            page.AddSub("Drugs", "$", BuildDrugsPage,
+            page.AddSub("Dealing", "$", BuildDrugsPage,
                 detail: "Re-up, bag up, and go to work",
                 value: DrugsSummary(),
                 enabled: !_deal.IsBusy && !_cutting.IsBusy,
@@ -500,7 +500,7 @@ namespace Hoodrich.Wheel
             var packaged = Stash.TotalPackaged;
             var bulk = Stash.TotalBulk;
 
-            var page = new WheelPage("Drugs", DrugsSummary());
+            var page = new WheelPage("Dealing", DrugsSummary());
 
             // Two lines, in the words you would use out loud. Grams, multipliers and market
             // prices are a screenful on their own -- they live behind The numbers.

@@ -108,10 +108,11 @@ namespace Hoodrich.Locations
         /// <summary>
         /// Keeps the house quiet.
         ///
-        /// Denise has a lot to say and says all of it at volume, which is fine for a story
-        /// mission and wearing when the house is somewhere you come back to every time your
-        /// pockets fill up. Her ambient lines are cut off as they start; everything else about
-        /// her is untouched.
+        /// Denise shouting through the door and Franklin answering her is not ambient chatter,
+        /// it is a scripted CONVERSATION -- the game still thinks he lives here, because the
+        /// house is only reachable at all thanks to Open All Interiors. So stopping ambient
+        /// speech was never going to touch it: the conversation has to be stopped as well, and
+        /// the player's own line with it.
         /// </summary>
         private void Hush()
         {
@@ -122,12 +123,26 @@ namespace Hoodrich.Locations
 
             try
             {
+                // The scripted exchange, which is the actual offender.
+                if (Function.Call<bool>(Hash.IS_SCRIPTED_CONVERSATION_ONGOING))
+                {
+                    Function.Call(Hash.STOP_SCRIPTED_CONVERSATION, false);
+                }
+
+                Function.Call(Hash.STOP_CURRENT_PLAYING_SPEECH, player.Handle);
+                Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, player.Handle);
+
                 foreach (var ped in World.GetNearbyPeds(player, QuietRange))
                 {
                     if (ped == null || !ped.Exists() || ped.Handle == player.Handle) continue;
 
+                    Function.Call(Hash.STOP_CURRENT_PLAYING_SPEECH, ped.Handle);
                     Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, ped.Handle);
                     Function.Call(Hash.DISABLE_PED_PAIN_AUDIO, ped.Handle, true);
+
+                    // An empty voice leaves the game nothing to pick a line from, which stops
+                    // the next one before it starts rather than cutting it off mid-word.
+                    Function.Call(Hash.SET_AMBIENT_VOICE_NAME, ped.Handle, "");
                 }
             }
             catch (Exception ex)

@@ -66,6 +66,29 @@ namespace Hoodrich.UI
             return false;
         }
 
+        /// <summary>
+        /// Whether a texture actually exists in a dictionary.
+        ///
+        /// There is no "does this sprite exist" native, but a missing texture has no resolution,
+        /// so asking for its size answers the question. Without this a wrong texture name draws
+        /// nothing at all and looks identical to a rendering bug.
+        /// </summary>
+        public static bool HasTexture(string dict, string texture)
+        {
+            if (string.IsNullOrEmpty(dict) || string.IsNullOrEmpty(texture)) return false;
+            if (!EnsureTextureDict(dict)) return false;
+
+            try
+            {
+                var size = Function.Call<GTA.Math.Vector3>(Hash.GET_TEXTURE_RESOLUTION, dict, texture);
+                return size.X > 0f && size.Y > 0f;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         // ---- primitives --------------------------------------------------------
 
         /// <summary>Axis-aligned filled rectangle. w/h are normalized screen fractions.</summary>

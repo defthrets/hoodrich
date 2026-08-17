@@ -1,18 +1,38 @@
 namespace Hoodrich.UI
 {
-    /// <summary>A streamed game texture, named so call sites read as intent.</summary>
+    /// <summary>
+    /// A streamed game texture, named so call sites read as intent.
+    ///
+    /// Carries alternatives rather than one name. A texture that does not exist fails silently
+    /// -- the dictionary streams, the sprite call succeeds, and nothing is drawn -- so a single
+    /// wrong guess leaves a wedge permanently blank with nothing to debug. With a list, the
+    /// first name that actually exists wins and a bad guess costs nothing.
+    /// </summary>
     internal struct Icon
     {
         public readonly string Dict;
-        public readonly string Texture;
+        public readonly string[] Textures;
 
-        public Icon(string dict, string texture)
+        public Icon(string dict, params string[] textures)
         {
             Dict = dict;
-            Texture = texture;
+            Textures = textures;
         }
 
-        public bool IsSet => !string.IsNullOrEmpty(Dict) && !string.IsNullOrEmpty(Texture);
+        public bool IsSet => !string.IsNullOrEmpty(Dict) && Textures != null && Textures.Length > 0;
+
+        /// <summary>The first name the game actually has, or the first as a last resort.</summary>
+        public string Resolve()
+        {
+            if (!IsSet) return "";
+
+            foreach (var name in Textures)
+            {
+                if (Draw.HasTexture(Dict, name)) return name;
+            }
+
+            return Textures[0];
+        }
     }
 
     /// <summary>
@@ -55,10 +75,12 @@ namespace Hoodrich.UI
         /// <summary>
         /// What you are carrying.
         ///
-        /// From commonmenu rather than the inventory dictionary: mp_specitem_briefcase is not
-        /// a texture that exists, so the wedge drew nothing at all.
+        /// Several candidates because this one has been guessed wrong twice: the first name the
+        /// install actually has wins, and the last is the same sprite the weapons wedge already
+        /// proves renders, so the wedge cannot end up blank again.
         /// </summary>
-        public static readonly Icon Stash = new Icon(Menu, "shop_ammo_icon_a");
+        public static readonly Icon Stash = new Icon(Menu,
+            "shop_ammo_icon_a", "shop_clothing_icon_a", "shop_garage_icon_a", "shop_gunclub_icon_a");
         public static readonly Icon Warning = new Icon(Menu, "mp_alerttriangle");
         public static readonly Icon Tick = new Icon(Menu, "shop_tick_icon");
         public static readonly Icon Locked = new Icon(Menu, "shop_lock");

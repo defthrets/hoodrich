@@ -35,6 +35,25 @@ namespace Hoodrich.Gangs
 
         public float Heading;
 
+        /// <summary>
+        /// Hours he is not on the corner at all, wrapping midnight. Equal values mean always.
+        ///
+        /// Nobody stands on the same corner twenty-four hours a day, and a man who is reliably
+        /// absent before dawn is a man with a life rather than a vending machine.
+        /// </summary>
+        public int AwayFromHour;
+        public int AwayToHour;
+
+        /// <summary>True when the clock says he has gone home.</summary>
+        public bool IsAwayAt(int hour)
+        {
+            if (AwayFromHour == AwayToHour) return false;
+
+            return AwayFromHour < AwayToHour
+                ? hour >= AwayFromHour && hour < AwayToHour
+                : hour >= AwayFromHour || hour < AwayToHour;
+        }
+
         /// <summary>Said when you walk up unaffiliated.</summary>
         public string Greeting = "";
 
@@ -120,6 +139,8 @@ namespace Hoodrich.Gangs
                 def.SpotX = node["x"].AsFloat();
                 def.SpotY = node["y"].AsFloat();
                 def.Heading = node["heading"].AsFloat();
+                def.AwayFromHour = node["awayFromHour"].AsInt(0);
+                def.AwayToHour = node["awayToHour"].AsInt(0);
 
                 var models = node["models"].AsStringList();
                 if (models != null && models.Count > 0)
@@ -418,7 +439,22 @@ namespace Hoodrich.Gangs
 
             if (_liveDef != null && _liveDef.GangId != nearest.GangId) Despawn();
 
-            if (_livePed == null && nearestDistance <= SpawnRange) Spawn(nearest);
+            // He keeps hours. Off the corner in the small hours, and if the clock rolls round
+            // while you are stood there, he goes.
+            if (nearest.IsAwayAt(Pricing.ClockHour))
+            {
+                if (_liveDef != null && _liveDef.GangId == nearest.GangId) Despawn();
+                return;
+            }
+
+            if (_livePed == null && nearestDistance <= SpawnRange)
+            {
+                Spawn(nearest);
+                return;
+            }
+
+            ReturnIfStrayed();
+            SettleIfHome();
         }
 
         private void Spawn(LeaderDef def)
@@ -442,7 +478,7 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
 
-                Wander();
+                StandAtSpot();
 
                 var gang = _gangs.Get(def.GangId);
                 if (gang != null && gang.GroupHash != 0)
@@ -466,20 +502,26 @@ namespace Hoodrich.Gangs
             }
         }
 
-        /// <summary>How far he will drift from his spot while nobody is talking to him.</summary>
-        private const float WanderRadius = 35f;
+        /// <summary>How far he can end up from his spot before he walks back to it.</summary>
+        private const float DriftAllowance = 6f;
+
+        /// <summary>Idles tried in order, so he is doing something rather than staring ahead.</summary>
+        private static readonly string[] StandScenarios =
+        {
+            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_STAND_IMPATIENT", "WORLD_HUMAN_STAND_MOBILE"
+        };
 
         /// <summary>True while he has been stopped to talk.</summary>
         private bool _held;
 
         /// <summary>
-        /// Sets him wandering his own corner.
+        /// Puts him back on his corner, doing nothing in particular.
         ///
-        /// Standing rooted to one tile made him read as a shop counter rather than a man on his
-        /// block. He walks his own patch instead -- bounded to the spot so he never wanders off
-        /// his gang's streets and out of the story.
+        /// He is a fixture: the corner is where he is, and it is where you go to find him. He
+        /// can still be frightened off it -- gunfire, a car through the fence -- because a man
+        /// who stands still while being shot at is a prop. He walks back afterwards.
         /// </summary>
-        private void Wander()
+        private void StandAtSpot()
         {
             if (_livePed == null || !_livePed.Exists()) return;
 
@@ -487,21 +529,84 @@ namespace Hoodrich.Gangs
 
             try
             {
-                var spot = _spots.TryGetValue(_liveDef?.GangId ?? "", out var s) ? s : _livePed.Position;
-
                 _livePed.Task.ClearAll();
-                Function.Call(Hash.TASK_WANDER_IN_AREA, _livePed.Handle,
-                              spot.X, spot.Y, spot.Z, WanderRadius, 3f, 8f);
+
+                foreach (var scenario in StandScenarios)
+                {
+                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _livePed.Handle, scenario, 0, true);
+                    break;
+                }
             }
             catch (Exception ex)
             {
-                Log.Debug("Leader could not be set wandering: " + ex.Message);
+                Log.Debug("Leader could not be posted up: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Walks him back to his corner once whatever spooked him is over.
+        ///
+        /// Nothing happens while he is fighting or fleeing -- being dragged back into gunfire by
+        /// a script is worse than being off his mark for a minute.
+        /// </summary>
+        private void ReturnIfStrayed()
+        {
+            if (_held || _liveDef == null || _livePed == null || !_livePed.Exists() || !_livePed.IsAlive) return;
+
+            var spot = SpotFor(_liveDef);
+            if (spot == Vector3.Zero) return;
+
+            var dx = _livePed.Position.X - spot.X;
+            var dy = _livePed.Position.Y - spot.Y;
+            if (dx * dx + dy * dy <= DriftAllowance * DriftAllowance) return;
+
+            try
+            {
+                if (_livePed.IsInCombat || _livePed.IsRagdoll) return;
+                if (Function.Call<bool>(Hash.IS_PED_FLEEING, _livePed.Handle)) return;
+
+                // Already on his way back.
+                if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, _livePed.Handle, 224)) return;
+
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _livePed.Handle,
+                              spot.X, spot.Y, spot.Z, 1.2f, 20000, 1.5f, false,
+                              Math.Abs(_liveDef.Heading) > 0.01f ? _liveDef.Heading : 0f);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Leader could not walk back: " + ex.Message);
+            }
+        }
+
+        /// <summary>Re-posts him once he is home again, so he is idling rather than standing dumb.</summary>
+        private void SettleIfHome()
+        {
+            if (_held || _liveDef == null || _livePed == null || !_livePed.Exists()) return;
+
+            var spot = SpotFor(_liveDef);
+            if (spot == Vector3.Zero) return;
+
+            var dx = _livePed.Position.X - spot.X;
+            var dy = _livePed.Position.Y - spot.Y;
+            if (dx * dx + dy * dy > 2.5f * 2.5f) return;
+
+            try
+            {
+                if (_livePed.IsInCombat) return;
+                if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, _livePed.Handle, 118)) return;
+
+                StandAtSpot();
+                if (Math.Abs(_liveDef.Heading) > 0.01f) _livePed.Heading = _liveDef.Heading;
+            }
+            catch
+            {
+                // He will settle on the next pass.
             }
         }
 
         /// <summary>
         /// Stops him and turns him to face you, for as long as the conversation lasts. Called
-        /// when the dialogue opens; <see cref="Wander"/> puts him back to work afterwards.
+        /// when the dialogue opens; <see cref="StandAtSpot"/> puts him back on his mark afterwards.
         /// </summary>
         public void HoldForTalk()
         {
@@ -525,11 +630,11 @@ namespace Hoodrich.Gangs
             }
         }
 
-        /// <summary>Puts him back to wandering once you have finished with him.</summary>
+        /// <summary>Puts him back on his corner once you have finished with him.</summary>
         public void ReleaseFromTalk()
         {
             if (!_held) return;
-            Wander();
+            StandAtSpot();
         }
 
         /// <summary>
