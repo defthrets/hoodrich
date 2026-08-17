@@ -95,12 +95,18 @@ namespace Hoodrich
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
                                            _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts);
 
+                pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
+
+                
+
                 _menu = new RadialMenu(_cfg);
                 _wheel = new WheelController(_cfg, _menu, pages.BuildRoot);
 
                 Interval = 0;
                 Tick += OnTick;
                 Aborted += OnAborted;
+
+                Log.Info("Paths: data=" + Paths.Data + "  writable=" + Paths.Writable);
 
                 Log.Info("Hoodrich " + Build.Version + " loaded. Wheel: " +
                          (_cfg.WheelMode == WheelMode.Replace

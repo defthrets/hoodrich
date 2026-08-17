@@ -45,8 +45,31 @@ namespace Hoodrich.UI
 
         // ---- per-frame ---------------------------------------------------------
 
+        /// <summary>While this is in the future, the vanilla wheel is handed back to the player.</summary>
+        private int _vanillaUntil;
+
+        /// <summary>
+        /// Closes our wheel and gives the player the REAL weapon wheel for a moment.
+        ///
+        /// Hoodrich normally suppresses it by disabling its control, so handing it back is a
+        /// matter of not doing that for a beat and forcing it open -- the player is still
+        /// holding the button, so it appears under their thumb as though it always had.
+        /// </summary>
+        public void ShowVanillaWheel()
+        {
+            CloseWheel();
+            _vanillaUntil = Game.GameTime + 2500;
+        }
+
         public void Update(bool available)
         {
+            if (Game.GameTime < _vanillaUntil)
+            {
+                // Hands off: no suppression, and force the real wheel up.
+                Function.Call(Hash.HUD_FORCE_WEAPON_WHEEL, true);
+                return;
+            }
+
             if (_cfg.WheelMode == WheelMode.Replace) SuppressVanillaWheel();
 
             if (!available)

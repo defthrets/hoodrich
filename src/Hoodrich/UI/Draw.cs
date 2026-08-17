@@ -90,53 +90,139 @@ namespace Hoodrich.UI
                           (int)c.R, (int)c.G, (int)c.B, (int)c.A);
         }
 
+        /// <summary>Height of one scanline row. Smaller is smoother and costs more rectangles.</summary>
+        private const float RowHeight = 0.0035f;
+
+        /// <summary>A span wider than this is split, so the half-plane clip stays valid.</summary>
+        private const float MaxSpanDegrees = 170f;
+
         /// <summary>
-        /// Filled annulus sector ("wedge") between two radii and two angles, built from a fan
-        /// of rotated sprite slivers. Angles are in degrees measured clockwise from screen-up,
-        /// matching the way a wheel is naturally described.
+        /// Solid filled annulus sector ("wedge"). Angles are degrees clockwise from screen-up.
+        ///
+        /// Rasterised as horizontal scanlines of DRAW_RECT rather than as rotated sprites. The
+        /// sprite approach needs a texture that is opaque everywhere, and the ones the game
+        /// ships are gradients -- tiling fourteen gradients side by side produced a starburst
+        /// instead of an arc. DRAW_RECT has no texture and no rotation, so there is nothing left
+        /// to get wrong: the fill is exact, solid, and needs nothing streamed.
+        ///
+        /// Each row solves the sector analytically. The annulus gives the horizontal extent
+        /// (an outer circle, minus an inner circle that punches a hole), and the two boundary
+        /// rays are half-planes that clip it -- so there is no sampling and no approximation
+        /// beyond the row height itself.
         /// </summary>
-        public static void Wedge(string dict, string texture, float cx, float cy,
-                                 float rInner, float rOuter, float angFromDeg, float angToDeg,
-                                 Color c, int slices)
+        public static void Wedge(float cx, float cy, float rInner, float rOuter,
+                                 float angFromDeg, float angToDeg, Color c)
         {
-            if (slices < 1) slices = 1;
             if (rOuter <= rInner) return;
+            if (c.A <= 0) return;
 
             var span = angToDeg - angFromDeg;
-            var step = span / slices;
-            var rMid = (rInner + rOuter) * 0.5f;
-            var radial = rOuter - rInner;
+            if (span <= 0f) return;
 
-            // Tangential width of one sliver at the mid radius, plus a hair of overlap so the
-            // seams between slivers do not show as darker/lighter lines.
-            var halfStepRad = Math.Abs(step) * 0.5f * (float)(Math.PI / 180.0);
-            var tangential = 2f * rMid * (float)Math.Tan(halfStepRad) * 1.08f;
-
-            for (var i = 0; i < slices; i++)
+            // The half-plane clip below assumes a convex wedge, so split anything too wide.
+            if (span > MaxSpanDegrees)
             {
-                var mid = angFromDeg + step * (i + 0.5f);
-                var rad = mid * (float)(Math.PI / 180.0);
+                var mid = angFromDeg + span * 0.5f;
+                Wedge(cx, cy, rInner, rOuter, angFromDeg, mid, c);
+                Wedge(cx, cy, rInner, rOuter, mid, angToDeg, c);
+                return;
+            }
 
-                // Screen-up is -y, and angles run clockwise.
-                var px = cx + ToX(rMid * (float)Math.Sin(rad));
-                var py = cy - rMid * (float)Math.Cos(rad);
+            const double deg2rad = Math.PI / 180.0;
+            var a0 = angFromDeg * deg2rad;
+            var a1 = angToDeg * deg2rad;
 
-                Sprite(dict, texture, px, py, ToX(tangential), radial, mid, c);
+            // Direction vectors in (dx right, dy up). Angle runs clockwise from up.
+            var d0x = (float)Math.Sin(a0);
+            var d0y = (float)Math.Cos(a0);
+            var d1x = (float)Math.Sin(a1);
+            var d1y = (float)Math.Cos(a1);
+
+            var rOut2 = rOuter * rOuter;
+            var rIn2 = rInner * rInner;
+
+            for (var dy = -rOuter; dy <= rOuter; dy += RowHeight)
+            {
+                var dy2 = dy * dy;
+                if (dy2 > rOut2) continue;
+
+                var hi = (float)Math.Sqrt(rOut2 - dy2);
+                var lo = dy2 < rIn2 ? (float)Math.Sqrt(rIn2 - dy2) : 0f;
+
+                // Clip the row to the wedge: inside means clockwise of d0 and anticlockwise of d1.
+                var min = -hi;
+                var max = hi;
+
+                if (!ClipHalfPlane(d0x, d0y, dy, true, ref min, ref max)) continue;
+                if (!ClipHalfPlane(d1x, d1y, dy, false, ref min, ref max)) continue;
+
+                // The inner radius punches a hole, leaving up to two runs on this row.
+                if (lo <= 0f)
+                {
+                    EmitRow(cx, cy, dy, min, max, c);
+                }
+                else
+                {
+                    EmitRow(cx, cy, dy, min, Math.Min(max, -lo), c);
+                    EmitRow(cx, cy, dy, Math.Max(min, lo), max, c);
+                }
             }
         }
 
-        /// <summary>Ring outline approximated by short rotated slivers.</summary>
-        public static void Arc(string dict, string texture, float cx, float cy, float radius,
-                               float angFromDeg, float angToDeg, float thickness, Color c, int slices)
+        /// <summary>
+        /// Narrows [min,max] to the side of a boundary ray the sector lives on.
+        /// Returns false when the row falls entirely outside.
+        /// </summary>
+        private static bool ClipHalfPlane(float dirX, float dirY, float dy, bool isStartRay,
+                                          ref float min, ref float max)
         {
-            Wedge(dict, texture, cx, cy, radius - thickness * 0.5f, radius + thickness * 0.5f,
-                  angFromDeg, angToDeg, c, slices);
+            // Start ray keeps cross(d, p) <= 0; end ray keeps cross(d, p) >= 0.
+            // cross(d, p) = d.x*dy - d.y*dx, so each becomes a bound on dx.
+            if (Math.Abs(dirY) < 1e-6f)
+            {
+                // Ray is horizontal: the constraint no longer involves dx at all.
+                var side = isStartRay ? -dirX * dy : dirX * dy;
+                return side >= 0f;
+            }
+
+            var bound = dirX * dy / dirY;
+            var lowerBound = isStartRay ? dirY > 0f : dirY < 0f;
+
+            if (lowerBound)
+            {
+                if (bound > min) min = bound;
+            }
+            else
+            {
+                if (bound < max) max = bound;
+            }
+
+            return min < max;
         }
 
-        /// <summary>Filled disc, drawn as a single wedge covering the full turn.</summary>
-        public static void Disc(string dict, string texture, float cx, float cy, float radius, Color c, int slices = 48)
+        private static void EmitRow(float cx, float cy, float dy, float x0, float x1, Color c)
         {
-            Wedge(dict, texture, cx, cy, 0f, radius, 0f, 360f, c, slices);
+            if (x1 <= x0) return;
+
+            var width = x1 - x0;
+            var centreDx = (x0 + x1) * 0.5f;
+
+            // dy is measured upward; screen y grows downward.
+            Rect(cx + ToX(centreDx), cy - dy, ToX(width), RowHeight * 1.05f, c);
+        }
+
+        /// <summary>Ring outline, drawn as a thin wedge covering the given sweep.</summary>
+        public static void Arc(float cx, float cy, float radius,
+                               float angFromDeg, float angToDeg, float thickness, Color c)
+        {
+            Wedge(cx, cy, radius - thickness * 0.5f, radius + thickness * 0.5f,
+                  angFromDeg, angToDeg, c);
+        }
+
+        /// <summary>Filled disc.</summary>
+        public static void Disc(float cx, float cy, float radius, Color c)
+        {
+            Wedge(cx, cy, 0f, radius, 0f, 360f, c);
         }
 
         // ---- text --------------------------------------------------------------

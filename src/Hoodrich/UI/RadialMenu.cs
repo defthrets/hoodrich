@@ -199,31 +199,16 @@ namespace Hoodrich.UI
 
         // ---- rendering ---------------------------------------------------------
 
-        private bool ResolveWedgeMode()
-        {
-            switch (_cfg.RenderMode)
-            {
-                case WheelRenderMode.Node:
-                    return false;
-                case WheelRenderMode.Wedge:
-                    Draw.EnsureTextureDict(_cfg.WheelTextureDict);
-                    return true;
-                default:
-                    // Auto: only use wedges once the dict is actually resident.
-                    return Draw.EnsureTextureDict(_cfg.WheelTextureDict);
-            }
-        }
+        /// <summary>
+        /// Wedges are rasterised with DRAW_RECT and need nothing streamed, so this is now purely
+        /// a style preference rather than the fallback it started as.
+        /// </summary>
+        private bool ResolveWedgeMode() => _cfg.RenderMode != WheelRenderMode.Node;
 
         public void Render()
         {
             var page = Current;
             if (!IsOpen || page == null) return;
-
-            if (_cfg.RenderMode == WheelRenderMode.Auto && !_wedgeMode)
-            {
-                // Keep trying: the dict usually lands within a frame or two of the request.
-                _wedgeMode = Draw.EnsureTextureDict(_cfg.WheelTextureDict);
-            }
 
             var t = Ease((Game.GameTime - _openedAt) / (float)OpenAnimationMs);
 
@@ -266,8 +251,7 @@ namespace Hoodrich.UI
                 {
                     // A hovered segment reaches slightly further out, the way the vanilla wheel does.
                     var outer = hovered ? rOuter * 1.045f : rOuter;
-                    Draw.Wedge(_cfg.WheelTextureDict, _cfg.WheelTexture,
-                                  cx, cy, rInner, outer, from, to, fill, SlicesPerSegment);
+                    Draw.Wedge(cx, cy, rInner, outer, from, to, fill);
                 }
                 else
                 {
@@ -281,8 +265,8 @@ namespace Hoodrich.UI
             // segments so a hovered wedge reaching past it still reads as breaking the line.
             if (_wedgeMode)
             {
-                Draw.Arc(_cfg.WheelTextureDict, _cfg.WheelTexture, cx, cy, rOuter,
-                         0f, 360f, 0.0022f, Palette.Alpha(Palette.Ring, (int)(Palette.Ring.A * t)), 96);
+                Draw.Arc(cx, cy, rOuter, 0f, 360f, 0.0022f,
+                         Palette.Alpha(Palette.Ring, (int)(Palette.Ring.A * t)));
             }
 
             DrawHub(cx, cy, rInner, page, t);
@@ -401,8 +385,7 @@ namespace Hoodrich.UI
         {
             if (_wedgeMode)
             {
-                Draw.Disc(_cfg.WheelTextureDict, _cfg.WheelTexture, cx, cy, rInner * 0.96f,
-                             Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t)));
+                Draw.Disc(cx, cy, rInner * 0.96f, Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t)));
             }
             else
             {

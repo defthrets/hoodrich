@@ -11,7 +11,7 @@ namespace Hoodrich.Weapons
     internal sealed class WeaponDef
     {
         public string Id = "";
-        public int Hash;
+        public uint Hash;
         public string Name = "";
 
         /// <summary>Which of the eight vanilla wheel slots this belongs in.</summary>
@@ -37,7 +37,7 @@ namespace Hoodrich.Weapons
     internal sealed class WeaponRegistry
     {
         /// <summary>WEAPON_UNARMED. Always available, and never listed in a slot.</summary>
-        public const int UnarmedHash = -1569615261;
+        public const uint UnarmedHash = 2725352035; // WEAPON_UNARMED, 0xA2719263
 
         /// <summary>The vanilla wheel's slots, in the order it draws them.</summary>
         public static readonly string[] SlotOrder =
@@ -46,7 +46,7 @@ namespace Hoodrich.Weapons
         };
 
         private readonly List<WeaponDef> _all = new List<WeaponDef>();
-        private readonly Dictionary<int, WeaponDef> _byHash = new Dictionary<int, WeaponDef>();
+        private readonly Dictionary<uint, WeaponDef> _byHash = new Dictionary<uint, WeaponDef>();
 
         /// <summary>Dicts we have asked the streamer for, so we only request each once.</summary>
         private readonly HashSet<string> _requested = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -61,7 +61,7 @@ namespace Hoodrich.Weapons
 
         public IReadOnlyList<WeaponDef> All => _all;
 
-        public WeaponDef Get(int hash) => _byHash.TryGetValue(hash, out var d) ? d : null;
+        public WeaponDef Get(uint hash) => _byHash.TryGetValue(hash, out var d) ? d : null;
 
         public static WeaponRegistry Load()
         {
@@ -84,7 +84,8 @@ namespace Hoodrich.Weapons
 
             foreach (var node in list.Items)
             {
-                var hash = node["hash"].AsInt(0);
+                // The dump stores hashes as signed; reinterpret rather than clamp.
+                var hash = unchecked((uint)node["hash"].AsLong(0));
                 if (hash == 0) continue;
 
                 var def = new WeaponDef
@@ -141,7 +142,7 @@ namespace Hoodrich.Weapons
             return slots;
         }
 
-        private static bool HasWeapon(Ped ped, int hash)
+        private static bool HasWeapon(Ped ped, uint hash)
         {
             try
             {
@@ -153,7 +154,7 @@ namespace Hoodrich.Weapons
             }
         }
 
-        public static int CurrentWeaponHash()
+        public static uint CurrentWeaponHash()
         {
             try
             {
@@ -162,7 +163,7 @@ namespace Hoodrich.Weapons
 
                 var outArg = new OutputArgument();
                 Function.Call(Hash.GET_CURRENT_PED_WEAPON, player.Handle, outArg, true);
-                return outArg.GetResult<int>();
+                return outArg.GetResult<uint>();
             }
             catch
             {
@@ -171,7 +172,7 @@ namespace Hoodrich.Weapons
         }
 
         /// <summary>Ammo in reserve for a weapon the player is carrying.</summary>
-        public static int AmmoFor(int hash)
+        public static int AmmoFor(uint hash)
         {
             try
             {
@@ -185,7 +186,7 @@ namespace Hoodrich.Weapons
             }
         }
 
-        public static void Equip(int hash)
+        public static void Equip(uint hash)
         {
             try
             {

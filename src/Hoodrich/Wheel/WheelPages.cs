@@ -45,6 +45,9 @@ namespace Hoodrich.Wheel
         private readonly HideoutManager _hideouts;
         private readonly WeaponRegistry _weapons;
 
+        /// <summary>Set by Main. Hands the player back the game's own weapon wheel.</summary>
+        public Action ShowVanillaWheel;
+
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
@@ -89,11 +92,9 @@ namespace Hoodrich.Wheel
             // Weapons sits at index 0 -- straight up, the easiest flick on the wheel. Hoodrich
             // took the weapon-wheel button, so getting a gun back has to be the fastest thing
             // on here, not something buried behind the business menu.
-            page.AddSub("Weapons", "^", BuildWeaponsPage,
-                detail: "Change weapon",
-                value: CurrentWeaponName(),
-                enabled: _weapons.OccupiedSlots().Count > 0,
-                disabledReason: "You are not carrying anything");
+            page.Add("Weapons", "^", () => ShowVanillaWheel?.Invoke(),
+                detail: "Opens the game's own weapon wheel",
+                value: CurrentWeaponName());
 
             page.AddSub("Drugs", "$", BuildDrugsPage,
                 detail: "Sell, cut and resupply",
@@ -150,7 +151,7 @@ namespace Hoodrich.Wheel
             page.Row("Street value", "$" + PackagedValue().ToString("N0"), Palette.Cash);
             page.Row("Prices", _pricing.PriceContext());
 
-            page.AddSub("Supply", "+", BuildSupplyPage,
+            page.AddSub("Buy", "+", BuildSupplyPage,
                 detail: SupplyDetail(),
                 value: "$" + Game.Player.Money.ToString("N0"));
 
@@ -166,16 +167,6 @@ namespace Hoodrich.Wheel
                 enabled: packaged > 0.005f,
                 disabledReason: bulk > 0.005f ? "All you have is bulk -- cut it first"
                                               : "You are holding nothing");
-
-            page.AddSub("Status", "*", BuildDrugStatusPage,
-                detail: "What you hold and what is inbound",
-                value: _dealers.HasMeet ? _dealers.MeetDealer.Tag + " inbound" : "no orders");
-
-            page.AddSub("Stash", "=", BuildStashPage,
-                detail: StashDetail(),
-                value: StashValue(),
-                enabled: _hideouts.AtPlayer != null,
-                disabledReason: _hideouts.OwnedCount > 0 ? "Get to a hideout" : "You do not own anywhere");
 
             return page;
         }
@@ -573,7 +564,7 @@ namespace Hoodrich.Wheel
             return page;
         }
 
-        private void Equip(int hash, string name)
+        private void Equip(uint hash, string name)
         {
             WeaponRegistry.Equip(hash);
             Log.Debug("Equipped " + name + ".");
@@ -938,23 +929,36 @@ namespace Hoodrich.Wheel
             page.Row("Standing on", _turf.ZoneName, TurfTint());
             page.Row("This block", _turf.StatusLine, TurfTint());
 
-            // Turf leads: "whose block am I on" is the question you ask most, and it is
-            // territorial, so it belongs here rather than on the root.
+            // Only YOUR crew belongs here. Listing all seven turned the wheel into a directory,
+            // and joining is something you do by finding a leader in the world, not by picking
+            // a wedge. Standing with the other crews is a readout, and lives on Reputation.
             page.AddSub("Turf", "#", BuildTurfPage,
                 detail: _turf.StatusLine,
                 value: _turf.ZoneName);
 
-            foreach (var g in _gangs.All)
+            if (_crew.IsAffiliated)
             {
-                var gang = g;
-                var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
+                var mine = _crew.Current;
 
-                page.AddSub(gang.Tag, mine ? "*" : "o",
-                    () => BuildGangPage(gang),
-                    detail: gang.TurfHint,
-                    value: mine ? "YOUR CREW" : RelationLabel(gang));
+                page.AddSub("My crew", "*", () => BuildGangPage(mine),
+                    detail: mine.TurfHint,
+                    value: mine.Name);
+                page.Items[page.Items.Count - 1].Tint = mine.Colour;
 
-                page.Items[page.Items.Count - 1].Tint = gang.Colour;
+                page.Add("Homies", "^", null,
+                    detail: "Pick up a homie to run with you",
+                    enabled: false, disabledReason: "Not in this build yet");
+
+                page.Add("Activities", "!", null,
+                    detail: "Work the crew puts your way",
+                    enabled: false, disabledReason: "Not in this build yet");
+            }
+            else
+            {
+                page.Add("No crew", "-", null,
+                    detail: "Find a gang leader on their turf and talk to them",
+                    value: "SOLO",
+                    enabled: false, disabledReason: "Go and find one");
             }
 
             return page;
@@ -1398,47 +1402,26 @@ namespace Hoodrich.Wheel
             page.Row("Deals for crews", totalGangDeals.ToString("N0"));
             page.Row("Earned for crews", "$" + gangEarnings.ToString("N0"), Palette.Cash);
 
-            page.AddSub("Rank", "*", BuildRankPage,
-                detail: RankProgressLabel(),
-                value: _state.RankName);
-
-            // Every crew's standing, readable by flicking round the ring.
+            // Standing with every crew goes in the PANEL, not on the ring. Seven wedges of
+            // pure readout was noise: the wheel is for picking things, the panel is for reading.
+            page.Row("", "");
             foreach (var g in _gangs.All)
             {
-                var gang = g;
-                var standing = _crew.StandingFor(gang.Id);
-                var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
+                var standing = _crew.StandingFor(g.Id);
+                var mine = _crew.IsAffiliated && _crew.Current.Id == g.Id;
 
-                var detail = standing.Kills + " kills  ·  " + standing.Deals + " deals  ·  $" +
-                             standing.MoneyEarned.ToString("N0") + " earned";
+                var value = standing.Rep.ToString("0");
+                if (standing.Kills > 0) value += "  ·  " + standing.Kills + "k";
+                if (standing.MoneyEarned > 0) value += "  ·  $" + standing.MoneyEarned.ToString("N0");
 
-                page.Add(gang.Tag, mine ? "*" : "o", null,
-                    detail: detail,
-                    value: mine ? "YOUR CREW  rep " + standing.Rep.ToString("0")
-                                : RelationLabel(gang) + (standing.Rep != 0f
-                                    ? "  rep " + standing.Rep.ToString("0") : ""));
-
-                page.Items[page.Items.Count - 1].Tint = gang.Colour;
+                page.Row(mine ? g.Tag + "  (yours)" : g.Tag, value,
+                         mine ? g.Colour
+                              : standing.Rep < 0f ? Palette.Danger
+                              : standing.Rep > 0f ? Palette.Cash : (System.Drawing.Color?)Palette.TextDim);
             }
 
-            return page;
-        }
-
-        /// <summary>
-        /// The rank ladder. Wedges are the ranks themselves rather than actions, so the ring
-        /// reads as a progression bar: what you have passed, where you are, and what the next
-        /// rung actually buys you.
-        /// </summary>
-        private WheelPage BuildRankPage()
-        {
-            var page = new WheelPage("Rank", RankProgressLabel());
+            // The ring itself is the rank ladder: what you passed, where you are, what is next.
             var current = _state.Rank;
-
-            page.PanelTitle = "Progression";
-            page.Row("Rank", _state.RankName);
-            page.Row("Respect", _state.Respect.ToString("N0"));
-            page.Row("Next rank", RankProgressLabel());
-            page.Row("Carry limit", Stash.Capacity.ToString("0") + "g");
 
             for (var i = 0; i < PlayerState.RankNames.Length; i++)
             {
