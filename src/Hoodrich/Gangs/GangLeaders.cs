@@ -242,8 +242,8 @@ namespace Hoodrich.Gangs
 
         private void AddDefaults()
         {
-            Add("families", "Uncle Dee", "CHAMH",
-                new[] { "g_m_y_famdnf_01", "g_m_y_famca_01", "a_m_m_soucent_01" },
+            Add("families", "Stretch", "CHAMH",
+                new[] { "ig_stretch", "csb_stretch", "g_m_y_famdnf_01", "a_m_m_soucent_01" },
                 "Who sent you? Nah, don't answer. What you want.",
                 "Alright. You can hang round the block, run a few things. But you ain't Family " +
                 "till the set says you are. Take this, move it, come back when it's gone.",

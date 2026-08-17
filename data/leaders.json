@@ -18,11 +18,11 @@
   "leaders": [
     {
       "gang": "families",
-      "name": "Uncle Dee",
+      "name": "Stretch",
       "zone": "CHAMH",
       "x": -187.163, "y": -1700.884, "heading": 328,
       "awayFromHour": 3, "awayToHour": 8,
-      "models": ["g_m_y_famdnf_01", "g_m_y_famca_01", "a_m_m_soucent_01"]
+      "models": ["ig_stretch", "csb_stretch", "g_m_y_famdnf_01", "a_m_m_soucent_01"]
     },
     {
       "gang": "ballas",
