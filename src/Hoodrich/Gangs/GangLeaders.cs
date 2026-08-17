@@ -334,7 +334,10 @@ namespace Hoodrich.Gangs
             foreach (var def in _defs)
             {
                 var gang = _gangs.Get(def.GangId);
-                var worthMarking = gang != null && gang.Joinable;
+
+                // A marker on an empty corner is worse than no marker: you drive across town
+                // and find nobody, with nothing telling you why.
+                var worthMarking = gang != null && gang.Joinable && !def.IsAwayAt(Pricing.ClockHour);
 
                 _blips.TryGetValue(def.GangId, out var existing);
 

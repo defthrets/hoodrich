@@ -34,10 +34,18 @@ namespace Hoodrich.UI
     /// </summary>
     internal sealed class StashScreen
     {
-        private const float PanelWidth = 0.52f;
-        private const float ColumnGap = 0.02f;
-        private const float RowHeight = 0.030f;
-        private const float Pad = 0.018f;
+        /// <summary>
+        /// Sized in HEIGHT fractions and converted, so the card keeps its shape.
+        ///
+        /// Width in screen fractions makes the panel as wide as the monitor is: on an ultrawide
+        /// the first version came out as a letterbox strip with two columns a metre apart. A
+        /// card should be a card at any aspect ratio.
+        /// </summary>
+        private const float PanelWidthH = 0.62f;
+
+        private const float ColumnGapH = 0.03f;
+        private const float RowHeight = 0.028f;
+        private const float PadH = 0.024f;
 
         /// <summary>Moved per press. Holding the run button moves the lot instead.</summary>
         private const float StepGrams = 10f;
@@ -272,34 +280,39 @@ namespace Hoodrich.UI
             if (!IsOpen) return;
 
             var bodyRows = Math.Max(_rows.Count, 1);
-            var height = 0.088f + bodyRows * RowHeight + 0.040f;
+            var height = 0.092f + bodyRows * RowHeight + 0.036f;
 
-            var left = 0.5f - PanelWidth * 0.5f;
+            // Everything converted from height fractions, so the proportions hold on any screen.
+            var panelWidth = Hud.ToX(PanelWidthH);
+            var pad = Hud.ToX(PadH);
+            var columnGap = Hud.ToX(ColumnGapH);
+
+            var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f;
 
-            Hud.RectFrom(left, top, PanelWidth, height, Color.FromArgb(232, 12, 13, 15));
-            Hud.RectFrom(left, top, PanelWidth, 0.003f, Palette.Accent);
+            Hud.RectFrom(left, top, panelWidth, height, Color.FromArgb(238, 12, 13, 15));
+            Hud.RectFrom(left, top, panelWidth, 0.0028f, Palette.Accent);
 
-            var colWidth = (PanelWidth - Pad * 2f - ColumnGap) * 0.5f;
-            var leftCol = left + Pad;
-            var rightCol = leftCol + colWidth + ColumnGap;
+            var colWidth = (panelWidth - pad * 2f - columnGap) * 0.5f;
+            var leftCol = left + pad;
+            var rightCol = leftCol + colWidth + columnGap;
 
-            var y = top + 0.014f;
+            var y = top + 0.013f;
 
-            Hud.Text("STASH HOUSE", leftCol, y, 0.36f, Palette.Text, Hud.FontLabel, centre: false);
-            y += 0.030f;
+            Hud.Text("STASH HOUSE", leftCol, y, 0.34f, Palette.Text, Hud.FontLabel, centre: false);
+            y += 0.032f;
 
             // Column headers, each with what that side is holding out of what it can.
             DrawColumnHead(leftCol, colWidth, y, "ON YOU", _pockets);
             DrawColumnHead(rightCol, colWidth, y, "AT HOME", _house);
-            y += 0.034f;
+            y += 0.030f;
 
-            Hud.RectFrom(leftCol, y - 0.006f, colWidth * 2f + ColumnGap, 0.0015f,
+            Hud.RectFrom(leftCol, y - 0.006f, colWidth * 2f + columnGap, 0.0015f,
                          Color.FromArgb(90, 255, 255, 255));
 
             if (_rows.Count == 0)
             {
-                Hud.Text("Nothing on you and nothing at home.", leftCol, y + 0.008f, 0.30f,
+                Hud.Text("Nothing on you and nothing at home.", leftCol, y + 0.008f, 0.28f,
                          Palette.TextDim, Hud.FontBody, centre: false);
             }
 
@@ -310,9 +323,9 @@ namespace Hoodrich.UI
 
                 if (picked)
                 {
-                    Hud.RectFrom(leftCol - 0.006f, y - 0.004f,
-                                 colWidth * 2f + ColumnGap + 0.012f, RowHeight,
-                                 Color.FromArgb(40, 255, 255, 255));
+                    Hud.RectFrom(leftCol - pad * 0.35f, y - 0.004f,
+                                 colWidth * 2f + columnGap + pad * 0.7f, RowHeight,
+                                 Color.FromArgb(45, 255, 255, 255));
                 }
 
                 var label = picked ? "> " + row.Label : "  " + row.Label;
@@ -333,10 +346,9 @@ namespace Hoodrich.UI
                 y += RowHeight;
             }
 
-            var hint = "UP / DOWN  PICK      LEFT  TAKE OUT      RIGHT  PUT AWAY" +
-                       "      HOLD SPRINT  ALL OF IT      BACKSPACE  DONE";
+            var hint = "UP / DOWN  PICK     LEFT  TAKE OUT     RIGHT  PUT AWAY     SPRINT  ALL     BACKSPACE  DONE";
 
-            Hud.Text(hint, leftCol, top + height - 0.024f, 0.25f, Palette.TextDim,
+            Hud.Text(hint, leftCol, top + height - 0.022f, 0.24f, Palette.TextDim,
                      Hud.FontLabel, centre: false);
         }
 

@@ -1005,41 +1005,50 @@ namespace Hoodrich.Wheel
                 return page;
             }
 
-            // Nobody in reach: who can you call, and where do they stand.
-            var list = new WheelPage("Supply", "Phone someone out, or go find them");
-            list.PanelTitle = "Your connects";
+            // Nobody in reach. Exactly one thing you can do from here: phone the docks. The
+            // gangs are people you walk up to and the independents are places you drive to, so
+            // listing all seven as pickable wedges was a directory pretending to be a menu.
+            var list = new WheelPage("Re-up", "Buying weight");
+
+            list.PanelTitle = "Where weight comes from";
             list.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
-            list.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
-            list.Row("Standing on", _turf.ZoneName);
-            list.Row("Docks", _state.DocksUnlocked ? "open" : "unknown to you",
-                     _state.DocksUnlocked ? Palette.Cash : Palette.TextDim);
+            list.Row("Room left", Stash.FreeSpace.ToString("0") + "g");
+            list.Row("Gangs", "talk to their leader", Palette.TextDim);
+            list.Row("The docks", _state.DocksUnlocked ? "they deliver" : "you do not know them",
+                     _state.DocksUnlocked ? Palette.Cash : (Color?)Palette.TextDim);
+
+            var docks = _dealers.Docks();
+
+            if (docks == null)
+            {
+                list.Add("Nothing", "-", null,
+                    detail: "No contacts in dealers.json",
+                    enabled: false, disabledReason: "Nobody to call");
+                return list;
+            }
 
             if (!_state.DocksUnlocked)
             {
                 var toGo = DealerManager.GramsUntilSource(_state, _cfg.DocksUnlockGrams);
-                list.Row("To the source", toGo.ToString("0.#") + "g more sold", Palette.Warn);
+
+                list.Add("Call the docks", "=", null,
+                    detail: "Ask Uncle Dee where it comes from once you have moved enough",
+                    value: toGo.ToString("0") + "g more to sell",
+                    enabled: false, disabledReason: "You do not know anyone at the port");
+                list.WithIcon(Icons.Locked);
+                return list;
             }
 
-            foreach (var d in _dealers.All)
-            {
-                var def = d;
-                var refusal = _dealers.RefusalReason(def, _state, _crew);
-                var gang = def.IsGangDealer ? _gangs.Get(def.GangId) : null;
+            var blocked = _dealers.RefusalReason(docks, _state, _crew);
 
-                // Where they stand, so the wheel doubles as directions.
-                var where = def.Kind == DealerKind.Docks
-                    ? "At the port"
-                    : gang != null ? "On " + gang.TurfHint : "";
-
-                list.Add(def.Tag, def.Kind == DealerKind.Docks ? "=" : "o",
-                    () => Call(def),
-                    detail: where + (refusal == null ? "  ·  phone them out" : ""),
-                    value: Carries(def) + "  x" + def.PriceMultiplier.ToString("0.00"),
-                    enabled: refusal == null,
-                    disabledReason: refusal ?? "");
-
-                if (gang != null) list.Items[list.Items.Count - 1].Tint = gang.Colour;
-            }
+            list.Add("Call the docks", "=", () => Call(docks),
+                detail: blocked == null
+                    ? docks.Name + " drives out to you with whatever you want"
+                    : blocked,
+                value: "everything, cheapest",
+                enabled: blocked == null,
+                disabledReason: blocked ?? "");
+            list.WithIcon(Icons.Money);
 
             return list;
         }

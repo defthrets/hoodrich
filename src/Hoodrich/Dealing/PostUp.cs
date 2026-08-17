@@ -69,33 +69,26 @@ namespace Hoodrich.Dealing
         /// <summary>How close the two of you stand for the handoff to look like a handoff.</summary>
         private const float HandoffDistance = 0.9f;
 
+        /// <summary>
+        /// What a passer-by actually buys: a gram, or an eighth.
+        ///
+        /// Those are the two amounts anybody asks for, so the money reads right without anyone
+        /// having to explain it -- a gram of weed is twenty dollars and an eighth is fifty,
+        /// because that is what a gram and an eighth cost.
+        /// </summary>
+        private static readonly float[] DealSizes = { 1f, 1f, 1f, 3.5f };
+
         /// <summary>A sale this close to a uniform is a sale a uniform saw.</summary>
         private const float CopWitnessRange = 25f;
 
         /// <summary>
-
-
         /// How fast a pitch warms up, on top of the product and the crowd.
-
-
         ///
-
-
         /// A corner that took an age to get warm meant the police half of the mechanic almost never
-
-
         /// fired -- you ran out of product before you ran out of welcome, so the decision the whole
-
-
         /// thing is built on never got asked.
-
-
         /// </summary>
-
-
         private const float HeatRate = 1.25f;
-
-
 
         /// <summary>Corner heat at which the police stop needing to see anything.</summary>
         private const float HeatForWanted = 0.85f;
@@ -109,8 +102,14 @@ namespace Hoodrich.Dealing
         /// <summary>Beat between your line and the buyer's answer, so they do not overlap.</summary>
         private const int BuyerReplyDelayMs = 1000;
 
+        /// <summary>How long they get to shoot from the car before they get out and fight.</summary>
+        private const int DriveByShootMs = 14000;
+
         /// <summary>How far a rival can be and still notice you working their block.</summary>
         private const float RivalNoticeRange = 28f;
+
+        /// <summary>What a carload of somebody else's people turns up in.</summary>
+        private static readonly string[] GangCars = { "baller", "buccaneer", "primo", "manana", "tornado", "peyote" };
 
         private static readonly string[] CopModels = { "s_m_y_cop_01", "s_f_y_cop_01", "s_m_y_swat_01" };
 
@@ -161,6 +160,9 @@ namespace Hoodrich.Dealing
 
         private readonly List<Ped> _rivals = new List<Ped>();
         private Vehicle _driveByCar;
+        private Ped _driveByDriver;
+        private int _driveByStartedAt;
+        private bool _driveByBailed;
 
         /// <summary>Buyer waiting to answer, and when.</summary>
         private Ped _pendingSpeaker;
@@ -210,6 +212,7 @@ namespace Hoodrich.Dealing
             _earned = 0;
             _lastScan = 0;
             _postedAt = Game.GameTime;
+            SchedulePatrol();
             if (Crew != null) Crew.WorkingACorner = true;
             _driveBys = 0;
             State = PostState.Posted;
@@ -320,6 +323,9 @@ namespace Hoodrich.Dealing
 
             RollRivals(player);
             RollDriveBy(player);
+            TickDriveBy(player);
+            RollPatrol(player);
+            TickPatrol(player);
         }
 
         /// <summary>How many people are actually walking past. Drives sales AND heat.</summary>
@@ -490,7 +496,8 @@ namespace Hoodrich.Dealing
             
             if (product == null) return;
 
-            var grams = Math.Min(_cfg.PostUpDealGrams, Stash.PackagedOf(product.Id));
+            var asked = DealSizes[_rng.Next(DealSizes.Length)];
+            var grams = Math.Min(asked, Stash.PackagedOf(product.Id));
             if (grams < 0.05f)
             {
                 Stop("You are out of " + product.Name.ToLowerInvariant() + ".");
@@ -655,16 +662,7 @@ namespace Hoodrich.Dealing
 
         private void SpawnDriveBy(Ped player, GangDef gang)
         {
-            Model? carModel = null;
-
-            foreach (var name in new[] { "baller", "buccaneer", "primo", "manana" })
-            {
-                var m = new Model(name);
-                if (!m.IsValid || !m.IsInCdImage || !m.Request(1200)) continue;
-                carModel = m;
-                break;
-            }
-
+            var carModel = PickModel(GangCars);
             if (carModel == null) return;
 
             try
@@ -686,21 +684,23 @@ namespace Hoodrich.Dealing
 
                     _rivals.Add(shooter);
 
-                    if (seat == -1)
-                    {
-                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, shooter.Handle, _driveByCar.Handle,
-                                      player.Position.X, player.Position.Y, player.Position.Z,
-                                      18f, 0, _driveByCar.Model.Hash, 786603, 8f, true);
-                    }
-                    else
-                    {
-                        Function.Call(Hash.TASK_DRIVE_BY, shooter.Handle, player.Handle, 0,
-                                      player.Position.X, player.Position.Y, player.Position.Z,
-                                      35f, 100, true, unchecked((uint)0));
-                    }
+                    if (seat == -1) _driveByDriver = shooter;
+                    else ArmForDriveBy(shooter, player);
+                }
+
+                if (_driveByDriver != null)
+                {
+                    // Mission 6 is "run the target down": the car keeps circling and passing
+                    // rather than parking. Driving TO a coordinate meant they arrived, stopped,
+                    // and sat there -- which is what a delivery looks like, not an attack.
+                    Function.Call(Hash.TASK_VEHICLE_MISSION_PED_TARGET, _driveByDriver.Handle,
+                                  _driveByCar.Handle, player.Handle, 6, 25f, 786603, 12f, 5f, true);
                 }
 
                 _driveBys++;
+                _driveByStartedAt = Game.GameTime;
+                _driveByBailed = false;
+
                 Notify.Failure("that is not your car coming.");
                 Log.Info("Drive-by from " + gang.Id + " after " +
                          ((Game.GameTime - _postedAt) / 1000) + "s posted up.");
@@ -712,6 +712,89 @@ namespace Hoodrich.Dealing
             finally
             {
                 try { carModel.Value.MarkAsNoLongerNeeded(); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// Puts a gun in a passenger's hands and tells him to lean out of the window.
+        ///
+        /// TASK_DRIVE_BY does nothing at all unless the ped is holding a weapon he is allowed
+        /// to fire from a car, which is why the first pass had three men driving past waving.
+        /// </summary>
+        private static void ArmForDriveBy(Ped shooter, Ped player)
+        {
+            try
+            {
+                var weapon = Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_MICROSMG");
+
+                Function.Call(Hash.GIVE_WEAPON_TO_PED, shooter.Handle, weapon, 250, false, true);
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, shooter.Handle, weapon, true);
+
+                // 0 = can use cover, 1 = can use vehicles, 46 = always fight, 5 = can do drivebys.
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, shooter.Handle, 5, true);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, shooter.Handle, 46, true);
+                Function.Call(Hash.SET_PED_ACCURACY, shooter.Handle, 25);
+
+                Function.Call(Hash.TASK_DRIVE_BY, shooter.Handle, player.Handle, 0,
+                              0f, 0f, 0f, 40f, 100, true, weapon);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not arm a drive-by shooter: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Keeps the drive-by honest.
+        ///
+        /// They get a window to shoot from the car. After that -- or the moment the car has
+        /// clearly stopped with everyone still sat in it -- they get out and fight, because a
+        /// carful of men parked next to you doing nothing is the worst possible outcome.
+        /// </summary>
+        private void TickDriveBy(Ped player)
+        {
+            if (_driveByCar == null || !_driveByCar.Exists()) return;
+
+            var elapsed = Game.GameTime - _driveByStartedAt;
+
+            if (!_driveByBailed)
+            {
+                var stalled = _driveByCar.Speed < 1.5f &&
+                              player.Position.DistanceTo(_driveByCar.Position) < 35f &&
+                              elapsed > 6000;
+
+                if (!stalled && elapsed < DriveByShootMs) return;
+
+                _driveByBailed = true;
+
+                foreach (var ped in _rivals)
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (!ped.IsInVehicle()) continue;
+
+                    try
+                    {
+                        Function.Call(Hash.TASK_LEAVE_VEHICLE, ped.Handle, _driveByCar.Handle, 0);
+                        Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16);
+                    }
+                    catch { /* he will be dealt with by the game's own AI */ }
+                }
+
+                Log.Info("Drive-by turned into a fight after " + (elapsed / 1000) + "s.");
+                return;
+            }
+
+            // Everyone down or gone: let the car go.
+            var standing = 0;
+            foreach (var ped in _rivals)
+            {
+                if (ped != null && ped.Exists() && ped.IsAlive) standing++;
+            }
+
+            if (standing == 0 && _driveByCar.Exists())
+            {
+                try { _driveByCar.MarkAsNoLongerNeeded(); } catch { }
+                _driveByCar = null;
             }
         }
 
@@ -752,6 +835,300 @@ namespace Hoodrich.Dealing
             }
 
             return null;
+        }
+
+        // ---- the patrol car ----------------------------------------------------
+
+        /// <summary>
+        /// How long after posting up, or after the last one left, the next patrol turns up.
+        ///
+        /// Scheduled rather than rolled every couple of seconds: a per-tick dice roll can fire
+        /// the moment you start and then again straight after, which reads as the game picking
+        /// on you. One car at a random point in this window reads as luck.
+        /// </summary>
+        private const int PatrolGapMinMs = 50 * 1000;
+        private const int PatrolGapMaxMs = 210 * 1000;
+
+        /// <summary>How long they sit there before losing interest.</summary>
+        private const int PatrolWatchMs = 60000;
+
+        /// <summary>Not so close it is comedy, not so far they cannot see you.</summary>
+        private const float PatrolMinDistance = 22f;
+        private const float PatrolMaxDistance = 40f;
+
+        /// <summary>Shuffled per call, so the same cruiser is not always the one that shows up.</summary>
+
+
+        private static readonly string[] PatrolCars = { "police", "police2", "police3", "sheriff", "police4" };
+
+
+
+        private Vehicle _patrolCar;
+        private readonly List<Ped> _patrolCops = new List<Ped>();
+        private int _patrolUntil;
+        private int _nextPatrolAt;
+
+        /// <summary>
+        /// A patrol pulling over to sit on the corner for a minute.
+        ///
+        /// Nothing happens on its own -- they park, they watch, they go. What they change is
+        /// the cost of the next sale: the existing witness check already turns a handoff in
+        /// front of a uniform into a star, so the decision is simply whether you can wait a
+        /// minute or whether you are greedy.
+        /// </summary>
+        private void RollPatrol(Ped player)
+        {
+            if (_patrolCar != null && _patrolCar.Exists()) return;
+            if (State == PostState.Investigated || State == PostState.Questioned) return;
+            if (Game.GameTime < _nextPatrolAt) return;
+
+            var carModel = PickModel(PatrolCars);
+
+            if (carModel == null) return;
+
+            try
+            {
+                var angle = _rng.NextDouble() * Math.PI * 2.0;
+                var distance = PatrolMinDistance +
+                               (float)_rng.NextDouble() * (PatrolMaxDistance - PatrolMinDistance);
+
+                var near = player.Position + new Vector3(
+                    (float)Math.Cos(angle) * distance, (float)Math.Sin(angle) * distance, 0f);
+
+                var kerb = World.GetNextPositionOnStreet(near);
+                if (kerb == Vector3.Zero) return;
+                if (kerb.DistanceTo(player.Position) > PatrolMaxDistance * 1.6f) return;
+
+                _patrolCar = World.CreateVehicle(carModel.Value, kerb);
+                if (_patrolCar == null || !_patrolCar.Exists()) return;
+
+                _patrolCar.IsPersistent = true;
+                _patrolCar.IsEngineRunning = true;
+
+                for (var seat = -1; seat <= 0; seat++)
+                {
+                    var cop = SpawnCopInCar(_patrolCar, seat);
+                    if (cop != null) _patrolCops.Add(cop);
+                }
+
+                _patrolUntil = Game.GameTime + PatrolWatchMs;
+                SchedulePatrol();
+
+                Notify.Problem("a patrol just pulled up. Sit tight or serve in front of them.");
+                Log.Info("Patrol parked up near the pitch.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Patrol spawn failed: " + ex.Message);
+            }
+            finally
+            {
+                try { carModel.Value.MarkAsNoLongerNeeded(); } catch { }
+            }
+        }
+
+        /// <summary>Sets when the next patrol is due, somewhere in the window.</summary>
+
+
+        private void SchedulePatrol()
+
+
+        {
+
+
+            _nextPatrolAt = Game.GameTime + PatrolGapMinMs + _rng.Next(PatrolGapMaxMs - PatrolGapMinMs);
+
+
+        }
+
+
+
+        private void TickPatrol(Ped player)
+        {
+            if (_patrolCar == null || !_patrolCar.Exists()) return;
+            if (Game.GameTime < _patrolUntil) return;
+
+            // Minute is up and nothing happened, so they move on.
+            foreach (var cop in _patrolCops)
+            {
+                if (cop == null || !cop.Exists() || !cop.IsAlive) continue;
+
+                try
+                {
+                    if (cop.SeatIndex == VehicleSeat.Driver)
+                    {
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, cop.Handle, _patrolCar.Handle,
+                                      15f, 786603);
+                    }
+
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, cop.Handle, false);
+                    cop.MarkAsNoLongerNeeded();
+                }
+                catch { /* they can look after themselves now */ }
+            }
+
+            try { _patrolCar.MarkAsNoLongerNeeded(); } catch { }
+
+            _patrolCops.Clear();
+            _patrolCar = null;
+            SchedulePatrol();
+
+            Log.Info("Patrol moved on.");
+        }
+
+        private Ped SpawnCopInCar(Vehicle car, int seat)
+        {
+            foreach (var name in CopModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+
+                    var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
+                                                    car.Handle, 6, model.Hash, seat, true, false);
+                    model.MarkAsNoLongerNeeded();
+                    if (handle == 0) continue;
+
+                    var cop = (Ped)Entity.FromHandle(handle);
+                    if (cop == null || !cop.Exists()) continue;
+
+                    cop.IsPersistent = true;
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, cop.Handle, true);
+
+                    return cop;
+                }
+                catch
+                {
+                    // Try the next model.
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+
+
+        /// One of these models, chosen at random rather than in order.
+
+
+        ///
+
+
+        /// Walking the list and taking the first that loads means the first entry wins every
+
+
+        /// single time, so the "random" police car was always the same police car.
+
+
+        /// </summary>
+
+
+        private Model? PickModel(string[] names)
+
+
+        {
+
+
+            var order = new List<string>(names);
+
+
+        
+
+
+            for (var i = order.Count - 1; i > 0; i--)
+
+
+            {
+
+
+                var j = _rng.Next(i + 1);
+
+
+                var swap = order[i];
+
+
+                order[i] = order[j];
+
+
+                order[j] = swap;
+
+
+            }
+
+
+        
+
+
+            foreach (var name in order)
+
+
+            {
+
+
+                try
+
+
+                {
+
+
+                    var model = new Model(name);
+
+
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+
+                    return model;
+
+
+                }
+
+
+                catch
+
+
+                {
+
+
+                    // Try the next.
+
+
+                }
+
+
+            }
+
+
+        
+
+
+            return null;
+
+
+        }
+
+
+
+        /// <summary>Lets the patrol go without ceremony, on teardown.</summary>
+        private void ReleasePatrol()
+        {
+            foreach (var cop in _patrolCops)
+            {
+                try
+                {
+                    if (cop == null || !cop.Exists()) continue;
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, cop.Handle, false);
+                    cop.MarkAsNoLongerNeeded();
+                }
+                catch { /* teardown */ }
+            }
+            _patrolCops.Clear();
+
+            try { if (_patrolCar != null && _patrolCar.Exists()) _patrolCar.MarkAsNoLongerNeeded(); }
+            catch { /* teardown */ }
+
+            _patrolCar = null;
         }
 
         /// <summary>Ambient speech, so a sale is something you hear as well as read.</summary>
@@ -1030,6 +1407,7 @@ namespace Hoodrich.Dealing
             ReleaseCustomer();
             ReleaseCop();
             ReleaseRivals();
+            ReleasePatrol();
             State = PostState.Idle;
             _product = null;
         }
@@ -1059,6 +1437,8 @@ namespace Hoodrich.Dealing
             catch { /* teardown */ }
 
             _driveByCar = null;
+            _driveByDriver = null;
+            _driveByBailed = false;
         }
 
         // ---- hud ---------------------------------------------------------------
@@ -1093,11 +1473,11 @@ namespace Hoodrich.Dealing
             // What is left is the number that decides whether you stay, so it goes first and
             // turns amber as it runs down.
             var left = _product == null ? 0f : Stash.PackagedOf(_product.Id);
-            var lots = _cfg.PostUpDealGrams > 0.01f ? (int)(left / _cfg.PostUpDealGrams) : 0;
+            var lots = (int)(left / 1.5f);
 
             Hud.Text(left.ToString("0.#") + "g left  ·  " + lots + " more sale" + (lots == 1 ? "" : "s"),
                      x, y + 0.024f, 0.30f,
-                     left < _cfg.PostUpDealGrams * 2f ? Palette.Warn : Palette.Cash, Hud.FontBody);
+                     left < 7f ? Palette.Warn : Palette.Cash, Hud.FontBody);
 
             Hud.Text(Footfall + " passing  ·  " + _sales + " sold  ·  $" + _earned.ToString("N0"),
                      x, y + 0.048f, 0.28f, Palette.TextDim, Hud.FontBody);

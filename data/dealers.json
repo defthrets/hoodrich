@@ -94,7 +94,7 @@
         "a_m_m_trampbeac_01"
       ],
       "drugs": ["meth"],
-      "zones": ["SANDY", "GRAPES", "HARMO", "ALAMO"],
+      "zones": ["ALAMO", "DESRT", "PALFOR"],
       "priceMultiplier": 0.9,
       "minRank": 0,
       "maxOrderGrams": 200,
@@ -107,7 +107,7 @@
       "farewell": "Don't speed on the way back. Ain't nothin' out here but troopers."
     },
     {
-      "id": "seoul_heroin",
+      "id": "downtown_heroin",
       "name": "Mrs. Pak",
       "tag": "H",
       "kind": "Independent",
@@ -119,7 +119,7 @@
         "a_f_m_eastsa_01"
       ],
       "drugs": ["heroin"],
-      "zones": ["KOREAT", "TEXTI", "LEGSQU"],
+      "zones": ["LEGSQU", "SKID"],
       "priceMultiplier": 1.1,
       "minRank": 1,
       "maxOrderGrams": 90,
@@ -144,7 +144,7 @@
         "a_m_y_hipster_01"
       ],
       "drugs": ["ecstasy"],
-      "zones": ["VINE", "DOWNT", "STRAW", "PBOX"],
+      "zones": ["VINE", "DOWNT", "DTVINE", "EAST_V"],
       "priceMultiplier": 1.15,
       "minRank": 0,
       "maxOrderGrams": 100,
@@ -157,7 +157,7 @@
       "farewell": "Have a good night. Try not to die."
     },
     {
-      "id": "chamberlain_crack",
+      "id": "puerta_crack",
       "name": "Old Ray",
       "tag": "CRK",
       "kind": "Independent",
@@ -169,7 +169,7 @@
         "a_m_o_soucent_03"
       ],
       "drugs": ["crack"],
-      "zones": ["CHAMH", "DAVIS", "RANCHO"],
+      "zones": ["LOSPUER", "DELSOL", "STAD"],
       "priceMultiplier": 0.95,
       "minRank": 0,
       "maxOrderGrams": 120,
