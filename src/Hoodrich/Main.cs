@@ -101,7 +101,7 @@ namespace Hoodrich
                 _talk = new Conversation();
 
                 _info = new InfoPanel();
-                _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing);
+                _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing, _cfg);
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
 

@@ -13,6 +13,16 @@ namespace Hoodrich.Supply
         Docks,
 
         /// <summary>
+        /// Runs their own thing in their own part of town, tied to no gang.
+        ///
+        /// The gangs only move what the gangs move, so without these the map has whole products
+        /// with nowhere to buy them. A supplier belongs to a place rather than to a crew: you
+        /// find the coke on the beach and the meth out in the sand because that is where those
+        /// trades live, not because somebody's turf says so.
+        /// </summary>
+        Independent,
+
+        /// <summary>
         /// Runs the crew. Sells nothing -- he is the person you have to find and talk to
         /// before you can run with them at all.
         /// </summary>

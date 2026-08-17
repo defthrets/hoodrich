@@ -22,9 +22,10 @@ namespace Hoodrich.Gangs
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
         private readonly Pricing _pricing;
+        private readonly Settings _cfg;
 
         public LeaderTalk(GangLeaders leaders, GangRegistry gangs, Affiliation crew,
-                          PlayerState state, Drugs drugs, Pricing pricing)
+                          PlayerState state, Drugs drugs, Pricing pricing, Settings cfg)
         {
             _leaders = leaders;
             _gangs = gangs;
@@ -32,6 +33,7 @@ namespace Hoodrich.Gangs
             _state = state;
             _drugs = drugs;
             _pricing = pricing;
+            _cfg = cfg;
         }
 
         public DialogueNode Root(LeaderDef def)
@@ -155,6 +157,50 @@ namespace Hoodrich.Gangs
             return string.Join(" and ", gang.Rivals.ToArray());
         }
 
+        /// <summary>
+        /// Where the weight really comes from.
+        ///
+        /// He will not tell a stranger and he will not tell somebody who has not moved
+        /// anything. Once you have, the port exists for you and the whole catalogue with it --
+        /// which is the single step-up in the supply chain, so it is worth making you earn.
+        /// </summary>
+        private DialogueNode AskSource(LeaderDef def, GangDef gang)
+        {
+            if (_state.DocksUnlocked)
+            {
+                var known = Node(def, gang, "I already told you. The port. Go see the man.");
+                known.Say("Back up.", () => Root(def));
+                known.Leave();
+                return known;
+            }
+
+            if (_state.GramsSold < _cfg.DocksUnlockGrams)
+            {
+                var soon = Node(def, gang,
+                    "You moved what, a couple of grams? Come back when you're worth telling.");
+
+                soon.Say("Back up.", () => Root(def),
+                         _state.GramsSold.ToString("0") + " / " + _cfg.DocksUnlockGrams.ToString("0") + "g moved");
+                soon.Leave();
+                return soon;
+            }
+
+            _state.DocksUnlocked = true;
+            _state.AddRespect(15f);
+            _state.Touch();
+
+            Notify.Important("~g~The docks are open to you.~s~ Find the dock worker at the port.");
+            Log.Info("Docks unlocked after " + _state.GramsSold.ToString("0.#") + "g sold.");
+
+            var node = Node(def, gang,
+                "Alright. You've earned the answer. It's the boat -- down the port, Elysian. " +
+                "Dock boy pulls it off the containers before anybody counts them. Tell him I sent you, " +
+                "and don't waste his time.");
+
+            node.Say("I'm on it.", () => null, "The docks are open");
+            return node;
+        }
+
         // ---- buying off him ----------------------------------------------------
 
         /// <summary>How much weight he shifts in one go.</summary>
@@ -243,6 +289,11 @@ namespace Hoodrich.Gangs
 
             node.Say("I need a re-up.", () => BuyList(def, gang),
                      "Buy weight off him");
+
+            // The one progression gate in the supply chain, and it belongs to him now that the
+            // corner dealers are gone.
+            node.Say("Where's it all coming from?", () => AskSource(def, gang),
+                     _state.DocksUnlocked ? "You already know" : "Ask about his supply");
 
             node.SayIf(false, "Coming soon",
                        "Got any work for me?", () => null,

@@ -375,6 +375,14 @@ namespace Hoodrich.Supply
             var docks = Docks();
             if (docks != null && state.DocksUnlocked && ZoneMatches(docks.Zones, zoneCode)) return docks;
 
+            // Independents stand in their own patch and answer to nobody, so they are found by
+            // zone alone -- no affiliation, no unlock.
+            foreach (var def in _defs)
+            {
+                if (def.Kind != DealerKind.Independent) continue;
+                if (ZoneMatches(def.Zones, zoneCode)) return def;
+            }
+
             if (!crew.IsAffiliated) return null;
 
             var gangDealer = ForGang(crew.Current.Id);
