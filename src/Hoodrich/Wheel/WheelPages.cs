@@ -37,13 +37,15 @@ namespace Hoodrich.Wheel
         private readonly GangRegistry _gangs;
         private readonly Affiliation _crew;
         private readonly TurfWatch _turf;
-        private readonly SupplierManager _suppliers;
+        private readonly DealerManager _dealers;
+        private readonly Core.Settings _cfg;
         private readonly WeaponRegistry _weapons;
 
-        public WheelPages(PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
+        public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
-                          SupplierManager suppliers, WeaponRegistry weapons)
+                          DealerManager suppliers, WeaponRegistry weapons)
         {
+            _cfg = cfg;
             _state = state;
             _drugs = drugs;
             _pricing = pricing;
@@ -52,7 +54,7 @@ namespace Hoodrich.Wheel
             _gangs = gangs;
             _crew = crew;
             _turf = turf;
-            _suppliers = suppliers;
+            _dealers = suppliers;
             _weapons = weapons;
         }
 
@@ -118,9 +120,9 @@ namespace Hoodrich.Wheel
 
         private string SupplyDetail()
         {
-            if (_suppliers.TradablePed != null) return "Your contact is right here";
-            if (_suppliers.HasMeet) return _suppliers.ActiveMeet.Name + " -- " +
-                                          _suppliers.MeetDistance.ToString("0") + "m away";
+            if (_dealers.InReach != null) return "Your contact is right here";
+            if (_dealers.HasMeet) return _dealers.MeetDealer.Name + " -- " +
+                                          _dealers.MeetDistance.ToString("0") + "m away";
             return "Call a contact for bulk weight";
         }
 
@@ -159,7 +161,7 @@ namespace Hoodrich.Wheel
 
             page.AddSub("Status", "*", BuildDrugStatusPage,
                 detail: "What you hold and what is inbound",
-                value: _suppliers.HasMeet ? _suppliers.ActiveMeet.Tag + " inbound" : "no orders");
+                value: _dealers.HasMeet ? _dealers.MeetDealer.Tag + " inbound" : "no orders");
 
             page.Add("Stash", "=", null,
                 detail: "Bank product off your person",
@@ -183,7 +185,7 @@ namespace Hoodrich.Wheel
             page.PanelTitle = "Imports";
 
             // Where every supply line stands right now.
-            foreach (var s in _suppliers.All)
+            foreach (var s in _dealers.All)
             {
                 page.Row(s.Tag, ImportStatus(s), ImportTint(s));
             }
@@ -237,36 +239,36 @@ namespace Hoodrich.Wheel
         }
 
         /// <summary>One-line state of a supply line, for the import board.</summary>
-        private string ImportStatus(SupplierDef def)
+        private string ImportStatus(DealerDef def)
         {
-            var isActive = _suppliers.HasMeet &&
-                           string.Equals(_suppliers.ActiveMeet.Id, def.Id, StringComparison.OrdinalIgnoreCase);
+            var isActive = _dealers.HasMeet &&
+                           string.Equals(_dealers.MeetDealer.Id, def.Id, StringComparison.OrdinalIgnoreCase);
 
             if (isActive)
             {
-                return _suppliers.TradablePed != null
+                return _dealers.InReach != null
                     ? "HERE NOW"
-                    : "inbound " + _suppliers.MeetDistance.ToString("0") + "m";
+                    : "inbound " + _dealers.MeetDistance.ToString("0") + "m";
             }
 
             // Another meet is already running, so nothing else can be called yet.
-            if (_suppliers.HasMeet) return "waiting";
+            if (_dealers.HasMeet) return "waiting";
 
-            var refusal = _suppliers.RefusalReason(def, _state, _crew);
+            var refusal = _dealers.RefusalReason(def, _state, _crew);
             if (refusal != null) return refusal.ToLowerInvariant();
 
             return "ready to call";
         }
 
-        private System.Drawing.Color? ImportTint(SupplierDef def)
+        private System.Drawing.Color? ImportTint(DealerDef def)
         {
-            var isActive = _suppliers.HasMeet &&
-                           string.Equals(_suppliers.ActiveMeet.Id, def.Id, StringComparison.OrdinalIgnoreCase);
+            var isActive = _dealers.HasMeet &&
+                           string.Equals(_dealers.MeetDealer.Id, def.Id, StringComparison.OrdinalIgnoreCase);
 
-            if (isActive) return _suppliers.TradablePed != null ? Palette.Cash : Palette.Warn;
-            if (_suppliers.HasMeet) return Palette.TextDim;
+            if (isActive) return _dealers.InReach != null ? Palette.Cash : Palette.Warn;
+            if (_dealers.HasMeet) return Palette.TextDim;
 
-            return _suppliers.RefusalReason(def, _state, _crew) != null
+            return _dealers.RefusalReason(def, _state, _crew) != null
                 ? Palette.TextDim
                 : (System.Drawing.Color?)null;
         }
@@ -484,80 +486,129 @@ namespace Hoodrich.Wheel
 
         // ---- supply ------------------------------------------------------------
 
+        /// <summary>
+        /// Supply is about people, not a catalogue. What this page shows depends entirely on
+        /// who is in front of you: the dealer you are standing at, the one you called out and
+        /// have not reached yet, or -- if neither -- who you could phone and where to find them.
+        /// </summary>
         private WheelPage BuildSupplyPage()
         {
-            // Standing in front of a contact: trade.
-            var ped = _suppliers.TradablePed;
-            if (ped != null && _suppliers.ActiveMeet != null) return BuildBuyPage(_suppliers.ActiveMeet);
+            // Standing in front of someone: talk and trade.
+            var here = _dealers.InReach;
+            if (here != null) return BuildDealerPage(here);
 
-            // Meet arranged but not there yet.
-            if (_suppliers.HasMeet)
+            // Called someone out but not there yet.
+            if (_dealers.HasMeet)
             {
-                var def = _suppliers.ActiveMeet;
+                var def = _dealers.MeetDealer;
                 var page = new WheelPage("Supply", "Meet is on");
                 page.PanelTitle = def.Name;
-                page.Row("Distance", _suppliers.MeetDistance.ToString("0") + "m");
-                page.Row("Sells", string.Join(", ", def.Drugs.ToArray()).ToUpperInvariant());
+                page.Row("Distance", _dealers.MeetDistance.ToString("0") + "m");
+                page.Row("Carries", Carries(def));
                 page.Row("Price", "x" + def.PriceMultiplier.ToString("0.00"));
                 page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g");
 
-                page.Add("Go to meet", ">", () => Notify.Ticker("Marked on your map."),
-                         detail: "Follow the yellow blip", value: _suppliers.MeetDistance.ToString("0") + "m");
-                page.Add("Call off", "x", () => _suppliers.CancelMeet("You called it off."),
-                         detail: "Cancel the meet");
+                page.Add("Waiting", ">", null,
+                    detail: "Follow the blip and walk up to them",
+                    value: _dealers.MeetDistance.ToString("0") + "m",
+                    enabled: false, disabledReason: "Get to the meet");
+                page.Add("Call off", "x", () => _dealers.CancelMeet("You called it off."),
+                    detail: "Cancel the meet");
                 return page;
             }
 
-            // Nobody arranged: pick a contact.
-            var list = new WheelPage("Supply", "Call a contact");
+            // Nobody in reach: who can you call, and where do they stand.
+            var list = new WheelPage("Supply", "Phone someone out, or go find them");
             list.PanelTitle = "Your connects";
             list.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
             list.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
-            list.Row("Rank", _state.RankName);
+            list.Row("Standing on", _turf.ZoneName);
+            list.Row("Docks", _state.DocksUnlocked ? "open" : "unknown to you",
+                     _state.DocksUnlocked ? Palette.Cash : Palette.TextDim);
 
-            foreach (var s in _suppliers.All)
+            if (!_state.DocksUnlocked)
             {
-                var def = s;
-                var refusal = _suppliers.RefusalReason(def, _state, _crew);
-                var mult = _suppliers.EffectiveMultiplier(def, _crew);
-                var note = _suppliers.PriceNote(def, _crew);
+                var toGo = DealerManager.GramsUntilSource(_state, _cfg.DocksUnlockGrams);
+                list.Row("To the source", toGo.ToString("0.#") + "g more sold", Palette.Warn);
+            }
 
-                // What they actually carry, so the wheel reads as a shopping list.
-                var carries = def.Drugs.Count == 0
-                    ? "everything"
-                    : string.Join(", ", def.Drugs.ToArray()).ToUpperInvariant();
+            foreach (var d in _dealers.All)
+            {
+                var def = d;
+                var refusal = _dealers.RefusalReason(def, _state, _crew);
+                var gang = def.IsGangDealer ? _gangs.Get(def.GangId) : null;
 
-                list.Add(def.Tag, def.IsGangContact ? "o" : "=", () => Call(def),
-                    detail: def.Blurb + (note.Length > 0 ? "  (" + note + ")" : ""),
-                    value: carries + "  x" + mult.ToString("0.00"),
+                // Where they stand, so the wheel doubles as directions.
+                var where = def.Kind == DealerKind.Docks
+                    ? "At the port"
+                    : gang != null ? "On " + gang.TurfHint : "";
+
+                list.Add(def.Tag, def.Kind == DealerKind.Docks ? "=" : "o",
+                    () => Call(def),
+                    detail: where + (refusal == null ? "  ·  phone them out" : ""),
+                    value: Carries(def) + "  x" + def.PriceMultiplier.ToString("0.00"),
                     enabled: refusal == null,
                     disabledReason: refusal ?? "");
 
-                var gang = def.IsGangContact ? _gangs.Get(def.GangId) : null;
                 if (gang != null) list.Items[list.Items.Count - 1].Tint = gang.Colour;
             }
 
             return list;
         }
 
-        private void Call(SupplierDef def)
+        private static string Carries(DealerDef def)
         {
-            var failure = _suppliers.ArrangeMeet(def, _state, _crew);
+            return def.Drugs.Count == 0
+                ? "everything"
+                : string.Join(", ", def.Drugs.ToArray()).ToUpperInvariant();
+        }
+
+        private void Call(DealerDef def)
+        {
+            var failure = _dealers.ArrangeMeet(def, _state, _crew);
             if (failure != null) Notify.Problem(failure);
         }
 
-        private WheelPage BuildBuyPage(SupplierDef def)
+        /// <summary>
+        /// Face to face with a dealer: what they sell, and the one question worth asking.
+        /// </summary>
+        private WheelPage BuildDealerPage(DealerDef def)
         {
-            var mult = _suppliers.EffectiveMultiplier(def, _crew);
-            var note = _suppliers.PriceNote(def, _crew);
+            var mult = def.PriceMultiplier;
 
-            var page = new WheelPage(def.Name, "Buying bulk");
+            var page = new WheelPage(def.Name, def.BuyLine);
             page.PanelTitle = def.Name;
             page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
             page.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
-            page.Row("Price", "x" + mult.ToString("0.00"),
-                     mult < def.PriceMultiplier ? Palette.Cash : (System.Drawing.Color?)null);
-            if (note.Length > 0) page.Row("Standing", note, Palette.Cash);
+            page.Row("Carries", Carries(def));
+            page.Row("Price", "x" + mult.ToString("0.00"));
+            page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g");
+            page.Row("Sold so far", _state.GramsSold.ToString("0.#") + "g");
+
+            // The question that opens the game up. Only a gang dealer knows the answer.
+            if (def.IsGangDealer)
+            {
+                var known = _state.DocksUnlocked;
+                var toGo = DealerManager.GramsUntilSource(_state, _cfg.DocksUnlockGrams);
+
+                page.Add("Ask source", "?",
+                    () => _dealers.AskSource(def, _state, _cfg.DocksUnlockGrams),
+                    detail: known
+                        ? "You already know: the port"
+                        : toGo > 0f
+                            ? "He will not say yet -- " + toGo.ToString("0.#") + "g more to move"
+                            : "\"Where are you getting this?\"",
+                    value: known ? "KNOWN" : toGo > 0f ? toGo.ToString("0.#") + "g to go" : "ASK HIM");
+            }
+
+            page.Add("Leave", "x", () => Dialogue.Say(def.Name, def.Farewell),
+                detail: "Walk away");
+
+            return BuildDealerStock(page, def, mult);
+        }
+
+        private WheelPage BuildDealerStock(WheelPage page, DealerDef def, float mult)
+        {
 
             // An empty Drugs list means this contact carries the whole catalogue.
             var stock = new List<DrugDef>();
@@ -596,14 +647,14 @@ namespace Hoodrich.Wheel
         }
 
         /// <summary>Rank raises how much weight a contact will move at once, up to their cap.</summary>
-        private float LotSizeFor(SupplierDef def, DrugDef product)
+        private float LotSizeFor(DealerDef def, DrugDef product)
         {
             var baseLot = 20f + _state.Rank * 20f;
             var scaled = Math.Max(5f, baseLot / product.Tier);
             return Math.Min(def.MaxOrderGrams, scaled);
         }
 
-        private void Buy(SupplierDef def, DrugDef product, float grams, int cost)
+        private void Buy(DealerDef def, DrugDef product, float grams, int cost)
         {
             if (Game.Player.Money < cost)
             {
@@ -741,14 +792,14 @@ namespace Hoodrich.Wheel
             var plug = FindPlugFor(gang);
             if (plug != null)
             {
-                var refusal = _suppliers.RefusalReason(plug, _state, _crew);
-                var mult = _suppliers.EffectiveMultiplier(plug, _crew);
+                var refusal = _dealers.RefusalReason(plug, _state, _crew);
+                var mult = plug.PriceMultiplier;
                 var carries = plug.Drugs.Count == 0
                     ? "everything"
                     : string.Join(", ", plug.Drugs.ToArray()).ToUpperInvariant();
 
                 page.Add("Their plug", "+", () => Call(plug),
-                    detail: plug.Blurb,
+                    detail: plug.BuyLine,
                     value: carries + "  x" + mult.ToString("0.00"),
                     enabled: refusal == null,
                     disabledReason: refusal ?? "");
@@ -770,11 +821,11 @@ namespace Hoodrich.Wheel
             return page;
         }
 
-        private SupplierDef FindPlugFor(GangDef gang)
+        private DealerDef FindPlugFor(GangDef gang)
         {
-            foreach (var s in _suppliers.All)
+            foreach (var s in _dealers.All)
             {
-                if (s.IsGangContact && string.Equals(s.GangId, gang.Id, StringComparison.OrdinalIgnoreCase))
+                if (s.IsGangDealer && string.Equals(s.GangId, gang.Id, StringComparison.OrdinalIgnoreCase))
                 {
                     return s;
                 }
@@ -985,7 +1036,7 @@ namespace Hoodrich.Wheel
         private string RankUnlocks(int rank)
         {
             var opened = new List<string>();
-            foreach (var s in _suppliers.All)
+            foreach (var s in _dealers.All)
             {
                 if (s.MinRank == rank && rank > 0) opened.Add(s.Tag);
             }

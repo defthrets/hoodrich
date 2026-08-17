@@ -1,3 +1,4 @@
+using System;
 using System.Windows.Forms;
 
 namespace Hoodrich.Core
@@ -72,6 +73,9 @@ namespace Hoodrich.Core
         public float BulkPurchaseDiscountPercent = 50f;
         public float BulkSaleDiscountPercent = 25f;
 
+        /// <summary>Grams that must be sold before a corner dealer will name his source.</summary>
+        public float DocksUnlockGrams = 50f;
+
         public static Settings Load()
         {
             var s = new Settings();
@@ -103,6 +107,7 @@ namespace Hoodrich.Core
                 Clamp(ini.GetFloat("Economy", "BulkPurchaseDiscountPercent", s.BulkPurchaseDiscountPercent), 0f, 90f);
             s.BulkSaleDiscountPercent =
                 Clamp(ini.GetFloat("Economy", "BulkSaleDiscountPercent", s.BulkSaleDiscountPercent), 0f, 90f);
+            s.DocksUnlockGrams = Math.Max(0f, ini.GetFloat("Economy", "DocksUnlockGrams", s.DocksUnlockGrams));
 
             // An inner radius at or past the outer one would render nothing at all.
             if (s.InnerRadius >= s.OuterRadius - 0.02f)

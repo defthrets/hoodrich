@@ -42,7 +42,7 @@ namespace Hoodrich
         private readonly Pricing _pricing;
         private readonly StreetDeal _deal;
         private readonly Cutting _cutting;
-        private readonly SupplierManager _suppliers;
+        private readonly DealerManager _dealers;
         private readonly WeaponRegistry _weapons;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
@@ -64,7 +64,7 @@ namespace Hoodrich
 
                 _drugs = Drugs.Load();
                 _gangs = GangRegistry.Load();
-                _suppliers = SupplierManager.Load();
+                _dealers = DealerManager.Load();
                 _weapons = WeaponRegistry.Load();
 
                 _state = new PlayerState();
@@ -77,8 +77,8 @@ namespace Hoodrich
                 _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew };
                 _cutting = new Cutting(_state.Stash, _state);
 
-                var pages = new WheelPages(_state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _suppliers, _weapons);
+                var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
+                                           _gangs, _crew, _turf, _dealers, _weapons);
 
                 _menu = new RadialMenu(_cfg);
                 _wheel = new WheelController(_cfg, _menu, pages.BuildRoot);
@@ -115,7 +115,8 @@ namespace Hoodrich
                 {
                     _crew.Update();
                     _turf.Update();
-                    _suppliers.Update();
+                    _dealers.Update(_turf, _crew, _state);
+                    _dealers.GreetIfNeeded();
                     _cutting.Update();
                 }
 
@@ -219,7 +220,7 @@ namespace Hoodrich
             catch { try { Game.TimeScale = 1f; } catch { /* nothing more we can do */ } }
 
             try { _crew?.RestoreWorld(); } catch { /* teardown */ }
-            try { _suppliers?.RestoreWorld(); } catch { /* teardown */ }
+            try { _dealers?.RestoreWorld(); } catch { /* teardown */ }
         }
     }
 }

@@ -26,6 +26,16 @@ namespace Hoodrich.State
         public int TotalDealsMade;
         public long TotalEarned;
 
+        /// <summary>Total grams moved hand-to-hand. Drives the docks unlock.</summary>
+        public float GramsSold;
+
+        /// <summary>
+        /// Set once the player has asked their gang's corner dealer where he sources from.
+        /// Until then the docks do not exist for them and their crew's dealer is the only
+        /// way to buy -- which is the whole shape of the early game.
+        /// </summary>
+        public bool DocksUnlocked;
+
         private bool _dirty;
 
         public bool IsDirty => _dirty;
@@ -100,6 +110,8 @@ namespace Hoodrich.State
                 .Set("notoriety", Math.Round(Notoriety, 2))
                 .Set("totalDeals", TotalDealsMade)
                 .Set("totalEarned", TotalEarned)
+                .Set("gramsSold", Math.Round(GramsSold, 2))
+                .Set("docksUnlocked", DocksUnlocked)
                 .Set("stash", Stash.ToJson());
         }
 
@@ -113,6 +125,8 @@ namespace Hoodrich.State
                 Notoriety = Math.Min(100f, Math.Max(0f, doc["notoriety"].AsFloat(0f)));
                 TotalDealsMade = Math.Max(0, doc["totalDeals"].AsInt(0));
                 TotalEarned = Math.Max(0L, doc["totalEarned"].AsLong(0));
+                GramsSold = Math.Max(0f, doc["gramsSold"].AsFloat(0f));
+                DocksUnlocked = doc["docksUnlocked"].AsBool(false);
 
                 // "inventory" is the 0.1.0 key; migrate it so old saves keep their product.
                 Stash.LoadFrom(doc.Has("stash") ? doc["stash"] : doc["inventory"]);

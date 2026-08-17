@@ -259,6 +259,7 @@ namespace Hoodrich.Dealing
             _state.AddRespect(1f + product.Tier * 0.5f);
             _state.AddNotoriety(product.HeatFactor * 1.5f * (Turf == null ? 1f : Turf.TurfHeatMultiplier));
             _state.TotalDealsMade++;
+            _state.GramsSold += sold;
             _state.TotalEarned += actualPayout;
             _state.Touch();
 

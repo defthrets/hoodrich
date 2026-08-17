@@ -1,0 +1,721 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using GTA;
+using GTA.Math;
+using GTA.Native;
+using Hoodrich.Core;
+using Hoodrich.Economy;
+using Hoodrich.Gangs;
+using Hoodrich.State;
+using Hoodrich.Territory;
+using Hoodrich.UI;
+
+namespace Hoodrich.Supply
+{
+    /// <summary>
+    /// Puts dealers in the world and keeps track of who is standing where.
+    ///
+    /// At most one dealer is live at a time: whoever belongs in the zone the player is
+    /// currently in. Their spot is chosen once per zone and remembered for the session, so a
+    /// dealer stays on the same corner while you are working that block rather than teleporting
+    /// around it.
+    /// </summary>
+    internal sealed class DealerManager
+    {
+        private const float SpawnMinDistance = 35f;
+        private const float SpawnMaxDistance = 85f;
+        private const float DespawnRange = 160f;
+        private const float TalkRange = 3.2f;
+        private const int UpdateIntervalMs = 750;
+
+        private readonly List<DealerDef> _defs = new List<DealerDef>();
+        private readonly Random _rng = new Random();
+
+        /// <summary>Chosen corner per zone, so a dealer keeps his pitch for the session.</summary>
+        private readonly Dictionary<string, Vector3> _pitches =
+            new Dictionary<string, Vector3>(StringComparer.OrdinalIgnoreCase);
+
+        private const float MeetMinDistance = 100f;
+        private const float MeetMaxDistance = 190f;
+        private const int MeetTimeoutMs = 15 * 60 * 1000;
+
+        private DealerDef _liveDef;
+        private Ped _livePed;
+        private Blip _liveBlip;
+        private string _liveZone = "";
+        private int _lastUpdate;
+        private bool _greeted;
+
+        /// <summary>A phoned-in rendezvous. Overrides whoever would otherwise be posted here.</summary>
+        private DealerDef _meetDef;
+        private Vector3 _meetSpot;
+        private int _meetStartedAt;
+
+        public DealerDef MeetDealer => _meetDef;
+
+        public bool HasMeet => _meetDef != null;
+
+        public float MeetDistance
+        {
+            get
+            {
+                if (_meetDef == null) return 0f;
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return 0f;
+                return player.Position.DistanceTo(_meetSpot);
+            }
+        }
+
+        public IReadOnlyList<DealerDef> All => _defs;
+
+        /// <summary>The dealer currently standing in the world, or null.</summary>
+        public DealerDef LiveDealer => _liveDef;
+
+        public float LiveDistance
+        {
+            get
+            {
+                if (_livePed == null || !_livePed.Exists()) return float.MaxValue;
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return float.MaxValue;
+                return player.Position.DistanceTo(_livePed.Position);
+            }
+        }
+
+        /// <summary>The dealer if the player is close enough to talk to them.</summary>
+        public DealerDef InReach => LiveDistance <= TalkRange ? _liveDef : null;
+
+        // ---- loading -----------------------------------------------------------
+
+        public static DealerManager Load()
+        {
+            var mgr = new DealerManager();
+            mgr.AddDefaults();
+
+            var path = Path.Combine(Paths.Data, "dealers.json");
+            var doc = JsonFile.Read(path);
+            if (doc != null) mgr.ApplyOverrides(doc);
+
+            Log.Info("Dealers loaded: " + mgr._defs.Count + ".");
+            return mgr;
+        }
+
+        private void ApplyOverrides(Json doc)
+        {
+            var list = doc.Kind == JsonKind.Array ? doc : doc["dealers"];
+            if (list.Kind != JsonKind.Array) return;
+
+            foreach (var node in list.Items)
+            {
+                var id = node["id"].AsString(null);
+                if (string.IsNullOrEmpty(id)) continue;
+
+                var def = _defs.Find(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
+                var isNew = def == null;
+                if (isNew) def = new DealerDef { Id = id };
+
+                def.Name = node["name"].AsString(def.Name.Length > 0 ? def.Name : id);
+                def.Tag = node["tag"].AsString(def.Tag);
+                def.GangId = node["gangId"].AsString(def.GangId);
+                def.PriceMultiplier = Math.Max(0.1f, node["priceMultiplier"].AsFloat(def.PriceMultiplier));
+                def.MinRank = Math.Max(0, node["minRank"].AsInt(def.MinRank));
+                def.MaxOrderGrams = Math.Max(1f, node["maxOrderGrams"].AsFloat(def.MaxOrderGrams));
+                def.OpenHour = node["openHour"].AsInt(def.OpenHour);
+                def.CloseHour = node["closeHour"].AsInt(def.CloseHour);
+
+                def.Greeting = node["greeting"].AsString(def.Greeting);
+                def.BuyLine = node["buyLine"].AsString(def.BuyLine);
+                def.SourceReply = node["sourceReply"].AsString(def.SourceReply);
+                def.SourceTooSoon = node["sourceTooSoon"].AsString(def.SourceTooSoon);
+                def.Farewell = node["farewell"].AsString(def.Farewell);
+
+                var kind = node["kind"].AsString(def.Kind.ToString());
+                try { def.Kind = (DealerKind)Enum.Parse(typeof(DealerKind), kind, true); }
+                catch { Log.Warn("Unknown dealer kind '" + kind + "' on " + id + "."); }
+
+                ReplaceList(def.Models, node["models"]);
+                ReplaceList(def.Drugs, node["drugs"]);
+                ReplaceList(def.Zones, node["zones"]);
+
+                if (isNew) _defs.Add(def);
+            }
+        }
+
+        private static void ReplaceList(List<string> target, Json node)
+        {
+            if (node.Kind != JsonKind.Array) return;
+            target.Clear();
+            foreach (var s in node.AsStringList()) target.Add(s);
+        }
+
+        /// <summary>
+        /// Built-in dealers: one corner dealer per gang, plus the dock worker.
+        ///
+        /// Gang dealers carry only what their crew moves, and stand on that crew's turf. The
+        /// dock worker carries everything (empty drug list) but does not exist for the player
+        /// until a corner dealer tells them he does.
+        /// </summary>
+        private void AddDefaults()
+        {
+            AddGangDealer("families", "Lil' Marcus", "FAM", "weed", 1.0f,
+                new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01", "a_m_y_soucent_01" },
+                "You good? Green's what I got, don't ask for nothin' else.",
+                "Say how much and don't stand there lookin' at me.",
+                "Man... the boat. Down the port, Elysian. Dock boy pulls it off the containers " +
+                "before it's counted. Tell him Marcus sent you and don't waste his time.",
+                "You moved what, an ounce? Come back when you're worth talkin' to.",
+                "Go on then.");
+
+            AddGangDealer("ballas", "Big Slime", "BALL", "crack", 1.0f,
+                new[] { "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01", "a_m_m_soucent_02" },
+                "You ain't from round here. Talk fast.",
+                "Rock's rock. How much you want?",
+                "Port. Elysian Island. There's a dock hand down there movin' weight off the " +
+                "containers. He don't know you, so don't act like he does.",
+                "Nah. You ain't moved enough for me to be tellin' you nothin'.",
+                "Get gone.");
+
+            AddGangDealer("vagos", "Chuy", "VAGO", "coke", 1.0f,
+                new[] { "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03", "a_m_y_mexthug_01" },
+                "Que onda. You buying or you lost?",
+                "Powder only. Say a number.",
+                "Comes off the water, homie. Port of LS, Elysian. Ask for the dock guy, he " +
+                "handles the containers. He'll sort you out with weight.",
+                "You barely moved anything. Come back when you're serious.",
+                "Andale.");
+
+            AddGangDealer("lost", "Wrench", "LOST", "meth", 1.0f,
+                new[] { "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03", "a_m_m_hillbilly_01" },
+                "You lost? 'Cause I'm Lost. That's the joke. What do you want.",
+                "Glass. That's it. How much.",
+                "Ha. You want the tap, not the cup. Port of LS, Elysian Island. Dock worker " +
+                "down there gets it all off the boats. Everything, not just my stuff.",
+                "You've shifted nothin'. Ask me again when that changes.",
+                "Ride safe.");
+
+            AddGangDealer("triads", "Mr. Kwan", "TRI", "ecstasy", 1.0f,
+                new[] { "g_m_m_chiboss_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02", "a_m_y_ktown_01" },
+                "You are early or you are late. Which is it.",
+                "Pills. By the bag. Quantity.",
+                "It arrives by sea, like everything. Elysian Island, the port. There is a man " +
+                "on the docks who counts containers badly, on purpose. Speak to him.",
+                "You have moved almost nothing. We will speak again when you have.",
+                "Go.");
+
+            AddGangDealer("armenians", "Vartan", "ARM", "heroin", 1.0f,
+                new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_y_armgoon_02", "a_m_m_eastsa_02" },
+                "You want something, or you want to stand there.",
+                "Brown. Weight only. How much.",
+                "Off the boat, where else. Port of Los Santos, Elysian Island. There is a dock " +
+                "worker. He takes his cut before the manifest. He can get you anything.",
+                "You have moved nothing worth counting. Come back.",
+                "Finished.");
+
+            var docks = new DealerDef
+            {
+                Id = "docks",
+                Name = "Dock Worker",
+                Tag = "DOCK",
+                Kind = DealerKind.Docks,
+                PriceMultiplier = 0.75f,
+                MinRank = 0,
+                MaxOrderGrams = 500f,
+                OpenHour = 5,
+                CloseHour = 21,
+                Greeting = "Marcus's people, right? Keep it quiet and keep it quick. " +
+                           "Whatever's in the box, I can get it off the box.",
+                BuyLine = "Anything you want, in weight. Say what and say how much.",
+                SourceReply = "Where do I get it? Mate, I AM where you get it.",
+                SourceTooSoon = "",
+                Farewell = "Off you go. Don't come back in daylight if you're carrying."
+            };
+            docks.Models.AddRange(new[]
+            {
+                "s_m_y_dockwork_01", "s_m_m_dockwork_01", "s_m_y_construct_01", "s_m_m_linecook"
+            });
+            // Drugs deliberately empty: the docks carry the whole catalogue.
+            docks.Zones.AddRange(new[] { "ELYSIAN", "ZP_ORT", "TERMINA", "BANNING" });
+            _defs.Add(docks);
+        }
+
+        private void AddGangDealer(string gangId, string name, string tag, string drug,
+                                   float priceMultiplier, string[] models,
+                                   string greeting, string buyLine, string sourceReply,
+                                   string sourceTooSoon, string farewell)
+        {
+            var def = new DealerDef
+            {
+                Id = gangId + "_corner",
+                Name = name,
+                Tag = tag,
+                Kind = DealerKind.GangCorner,
+                GangId = gangId,
+                PriceMultiplier = priceMultiplier,
+                MinRank = 0,
+                MaxOrderGrams = 60f,
+                OpenHour = 0,
+                CloseHour = 24,
+                Greeting = greeting,
+                BuyLine = buyLine,
+                SourceReply = sourceReply,
+                SourceTooSoon = sourceTooSoon,
+                Farewell = farewell
+            };
+            def.Models.AddRange(models);
+            def.Drugs.Add(drug);
+            // Zones left empty: a gang dealer stands wherever his crew holds turf.
+            _defs.Add(def);
+        }
+
+        public DealerDef Get(string id) =>
+            _defs.Find(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
+
+        public DealerDef ForGang(string gangId)
+        {
+            if (string.IsNullOrEmpty(gangId)) return null;
+            return _defs.Find(d => d.IsGangDealer &&
+                                   string.Equals(d.GangId, gangId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public DealerDef Docks() => _defs.Find(d => d.Kind == DealerKind.Docks);
+
+        // ---- placement ---------------------------------------------------------
+
+        /// <summary>
+        /// Which dealer, if any, belongs in the zone the player is standing in.
+        ///
+        /// Your own crew's dealer is on your crew's turf. The dock worker is at the port, but
+        /// only once someone has told you he exists.
+        /// </summary>
+        public DealerDef DealerForZone(string zoneCode, Affiliation crew, PlayerState state)
+        {
+            if (string.IsNullOrEmpty(zoneCode)) return null;
+
+            var docks = Docks();
+            if (docks != null && state.DocksUnlocked && ZoneMatches(docks.Zones, zoneCode)) return docks;
+
+            if (!crew.IsAffiliated) return null;
+
+            var gangDealer = ForGang(crew.Current.Id);
+            if (gangDealer == null) return null;
+
+            // Explicit zones win if the file names any; otherwise the crew's own turf.
+            var zones = gangDealer.Zones.Count > 0 ? gangDealer.Zones : crew.Current.Turf;
+            return ZoneMatches(zones, zoneCode) ? gangDealer : null;
+        }
+
+        private static bool ZoneMatches(List<string> zones, string zoneCode)
+        {
+            foreach (var z in zones)
+            {
+                if (string.Equals(z, zoneCode, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
+        // ---- phoning ahead -----------------------------------------------------
+
+        /// <summary>
+        /// Calls a dealer out to meet you. Returns a player-facing refusal, or null.
+        ///
+        /// Phoning does not skip the trip -- it picks a rendezvous and blips it, and you still
+        /// have to drive there and stand in front of them. The point is that you do not have to
+        /// be on their block to reach them, not that you can buy from the map screen.
+        /// </summary>
+        public string ArrangeMeet(DealerDef def, PlayerState state, Affiliation crew)
+        {
+            if (def == null) return "No such contact.";
+            if (_meetDef != null) return "You already have " + _meetDef.Name + " coming out.";
+
+            var refusal = RefusalReason(def, state, crew);
+            if (refusal != null) return def.Name + " will not come out: " + refusal + ".";
+
+            // Standing in front of them already.
+            if (InReach != null && _liveDef != null && _liveDef.Id == def.Id)
+            {
+                return "They are right in front of you.";
+            }
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return "Not right now.";
+
+            if (!TryMeetSpot(player.Position, out _meetSpot))
+            {
+                return "Nowhere good to meet round here. Try somewhere less remote.";
+            }
+
+            // A meet takes over the world slot; whoever was posted here stands down.
+            Despawn();
+
+            _meetDef = def;
+            _meetStartedAt = Game.GameTime;
+
+            Dialogue.Say(def.Name, "Yeah, alright. I'll come to you. Don't keep me standing there.");
+            Notify.Important("~y~" + def.Name + "~s~ is on their way. Marked on your map.");
+            Log.Info("Meet arranged with " + def.Id + " at " + _meetSpot + ".");
+            return null;
+        }
+
+        public void CancelMeet(string reason)
+        {
+            if (_meetDef == null) return;
+
+            var name = _meetDef.Name;
+            _meetDef = null;
+            Despawn();
+
+            if (!string.IsNullOrEmpty(reason)) Notify.Ticker("~o~Meet with " + name + " is off.~s~ " + reason);
+        }
+
+        private bool TryMeetSpot(Vector3 origin, out Vector3 spot)
+        {
+            spot = Vector3.Zero;
+
+            for (var attempt = 0; attempt < 12; attempt++)
+            {
+                var angle = _rng.NextDouble() * Math.PI * 2.0;
+                var distance = MeetMinDistance + (float)_rng.NextDouble() * (MeetMaxDistance - MeetMinDistance);
+
+                var candidate = origin + new Vector3(
+                    (float)Math.Cos(angle) * distance, (float)Math.Sin(angle) * distance, 0f);
+
+                Vector3 onFoot;
+                try { onFoot = World.GetNextPositionOnSidewalk(candidate); }
+                catch { continue; }
+
+                if (onFoot == Vector3.Zero) continue;
+                if (onFoot.DistanceTo(origin) < MeetMinDistance * 0.5f) continue;
+
+                try
+                {
+                    if (World.GetGroundHeight(onFoot, out var groundZ, GetGroundHeightMode.Normal))
+                    {
+                        onFoot.Z = groundZ;
+                    }
+                }
+                catch
+                {
+                    // Sidewalk Z is usually fine already.
+                }
+
+                spot = onFoot;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Why this dealer will not deal with you, or null if they will.</summary>
+        public string RefusalReason(DealerDef def, PlayerState state, Affiliation crew)
+        {
+            if (def == null) return "No such contact.";
+
+            if (def.Kind == DealerKind.Docks && !state.DocksUnlocked)
+            {
+                return "You do not know anyone at the port";
+            }
+
+            if (state.Rank < def.MinRank)
+            {
+                return "Need rank " +
+                       PlayerState.RankNames[Math.Min(def.MinRank, PlayerState.RankNames.Length - 1)];
+            }
+
+            if (!def.IsOpenAt(Pricing.ClockHour))
+            {
+                return "Works " + def.OpenHour + ":00-" + def.CloseHour + ":00";
+            }
+
+            if (!def.IsGangDealer) return null;
+
+            if (!crew.IsAffiliated) return "You do not run with anyone";
+
+            if (!string.Equals(def.GangId, crew.Current.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return "Not your crew";
+            }
+
+            return null;
+        }
+
+        // ---- per-tick ----------------------------------------------------------
+
+        public void Update(TurfWatch turf, Affiliation crew, PlayerState state)
+        {
+            var now = Game.GameTime;
+            if (now - _lastUpdate < UpdateIntervalMs) return;
+            _lastUpdate = now;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            // A phoned meet takes priority over whoever is posted on this block.
+            if (_meetDef != null)
+            {
+                if (now - _meetStartedAt > MeetTimeoutMs)
+                {
+                    CancelMeet("They got tired of waiting.");
+                    return;
+                }
+
+                if (_livePed != null && _livePed.Exists() && !_livePed.IsAlive)
+                {
+                    CancelMeet("Your contact is dead.");
+                    return;
+                }
+
+                var toMeet = player.Position.DistanceTo(_meetSpot);
+
+                if (_livePed == null && toMeet <= DespawnRange)
+                {
+                    SpawnAt(_meetDef, _meetSpot, "", player, route: true);
+                }
+                else if (_livePed != null && toMeet > DespawnRange)
+                {
+                    Despawn();
+                }
+
+                return;
+            }
+
+            var zone = turf.ZoneCode;
+            var wanted = DealerForZone(zone, crew, state);
+
+            // Dealer keeps shop hours.
+            if (wanted != null && !wanted.IsOpenAt(Pricing.ClockHour)) wanted = null;
+
+            if (_liveDef != null && (wanted == null || wanted.Id != _liveDef.Id || zone != _liveZone))
+            {
+                Despawn();
+            }
+
+            if (wanted == null) return;
+
+            // Dead dealer stays dead for this visit.
+            if (_livePed != null && _livePed.Exists() && !_livePed.IsAlive) return;
+
+            if (_livePed == null)
+            {
+                if (TryPitch(zone, player.Position, out var spot)) SpawnAt(wanted, spot, zone, player, false);
+                return;
+            }
+
+            if (player.Position.DistanceTo(_livePed.Position) > DespawnRange) Despawn();
+        }
+
+        private void SpawnAt(DealerDef def, Vector3 spot, string zone, Ped player, bool route)
+        {
+            var model = ResolveModel(def);
+            if (model == null) return;
+
+            try
+            {
+                var heading = (float)(_rng.NextDouble() * 360.0);
+                _livePed = World.CreatePed(model.Value, spot, heading);
+                if (_livePed == null || !_livePed.Exists())
+                {
+                    Log.Warn("CreatePed returned nothing for dealer " + def.Id + ".");
+                    return;
+                }
+
+                var h = _livePed.Handle;
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, h, "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
+
+                _livePed.IsPersistent = true;
+                _livePed.BlockPermanentEvents = true;
+
+                _liveDef = def;
+                _liveZone = zone;
+                _greeted = false;
+
+                CreateBlip(def, route);
+                Log.Info("Dealer " + def.Id + (route ? " arrived at the meet." : " posted up in " + zone + "."));
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Could not spawn dealer " + def.Id, ex);
+            }
+            finally
+            {
+                try { model.Value.MarkAsNoLongerNeeded(); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// Finds this zone's corner. Chosen once and cached, so the dealer is in the same place
+        /// every time you come back to that block during a session.
+        /// </summary>
+        private bool TryPitch(string zone, Vector3 origin, out Vector3 spot)
+        {
+            if (_pitches.TryGetValue(zone, out spot))
+            {
+                // Only reuse it if it is close enough to actually stream in.
+                if (spot.DistanceTo(origin) <= DespawnRange) return true;
+            }
+
+            for (var attempt = 0; attempt < 10; attempt++)
+            {
+                var angle = _rng.NextDouble() * Math.PI * 2.0;
+                var distance = SpawnMinDistance + (float)_rng.NextDouble() * (SpawnMaxDistance - SpawnMinDistance);
+
+                var candidate = origin + new Vector3(
+                    (float)Math.Cos(angle) * distance, (float)Math.Sin(angle) * distance, 0f);
+
+                Vector3 onFoot;
+                try { onFoot = World.GetNextPositionOnSidewalk(candidate); }
+                catch { continue; }
+
+                if (onFoot == Vector3.Zero) continue;
+
+                // It has to actually be in the zone we think it is.
+                var code = Function.Call<string>(Hash.GET_NAME_OF_ZONE, onFoot.X, onFoot.Y, onFoot.Z);
+                if (!string.Equals(code, zone, StringComparison.OrdinalIgnoreCase)) continue;
+
+                try
+                {
+                    if (World.GetGroundHeight(onFoot, out var groundZ, GetGroundHeightMode.Normal))
+                    {
+                        onFoot.Z = groundZ;
+                    }
+                }
+                catch
+                {
+                    // Sidewalk Z is usually fine already.
+                }
+
+                _pitches[zone] = onFoot;
+                spot = onFoot;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void CreateBlip(DealerDef def, bool route)
+        {
+            try
+            {
+                _liveBlip = _livePed.AddBlip();
+                if (_liveBlip == null || !_liveBlip.Exists()) return;
+
+                _liveBlip.Sprite = BlipSprite.Friend;
+                _liveBlip.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.Green;
+                _liveBlip.Name = def.Name;
+
+                // A posted dealer is a local landmark; someone you called out gets a route.
+                _liveBlip.IsShortRange = !route;
+                _liveBlip.ShowRoute = route;
+                _liveBlip.Scale = 0.85f;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not blip dealer: " + ex.Message);
+            }
+        }
+
+        private void Despawn()
+        {
+            try
+            {
+                if (_liveBlip != null && _liveBlip.Exists()) _liveBlip.Delete();
+            }
+            catch { }
+
+            try
+            {
+                if (_livePed != null && _livePed.Exists())
+                {
+                    _livePed.MarkAsNoLongerNeeded();
+                    _livePed.Delete();
+                }
+            }
+            catch { }
+
+            _liveBlip = null;
+            _livePed = null;
+            _liveDef = null;
+            _liveZone = "";
+            _greeted = false;
+        }
+
+        private static Model? ResolveModel(DealerDef def)
+        {
+            foreach (var name in def.Models)
+            {
+                if (string.IsNullOrEmpty(name)) continue;
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+                    if (!model.Request(1500)) continue;
+                    return model;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Dealer model '" + name + "' failed: " + ex.Message);
+                }
+            }
+
+            Log.Warn("No usable model for dealer " + def.Id + ".");
+            return null;
+        }
+
+        // ---- the conversation that opens the game up ----------------------------
+
+        /// <summary>
+        /// The player asks their crew's dealer where the product actually comes from.
+        ///
+        /// This is the one progression gate in the supply chain: until a corner dealer names
+        /// the port, the docks are not a place the player can go. He will only say it once
+        /// you have moved enough weight to be worth telling.
+        /// </summary>
+        public void AskSource(DealerDef def, PlayerState state, float requiredGrams)
+        {
+            if (def == null) return;
+
+            if (state.DocksUnlocked)
+            {
+                Dialogue.Say(def.Name, "I already told you. The port. Go see him.");
+                return;
+            }
+
+            if (state.GramsSold < requiredGrams)
+            {
+                Dialogue.Say(def.Name, string.IsNullOrEmpty(def.SourceTooSoon)
+                    ? "You ain't moved enough for me to be telling you that."
+                    : def.SourceTooSoon);
+                return;
+            }
+
+            state.DocksUnlocked = true;
+            state.AddRespect(15f);
+            state.Touch();
+
+            Dialogue.Say(def.Name, def.SourceReply);
+            Notify.Important("~g~The docks are open to you.~s~ Find the dock worker at the port.");
+            Log.Info("Docks unlocked after " + state.GramsSold.ToString("0.#") + "g sold.");
+        }
+
+        /// <summary>How much more the player has to move before the question will be answered.</summary>
+        public static float GramsUntilSource(PlayerState state, float requiredGrams)
+        {
+            return Math.Max(0f, requiredGrams - state.GramsSold);
+        }
+
+        /// <summary>Plays the dealer's greeting once per approach, as a subtitle.</summary>
+        public void GreetIfNeeded()
+        {
+            if (_liveDef == null || _greeted) return;
+            if (InReach == null) return;
+
+            _greeted = true;
+            Dialogue.Say(_liveDef.Name, _liveDef.Greeting);
+        }
+
+        public void RestoreWorld() => Despawn();
+    }
+}
