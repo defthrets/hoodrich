@@ -20,11 +20,20 @@ namespace Hoodrich.Locations
     /// </summary>
     internal sealed class StashHouse
     {
-        /// <summary>Outside Aunt Denise's, Forum Drive, Davis.</summary>
-        private static readonly Vector3 Door = new Vector3(-14.3f, -1438.4f, 31.1f);
+        /// <summary>Aunt Denise's, Forum Drive, Davis.</summary>
+        private static readonly Vector3 House = new Vector3(-14.3f, -1438.4f, 31.1f);
 
-        private const float MarkerRange = 60f;
-        private const float UseRange = 2.5f;
+        /// <summary>
+        /// Anywhere in or around the house counts.
+        ///
+        /// A two-metre door point meant standing INSIDE put you out of range, because the
+        /// interior sits several metres off the doorstep. A radius covers the yard, the porch
+        /// and every room without needing to know where the game hides the interior.
+        /// </summary>
+        private const float UseRange = 14f;
+
+        /// <summary>How close somebody has to be for their shouting to be our problem.</summary>
+        private const float QuietRange = 22f;
 
         private readonly Settings _cfg;
 
@@ -39,37 +48,49 @@ namespace Hoodrich.Locations
         /// <summary>What is being kept here.</summary>
         public Stash Stash { get; }
 
-        public Vector3 Position => Door;
+        public Vector3 Position => House;
 
         public string Name => "Aunt Denise's";
 
         /// <summary>True when the player is close enough to move product in or out.</summary>
-        public bool AtDoor
-        {
-            get
-            {
-                var player = Game.Player.Character;
-                if (player == null || !player.Exists()) return false;
-
-                return player.Position.DistanceTo(Door) <= UseRange;
-            }
-        }
+        public bool AtDoor => DistanceTo() <= UseRange;
 
         public float DistanceTo()
         {
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return 9999f;
 
-            return player.Position.DistanceTo(Door);
+            return player.Position.DistanceTo(House);
         }
 
+        /// <summary>True on the frame the player crosses into the house.</summary>
+        private bool _inside;
+
         public void Update()
+        {
+            EnsureBlip();
+            Hush();
+
+            var here = AtDoor;
+            if (here == _inside) return;
+
+            _inside = here;
+
+            // Told once on the way in, rather than a marker on the floor. It is a house, not a
+            // pickup: standing in the right two metres should not be part of using it.
+            if (_inside)
+            {
+                Notify.Ticker("~g~You are at the stash house.~s~ Open your inventory to move product in or out.");
+            }
+        }
+
+        private void EnsureBlip()
         {
             if (_blip != null && _blip.Exists()) return;
 
             try
             {
-                _blip = World.CreateBlip(Door);
+                _blip = World.CreateBlip(House);
                 if (_blip == null || !_blip.Exists()) return;
 
                 _blip.Sprite = BlipSprite.Safehouse;
@@ -84,28 +105,40 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>Ground marker, so the door reads as somewhere you can use.</summary>
-        public void Draw()
+        /// <summary>
+        /// Keeps the house quiet.
+        ///
+        /// Denise has a lot to say and says all of it at volume, which is fine for a story
+        /// mission and wearing when the house is somewhere you come back to every time your
+        /// pockets fill up. Her ambient lines are cut off as they start; everything else about
+        /// her is untouched.
+        /// </summary>
+        private void Hush()
         {
-            var distance = DistanceTo();
-            if (distance > MarkerRange) return;
+            if (!AtDoor) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
 
             try
             {
-                World.DrawMarker(MarkerType.Cylinder, Door, Vector3.Zero, Vector3.Zero,
-                                 new Vector3(1f, 1f, 0.8f),
-                                 Color.FromArgb(140, 60, 180, 75),
-                                 false, false, false, null, null, false);
-            }
-            catch
-            {
-                // Cosmetic only.
-            }
+                foreach (var ped in World.GetNearbyPeds(player, QuietRange))
+                {
+                    if (ped == null || !ped.Exists() || ped.Handle == player.Handle) continue;
 
-            if (distance <= UseRange)
-            {
-                Help.ShowThisFrame("Open the wheel to use the stash house.");
+                    Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, ped.Handle);
+                    Function.Call(Hash.DISABLE_PED_PAIN_AUDIO, ped.Handle, true);
+                }
             }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not quieten the house: " + ex.Message);
+            }
+        }
+
+        /// <summary>Nothing is drawn at the house. It is a building, not a checkpoint.</summary>
+        public void Draw()
+        {
         }
 
         public void RestoreWorld()

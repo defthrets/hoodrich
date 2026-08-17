@@ -52,8 +52,13 @@ namespace Hoodrich.UI
         public static readonly Icon Ammo = new Icon(Menu, "shop_ammo_icon_a");
         public static readonly Icon Tattoo = new Icon(Menu, "shop_tattoos_icon_a");
 
-        /// <summary>What you are carrying: the multiplayer inventory's own bag sprite.</summary>
-        public static readonly Icon Stash = new Icon(Inventory, "mp_specitem_briefcase");
+        /// <summary>
+        /// What you are carrying.
+        ///
+        /// From commonmenu rather than the inventory dictionary: mp_specitem_briefcase is not
+        /// a texture that exists, so the wedge drew nothing at all.
+        /// </summary>
+        public static readonly Icon Stash = new Icon(Menu, "shop_ammo_icon_a");
         public static readonly Icon Warning = new Icon(Menu, "mp_alerttriangle");
         public static readonly Icon Tick = new Icon(Menu, "shop_tick_icon");
         public static readonly Icon Locked = new Icon(Menu, "shop_lock");

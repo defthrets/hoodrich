@@ -23,6 +23,11 @@ param(
     [ValidateSet('Legacy', 'Enhanced', 'Both')]
     [string]$Target = 'Both',
 
+    # Overwrite the installed data files with the ones just built. Off by default so a
+    # player's hand-edits survive, but generated content (turf, dealers, gangs) has to be
+    # able to move or the game runs data that does not match the build.
+    [switch]$FreshData,
+
     [string]$GtaDir = 'C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V',
     [string]$EnhancedDir = 'C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V Enhanced'
 )
@@ -122,20 +127,53 @@ function Deploy-To([string]$gameDir, [string]$label) {
         Copy-Item (Join-Path $outDir 'Hoodrich.pdb') $scripts -Force
     }
 
-    # Config + data: never clobber the player's edited copies.
+    # Config + data: never clobber the player's edited copies, UNLESS asked to.
+    #
+    # Most of these files are content rather than settings, and keeping a stale copy is not
+    # being careful with somebody's edits, it is shipping a build that quietly does not match
+    # its own data. -FreshData overwrites them; without it the keeps are listed loudly enough
+    # to notice.
     $dataSrc = Join-Path $root 'data'
     $dataDst = Join-Path $scripts 'Hoodrich'
     New-Item -ItemType Directory -Force $dataDst | Out-Null
+
+    $stale = @()
+
     Get-ChildItem $dataSrc -Recurse -File | ForEach-Object {
         $rel = $_.FullName.Substring($dataSrc.Length).TrimStart('\')
         $dst = Join-Path $dataDst $rel
         New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null
-        if (Test-Path $dst) {
-            Write-Host "  keep   $rel" -ForegroundColor DarkGray
-        } else {
+
+        if (-not (Test-Path $dst)) {
             Copy-Item $_.FullName $dst
             Write-Host "  new    $rel" -ForegroundColor DarkGray
+            return
         }
+
+        $same = (Get-FileHash $_.FullName).Hash -eq (Get-FileHash $dst).Hash
+        if ($same) {
+            Write-Host "  same   $rel" -ForegroundColor DarkGray
+        } elseif ($FreshData) {
+            Copy-Item $_.FullName $dst -Force
+            Write-Host "  update $rel" -ForegroundColor Green
+        } else {
+            $stale += $rel
+            Write-Host "  KEEP   $rel  (differs from source)" -ForegroundColor Yellow
+        }
+    }
+
+    if ($stale -and -not $FreshData) {
+        Write-Host "         The game is running data that is NOT what you just built." -ForegroundColor Yellow
+        Write-Host "         Re-run with -FreshData to overwrite: $($stale -join ', ')" -ForegroundColor DarkGray
+    }
+
+    # Anything the mod no longer ships has to go, or it keeps being loaded.
+    Get-ChildItem $dataDst -File -Filter *.json | ForEach-Object {
+        if ($_.Name -eq 'save.json' -or $_.Name -eq 'save.json.bak') { return }
+        if (Test-Path (Join-Path $dataSrc $_.Name)) { return }
+
+        Remove-Item $_.FullName -Force
+        Write-Host "  remove $($_.Name)  (no longer shipped)" -ForegroundColor DarkYellow
     }
 
     # The ini is never overwritten, because it is the one file players hand-edit. That

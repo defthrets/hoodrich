@@ -139,7 +139,31 @@ namespace Hoodrich.Wheel
                         Stash.FreeSpace < 20f ? Palette.Warn : (Color?)null);
             sections.Add(pockets);
 
-            Info?.Open("Inventory", CarriedSummary(), sections);
+            // At home the inventory is two containers rather than one, so what is in the house
+            // is listed right beside what is on you.
+            if (_stash.AtDoor)
+            {
+                var den = _stash.Stash;
+                var home = new InfoSection { Title = "At the stash house" };
+
+                var kept = 0;
+                foreach (var drug in _drugs.All)
+                {
+                    var have = den.BulkOf(drug.Id) + den.PackagedOf(drug.Id);
+                    if (have <= 0.005f) continue;
+
+                    home.Row(drug.Name, have.ToString("0.#") + "g", Palette.Cash);
+                    kept++;
+                }
+
+                if (kept == 0) home.Row("Empty", "", Palette.TextDim);
+                home.Row("Room here", den.FreeSpace.ToString("0") + "g");
+                sections.Add(home);
+            }
+
+            Info?.Open("Inventory",
+                       _stash.AtDoor ? "At the stash house" : CarriedSummary(),
+                       sections);
         }
 
         /// <summary>One line for the wheel: what is on you right now.</summary>
