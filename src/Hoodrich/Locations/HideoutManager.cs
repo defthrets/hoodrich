@@ -35,15 +35,13 @@ namespace Hoodrich.Locations
             new Dictionary<string, Blip>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Settings _cfg;
-        private readonly TerritoryState _territory;
         private readonly Random _rng = new Random();
 
         private int _lastUpdate;
 
-        public HideoutManager(Settings cfg, TerritoryState territory)
+        public HideoutManager(Settings cfg)
         {
             _cfg = cfg;
-            _territory = territory;
         }
 
         public IEnumerable<Hideout> All => _byZone.Values;
@@ -116,7 +114,7 @@ namespace Hoodrich.Locations
         /// <summary>What a place on this block costs. Better turf, higher price.</summary>
         public int PriceFor(string zoneCode)
         {
-            return _cfg.HideoutBasePrice + _territory.ValueOf(zoneCode) * _cfg.HideoutPricePerTurfValue;
+            return _cfg.HideoutBasePrice;
         }
 
         /// <summary>

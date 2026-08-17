@@ -370,8 +370,12 @@ namespace Hoodrich.UI
             {
                 // The game's weapon art is a white silhouette, so it is tinted the same colour the
                 // label uses -- dark when it sits on a highlighted wedge, white otherwise.
+                // Height is fixed and width follows the art's own aspect, so a square inventory
+                // sprite stays square and a long weapon silhouette stays long.
+                var iconWidth = Math.Min(IconWidth, IconHeight * Math.Max(0.2f, item.IconAspect));
+
                 Draw.Sprite(item.IconDict, item.IconTexture, px, py - 0.030f,
-                            Draw.ToX(IconWidth), IconHeight, 0f, colour);
+                            Draw.ToX(iconWidth), IconHeight, 0f, colour);
             }
             else if (!string.IsNullOrEmpty(item.Symbol))
             {

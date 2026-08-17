@@ -42,7 +42,6 @@ namespace Hoodrich.Wheel
         private readonly DealerManager _dealers;
         private readonly Core.Settings _cfg;
         private readonly Market _market;
-        private readonly TurfWar _war;
         private readonly HideoutManager _hideouts;
         private readonly PostUp _postUp;
         private readonly GangLeaders _leaders;
@@ -63,7 +62,7 @@ namespace Hoodrich.Wheel
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
-                          TurfWar war, HideoutManager hideouts, PostUp postUp, GangLeaders leaders)
+                          HideoutManager hideouts, PostUp postUp, GangLeaders leaders)
         {
             _cfg = cfg;
             _state = state;
@@ -77,7 +76,6 @@ namespace Hoodrich.Wheel
             _dealers = suppliers;
             _weapons = weapons;
             _market = market;
-            _war = war;
             _hideouts = hideouts;
             _postUp = postUp;
             _leaders = leaders;
@@ -727,6 +725,9 @@ namespace Hoodrich.Wheel
                     IconDict = def.Icon,
                     IconTexture = def.Icon,
                     IconReady = () => _weapons.IconReady(def),
+
+                    // Weapon art is a long letterbox, unlike the square menu sprites.
+                    IconAspect = 2f,
                     Detail = equipped ? "In your hands" : "Equip",
                     Value = isMelee ? (equipped ? "EQUIPPED" : "") : ammo.ToString("N0") + " rounds",
                     OnSelect = () => Equip(def.Hash, def.Name)
@@ -1422,74 +1423,7 @@ namespace Hoodrich.Wheel
                 value: "");
             page.WithIcon(Icons.Health);
 
-            var claimBlocker =
-                _war.IsActive ? "You are already in a war"
-                : !_crew.IsAffiliated ? "You need a crew behind you"
-                : _turf.Owner == null ? "Nobody holds this block"
-                : _turf.Status == TurfStatus.Home ? "This is already your block"
-                : "";
-
-            page.AddSub("Take it", "#", BuildClaimPage,
-                detail: claimBlocker.Length == 0
-                    ? "Take " + _turf.ZoneName + " off " + _turf.Owner.Name
-                    : "Take this block by force",
-                value: claimBlocker.Length == 0
-                    ? _war.DefenderReinforcements(_turf.ZoneCode) + " to fight"
-                    : "",
-                enabled: claimBlocker.Length == 0,
-                disabledReason: claimBlocker);
-            page.WithIcon(Icons.Warning);
-
             return page;
-        }
-
-        /// <summary>
-        /// How hard to go in. A war is decided by reinforcements, so the only question is
-        /// whether you brought more than they have -- and each tier costs far more than the last.
-        /// </summary>
-        private WheelPage BuildClaimPage()
-        {
-            var zone = _turf.ZoneCode;
-            var defenders = _war.DefenderReinforcements(zone);
-            var recommended = _war.RecommendedStrength(zone);
-
-            var page = new WheelPage("Claim", _turf.ZoneName + " -- " + _turf.Owner.Name);
-
-            page.PanelTitle = _turf.ZoneName;
-            page.Row("Held by", _turf.Owner.Name, _turf.Owner.Colour);
-            page.Row("Block value", _territoryValue(zone) + " / " + _cfg.MaxTurfValue);
-            page.Row("Defenders", defenders.ToString("N0"), Palette.Danger);
-            page.Row("Suggested", recommended.ToString(), Palette.Warn);
-            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
-
-            foreach (AttackStrength strength in Enum.GetValues(typeof(AttackStrength)))
-            {
-                var s = strength;
-                var cost = _war.AttackCost(s);
-                var mine = _war.AttackerReinforcements(s);
-                var canAfford = Game.Player.Money >= cost;
-
-                page.Add(s.ToString(), s == recommended ? "*" : "o",
-                    () => Claim(s),
-                    detail: mine + " of yours against " + defenders + " of theirs" +
-                            (mine >= defenders ? "  ·  should hold" : "  ·  you will be outnumbered"),
-                    value: "$" + cost.ToString("N0"),
-                    enabled: canAfford,
-                    disabledReason: "Short $" + (cost - Game.Player.Money).ToString("N0"));
-            }
-
-            return page;
-        }
-
-        private int _territoryValue(string zone) => _war.DefenderReinforcements(zone) > 0
-            ? (int)Math.Round((_war.DefenderReinforcements(zone) - _cfg.BaseKillsBeforeWarVictory)
-                              / Math.Max(0.01f, _cfg.ExtraKillsPerTurfValue))
-            : 0;
-
-        private void Claim(AttackStrength strength)
-        {
-            var failure = _war.TryStart(_turf.ZoneCode, _turf.ZoneName, _turf.Owner, strength);
-            if (failure != null) Notify.Problem(failure);
         }
 
         private System.Drawing.Color TurfTint()

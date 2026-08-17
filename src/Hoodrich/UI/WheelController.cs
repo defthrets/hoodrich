@@ -223,10 +223,18 @@ namespace Hoodrich.UI
             CloseWheel();
         }
 
+        /// <summary>
+        /// Closes our wheel.
+        ///
+        /// Deliberately does NOT end a vanilla-wheel handoff. Picking Weapons runs through
+        /// Commit and then straight into this, so restoring everything here cancelled the
+        /// handoff on the same frame it was asked for -- which is why the real weapon wheel
+        /// never appeared. Ending it belongs to the paths that mean "stop", not to closing.
+        /// </summary>
         public void CloseWheel()
         {
             _menu.Close();
-            RestoreWorld();
+            RestoreTimeAndBlur();
         }
 
         /// <summary>

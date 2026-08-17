@@ -22,6 +22,15 @@ namespace Hoodrich.UI
         public string IconTexture = "";
 
         /// <summary>
+        /// Width over height of the source art, so it is drawn in its own proportions.
+        ///
+        /// Weapon art is a long letterbox and the menu and inventory sprites are square. Fitting
+        /// both into one fixed box stretched the square ones sideways, which is why they looked
+        /// squashed.
+        /// </summary>
+        public float IconAspect = 1f;
+
+        /// <summary>
         /// Whether the icon is resident right now. Evaluated per frame rather than at page-build
         /// time, because the dict often arrives a frame or two after the wheel opens.
         /// </summary>

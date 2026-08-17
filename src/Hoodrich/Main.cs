@@ -56,8 +56,6 @@ namespace Hoodrich
         private readonly LeaderTalk _leaderTalk;
         private readonly Conversation _talk;
         private readonly InfoPanel _info;
-        private readonly TerritoryState _territory;
-        private readonly TurfWar _war;
         private readonly HideoutManager _hideouts;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
@@ -87,14 +85,12 @@ namespace Hoodrich
                 // Everything the save writes into has to exist before the save is read.
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
-                _territory = new TerritoryState(_cfg);
-                _hideouts = new HideoutManager(_cfg, _territory);
+                _hideouts = new HideoutManager(_cfg);
                 _market = new Market(_cfg);
 
-                SaveGame.Load(_state, _crew, _market, _territory, _hideouts);
+                SaveGame.Load(_state, _crew, _market, _hideouts);
 
-                _turf = new TurfWatch(_gangs, _crew, _state) { Territory = _territory };
-                _war = new TurfWar(_cfg, _state, _crew, _territory);
+                _turf = new TurfWatch(_gangs, _crew, _state);
                 _bust = new Bust(_cfg, _state) { Turf = _turf };
                 _deadDrop = new DeadDrop(_cfg, _state);
 
@@ -102,7 +98,7 @@ namespace Hoodrich
                 _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
                 _cutting = new Cutting(_state.Stash, _state);
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
-                _turfBlips = new TurfBlips(_cfg, _gangs, _zoneMap, _turfAreas, _territory);
+                _turfBlips = new TurfBlips(_cfg, _gangs, _zoneMap, _turfAreas);
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
                 _talk = new Conversation();
@@ -113,7 +109,7 @@ namespace Hoodrich
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts, _postUp, _leaders);
+                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _hideouts, _postUp, _leaders);
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
                 pages.Info = _info;
@@ -223,9 +219,7 @@ namespace Hoodrich
                     _bust.Update();
                     _deadDrop.Update();
                     _market.Update(_drugs);
-                    _war.Update();
                     _hideouts.Update(_turf);
-                    _territory.UpgradeTick();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
                     _turfBlips.Refresh();
@@ -239,7 +233,6 @@ namespace Hoodrich
                 _bust.Draw();
                 _postUp.Draw();
                 _leaders.Draw();
-                _war.Draw();
                 _hideouts.Draw();
 
                 SlowTick();
@@ -285,7 +278,7 @@ namespace Hoodrich
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {
                 _lastSave = now;
-                SaveGame.Save(_state, _crew, _market, _territory, _hideouts);
+                SaveGame.Save(_state, _crew, _market, _hideouts);
             }
         }
 
@@ -359,7 +352,7 @@ namespace Hoodrich
 
             try
             {
-                SaveGame.Save(_state, _crew, _market, _territory, _hideouts, true);
+                SaveGame.Save(_state, _crew, _market, _hideouts, true);
                 Log.Info("Hoodrich unloaded cleanly.");
             }
             catch (Exception ex)
@@ -381,7 +374,6 @@ namespace Hoodrich
             try { _crew?.RestoreWorld(); } catch { /* teardown */ }
             try { _dealers?.RestoreWorld(); } catch { /* teardown */ }
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
-            try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _turfBlips?.RestoreWorld(); } catch { /* teardown */ }

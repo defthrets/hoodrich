@@ -17,9 +17,6 @@ namespace Hoodrich.Territory
     ///
     /// Each claimed zone also gets one small icon blip at its centre, so the shading reads as
     /// somebody's turf rather than as an unexplained wash of colour.
-    ///
-    /// Rebuilt whenever ownership changes, so a zone taken in a turf war immediately changes
-    /// colour.
     /// </summary>
     internal sealed class TurfBlips
     {
@@ -30,19 +27,16 @@ namespace Hoodrich.Territory
         private readonly GangRegistry _gangs;
         private readonly ZoneMap _zones;
         private readonly TurfAreas _areas;
-        private readonly TerritoryState _territory;
         private readonly Settings _cfg;
 
         private string _signature = "";
 
-        public TurfBlips(Settings cfg, GangRegistry gangs, ZoneMap zones, TurfAreas areas,
-                         TerritoryState territory)
+        public TurfBlips(Settings cfg, GangRegistry gangs, ZoneMap zones, TurfAreas areas)
         {
             _cfg = cfg;
             _gangs = gangs;
             _zones = zones;
             _areas = areas;
-            _territory = territory;
         }
 
         /// <summary>
@@ -64,7 +58,7 @@ namespace Hoodrich.Territory
 
             foreach (var gang in _gangs.All)
             {
-                foreach (var code in ClaimedBy(gang))
+                foreach (var code in gang.Turf)
                 {
                     var drewShape = false;
 
@@ -86,31 +80,6 @@ namespace Hoodrich.Territory
             Log.Info("Turf overlay: " + _blips.Count + " map markers.");
         }
 
-        /// <summary>Every zone this gang holds, starting map plus anything they have taken.</summary>
-        private IEnumerable<string> ClaimedBy(GangDef gang)
-        {
-            var codes = new List<string>();
-
-            foreach (var code in gang.Turf)
-            {
-                // A zone someone else has captured is no longer theirs.
-                var captured = _territory.OwnerOverride(code);
-                if (!string.IsNullOrEmpty(captured) &&
-                    !string.Equals(captured, gang.Id, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-                if (!codes.Contains(code)) codes.Add(code);
-            }
-
-            foreach (var code in _territory.ZonesHeldBy(gang.Id))
-            {
-                if (!codes.Contains(code)) codes.Add(code);
-            }
-
-            return codes;
-        }
-
         /// <summary>One box of a hood's real footprint.</summary>
         private void AddBox(TurfBox box, GangDef gang)
         {
@@ -122,7 +91,11 @@ namespace Hoodrich.Territory
                 Function.Call(Hash.SET_BLIP_COLOUR, handle, gang.BlipColour);
                 Function.Call(Hash.SET_BLIP_ALPHA, handle, _cfg.TurfBlipAlpha);
 
-                // Area blips are map furniture; keep them off the compass.
+                // Display 3 is the pause map only. The minimap shows a couple of hundred metres
+                // at a time, so shading drawn there is all edges and no shape -- it buried the
+                // corner of the screen under stacked translucent squares. Territory is something
+                // you read on the full map, so that is the only place it is drawn.
+                Function.Call(Hash.SET_BLIP_DISPLAY, handle, 3);
                 Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, handle, true);
 
                 _blips.Add(new Blip(handle));
@@ -164,7 +137,7 @@ namespace Hoodrich.Territory
             var parts = new List<string>();
             foreach (var gang in _gangs.All)
             {
-                foreach (var code in ClaimedBy(gang)) parts.Add(gang.Id + ":" + code);
+                foreach (var code in gang.Turf) parts.Add(gang.Id + ":" + code);
             }
             parts.Sort(StringComparer.Ordinal);
 

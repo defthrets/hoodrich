@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using Control = GTA.Control;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -476,6 +477,31 @@ namespace Hoodrich.Gangs
         public Func<LeaderDef, DialogueNode> TalkBuilder;
 
         /// <summary>
+        /// True the frame the player asks to talk.
+        ///
+        /// Read through several inputs rather than one. The cellphone directions are D-pad on a
+        /// pad and the arrow keys on a keyboard, but they are also a control other scripts like
+        /// to disable, and a prompt you cannot answer is worse than no prompt -- so the enabled
+        /// and disabled paths are both checked, and E is accepted as well.
+        /// </summary>
+        private static bool WantsToTalk()
+        {
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.PhoneRight)) return true;
+                if (Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0, (int)Control.PhoneRight)) return true;
+                if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, (int)Control.PhoneRight)) return true;
+                if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return true;
+            }
+            catch
+            {
+                // A control that cannot be read is simply not pressed.
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Offers the conversation and starts it on D-pad right. Runs every frame rather than
         /// on the slow tick, because a prompt that appears 800ms after you arrive feels broken.
         /// </summary>
@@ -486,12 +512,11 @@ namespace Hoodrich.Gangs
             var def = InReach;
             if (def == null) return;
 
-            var gang = _gangs.Get(def.GangId);
-            var name = gang == null ? def.Name : def.Name;
+            // ~INPUT_PHONE_RIGHT~ is not a control the game knows, so it substituted nothing and
+            // the prompt read "Press  to talk". The D-pad directions are the CELLPHONE inputs.
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to talk to " + def.Name + ".");
 
-            Help.ShowThisFrame("Press ~INPUT_PHONE_RIGHT~ to talk to " + name + ".");
-
-            if (!Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)GTA.Control.PhoneRight)) return;
+            if (!WantsToTalk()) return;
 
             var root = TalkBuilder?.Invoke(def);
             if (root == null) return;
