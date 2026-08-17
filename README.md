@@ -47,6 +47,30 @@ The vanilla weapon wheel is suppressed while the mod is loaded.
 Prefer to keep your weapon wheel? Set `Mode=Separate` in `Hoodrich.ini` and the wheel
 moves to its own key (`Key=B` by default).
 
+## Menu structure
+
+Four wedges at the root — 90° each, impossible to mis-flick. Every tab owns its own
+sub-tabs rather than spilling onto the root.
+
+```
+Weapons ── Melee · Handguns · SMGs · Shotguns · Rifles · Sniper · Heavy · Thrown
+                └── each weapon, with the game's own icon and its ammo
+
+Drugs ──── Supply ── your contacts ── their stock
+       ├── Cut ───── product ─────── purity (100 / 75 / 50 / 33%)
+       ├── Sell ──── what you have bagged
+       └── Stash     (next build)
+
+Gangs ──── Turf ──── this block: who claims it, what it pays, what it costs
+       └── one wedge per gang
+             └── Join or Leave · Their plug · Their turf · Dossier
+
+Status ─── one-shot readout of rank, holdings, crew, block and heat
+```
+
+`Weapons` sits at index 0, straight up: Hoodrich took the weapon-wheel button, so getting
+a gun back has to be the fastest thing on the wheel.
+
 ## What works right now (0.2.0)
 
 Six wheel pages, and a supply chain you have to actually work.

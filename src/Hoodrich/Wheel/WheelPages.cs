@@ -72,46 +72,28 @@ namespace Hoodrich.Wheel
             var page = new WheelPage("Hoodrich",
                 _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated");
 
-            // Weapons sit at index 0 -- straight up, the easiest flick on the wheel. Hoodrich
+            // Four wedges at 90 degrees each -- big targets, impossible to mis-flick. Every
+            // top-level tab owns its own sub-tabs rather than spilling onto the root:
+            // dealing lives under Drugs, and everything territorial lives under Gangs.
+            //
+            // Weapons sits at index 0 -- straight up, the easiest flick on the wheel. Hoodrich
             // took the weapon-wheel button, so getting a gun back has to be the fastest thing
             // on here, not something buried behind the business menu.
-            var slots = _weapons.OccupiedSlots();
             page.AddSub("Weapons", "^", BuildWeaponsPage,
                 detail: "Change weapon",
                 value: CurrentWeaponName(),
-                enabled: slots.Count > 0,
+                enabled: _weapons.OccupiedSlots().Count > 0,
                 disabledReason: "You are not carrying anything");
 
-            page.AddSub("Sell", "$", BuildSellPage,
-                detail: "Hand-to-hand to someone on foot",
-                value: packaged > 0.005f ? packaged.ToString("0.#") + "g bagged" : "",
-                enabled: packaged > 0.005f && !_deal.IsBusy && !_cutting.IsBusy,
-                disabledReason: _deal.IsBusy ? "Already mid-deal"
-                    : _cutting.IsBusy ? "You are cutting"
-                    : bulk > 0.005f ? "All you have is bulk -- cut it first"
-                    : "You are holding nothing");
-
-            page.AddSub("Cut", "/", BuildCutPage,
-                detail: "Bag bulk into street units",
-                value: bulk > 0.005f ? bulk.ToString("0.#") + "g bulk" : "",
-                enabled: bulk > 0.005f && !_cutting.IsBusy && !_deal.IsBusy,
-                disabledReason: _cutting.IsBusy ? "Already cutting"
-                    : _deal.IsBusy ? "Already mid-deal"
-                    : "No bulk to cut -- buy some first");
-
-            page.AddSub("Supply", "+", BuildSupplyPage,
-                detail: SupplyDetail(),
-                value: "$" + Game.Player.Money.ToString("N0"),
+            page.AddSub("Drugs", "$", BuildDrugsPage,
+                detail: "Sell, cut and resupply",
+                value: DrugsSummary(),
                 enabled: !_deal.IsBusy && !_cutting.IsBusy,
-                disabledReason: "Busy");
+                disabledReason: _deal.IsBusy ? "Already mid-deal" : "You are cutting");
 
-            page.AddSub("Gang", "^", BuildGangPage,
-                detail: _crew.IsAffiliated ? "Your crew and your standing" : "Pick who you run with",
+            page.AddSub("Gangs", "%", BuildGangsPage,
+                detail: _crew.IsAffiliated ? "Crews and turf" : "Pick who you run with",
                 value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
-
-            page.AddSub("Turf", "#", BuildTurfPage,
-                detail: _turf.StatusLine,
-                value: _turf.ZoneName);
 
             page.Add("Status", "*", ShowStatus,
                 detail: _pricing.PriceContext(),
@@ -120,12 +102,76 @@ namespace Hoodrich.Wheel
             return page;
         }
 
+        private string DrugsSummary()
+        {
+            var packaged = Stash.TotalPackaged;
+            var bulk = Stash.TotalBulk;
+
+            if (packaged > 0.005f && bulk > 0.005f)
+            {
+                return packaged.ToString("0.#") + "g bagged, " + bulk.ToString("0.#") + "g bulk";
+            }
+            if (packaged > 0.005f) return packaged.ToString("0.#") + "g bagged";
+            if (bulk > 0.005f) return bulk.ToString("0.#") + "g bulk";
+            return "empty";
+        }
+
         private string SupplyDetail()
         {
             if (_suppliers.TradablePed != null) return "Your contact is right here";
             if (_suppliers.HasMeet) return _suppliers.ActiveMeet.Name + " -- " +
                                           _suppliers.MeetDistance.ToString("0") + "m away";
             return "Call a contact for bulk weight";
+        }
+
+        // ---- drugs -------------------------------------------------------------
+
+        /// <summary>Everything to do with product, in the order you actually do it.</summary>
+        private WheelPage BuildDrugsPage()
+        {
+            var packaged = Stash.TotalPackaged;
+            var bulk = Stash.TotalBulk;
+
+            var page = new WheelPage("Drugs", DrugsSummary());
+            page.PanelTitle = "Holding";
+            page.Row("Bulk", bulk.ToString("0.#") + "g");
+            page.Row("Bagged", packaged.ToString("0.#") + "g");
+            page.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
+            page.Row("Street value", "$" + PackagedValue().ToString("N0"), Palette.Cash);
+            page.Row("Prices", _pricing.PriceContext());
+
+            page.AddSub("Supply", "+", BuildSupplyPage,
+                detail: SupplyDetail(),
+                value: "$" + Game.Player.Money.ToString("N0"));
+
+            page.AddSub("Cut", "/", BuildCutPage,
+                detail: "Bag bulk into street units",
+                value: bulk > 0.005f ? bulk.ToString("0.#") + "g bulk" : "",
+                enabled: bulk > 0.005f,
+                disabledReason: "No bulk to cut -- buy some first");
+
+            page.AddSub("Sell", "$", BuildSellPage,
+                detail: "Hand-to-hand to someone on foot",
+                value: packaged > 0.005f ? packaged.ToString("0.#") + "g bagged" : "",
+                enabled: packaged > 0.005f,
+                disabledReason: bulk > 0.005f ? "All you have is bulk -- cut it first"
+                                              : "You are holding nothing");
+
+            page.Add("Stash", "=", null,
+                detail: "Bank product off your person",
+                enabled: false, disabledReason: "Not in this build yet");
+
+            return page;
+        }
+
+        private int PackagedValue()
+        {
+            var worth = 0;
+            foreach (var d in _drugs.All)
+            {
+                worth += _pricing.SaleValue(d, Stash.PackagedOf(d.Id), Stash.PurityOf(d.Id));
+            }
+            return worth;
         }
 
         // ---- weapons -----------------------------------------------------------
@@ -475,11 +521,16 @@ namespace Hoodrich.Wheel
                      " from " + def.Id + " for $" + charged + ".");
         }
 
-        // ---- gang --------------------------------------------------------------
+        // ---- gangs -------------------------------------------------------------
 
-        private WheelPage BuildGangPage()
+        /// <summary>
+        /// One wedge per gang. Picking one opens that gang's own page rather than joining
+        /// immediately -- every crew is an entity you can inspect, deal with, or sign up to,
+        /// and a mis-flick should never silently change who you run with.
+        /// </summary>
+        private WheelPage BuildGangsPage()
         {
-            var page = new WheelPage("Gang",
+            var page = new WheelPage("Gangs",
                 _crew.IsAffiliated ? "Running with " + _crew.Current.Name : "Running solo");
 
             var standing = _crew.CurrentStanding;
@@ -498,31 +549,152 @@ namespace Hoodrich.Wheel
             page.Row("Deals", standing == null ? "-" : standing.Deals.ToString("N0"));
             page.Row("Lookouts near", _crew.NearbyAllies.ToString(),
                      _crew.NearbyAllies > 0 ? Palette.Cash : Palette.TextDim);
-            page.Row("Their turf", _crew.IsAffiliated ? _crew.Current.TurfHint : "-");
+            page.Row("Standing on", _turf.ZoneName, TurfTint());
+
+            // Turf leads: "whose block am I on" is the question you ask most, and it is
+            // territorial, so it belongs here rather than on the root.
+            page.AddSub("Turf", "#", BuildTurfPage,
+                detail: _turf.StatusLine,
+                value: _turf.ZoneName);
 
             foreach (var g in _gangs.All)
             {
                 var gang = g;
                 var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
-                var theirStanding = _crew.StandingFor(gang.Id);
 
-                var reason = mine ? "" :
-                    theirStanding.Rep <= -50f ? "They want you dead"
-                    : _state.Respect < gang.JoinRespect
-                        ? "Need " + gang.JoinRespect.ToString("F0") + " respect"
-                        : "";
-
-                page.Add(gang.Tag, mine ? "*" : "o",
-                    mine ? (Action)(() => _crew.Leave()) : () => Join(gang),
-                    detail: mine ? "Your crew -- pick to walk away" : gang.TurfHint,
-                    value: mine ? "AFFILIATED" : "rep " + theirStanding.Rep.ToString("0"),
-                    enabled: mine || reason.Length == 0,
-                    disabledReason: reason);
+                page.AddSub(gang.Tag, mine ? "*" : "o",
+                    () => BuildGangPage(gang),
+                    detail: gang.TurfHint,
+                    value: mine ? "YOUR CREW" : RelationLabel(gang));
 
                 page.Items[page.Items.Count - 1].Tint = gang.Colour;
             }
 
             return page;
+        }
+
+        /// <summary>How this gang currently reads to the player, in two words.</summary>
+        private string RelationLabel(GangDef gang)
+        {
+            var standing = _crew.StandingFor(gang.Id);
+
+            if (_crew.IsAffiliated)
+            {
+                var mine = _crew.Current;
+                if (mine.IsRivalOf(gang.Id) || gang.IsRivalOf(mine.Id)) return "AT WAR";
+            }
+
+            if (standing.Rep <= -50f) return "HOSTILE";
+            if (standing.Rep >= 100f) return "TRUSTED";
+            return "rep " + standing.Rep.ToString("0");
+        }
+
+        /// <summary>Everything you can do with one particular crew.</summary>
+        private WheelPage BuildGangPage(GangDef gang)
+        {
+            var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
+            var standing = _crew.StandingFor(gang.Id);
+            var atWar = _crew.IsAffiliated && !mine &&
+                        (_crew.Current.IsRivalOf(gang.Id) || gang.IsRivalOf(_crew.Current.Id));
+
+            var page = new WheelPage(gang.Name, mine ? "Your crew" : RelationLabel(gang));
+
+            page.PanelTitle = gang.Name;
+            page.Row("Standing", mine ? "your crew" : RelationLabel(gang),
+                     mine ? gang.Colour : atWar ? Palette.Danger : (System.Drawing.Color?)null);
+            page.Row("Rep", standing.Rep.ToString("N0"),
+                     standing.Rep < 0 ? Palette.Danger : Palette.Cash);
+            page.Row("Kills for them", standing.Kills.ToString("N0"));
+            page.Row("Money made", "$" + standing.MoneyEarned.ToString("N0"), Palette.Cash);
+            page.Row("Deals", standing.Deals.ToString("N0"));
+            page.Row("They move", string.Join(", ", gang.Drugs.ToArray()).ToUpperInvariant());
+            page.Row("Turf", gang.TurfHint);
+            page.Row("At war with", gang.Rivals.Count == 0 ? "nobody"
+                                                           : string.Join(", ", gang.Rivals.ToArray()));
+
+            // Join / leave.
+            if (mine)
+            {
+                page.Add("Leave", "x", () => _crew.Leave(),
+                    detail: "Walk away. Costs you rep with them.",
+                    value: "-25 rep");
+            }
+            else
+            {
+                var reason = atWar ? "At war with " + _crew.Current.Name
+                    : standing.Rep <= -50f ? "They want you dead"
+                    : _state.Respect < gang.JoinRespect
+                        ? "Need " + gang.JoinRespect.ToString("F0") + " respect"
+                        : "";
+
+                page.Add("Join", "+", () => Join(gang),
+                    detail: _crew.IsAffiliated
+                        ? "Switch crews -- " + _crew.Current.Name + " will remember"
+                        : "Run with " + gang.Name,
+                    value: gang.JoinRespect > 0 ? gang.JoinRespect.ToString("F0") + " respect" : "free",
+                    enabled: reason.Length == 0,
+                    disabledReason: reason);
+            }
+
+            // Their supply contact, if they have one.
+            var plug = FindPlugFor(gang);
+            if (plug != null)
+            {
+                var refusal = _suppliers.RefusalReason(plug, _state, _crew);
+                var mult = _suppliers.EffectiveMultiplier(plug, _crew);
+                var carries = plug.Drugs.Count == 0
+                    ? "everything"
+                    : string.Join(", ", plug.Drugs.ToArray()).ToUpperInvariant();
+
+                page.Add("Their plug", "+", () => Call(plug),
+                    detail: plug.Blurb,
+                    value: carries + "  x" + mult.ToString("0.00"),
+                    enabled: refusal == null,
+                    disabledReason: refusal ?? "");
+            }
+            else
+            {
+                page.Add("Their plug", "+", null,
+                    detail: "They have no contact you can call",
+                    enabled: false, disabledReason: "No contact");
+            }
+
+            page.Add("Their turf", "#", () => LogGangTurf(gang),
+                detail: "Write their claimed zones to the log",
+                value: gang.Turf.Count + " zones");
+
+            page.Add("Dossier", "*", () => ShowGangDossier(gang, standing, mine),
+                detail: "Full standing with this crew");
+
+            return page;
+        }
+
+        private SupplierDef FindPlugFor(GangDef gang)
+        {
+            foreach (var s in _suppliers.All)
+            {
+                if (s.IsGangContact && string.Equals(s.GangId, gang.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return s;
+                }
+            }
+            return null;
+        }
+
+        private void LogGangTurf(GangDef gang)
+        {
+            Log.Info("TURF  " + gang.Id.PadRight(12) + " " + string.Join(", ", gang.Turf.ToArray()));
+            Notify.Ticker("~y~" + gang.Name + "~s~ holds " + gang.Turf.Count + " zones -- written to the log.");
+        }
+
+        private void ShowGangDossier(GangDef gang, GangStanding standing, bool mine)
+        {
+            Notify.Ticker(
+                "~y~" + gang.Name + "~s~  " + (mine ? "your crew" : RelationLabel(gang)) + "\n" +
+                "Rep " + standing.Rep.ToString("N0") + "  ·  " + standing.Kills + " kills  ·  " +
+                standing.Deals + " deals\n" +
+                "Made ~g~$" + standing.MoneyEarned.ToString("N0") + "~s~ under them\n" +
+                gang.TurfHint);
         }
 
         private void Join(GangDef gang)
