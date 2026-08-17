@@ -43,8 +43,8 @@
         "STRAW"
       ],
       "turfHint": "Davis, Chamberlain Hills, Strawberry",
-      "joinRespect": 0
-    },
+      "joinRespect": 0,
+      "joinable": true    },
     {
       "id": "ballas",
       "name": "Ballas",

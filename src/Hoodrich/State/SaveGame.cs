@@ -16,7 +16,7 @@ namespace Hoodrich.State
     /// </summary>
     internal static class SaveGame
     {
-        public static void Load(PlayerState state, Affiliation affiliation, Market market, HideoutManager hideouts)
+        public static void Load(PlayerState state, Affiliation affiliation, Market market, StashHouse stash)
         {
             var doc = JsonFile.Read(Paths.SaveFile);
             if (doc == null)
@@ -34,11 +34,11 @@ namespace Hoodrich.State
             state.LoadFrom(doc);
             affiliation.LoadFrom(doc["affiliation"]);
             market.LoadFrom(doc["market"]);
-            hideouts.LoadFrom(doc["hideouts"]);
+            stash.LoadFrom(doc["stashHouse"]);
             state.MarkSaved();
         }
 
-        public static bool Save(PlayerState state, Affiliation affiliation, Market market, HideoutManager hideouts, bool force = false)
+        public static bool Save(PlayerState state, Affiliation affiliation, Market market, StashHouse stash, bool force = false)
         {
             if (!state.IsDirty && !force) return false;
 
@@ -48,7 +48,7 @@ namespace Hoodrich.State
                     .Set("version", Build.Version)
                     .Set("affiliation", affiliation.ToJson())
                     .Set("market", market.ToJson())
-                    .Set("hideouts", hideouts.ToJson());
+                    .Set("stashHouse", stash.ToJson());
 
                 if (!JsonFile.Write(Paths.SaveFile, doc)) return false;
 

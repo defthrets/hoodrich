@@ -85,6 +85,7 @@ namespace Hoodrich.Gangs
                 g.BlipColour = node["blipColour"].AsInt(g.BlipColour);
                 g.TurfHint = node["turfHint"].AsString(g.TurfHint);
                 g.JoinRespect = Math.Max(0f, node["joinRespect"].AsFloat(g.JoinRespect));
+                g.Joinable = node["joinable"].AsBool(g.Joinable);
 
                 var col = node["colour"];
                 if (col.Kind == JsonKind.Array && col.Count >= 3)

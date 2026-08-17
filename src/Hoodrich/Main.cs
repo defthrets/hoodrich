@@ -50,13 +50,11 @@ namespace Hoodrich
         private readonly DeadDrop _deadDrop;
         private readonly PostUp _postUp;
         private readonly ZoneMap _zoneMap;
-        private readonly TurfAreas _turfAreas;
-        private readonly TurfBlips _turfBlips;
         private readonly GangLeaders _leaders;
         private readonly LeaderTalk _leaderTalk;
         private readonly Conversation _talk;
         private readonly InfoPanel _info;
-        private readonly HideoutManager _hideouts;
+        private readonly StashHouse _stash;
         private readonly RadialMenu _menu;
         private readonly WheelController _wheel;
 
@@ -80,17 +78,17 @@ namespace Hoodrich
                 _dealers = DealerManager.Load(_cfg);
                 _weapons = WeaponRegistry.Load();
                 _zoneMap = ZoneMap.Load();
-                _turfAreas = TurfAreas.Load();
 
                 // Everything the save writes into has to exist before the save is read.
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
-                _hideouts = new HideoutManager(_cfg);
+                _stash = new StashHouse(_cfg);
                 _market = new Market(_cfg);
 
-                SaveGame.Load(_state, _crew, _market, _hideouts);
+                SaveGame.Load(_state, _crew, _market, _stash);
 
                 _turf = new TurfWatch(_gangs, _crew, _state);
+                _crew.Turf = _turf;
                 _bust = new Bust(_cfg, _state) { Turf = _turf };
                 _deadDrop = new DeadDrop(_cfg, _state);
 
@@ -98,18 +96,17 @@ namespace Hoodrich
                 _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
                 _cutting = new Cutting(_state.Stash, _state);
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
-                _turfBlips = new TurfBlips(_cfg, _gangs, _zoneMap, _turfAreas);
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
                 _talk = new Conversation();
 
                 _info = new InfoPanel();
-                _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs);
+                _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing);
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _hideouts, _postUp, _leaders);
+                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _stash, _postUp, _leaders);
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
                 pages.Info = _info;
@@ -194,10 +191,9 @@ namespace Hoodrich
                     _bust.Update();
                     _deadDrop.Update();
                     _market.Update(_drugs);
-                    _hideouts.Update(_turf);
+                    _stash.Update();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
-                    _turfBlips.Refresh();
                     UpdateLoan();
                 }
 
@@ -208,7 +204,7 @@ namespace Hoodrich
                 _bust.Draw();
                 _postUp.Draw();
                 _leaders.Draw();
-                _hideouts.Draw();
+                _stash.Draw();
 
                 SlowTick();
 
@@ -253,7 +249,7 @@ namespace Hoodrich
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {
                 _lastSave = now;
-                SaveGame.Save(_state, _crew, _market, _hideouts);
+                SaveGame.Save(_state, _crew, _market, _stash);
             }
         }
 
@@ -331,7 +327,7 @@ namespace Hoodrich
 
             try
             {
-                SaveGame.Save(_state, _crew, _market, _hideouts, true);
+                SaveGame.Save(_state, _crew, _market, _stash, true);
                 Log.Info("Hoodrich unloaded cleanly.");
             }
             catch (Exception ex)
@@ -355,8 +351,7 @@ namespace Hoodrich
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
-            try { _turfBlips?.RestoreWorld(); } catch { /* teardown */ }
-            try { _hideouts?.RestoreWorld(); } catch { /* teardown */ }
+            try { _stash?.RestoreWorld(); } catch { /* teardown */ }
         }
     }
 }

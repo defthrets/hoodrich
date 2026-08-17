@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GTA;
 using GTA.Native;
 using Hoodrich.Core;
+using Hoodrich.Territory;
 using Hoodrich.UI;
 
 namespace Hoodrich.Gangs
@@ -225,8 +226,8 @@ namespace Hoodrich.Gangs
 
             if (now - _lastKillScan >= KillScanIntervalMs)
             {
-                _lastKillScan = now;
-                ScanKills();
+                _lastKillScan = now;                ScanKills();
+                TickPresence(Turf);
                 ScanAllies();
             }
         }
@@ -324,7 +325,11 @@ namespace Hoodrich.Gangs
 
                     var standing = StandingFor(Current.Id);
                     standing.Kills++;
-                    standing.Rep = Math.Min(1000f, standing.Rep + 3f);
+
+                    // Dropping a rival while you are working a corner is the thing they respect
+                    // most: it is done for the block, in front of people, at real risk.
+                    var earned = WorkingACorner ? KillWhileDealingRep : KillRep;
+                    AddRep(earned, "for that one");
 
                     var theirs = StandingFor(gang.Id);
                     theirs.Rep = Math.Max(-100f, theirs.Rep - 5f);
@@ -337,6 +342,85 @@ namespace Hoodrich.Gangs
 
             if (_countedKills.Count > 400) _countedKills.Clear();
         }
+
+        // ---- earning it --------------------------------------------------------
+
+        /// <summary>Rep for a rival dropped in passing.</summary>
+        private const float KillRep = 3f;
+
+        /// <summary>Rep for a rival dropped while you are working a corner.</summary>
+        private const float KillWhileDealingRep = 12f;
+
+        /// <summary>Rep for one sale.</summary>
+        private const float SaleRep = 0.8f;
+
+        /// <summary>Rep for buying weight off your own people.</summary>
+        private const float BuyRep = 1.2f;
+
+        /// <summary>Rep per minute simply spent on your gang's blocks.</summary>
+        private const float PresenceRepPerMinute = 0.5f;
+
+        /// <summary>Rep for finishing a piece of work they put your way.</summary>
+        private const float MissionRep = 40f;
+
+        /// <summary>Set by PostUp, so a kill on the corner counts for more than one in a car.</summary>
+        public bool WorkingACorner;
+
+        private int _lastPresenceTick;
+
+        /// <summary>
+        /// Adds rep with the gang you run with, capped and announced.
+        ///
+        /// Everything that earns rep funnels through here so the amounts stay comparable to
+        /// each other: standing on the block is a trickle, a sale is a nudge, a body is real.
+        /// </summary>
+        public void AddRep(float amount, string why = null)
+        {
+            if (!IsAffiliated || Math.Abs(amount) < 0.001f) return;
+
+            var standing = StandingFor(Current.Id);
+            var before = standing.Rep;
+
+            standing.Rep = Math.Max(-100f, Math.Min(1000f, standing.Rep + amount));
+
+            // Only worth telling them about when it is a lump, not a trickle.
+            if (!string.IsNullOrEmpty(why) && standing.Rep - before >= 1f)
+            {
+                Notify.Ticker("~g~+" + (standing.Rep - before).ToString("0") + " rep~s~ " + why);
+            }
+        }
+
+        /// <summary>Rep for a completed sale. Called by the dealing code.</summary>
+        public void CreditSale() => AddRep(SaleRep);
+
+        /// <summary>Rep for buying weight. Called when a purchase lands.</summary>
+        public void CreditPurchase() => AddRep(BuyRep);
+
+        /// <summary>Rep for a job finished. Called by mission code when there is any.</summary>
+        public void CreditMission() => AddRep(MissionRep, "for handling that");
+
+        /// <summary>
+        /// A slow drip for simply being seen on your own blocks. Being around is how anyone
+        /// becomes a face, so standing on the corner counts for something even on a day you
+        /// sell nothing.
+        /// </summary>
+        private void TickPresence(TurfWatch turf)
+        {
+            if (!IsAffiliated || turf == null) return;
+            if (turf.Status != TurfStatus.Home) { _lastPresenceTick = 0; return; }
+
+            var now = Game.GameTime;
+            if (_lastPresenceTick == 0) { _lastPresenceTick = now; return; }
+
+            var minutes = (now - _lastPresenceTick) / 60000f;
+            if (minutes < 0.25f) return;
+
+            _lastPresenceTick = now;
+            AddRep(PresenceRepPerMinute * minutes);
+        }
+
+        /// <summary>Where the presence drip is driven from, once turf is known.</summary>
+        public TurfWatch Turf;
 
         /// <summary>Orders nearby allies onto whoever is attacking the player.</summary>
         public int CallBackup(Ped target)

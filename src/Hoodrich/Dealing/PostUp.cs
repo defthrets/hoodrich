@@ -81,6 +81,14 @@ namespace Hoodrich.Dealing
         /// <summary>Chance per scan of a rival car coming past, once you have been here a while.</summary>
         private const float DriveByChancePercent = 4f;
 
+        /// <summary>Beat between your line and the buyer's answer, so they do not overlap.</summary>
+
+        private const int BuyerReplyDelayMs = 1000;
+
+
+        
+
+
         /// <summary>How far a rival can be and still notice you working their block.</summary>
         private const float RivalNoticeRange = 28f;
 
@@ -134,6 +142,12 @@ namespace Hoodrich.Dealing
         private readonly List<Ped> _rivals = new List<Ped>();
         private Vehicle _driveByCar;
 
+        
+
+        /// <summary>Buyer waiting to answer, and when.</summary>
+        private Ped _pendingSpeaker;
+        private int _pendingSpeakAt;
+
         public PostUp(Settings cfg, PlayerState state, Pricing pricing)
         {
             _cfg = cfg;
@@ -178,6 +192,7 @@ namespace Hoodrich.Dealing
             _earned = 0;
             _lastScan = 0;
             _postedAt = Game.GameTime;
+            if (Crew != null) Crew.WorkingACorner = true;
             _driveBys = 0;
             State = PostState.Posted;
 
@@ -201,6 +216,7 @@ namespace Hoodrich.Dealing
             State = PostState.Idle;
             _product = null;
             _cornerHeat = 0f;
+            if (Crew != null) Crew.WorkingACorner = false;
 
             if (!string.IsNullOrEmpty(reason)) Notify.Ticker("~o~" + reason + "~s~");
 
@@ -237,9 +253,29 @@ namespace Hoodrich.Dealing
             }
 
 
-            switch (State)
+            // The buyer's answer is on a short fuse so it lands after the player's line.
+
+
+            if (_pendingSpeaker != null && Game.GameTime >= _pendingSpeakAt)
+
+
             {
-                case PostState.Dealing:
+
+
+                Say(_pendingSpeaker, BuyerLines);
+
+
+                _pendingSpeaker = null;
+
+
+            }
+
+
+
+            
+
+
+            switch (State)            {                case PostState.Dealing:
                     TickDeal(player);
                     return;
                 case PostState.Approaching:
@@ -479,8 +515,8 @@ namespace Hoodrich.Dealing
             if (Crew != null && Crew.IsAffiliated)
             {
                 var standing = Crew.CurrentStanding;
-                standing.MoneyEarned += payout;
-                standing.Deals++;
+                standing.MoneyEarned += payout;                standing.Deals++;
+                Crew.CreditSale();
             }
 
             if (customer != null && customer.Exists())
@@ -488,7 +524,10 @@ namespace Hoodrich.Dealing
                 try { Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, customer.Handle, false); }
                 catch { }
 
-                Say(customer, BuyerLines);
+                // Held back a beat: both talking at once was two voices over each other rather
+                // than an exchange. The player speaks, then the buyer answers.
+                _pendingSpeaker = customer;
+                _pendingSpeakAt = Game.GameTime + BuyerReplyDelayMs;
             }
 
             Say(player, SellerLines);

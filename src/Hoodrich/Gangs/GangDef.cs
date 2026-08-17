@@ -72,6 +72,15 @@ namespace Hoodrich.Gangs
         /// <summary>Player respect needed before this gang will take you on.</summary>
         public float JoinRespect;
 
+        /// <summary>
+        /// Whether this gang will take you on at all.
+        ///
+        /// Only the Families for now. The others are fully in the world -- they hold their
+        /// blocks, they sell to you, their leader talks to you -- you simply cannot sign on
+        /// with them, so the story has one home rather than seven interchangeable ones.
+        /// </summary>
+        public bool Joinable;
+
         public bool IsRivalOf(string gangId)
         {
             if (string.IsNullOrEmpty(gangId)) return false;

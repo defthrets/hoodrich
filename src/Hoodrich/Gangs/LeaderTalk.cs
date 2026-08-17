@@ -1,4 +1,5 @@
 using System;
+using GTA;
 using Hoodrich.Core;
 using Hoodrich.Economy;
 using Hoodrich.State;
@@ -20,15 +21,17 @@ namespace Hoodrich.Gangs
         private readonly Affiliation _crew;
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
+        private readonly Pricing _pricing;
 
         public LeaderTalk(GangLeaders leaders, GangRegistry gangs, Affiliation crew,
-                          PlayerState state, Drugs drugs)
+                          PlayerState state, Drugs drugs, Pricing pricing)
         {
             _leaders = leaders;
             _gangs = gangs;
             _crew = crew;
             _state = state;
             _drugs = drugs;
+            _pricing = pricing;
         }
 
         public DialogueNode Root(LeaderDef def)
@@ -59,13 +62,27 @@ namespace Hoodrich.Gangs
             node.Say("What's the work?", () => TheWork(def, gang),
                      "Ask what they move");
 
-            var short_ = _state.Respect < gang.JoinRespect;
+            // Every gang sells to you whether or not they will have you. That is the point of
+            // keeping the other six around.
+            node.Say("I'm buying.", () => BuyList(def, gang),
+                     "Buy weight off him");
 
-            node.SayIf(!_crew.IsAffiliated, "You already run with " +
-                       (_crew.IsAffiliated ? _crew.Current.Name : "somebody"),
-                       "Put me on.", () => AskToJoin(def, gang),
-                       short_ ? "He may not rate you yet"
-                              : "Sign on with " + gang.Name);
+            if (gang.Joinable)
+            {
+                var short_ = _state.Respect < gang.JoinRespect;
+
+                node.SayIf(!_crew.IsAffiliated, "You already run with " +
+                           (_crew.IsAffiliated ? _crew.Current.Name : "somebody"),
+                           "Put me on.", () => AskToJoin(def, gang),
+                           short_ ? "He may not rate you yet"
+                                  : "Sign on with " + gang.Name);
+            }
+            else
+            {
+                // They will trade with you all day and never take you on.
+                node.Say("Put me on.", () => NotTakingAnyone(def, gang),
+                         "He is not recruiting");
+            }
 
             node.Leave("Forget it.");
             return node;
@@ -118,9 +135,98 @@ namespace Hoodrich.Gangs
             return yes;
         }
 
+        /// <summary>
+        /// A gang that does not recruit, saying so in its own voice. He still sells to you --
+        /// business is business -- he just is not making you one of his.
+        /// </summary>
+        private DialogueNode NotTakingAnyone(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Nah. We don't take people in off the street, and you ain't people. " +
+                "You want to buy somethin', that's different. That I'll do all day.");
+
+            node.Say("Fair enough.", () => Root(def));
+            node.Leave();
+            return node;
+        }
+
         private static string JoinNames(GangDef gang)
         {
             return string.Join(" and ", gang.Rivals.ToArray());
+        }
+
+        // ---- buying off him ----------------------------------------------------
+
+        /// <summary>How much weight he shifts in one go.</summary>
+        private const float LotGrams = 30f;
+
+        /// <summary>
+        /// Buying weight, face to face.
+        ///
+        /// There used to be a separate corner dealer standing about for every gang doing this
+        /// job, which was a second man to find for no reason. The leader IS the connect: you
+        /// walk up to him and ask, and every gang will sell to you whether or not they will
+        /// have you.
+        /// </summary>
+        private DialogueNode BuyList(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang, "How much you want?");
+
+            foreach (var id in gang.Drugs)
+            {
+                var product = _drugs.Get(id);
+                if (product == null) continue;
+
+                var cost = _pricing.PurchaseCost(product, LotGrams);
+                var canPay = Game.Player.Money >= cost;
+                var fits = _state.Stash.FreeSpace >= LotGrams - 0.001f;
+
+                var blocked = !canPay ? "You are $" + (cost - Game.Player.Money).ToString("N0") + " short"
+                            : !fits ? "You cannot carry that much"
+                            : "";
+
+                node.SayIf(blocked.Length == 0, blocked,
+                           LotGrams.ToString("0") + "g of " + product.Name.ToLowerInvariant() + ".",
+                           () => Buy(def, gang, product, cost),
+                           "$" + cost.ToString("N0"));
+            }
+
+            if (gang.Drugs.Count == 0)
+            {
+                node.Say("...", () => Root(def), "He has nothing to sell you");
+            }
+
+            node.Say("Not right now.", () => Root(def));
+            return node;
+        }
+
+        private DialogueNode Buy(LeaderDef def, GangDef gang, DrugDef product, int cost)
+        {
+            var taken = _state.Stash.AddBulk(product.Id, LotGrams);
+            if (taken <= 0.005f)
+            {
+                return Node(def, gang, "You got nowhere to put it. Come back with empty pockets.");
+            }
+
+            // Charged for what actually fit, so a part-full pocket is not a part-paid robbery.
+            var charged = (int)Math.Round(cost * (taken / LotGrams));
+            Game.Player.Money -= charged;
+
+            _state.Touch();
+            _crew.CreditPurchase();
+
+            Notify.Ticker("~y~-$" + charged.ToString("N0") + "~s~  " + taken.ToString("0.#") +
+                          "g of " + product.Name.ToLowerInvariant());
+            Log.Info("Bought " + taken.ToString("0.#") + "g " + product.Id + " off " + def.Name +
+                     " for $" + charged + ".");
+
+            var node = Node(def, gang,
+                "That's " + taken.ToString("0") + " grams. " + product.SplitVerb +
+                " it before you try and move it, and don't come back empty handed.");
+
+            node.Say("Anything else.", () => BuyList(def, gang));
+            node.Leave("Got it.");
+            return node;
         }
 
         // ---- once you are in ---------------------------------------------------
@@ -135,9 +241,8 @@ namespace Hoodrich.Gangs
             node.Say("How am I doing?", () => Standing(def, gang),
                      "Ask what they think of you");
 
-            node.SayIf(false, "Coming soon",
-                       "I need a re-up.", () => null,
-                       "Buy product off him");
+            node.Say("I need a re-up.", () => BuyList(def, gang),
+                     "Buy weight off him");
 
             node.SayIf(false, "Coming soon",
                        "Got any work for me?", () => null,

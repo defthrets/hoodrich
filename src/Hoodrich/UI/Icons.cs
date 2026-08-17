@@ -51,6 +51,9 @@ namespace Hoodrich.UI
         public static readonly Icon Armour = new Icon(Menu, "shop_armour_icon_a");
         public static readonly Icon Ammo = new Icon(Menu, "shop_ammo_icon_a");
         public static readonly Icon Tattoo = new Icon(Menu, "shop_tattoos_icon_a");
+
+        /// <summary>What you are carrying: the multiplayer inventory's own bag sprite.</summary>
+        public static readonly Icon Stash = new Icon(Inventory, "mp_specitem_briefcase");
         public static readonly Icon Warning = new Icon(Menu, "mp_alerttriangle");
         public static readonly Icon Tick = new Icon(Menu, "shop_tick_icon");
         public static readonly Icon Locked = new Icon(Menu, "shop_lock");

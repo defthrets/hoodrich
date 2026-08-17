@@ -297,47 +297,77 @@ namespace Hoodrich.Gangs
 
         // ---- map markers -------------------------------------------------------
 
+        /// <summary>Gang skull, the sprite the game uses for its own gang markers.</summary>
+        private const int GangIconSprite = 84;
+
         /// <summary>
-        /// Every leader is marked permanently, so finding one is navigation rather than luck.
-        /// The marker only disappears for the crew you already run with.
+        /// Marks the one leader worth finding, attached to the MAN rather than to a coordinate
+        /// so the marker walks with him.
+        ///
+        /// Only the gang you can actually join is marked. The others are still out there and
+        /// still sell to you, but a map peppered with skulls you have no business visiting is
+        /// noise, not navigation.
         /// </summary>
         private void SyncBlips()
         {
             foreach (var def in _defs)
             {
-                var mine = _crew.IsAffiliated &&
-                           string.Equals(_crew.Current.Id, def.GangId, StringComparison.OrdinalIgnoreCase);
+                var gang = _gangs.Get(def.GangId);
+                var worthMarking = gang != null && gang.Joinable;
 
-                if (mine)
+                _blips.TryGetValue(def.GangId, out var existing);
+
+                // The blip is on the ped, so it only exists while he does.
+                var live = _liveDef != null &&
+                           string.Equals(_liveDef.GangId, def.GangId, StringComparison.OrdinalIgnoreCase) &&
+                           _livePed != null && _livePed.Exists();
+
+                if (!worthMarking)
                 {
-                    if (_blips.TryGetValue(def.GangId, out var owned))
+                    if (existing != null)
                     {
-                        try { if (owned != null && owned.Exists()) owned.Delete(); } catch { }
+                        try { if (existing.Exists()) existing.Delete(); } catch { }
                         _blips.Remove(def.GangId);
                     }
                     continue;
                 }
 
-                if (_blips.TryGetValue(def.GangId, out var existing) && existing != null && existing.Exists())
+                if (existing != null && existing.Exists())
                 {
-                    continue;
-                }
+                    // Swap a coordinate marker for one on the man as soon as he is around.
+                    if (!live || existing.Handle == _pedBlipHandle) continue;
 
-                var spot = SpotFor(def);
-                if (spot == Vector3.Zero) continue;
+                    try { existing.Delete(); } catch { }
+                    _blips.Remove(def.GangId);
+                }
 
                 try
                 {
-                    var blip = World.CreateBlip(spot);
-                    if (blip == null || !blip.Exists()) continue;
+                    Blip blip;
 
-                    var gang = _gangs.Get(def.GangId);
+                    if (live)
+                    {
+                        var handle = Function.Call<int>(Hash.ADD_BLIP_FOR_ENTITY, _livePed.Handle);
+                        if (handle == 0) continue;
 
-                    blip.Sprite = BlipSprite.Enemy;
-                    blip.Color = (BlipColor)(gang?.BlipColour ?? 0);
-                    blip.Name = def.Name + " -- " + (gang?.Name ?? def.GangId);
+                        blip = new Blip(handle);
+                        _pedBlipHandle = handle;
+                    }
+                    else
+                    {
+                        var spot = SpotFor(def);
+                        if (spot == Vector3.Zero) continue;
+
+                        blip = World.CreateBlip(spot);
+                        if (blip == null || !blip.Exists()) continue;
+                    }
+
+                    Function.Call(Hash.SET_BLIP_SPRITE, blip.Handle, GangIconSprite);
+                    Function.Call(Hash.SET_BLIP_COLOUR, blip.Handle, gang.BlipColour);
+
+                    blip.Name = def.Name + " -- " + gang.Name;
                     blip.IsShortRange = false;
-                    blip.Scale = 0.8f;
+                    blip.Scale = 0.85f;
 
                     _blips[def.GangId] = blip;
                 }
@@ -347,6 +377,9 @@ namespace Hoodrich.Gangs
                 }
             }
         }
+
+        /// <summary>Handle of the blip currently attached to a ped, so it is not rebuilt.</summary>
+        private int _pedBlipHandle;
 
         // ---- per-tick ----------------------------------------------------------
 
