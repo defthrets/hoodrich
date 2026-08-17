@@ -1,0 +1,481 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using GTA;
+using GTA.Math;
+using GTA.Native;
+using Hoodrich.Core;
+using Hoodrich.Economy;
+using Hoodrich.State;
+using Hoodrich.Supply;
+using Hoodrich.Territory;
+using Hoodrich.UI;
+
+namespace Hoodrich.Gangs
+{
+    /// <summary>The man you have to find before a crew will have anything to do with you.</summary>
+    internal sealed class LeaderDef
+    {
+        public string GangId = "";
+        public string Name = "";
+
+        /// <summary>Zone he holds court in. Drives both his map marker and where he stands.</summary>
+        public string HomeZone = "";
+
+        public readonly List<string> Models = new List<string>();
+
+        /// <summary>Said when you walk up unaffiliated.</summary>
+        public string Greeting = "";
+
+        /// <summary>Said when he takes you on.</summary>
+        public string Accept = "";
+
+        /// <summary>Said when you have not earned it yet.</summary>
+        public string Refuse = "";
+
+        /// <summary>Said when you already run with him.</summary>
+        public string Already = "";
+    }
+
+    /// <summary>
+    /// Gang leaders: where they are, and how you get in with them.
+    ///
+    /// Every crew has one, permanently marked on the map so joining is something you go and
+    /// DO rather than a wedge you pick. He is also the crew's first dealer -- taking you on
+    /// comes with a bag fronted to you, because a crew does not hand a stranger cash, it hands
+    /// him work.
+    /// </summary>
+    internal sealed class GangLeaders
+    {
+        private const float SpawnRange = 120f;
+        private const float DespawnRange = 200f;
+        private const float TalkRange = 3.0f;
+        private const float MarkerRange = 60f;
+        private const int UpdateIntervalMs = 800;
+
+        private readonly List<LeaderDef> _defs = new List<LeaderDef>();
+        private readonly Dictionary<string, Blip> _blips = new Dictionary<string, Blip>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Vector3> _spots = new Dictionary<string, Vector3>(StringComparer.OrdinalIgnoreCase);
+
+        private readonly Settings _cfg;
+        private readonly GangRegistry _gangs;
+        private readonly ZoneMap _zones;
+        private readonly Affiliation _crew;
+        private readonly PlayerState _state;
+
+        private LeaderDef _liveDef;
+        private Ped _livePed;
+        private int _lastUpdate;
+        private bool _greeted;
+
+        public GangLeaders(Settings cfg, GangRegistry gangs, ZoneMap zones, Affiliation crew, PlayerState state)
+        {
+            _cfg = cfg;
+            _gangs = gangs;
+            _zones = zones;
+            _crew = crew;
+            _state = state;
+
+            AddDefaults();
+        }
+
+        public IReadOnlyList<LeaderDef> All => _defs;
+
+        /// <summary>The leader the player is close enough to talk to, if any.</summary>
+        public LeaderDef InReach
+        {
+            get
+            {
+                if (_liveDef == null || _livePed == null || !_livePed.Exists() || !_livePed.IsAlive) return null;
+
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return null;
+
+                return player.Position.DistanceTo(_livePed.Position) <= TalkRange ? _liveDef : null;
+            }
+        }
+
+        public LeaderDef Get(string gangId)
+        {
+            return _defs.Find(d => string.Equals(d.GangId, gangId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public Vector3 SpotFor(LeaderDef def)
+        {
+            if (def == null) return Vector3.Zero;
+            if (_spots.TryGetValue(def.GangId, out var v)) return v;
+
+            var spot = _zones.GroundedCentre(def.HomeZone);
+            _spots[def.GangId] = spot;
+            return spot;
+        }
+
+        // ---- who they are ------------------------------------------------------
+
+        private void AddDefaults()
+        {
+            Add("families", "Uncle Dee", "CHAMH",
+                new[] { "g_m_y_famdnf_01", "g_m_y_famca_01", "a_m_m_soucent_01" },
+                "Who sent you? Nah, don't answer. What you want.",
+                "Alright. You can hang round the block, run a few things. But you ain't Family " +
+                "till the set says you are. Take this, move it, come back when it's gone.",
+                "Slow down. You ain't done nothin' for nobody yet. Go put some work in first.",
+                "You already ride with us. Go handle your business.");
+
+            Add("ballas", "OG Reese", "RANCHO",
+                new[] { "g_m_y_ballaorig_01", "g_m_y_ballaeast_01", "a_m_m_soucent_02" },
+                "You a long way from wherever you from.",
+                "Purple looks alright on you. You ain't one of us yet though -- you a worker. " +
+                "Take this, bring me my money, then we talk.",
+                "Nah. You ain't put in nothin'. Come back when your name means somethin'.",
+                "You already with us. Go on.");
+
+            Add("vagos", "El Tio", "EBURO",
+                new[] { "g_m_y_mexgoon_02", "g_m_y_mexgoon_01", "a_m_y_mexthug_01" },
+                "You lost, or you looking for something.",
+                "Bueno. You run for us, not with us -- not yet. Take this, move it, don't be " +
+                "stupid with it. Then we see.",
+                "You are nobody to me yet. Go make a name, then come back.",
+                "You are already with us. Go work.");
+
+            Add("marabunta", "Chavo", "CYPRE",
+                new[] { "g_m_y_salvagoon_01", "g_m_y_salvaboss_01", "a_m_y_mexthug_01" },
+                "You standing in the wrong place to be asking questions.",
+                "You want in, you start at the bottom like everyone. Take this, sell it, " +
+                "bring back what's ours.",
+                "You have not earned a word from me. Go and do something worth hearing about.",
+                "You are one of ours already.");
+
+            Add("lost", "Bull", "SLAB",
+                new[] { "g_m_y_lost_02", "g_m_y_lost_01", "a_m_m_hillbilly_01" },
+                "You ain't wearing a patch, so make it quick.",
+                "You're a hangaround. That's it. Hangarounds work. Take this, shift it, " +
+                "don't touch it yourself.",
+                "Hangarounds earn. You ain't earned. Come back when you have.",
+                "You're already riding with us.");
+
+            Add("triads", "Uncle Wei", "KOREAT",
+                new[] { "g_m_m_chiboss_01", "g_m_m_chigoon_01", "a_m_y_ktown_01" },
+                "You are not expected. Speak.",
+                "You may work for us. You are not of us -- that takes years, not a conversation. " +
+                "Take this. Return with what it is worth.",
+                "You have done nothing. There is nothing to discuss. Go.",
+                "You already work for us. Do so.");
+
+            Add("armenians", "Sarkis", "ALTA",
+                new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "a_m_m_eastsa_02" },
+                "You want something. Everybody wants something.",
+                "You can carry for us. That is all, for now. Take this, sell it, bring the money. " +
+                "Then we find out what you are.",
+                "You are nobody. Nobody gets anything. Come back when that changes.",
+                "You are already ours.");
+        }
+
+        private void Add(string gangId, string name, string zone, string[] models,
+                         string greeting, string accept, string refuse, string already)
+        {
+            var def = new LeaderDef
+            {
+                GangId = gangId,
+                Name = name,
+                HomeZone = zone,
+                Greeting = greeting,
+                Accept = accept,
+                Refuse = refuse,
+                Already = already
+            };
+            def.Models.AddRange(models);
+            _defs.Add(def);
+        }
+
+        // ---- map markers -------------------------------------------------------
+
+        /// <summary>
+        /// Every leader is marked permanently, so finding one is navigation rather than luck.
+        /// The marker only disappears for the crew you already run with.
+        /// </summary>
+        private void SyncBlips()
+        {
+            foreach (var def in _defs)
+            {
+                var mine = _crew.IsAffiliated &&
+                           string.Equals(_crew.Current.Id, def.GangId, StringComparison.OrdinalIgnoreCase);
+
+                if (mine)
+                {
+                    if (_blips.TryGetValue(def.GangId, out var owned))
+                    {
+                        try { if (owned != null && owned.Exists()) owned.Delete(); } catch { }
+                        _blips.Remove(def.GangId);
+                    }
+                    continue;
+                }
+
+                if (_blips.TryGetValue(def.GangId, out var existing) && existing != null && existing.Exists())
+                {
+                    continue;
+                }
+
+                var spot = SpotFor(def);
+                if (spot == Vector3.Zero) continue;
+
+                try
+                {
+                    var blip = World.CreateBlip(spot);
+                    if (blip == null || !blip.Exists()) continue;
+
+                    var gang = _gangs.Get(def.GangId);
+
+                    blip.Sprite = BlipSprite.Enemy;
+                    blip.Color = (BlipColor)(gang?.BlipColour ?? 0);
+                    blip.Name = def.Name + " -- " + (gang?.Name ?? def.GangId);
+                    blip.IsShortRange = false;
+                    blip.Scale = 0.8f;
+
+                    _blips[def.GangId] = blip;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not blip leader " + def.GangId + ": " + ex.Message);
+                }
+            }
+        }
+
+        // ---- per-tick ----------------------------------------------------------
+
+        public void Update()
+        {
+            var now = Game.GameTime;
+            if (now - _lastUpdate < UpdateIntervalMs) return;
+            _lastUpdate = now;
+
+            SyncBlips();
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            // Whichever leader you are closest to, if you are near enough to matter.
+            LeaderDef nearest = null;
+            var nearestDistance = float.MaxValue;
+
+            foreach (var def in _defs)
+            {
+                var spot = SpotFor(def);
+                if (spot == Vector3.Zero) continue;
+
+                var d = player.Position.DistanceTo(spot);
+                if (d >= nearestDistance) continue;
+
+                nearestDistance = d;
+                nearest = def;
+            }
+
+            if (nearest == null || nearestDistance > DespawnRange)
+            {
+                Despawn();
+                return;
+            }
+
+            if (_liveDef != null && _liveDef.GangId != nearest.GangId) Despawn();
+
+            if (_livePed == null && nearestDistance <= SpawnRange) Spawn(nearest);
+
+            GreetIfNeeded();
+        }
+
+        private void Spawn(LeaderDef def)
+        {
+            var spot = SpotFor(def);
+            if (spot == Vector3.Zero) return;
+
+            var model = ResolveModel(def);
+            if (model == null) return;
+
+            try
+            {
+                _livePed = World.CreatePed(model.Value, spot);
+                if (_livePed == null || !_livePed.Exists()) return;
+
+                var h = _livePed.Handle;
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, h, "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
+
+                var gang = _gangs.Get(def.GangId);
+                if (gang != null && gang.GroupHash != 0)
+                {
+                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, h, gang.GroupHash);
+                }
+
+                _livePed.IsPersistent = true;
+                _livePed.BlockPermanentEvents = true;
+
+                _liveDef = def;
+                _greeted = false;
+
+                Log.Info("Leader " + def.Name + " (" + def.GangId + ") spawned in " + def.HomeZone + ".");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Could not spawn leader " + def.GangId, ex);
+            }
+            finally
+            {
+                try { model.Value.MarkAsNoLongerNeeded(); } catch { }
+            }
+        }
+
+        private static Model? ResolveModel(LeaderDef def)
+        {
+            foreach (var name in def.Models)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+                    if (!model.Request(1500)) continue;
+                    return model;
+                }
+                catch
+                {
+                    // Try the next one.
+                }
+            }
+            return null;
+        }
+
+        private void Despawn()
+        {
+            if (_livePed != null && _livePed.Exists())
+            {
+                try
+                {
+                    _livePed.MarkAsNoLongerNeeded();
+                    _livePed.Delete();
+                }
+                catch { }
+            }
+
+            _livePed = null;
+            _liveDef = null;
+            _greeted = false;
+        }
+
+        private void GreetIfNeeded()
+        {
+            if (_greeted || InReach == null) return;
+            _greeted = true;
+
+            var mine = _crew.IsAffiliated &&
+                       string.Equals(_crew.Current.Id, _liveDef.GangId, StringComparison.OrdinalIgnoreCase);
+
+            Dialogue.Say(_liveDef.Name, mine ? _liveDef.Already : _liveDef.Greeting);
+        }
+
+        // ---- joining -----------------------------------------------------------
+
+        /// <summary>
+        /// Signing on. Returns a player-facing refusal, or null once you are in.
+        ///
+        /// Joining is not a handshake -- it is being handed work. The crew fronts you a bag on
+        /// the spot, which is both the tutorial and the debt that starts the relationship.
+        /// </summary>
+        public string Join(LeaderDef def, Drugs catalogue)
+        {
+            if (def == null) return "Nobody here.";
+
+            var gang = _gangs.Get(def.GangId);
+            if (gang == null) return "Nobody here.";
+
+            if (_crew.IsAffiliated && _crew.Current.Id == gang.Id)
+            {
+                Dialogue.Say(def.Name, def.Already);
+                return null;
+            }
+
+            if (_state.Respect < gang.JoinRespect)
+            {
+                Dialogue.Say(def.Name, def.Refuse);
+                return "Need " + gang.JoinRespect.ToString("F0") + " respect. You have " +
+                       _state.Respect.ToString("F0") + ".";
+            }
+
+            var failure = _crew.Join(gang, _state.Respect);
+            if (failure != null)
+            {
+                Dialogue.Say(def.Name, def.Refuse);
+                return failure;
+            }
+
+            Dialogue.Say(def.Name, def.Accept);
+            FrontProduct(gang, catalogue);
+            return null;
+        }
+
+        /// <summary>Hands over a starter bag of whatever the crew moves.</summary>
+        private void FrontProduct(GangDef gang, Drugs catalogue)
+        {
+            if (catalogue == null || gang.Drugs.Count == 0) return;
+
+            var product = catalogue.Get(gang.Drugs[0]);
+            if (product == null) return;
+
+            var grams = Math.Max(1f, _cfg.LeaderFrontGrams);
+            var given = _state.Stash.AddPackaged(product.Id, grams, 1f);
+            if (given <= 0f)
+            {
+                Notify.Problem("you cannot carry what they are trying to hand you.");
+                return;
+            }
+
+            _state.Touch();
+            Notify.Important("~g~" + given.ToString("0") + "g of " + product.Name.ToLowerInvariant() +
+                             " fronted to you.~s~ Post up and move it.");
+            Log.Info("Fronted " + given.ToString("0.#") + "g " + product.Id + " on joining " + gang.Id + ".");
+        }
+
+        /// <summary>Ground marker so a leader reads as somewhere to go, not just a blip.</summary>
+        public void Draw()
+        {
+            foreach (var def in _defs)
+            {
+                var mine = _crew.IsAffiliated &&
+                           string.Equals(_crew.Current.Id, def.GangId, StringComparison.OrdinalIgnoreCase);
+                if (mine) continue;
+
+                var spot = SpotFor(def);
+                if (spot == Vector3.Zero) continue;
+
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) continue;
+                if (player.Position.DistanceTo(spot) > MarkerRange) continue;
+
+                var gang = _gangs.Get(def.GangId);
+                var colour = gang?.Colour ?? Color.White;
+
+                try
+                {
+                    World.DrawMarker(MarkerType.Cylinder, spot, Vector3.Zero, Vector3.Zero,
+                                     new Vector3(1.2f, 1.2f, 0.7f),
+                                     Color.FromArgb(140, colour.R, colour.G, colour.B),
+                                     false, false, false, null, null, false);
+                }
+                catch
+                {
+                    // Cosmetic only.
+                }
+            }
+        }
+
+        public void RestoreWorld()
+        {
+            Despawn();
+            foreach (var kv in _blips)
+            {
+                try { if (kv.Value != null && kv.Value.Exists()) kv.Value.Delete(); } catch { }
+            }
+            _blips.Clear();
+        }
+    }
+}

@@ -90,8 +90,13 @@ namespace Hoodrich.UI
                           (int)c.R, (int)c.G, (int)c.B, (int)c.A);
         }
 
-        /// <summary>Height of one scanline row. Smaller is smoother and costs more rectangles.</summary>
-        private const float RowHeight = 0.0035f;
+        /// <summary>
+        /// Height of one scanline row, as a fraction of screen height. Smaller is smoother and
+        /// costs more rectangles. At 0.0035 the curve visibly stair-stepped; 0.0014 is roughly
+        /// 1.5px at 1080p, which reads as a clean edge, and the whole ring still costs only a
+        /// few hundred DRAW_RECT calls.
+        /// </summary>
+        private const float RowHeight = 0.0014f;
 
         /// <summary>A span wider than this is split, so the half-plane clip stays valid.</summary>
         private const float MaxSpanDegrees = 170f;
@@ -207,8 +212,9 @@ namespace Hoodrich.UI
             var width = x1 - x0;
             var centreDx = (x0 + x1) * 0.5f;
 
-            // dy is measured upward; screen y grows downward.
-            Rect(cx + ToX(centreDx), cy - dy, ToX(width), RowHeight * 1.05f, c);
+            // dy is measured upward; screen y grows downward. The slight overlap hides seams
+            // between rows without visibly thickening the shape.
+            Rect(cx + ToX(centreDx), cy - dy, ToX(width), RowHeight * 1.6f, c);
         }
 
         /// <summary>Ring outline, drawn as a thin wedge covering the given sweep.</summary>

@@ -44,6 +44,7 @@ namespace Hoodrich.Wheel
         private readonly TurfWar _war;
         private readonly HideoutManager _hideouts;
         private readonly PostUp _postUp;
+        private readonly GangLeaders _leaders;
         private readonly WeaponRegistry _weapons;
 
         /// <summary>Set by Main. Hands the player back the game's own weapon wheel.</summary>
@@ -52,7 +53,7 @@ namespace Hoodrich.Wheel
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
-                          TurfWar war, HideoutManager hideouts, PostUp postUp)
+                          TurfWar war, HideoutManager hideouts, PostUp postUp, GangLeaders leaders)
         {
             _cfg = cfg;
             _state = state;
@@ -69,6 +70,7 @@ namespace Hoodrich.Wheel
             _war = war;
             _hideouts = hideouts;
             _postUp = postUp;
+            _leaders = leaders;
         }
 
         private Stash Stash => _state.Stash;
@@ -979,13 +981,41 @@ namespace Hoodrich.Wheel
             }
             else
             {
-                page.Add("No crew", "-", null,
-                    detail: "Find a gang leader on their turf and talk to them",
-                    value: "SOLO",
-                    enabled: false, disabledReason: "Go and find one");
+                // Joining happens face to face. The wheel only offers it when you are actually
+                // standing in front of the man; otherwise it tells you to go and find one.
+                var leader = _leaders.InReach;
+                if (leader != null)
+                {
+                    var gang = _gangs.Get(leader.GangId);
+                    var needed = gang == null ? 0f : gang.JoinRespect;
+                    var ready = _state.Respect >= needed;
+
+                    page.Add("Sign on", "+", () => JoinWith(leader),
+                        detail: ready
+                            ? leader.Name + " will put you to work"
+                            : "He wants " + needed.ToString("F0") + " respect first",
+                        value: gang == null ? leader.Name : gang.Name,
+                        enabled: ready,
+                        disabledReason: "Need " + needed.ToString("F0") + " respect");
+
+                    page.Items[page.Items.Count - 1].Tint = gang?.Colour;
+                }
+                else
+                {
+                    page.Add("No crew", "-", null,
+                        detail: "Gang leaders are marked on your map. Go and talk to one.",
+                        value: "SOLO",
+                        enabled: false, disabledReason: "Go and find one");
+                }
             }
 
             return page;
+        }
+
+        private void JoinWith(LeaderDef leader)
+        {
+            var failure = _leaders.Join(leader, _drugs);
+            if (failure != null) Notify.Problem(failure);
         }
 
         /// <summary>How this gang currently reads to the player, in two words.</summary>

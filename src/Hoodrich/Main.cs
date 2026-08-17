@@ -49,6 +49,9 @@ namespace Hoodrich
         private readonly Bust _bust;
         private readonly DeadDrop _deadDrop;
         private readonly PostUp _postUp;
+        private readonly ZoneMap _zoneMap;
+        private readonly TurfBlips _turfBlips;
+        private readonly GangLeaders _leaders;
         private readonly TerritoryState _territory;
         private readonly TurfWar _war;
         private readonly HideoutManager _hideouts;
@@ -74,6 +77,7 @@ namespace Hoodrich
                 _gangs = GangRegistry.Load();
                 _dealers = DealerManager.Load(_cfg);
                 _weapons = WeaponRegistry.Load();
+                _zoneMap = ZoneMap.Load();
 
                 // Everything the save writes into has to exist before the save is read.
                 _state = new PlayerState();
@@ -93,9 +97,11 @@ namespace Hoodrich
                 _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
                 _cutting = new Cutting(_state.Stash, _state);
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
+                _turfBlips = new TurfBlips(_cfg, _gangs, _zoneMap, _territory);
+                _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts, _postUp);
+                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _war, _hideouts, _postUp, _leaders);
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
 
@@ -147,6 +153,8 @@ namespace Hoodrich
                     _war.Update();
                     _hideouts.Update(_turf);
                     _territory.UpgradeTick();
+                    _leaders.Update();
+                    _turfBlips.Refresh();
                     UpdateLoan();
                 }
 
@@ -156,6 +164,7 @@ namespace Hoodrich
                 _cutting.Draw();
                 _bust.Draw();
                 _postUp.Draw();
+                _leaders.Draw();
                 _war.Draw();
                 _hideouts.Draw();
 
@@ -285,6 +294,8 @@ namespace Hoodrich
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
+            try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
+            try { _turfBlips?.RestoreWorld(); } catch { /* teardown */ }
             try { _hideouts?.RestoreWorld(); } catch { /* teardown */ }
         }
     }

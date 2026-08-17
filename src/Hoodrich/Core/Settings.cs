@@ -207,6 +207,17 @@ namespace Hoodrich.Core
         /// <summary>Fine when a search finds product on you.</summary>
         public int PostUpFine = 2500;
 
+        // ---- map ---------------------------------------------------------------
+
+        /// <summary>Shade gang turf on the map in each gang's colour.</summary>
+        public bool ShowTurfOnMap = true;
+
+        /// <summary>Opacity of those turf shades, 0-255.</summary>
+        public int TurfBlipAlpha = 70;
+
+        /// <summary>Grams a gang leader fronts you when he takes you on.</summary>
+        public float LeaderFrontGrams = 20f;
+
         public static Settings Load()
         {
             var s = new Settings();
@@ -309,6 +320,10 @@ namespace Hoodrich.Core
             s.PostUpSearchSeconds =
                 Clamp(ini.GetFloat("PostUp", "PostUpSearchSeconds", s.PostUpSearchSeconds), 1f, 60f);
             s.PostUpFine = Math.Max(0, ini.GetInt("PostUp", "PostUpFine", s.PostUpFine));
+
+            s.ShowTurfOnMap = ini.GetBool("Map", "ShowTurfOnMap", s.ShowTurfOnMap);
+            s.TurfBlipAlpha = (int)Clamp(ini.GetInt("Map", "TurfBlipAlpha", s.TurfBlipAlpha), 0f, 255f);
+            s.LeaderFrontGrams = Math.Max(0f, ini.GetFloat("Map", "LeaderFrontGrams", s.LeaderFrontGrams));
 
             // An inner radius at or past the outer one would render nothing at all.
             if (s.InnerRadius >= s.OuterRadius - 0.02f)
