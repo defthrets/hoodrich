@@ -513,7 +513,7 @@ namespace Hoodrich.Supply
 
             if (!string.Equals(def.GangId, crew.Current.Id, StringComparison.OrdinalIgnoreCase))
             {
-                return "Not your crew";
+                return "Not the gang you run with";
             }
 
             return null;

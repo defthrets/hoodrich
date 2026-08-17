@@ -53,7 +53,7 @@ namespace Hoodrich.Wheel
         /// <summary>
         /// Set by Main. Where the numbers live.
         ///
-        /// The wheel says "sell" and "re-up"; multipliers, heat percentages and per-crew
+        /// The wheel says "sell" and "re-up"; multipliers, heat percentages and per-gang
         /// standings go here, on a screen you can actually read, instead of crowding the ring
         /// with figures nobody can parse while holding a button down.
         /// </summary>
@@ -97,7 +97,7 @@ namespace Hoodrich.Wheel
                     _state.Notoriety > 50f ? "Police are paying attention"
                     : _state.Notoriety > 20f ? "You have been noticed"
                     : "Nobody is looking at you");
-            you.Row("Crew", _crew.IsAffiliated ? _crew.Current.Name : "riding solo",
+            you.Row("Running with", _crew.IsAffiliated ? _crew.Current.Name : "nobody",
                     _crew.IsAffiliated ? _crew.Current.Colour : (Color?)Palette.TextDim);
             sections.Add(you);
 
@@ -107,7 +107,7 @@ namespace Hoodrich.Wheel
             trade.Row("Total earned", "$" + _state.TotalEarned.ToString("N0"), Palette.Cash);
             sections.Add(trade);
 
-            var crews = new InfoSection { Title = "How the crews see you" };
+            var crews = new InfoSection { Title = "How the gangs see you" };
             foreach (var g in _gangs.All)
             {
                 var standing = _crew.StandingFor(g.Id);
@@ -117,7 +117,7 @@ namespace Hoodrich.Wheel
                 if (standing.Kills > 0) value += "  ·  " + standing.Kills + " kills";
                 if (standing.MoneyEarned > 0) value += "  ·  $" + standing.MoneyEarned.ToString("N0");
 
-                crews.Row(mine ? g.Name + " (yours)" : g.Name, value,
+                crews.Row(mine ? g.Name + " (you run with them)" : g.Name, value,
                           mine ? g.Colour
                                : standing.Rep < 0f ? Palette.Danger
                                : standing.Rep > 0f ? Palette.Cash : (Color?)Palette.TextDim);
@@ -164,7 +164,7 @@ namespace Hoodrich.Wheel
             block.Row("Attention", Multiplier(_turf.TurfHeatMultiplier),
                       _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : (Color?)Palette.Cash);
             block.Row("Lookouts", _crew.NearbyAllies.ToString(), null,
-                      _crew.NearbyAllies > 0 ? "Your people are nearby" : "You are on your own here");
+                      _crew.NearbyAllies > 0 ? "Some of them are around" : "You are on your own here");
             sections.Add(block);
 
             var contacts = new InfoSection { Title = "Your contacts" };
@@ -258,8 +258,8 @@ namespace Hoodrich.Wheel
             return string.Join(", ", names.ToArray());
         }
 
-        /// <summary>Everything you have done for one crew, and what they hold.</summary>
-        private void ShowCrewDetail(GangDef gang)
+        /// <summary>Everything you have done for one gang, and what they hold.</summary>
+        private void ShowGangDetail(GangDef gang)
         {
             var standing = _crew.StandingFor(gang.Id);
             var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
@@ -285,7 +285,7 @@ namespace Hoodrich.Wheel
                 : "just ask their leader");
             sections.Add(them);
 
-            Info?.Open(gang.Name, mine ? "Your crew" : RelationLabel(gang), sections);
+            Info?.Open(gang.Name, mine ? "You run with them" : RelationLabel(gang), sections);
         }
 
         // ---- root --------------------------------------------------------------
@@ -321,8 +321,10 @@ namespace Hoodrich.Wheel
                 disabledReason: _deal.IsBusy ? "Already mid-deal" : "You are cutting");
             page.WithIcon(Icons.Weed);
 
-            page.AddSub("Crew", "%", BuildGangsPage,
-                detail: _crew.IsAffiliated ? "Your people and your blocks" : "Nobody has put you on yet",
+            page.AddSub("Gangs", "%", BuildGangsPage,
+                detail: _crew.IsAffiliated
+                    ? "You run with " + _crew.Current.Name
+                    : "Nobody has put you on yet",
                 value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
             page.WithIcon(Icons.Mask);
 
@@ -755,7 +757,7 @@ namespace Hoodrich.Wheel
             page.Row("This spot", TurfWord(), TurfTint());
             page.Row("Foot traffic", FootfallWord(),
                      _postUp.Footfall == 0 ? Palette.Warn : Palette.Cash);
-            page.Row("Your people", _crew.NearbyAllies > 0 ? "nearby" : "not around",
+            page.Row("Gang around", _crew.NearbyAllies > 0 ? "yes" : "no",
                      _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim);
 
             var held = Stash.WithPackaged(_drugs);
@@ -1098,26 +1100,22 @@ namespace Hoodrich.Wheel
 
         /// <summary>
         /// One wedge per gang. Picking one opens that gang's own page rather than joining
-        /// immediately -- every crew is an entity you can inspect, deal with, or sign up to,
+        /// immediately -- every gang is an entity you can inspect, deal with, or sign up to,
         /// and a mis-flick should never silently change who you run with.
         /// </summary>
         private WheelPage BuildGangsPage()
         {
-            var page = new WheelPage("Crew",
+            var page = new WheelPage("Gangs",
                 _crew.IsAffiliated ? "Running with " + _crew.Current.Name : "Running solo");
 
             // Where you are and who is around you -- the things that change what happens if you
-            // pull something out here. Rep, kills and money made are a readout, not a heads-up,
-            // so they sit behind Status.
-            page.PanelTitle = _crew.IsAffiliated ? _crew.Current.Name : "Nobody";
+            // pull something out here.
+            page.PanelTitle = _crew.IsAffiliated ? _crew.Current.Name : "Not with anybody";
             page.Row("You are on", _turf.ZoneName, TurfTint());
             page.Row("Whose block", TurfWord(), TurfTint());
-            page.Row("Your people", _crew.NearbyAllies > 0 ? "nearby" : "not around",
+            page.Row("Gang around", _crew.NearbyAllies > 0 ? "yes" : "no",
                      _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim);
 
-            // Only YOUR crew belongs here. Listing all seven turned the wheel into a directory,
-            // and joining is something you do by finding a leader in the world, not by picking
-            // a wedge.
             page.AddSub("This block", "#", BuildTurfPage,
                 detail: TurfWord(),
                 value: _turf.ZoneName);
@@ -1125,21 +1123,23 @@ namespace Hoodrich.Wheel
 
             if (_crew.IsAffiliated)
             {
+                // You run WITH them; you do not run them. One wedge for the gang you are down
+                // with -- listing all seven turned the wheel into a directory.
                 var mine = _crew.Current;
 
-                page.AddSub("My crew", "*", () => BuildGangPage(mine),
+                page.AddSub("Who you run with", "*", () => BuildGangPage(mine),
                     detail: "They run " + mine.TurfHint,
                     value: mine.Name);
                 page.Items[page.Items.Count - 1].Tint = mine.Colour;
                 page.WithIcon(Icons.Mask);
 
-                page.Add("Homies", "^", null,
-                    detail: "Pick up a homie to run with you",
+                page.Add("Ride with somebody", "^", null,
+                    detail: "Pick up one of theirs to run with you",
                     enabled: false, disabledReason: "Not in this build yet");
                 page.WithIcon(Icons.Clothes);
 
-                page.Add("Activities", "!", null,
-                    detail: "Work the crew puts your way",
+                page.Add("Work", "!", null,
+                    detail: "Jobs they put your way",
                     enabled: false, disabledReason: "Not in this build yet");
                 page.WithIcon(Icons.Warning);
             }
@@ -1149,13 +1149,14 @@ namespace Hoodrich.Wheel
                 // wheel does not offer it -- you press D-pad right and ask him yourself.
                 var leader = _leaders.InReach;
 
-                page.Add("No crew", "-", null,
+                page.Add("Not with anybody", "-", null,
                     detail: leader != null
                         ? "Press D-pad right to talk to " + leader.Name
                         : "Gang leaders are marked on your map. Go and talk to one.",
                     value: leader != null ? leader.Name.ToUpperInvariant() : "SOLO",
                     enabled: false,
                     disabledReason: leader != null ? "Talk to him" : "Go and find one");
+                page.WithIcon(Icons.Locked);
             }
 
             return page;
@@ -1177,7 +1178,7 @@ namespace Hoodrich.Wheel
             return "rep " + standing.Rep.ToString("0");
         }
 
-        /// <summary>Everything you can do with one particular crew.</summary>
+        /// <summary>Everything you can do with one particular gang.</summary>
         private WheelPage BuildGangPage(GangDef gang)
         {
             var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
@@ -1185,27 +1186,27 @@ namespace Hoodrich.Wheel
             var atWar = _crew.IsAffiliated && !mine &&
                         (_crew.Current.IsRivalOf(gang.Id) || gang.IsRivalOf(_crew.Current.Id));
 
-            var page = new WheelPage(gang.Name, mine ? "Your crew" : RelationLabel(gang));
+            var page = new WheelPage(gang.Name, mine ? "You run with them" : RelationLabel(gang));
 
             page.PanelTitle = gang.Name;
             page.Row("They run", gang.TurfHint);
             page.Row("They move", DrugNames(gang));
             page.Row("Beefing with", RivalNames(gang));
-            page.Row("With you", mine ? "your crew" : RelationLabel(gang),
+            page.Row("With you", mine ? "you run with them" : RelationLabel(gang),
                      mine ? gang.Colour : atWar ? Palette.Danger : (Color?)null);
 
             // Join / leave.
             if (mine)
             {
                 page.Add("Walk away", "x", () => _crew.Leave(),
-                    detail: "Leave the crew. They will not forget it.",
+                    detail: "Stop running with them. They will not forget it.",
                     value: "");
                 page.WithIcon(Icons.Warning);
             }
             else
             {
                 // Joining is a conversation with the man himself, never a wedge.
-                page.Add("Not your crew", "-", null,
+                page.Add("You are not with them", "-", null,
                     detail: "Find their leader on the map and ask him yourself",
                     value: "",
                     enabled: false,
@@ -1238,23 +1239,21 @@ namespace Hoodrich.Wheel
                 page.WithIcon(Icons.Locked);
             }
 
-            // Borrowing. Only your own crew will front you anything.
+            // Borrowing. Only the gang you run with will front you anything.
             var loan = _crew.Loan;
             var theirLoan = loan != null && loan.IsActive &&
                             string.Equals(loan.GangId, gang.Id, StringComparison.OrdinalIgnoreCase);
 
             page.AddSub("Borrow money", "$", () => BuildLoanPage(gang),
-                detail: theirLoan
-                    ? "You owe $" + loan.TotalOwed.ToString("N0") + ", due in " + loan.DaysLeft + " days"
-                    : mine ? "They will front you against your name"
+                detail: theirLoan                        ? "You owe $" + loan.TotalOwed.ToString("N0") + ", due in " + loan.DaysLeft + " days"                        : mine ? "They will front you against your name"
                            : "They will not front you anything",
                 value: theirLoan ? "$" + loan.TotalOwed.ToString("N0") + " owed" : "",
                 enabled: mine || theirLoan,
                 disabledReason: loan != null && loan.IsActive ? "You already owe " + loan.GangId
-                                                              : "Not your crew");
+                                                              : "Not the gang you run with");
             page.WithIcon(Icons.Cash);
 
-            page.Add("How you stand", "*", () => ShowCrewDetail(gang),
+            page.Add("How you stand", "*", () => ShowGangDetail(gang),
                 detail: "What you have done for them, and what they hold",
                 value: "");
             page.WithIcon(Icons.Tattoo);
@@ -1263,7 +1262,7 @@ namespace Hoodrich.Wheel
         }
 
         /// <summary>
-        /// Borrowing from the crew, and the vig that follows. The offer scales with rank,
+        /// Borrowing from the gang you run with, and the vig that follows. The offer scales with rank,
         /// because a Pee-Wee has nothing to lend against.
         /// </summary>
         private WheelPage BuildLoanPage(GangDef gang)

@@ -23,11 +23,25 @@
       "name": "The Families",
       "tag": "FAM",
       "relationshipGroup": "AMBIENT_GANG_FAMILY",
-      "colour": [60, 180, 75],
+      "colour": [
+        60,
+        180,
+        75
+      ],
       "blipColour": 2,
-      "drugs": ["weed", "crack"],
-      "rivals": ["ballas", "vagos"],
-      "turf": ["DAVIS", "CHAMH", "STRAW"],
+      "drugs": [
+        "weed",
+        "crack"
+      ],
+      "rivals": [
+        "ballas",
+        "vagos"
+      ],
+      "turf": [
+        "CHAMH",
+        "DAVIS",
+        "STRAW"
+      ],
       "turfHint": "Davis, Chamberlain Hills, Strawberry",
       "joinRespect": 0
     },
@@ -36,11 +50,25 @@
       "name": "Ballas",
       "tag": "BALL",
       "relationshipGroup": "AMBIENT_GANG_BALLAS",
-      "colour": [145, 70, 190],
+      "colour": [
+        145,
+        70,
+        190
+      ],
       "blipColour": 27,
-      "drugs": ["crack", "weed"],
-      "rivals": ["families", "vagos"],
-      "turf": ["RANCHO", "MURRI", "ZQ_UAR"],
+      "drugs": [
+        "crack",
+        "weed"
+      ],
+      "rivals": [
+        "families",
+        "vagos"
+      ],
+      "turf": [
+        "MURRI",
+        "RANCHO",
+        "ZQ_UAR"
+      ],
       "turfHint": "Rancho, Murrieta Heights, Davis Quartz",
       "joinRespect": 0
     },
@@ -49,11 +77,24 @@
       "name": "Los Santos Vagos",
       "tag": "VAGO",
       "relationshipGroup": "AMBIENT_GANG_MEXICAN",
-      "colour": [235, 195, 40],
+      "colour": [
+        235,
+        195,
+        40
+      ],
       "blipColour": 5,
-      "drugs": ["coke", "meth"],
-      "rivals": ["families", "ballas"],
-      "turf": ["EBURO", "LMESA"],
+      "drugs": [
+        "coke",
+        "meth"
+      ],
+      "rivals": [
+        "families",
+        "ballas"
+      ],
+      "turf": [
+        "EBURO",
+        "LMESA"
+      ],
       "turfHint": "El Burro Heights, La Mesa",
       "joinRespect": 0
     },
@@ -62,11 +103,25 @@
       "name": "Marabunta Grande",
       "tag": "MARA",
       "relationshipGroup": "AMBIENT_GANG_MARABUNTE",
-      "colour": [70, 200, 200],
+      "colour": [
+        70,
+        200,
+        200
+      ],
       "blipColour": 3,
-      "drugs": ["meth", "coke"],
-      "rivals": ["vagos", "families"],
-      "turf": ["CYPRE", "TEXTI", "ELYSIAN"],
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "rivals": [
+        "vagos",
+        "families"
+      ],
+      "turf": [
+        "CYPRE",
+        "ELYSIAN",
+        "TEXTI"
+      ],
       "turfHint": "Cypress Flats, Textile City, Elysian Island",
       "joinRespect": 250
     },
@@ -75,11 +130,26 @@
       "name": "The Lost MC",
       "tag": "LOST",
       "relationshipGroup": "AMBIENT_GANG_LOST",
-      "colour": [200, 200, 200],
+      "colour": [
+        200,
+        200,
+        200
+      ],
       "blipColour": 40,
-      "drugs": ["meth", "heroin"],
-      "rivals": ["families", "vagos"],
-      "turf": ["SLAB", "SANDY", "GRAPES", "HARMO"],
+      "drugs": [
+        "meth",
+        "heroin"
+      ],
+      "rivals": [
+        "families",
+        "vagos"
+      ],
+      "turf": [
+        "GRAPES",
+        "HARMO",
+        "SANDY",
+        "SLAB"
+      ],
       "turfHint": "Stab City, Sandy Shores, Grapeseed",
       "joinRespect": 250
     },
@@ -88,11 +158,25 @@
       "name": "Wei Cheng Triads",
       "tag": "TRI",
       "relationshipGroup": "AMBIENT_GANG_WEICHENG",
-      "colour": [220, 60, 60],
+      "colour": [
+        220,
+        60,
+        60
+      ],
       "blipColour": 1,
-      "drugs": ["ecstasy", "heroin"],
-      "rivals": ["marabunta", "armenians"],
-      "turf": ["KOREAT", "MIRR", "HAWICK"],
+      "drugs": [
+        "ecstasy",
+        "heroin"
+      ],
+      "rivals": [
+        "marabunta",
+        "armenians"
+      ],
+      "turf": [
+        "HAWICK",
+        "KOREAT",
+        "MIRR"
+      ],
       "turfHint": "Little Seoul, Mirror Park, Hawick",
       "joinRespect": 900
     },
@@ -101,11 +185,23 @@
       "name": "Armenian Mob",
       "tag": "ARM",
       "relationshipGroup": "AMBIENT_GANG_ARMENIAN",
-      "colour": [150, 40, 60],
+      "colour": [
+        150,
+        40,
+        60
+      ],
       "blipColour": 76,
-      "drugs": ["heroin"],
-      "rivals": ["triads"],
-      "turf": ["ALTA", "BURTON", "PBOX"],
+      "drugs": [
+        "heroin"
+      ],
+      "rivals": [
+        "triads"
+      ],
+      "turf": [
+        "ALTA",
+        "BURTON",
+        "PBOX"
+      ],
       "turfHint": "Alta, Burton, Pillbox Hill",
       "joinRespect": 900
     }

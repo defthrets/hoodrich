@@ -100,7 +100,7 @@ namespace Hoodrich.Gangs
         /// <summary>Returns a player-facing refusal, or null on success.</summary>
         public string Join(GangDef gang, float playerRespect)
         {
-            if (gang == null) return "No such crew.";
+            if (gang == null) return "No such gang.";
             if (Current != null && Current.Id == gang.Id) return "You already run with " + gang.Name + ".";
 
             var standing = StandingFor(gang.Id);
