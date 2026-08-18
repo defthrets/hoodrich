@@ -14,6 +14,15 @@ namespace Hoodrich.Social
         /// <summary>The blue tick. Rare on purpose -- almost nobody on this block has one.</summary>
         public bool Verified;
 
+        /// <summary>
+        /// male, female, or none for an organisation.
+        ///
+        /// Only used to pick which of the game's phone-contact pictures turns up on the
+        /// notification. A woman's post arriving with a man's face on it is the kind of small
+        /// wrongness that makes a whole system read as generated.
+        /// </summary>
+        public string Gender = "male";
+
         /// <summary>Avatar colour, derived once from the handle so it never changes on them.</summary>
         public Color Tint = Color.FromArgb(255, 90, 96, 92);
 

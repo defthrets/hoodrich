@@ -63,17 +63,50 @@ namespace Hoodrich.Social
         private const int StartingFollowers = 0;
 
         /// <summary>
-        /// Contact pictures, assigned per handle so somebody always turns up looking the same.
+        /// Contact pictures, split by who is holding the phone.
         ///
-        /// These are the game's own phone-contact textures. A real headshot needs a ped that
-        /// exists in the world, and the people writing these posts do not -- so the notification
-        /// borrows the same art the phone uses for people who are not on screen.
+        /// These are the game's own phone-contact textures -- every face it ships that belongs
+        /// to a nobody, which is most of them. A real headshot needs a ped that exists in the
+        /// world and the people writing these posts do not, so the notification borrows the
+        /// same art the phone uses for anybody who is not on screen.
+        ///
+        /// The story leads are deliberately absent. Franklin, Michael, Trevor, Lamar and
+        /// Stretch are people who exist in this mod and can be stood in front of; seeing one of
+        /// their faces on a stranger complaining about the price of chicken breaks the whole
+        /// illusion in a way no amount of good writing recovers from.
         /// </summary>
-        private static readonly string[] ContactPics =
+        private static readonly string[] MalePics =
         {
-            "CHAR_DEFAULT", "CHAR_BLOCKED", "CHAR_CHAT_CALL", "CHAR_SOCIAL_CLUB",
-            "CHAR_LAMAR", "CHAR_FRANKLIN", "CHAR_DENISE", "CHAR_SIMEON",
-            "CHAR_MP_MECHANIC", "CHAR_MP_GERALD", "CHAR_MP_STRETCH", "CHAR_MP_MERRYWEATHER"
+            "CHAR_ANDREAS", "CHAR_BARRY", "CHAR_BEVERLY", "CHAR_CASTRO", "CHAR_CHEF",
+            "CHAR_CHENG", "CHAR_CHENGSR", "CHAR_CRIS", "CHAR_DAVE", "CHAR_DEVIN",
+            "CHAR_DOM", "CHAR_DREYFUSS", "CHAR_DR_FRIEDLANDER", "CHAR_FLOYD", "CHAR_HAO",
+            "CHAR_JIMMY", "CHAR_JIMMY_BOSTON", "CHAR_JOE", "CHAR_JOSEF", "CHAR_JOSH",
+            "CHAR_LAZLOW", "CHAR_LESTER", "CHAR_MANUEL", "CHAR_MARTIN", "CHAR_MECHANIC",
+            "CHAR_NIGEL", "CHAR_OMEGA", "CHAR_ONEIL", "CHAR_ORTEGA", "CHAR_OSCAR",
+            "CHAR_RON", "CHAR_SIMEON", "CHAR_SOLOMON", "CHAR_STEVE", "CHAR_WADE",
+            "CHAR_MP_BRUCIE", "CHAR_MP_GERALD", "CHAR_MP_JULIO", "CHAR_MP_MECHANIC",
+            "CHAR_MP_RAY_LAVOY", "CHAR_MP_ROBERTO", "CHAR_MP_FAM_BOSS", "CHAR_MP_MEX_BOSS",
+            "CHAR_MP_MEX_DOCKS", "CHAR_MP_MEX_LT", "CHAR_MP_BIKER_BOSS",
+            "CHAR_MP_BIKER_MECHANIC", "CHAR_MP_PROF_BOSS", "CHAR_MP_SNITCH",
+            "CHAR_MP_ARMY_CONTACT", "CHAR_MP_FIB_CONTACT"
+        };
+
+        private static readonly string[] FemalePics =
+        {
+            "CHAR_ABIGAIL", "CHAR_AMANDA", "CHAR_ANTONIA", "CHAR_BROKEN_DOWN_GIRL",
+            "CHAR_DENISE", "CHAR_HITCHER_GIRL", "CHAR_MARNIE", "CHAR_MARY_ANN",
+            "CHAR_MAUDE", "CHAR_MOLLY", "CHAR_PATRICIA", "CHAR_SAEEDA", "CHAR_TANISHA",
+            "CHAR_TAXI_LIZ", "CHAR_TENNIS_COACH", "CHAR_TOW_TONYA", "CHAR_TRACEY",
+            "CHAR_MP_STRIPCLUB_PR", "CHAR_MP_FM_CONTACT"
+        };
+
+        /// <summary>Everything that is not a person: papers, shops, radio stations.</summary>
+        private static readonly string[] OrgPics =
+        {
+            "CHAR_LIFEINVADER", "CHAR_SOCIAL_CLUB", "CHAR_LS_CUSTOMS", "CHAR_BUGSTARS",
+            "CHAR_EPSILON", "CHAR_MERRYWEATHER", "CHAR_LS_TOURIST_BOARD", "CHAR_PEGASUS_DELIVERY",
+            "CHAR_MP_MORS_MUTUAL", "CHAR_TAXI", "CHAR_CALL911", "CHAR_BLOCKED",
+            "CHAR_CHAT_CALL", "CHAR_DIAL_A_SUB", "CHAR_MINOTAUR", "CHAR_SASQUATCH"
         };
 
         private readonly Random _rng = new Random();
@@ -143,6 +176,7 @@ namespace Hoodrich.Social
                         Name = node["name"].AsString(handle),
                         Gang = node["gang"].AsString(""),
                         Verified = node["verified"].AsBool(false),
+                        Gender = node["gender"].AsString("male"),
                         Tint = TintFor(handle)
                     });
                 }
@@ -479,7 +513,7 @@ namespace Hoodrich.Social
                                   post.Body.Substring(i, len));
                 }
 
-                var pic = PicFor(post.By.Handle);
+                var pic = PicFor(post.By);
 
                 Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_MESSAGETEXT,
                               pic, pic, false, 0, post.By.Name, post.By.Handle);
@@ -492,13 +526,24 @@ namespace Hoodrich.Social
             }
         }
 
-        /// <summary>The same picture for the same person, every time, without storing one.</summary>
-        private static string PicFor(string handle)
+        /// <summary>
+        /// The same face for the same person, every time, without storing one.
+        ///
+        /// Derived from the handle so it is stable across saves and across sessions, and drawn
+        /// from the pool that matches who they are. Seventy people over roughly eighty-five
+        /// faces means the rotation is wide enough that two posts in a row rarely wear the
+        /// same one.
+        /// </summary>
+        private static string PicFor(Author by)
         {
-            var hash = 17;
-            foreach (var c in handle) hash = hash * 31 + c;
+            var pool = string.Equals(by.Gender, "female", StringComparison.OrdinalIgnoreCase) ? FemalePics
+                     : string.Equals(by.Gender, "none", StringComparison.OrdinalIgnoreCase) ? OrgPics
+                     : MalePics;
 
-            return ContactPics[Math.Abs(hash) % ContactPics.Length];
+            var hash = 17;
+            foreach (var c in by.Handle) hash = hash * 31 + c;
+
+            return pool[Math.Abs(hash) % pool.Length];
         }
 
         private void Add(Post post)

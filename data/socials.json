@@ -20,7 +20,9 @@
     "An unknown slot prints its own braces, so a typo is visible rather than silent.",
     "",
     "Authors are just people. The avatar colour is derived from the handle, so somebody always",
-    "looks the same without a colour being stored for them."
+    "looks the same without a colour being stored for them. \"gender\" decides which of the",
+    "game's phone-contact pictures they get on a notification -- male, female, or none for",
+    "an organisation, which draws from the neutral icons."
   ],
   "you": {
     "handle": "@franklin_c",
@@ -32,421 +34,491 @@
       "handle": "tanya445gsf",
       "name": "Tanya",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "lil_dree",
       "name": "Dree",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "bigmoe_cham",
       "name": "Big Moe",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "kesha_onforum",
       "name": "Kesha",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "dtwo_gsf",
       "name": "D-Two",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "marcusonfoot",
       "name": "Marcus",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "auntiepat_ls",
       "name": "Auntie Pat",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "jaydagreen",
       "name": "Jayda",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "smokeyfromdavis",
       "name": "Smokey",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "nay_nay213",
       "name": "Nay Nay",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "terrell_tt",
       "name": "Terrell",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "bookie_bee",
       "name": "Bookie",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "shonda_c",
       "name": "Shonda",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "young_pree",
       "name": "Pree",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "gee_from_grove",
       "name": "Gee",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "mama_dubois",
       "name": "Mrs Dubois",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "ricky_rideout",
       "name": "Ricky",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "tashaaaa_",
       "name": "Tasha",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "cuzzo_kev",
       "name": "Kev",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "darnell_dnl",
       "name": "Darnell",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "bre_onthelow",
       "name": "Bre",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "juju_chamhills",
       "name": "Juju",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "oldheadray",
       "name": "Ray",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "kimmy_forumdr",
       "name": "Kimmy",
       "gang": "families",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "purple_reign_ls",
       "name": "Reign",
       "gang": "ballas",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "balla_bee_",
       "name": "Bee",
       "gang": "ballas",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "kdot_ontheblock",
       "name": "K-Dot",
       "gang": "ballas",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "grove_iz_ours",
       "name": "Trey",
       "gang": "ballas",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "lavender_lo",
       "name": "Lo",
       "gang": "ballas",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "bigshotta_ls",
       "name": "Shotta",
       "gang": "ballas",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "elguero_rancho",
       "name": "El Guero",
       "gang": "vagos",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "vagos_vic",
       "name": "Vic",
       "gang": "vagos",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "chuy_lmesa",
       "name": "Chuy",
       "gang": "vagos",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "yellowtape_ls",
       "name": "Nando",
       "gang": "vagos",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "rancho_rosa",
       "name": "Rosa",
       "gang": "vagos",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "davisdaily",
       "name": "Davis Daily",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "chamblocktalk",
       "name": "Block Talk",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "ls_scanner_feed",
       "name": "LS Scanner",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "weazelnewsla",
       "name": "Weazel News LS",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "southsidesports",
       "name": "Southside Sports",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "forumdrfoodie",
       "name": "Forum Dr Foodie",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "lspd_watch_ls",
       "name": "LSPD Watch",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "cluckin_deals",
       "name": "Cluckin Bell Deals",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "bettapharma",
       "name": "Betta Pharmaceuticals",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "lifeinvader_ls",
       "name": "Lifeinvader LS",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "radio_westcoast",
       "name": "West Coast Classics",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "vinewood_gossip",
       "name": "Vinewood Gossip",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "ls_traffic",
       "name": "LS Traffic",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "puravidadeals",
       "name": "Pura Vida Deals",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "bennys_ls",
       "name": "Benny's",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "straw_neighbours",
       "name": "Strawberry Neighbours",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "elrancho_news",
       "name": "El Rancho News",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "dogwalker_ls",
       "name": "Marnie",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "uberdriver_ls",
       "name": "Ahmed",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "busdriver_248",
       "name": "Ronnie",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "cornerstore_sam",
       "name": "Sam",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "barber_on_grove",
       "name": "Deon",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "towtruck_terry",
       "name": "Terry",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "ls_weather",
       "name": "LS Weather",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "bailbonds_ls",
       "name": "Cheap Bail LS",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "pastor_willis",
       "name": "Pastor Willis",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "nailtech_niecy",
       "name": "Niecy",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "mechanic_hector",
       "name": "Hector",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "teacher_ms_ruiz",
       "name": "Ms Ruiz",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "delivery_dave",
       "name": "Dave",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "male"
     },
     {
       "handle": "nightshift_nina",
       "name": "Nina",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "female"
     },
     {
       "handle": "fishtaco_truck",
       "name": "Fish Taco Truck",
       "gang": "",
-      "verified": false
+      "verified": false,
+      "gender": "none"
     },
     {
       "handle": "weazelnews",
       "name": "Weazel News",
       "gang": "",
-      "verified": true
+      "verified": true,
+      "gender": "none"
     },
     {
       "handle": "lifeinvader",
       "name": "Lifeinvader",
       "gang": "",
-      "verified": true
+      "verified": true,
+      "gender": "none"
     },
     {
       "handle": "bleeter_ls",
       "name": "Bleeter LS",
       "gang": "",
-      "verified": true
+      "verified": true,
+      "gender": "none"
     }
   ],
   "slots": {
