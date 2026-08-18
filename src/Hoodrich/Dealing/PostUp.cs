@@ -138,6 +138,9 @@ namespace Hoodrich.Dealing
         private readonly Dictionary<int, int> _served = new Dictionary<int, int>();
 
         public TurfWatch Turf;
+
+        /// <summary>The undercover roll. Owned by Main so a call outlives the pitch.</summary>
+        public Bust Bust;
         public Affiliation Crew;
 
         private DrugDef _product;
@@ -189,6 +192,13 @@ namespace Hoodrich.Dealing
         public DrugDef Product => _product;
 
         public float CornerHeat => _cornerHeat;
+
+        /// <summary>Heat from something that happened here but is not ours to time.</summary>
+        public void AddCornerHeat(float amount)
+        {
+            if (!IsPosted || amount <= 0f) return;
+            _cornerHeat += amount;
+        }
 
         public int Footfall { get; private set; }
 
@@ -604,6 +614,12 @@ namespace Hoodrich.Dealing
                 // Word gets round without anybody having to see it.
                 Notify.Failure("this corner is too hot now.");
                 Wanted(1);
+            }
+            else if (Bust != null)
+            {
+                // Only reached when nobody saw it and the corner is still quiet. Stacking a
+                // countdown on top of stars you already have is a pile-on, not a decision.
+                Bust.OnSale(customer, product);
             }
 
             if (Stash.PackagedOf(product.Id) < 0.05f) Stop("That is the last of it.");
@@ -1358,7 +1374,7 @@ namespace Hoodrich.Dealing
         }
 
         /// <summary>Raises the wanted level, never lowers it.</summary>
-        private static void Wanted(int stars)
+        internal static void Wanted(int stars)
         {
             try
             {

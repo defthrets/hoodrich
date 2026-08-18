@@ -31,7 +31,6 @@ namespace Hoodrich.Wheel
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
         private readonly Pricing _pricing;
-        private readonly StreetDeal _deal;
         private readonly Cutting _cutting;
         private readonly GangRegistry _gangs;
         private readonly Affiliation _crew;
@@ -62,7 +61,7 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main. Moving product between your pockets and the house.</summary>
         public StashScreen StashScreen;
 
-        public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing, StreetDeal deal,
+        public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
                           StashHouse stash, PostUp postUp, GangLeaders leaders)
@@ -71,7 +70,6 @@ namespace Hoodrich.Wheel
             _state = state;
             _drugs = drugs;
             _pricing = pricing;
-            _deal = deal;
             _cutting = cutting;
             _gangs = gangs;
             _crew = crew;
@@ -446,8 +444,8 @@ namespace Hoodrich.Wheel
             page.AddSub("Dealing", "$", BuildDrugsPage,
                 detail: "Re-up, bag up, and go to work",
                 value: DrugsSummary(),
-                enabled: !_deal.IsBusy && !_cutting.IsBusy,
-                disabledReason: _deal.IsBusy ? "Already mid-deal" : "You are cutting");
+                enabled: !_cutting.IsBusy,
+                disabledReason: "You are cutting");
             page.WithIcon(Icons.Weed);
 
             page.AddSub("Gangs", "%", BuildGangsPage,
@@ -839,12 +837,6 @@ namespace Hoodrich.Wheel
         private void PostUpWith(DrugDef product)
         {
             var failure = _postUp.Start(product);
-            if (failure != null) Notify.Problem(failure);
-        }
-
-        private void Sell(DrugDef product, float grams)
-        {
-            var failure = _deal.TrySell(product, grams);
             if (failure != null) Notify.Problem(failure);
         }
 

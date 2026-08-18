@@ -49,6 +49,11 @@ You are never locked in place. Walk the block; go too far and you have stopped w
   and comes for you
 - A corner that has got hot enough draws a star on its own
 - Stay put while an officer is on you and you get searched, cleaned out and fined
+- And some of the people buying off you are not buying. If nobody saw the handoff and
+  the corner is still quiet, the buyer might back off and start making a call. You get a
+  few seconds: drop them, or get far enough from where it happened that what they say
+  does not place you. Let it land and you get stars **and** a much hotter corner. It is
+  the one thing here you can play your way out of
 
 ### The other gangs
 

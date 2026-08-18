@@ -42,7 +42,6 @@ namespace Hoodrich
         private readonly Affiliation _crew;
         private readonly TurfWatch _turf;
         private readonly Pricing _pricing;
-        private readonly StreetDeal _deal;
         private readonly Cutting _cutting;
         private readonly DealerManager _dealers;
         private readonly Delivery _delivery;
@@ -107,12 +106,12 @@ namespace Hoodrich
                 _deadDrop = new DeadDrop(_cfg, _state);
 
                 _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market };
-                _deal = new StreetDeal(_state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
                 _cutting = new Cutting(_state.Stash, _state);
                 _cook = new CookScreen();
                 _kitchen = new Kitchen(OpenKitchen, () => _cutting.IsBusy);
                 _chop = new Dog();
-                _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew };
+                _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
+                _bust.Post = _postUp;
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 
                 _jobs = new MissionRunner(_state, _crew, _gangs, _zoneMap);
@@ -132,7 +131,7 @@ namespace Hoodrich
                 _fixer.Talk = _talk;
                 _fixer.TalkBuilder = () => _fixerTalk.Root();
 
-                var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _deal, _cutting,
+                var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _cutting,
                                            _gangs, _crew, _turf, _dealers, _weapons, _market, _stash, _postUp, _leaders);
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
@@ -247,7 +246,6 @@ namespace Hoodrich
                     _dealers.GreetIfNeeded();
                     _delivery.Update();
                     _cutting.Update();
-                    _bust.Update();
                     _deadDrop.Update();
                     _market.Update(_drugs);
                     _stash.Update();
@@ -263,8 +261,9 @@ namespace Hoodrich
                     UpdateLoan();
                 }
 
-                // In-flight deals keep ticking even when unavailable so they can abort cleanly.
-                _deal.Update();
+                // In-flight work keeps ticking even when unavailable so it can abort cleanly --
+                // and because a narc's clock does not stop just because a cutscene started.
+                _bust.Update();
                 _postUp.Update();
                 _cutting.Draw();
                 _bust.Draw();
@@ -305,12 +304,10 @@ namespace Hoodrich
             _lastSlowTick = now;
 
             // Heat only cools while you are not actively drawing attention.
-            if (_state.Notoriety > 0f && !_deal.IsBusy && !_turf.IsExposed)
+            if (_state.Notoriety > 0f && !_bust.CallInProgress && !_turf.IsExposed)
             {
                 _state.AddNotoriety(-NotorietyDecayPerSecond * Math.Min(elapsedSeconds, 5f));
             }
-
-            _deal.PruneCooldowns();
 
             _postUp.Prune();
             _turf.Prune();
@@ -427,6 +424,7 @@ namespace Hoodrich
             try { _delivery?.RestoreWorld(); } catch { /* teardown */ }
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
+            try { _bust?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
             try { _chop?.RestoreWorld(); } catch { /* teardown */ }

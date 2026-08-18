@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using GTA;
+using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.Economy;
@@ -11,22 +12,24 @@ using Hoodrich.UI;
 namespace Hoodrich.Dealing
 {
     /// <summary>
-    /// The chance that a sale goes wrong with the police.
+    /// The buyer who was never a buyer.
     ///
-    /// Two separate failure modes, because they punish different mistakes:
+    /// This is the only failure in the mod you can play your way out of. A uniform with line of
+    /// sight is instant and undodgeable, corner heat is a slow inevitability, and a search you
+    /// stand still for is a coin flip you have already lost. The narc hands you a clock and a
+    /// decision instead: drop them before the call lands, or get far enough from where the
+    /// handoff happened that what they say no longer places you.
     ///
-    ///   Seen   -- a real cop with line of sight on the handoff. Instant. This is the mod
-    ///             telling you not to deal in front of police, and it cannot be dodged.
-    ///   Narced -- the buyer was undercover. You get a window: drop them or get out of the
-    ///             radius before the call completes. This is the one heat makes likelier, and
-    ///             it is survivable if you are paying attention.
+    /// It used to carry a witness scan and a wanted-level call of its own as well. Both were
+    /// duplicates of PostUp's -- the scan at nearly three times the range, so it counted cops
+    /// who could not have seen anything, and the wanted call flat rather than never-lower, so a
+    /// two-star bust could pull you DOWN from three stars. Only the narc survived the move.
     /// </summary>
     internal sealed class Bust
     {
-        private const float CopScanRange = 70f;
-
-        /// <summary>PED_TYPE values that count as police.</summary>
-        private static readonly int[] CopPedTypes = { 6, 27, 29 };
+        /// <summary>Corner heat added when a call lands, and when you stop one with a body.</summary>
+        private const float HeatOnBust = 14f;
+        private const float HeatOnKill = 5f;
 
         private readonly Settings _cfg;
         private readonly PlayerState _state;
@@ -34,15 +37,12 @@ namespace Hoodrich.Dealing
 
         public TurfWatch Turf;
 
+        /// <summary>The corner this happened on, so the fallout lands where the work is.</summary>
+        public PostUp Post;
+
         private Ped _narc;
         private int _callStartedAt;
-        private Vector3Holder _callOrigin;
-
-        /// <summary>Small struct-free holder so the field can be null when idle.</summary>
-        private sealed class Vector3Holder
-        {
-            public GTA.Math.Vector3 Value;
-        }
+        private Vector3? _callOrigin;
 
         public Bust(Settings cfg, PlayerState state)
         {
@@ -66,27 +66,20 @@ namespace Hoodrich.Dealing
         // ---- called from the deal ----------------------------------------------
 
         /// <summary>
-        /// Rolled the moment a sale completes. Returns true if the deal drew police attention.
+        /// Rolled once a sale has landed. Returns true if this one was undercover.
+        ///
+        /// Not called when a cop already saw the handoff or the corner has gone hot on its own
+        /// -- you are already in trouble, and stacking a second clock on top of stars you cannot
+        /// outrun is not a decision, it is a pile-on.
         /// </summary>
         public bool OnSale(Ped buyer, DrugDef product)
         {
             if (_cfg.PoliceBustChancePercent <= 0f) return false;
+            if (_narc != null) return false;
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return false;
 
-            // A cop who can actually see the handoff does not need to roll dice.
-            var witness = FindCopWitness(player);
-            if (witness != null)
-            {
-                Notify.Failure("a cop watched you do that.");
-                ApplyWanted();
-                _state.AddNotoriety(12f);
-                Log.Info("Bust: cop witnessed a sale.");
-                return true;
-            }
-
-            // Otherwise, the chance the buyer was never a buyer.
             var chance = _cfg.PoliceBustChancePercent / 100f
                          * (1f + _state.Notoriety / 100f)
                          * (Turf == null ? 1f : Turf.TurfHeatMultiplier)
@@ -94,52 +87,27 @@ namespace Hoodrich.Dealing
 
             if (_rng.NextDouble() > chance) return false;
 
-            StartNarcCall(buyer);
+            StartCall(buyer);
             return true;
         }
 
-        private Ped FindCopWitness(Ped player)
-        {
-            try
-            {
-                foreach (var ped in World.GetNearbyPeds(player, CopScanRange))
-                {
-                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
-                    if (ped.Handle == player.Handle) continue;
-
-                    var type = Function.Call<int>(Hash.GET_PED_TYPE, ped.Handle);
-                    var isCop = Array.IndexOf(CopPedTypes, type) >= 0;
-                    if (!isCop) continue;
-
-                    if (!Function.Call<bool>(Hash.HAS_ENTITY_CLEAR_LOS_TO_ENTITY,
-                                             ped.Handle, player.Handle, 17))
-                    {
-                        continue;
-                    }
-
-                    return ped;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Cop witness scan failed: " + ex.Message);
-            }
-
-            return null;
-        }
-
-        private void StartNarcCall(Ped buyer)
+        private void StartCall(Ped buyer)
         {
             if (buyer == null || !buyer.Exists() || !buyer.IsAlive) return;
 
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
             _narc = buyer;
             _callStartedAt = Game.GameTime;
-
-            var player = Game.Player.Character;
-            _callOrigin = new Vector3Holder { Value = player.Position };
+            _callOrigin = player.Position;
 
             try
             {
+                // Held for the length of the call and let go the moment it resolves, either way.
+                // A man who has made his call is just a man in a street.
+                buyer.IsPersistent = true;
+
                 // Back off and make the call. The animation is the tell.
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, buyer.Handle, true);
                 Function.Call(Hash.TASK_USE_MOBILE_PHONE_TIMED, buyer.Handle,
@@ -150,7 +118,7 @@ namespace Hoodrich.Dealing
                 Log.Debug("Could not task the narc: " + ex.Message);
             }
 
-            Notify.Failure("that one's a narc. Drop them or get gone.");
+            Notify.Failure("that one is a narc. Drop them or get gone.");
             Log.Info("Bust: undercover buyer started a call.");
         }
 
@@ -167,20 +135,31 @@ namespace Hoodrich.Dealing
                 return;
             }
 
-            // Dropped them in time.
-            if (!_narc.Exists() || !_narc.IsAlive)
+            // Streamed out from under us. Nobody earned anything, so drop it quietly rather than
+            // crediting a kill that never happened.
+            if (!_narc.Exists())
             {
-                Notify.Ticker("~g~The call never got made.~s~");
-                _state.AddNotoriety(6f);
                 Clear();
                 return;
             }
 
-            // Got clear of the area in time.
-            if (_callOrigin != null &&
+            // Dropped them in time.
+            if (!_narc.IsAlive)
+            {
+                Notify.Ticker("~g~The call never got made.~s~");
+
+                // Cheaper than the bust, not free. A body on the pavement is its own problem.
+                _state.AddNotoriety(6f);
+                if (Post != null) Post.AddCornerHeat(HeatOnKill);
+                Clear();
+                return;
+            }
+
+            // Got clear of where it happened in time.
+            if (_callOrigin.HasValue &&
                 player.Position.DistanceTo(_callOrigin.Value) > _cfg.UndercoverEscapeDistance)
             {
-                Notify.Ticker("~g~You're clear.~s~ They lost you.");
+                Notify.Ticker("~g~You are clear.~s~ They lost you.");
                 Clear();
                 return;
             }
@@ -188,35 +167,39 @@ namespace Hoodrich.Dealing
             if (CallProgress < 1f) return;
 
             Notify.Failure("they called it in.");
-            ApplyWanted();
+            PostUp.Wanted(Math.Max(1, Math.Min(5, _cfg.BustWantedStars)));
             _state.AddNotoriety(15f);
-            Clear();
-        }
 
-        private void ApplyWanted()
-        {
-            try
-            {
-                var stars = Math.Max(1, Math.Min(5, _cfg.BustWantedStars));
-                Function.Call(Hash.SET_PLAYER_WANTED_LEVEL, Game.Player.Handle, stars, false);
-                Function.Call(Hash.SET_PLAYER_WANTED_LEVEL_NOW, Game.Player.Handle, false);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Could not apply a wanted level.", ex);
-            }
+            // A squad car pulling up where you are stood is exactly what makes a corner hot, so
+            // it has to cost the pitch as well as the player. Without this you could eat bust
+            // after bust on the same spot and the corner would never notice.
+            if (Post != null) Post.AddCornerHeat(HeatOnBust);
+            Clear();
         }
 
         private void Clear()
         {
             if (_narc != null && _narc.Exists())
             {
-                try { Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _narc.Handle, false); }
-                catch { }
+                try
+                {
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _narc.Handle, false);
+                    _narc.MarkAsNoLongerNeeded();
+                }
+                catch
+                {
+                    // Letting a ped go is never worth an exception.
+                }
             }
 
             _narc = null;
             _callOrigin = null;
+        }
+
+        /// <summary>Called on unload. The world does not keep our narc.</summary>
+        public void RestoreWorld()
+        {
+            Clear();
         }
 
         /// <summary>Countdown bar while the narc is on the phone -- your window to act.</summary>
