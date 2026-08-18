@@ -22,7 +22,12 @@ namespace Hoodrich.Missions
         /// afterwards, and ride back. Scripted end to end rather than assembled from a site
         /// and a target count, because the shape of it IS the job.
         /// </summary>
-        BikeRide
+        BikeRide,
+
+        /// <summary>
+        /// Going round rival blocks putting your set over theirs. Targets is how many walls.
+        /// </summary>
+        Tags
     }
 
     /// <summary>One job Lamar can put your way.</summary>

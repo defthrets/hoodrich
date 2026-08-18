@@ -41,6 +41,9 @@ namespace Hoodrich.Locations
         /// <summary>Following is a task the game drops; it gets put back on this often.</summary>
         private const int RetaskGapMs = 3000;
 
+        /// <summary>How long he is given to climb in before he is simply put in the seat.</summary>
+        private const int BoardTimeoutMs = 6000;
+
         /// <summary>
         /// Animations, tried in order and validated before use.
         ///
@@ -101,6 +104,7 @@ namespace Hoodrich.Locations
 
         private int _lastRivalScan;
         private int _nextRetask;
+        private int _boardingSince;
         private bool _playing;
 
         private bool _following;
@@ -239,6 +243,7 @@ namespace Hoodrich.Locations
             _following = false;
             _petting = false;
             _playing = false;
+            _boardingSince = 0;
         }
 
         /// <summary>
@@ -308,10 +313,108 @@ namespace Hoodrich.Locations
         {
             if (!_following || _petting) return;
             if (_chop == null || !_chop.Exists() || !_chop.IsAlive) return;
+
+            // Cars come first and are checked every tick, not on the retask clock. A dog left
+            // standing in the road while you drive off is the one failure nobody forgives, and
+            // three seconds is long enough to be out of the street.
+            if (Ride(player)) return;
+
             if (now < _nextRetask) return;
 
             _nextRetask = now + RetaskGapMs;
             Heel();
+        }
+
+        /// <summary>
+        /// Getting in and out of the car with you.
+        ///
+        /// He climbs in himself, using the game's own animal entry animation, because a dog
+        /// that appears in the passenger seat is a teleport and a dog that scrambles in is a
+        /// dog. He is only put there outright if the climb has not landed in six seconds --
+        /// which happens when the door he wants is against a wall, and being in the car late is
+        /// better than being left on the pavement.
+        ///
+        /// Returns true when the car is handling him, so the follow task does not fight it.
+        /// </summary>
+        private bool Ride(Ped player)
+        {
+            var car = player.CurrentVehicle;
+
+            if (car == null || !car.Exists())
+            {
+                // You got out, so he gets out.
+                if (_chop.IsInVehicle())
+                {
+                    try { _chop.Task.LeaveVehicle(); }
+                    catch { /* he will jump out on his own */ }
+                }
+
+                _boardingSince = 0;
+                return false;
+            }
+
+            if (_chop.IsInVehicle(car))
+            {
+                _boardingSince = 0;
+                return true;
+            }
+
+            var seat = FreeSeat(car);
+            if (seat == VehicleSeat.None) return false;
+
+            if (_boardingSince == 0) _boardingSince = Game.GameTime;
+
+            if (Game.GameTime - _boardingSince > BoardTimeoutMs)
+            {
+                try
+                {
+                    _chop.SetIntoVehicle(car, seat);
+                    Log.Info("Chop could not climb in, so he was put in.");
+                }
+                catch { /* nothing more to try */ }
+
+                _boardingSince = 0;
+                return true;
+            }
+
+            try
+            {
+                // Flag 8 is the animal entry set -- without it he plays the human get-in and
+                // slides through the door on his side.
+                Function.Call(Hash.TASK_ENTER_VEHICLE, _chop.Handle, car.Handle,
+                              BoardTimeoutMs, (int)seat, 2.5f, 8, 0);
+            }
+            catch
+            {
+                // The timeout above will put him in.
+            }
+
+            return true;
+        }
+
+        /// <summary>A seat that is not the driver's and not already taken.</summary>
+        private static VehicleSeat FreeSeat(Vehicle car)
+        {
+            // Back seats first, which is where a dog goes, then the front passenger.
+            var order = new[]
+            {
+                VehicleSeat.RightRear, VehicleSeat.LeftRear, VehicleSeat.Passenger
+            };
+
+            foreach (var seat in order)
+            {
+                try
+                {
+                    if (!car.IsSeatFree(seat)) continue;
+                    return seat;
+                }
+                catch
+                {
+                    // A seat the vehicle does not have.
+                }
+            }
+
+            return VehicleSeat.None;
         }
 
         /// <summary>Walks him back to the kennel if he has wandered off the yard.</summary>

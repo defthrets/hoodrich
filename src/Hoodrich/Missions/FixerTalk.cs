@@ -107,6 +107,7 @@ namespace Hoodrich.Missions
             {
                 case MissionKind.BikeRide: return Icons.Health;
                 case MissionKind.DriveBy: return Icons.Garage;
+                case MissionKind.Tags: return Icons.Weed;
                 case MissionKind.Hit: return Icons.Guns;
                 default: return Icons.Mask;
             }

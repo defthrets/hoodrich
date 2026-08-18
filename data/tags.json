@@ -1,0 +1,98 @@
+{
+  "_comment": [
+    "Walls that already have somebody else's tag on them.",
+    "",
+    "EVERY COORDINATE IN HERE IS A PLACEHOLDER. They are picked off the middle of the",
+    "blocks the mod already knows about, which puts them roughly in the right neighbourhood",
+    "and almost certainly not in front of an actual wall. This is the one thing in the mod",
+    "that cannot be got right from a desk: a tag has to be somewhere you can stand facing a",
+    "flat surface, on a block that belongs to somebody.",
+    "",
+    "TO FIX ONE: stand where Franklin should stand to paint, facing the wall, and read the",
+    "X, Y, Z and heading straight off the HUD into the entry below. The heading is what",
+    "turns him to face the wall, so it matters as much as the position.",
+    "",
+    "id       stable key; the run remembers which walls are done by it",
+    "zone     GET_NAME_OF_ZONE code, for reference only",
+    "gang     whose tag is on it -- decides the marker colour and who turns up",
+    "x, y, z  where Franklin stands to paint",
+    "heading  which way he faces, which should be square on to the wall",
+    "",
+    "The mission picks its walls at random from this whole list, so more entries means a run",
+    "you can do twice without it being the same afternoon. Add as many as you like."
+  ],
+  "tags": [
+    {
+      "id": "grove_1",
+      "zone": "DAVIS",
+      "gang": "ballas",
+      "x": 115.921,
+      "y": -1949.503,
+      "z": 20.698,
+      "heading": 0
+    },
+    {
+      "id": "grove_2",
+      "zone": "DAVIS",
+      "gang": "ballas",
+      "x": 88.5,
+      "y": -1961.2,
+      "z": 21.1,
+      "heading": 90
+    },
+    {
+      "id": "davis_1",
+      "zone": "DAVIS",
+      "gang": "ballas",
+      "x": 152.4,
+      "y": -1914.8,
+      "z": 22.6,
+      "heading": 180
+    },
+    {
+      "id": "rancho_1",
+      "zone": "RANCHO",
+      "gang": "vagos",
+      "x": 356.821,
+      "y": -1804.54,
+      "z": 28.905,
+      "heading": 0
+    },
+    {
+      "id": "rancho_2",
+      "zone": "RANCHO",
+      "gang": "vagos",
+      "x": 391.6,
+      "y": -1830.4,
+      "z": 28.4,
+      "heading": 270
+    },
+    {
+      "id": "lmesa_1",
+      "zone": "LMESA",
+      "gang": "vagos",
+      "x": 826.4,
+      "y": -1290.6,
+      "z": 27.3,
+      "heading": 180
+    },
+    {
+      "id": "eburo_1",
+      "zone": "EBURO",
+      "gang": "vagos",
+      "x": 1364.8,
+      "y": -1520.9,
+      "z": 57.4,
+      "heading": 90
+    },
+    {
+      "id": "murri_1",
+      "zone": "MURRI",
+      "gang": "vagos",
+      "x": 1070.2,
+      "y": -1746.8,
+      "z": 34.9,
+      "heading": 0
+    }
+  ]
+}

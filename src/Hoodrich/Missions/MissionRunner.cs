@@ -118,6 +118,15 @@ namespace Hoodrich.Missions
         /// </summary>
         private readonly BikeRide _bike;
 
+        /// <summary>
+        /// The tag run, and the walls it draws from.
+        ///
+        /// The list is loaded once and kept, so a run picks a different handful each time
+        /// rather than sending you round the same walls in the same order.
+        /// </summary>
+        private readonly TagRun _tags;
+        private readonly List<TagSpot> _walls;
+
         public MissionRunner(PlayerState state, Affiliation crew, GangRegistry gangs, ZoneMap zones)
         {
             _state = state;
@@ -125,6 +134,8 @@ namespace Hoodrich.Missions
             _gangs = gangs;
             _zones = zones;
             _bike = new BikeRide(crew, gangs);
+            _tags = new TagRun(gangs, crew);
+            _walls = TagRun.Load();
         }
 
         /// <summary>Set by Main and handed straight to the bike job for its courtyard exchange.</summary>
@@ -136,9 +147,11 @@ namespace Hoodrich.Missions
 
         public MissionState State { get; private set; } = MissionState.None;
 
-        public bool IsRunning => State != MissionState.None || _bike.IsRunning;
+        public bool IsRunning => State != MissionState.None || _bike.IsRunning || _tags.IsRunning;
 
         private bool OnBike => _bike.IsRunning;
+
+        private bool OnTags => _tags.IsRunning;
 
         public MissionDef Current => _def;
 
@@ -148,6 +161,7 @@ namespace Hoodrich.Missions
             get
             {
                 if (OnBike) return _bike.Objective;
+                if (OnTags) return _tags.Objective;
 
                 switch (State)
                 {
@@ -201,6 +215,20 @@ namespace Hoodrich.Missions
                 : _zones.GroundedCentre(def.Zone);
 
             if (site == Vector3.Zero) return "Nobody could tell you where that is.";
+
+            if (def.Kind == MissionKind.Tags)
+            {
+                var refused = _tags.Start(def, _walls);
+                if (refused != null) return refused;
+
+                _def = def;
+                _homiesLost = 0;
+                _startedAt = Game.GameTime;
+
+                Notify.Important("~g~Job on.~s~ " + _tags.Objective + ".");
+                Log.Info("Mission " + def.Id + " started as a tag run.");
+                return null;
+            }
 
             if (def.Kind == MissionKind.BikeRide)
             {
@@ -454,6 +482,12 @@ namespace Hoodrich.Missions
                 return;
             }
 
+            if (OnTags)
+            {
+                _tags.Update();
+                return;
+            }
+
             if (!IsRunning) return;
 
             var now = Game.GameTime;
@@ -653,7 +687,10 @@ namespace Hoodrich.Missions
         // ---- finishing ---------------------------------------------------------
 
         /// <summary>True when the player can hand the job in.</summary>
-        public bool ReadyToCollect => OnBike ? _bike.ReadyToCollect : State == MissionState.Collect;
+        public bool ReadyToCollect =>
+            OnBike ? _bike.ReadyToCollect :
+            OnTags ? _tags.ReadyToCollect :
+            State == MissionState.Collect;
 
         /// <summary>Pays out and clears down. Returns what Lamar says.</summary>
         public string Collect()
@@ -696,6 +733,7 @@ namespace Hoodrich.Missions
         private void Clear()
         {
             _bike.Clear();
+            _tags.Clear();
 
             ClearSiteBlip();
             ClearBlips();
@@ -762,6 +800,8 @@ namespace Hoodrich.Missions
         public void Draw()
         {
             if (!IsRunning || _def == null) return;
+
+            _tags.Draw();
 
             // Centred at the top: it belongs to the job, not to the corner of the screen.
             const float width = 0.26f;
