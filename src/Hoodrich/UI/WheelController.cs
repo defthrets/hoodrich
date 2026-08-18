@@ -101,7 +101,7 @@ namespace Hoodrich.UI
 
                 if (!holding && !_vanillaUsed)
                 {
-                    Help.ShowThisFrame("Hold ~INPUT_SELECT_WEAPON~ for your weapons.");
+                    Help.ShowThisFrame("Hold ~INPUT_SELECT_WEAPON~ for your strap.");
                 }
 
                 // It ends when they let go of a wheel they actually opened, or when they never

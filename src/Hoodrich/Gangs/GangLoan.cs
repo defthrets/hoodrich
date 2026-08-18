@@ -94,7 +94,7 @@ namespace Hoodrich.Gangs
             MissedPeriods = 0;
             PushDueDate(periodDays);
 
-            Notify.Ticker("~g~-$" + Vig.ToString("N0") + "~s~ vig paid. Clock reset.");
+            Notify.Ticker("~g~-$" + Vig.ToString("N0") + "~s~ vig paid. Clock's reset.");
             return true;
         }
 
@@ -126,7 +126,7 @@ namespace Hoodrich.Gangs
             if (!_warned && DaysLeft <= 1 && !IsOverdue)
             {
                 _warned = true;
-                Notify.Important("~y~Vig is due tomorrow.~s~ $" + Vig.ToString("N0"));
+                Notify.Important("~y~Vig's due tomorrow.~s~ $" + Vig.ToString("N0"));
                 return false;
             }
 
@@ -144,7 +144,7 @@ namespace Hoodrich.Gangs
                 return true;
             }
 
-            Notify.Failure("you missed the vig. It is now $" + Vig.ToString("N0") + ".");
+            Notify.Failure("you missed the vig. It's $" + Vig.ToString("N0") + " now.");
             return false;
         }
 

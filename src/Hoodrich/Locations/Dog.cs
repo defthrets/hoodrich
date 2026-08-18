@@ -517,10 +517,10 @@ namespace Hoodrich.Locations
             // naming the button and what it does. The old one was a row of shorthand, which is
             // a debug readout rather than something the game would put on screen.
             Help.ShowThisFrame(
-                "Press ~INPUT_CONTEXT~ to pet Chop, ~INPUT_CELLPHONE_UP~ to play.~n~" +
+                "Press ~INPUT_CONTEXT~ to pet Chop, ~INPUT_CELLPHONE_UP~ to play with him.~n~" +
                 (_following
-                    ? "Press ~INPUT_CELLPHONE_RIGHT~ to leave him here."
-                    : "Press ~INPUT_CELLPHONE_RIGHT~ to take him with you."));
+                    ? "Press ~INPUT_CELLPHONE_RIGHT~ to leave him home."
+                    : "Press ~INPUT_CELLPHONE_RIGHT~ to bring him with you."));
 
             if (Tapped(Control.Context, System.Windows.Forms.Keys.E, ref _held)) { Pet(); return; }
             if (Tapped(Control.PhoneUp, System.Windows.Forms.Keys.Up, ref _heldPlay)) { Play(); return; }
@@ -587,7 +587,7 @@ namespace Hoodrich.Locations
                 Log.Debug("Could not make a fuss of Chop: " + ex.Message);
             }
 
-            Notify.Ticker("~g~Chop is pleased to see you.~s~");
+            Notify.Ticker("~g~Chop's happy to see you.~s~");
             Log.Info("Chop petted.");
         }
 
@@ -698,7 +698,7 @@ namespace Hoodrich.Locations
                 Log.Debug("Chop did not hear that: " + ex.Message);
             }
 
-            Notify.Ticker(on ? "~g~Chop is coming with you.~s~" : "~o~Chop stays.~s~");
+            Notify.Ticker(on ? "~g~Chop's coming with you.~s~" : "~o~Chop stays.~s~");
             Log.Info(on ? "Chop is following." : "Chop is staying.");
         }
 

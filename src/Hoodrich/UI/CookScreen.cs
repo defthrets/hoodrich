@@ -210,7 +210,7 @@ namespace Hoodrich.UI
             Hud.Text("THE KITCHEN", x, y, 0.34f, Palette.Text, Hud.FontLabel, centre: false);
             y += 0.030f;
 
-            Hud.Text("Pick what you are working, then how far you stretch it.",
+            Hud.Text("Pick what you're working, then how far you stretch it.",
                      x, y, 0.26f, Palette.TextDim, Hud.FontBody, centre: false);
             y += 0.030f;
 

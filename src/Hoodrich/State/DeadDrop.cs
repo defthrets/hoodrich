@@ -142,7 +142,7 @@ namespace Hoodrich.State
             }
 
             _bagDroppedAt = Game.GameTime;
-            Notify.Important("~o~You dropped " + taken.ToString("0.#") + "g.~s~ It is on the map -- go get it.");
+            Notify.Important("~o~You dropped " + taken.ToString("0.#") + "g.~s~ It's on your map -- go get it.");
             Log.Info("Death: dropped " + taken.ToString("0.##") + "g at " + where + ".");
         }
 

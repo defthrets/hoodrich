@@ -214,7 +214,7 @@ namespace Hoodrich.Supply
 
             AddGangDealer("triads", "Mr. Kwan", "TRI", "ecstasy", 1.0f,
                 new[] { "g_m_m_chiboss_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02", "a_m_y_ktown_01" },
-                "You are early or you are late. Which is it.",
+                "You're early or you're late. Which is it.",
                 "Pills. By the bag. Quantity.",
                 "It arrives by sea, like everything. Elysian Island, the port. There is a man " +
                 "on the docks who counts containers badly, on purpose. Speak to him.",
@@ -244,7 +244,7 @@ namespace Hoodrich.Supply
                 Greeting = "Marcus's people, right? Keep it quiet and keep it quick. " +
                            "Whatever's in the box, I can get it off the box.",
                 BuyLine = "Anything you want, in weight. Say what and say how much.",
-                SourceReply = "Where do I get it? Mate, I AM where you get it.",
+                SourceReply = "Where do I get it? Man, I AM where you get it.",
                 SourceTooSoon = "",
                 Farewell = "Off you go. Don't come back in daylight if you're carrying."
             };
@@ -434,7 +434,7 @@ namespace Hoodrich.Supply
             if (_meetDef != null) return "You already have " + _meetDef.Name + " coming out.";
 
             var refusal = RefusalReason(def, state, crew);
-            if (refusal != null) return def.Name + " will not come out: " + refusal + ".";
+            if (refusal != null) return def.Name + " won't come out: " + refusal + ".";
 
             // Standing in front of them already.
             if (InReach != null && _liveDef != null && _liveDef.Id == def.Id)
@@ -518,7 +518,7 @@ namespace Hoodrich.Supply
 
             if (def.Kind == DealerKind.Docks && !state.DocksUnlocked)
             {
-                return "You do not know anyone at the port";
+                return "You don't know nobody at the port";
             }
 
             if (state.Rank < def.MinRank)
@@ -534,7 +534,7 @@ namespace Hoodrich.Supply
 
             if (!def.IsGangDealer) return null;
 
-            if (!crew.IsAffiliated) return "You do not run with anyone";
+            if (!crew.IsAffiliated) return "You don't run with nobody";
 
             if (!string.Equals(def.GangId, crew.Current.Id, StringComparison.OrdinalIgnoreCase))
             {

@@ -178,18 +178,18 @@ namespace Hoodrich.Missions
                 {
                     case MissionState.Travel:
                         return _def.Kind == MissionKind.DriveBy
-                            ? "Get a car and drive to " + ZoneName()
+                            ? "Get a car and roll out to " + ZoneName()
                             : "Get to " + ZoneName();
 
                     case MissionState.Work:
                         if (_def.Kind == MissionKind.DriveBy) return "Shoot up the corner -- stay in the car";
-                        return Fists(_def.Kind) ? "Put hands on them" : "Put them down";
+                        return Fists(_def.Kind) ? "Put hands on them" : "Put 'em down";
 
                     case MissionState.Escape:
                         return "Lose the cops, then get back to Lamar";
 
                     case MissionState.Collect:
-                        return "Go back to Lamar for the money";
+                        return "Get back to Lamar for the money";
 
                     default:
                         return "";
@@ -215,8 +215,8 @@ namespace Hoodrich.Missions
         public string Start(MissionDef def)
         {
             if (def == null) return "No such job.";
-            if (IsRunning) return "You are already on something.";
-            if (!_crew.IsAffiliated) return "You do not run with anyone.";
+            if (IsRunning) return "You're already on something.";
+            if (!_crew.IsAffiliated) return "You don't run with nobody.";
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
@@ -225,7 +225,7 @@ namespace Hoodrich.Missions
                 ? new Vector3(def.X, def.Y, def.Z)
                 : _zones.GroundedCentre(def.Zone);
 
-            if (site == Vector3.Zero) return "Nobody could tell you where that is.";
+            if (site == Vector3.Zero) return "Nobody could tell you where that's at.";
 
             if (def.Kind == MissionKind.Tags)
             {
@@ -633,13 +633,13 @@ namespace Hoodrich.Missions
 
             if (_targets.Count == 0)
             {
-                Fail("There was nobody there.");
+                Fail("Wasn't nobody there.");
                 return;
             }
 
             ClearSiteBlip();
 
-            Notify.Important("~r~They are here.~s~ " + Objective + ".");
+            Notify.Important("~r~They're here.~s~ " + Objective + ".");
         }
 
         private void TickWork(Ped player)
@@ -660,12 +660,12 @@ namespace Hoodrich.Missions
                 State = MissionState.Escape;
 
                 Wanted(_def.HeatStars);
-                Notify.Important("~r~Somebody called it in.~s~ Lose them, then get back to Lamar.");
+                Notify.Important("~r~Somebody called it in.~s~ Lose 'em, then get back to Lamar.");
                 return;
             }
 
             State = MissionState.Collect;
-            Notify.Important("~g~That is them done.~s~ Go back to Lamar.");
+            Notify.Important("~g~That's them done.~s~ Get back to Lamar.");
         }
 
         /// <summary>Waiting on the stars to drop before he will take it off you.</summary>
@@ -674,7 +674,7 @@ namespace Hoodrich.Missions
             if (Game.Player.Wanted.WantedLevel > 0) return;
 
             State = MissionState.Collect;
-            Notify.Important("~g~You are clear.~s~ Go back to Lamar.");
+            Notify.Important("~g~You're clear.~s~ Get back to Lamar.");
         }
 
         /// <summary>Raises the wanted level, never lowers it.</summary>
@@ -703,7 +703,7 @@ namespace Hoodrich.Missions
                 _homies.RemoveAt(i);
                 _homiesLost++;
 
-                Notify.Problem("you lost one of the homies.");
+                Notify.Problem("you lost one of the homies out there.");
             }
         }
 

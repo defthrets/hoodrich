@@ -146,7 +146,7 @@ namespace Hoodrich.Dealing
             // Dropped them in time.
             if (!_narc.IsAlive)
             {
-                Notify.Ticker("~g~The call never got made.~s~");
+                Notify.Ticker("~g~That call never got made.~s~");
 
                 // Cheaper than the bust, not free. A body on the pavement is its own problem.
                 _state.AddNotoriety(6f);
@@ -159,14 +159,14 @@ namespace Hoodrich.Dealing
             if (_callOrigin.HasValue &&
                 player.Position.DistanceTo(_callOrigin.Value) > _cfg.UndercoverEscapeDistance)
             {
-                Notify.Ticker("~g~You are clear.~s~ They lost you.");
+                Notify.Ticker("~g~You're clear.~s~ They lost you.");
                 Clear();
                 return;
             }
 
             if (CallProgress < 1f) return;
 
-            Notify.Failure("they called it in.");
+            Notify.Failure("he called it in.");
             PostUp.Wanted(Math.Max(1, Math.Min(5, _cfg.BustWantedStars)));
             _state.AddNotoriety(15f);
 

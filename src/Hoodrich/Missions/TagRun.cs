@@ -227,7 +227,7 @@ namespace Hoodrich.Missions
         /// <summary>Returns a player-facing refusal, or null once the run is on.</summary>
         public string Start(MissionDef def, List<TagSpot> all)
         {
-            if (all == null || all.Count == 0) return "Nobody could tell you where they are.";
+            if (all == null || all.Count == 0) return "Nobody could tell you where they're at.";
 
             _def = def;
             _spots.Clear();
@@ -254,7 +254,7 @@ namespace Hoodrich.Missions
             if (_playerBike == null)
             {
                 IsRunning = false;
-                return "There was no bike out there.";
+                return "Ain't no bike out there.";
             }
 
             Mark(BikeSpot, "Your bike");
@@ -343,7 +343,7 @@ namespace Hoodrich.Missions
 
             if (player.IsInVehicle())
             {
-                Help.ShowThisFrame("Get out to go over their tag.");
+                Help.ShowThisFrame("Get off the bike to go over their tag.");
                 return;
             }
 
@@ -644,7 +644,7 @@ namespace Hoodrich.Missions
 
             _done.Add(_spraying.Id);
 
-            Notify.Ticker("~g~That is ours now.~s~  " + _done.Count + " of " + _spots.Count);
+            Notify.Ticker("~g~That's ours now.~s~  " + _done.Count + " of " + _spots.Count);
             Log.Info("Tag " + _spraying.Id + " gone over.");
 
             if (Social != null) Social.On(SocialEvent.Tagged);
@@ -655,7 +655,7 @@ namespace Hoodrich.Missions
             if (Painted)
             {
                 Mark(Fixer.Spot, "Lamar");
-                Notify.Important("~g~That is all of them.~s~ Ride back to Lamar.");
+                Notify.Important("~g~That's all of 'em.~s~ Ride back to Lamar.");
             }
         }
 

@@ -279,16 +279,16 @@ namespace Hoodrich.Gangs
                 "You lost, or you looking for something.",
                 "Bueno. You run for us, not with us -- not yet. Take this, move it, don't be " +
                 "stupid with it. Then we see.",
-                "You are nobody to me yet. Go make a name, then come back.",
-                "You are already with us. Go work.");
+                "You ain't nobody to me yet. Go make a name, then come back.",
+                "You already with us. Go work.");
 
             Add("marabunta", "Chavo", "CYPRE",
                 new[] { "g_m_y_salvagoon_01", "g_m_y_salvaboss_01", "a_m_y_mexthug_01" },
                 "You standing in the wrong place to be asking questions.",
                 "You want in, you start at the bottom like everyone. Take this, sell it, " +
                 "bring back what's ours.",
-                "You have not earned a word from me. Go and do something worth hearing about.",
-                "You are one of ours already.");
+                "You ain't earned a word from me. Go do something worth hearing about.",
+                "You one of ours already.");
 
             Add("lost", "Bull", "SLAB",
                 new[] { "g_m_y_lost_02", "g_m_y_lost_01", "a_m_m_hillbilly_01" },
@@ -309,10 +309,10 @@ namespace Hoodrich.Gangs
             Add("armenians", "Sarkis", "ALTA",
                 new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "a_m_m_eastsa_02" },
                 "You want something. Everybody wants something.",
-                "You can carry for us. That is all, for now. Take this, sell it, bring the money. " +
+                "You can carry for us. That's all, for now. Take this, sell it, bring the money. " +
                 "Then we find out what you are.",
-                "You are nobody. Nobody gets anything. Come back when that changes.",
-                "You are already ours.");
+                "You're nobody. Nobody gets nothing. Come back when that changes.",
+                "You already ours.");
         }
 
         private void Add(string gangId, string name, string zone, string[] models,
@@ -894,7 +894,7 @@ namespace Hoodrich.Gangs
             var given = _state.Stash.AddPackaged(product.Id, grams, 1f);
             if (given <= 0f)
             {
-                Notify.Problem("you cannot carry what they are trying to hand you.");
+                Notify.Problem("you can't carry what he's trying to hand you.");
                 return;
             }
 

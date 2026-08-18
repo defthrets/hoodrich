@@ -364,7 +364,7 @@ namespace Hoodrich
                 {
                     _parked = true;
                     Log.Error("Too many consecutive failures; Hoodrich is parked for this session.");
-                    Notify.Failure("disabled for this session. See scripts\\Hoodrich.log.");
+                    Notify.Failure("Hoodrich shut itself off for this session. Check the log.");
                 }
             }
         }
@@ -414,7 +414,7 @@ namespace Hoodrich
             _state.AddRespect(-40f);
             _state.Touch();
 
-            Notify.Failure((gang == null ? "They" : gang.Name) + " wrote your debt off. You are done with them.");
+            Notify.Failure((gang == null ? "They" : gang.Name) + " wrote your debt off. You're done with them.");
         }
 
         /// <summary>

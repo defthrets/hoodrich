@@ -141,9 +141,9 @@ namespace Hoodrich.Missions
                 {
                     case BikePhase.ToBike: return "Get on the bike";
                     case BikePhase.Riding: return "Ride to the courts in Chamberlain Hills";
-                    case BikePhase.Words: return "Go and speak to them";
-                    case BikePhase.Fight: return "Hands only -- pull a gun and it is over";
-                    case BikePhase.Drink: return "Get a drink from the 24/7";
+                    case BikePhase.Words: return "Go say something to them";
+                    case BikePhase.Fight: return "Hands only -- pull a gun and it's over";
+                    case BikePhase.Drink: return "Go get a drink from the 24/7";
                     case BikePhase.Home: return "Ride back to Lamar";
                     default: return "";
                 }
@@ -165,7 +165,7 @@ namespace Hoodrich.Missions
             Failure = null;
 
             _playerBike = SpawnBike(BikeSpot, BikeHeading);
-            if (_playerBike == null) return "There was no bike out there.";
+            if (_playerBike == null) return "Ain't no bike out there.";
 
             Phase = BikePhase.ToBike;
             HoldTheLaw(true);
@@ -198,7 +198,7 @@ namespace Hoodrich.Missions
             // being true the moment the last one goes down.
             if (Phase >= BikePhase.Words && Phase <= BikePhase.Fight && PlayerFired(player))
             {
-                Failure = "You pulled a gun. That was not the job.";
+                Failure = "You pulled a gun. That wasn't the job.";
                 return;
             }
 
@@ -217,7 +217,7 @@ namespace Hoodrich.Missions
         {
             if (_playerBike == null || !_playerBike.Exists())
             {
-                Failure = "The bike is gone.";
+                Failure = "Somebody took the bike.";
                 return;
             }
 
@@ -250,7 +250,7 @@ namespace Hoodrich.Missions
 
             if (_rivals.Count == 0)
             {
-                Failure = "There was nobody at the courts.";
+                Failure = "Wasn't nobody at the courts.";
                 return;
             }
 
@@ -258,7 +258,7 @@ namespace Hoodrich.Missions
             GatherStragglers();
             ClearMarker();
 
-            Notify.Important("~r~They are already here.~s~ " + Objective + ".");
+            Notify.Important("~r~They're already here.~s~ " + Objective + ".");
         }
 
         private void TickWords(Ped player)
@@ -332,7 +332,7 @@ namespace Hoodrich.Missions
             _wentInside = false;
 
             Mark(Shop, "24/7", BlipColor.Yellow);
-            Notify.Important("~g~That is that.~s~ Everybody is thirsty. " + Objective + ".");
+            Notify.Important("~g~That's that.~s~ Everybody's thirsty now. " + Objective + ".");
         }
 
         private void TickDrink(Ped player)
@@ -348,7 +348,7 @@ namespace Hoodrich.Missions
                 if (near && Inside(player))
                 {
                     _wentInside = true;
-                    Notify.Ticker("~g~Get something and get out.~s~");
+                    Notify.Ticker("~g~Grab something and get out.~s~");
                 }
 
                 return;
@@ -631,7 +631,7 @@ namespace Hoodrich.Missions
                 catch { /* they will use their hands anyway */ }
             }
 
-            Notify.Important("~r~It is on.~s~ " + Objective + ".");
+            Notify.Important("~r~It's on.~s~ " + Objective + ".");
         }
 
         // ---- helpers -----------------------------------------------------------

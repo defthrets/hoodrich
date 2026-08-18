@@ -76,14 +76,14 @@ namespace Hoodrich.Gangs
                 node.SayIf(!_crew.IsAffiliated, "You already run with " +
                            (_crew.IsAffiliated ? _crew.Current.Name : "somebody"),
                            "Put me on.", () => AskToJoin(def, gang),
-                           short_ ? "He may not rate you yet"
+                           short_ ? "He might not rate you yet"
                                   : "Sign on with " + gang.Name);
             }
             else
             {
                 // They will trade with you all day and never take you on.
                 node.Say("Put me on.", () => NotTakingAnyone(def, gang),
-                         "He is not recruiting");
+                         "He ain't taking nobody on");
             }
 
             node.Leave("Forget it.");
@@ -189,7 +189,7 @@ namespace Hoodrich.Gangs
             _state.AddRespect(15f);
             _state.Touch();
 
-            Notify.Important("~g~The docks are open to you.~s~ Find the dock worker at the port.");
+            Notify.Important("~g~The port's open to you.~s~ Go find the dock worker down there.");
             Log.Info("Docks unlocked after " + _state.GramsSold.ToString("0.#") + "g sold.");
 
             var node = Node(def, gang,
@@ -239,7 +239,7 @@ namespace Hoodrich.Gangs
 
             if (gang.Drugs.Count == 0)
             {
-                node.Say("...", () => Root(def), "He has nothing to sell you");
+                node.Say("...", () => Root(def), "He ain't got nothing for you");
             }
 
             node.Say("Not right now.", () => Root(def));
@@ -259,8 +259,8 @@ namespace Hoodrich.Gangs
                 var canPay = Game.Player.Money >= cost;
                 var fits = _state.Stash.FreeSpace >= lot - 0.001f;
 
-                var blocked = !canPay ? "You are $" + (cost - Game.Player.Money).ToString("N0") + " short"
-                            : !fits ? "You cannot carry that much"
+                var blocked = !canPay ? "You're $" + (cost - Game.Player.Money).ToString("N0") + " short"
+                            : !fits ? "You can't carry that much"
                             : "";
 
                 node.SayIf(blocked.Length == 0, blocked,
@@ -309,7 +309,7 @@ namespace Hoodrich.Gangs
                      " for $" + charged + ".");
 
             var node = Node(def, gang,
-                "That is " + taken.ToString("0.#") + " grams. " + product.SplitVerb +
+                "That's " + taken.ToString("0.#") + " grams. " + product.SplitVerb +
                 " it before you try and move it, and don't come back empty handed.");
 
             node.Say("Anything else.", () => BuyList(def, gang));
@@ -327,7 +327,7 @@ namespace Hoodrich.Gangs
                      "Ask which blocks are safe");
 
             node.Say("How am I doing?", () => Standing(def, gang),
-                     "Ask what they think of you");
+                     "Ask how they rate you");
 
             node.Say("I need a re-up.", () => BuyList(def, gang),
                      "Buy weight off him");

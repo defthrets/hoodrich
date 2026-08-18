@@ -246,13 +246,13 @@ namespace Hoodrich.Dealing
         /// <summary>Returns a player-facing refusal, or null once posted.</summary>
         public string Start(DrugDef product)
         {
-            if (IsPosted) return "You are already posted up.";
+            if (IsPosted) return "You're already posted up.";
             if (product == null) return "Pick something to move.";
             if (Stash.PackagedOf(product.Id) < 0.5f)
             {
                 return Stash.BulkOf(product.Id) > 0.005f
-                    ? "That is still bulk. " + product.SplitVerb + " it first."
-                    : "You are not holding any " + product.Name + ".";
+                    ? "That's still weight. " + product.SplitVerb + " it first."
+                    : "You ain't holding no " + product.Name.ToLowerInvariant() + ".";
             }
 
             var player = Game.Player.Character;
@@ -273,7 +273,7 @@ namespace Hoodrich.Dealing
 
 
             Notify.Ticker("~g~Posted up.~s~ Moving " + product.Name.ToLowerInvariant() +
-                          ". Busy pavement sells faster and burns hotter.");
+                          ". A busy sidewalk sells faster and burns hotter.");
             Log.Info("Posted up with " + product.Id + " at " + _anchor + ".");
             return null;
         }
@@ -590,7 +590,7 @@ namespace Hoodrich.Dealing
             var grams = Math.Min(asked, Stash.PackagedOf(product.Id));
             if (grams < 0.05f)
             {
-                Stop("You are out of " + product.Name.ToLowerInvariant() + ".");
+                Stop("You're out of " + product.Name.ToLowerInvariant() + ".");
                 return;
             }
 
@@ -662,7 +662,7 @@ namespace Hoodrich.Dealing
             // corner has been up to now.
             if (CopIsWatching(player))
             {
-                Notify.Failure("a cop watched that.");
+                Notify.Failure("a badge just watched that.");
                 Wanted(1);
 
                 if (Social != null) Social.On(SocialEvent.Busted);
@@ -675,7 +675,7 @@ namespace Hoodrich.Dealing
             else if (_cornerHeat >= _cfg.PostUpHeatBeforePolice * HeatForWanted)
             {
                 // Word gets round without anybody having to see it.
-                Notify.Failure("this corner is too hot now.");
+                Notify.Failure("this corner's too hot now.");
                 Wanted(1);
             }
             else if (Bust != null)
@@ -685,7 +685,7 @@ namespace Hoodrich.Dealing
                 Bust.OnSale(customer, product);
             }
 
-            if (Stash.PackagedOf(product.Id) < 0.05f) Stop("That is the last of it.");
+            if (Stash.PackagedOf(product.Id) < 0.05f) Stop("That was the last of it.");
         }
 
         // ---- the other gangs ---------------------------------------------------
@@ -719,7 +719,7 @@ namespace Hoodrich.Dealing
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
                     Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16);
 
-                    Notify.Failure("you have been seen selling on their block.");
+                    Notify.Failure("they caught you serving on their block.");
 
                     // One is enough to start it; the game's own gang AI brings the rest.
                     return;
@@ -815,7 +815,7 @@ namespace Hoodrich.Dealing
                 _driveByBailed = false;
                 _driveByInRangeAt = 0;
 
-                Notify.Failure("that is not your car coming.");
+                Notify.Failure("that ain't your people pulling up.");
                 Log.Info("Drive-by from " + gang.Id + " after " +
                          ((Game.GameTime - _postedAt) / 1000) + "s posted up.");
             }
@@ -1200,7 +1200,7 @@ namespace Hoodrich.Dealing
 
                 Drive(driver, _patrolStop, PatrolCrawlSpeed);
 
-                Notify.Problem("cops rolling past. Be careful.");
+                Notify.Problem("black and white rolling past. Look busy.");
                 Log.Info("Patrol crawling past at " + near.ToString("0") + "m.");
                 return;
             }
@@ -1545,7 +1545,7 @@ namespace Hoodrich.Dealing
                 Log.Debug("Could not send a cop over: " + ex.Message);
             }
 
-            Notify.Failure("a patrol has taken an interest. Move.");
+            Notify.Failure("a patrol's taken an interest. Move.");
             Log.Info("Post-up drew police at corner heat " + _cornerHeat.ToString("0.0") + ".");
         }
 

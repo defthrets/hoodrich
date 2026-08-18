@@ -67,7 +67,7 @@ namespace Hoodrich.Locations
 
         private DialogueNode Table(string title, Piece[] pieces)
         {
-            var node = Node(title + ". Cash, and I never saw you.");
+            var node = Node(title + ". Cash only, and I never saw you.");
 
             foreach (var piece in pieces)
             {
@@ -81,7 +81,7 @@ namespace Hoodrich.Locations
                 var cost = owned ? AmmoPrice(item) : item.Price;
 
                 node.SayIf(canPay,
-                           "You are $" + (cost - Game.Player.Money).ToString("N0") + " short",
+                           "You're $" + (cost - Game.Player.Money).ToString("N0") + " short",
                            label,
                            () => Buy(item, owned, cost),
                            "$" + cost.ToString("N0") + "  ·  " + item.Note);
@@ -144,7 +144,7 @@ namespace Hoodrich.Locations
 
             var node = Node(topUp
                 ? "Rounds for the " + piece.Name + ". Don't waste 'em."
-                : "That's yours. You didn't get it from me.");
+                : "That's yours. And you ain't get it from me.");
 
             node.Say("What else you got.", Root);
             node.Leave("Good looking out.");

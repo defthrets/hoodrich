@@ -296,7 +296,7 @@ namespace Hoodrich.Locations
         {
             if (Talk == null || Talk.IsOpen || !InReach) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to see what Grimes has.");
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to see what Grimes is holding.");
 
             if (!WantsToTalk()) return;
 

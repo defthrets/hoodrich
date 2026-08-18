@@ -128,7 +128,7 @@ namespace Hoodrich.Gangs
                 // Switching sides is not free: the crew you walked out on remembers.
                 var old = StandingFor(previous.Id);
                 old.Rep = Math.Max(-100f, old.Rep - 40f);
-                Notify.Ticker("~o~You walked out on " + previous.Name + ".~s~");
+                Notify.Ticker("~o~You walked out on " + previous.Name + ".~s~ They ain't forgetting that.");
             }
 
             Notify.Important("~g~Running with " + gang.Name + ".~s~ " + gang.TurfHint);
@@ -149,7 +149,7 @@ namespace Hoodrich.Gangs
             standing.Rep = Math.Max(-100f, standing.Rep - 25f);
 
             Current = null;
-            Notify.Ticker("~o~You are running solo.~s~");
+            Notify.Ticker("~o~You're on your own now.~s~");
             Log.Info("Left " + gang.Id + ".");
 
             if (Social != null) Social.On(SocialEvent.LeftGang, gang.Name);

@@ -195,7 +195,7 @@ namespace Hoodrich.Economy
             var taken = _stash.RemoveBulk(product.Id, bulk);
             if (taken <= 0f)
             {
-                Notify.Problem("the bulk was gone before you finished.");
+                Notify.Problem("the weight was gone before you finished.");
                 return;
             }
 

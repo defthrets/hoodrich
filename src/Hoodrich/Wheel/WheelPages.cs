@@ -300,7 +300,7 @@ namespace Hoodrich.Wheel
             var sections = new List<InfoSection> { BlockSection() };
 
             var risk = new InfoSection { Title = "If you work here" };
-            risk.Row("Selling", _turf.Status == TurfStatus.Hostile ? "they will jump you"
+            risk.Row("Serving", _turf.Status == TurfStatus.Hostile ? "they'll jump you"
                               : _turf.Status == TurfStatus.Home ? "safe enough"
                               : "nobody minds much",
                      TurfTint());
@@ -446,10 +446,10 @@ namespace Hoodrich.Wheel
             page.WithIcon(Icons.Guns);
 
             page.AddSub("Dealing", "$", BuildDrugsPage,
-                detail: "Re-up, bag up, and go to work",
+                detail: "Re-up, bag up, go to work",
                 value: DrugsSummary(),
                 enabled: !_cutting.IsBusy,
-                disabledReason: "You are cutting");
+                disabledReason: "You're working the counter");
             page.WithIcon(Icons.Weed);
 
             page.AddSub("Gangs", "%", BuildGangsPage,
@@ -541,7 +541,7 @@ namespace Hoodrich.Wheel
             }
 
             page.Add("The numbers", "=", ShowTradeNumbers,
-                detail: "Prices, heat, and what this block is doing to both",
+                detail: "Prices, heat, and what this block does to both",
                 value: "");
             page.WithIcon(Icons.Health);
 
@@ -600,10 +600,10 @@ namespace Hoodrich.Wheel
             page.WithIcon(Icons.Stash);
 
             page.Add("Leave it all", "v", DepositAll,
-                detail: "Everything you are carrying, into the house",
+                detail: "Everything on you, into the house",
                 value: Stash.Total.ToString("0.#") + "g",
                 enabled: Stash.Total > 0.005f,
-                disabledReason: "You are carrying nothing");
+                disabledReason: "You ain't holding nothing");
             page.WithIcon(Icons.Cash);
 
             page.Add("Take it all", "^", WithdrawAll,
@@ -885,7 +885,7 @@ namespace Hoodrich.Wheel
                         : "Follow the blip. He is driving to you.",
                     value: Delivery.Distance.ToString("0") + "m",
                     enabled: false,
-                    disabledReason: "He is on his way");
+                    disabledReason: "He's on his way");
                 run.WithIcon(Icons.Garage);
 
                 run.Add("Call it off", "x", () => Delivery.Cancel("Told him not to bother."),
@@ -912,7 +912,7 @@ namespace Hoodrich.Wheel
                 page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g");
 
                 page.Add("Waiting", ">", null,
-                    detail: "Follow the blip and walk up to them",
+                    detail: "Follow the blip and walk up on him",
                     value: _dealers.MeetDistance.ToString("0") + "m",
                     enabled: false, disabledReason: "Get to the meet");
                 page.Add("Call off", "x", () => _dealers.CancelMeet("You called it off."),
@@ -925,11 +925,11 @@ namespace Hoodrich.Wheel
             // listing all seven as pickable wedges was a directory pretending to be a menu.
             var list = new WheelPage("Re-up", "Buying weight");
 
-            list.PanelTitle = "Where weight comes from";
+            list.PanelTitle = "Where the weight comes from";
             list.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
             list.Row("Room left", Stash.FreeSpace.ToString("0") + "g");
             list.Row("Gangs", "talk to their leader", Palette.TextDim);
-            list.Row("The docks", _state.DocksUnlocked ? "they deliver" : "you do not know them",
+            list.Row("The port", _state.DocksUnlocked ? "he delivers" : "you don't know nobody",
                      _state.DocksUnlocked ? Palette.Cash : (Color?)Palette.TextDim);
 
             var docks = _dealers.Docks();
@@ -937,7 +937,7 @@ namespace Hoodrich.Wheel
             if (docks == null)
             {
                 list.Add("Nothing", "-", null,
-                    detail: "No contacts in dealers.json",
+                    detail: "Nobody in your phone",
                     enabled: false, disabledReason: "Nobody to call");
                 return list;
             }
@@ -947,9 +947,9 @@ namespace Hoodrich.Wheel
                 var toGo = DealerManager.GramsUntilSource(_state, _cfg.DocksUnlockGrams);
 
                 list.Add("Call the docks", "=", null,
-                    detail: "Ask Uncle Dee where it comes from once you have moved enough",
+                    detail: "Ask Stretch where it comes from, once you've moved enough",
                     value: toGo.ToString("0") + "g more to sell",
-                    enabled: false, disabledReason: "You do not know anyone at the port");
+                    enabled: false, disabledReason: "You don't know nobody at the port");
                 list.WithIcon(Icons.Locked);
                 return list;
             }
@@ -1114,7 +1114,7 @@ namespace Hoodrich.Wheel
             var accepted = Stash.AddBulk(product.Id, supplied);
             if (accepted <= 0f)
             {
-                Notify.Problem("you cannot carry any more.");
+                Notify.Problem("you can't carry no more.");
                 return;
             }
 
@@ -1185,7 +1185,7 @@ namespace Hoodrich.Wheel
                 // Work comes from Lamar in person, so the wheel points at him rather than
                 // pretending to hand out jobs itself.
                 page.Add("Work", "!", null,
-                    detail: "Lamar has the jobs. He is marked on your map.",
+                    detail: "Lamar's got the work. He's on your map.",
                     value: "",
                     enabled: false, disabledReason: "Go and see Lamar");
                 page.WithIcon(Icons.Warning);
@@ -1253,7 +1253,7 @@ namespace Hoodrich.Wheel
             if (mine)
             {
                 page.Add("Walk away", "x", () => _crew.Leave(),
-                    detail: "Stop running with them. They will not forget it.",
+                    detail: "Walk away from the set. They won't forget it.",
                     value: "");
                 page.WithIcon(Icons.Warning);
             }

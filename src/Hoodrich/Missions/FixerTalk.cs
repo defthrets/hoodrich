@@ -50,7 +50,7 @@ namespace Hoodrich.Missions
                 return _runner.ReadyToCollect ? HandIn() : StillOn();
             }
 
-            var node = Node("What's happening. You looking for work or you just walking past?");
+            var node = Node("What's happening. You looking for work, or you just walking past?");
 
             // The NEW thing comes first and on its own terms: he works down his list in order,
             // and until you have been through it he tells you what needs doing rather than
@@ -90,7 +90,7 @@ namespace Hoodrich.Missions
                 // you have. Those are different sentences, so which one he says depends on it.
                 return Nothing(_missions.All.Count == 0
                     ? "Ain't got nothing right now. Come see me later."
-                    : "Got something for you, but not yet. Make more of a name first.");
+                    : "Got something for you, but not yet. Go make more of a name first.");
             }
 
             node.Leave("Not today.");
@@ -139,7 +139,7 @@ namespace Hoodrich.Missions
         private DialogueNode StillOn()
         {
             var node = Node("You already got something on. Go handle that first.");
-            node.Say("On it.", () => null, _runner.Objective);
+            node.Say("I'm on it.", () => null, _runner.Objective);
             return node;
         }
 
@@ -154,7 +154,7 @@ namespace Hoodrich.Missions
 
             node.WithIcon(Icons.Tick);
 
-            node.Say("Nah, what else you got?", Root);
+            node.Say("Nah. What else you got?", Root);
             node.Leave("Forget it.");
             return node;
         }

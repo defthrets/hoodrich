@@ -1166,7 +1166,7 @@
       "Dog on {hood} got a whole outfit on. Better dressed than me",
       "{source} {hearsay} they raising rent on {hood} again",
       "{source} {hearsay} {localspot} changing hands",
-      "{reaction}. It is always something on {hood}",
+      "{reaction}. It's always something on {hood}",
       "Somebody put speed bumps on {hood} and I have never been angrier",
       "Whoever been playing music at 3am on {hood}, we know which house",
       "Free kittens outside {localspot}. Somebody take these kittens",
@@ -1176,20 +1176,20 @@
       "My car got booted outside {localspot}. Over ONE ticket",
       "{weathertalk} and my AC picked today to die",
       "The kids on {hood} built a whole ramp out of scrap. Engineers",
-      "Somebody peacock is loose on {hood}. I said what I said",
+      "Somebody's peacock is loose on {hood}. I said what I said",
       "Barber gave me exactly what I asked for. Miracle",
       "Been on hold with the city for 45 minutes about {hood}",
       "{source} {hearsay} they finally paving {hood}. Believe it when I see it",
       "Everybody on {hood} outside because the power went out. Best block party we had",
-      "Somebody selling plates out their kitchen on {hood} and they are better than any restaurant",
+      "Somebody selling plates out their kitchen on {hood} and they're better than any restaurant",
       "Church let out and {hood} is gridlocked",
       "Nobody told me {priceofthing} went up again. {reaction}",
       "That old blue car been parked on {hood} for three years. Who owns it",
-      "Somebody grandad still washing his car by hand every Sunday on {hood}. Legend",
+      "Somebody's grandad still washing his car by hand every Sunday on {hood}. Legend",
       "Whole family cookout in the front yard on {hood}. Smells incredible",
-      "{excuse}, so I am late. Again",
+      "{excuse}, so I'm late. Again",
       "Somebody fixed the swing at the park on {hood}. Small thing, big deal",
-      "It is a good day on {hood} and I am not gonna jinx it"
+      "It's a good day on {hood} and I'm not gonna jinx it"
     ],
     "MissionTaken": [
       "Seen {yours} pulling up on {here}. Something about to happen",
@@ -1200,7 +1200,7 @@
       "Green shirts everywhere on {here} right now",
       "{source} {hearsay} {yours} got something planned",
       "Everybody with a green shirt is walking fast on {here}",
-      "It is about to be a long night on {here}",
+      "It's about to be a long night on {here}",
       "{reaction}. Locking my door"
     ],
     "MissionDone": [
@@ -1225,7 +1225,7 @@
       "Everybody outside {localspot} talking about {here} right now",
       "{here} was {opinion} {timeofday}. Wish I had my phone out",
       "{source} {hearsay} it was over in about a minute",
-      "Somebody stock went UP today and it was not mine",
+      "Somebody's stock went UP today and it wasn't mine",
       "They gonna be talking about {here} for a week",
       "{rival} not gonna post about this one",
       "Whatever {yours} paying, it worked",
@@ -1247,7 +1247,7 @@
       "{rival} still standing. Try again",
       "{source} {hearsay} it fell apart on {here}. {reaction}",
       "{rival} laughing about {here} right now and honestly, fair",
-      "That is gonna be a long ride home",
+      "That's gonna be a long ride home",
       "Whoever planned that one, sit down"
     ],
     "RivalKilled": [
@@ -1260,11 +1260,11 @@
       "This beef is getting out of hand",
       "Whoever's doing this to {rival}, they're not slowing down",
       "{source} {hearsay} somebody from {rival} caught it near {here}",
-      "Scanner saying {here}. {reaction}",
-      "That is somebody son. Regardless of colours",
-      "{rival} down another one and it is not even the weekend",
-      "Pray for {here}. It has been a month",
-      "The corner store on {here} closing early now. Cannot blame them",
+      "Scanner's saying {here}. {reaction}",
+      "That's somebody's son. Regardless of colors",
+      "{rival} down another one and it's not even the weekend",
+      "Pray for {here}. It's been a month",
+      "The corner store on {here} closing early now. Can't blame them",
       "This the fourth time this year on {here}. {reaction}",
       "{source} {hearsay} it was quick. Small mercy",
       "Whole block on {here} standing outside watching. Nobody saying nothing"
@@ -1276,8 +1276,8 @@
       "Old school straightener at {here}. Nobody pulled nothing. That's how it used to be",
       "Y'all missed the fight at {here}. I did NOT miss it",
       "Two sets squared up at {here} and nobody got shot. Progress?",
-      "Somebody {bodypart} is NOT okay after {here} {timeofday}",
-      "{source} {hearsay} it was hands only at {here}. That is rare now",
+      "Somebody's {bodypart} is NOT okay after {here} {timeofday}",
+      "{source} {hearsay} it was hands only at {here}. That's rare now",
       "That fight at {here} was {opinion}. No weapons, just work",
       "{reaction}. {here} turned into a whole boxing gym",
       "Whoever from {rival} thought that was a good idea at {here}, {filler}",
@@ -1295,8 +1295,8 @@
       "My whole street on {here} is outside right now",
       "{reaction}. {here} is not safe today",
       "Police took an hour to get to {here}. An HOUR",
-      "That is somebody window, somebody car, somebody kid asleep",
-      "Whoever was in that car on {here}, you are gonna get somebody hurt"
+      "That's somebody's window, somebody's car, somebody's kid asleep",
+      "Whoever was in that car on {here}, you're gonna get somebody hurt"
     ],
     "Busted": [
       "LSPD got somebody on {here} {timeofday}",
@@ -1308,8 +1308,8 @@
       "{source} {hearsay} somebody got taken off {here} {timeofday}",
       "Four cars for one person on {here}. {reaction}",
       "Watched the whole thing outside {localspot}. {filler}",
-      "Somebody about to need {source} to post bail",
-      "That is what the corner gets you eventually"
+      "Somebody's about to need {source} to post bail",
+      "That's what the corner gets you eventually"
     ],
     "Tagged": [
       "Somebody went over the {rival} tag on {here} {timeofday}. Bold",
@@ -1321,7 +1321,7 @@
       "That wall on {here} is a whole war at this point {filler}",
       "New tag on {here} and it is actually clean",
       "{rival} gonna repaint that by tomorrow. Watch",
-      "{reaction}. It is just paint and yet"
+      "{reaction}. It's just paint and yet"
     ],
     "BigSale": [
       "It's busy on {here} {timeofday}. Everybody knows why",
@@ -1347,7 +1347,7 @@
       "From nobody to somebody in about six months. {reaction}",
       "{yours} got a new problem-solver and everybody knows it",
       "Whoever that is, they earned every bit of it",
-      "You can tell who is running things by who does not have to say it"
+      "You can tell who's running things by who don't have to say it"
     ],
     "JoinedGang": [
       "Heard {yours} put somebody on {timeofday}",
@@ -1361,8 +1361,8 @@
       "Somebody walked away from {yours}. That's rare",
       "Heard somebody left the set. Bold move",
       "You don't just leave. We'll see",
-      "{source} {hearsay} somebody walked away clean. Do not happen often",
-      "That is a brave phone call to make"
+      "{source} {hearsay} somebody walked away clean. Don't happen often",
+      "That's a brave phone call to make"
     ],
     "Delivery": [
       "Nice car parked up on {here} that definitely don't live here",

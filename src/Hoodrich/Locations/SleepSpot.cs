@@ -76,7 +76,7 @@ namespace Hoodrich.Locations
                 player.Position = Bed;
                 player.Heading = 200f;
 
-                Notify.Ticker("~g~Woke up at the stash house.~s~");
+                Notify.Ticker("~g~Woke up at the spot.~s~");
                 Log.Info("Restored the player to the stash house bed on load.");
             }
             catch (Exception ex)
@@ -142,7 +142,7 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.DO_SCREEN_FADE_IN, FadeMs);
 
-                Notify.Important("~g~Slept.~s~ " + HoursSlept + " hours gone, and the game is saved.");
+                Notify.Important("~g~Slept.~s~ " + HoursSlept + " hours gone. Game's saved.");
                 Log.Info("Slept " + HoursSlept + "h at the stash house.");
             }
             catch (Exception ex)

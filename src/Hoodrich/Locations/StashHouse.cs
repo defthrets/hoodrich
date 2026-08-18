@@ -87,7 +87,7 @@ namespace Hoodrich.Locations
             // pickup: standing in the right two metres should not be part of using it.
             if (_inside)
             {
-                Notify.Ticker("~g~You are at the stash house.~s~ Open your inventory to move product in or out.");
+                Notify.Ticker("~g~You're at the spot.~s~ Open your inventory to move work in or out.");
             }
         }
 
