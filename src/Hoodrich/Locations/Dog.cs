@@ -18,12 +18,22 @@ namespace Hoodrich.Locations
     /// </summary>
     internal sealed class Dog
     {
-        /// <summary>The yard, off the back of the house.</summary>
-        private static readonly Vector3 Yard = new Vector3(-9.9f, -1435.2f, 31.1f);
+        /// <summary>
+        /// Where Chop actually is, read off the HUD standing on the spot.
+        ///
+        /// The height was not in the reading, so it is taken from the house: the bed sits at
+        /// 31.102 barely seven metres north of here on the same X, so this is the same floor.
+        /// The probe below corrects it if the ground turns out to be within a storey of that.
+        /// </summary>
+        private static readonly Vector3 Yard = new Vector3(-17.7249f, -1447.3206f, 31.1f);
 
         private const float SpawnRange = 90f;
         private const float DespawnRange = 160f;
-        private const float WanderRadius = 12f;
+        /// <summary>
+        /// Kept tight. Twelve metres was enough to take him out of the yard and into the road,
+        /// which is not where a dog who lives here would put himself.
+        /// </summary>
+        private const float WanderRadius = 7f;
         private const int UpdateIntervalMs = 900;
 
         /// <summary>Close enough to put a hand on him.</summary>
