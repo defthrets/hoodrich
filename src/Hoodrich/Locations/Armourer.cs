@@ -10,7 +10,7 @@ using Hoodrich.UI;
 
 namespace Hoodrich.Locations
 {
-    /// <summary>One thing Big J will sell you.</summary>
+    /// <summary>One thing Grimes will sell you.</summary>
     internal sealed class Piece
     {
         public readonly string Name;
@@ -32,7 +32,7 @@ namespace Hoodrich.Locations
     }
 
     /// <summary>
-    /// Big J, who sells guns out of the courtyard on Forum Drive.
+    /// Grimes, who sells guns out of the courtyard on Forum Drive.
     ///
     /// Deliberately not a shop. Ammu-Nation exists, it is on the map, and it wants your licence
     /// and your name -- so a man in a courtyard who does not is a different thing to have, not a
@@ -77,7 +77,10 @@ namespace Hoodrich.Locations
         /// </summary>
         public static readonly Piece[] Handguns =
         {
-            new Piece("WM 29 Pistol",         "WEAPON_PISTOL",         450,  60, "Does the job"),
+            // The WM 29 is its own weapon, not the stock Pistol -- WEAPON_PISTOL is the one
+            // everybody already has, which is why asking for a WM 29 handed over a normal one.
+            new Piece("WM 29 Pistol",         "WEAPON_GADGETPISTOL",  1400,  60, "Fancy piece"),
+            new Piece("Pistol",               "WEAPON_PISTOL",         450,  60, "Does the job"),
             new Piece("SNS Pistol",           "WEAPON_SNSPISTOL",      300,  40, "Fits anywhere"),
             new Piece("Vintage Pistol",       "WEAPON_VINTAGEPISTOL",  650,  40, "Somebody's grandad's"),
             new Piece("Double Action",        "WEAPON_DOUBLEACTION",   900,  36, "Slow and mean"),
@@ -130,7 +133,7 @@ namespace Hoodrich.Locations
             _gangs = gangs;
         }
 
-        public string Name => "Big J";
+        public string Name => "Grimes";
 
         public Vector3 Position => Spot;
 
@@ -230,7 +233,7 @@ namespace Hoodrich.Locations
 
                     Settle();
 
-                    Log.Info("Big J is out at " + spot + ".");
+                    Log.Info("Grimes is out at " + spot + ".");
                     return;
                 }
                 catch
@@ -239,7 +242,7 @@ namespace Hoodrich.Locations
                 }
             }
 
-            Log.Warn("No model would load for Big J.");
+            Log.Warn("No model would load for Grimes.");
         }
 
         /// <summary>Puts him back on his spot, facing the right way.</summary>
@@ -279,11 +282,11 @@ namespace Hoodrich.Locations
                 _blip.Color = BlipColor.Green;
                 _blip.Scale = 0.8f;
                 _blip.IsShortRange = true;
-                _blip.Name = "Big J -- guns";
+                _blip.Name = "Grimes -- guns";
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not blip Big J: " + ex.Message);
+                Log.Debug("Could not blip Grimes: " + ex.Message);
             }
         }
 
@@ -293,7 +296,7 @@ namespace Hoodrich.Locations
         {
             if (Talk == null || Talk.IsOpen || !InReach) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to see what Big J has.");
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to see what Grimes has.");
 
             if (!WantsToTalk()) return;
 

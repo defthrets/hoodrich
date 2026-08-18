@@ -132,6 +132,30 @@ namespace Hoodrich.Dealing
             "SPEECH_BUY_DRUGS", "GENERIC_THANKS", "GENERIC_BYE"
         };
 
+        /// <summary>
+        /// What a buyer says while it is happening, rather than after.
+        ///
+        /// Neutral on purpose. Somebody buying off you on a corner is doing something ordinary
+        /// and slightly furtive, not starting an argument -- the aggressive lines are kept for
+        /// the one thing that actually warrants them, which is being sold something short.
+        /// </summary>
+        private static readonly string[] BuyerChatter =
+        {
+            "GENERIC_HOWS_IT_GOING", "GENERIC_HI", "CHAT_STATE", "GENERIC_YES"
+        };
+
+        /// <summary>Said by somebody who has just worked out what you sold them.</summary>
+        private static readonly string[] RefusedLines =
+        {
+            "GENERIC_INSULT_HIGH", "GENERIC_CURSE_HIGH", "GENERIC_INSULT_MED"
+        };
+
+        /// <summary>How often a knocked-back buyer decides to do something about it.</summary>
+        private const float RefusedFightChance = 0.20f;
+
+        /// <summary>A buyer who cannot reach you gives up after this and wanders off.</summary>
+        private const int ApproachTimeoutMs = 60000;
+
         /// <summary>Said by the player once the handoff lands.</summary>
         private static readonly string[] SellerLines =
         {
@@ -155,6 +179,7 @@ namespace Hoodrich.Dealing
         private int _lastScan;
 
         private Ped _customer;
+        private int _approachStartedAt;
         private int _dealStartedAt;
         private bool _animRequested;
 
@@ -413,6 +438,7 @@ namespace Hoodrich.Dealing
             _customer = pick;
             _served[pick.Handle] = Game.GameTime;
             State = PostState.Approaching;
+            _approachStartedAt = Game.GameTime;
 
             try
             {
@@ -434,11 +460,26 @@ namespace Hoodrich.Dealing
                 return;
             }
 
-            if (player.Position.DistanceTo(_customer.Position) > 2.2f) return;
+            if (player.Position.DistanceTo(_customer.Position) > 2.2f)
+            {
+                // Some of them cannot get to you: a fence, a wall, a car in the way, or a spot
+                // you picked that has no route into it. Waiting forever means the corner stops
+                // producing and looks broken, so they give up and go about their day.
+                if (Game.GameTime - _approachStartedAt < ApproachTimeoutMs) return;
+
+                Log.Info("A buyer gave up trying to reach you.");
+                ReleaseCustomer();
+                State = PostState.Posted;
+                return;
+            }
 
             State = PostState.Dealing;
             _dealStartedAt = Game.GameTime;
             _animRequested = true;
+
+            // He says something as it starts. Franklin answers when it lands, so the exchange
+            // has two voices in it rather than one man muttering at a stranger.
+            Say(_customer, BuyerChatter);
 
             try
             {
@@ -554,7 +595,9 @@ namespace Hoodrich.Dealing
             if (_rng.NextDouble() < Pricing.BadCutChance(purity))
             {
                 _state.AddNotoriety(1f);
-                Notify.Problem("they clocked the cut and walked.");
+                Notify.Problem("they clocked the cut.");
+
+                Refused(player, customer);
                 return;
             }
 
@@ -1633,6 +1676,50 @@ namespace Hoodrich.Dealing
 
         // ---- cleanup -----------------------------------------------------------
 
+        /// <summary>
+        /// Somebody who has just been sold something short.
+        ///
+        /// Most of them swear at you and walk, which costs you the sale and a little standing.
+        /// One in five decides that is not enough. He is not a gangster and he is not armed --
+        /// he is somebody having a very bad afternoon -- so it is hands, and the corner notices,
+        /// because a fight outside your pitch is exactly the sort of thing that gets a corner
+        /// looked at.
+        /// </summary>
+        private void Refused(Ped player, Ped buyer)
+        {
+            if (buyer == null || !buyer.Exists() || !buyer.IsAlive) return;
+
+            Say(buyer, RefusedLines);
+
+            if (_rng.NextDouble() >= RefusedFightChance)
+            {
+                try { Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, buyer.Handle, false); }
+                catch { /* he will wander off on his own */ }
+
+                return;
+            }
+
+            try
+            {
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, buyer.Handle, false);
+                Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, buyer.Handle, true);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, buyer.Handle, 46, true);
+                Function.Call(Hash.TASK_COMBAT_PED, buyer.Handle, player.Handle, 0, 16);
+
+                _cornerHeat += RefusedFightHeat;
+
+                Notify.Problem("that one wants to do something about it.");
+                Log.Info("A knocked-back buyer squared up.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("A refused buyer could not square up: " + ex.Message);
+            }
+        }
+
+        /// <summary>A scuffle outside your pitch is its own kind of attention.</summary>
+        private const float RefusedFightHeat = 6f;
+
         private void ReleaseCustomer()
         {
             if (_customer != null && _customer.Exists())
@@ -1733,13 +1820,23 @@ namespace Hoodrich.Dealing
             var filled = w * heat;
             Hud.Rect(x - (w - filled) * 0.5f, y, filled, h, colour);
 
-            var label = State == PostState.Questioned ? "BEING SEARCHED"
+            // Two lines rather than one. "POSTED UP" is the state you are in and the product
+            // is what you happen to be moving while in it, so they are not the same sentence --
+            // and the state reads better in the house script face above the detail.
+            var state = State == PostState.Questioned ? "BEING SEARCHED"
                 : State == PostState.Investigated ? "PATROL INCOMING"
-                : _product == null ? "POSTED UP"
-                : "POSTED UP  ·  SELLING " + _product.Name.ToUpperInvariant();
+                : "POSTED UP";
 
-            Hud.Text(label, x, y - 0.042f, 0.34f,
-                     State == PostState.Posted ? Palette.Text : Palette.Danger, Hud.FontLabel);
+            var detail = _product == null ? "" : "SELLING " + _product.Name.ToUpperInvariant();
+
+            var tint = State == PostState.Posted ? Palette.Text : Palette.Danger;
+
+            Hud.Text(state, x, y - 0.072f, 0.62f, tint, Hud.FontCursive);
+
+            if (!string.IsNullOrEmpty(detail))
+            {
+                Hud.Text(detail, x, y - 0.036f, 0.30f, Palette.TextDim, Hud.FontLabel);
+            }
 
             // What is left is the number that decides whether you stay, so it goes first and
             // turns amber as it runs down.

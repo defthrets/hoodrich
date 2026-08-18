@@ -25,15 +25,46 @@ namespace Hoodrich.Locations
         /// 31.102 barely seven metres north of here on the same X, so this is the same floor.
         /// The probe below corrects it if the ground turns out to be within a storey of that.
         /// </summary>
-        private static readonly Vector3 Yard = new Vector3(-17.7249f, -1447.3206f, 31.1f);
+        private static readonly Vector3 Yard = new Vector3(-11.095f, -1423.223f, 30.678f);
 
         private const float SpawnRange = 90f;
         private const float DespawnRange = 160f;
         /// <summary>
-        /// Kept tight. Twelve metres was enough to take him out of the yard and into the road,
-        /// which is not where a dog who lives here would put himself.
+        /// Kept tight, and centred on the kennel. He is meant to be found there most of the
+        /// time, with a bit of drift -- twelve metres was enough to put him in the road.
         /// </summary>
-        private const float WanderRadius = 7f;
+        private const float WanderRadius = 6f;
+
+        /// <summary>How far he is allowed to drift before he is walked back to the kennel.</summary>
+        private const float LeashRange = 11f;
+
+        /// <summary>Following is a task the game drops; it gets put back on this often.</summary>
+        private const int RetaskGapMs = 3000;
+
+        /// <summary>
+        /// Animations, tried in order and validated before use.
+        ///
+        /// DOES_ANIM_DICT_EXIST is the only honest way to find out whether a clip is in this
+        /// install, and the animal sets differ between editions. Whichever one answers is used
+        /// and logged, so a dog that does nothing is a question the log can answer.
+        /// </summary>
+        private static readonly string[] SitDicts =
+        {
+            "creatures@rottweiler@amb@world_dog_sitting@base",
+            "creatures@rottweiler@amb@world_dog_sitting@idle_a",
+            "creatures@rottweiler@move"
+        };
+
+        private static readonly string[] SitClips = { "base", "idle_a", "idle" };
+
+        private static readonly string[] TrickDicts =
+        {
+            "creatures@rottweiler@tricks@",
+            "creatures@rottweiler@amb@world_dog_barking@base",
+            "creatures@rottweiler@move"
+        };
+
+        private static readonly string[] TrickClips = { "beg_loop", "base", "idle" };
         private const int UpdateIntervalMs = 900;
 
         /// <summary>Close enough to put a hand on him.</summary>
@@ -69,6 +100,7 @@ namespace Hoodrich.Locations
         private bool _gaveUp;
 
         private int _lastRivalScan;
+        private int _nextRetask;
         private bool _playing;
 
         private bool _following;
@@ -90,6 +122,8 @@ namespace Hoodrich.Locations
             if (_petting && now >= _pettingUntil) EndPet();
 
             SendAwayTheOtherOne(player, now);
+            KeepUp(player, now);
+            Leash();
 
             var distance = player.Position.DistanceTo(Yard);
 
@@ -263,6 +297,84 @@ namespace Hoodrich.Locations
             return false;
         }
 
+        /// <summary>
+        /// Puts the follow task back on, because the game drops it.
+        ///
+        /// TASK_FOLLOW_TO_OFFSET_OF_ENTITY is issued once and abandoned the moment anything
+        /// interrupts it -- a door, a fence, being knocked over. Once abandoned he simply stops,
+        /// which is exactly what "he does not follow" looked like.
+        /// </summary>
+        private void KeepUp(Ped player, int now)
+        {
+            if (!_following || _petting) return;
+            if (_chop == null || !_chop.Exists() || !_chop.IsAlive) return;
+            if (now < _nextRetask) return;
+
+            _nextRetask = now + RetaskGapMs;
+            Heel();
+        }
+
+        /// <summary>Walks him back to the kennel if he has wandered off the yard.</summary>
+        private void Leash()
+        {
+            if (_following || _petting) return;
+            if (_chop == null || !_chop.Exists() || !_chop.IsAlive) return;
+            if (_chop.Position.DistanceTo(Yard) <= LeashRange) return;
+
+            try
+            {
+                _chop.Task.ClearAll();
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _chop.Handle,
+                              Yard.X, Yard.Y, Yard.Z, 1.6f, 20000, 0f, 0.5f);
+            }
+            catch
+            {
+                // He will find his own way.
+            }
+        }
+
+        /// <summary>
+        /// Plays a clip from the first dictionary this install actually has.
+        ///
+        /// Scenario names fail silently when they are wrong, which is how a dog ended up with
+        /// no pet animation and nothing to show for it. An anim dictionary can be asked whether
+        /// it exists before it is used.
+        /// </summary>
+        private bool PlayClip(string[] dicts, string[] clips, int durationMs)
+        {
+            if (_chop == null || !_chop.Exists()) return false;
+
+            foreach (var dict in dicts)
+            {
+                try
+                {
+                    if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) continue;
+
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+
+                    // One frame is usually enough for a small animal clip; if it is not, the
+                    // call below simply does nothing and he keeps his scenario.
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
+
+                    foreach (var clip in clips)
+                    {
+                        Function.Call(Hash.TASK_PLAY_ANIM, _chop.Handle, dict, clip,
+                                      4f, -4f, durationMs, 1, 0f, false, false, false);
+
+                        Log.Info("Chop is playing " + dict + " / " + clip + ".");
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Try the next dictionary.
+                }
+            }
+
+            Log.Debug("No dog animation dictionary in this install answered.");
+            return false;
+        }
+
         // ---- being a dog -------------------------------------------------------
 
         private bool InReach
@@ -287,9 +399,15 @@ namespace Hoodrich.Locations
         {
             if (!InReach || _petting) return;
 
-            Help.ShowThisFrame(_following
-                ? "~INPUT_CONTEXT~ pet     ~INPUT_CELLPHONE_UP~ play     ~INPUT_CELLPHONE_RIGHT~ tell him to stay"
-                : "~INPUT_CONTEXT~ pet     ~INPUT_CELLPHONE_UP~ play     ~INPUT_CELLPHONE_RIGHT~ take him with you");
+            // Written the way the game writes its own prompts -- a sentence per line, each
+            // naming the button and what it does. The old one was a row of shorthand, which is
+            // a debug readout rather than something the game would put on screen.
+            Help.ShowThisFrame(
+                "Press ~INPUT_CONTEXT~ to pet Chop.~n~" +
+                "Press ~INPUT_CELLPHONE_UP~ to play with him.~n~" +
+                (_following
+                    ? "Press ~INPUT_CELLPHONE_RIGHT~ to leave him here."
+                    : "Press ~INPUT_CELLPHONE_RIGHT~ to take him with you."));
 
             if (Tapped(Control.Context, System.Windows.Forms.Keys.E, ref _held)) { Pet(); return; }
             if (Tapped(Control.PhoneUp, System.Windows.Forms.Keys.Up, ref _heldPlay)) { Play(); return; }
@@ -338,11 +456,14 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _chop.Handle, player.Handle, PetMs);
                 Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, player.Handle, _chop.Handle, PetMs);
 
-                // The game own dog-sitting idle. Nothing else in the animal set reads as a dog
-                // enjoying itself, and a made-up pose on a quadruped looks broken rather than
-                // affectionate.
-                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _chop.Handle,
-                              "WORLD_DOG_SITTING_GENERIC", 0, true);
+                // A real clip if this install has one, and the sitting scenario if it does not,
+                // so he does SOMETHING either way rather than standing there being petted by a
+                // man waving at the air.
+                if (!PlayClip(SitDicts, SitClips, PetMs))
+                {
+                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _chop.Handle,
+                                  "WORLD_DOG_SITTING_ROTTWEILER", 0, true);
+                }
 
                 Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _chop.Handle,
                               "GENERIC_HOWS_IT_GOING", "SPEECH_PARAMS_FORCE");
@@ -380,10 +501,13 @@ namespace Hoodrich.Locations
                 var away = player.Position.Around(7f);
                 away.Z = _chop.Position.Z;
 
-                // Out and back rather than a scenario: a dog that runs somewhere and returns to
-                // you reads as playing, and a dog stood still playing an animation does not.
+                // A trick if the install has one, then out and back. A dog that runs somewhere
+                // and returns to you reads as playing; one stood still playing an animation
+                // does not, so the clip is the flourish and the running is the game.
+                PlayClip(TrickDicts, TrickClips, 1200);
+
                 Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _chop.Handle,
-                              away.X, away.Y, away.Z, 2.5f, PlayMs / 2, 0f, 0f);
+                              away.X, away.Y, away.Z, 3.2f, PlayMs / 2, 0f, 0f);
 
                 Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _chop.Handle,
                               "GENERIC_WAR_CRY", "SPEECH_PARAMS_FORCE");
@@ -466,14 +590,19 @@ namespace Hoodrich.Locations
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
-            // Just behind and to one side, which is where a dog walks.
+            // Just behind and to one side, which is where a dog walks. Speed is well above a
+            // walk so he can catch up after a corner rather than trailing further behind at
+            // every turn.
             Function.Call(Hash.TASK_FOLLOW_TO_OFFSET_OF_ENTITY, _chop.Handle, player.Handle,
-                          -0.6f, -1.4f, 0f, 2.2f, -1, 2.5f, true);
+                          -0.6f, -1.4f, 0f, 4.0f, -1, 2.0f, true);
         }
 
         private void Wander()
         {
-            var spot = _chop.Position;
+            // Anchored on the kennel, not on wherever he happens to be standing. Wandering from
+            // where you last were compounds: every wander starts a little further out than the
+            // last one, and after a while he lives down the street.
+            var spot = Yard;
 
             Function.Call(Hash.TASK_WANDER_IN_AREA, _chop.Handle,
                           spot.X, spot.Y, spot.Z, WanderRadius, 2f, 6f);

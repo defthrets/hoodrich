@@ -67,7 +67,7 @@ namespace Hoodrich.UI
         /// monitor apart and read as unrelated. This is a narrow column with the value directly
         /// under its label's eye line, which is how a stat block is meant to work.
         /// </summary>
-        private const float PanelWidth = 0.235f;
+        private const float PanelWidth = 0.290f;
 
         private const float RowHeight = 0.0225f;
         private const float SectionGap = 0.014f;
@@ -176,20 +176,34 @@ namespace Hoodrich.UI
             var x = 0.5f - PanelWidth * 0.5f;
             var top = Math.Max(0.06f, 0.5f - height * 0.5f);
 
-            Hud.RectFrom(x, top, PanelWidth, height, Color.FromArgb(228, 12, 13, 15));
-            Hud.RectFrom(x, top, PanelWidth, 0.0030f, Palette.Accent);
+            // A hairline border around a slightly darker ground, and a header strip the title
+            // sits in rather than floating above the list. The old panel was a black rectangle
+            // with words in it; the difference between that and something you would call a
+            // screen is almost entirely edges.
+            Hud.RectFrom(x - 0.0016f, top - 0.0016f, PanelWidth + 0.0032f, height + 0.0032f,
+                         Color.FromArgb(150, 90, 96, 92));
 
-            var y = top + 0.012f;
+            Hud.RectFrom(x, top, PanelWidth, height, Color.FromArgb(238, 10, 11, 13));
 
-            Hud.Text(_title.ToUpperInvariant(), x + Pad, y, 0.34f, Palette.Text, Hud.FontLabel, centre: false);
-            y += 0.024f;
+            const float header = 0.046f;
+
+            Hud.RectFrom(x, top, PanelWidth, header, Color.FromArgb(235, 20, 22, 24));
+            Hud.RectFrom(x, top + header - 0.0022f, PanelWidth, 0.0022f, Palette.Accent);
+
+            var y = top + 0.006f;
+
+            // The name of the screen in the house script face, and what it is showing under it
+            // in plain type -- the same split the wheel readout uses.
+            Hud.Text(_title.ToUpperInvariant(), x + Pad, y, 0.68f, Palette.Text,
+                     Hud.FontCursive, centre: false);
 
             if (!string.IsNullOrEmpty(_subtitle))
             {
-                Hud.Text(_subtitle, x + Pad, y, 0.27f, Palette.TextDim, Hud.FontBody, centre: false);
+                Hud.TextRight(_subtitle, x + PanelWidth - Pad, y + 0.014f, 0.30f,
+                              Palette.Cash, Hud.FontChaletLondon);
             }
 
-            y += 0.022f;
+            y = top + header + 0.012f;
 
             // Flattened once, so scrolling is a plain row offset rather than section bookkeeping.
             var index = 0;
@@ -201,9 +215,24 @@ namespace Hoodrich.UI
                 {
                     if (index++ >= _scroll && drawn < MaxVisibleRows)
                     {
+                        // A rule that runs to the right edge, so a section heading reads as a
+                        // divider rather than as another row that happens to be a different
+                        // colour.
                         Hud.Text(section.Title.ToUpperInvariant(), x + Pad, y, 0.24f,
                                  Palette.Accent, Hud.FontLabel, centre: false);
-                        y += RowHeight * 0.9f;
+
+                        var ruleFrom = x + Pad + Hud.MeasureText(section.Title.ToUpperInvariant(),
+                                                                 0.24f, Hud.FontLabel) + 0.008f;
+
+                        var ruleWidth = x + PanelWidth - Pad - ruleFrom;
+
+                        if (ruleWidth > 0.01f)
+                        {
+                            Hud.RectFrom(ruleFrom, y + 0.0105f, ruleWidth, 0.0012f,
+                                         Color.FromArgb(70, 200, 205, 200));
+                        }
+
+                        y += RowHeight * 0.95f;
                         drawn++;
                     }
                 }
@@ -215,8 +244,14 @@ namespace Hoodrich.UI
 
                     if (!row.IsSpacer)
                     {
-                        // Label left, value hard right in a narrow column -- close enough
-                        // together to read as one line.
+                        // Banded, faintly. Reading a value back to its label across a gap is
+                        // what a stripe is for, and at this alpha it is felt rather than seen.
+                        if ((drawn & 1) == 1)
+                        {
+                            Hud.RectFrom(x + 0.004f, y - 0.0035f, PanelWidth - 0.008f, RowHeight,
+                                         Color.FromArgb(26, 210, 215, 210));
+                        }
+
                         Hud.Text(row.Label, x + Pad, y, 0.28f, Palette.TextDim, Hud.FontBody, centre: false);
                         Hud.TextRight(row.Value, x + PanelWidth - Pad, y, 0.28f, row.Colour, Hud.FontBody);
                     }
@@ -228,7 +263,10 @@ namespace Hoodrich.UI
                 y += SectionGap;
             }
 
-            var hint = total > MaxVisibleRows ? "UP / DOWN SCROLL   ENTER CLOSE" : "ENTER CLOSE";
+            Hud.RectFrom(x, top + height - 0.026f, PanelWidth, 0.0012f,
+                         Color.FromArgb(60, 200, 205, 200));
+
+            var hint = total > MaxVisibleRows ? "UP / DOWN SCROLL      ENTER CLOSE" : "ENTER CLOSE";
             Hud.Text(hint, x + Pad, top + height - 0.018f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
     }

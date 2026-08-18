@@ -25,6 +25,25 @@ namespace Hoodrich.UI
         /// returning null ends it.
         /// </summary>
         public Func<DialogueNode> Pick;
+
+        /// <summary>
+        /// Optional art for the row, resolved per frame like the wheel's.
+        ///
+        /// A list of gun names is a list of words; the same list with the guns beside them is
+        /// something you can read at a glance, which is what a table on a man's floor would be.
+        /// </summary>
+        public string IconDict = "";
+        public string IconTexture = "";
+        public float IconAspect = 1f;
+        public bool IconTried;
+
+        /// <summary>Texture names to try, for icons that are not named after their dictionary.</summary>
+        public string[] Candidates;
+
+        /// <summary>True when the texture shares its dictionary's name, as weapon art does.</summary>
+        public bool SelfNamed;
+
+        public bool HasIcon => !string.IsNullOrEmpty(IconDict) && !string.IsNullOrEmpty(IconTexture);
     }
 
     /// <summary>A line of theirs plus everything you can say to it.</summary>
@@ -45,6 +64,33 @@ namespace Hoodrich.UI
         public DialogueNode Say(string label, Func<DialogueNode> pick, string detail = "")
         {
             Choices.Add(new DialogueChoice { Label = label, Detail = detail, Pick = pick });
+            return this;
+        }
+
+        /// <summary>
+        /// Gives the choice just added a weapon's own model art.
+        ///
+        /// Weapon dictionaries are named after the weapon, so the name is enough -- the panel
+        /// resolves it the first time it draws the row.
+        /// </summary>
+        public DialogueNode WithWeapon(string weaponName)
+        {
+            if (Choices.Count == 0 || string.IsNullOrEmpty(weaponName)) return this;
+
+            var choice = Choices[Choices.Count - 1];
+            choice.IconDict = weaponName;
+            choice.SelfNamed = true;
+            return this;
+        }
+
+        /// <summary>Gives the choice just added one of the wheel's icons.</summary>
+        public DialogueNode WithIcon(Icon icon)
+        {
+            if (Choices.Count == 0 || !icon.IsSet) return this;
+
+            var choice = Choices[Choices.Count - 1];
+            choice.IconDict = icon.Dict;
+            choice.Candidates = icon.Textures;
             return this;
         }
 
@@ -112,15 +158,39 @@ namespace Hoodrich.UI
         /// </summary>
         public Ped Speaker;
 
+        /// <summary>
+        /// Lines for the middle of a conversation.
+        ///
+        /// Deliberately NOT thanks. Thanks is what you say when money changes hands, and using
+        /// it for every button press made two men stood in a courtyard sound like they were
+        /// completing a transaction over and over. These are the noises people make while
+        /// talking: agreeing, thinking about it, asking.
+        /// </summary>
         private static readonly string[] TheirLines =
         {
-            "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "CHAT_STATE", "GENERIC_THANKS"
+            "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "CHAT_STATE",
+            "GENERIC_HI", "SHOP_GREETING", "GENERIC_INSULT_HIGH"
         };
 
         private static readonly string[] YourLines =
         {
-            "GENERIC_YES", "GENERIC_HOWS_IT_GOING", "GENERIC_THANKS"
+            "GENERIC_YES", "GENERIC_HOWS_IT_GOING", "CHAT_STATE", "GENERIC_HI"
         };
+
+        /// <summary>Saved for the end, which is the one place it means something.</summary>
+        private static readonly string[] PartingLines =
+        {
+            "GENERIC_BYE", "GENERIC_THANKS"
+        };
+
+        /// <summary>
+        /// Whose turn it is.
+        ///
+        /// A conversation is two people alternating, not one person answering himself. Without
+        /// this the NPC spoke on every page and Franklin spoke on every pick, which meant they
+        /// talked over each other twice per choice.
+        /// </summary>
+        private bool _theirTurn = true;
 
         private static readonly Random Rng = new Random();
 
@@ -153,18 +223,33 @@ namespace Hoodrich.UI
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
-            // Whoever is talking says something as the page comes up.
-            Speak(Speaker, TheirLines);
+            // Only on the FIRST page. After that the answer comes from Commit, so that one pick
+            // produces one line rather than yours and theirs on top of each other.
+            if (_openedFresh)
+            {
+                _openedFresh = false;
+                _theirTurn = false;
+                Speak(Speaker, TheirLines);
+            }
         }
 
         private void _subjectSet(object subject) => Subject = subject;
 
         public void Close()
         {
+            // Both of them, because a goodbye one man says on his own is not a goodbye.
+            Speak(Game.Player.Character, PartingLines);
+            Speak(Speaker, PartingLines);
+
             _node = null;
             Subject = null;
             Speaker = null;
+            _openedFresh = true;
+            _theirTurn = true;
         }
+
+        /// <summary>True until the opening line has been said, so pages do not re-greet you.</summary>
+        private bool _openedFresh = true;
 
         private static int FirstEnabled(DialogueNode node)
         {
@@ -228,8 +313,11 @@ namespace Hoodrich.UI
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
-            // You answer, then they answer back when the next page opens.
-            Speak(Game.Player.Character, YourLines);
+            // Turn and turn about.
+            Speak(_theirTurn ? Speaker : Game.Player.Character,
+                  _theirTurn ? TheirLines : YourLines);
+
+            _theirTurn = !_theirTurn;
 
             DialogueNode next = null;
             try
@@ -319,8 +407,26 @@ namespace Hoodrich.UI
                            : picked ? Palette.TextOnHover
                            : Palette.TextDim;
 
+                var textX = PanelX + 0.014f;
+
+                if (ResolveIcon(choice))
+                {
+                    // Height-boxed the same way the wheel does it, so a long silhouette stays
+                    // long and a square one stays square.
+                    var aspect = choice.IconAspect;
+                    if (aspect < 0.25f || aspect > 4f) aspect = 1f;
+
+                    var iw = Math.Min(0.048f, 0.022f * aspect);
+
+                    Hud.Sprite(choice.IconDict, choice.IconTexture,
+                               textX + Hud.ToX(iw) * 0.5f, y + 0.012f,
+                               Hud.ToX(iw), 0.022f, 0f, colour);
+
+                    textX += Hud.ToX(iw) + 0.006f;
+                }
+
                 Hud.Text(picked ? "> " + choice.Label : "  " + choice.Label,
-                             PanelX + 0.014f, y, ChoiceScale, colour, Hud.FontBody, centre: false);
+                             textX, y, ChoiceScale, colour, Hud.FontBody, centre: false);
 
                 var note = !choice.Enabled ? choice.DisabledReason : picked ? choice.Detail : "";
                 if (!string.IsNullOrEmpty(note))
@@ -336,6 +442,53 @@ namespace Hoodrich.UI
 
             Hud.Text("D-PAD / ARROWS  CHOOSE      ENTER  SAY IT      BACKSPACE  WALK OFF",
                          PanelX + 0.014f, y + 0.004f, 0.28f, Palette.TextDim, Hud.FontLabel, centre: false);
+        }
+
+        /// <summary>
+        /// Finds the weapon's own model art, once, and remembers the answer either way.
+        ///
+        /// Weapon art lives in a dictionary named after the weapon, with the texture named the
+        /// same -- so a gun that is in this install answers, and one that is not simply has no
+        /// picture and keeps its words.
+        /// </summary>
+        private static bool ResolveIcon(DialogueChoice choice)
+        {
+            if (string.IsNullOrEmpty(choice.IconDict)) return false;
+            if (choice.HasIcon) return true;
+            if (choice.IconTried) return false;
+
+            var dict = choice.SelfNamed ? choice.IconDict.ToLowerInvariant() : choice.IconDict;
+            if (!Hud.EnsureTextureDict(dict)) return false;
+
+            float aspect;
+
+            // Weapon art shares its dictionary's name. Everything else carries a list, because
+            // which of these the install actually has varies -- and a name that is not there
+            // draws nothing at all rather than failing, so it has to be checked first.
+            if (choice.SelfNamed)
+            {
+                if (Hud.HasTexture(dict, dict, out aspect))
+                {
+                    choice.IconDict = dict;
+                    choice.IconTexture = dict;
+                    choice.IconAspect = aspect;
+                    return true;
+                }
+            }
+            else if (choice.Candidates != null)
+            {
+                foreach (var name in choice.Candidates)
+                {
+                    if (!Hud.HasTexture(dict, name, out aspect)) continue;
+
+                    choice.IconTexture = name;
+                    choice.IconAspect = aspect;
+                    return true;
+                }
+            }
+
+            choice.IconTried = true;
+            return false;
         }
 
         /// <summary>

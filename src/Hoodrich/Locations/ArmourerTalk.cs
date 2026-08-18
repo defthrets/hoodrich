@@ -10,7 +10,7 @@ using Hoodrich.UI;
 namespace Hoodrich.Locations
 {
     /// <summary>
-    /// Buying off Big J.
+    /// Buying off Grimes.
     ///
     /// A conversation rather than a shop screen, for the same reason Stretch is: you are not
     /// browsing a catalogue, you are asking a man what he has. He answers by table -- handguns,
@@ -74,6 +74,8 @@ namespace Hoodrich.Locations
                            label,
                            () => Buy(item, owned, cost),
                            "$" + cost.ToString("N0") + "  ·  " + item.Note);
+
+                node.WithWeapon(item.Weapon);
             }
 
             node.Say("Show me something else.", Root);
@@ -121,7 +123,7 @@ namespace Hoodrich.Locations
                 _state.Touch();
 
                 Notify.Ticker("~y~-$" + cost.ToString("N0") + "~s~  " + piece.Name);
-                Log.Info("Bought " + piece.Weapon + " off Big J for $" + cost + ".");
+                Log.Info("Bought " + piece.Weapon + " off Grimes for $" + cost + ".");
             }
             catch (Exception ex)
             {

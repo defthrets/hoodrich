@@ -380,7 +380,13 @@ namespace Hoodrich.UI
                 // anything wider than the box squashed to fit, which is how a banner-shaped
                 // sprite ended up looking like half an icon; overflowing the width now costs
                 // height instead, so the art keeps its own proportions whatever shape it is.
-                var aspect = item.IconAspect > 0.05f ? item.IconAspect : 1f;
+                // Clamped, because the measured aspect is not always the sprite's.
+                // GET_TEXTURE_RESOLUTION can answer with the size of the atlas page a texture
+                // sits on rather than the texture itself, and one extreme number fitted into
+                // the box shrinks the height to nothing -- which is an icon that is technically
+                // being drawn and is invisible. No real icon is outside 1:4 either way.
+                var aspect = item.IconAspect;
+                if (aspect < 0.25f || aspect > 4f || float.IsNaN(aspect)) aspect = 1f;
 
                 var w = IconHeight * aspect;
                 var h = IconHeight;
@@ -444,7 +450,7 @@ namespace Hoodrich.UI
             {
                 if (string.IsNullOrEmpty(page.Subtitle)) return;
 
-                Draw.Text(page.Subtitle, cx, top + 0.030f, 0.34f, Palette.TextDim,
+                Draw.Text(page.Subtitle, cx, top + 0.044f, 0.36f, Palette.TextDim,
                           Draw.FontChaletLondon);
                 return;
             }
@@ -453,16 +459,19 @@ namespace Hoodrich.UI
                 ? item.DisabledReason
                 : item.Detail;
 
-            Draw.Text(item.Label.ToUpperInvariant(), cx, top, 0.62f, Palette.Text,
-                      Draw.FontChaletLondon);
+            // The house script face, which is the closest thing the game ships to the old
+            // English lettering this wants. There is no blackletter in GTA's HUD fonts, and a
+            // shipped one would mean asset files, which this mod does not have.
+            Draw.Text(item.Label.ToUpperInvariant(), cx, top - 0.006f, 0.90f, Palette.Text,
+                      Draw.FontCursive);
 
-            var y = top + 0.046f;
+            var y = top + 0.060f;
 
             if (!string.IsNullOrEmpty(item.Value))
             {
-                Draw.Text(item.Value, cx, y, 0.40f,
+                Draw.Text(item.Value, cx, y, 0.42f,
                           item.Enabled ? Palette.Cash : Palette.TextDisabled, Draw.FontChaletLondon);
-                y += 0.032f;
+                y += 0.034f;
             }
 
             if (!string.IsNullOrEmpty(detail))

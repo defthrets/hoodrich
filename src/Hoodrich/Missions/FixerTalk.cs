@@ -1,5 +1,5 @@
 using System;
-using System.Drawing;
+using Color = System.Drawing.Color;
 using GTA;
 using Hoodrich.Core;
 using Hoodrich.Gangs;
@@ -52,50 +52,64 @@ namespace Hoodrich.Missions
 
             var node = Node("What's happening. You looking for work or you just walking past?");
 
-            // He works through his list in order. Until it is finished there is no menu, just
-            // the next thing -- picking your own jobs off a board is a shop, and he is not a
-            // shop, he is somebody who tells you what needs doing. Once you have been through
-            // the lot he stops deciding for you and the choice opens up.
+            // The NEW thing comes first and on its own terms: he works down his list in order,
+            // and until you have been through it he tells you what needs doing rather than
+            // handing you a board to pick from.
             var next = NextUndone();
+            var offered = 0;
 
-            if (next != null)
+            if (next != null && _state.Rank >= next.MinRank)
             {
-                if (_state.Rank < next.MinRank)
-                {
-                    return Nothing("Got something for you, but not yet. Make more of a name first.");
-                }
-
                 node.Say(next.Name, () => Brief(next),
                          "$" + next.PayMin.ToString("N0") + "-" + next.PayMax.ToString("N0"));
 
-                node.Leave("Not today.");
-                return node;
+                node.WithIcon(IconFor(next));
+                offered++;
             }
 
-            var offered = 0;
-
+            // Then anything already behind you, because a job you liked should be a job you can
+            // go and do again. It pays the same and it counts the same; what it does not do is
+            // hold up the next one.
             foreach (var def in _missions.All)
             {
-                if (offered >= Offers) break;
+                if (!_state.HasDone(def.Id)) continue;
+                if (_state.Rank < def.MinRank) continue;
 
-                var locked = _state.Rank < def.MinRank;
+                var again = def;
 
-                node.SayIf(!locked,
-                           "He wants somebody with more of a name",
-                           def.Name,
-                           () => Brief(def),
-                           "$" + def.PayMin.ToString("N0") + "-" + def.PayMax.ToString("N0"));
+                node.Say(def.Name, () => Brief(again),
+                         "again  ·  $" + def.PayMin.ToString("N0") + "-" + def.PayMax.ToString("N0"));
 
+                node.WithIcon(IconFor(def));
                 offered++;
             }
 
             if (offered == 0)
             {
-                node.Say("...", () => Nothing(), "He has nothing going");
+                return Nothing(next == null
+                    ? "Ain't got nothing right now. Come see me later."
+                    : "Got something for you, but not yet. Make more of a name first.");
             }
 
             node.Leave("Not today.");
             return node;
+        }
+
+        /// <summary>
+        /// Art for a job, by what the job actually is.
+        ///
+        /// The kind is the only thing that reliably distinguishes one from another at a glance,
+        /// and it is the thing you care about when picking: whether this is hands or guns.
+        /// </summary>
+        private static Icon IconFor(MissionDef def)
+        {
+            switch (def.Kind)
+            {
+                case MissionKind.BikeRide: return Icons.Health;
+                case MissionKind.DriveBy: return Icons.Garage;
+                case MissionKind.Hit: return Icons.Guns;
+                default: return Icons.Mask;
+            }
         }
 
         /// <summary>The first job on his list you have not finished, or null once they are all behind you.</summary>
@@ -135,8 +149,9 @@ namespace Hoodrich.Missions
                      "$" + def.PayMin.ToString("N0") + "-" + def.PayMax.ToString("N0") +
                      "  ·  " + def.Rep.ToString("0") + " rep");
 
-            if (NextUndone() == null) node.Say("Nah, what else you got?", Root);
+            node.WithIcon(Icons.Tick);
 
+            node.Say("Nah, what else you got?", Root);
             node.Leave("Forget it.");
             return node;
         }

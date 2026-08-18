@@ -1,5 +1,6 @@
 using System;
 using GTA;
+using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.Dealing;
@@ -63,6 +64,13 @@ namespace Hoodrich
         private readonly MissionBook _missions;
         private readonly Fixer _fixer;
         private readonly Armourer _bigj;
+
+        /// <summary>
+        /// The people who stand near the people who matter. One each for Lamar and Stretch;
+        /// their coordinates are the men's own, so the two sets never need keeping in step.
+        /// </summary>
+        private readonly Entourage _lamarCrew;
+        private readonly Entourage _stretchCrew;
         private ArmourerTalk _bigjTalk;
         private readonly FixerTalk _fixerTalk;
         private readonly MissionRunner _jobs;
@@ -120,6 +128,15 @@ namespace Hoodrich
 
                 _fixer = new Fixer(_crew);
                 _bigj = new Armourer(_crew, _gangs);
+
+                _lamarCrew = new Entourage(_gangs, "families", Fixer.Spot, 206f, "Lamar");
+
+                var stretch = _leaders.Get("families");
+                _stretchCrew = stretch == null
+                    ? null
+                    : new Entourage(_gangs, "families",
+                                    new Vector3(stretch.SpotX, stretch.SpotY, stretch.SpotZ),
+                                    stretch.Heading, stretch.Name);
 
 
                 _talk = new Conversation();
@@ -271,6 +288,9 @@ namespace Hoodrich
                     _fixer.UpdatePrompt();
                     _bigj.Update();
                     _bigj.UpdatePrompt();
+
+                    _lamarCrew.Update();
+                    if (_stretchCrew != null) _stretchCrew.Update();
                     _jobs.Update();
                     UpdateLoan();
                 }
@@ -442,6 +462,8 @@ namespace Hoodrich
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
             try { _bigj?.RestoreWorld(); } catch { /* teardown */ }
+            try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _chop?.RestoreWorld(); } catch { /* teardown */ }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }

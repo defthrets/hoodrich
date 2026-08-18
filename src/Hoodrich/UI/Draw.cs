@@ -158,7 +158,7 @@ namespace Hoodrich.UI
         /// filled, which looked like broken geometry and was really the game refusing to draw
         /// any more rectangles.
         /// </summary>
-        private const float RowHeight = 0.0016f;
+        private const float RowHeight = 0.0010f;
 
         /// <summary>A span wider than this is split, so the half-plane clip stays valid.</summary>
         private const float MaxSpanDegrees = 170f;

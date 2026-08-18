@@ -233,6 +233,8 @@ namespace Hoodrich.Gangs
 
                 node.Say(product.Name + ".", () => LotList(def, gang, picked),
                          "$" + _pricing.WholesalePrice(product).ToString("0.##") + " a gram");
+
+                node.WithIcon(Icons.ForDrug(product.Id));
             }
 
             if (gang.Drugs.Count == 0)
@@ -265,6 +267,8 @@ namespace Hoodrich.Gangs
                            Weight(lot),
                            () => Buy(def, gang, product, lot, cost),
                            "$" + cost.ToString("N0"));
+
+                node.WithIcon(Icons.ForDrug(product.Id));
             }
 
             node.Say("Something else.", () => BuyList(def, gang));
