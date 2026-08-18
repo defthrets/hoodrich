@@ -50,18 +50,15 @@ namespace Hoodrich.Social
         private const int Capacity = 80;
 
         /// <summary>
-        /// How often the block says something, and how often it interrupts you about it.
+        /// How often the block says something.
         ///
-        /// Two different rates on purpose. The TIMELINE fills at the first one, so opening it
-        /// after an hour out shows an hour of chatter. NOTIFICATIONS come at the second, which
-        /// is far slower -- a phone that buzzes every forty seconds is a phone you turn off,
-        /// and then the whole system may as well not exist.
+        /// Fast, and everything it says comes through. The notification and the timeline are the
+        /// same feed seen twice: a post pops as it is written and is still sitting there in the
+        /// same order when you open the tab. Holding some back would mean the feed you read and
+        /// the feed you were shown are two different feeds, which is worse than either.
         /// </summary>
-        private const int AmbientGapMinMs = 55000;
-        private const int AmbientGapMaxMs = 150000;
-
-        /// <summary>Nothing pops within this of the last one, whatever happened.</summary>
-        private const int NotifyCooldownMs = 150000;
+        private const int AmbientGapMinMs = 6000;
+        private const int AmbientGapMaxMs = 12000;
 
         /// <summary>
         /// How often a post comes from somebody with a name.
@@ -73,8 +70,7 @@ namespace Hoodrich.Social
         private const float VoicedEventChance = 0.55f;
         private const float VoicedAmbientChance = 0.30f;
 
-        /// <summary>How much of the everyday chatter is worth interrupting you for.</summary>
-        private const float AmbientNotifyChance = 0.22f;
+
 
         /// <summary>
         /// Nobody, to begin with.
@@ -333,7 +329,7 @@ namespace Hoodrich.Social
             // A few already on the timeline, so opening it for the first time is not an empty
             // screen where a neighbourhood should be. These are backdated and never notify --
             // they are what you missed, not what just happened.
-            for (var i = 0; i < 9; i++) Ambient(true);
+            for (var i = 0; i < 12; i++) Ambient(true);
         }
 
         public void Update()
@@ -359,9 +355,7 @@ namespace Hoodrich.Social
             }
 
             Add(post);
-
-            // Most of the everyday stuff just lands on the timeline for you to find later.
-            if (_rng.NextDouble() < AmbientNotifyChance) Notify(post, false);
+            Notify(post);
         }
 
         // ---- things that happened ----------------------------------------------
@@ -383,10 +377,7 @@ namespace Hoodrich.Social
 
             post.AboutYou = true;
             Add(post);
-
-            // A post about something you just did always comes through, cooldown or not. That
-            // is the one moment the system exists for.
-            Notify(post, true);
+            Notify(post);
 
             var gained = FollowersFor(kind, amount);
             if (gained == 0) return;
@@ -599,12 +590,9 @@ namespace Hoodrich.Social
         /// every one of these would be unbearable within ten minutes, and the point is that the
         /// block is talking whether or not you are listening.
         /// </summary>
-        private void Notify(Post post, bool important)
+        private void Notify(Post post)
         {
             if (post == null || post.By == null) return;
-
-            // Quiet spell after anything lands, so two posts never arrive on top of each other.
-            if (!important && Game.GameTime - _lastNotify < NotifyCooldownMs) return;
 
             _lastNotify = Game.GameTime;
 

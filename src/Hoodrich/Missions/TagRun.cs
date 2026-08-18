@@ -52,7 +52,17 @@ namespace Hoodrich.Missions
 
         private static readonly string[] BikeModels = { "bmx", "cruiser", "scorcher", "tribike" };
 
-        private const float ArriveRange = 3.5f;
+        /// <summary>
+        /// How close is close enough to paint.
+        ///
+        /// Matched to the ring on the ground, because a prompt that appears three metres before
+        /// you reach the marker makes the marker decorative -- you press the button somewhere
+        /// in the street and Franklin paints the air.
+        /// </summary>
+        private const float ArriveRange = 1.1f;
+
+        /// <summary>How wide the ring is drawn, which is what ArriveRange has to agree with.</summary>
+        private const float MarkerSize = 2.2f;
         private const int SprayMs = 8000;
         private const int UpdateIntervalMs = 300;
 
@@ -84,14 +94,20 @@ namespace Hoodrich.Missions
         /// </summary>
         private static readonly string[] SprayDicts =
         {
-            "anim@heists@ornate_bank@grab_cash",
-            "amb@world_human_janitor@male@idle_a",
+            // The game's own tagging set, if this install has it.
+            "anim@mp_tagging@", "mp_tagging", "anim@mp_tagging",
+
+            // Otherwise anything where a man works at a wall in front of him.
             "amb@world_human_hammering@male@base",
-            "missfbi4prepp1@",
+            "amb@world_human_janitor@male@idle_a",
+            "amb@world_human_window_shop_browse@male@base",
             "amb@world_human_bum_wash@male@high@idle_a"
         };
 
-        private static readonly string[] SprayClips = { "idle_a", "base", "idle", "washing_face_idle" };
+        private static readonly string[] SprayClips =
+        {
+            "tag_loop", "tag_enter", "base", "idle_a", "idle", "washing_face_idle"
+        };
 
         /// <summary>
         /// The paint itself.
@@ -101,6 +117,15 @@ namespace Hoodrich.Missions
         /// </summary>
         private const string PaintAsset = "core";
         private const string PaintEffect = "ent_sht_steam";
+
+        /// <summary>
+        /// The live paint effect.
+        ///
+        /// Looped and held by handle rather than a puff per tick: a non-looped effect fired
+        /// every frame carries on for its own lifetime after the last one is fired, which is
+        /// why the smoke outlived the animation. A handle can simply be told to stop.
+        /// </summary>
+        private int _paintFx = -1;
 
         private readonly GangRegistry _gangs;
         private readonly Affiliation _crew;
@@ -287,15 +312,15 @@ namespace Hoodrich.Missions
                 if (!player.IsInVehicle(_playerBike)) return;
 
                 _rolling = true;
-
-                SpawnHomie(player);
                 MarkAll();
 
+                // Alone. Going over somebody's tag is a thing you do quietly and quickly, and
+                // a second man on a bicycle behind you is a lookout, which changes what the job
+                // is -- the whole tension here is that nobody is watching your back.
                 Notify.Ticker("~g~Rolling out.~s~ Their blocks, our set.");
                 return;
             }
 
-            KeepUp(player, now);
 
             if (_spraying != null)
             {
@@ -343,9 +368,10 @@ namespace Hoodrich.Missions
                 var gang = _gangs.Get(spot.Gang);
                 var colour = gang == null ? System.Drawing.Color.FromArgb(160, 190, 60, 190) : gang.Colour;
 
-                World.DrawMarker(MarkerType.VerticalCylinder,
+                World.DrawMarker(MarkerType.Cylinder,
                                  spot.Where - new Vector3(0f, 0f, 0.95f),
-                                 Vector3.Zero, Vector3.Zero, new Vector3(0.8f, 0.8f, 0.7f),
+                                 Vector3.Zero, Vector3.Zero,
+                                 new Vector3(MarkerSize, MarkerSize, 0.7f),
                                  System.Drawing.Color.FromArgb(120, colour.R, colour.G, colour.B));
             }
 
@@ -602,7 +628,7 @@ namespace Hoodrich.Missions
             // The wall keeps their tag and you can come back -- nothing is lost but the paint
             // and the time. An animation you cannot get out of is a cutscene, and this is not
             // one: it is eight seconds of standing still that you chose to spend.
-            var walked = player.Position.DistanceTo(_spraying.Where) > ArriveRange + 2f;
+            var walked = player.Position.DistanceTo(_spraying.Where) > ArriveRange + 1.2f;
             var cancelled = Tapped() || Moving(player);
 
             if (walked || cancelled || !player.IsAlive)
@@ -638,6 +664,8 @@ namespace Hoodrich.Missions
             _spraying = null;
             _sprayingSince = 0;
 
+            StopPaint();
+
             try
             {
                 // CLEAR_PED_TASKS_IMMEDIATELY as well as the managed call, because a looping
@@ -658,7 +686,7 @@ namespace Hoodrich.Missions
         /// <summary>Green paint, coming out of the can, at the wall.</summary>
         private void Paint(Ped player)
         {
-            if (_spraying == null) return;
+            if (_spraying == null || _paintFx != -1) return;
 
             try
             {
@@ -670,20 +698,37 @@ namespace Hoodrich.Missions
 
                 Function.Call(Hash.USE_PARTICLE_FX_ASSET, PaintAsset);
 
-                // Tinted to the set rather than left grey. Green paint on a Ballas wall is the
-                // entire point of the errand, and it is the only bit of it the eye gets.
-                Function.Call(Hash.SET_PARTICLE_FX_NON_LOOPED_COLOUR, 0.15f, 0.85f, 0.25f);
-                Function.Call(Hash.SET_PARTICLE_FX_NON_LOOPED_ALPHA, 0.55f);
+                _paintFx = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_PED_BONE,
+                                              PaintEffect, player.Handle,
+                                              0.22f, 0.30f, 0.02f, 0f, 0f, 0f,
+                                              57005, 0.5f, false, false, false);
 
-                Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_PED_BONE,
-                              PaintEffect, player.Handle,
-                              0.25f, 0.35f, 0.05f, 0f, 0f, 0f,
-                              57005, 0.55f, false, false, false);
+                if (_paintFx == -1) return;
+
+                // Tinted to the set. Green paint on a Ballas wall is the entire point of the
+                // errand, and it is the only part of it the eye actually gets.
+                Function.Call(Hash.SET_PARTICLE_FX_LOOPED_COLOUR, _paintFx, 0.15f, 0.85f, 0.25f, false);
+                Function.Call(Hash.SET_PARTICLE_FX_LOOPED_ALPHA, _paintFx, 0.6f);
             }
             catch
             {
                 // No paint is a quieter failure than no job.
             }
+        }
+
+        /// <summary>Turns the paint off. Called from every path out of painting.</summary>
+        private void StopPaint()
+        {
+            if (_paintFx == -1) return;
+
+            try
+            {
+                Function.Call(Hash.STOP_PARTICLE_FX_LOOPED, _paintFx, false);
+                Function.Call(Hash.REMOVE_PARTICLE_FX, _paintFx, false);
+            }
+            catch { /* it will time out on its own */ }
+
+            _paintFx = -1;
         }
 
         /// <summary>True when the player is trying to walk away, which cancels it.</summary>
@@ -876,6 +921,7 @@ namespace Hoodrich.Missions
             var player = Game.Player.Character;
             if (_spraying != null && player != null && player.Exists()) EndSpray(player);
 
+            StopPaint();
             TakeCan();
             ClearBlips();
             ClearMarker();

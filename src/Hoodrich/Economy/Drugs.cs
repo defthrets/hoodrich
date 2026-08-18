@@ -102,6 +102,7 @@ namespace Hoodrich.Economy
                 def.Name = node["name"].AsString(def.Name.Length > 0 ? def.Name : id);
                 def.Tag = node["tag"].AsString(def.Tag.Length > 0 ? def.Tag : id.Substring(0, Math.Min(4, id.Length)));
                 def.BasePrice = Math.Max(0.01f, node["basePrice"].AsFloat(def.BasePrice));
+                def.BulkPrice = Math.Max(0f, node["bulkPrice"].AsFloat(def.BulkPrice));
                 def.Tier = Math.Max(1, node["tier"].AsInt(def.Tier));
                 def.HeatFactor = Math.Max(0f, node["heatFactor"].AsFloat(def.HeatFactor));
                 def.SplitVerb = node["splitVerb"].AsString(def.SplitVerb);
@@ -154,6 +155,7 @@ namespace Hoodrich.Economy
                     .Set("name", d.Name)
                     .Set("tag", d.Tag)
                     .Set("basePrice", d.BasePrice)
+                    .Set("bulkPrice", d.BulkPrice)
                     .Set("tier", d.Tier)
                     .Set("heatFactor", d.HeatFactor));
             }
