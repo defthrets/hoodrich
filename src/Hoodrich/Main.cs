@@ -62,6 +62,8 @@ namespace Hoodrich
         private readonly Dog _chop;
         private readonly MissionBook _missions;
         private readonly Fixer _fixer;
+        private readonly Armourer _bigj;
+        private ArmourerTalk _bigjTalk;
         private readonly FixerTalk _fixerTalk;
         private readonly MissionRunner _jobs;
         private readonly CookScreen _cook;
@@ -117,6 +119,7 @@ namespace Hoodrich
                 _jobs = new MissionRunner(_state, _crew, _gangs, _zoneMap);
 
                 _fixer = new Fixer(_crew);
+                _bigj = new Armourer(_crew, _gangs);
 
 
                 _talk = new Conversation();
@@ -133,6 +136,10 @@ namespace Hoodrich
                 _fixerTalk = new FixerTalk(_fixer, _missions, _jobs, _crew, _state);
                 _fixer.Talk = _talk;
                 _fixer.TalkBuilder = () => _fixerTalk.Root();
+
+                _bigjTalk = new ArmourerTalk(_bigj, _crew, _state);
+                _bigj.Talk = _talk;
+                _bigj.TalkBuilder = () => _bigjTalk.Root();
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _cutting,
                                            _gangs, _crew, _turf, _dealers, _weapons, _market, _stash, _postUp, _leaders);
@@ -228,6 +235,7 @@ namespace Hoodrich
                         _talk.Close();
                         _leaders.ReleaseFromTalk();
                         _fixer.ReleaseFromTalk();
+                        _bigj.ReleaseFromTalk();
                     }
                     else
                     {
@@ -255,11 +263,14 @@ namespace Hoodrich
                     _sleep.Update();
                     _kitchen.Update();
                     _chop.Update();
+                    _chop.UpdatePrompt();
                     _sleep.RestoreOnLoad();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
                     _fixer.Update();
                     _fixer.UpdatePrompt();
+                    _bigj.Update();
+                    _bigj.UpdatePrompt();
                     _jobs.Update();
                     UpdateLoan();
                 }
@@ -430,6 +441,7 @@ namespace Hoodrich
             try { _bust?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
+            try { _bigj?.RestoreWorld(); } catch { /* teardown */ }
             try { _chop?.RestoreWorld(); } catch { /* teardown */ }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }

@@ -54,14 +54,14 @@
       "id": "hit_rancho",
       "kind": "Hit",
       "name": "Rancho. Vagos.",
-      "brief": "Vagos in Rancho been running their mouth about the set. That's their block so they'll be ready -- take three of the homies and everybody carries. Two of 'em is all it takes to make the point. Somebody will call it in, so lose the law before you come back to me.",
+      "brief": "Vagos got a spot out in Rancho they think nobody knows about. Five of 'em, standing round like they got no worries. Take three of the homies, everybody carries a machine pistol, and go give 'em some. Somebody will call it in, so lose the law before you come back to me.",
       "done": "Heard about that before you got here. Take it.",
       "targetGang": "vagos",
       "zone": "RANCHO",
-      "x": 0,
-      "y": 0,
-      "z": 0,
-      "targets": 2,
+      "x": 356.821,
+      "y": -1804.54,
+      "z": 28.905,
+      "targets": 5,
       "homies": 3,
       "escapeHeat": true,
       "heatStars": 2,
@@ -108,7 +108,11 @@
       "payMin": 1200,
       "payMax": 2200,
       "rep": 55,
-      "minRank": 1
+      "minRank": 1,
+      "carX": -112.176,
+      "carY": -1602.935,
+      "carZ": 31.13,
+      "carHeading": 317.331
     },
     {
       "id": "driveby_lamesa",
@@ -128,7 +132,11 @@
       "payMin": 1400,
       "payMax": 2400,
       "rep": 55,
-      "minRank": 2
+      "minRank": 2,
+      "carX": -112.176,
+      "carY": -1602.935,
+      "carZ": 31.13,
+      "carHeading": 317.331
     }
   ]
 }

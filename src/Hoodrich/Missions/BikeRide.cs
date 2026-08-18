@@ -60,6 +60,9 @@ namespace Hoodrich.Missions
         /// <summary>The 24/7 down the road.</summary>
         private static readonly Vector3 Shop = new Vector3(29.028f, -1352.893f, 29.341f);
 
+        /// <summary>The alley the homies come out of, round the back from Lamar.</summary>
+        private static readonly Vector3 HomieSpot = new Vector3(-115.933f, -1609.875f, 31.249f);
+
         // ---- ranges and timings ------------------------------------------------
 
         private const float MountRange = 6f;
@@ -76,6 +79,9 @@ namespace Hoodrich.Missions
 
         /// <summary>Chatter on the ride out, so four men on bikes are not four silent men on bikes.</summary>
         private const int ChatterGapMs = 14000;
+
+        /// <summary>How often the escort task is put back on anybody who has lost it.</summary>
+        private const int RetaskGapMs = 4000;
 
         private static readonly string[] RideLines =
         {
@@ -104,6 +110,7 @@ namespace Hoodrich.Missions
 
         private int _lastUpdate;
         private int _nextChatter;
+        private int _nextRetask;
         private bool _wentInside;
         private bool _talkHeld;
         private bool _wordsSaid;
@@ -161,6 +168,7 @@ namespace Hoodrich.Missions
             if (_playerBike == null) return "There was no bike out there.";
 
             Phase = BikePhase.ToBike;
+            HoldTheLaw(true);
             Mark(BikeSpot, "Your bike", BlipColor.Yellow);
 
             Notify.Important("~g~Job on.~s~ " + Objective + ".");
@@ -229,6 +237,7 @@ namespace Hoodrich.Missions
         private void TickRiding(Ped player)
         {
             Chatter();
+            KeepUp(player);
 
             if (player.Position.DistanceTo(Courts) <= PreSpawnRange && _rivals.Count == 0)
             {
@@ -246,6 +255,7 @@ namespace Hoodrich.Missions
             }
 
             Phase = BikePhase.Words;
+            GatherStragglers();
             ClearMarker();
 
             Notify.Important("~r~They are already here.~s~ " + Objective + ".");
@@ -289,11 +299,11 @@ namespace Hoodrich.Missions
         private DialogueNode Words()
         {
             var gang = _gangs.Get(_def.TargetGang);
-            var who = gang == null ? "Some Balla" : gang.Name;
+            var who = gang == null ? "Ballas" : gang.Name;
 
             var node = new DialogueNode(who,
-                "You lot are a long way off your block. Y'all lost, or you just come " +
-                "to get put on your backs in front of your own people?")
+                "You been talking a lot of smack online. We here right now, boy. " +
+                "Whatchu wanna do?")
             {
                 SpeakerColour = gang == null ? Palette.Danger : gang.Colour
             };
@@ -373,7 +383,9 @@ namespace Hoodrich.Missions
 
             for (var i = 0; i < count; i++)
             {
-                var spot = player.Position.Around(4f + i * 1.5f);
+                // Out of the alley round the back, not conjured at your elbow. Three men
+                // appearing beside you is a spawn; three men coming up the alley is an arrival.
+                var spot = Ground(HomieSpot).Around(2.5f + i * 1.6f);
 
                 var bike = SpawnBike(spot, player.Heading);
                 if (bike == null) continue;
@@ -429,17 +441,86 @@ namespace Hoodrich.Missions
 
                 if (target != null && target.Exists())
                 {
+                    // Mode 0 is "rear", so they sit behind you rather than trying to overtake
+                    // and cut across the front wheel of the man they are escorting.
                     Function.Call(Hash.TASK_VEHICLE_ESCORT, ped.Handle, bike.Handle, target.Handle,
-                                  -1, 14f, 786603, 12f, 0, 8f);
+                                  0, 20f, 786603, 15f, 0, 10f);
                     return;
                 }
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, ped.Handle, bike.Handle,
-                              Courts.X, Courts.Y, Courts.Z, 12f, 0, bike.Model.Hash, 786603, 6f, true);
+                              Courts.X, Courts.Y, Courts.Z, 16f, 0, bike.Model.Hash, 786603, 6f, true);
             }
             catch
             {
-                // The game's own driving takes over.
+                // The game own driving takes over.
+            }
+        }
+
+        /// <summary>
+        /// Reissued while riding, because one escort task does not survive the trip.
+        ///
+        /// A bicycle AI that clips a kerb, gets knocked off, or loses its task ends up standing
+        /// in an alley two streets back for the rest of the job. Re-tasking anyone who has
+        /// fallen behind or come off their bike costs nothing, and it is the difference between
+        /// riding out with the homies and riding out on your own.
+        /// </summary>
+        private void KeepUp(Ped player)
+        {
+            if (Game.GameTime < _nextRetask) return;
+            _nextRetask = Game.GameTime + RetaskGapMs;
+
+            for (var i = 0; i < _homies.Count; i++)
+            {
+                var ped = _homies[i];
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                if (i >= _bikes.Count) continue;
+
+                var bike = _bikes[i];
+                if (bike == null || !bike.Exists()) continue;
+
+                if (!ped.IsInVehicle(bike))
+                {
+                    try
+                    {
+                        Function.Call(Hash.TASK_ENTER_VEHICLE, ped.Handle, bike.Handle,
+                                      -1, (int)VehicleSeat.Driver, 2f, 1, 0);
+                    }
+                    catch { /* they will walk it */ }
+
+                    continue;
+                }
+
+                Escort(ped, bike, player);
+            }
+        }
+
+        /// <summary>
+        /// Anybody who never made it is put on the court when it goes off.
+        ///
+        /// A homie stuck on a kerb two neighbourhoods back is not a consequence of anything you
+        /// did, so he should not cost you the fight. Nobody is duplicated -- they are moved.
+        /// </summary>
+        private void GatherStragglers()
+        {
+            foreach (var ped in _homies)
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                if (Flat(ped.Position, Courts) <= 40f) continue;
+
+                try
+                {
+                    if (ped.IsInVehicle()) ped.Task.LeaveVehicle();
+
+                    ped.Position = Ground(Courts).Around(4f);
+                    ped.Task.ClearAll();
+
+                    Log.Info("BikeRide: brought a straggler up to the court.");
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not bring a homie up: " + ex.Message);
+                }
             }
         }
 
@@ -555,6 +636,36 @@ namespace Hoodrich.Missions
 
         // ---- helpers -----------------------------------------------------------
 
+        /// <summary>
+        /// Switches the wanted system off for the length of the job, and back on afterwards.
+        ///
+        /// This is a straightener on a basketball court, not a crime. Four men having a fight
+        /// in a park should not put a helicopter over Chamberlain, and a mission that fails
+        /// because a passing patrol saw a fist fight it was never meant to notice is a mission
+        /// nobody can finish. Turned back on the moment the job ends, however it ends.
+        /// </summary>
+        private void HoldTheLaw(bool held)
+        {
+            try
+            {
+                if (held)
+                {
+                    Game.Player.Wanted.SetWantedLevel(0, false);
+                    Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+                }
+
+                Function.Call(Hash.SET_MAX_WANTED_LEVEL, held ? 0 : 5);
+                Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, Game.Player.Handle, held);
+                Function.Call(Hash.SET_EVERYONE_IGNORE_PLAYER, Game.Player.Handle, false);
+
+                Log.Info(held ? "BikeRide: the law is off for the job." : "BikeRide: the law is back on.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not change the wanted rules: " + ex.Message);
+            }
+        }
+
         private void Chatter()
         {
             if (Game.GameTime < _nextChatter) return;
@@ -597,6 +708,35 @@ namespace Hoodrich.Missions
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Settles a coordinate onto the ground, but only if the ground is roughly where the
+        /// coordinate already said it was.
+        ///
+        /// Every authored position in this job was read off the player HUD while stood on the
+        /// spot, so the height is already right. Probing downward from fifteen metres up in a
+        /// courtyard finds the first thing it hits, which is a balcony -- and that is how the
+        /// bike ended up on a roof. A probe that disagrees by more than a storey is wrong about
+        /// a coordinate somebody measured by standing on it.
+        /// </summary>
+        private static Vector3 Ground(Vector3 where)
+        {
+            try
+            {
+                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                    groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
+                {
+                    where.Z = groundZ;
+                }
+            }
+            catch
+            {
+                // Keep the authored height.
+            }
+
+            return where;
         }
 
         private static float Flat(Vector3 a, Vector3 b)
@@ -649,20 +789,8 @@ namespace Hoodrich.Missions
 
         private Vehicle SpawnBike(Vector3 where, float heading)
         {
-            var spot = where;
-
-            try
-            {
-                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 12f),
-                                          out var groundZ, GetGroundHeightMode.Normal) && groundZ > 0f)
-                {
-                    spot.Z = groundZ + 0.4f;
-                }
-            }
-            catch
-            {
-                // Use the authored height.
-            }
+            var spot = Ground(where);
+            spot.Z += 0.4f;
 
             foreach (var name in BikeModels)
             {
@@ -781,6 +909,11 @@ namespace Hoodrich.Missions
 
         public void Clear()
         {
+            // First, before anything else can go wrong in teardown. Leaving the player unable
+            // to attract police for the rest of the session because a cleanup threw is far
+            // worse than any of the litter below.
+            if (IsRunning) HoldTheLaw(false);
+
             ClearMarker();
 
             foreach (var blip in _blips)

@@ -1,24 +1,88 @@
 {
   "_comment": [
-    "Hoodrich product catalogue. Edit freely - the mod reloads this on startup.",
-    "id        stable key used in save files; never change it once you have a save",
-    "name      full name shown in notifications",
-    "tag       short label drawn on the wheel (keep it to 4 characters)",
-    "basePrice street price per gram before night/rank/heat modifiers",
-    "tier      1 = low risk street weight, 3 = brings heat. Gates resupply by rank.",
-    "heatFactor how much attention one sale attracts, relative to 1.0",
+    "The catalogue. Prices are per GRAM and are meant to sit near what these things really",
+    "cost on an American street, so a number in the wheel means something outside the game.",
     "",
-    "Prices are per GRAM (per PILL for ecstasy) and sit roughly where the real ones do: weed",
-    "about fifteen a gram, a crack rock about twenty five, pills twenty each, meth fifty,",
-    "heroin a hundred and twenty, coke a hundred and fifty. Buying weight off a supplier",
-    "costs half of that -- the spread is the whole business."
+    "id          stable key; never change it once a save references it",
+    "name        what it is called in the UI",
+    "tag         three or four letters for the wheel glyph",
+    "tier        0-5, used for how much respect a sale is worth",
+    "basePrice   STREET price per gram, before night, turf, rank and market",
+    "bulkPrice   WHOLESALE price per gram, what a supplier charges you for weight.",
+    "            Set per product rather than derived from a flat discount: the gap between",
+    "            wholesale and street is much wider on powder than it is on weed, and a single",
+    "            percentage across the catalogue made cheap product unbuyable and expensive",
+    "            product free money. Leave it at 0 to fall back to the old flat discount.",
+    "heatFactor  how much attention a sale draws, relative to 1.0",
+    "splitVerb   what cutting it is called -- Cut, Bag up, Press",
+    "unitName    what a unit of it is called -- grams, baggies, pills"
   ],
   "drugs": [
-    { "id": "weed",   "name": "Marijuana", "tag": "WEED", "basePrice": 15,  "tier": 1, "heatFactor": 0.5 },
-    { "id": "crack",  "name": "Crack",     "tag": "CRK",  "basePrice": 25,  "tier": 2, "heatFactor": 1.0 },
-    { "id": "ecstasy","name": "Ecstasy",   "tag": "PILL", "basePrice": 20,  "tier": 2, "heatFactor": 0.8 },
-    { "id": "meth",   "name": "Meth",      "tag": "METH", "basePrice": 50, "tier": 2, "heatFactor": 1.1 },
-    { "id": "heroin", "name": "Heroin",    "tag": "H",    "basePrice": 120, "tier": 3, "heatFactor": 1.4 },
-    { "id": "coke",   "name": "Cocaine",   "tag": "COKE", "basePrice": 150, "tier": 3, "heatFactor": 1.6 }
+    {
+      "id": "weed",
+      "name": "Marijuana",
+      "tag": "WEED",
+      "tier": 0,
+      "basePrice": 12,
+      "bulkPrice": 3.5,
+      "heatFactor": 0.55,
+      "splitVerb": "Bag up",
+      "unitName": "baggies"
+    },
+    {
+      "id": "ecstasy",
+      "name": "Ecstasy",
+      "tag": "E",
+      "tier": 1,
+      "basePrice": 22,
+      "bulkPrice": 6,
+      "heatFactor": 0.9,
+      "splitVerb": "Press",
+      "unitName": "pills"
+    },
+    {
+      "id": "crack",
+      "name": "Crack",
+      "tag": "CRK",
+      "tier": 2,
+      "basePrice": 90,
+      "bulkPrice": 32,
+      "heatFactor": 1.35,
+      "splitVerb": "Cook up",
+      "unitName": "rocks"
+    },
+    {
+      "id": "meth",
+      "name": "Meth",
+      "tag": "METH",
+      "tier": 3,
+      "basePrice": 85,
+      "bulkPrice": 28,
+      "heatFactor": 1.4,
+      "splitVerb": "Cut",
+      "unitName": "grams"
+    },
+    {
+      "id": "coke",
+      "name": "Cocaine",
+      "tag": "COKE",
+      "tier": 4,
+      "basePrice": 110,
+      "bulkPrice": 40,
+      "heatFactor": 1.25,
+      "splitVerb": "Cut",
+      "unitName": "grams"
+    },
+    {
+      "id": "heroin",
+      "name": "Heroin",
+      "tag": "H",
+      "tier": 5,
+      "basePrice": 150,
+      "bulkPrice": 55,
+      "heatFactor": 1.5,
+      "splitVerb": "Cut",
+      "unitName": "grams"
+    }
   ]
 }

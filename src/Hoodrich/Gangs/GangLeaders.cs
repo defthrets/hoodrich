@@ -837,6 +837,8 @@ namespace Hoodrich.Gangs
             Log.Info("Talking to " + def.Name + ".");
 
             HoldForTalk();
+
+            Talk.Speaker = _livePed;
             Talk.Open(root, def);
         }
 

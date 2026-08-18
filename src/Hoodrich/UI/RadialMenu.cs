@@ -274,6 +274,7 @@ namespace Hoodrich.UI
             }
 
             DrawHub(cx, cy, rInner, page, t);
+            DrawReadout(page, t);
             DrawPanel(page, t);
         }
 
@@ -415,41 +416,59 @@ namespace Hoodrich.UI
 
             if (t < 0.75f) return;
 
+            // Only the breadcrumb stays in the middle. Everything else moved to the readout at
+            // the top of the screen: the hub is a small disc with a wheel drawn tight around it,
+            // and a name, a price and a sentence of description will not fit inside one without
+            // running out over the wedges, which is exactly what it was doing.
+            var title = _stack.Count > 1 ? "< " + page.Title : page.Title;
+            Draw.Text(title.ToUpperInvariant(), cx, cy - 0.012f, 0.34f, Palette.Accent, Draw.FontLabel);
+        }
+
+        /// <summary>
+        /// What you are pointing at, read across the top of the screen.
+        ///
+        /// Out here it has the whole screen width to use, so nothing has to be shortened to fit
+        /// a disc, and it sits where the game puts its own mission text rather than on top of
+        /// the thing you are trying to look at.
+        /// </summary>
+        private void DrawReadout(WheelPage page, float t)
+        {
+            if (t < 0.75f) return;
+
+            const float cx = 0.5f;
+            const float top = 0.085f;
+
             var item = HoveredItem;
 
-            // Title line: page name, or a breadcrumb once nested. Condensed, like the vanilla
-            // wheel's category label.
-            var title = _stack.Count > 1 ? "< " + page.Title : page.Title;
-            Draw.Text(title.ToUpperInvariant(), cx, cy - rInner * 0.72f, 0.32f, Palette.Accent,
-                      Draw.FontLabel);
-
-            if (item != null)
+            if (item == null)
             {
-                var detail = !item.Enabled && !string.IsNullOrEmpty(item.DisabledReason)
-                    ? item.DisabledReason
-                    : item.Detail;
+                if (string.IsNullOrEmpty(page.Subtitle)) return;
 
-                // The item's own name gets the standard HUD face, the way the vanilla wheel
-                // sets the selected weapon's name -- it is the thing you actually read.
-                Draw.Text(item.Label.ToUpperInvariant(), cx, cy - rInner * 0.18f, 0.40f,
-                          Palette.Text, Draw.FontBody);
-
-                if (!string.IsNullOrEmpty(item.Value))
-                {
-                    Draw.Text(item.Value, cx, cy + rInner * 0.16f, 0.36f,
-                              item.Enabled ? Palette.Cash : Palette.TextDisabled, Draw.FontLabel);
-                }
-
-                if (!string.IsNullOrEmpty(detail))
-                {
-                    Draw.Text(detail, cx, cy + rInner * 0.46f, 0.26f,
-                              item.Enabled ? Palette.TextDim : Palette.Warn, Draw.FontBody);
-                }
+                Draw.Text(page.Subtitle, cx, top + 0.030f, 0.34f, Palette.TextDim,
+                          Draw.FontChaletLondon);
+                return;
             }
-            else if (!string.IsNullOrEmpty(page.Subtitle))
+
+            var detail = !item.Enabled && !string.IsNullOrEmpty(item.DisabledReason)
+                ? item.DisabledReason
+                : item.Detail;
+
+            Draw.Text(item.Label.ToUpperInvariant(), cx, top, 0.62f, Palette.Text,
+                      Draw.FontChaletLondon);
+
+            var y = top + 0.046f;
+
+            if (!string.IsNullOrEmpty(item.Value))
             {
-                Draw.Text(page.Subtitle, cx, cy - rInner * 0.08f, 0.28f, Palette.TextDim,
-                          Draw.FontBody);
+                Draw.Text(item.Value, cx, y, 0.40f,
+                          item.Enabled ? Palette.Cash : Palette.TextDisabled, Draw.FontChaletLondon);
+                y += 0.032f;
+            }
+
+            if (!string.IsNullOrEmpty(detail))
+            {
+                Draw.Text(detail, cx, y, 0.32f,
+                          item.Enabled ? Palette.TextDim : Palette.Warn, Draw.FontChaletLondon);
             }
         }
 

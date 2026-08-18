@@ -103,6 +103,44 @@ namespace Hoodrich.UI
         /// <summary>Who we are talking to, so the caller can end it when they walk away.</summary>
         public object Subject { get; private set; }
 
+        /// <summary>
+        /// The two people in the room, so an exchange sounds like one.
+        ///
+        /// Set by whoever opened the conversation. Reading a wall of text in silence is a menu;
+        /// hearing them answer and hearing yourself answer back is a conversation, and it costs
+        /// two ambient lines.
+        /// </summary>
+        public Ped Speaker;
+
+        private static readonly string[] TheirLines =
+        {
+            "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "CHAT_STATE", "GENERIC_THANKS"
+        };
+
+        private static readonly string[] YourLines =
+        {
+            "GENERIC_YES", "GENERIC_HOWS_IT_GOING", "GENERIC_THANKS"
+        };
+
+        private static readonly Random Rng = new Random();
+
+        /// <summary>One ambient line, cutting off whatever they were already saying.</summary>
+        private static void Speak(Ped ped, string[] lines)
+        {
+            if (ped == null || !ped.Exists() || !ped.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, ped.Handle);
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
+                              lines[Rng.Next(lines.Length)], "SPEECH_PARAMS_FORCE");
+            }
+            catch
+            {
+                // A missing line costs nothing.
+            }
+        }
+
         public void Open(DialogueNode node, object subject = null)
         {
             if (node == null) return;
@@ -114,6 +152,9 @@ namespace Hoodrich.UI
             _wrapped = Wrap(node.Line, PanelWidth - 0.03f, BodyScale);
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+            // Whoever is talking says something as the page comes up.
+            Speak(Speaker, TheirLines);
         }
 
         private void _subjectSet(object subject) => Subject = subject;
@@ -122,6 +163,7 @@ namespace Hoodrich.UI
         {
             _node = null;
             Subject = null;
+            Speaker = null;
         }
 
         private static int FirstEnabled(DialogueNode node)
@@ -185,6 +227,9 @@ namespace Hoodrich.UI
             }
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+            // You answer, then they answer back when the next page opens.
+            Speak(Game.Player.Character, YourLines);
 
             DialogueNode next = null;
             try

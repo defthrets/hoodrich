@@ -19,6 +19,16 @@ namespace Hoodrich.Economy
         /// <summary>Street price for one unit (one gram) before any modifiers.</summary>
         public float BasePrice = 10f;
 
+        /// <summary>
+        /// Wholesale price per gram. Zero falls back to the flat percentage discount.
+        ///
+        /// Per product rather than a single percentage off the street price, because the gap
+        /// between wholesale and street is nothing like the same on weed as it is on powder.
+        /// One percentage across the catalogue made the cheap end unbuyable and the expensive
+        /// end free money.
+        /// </summary>
+        public float BulkPrice;
+
         /// <summary>1 = low-risk street weight, 3 = the stuff that brings heat.</summary>
         public int Tier = 1;
 

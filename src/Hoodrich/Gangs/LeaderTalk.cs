@@ -203,8 +203,14 @@ namespace Hoodrich.Gangs
 
         // ---- buying off him ----------------------------------------------------
 
-        /// <summary>How much weight he shifts in one go.</summary>
-        private const float LotGrams = 30f;
+        /// <summary>
+        /// The lots he deals in.
+        ///
+        /// More than one size because a single 30g lot priced everything out of reach at the
+        /// start and made no difference at all later. A tenth of an ounce is what somebody
+        /// starting out can actually put their hands on; two ounces is what you come back for.
+        /// </summary>
+        private static readonly float[] Lots = { 3.5f, 28f, 56f };
 
         /// <summary>
         /// Buying weight, face to face.
@@ -223,18 +229,10 @@ namespace Hoodrich.Gangs
                 var product = _drugs.Get(id);
                 if (product == null) continue;
 
-                var cost = _pricing.PurchaseCost(product, LotGrams);
-                var canPay = Game.Player.Money >= cost;
-                var fits = _state.Stash.FreeSpace >= LotGrams - 0.001f;
+                var picked = product;
 
-                var blocked = !canPay ? "You are $" + (cost - Game.Player.Money).ToString("N0") + " short"
-                            : !fits ? "You cannot carry that much"
-                            : "";
-
-                node.SayIf(blocked.Length == 0, blocked,
-                           LotGrams.ToString("0") + "g of " + product.Name.ToLowerInvariant() + ".",
-                           () => Buy(def, gang, product, cost),
-                           "$" + cost.ToString("N0"));
+                node.Say(product.Name + ".", () => LotList(def, gang, picked),
+                         "$" + _pricing.WholesalePrice(product).ToString("0.##") + " a gram");
             }
 
             if (gang.Drugs.Count == 0)
@@ -246,16 +244,56 @@ namespace Hoodrich.Gangs
             return node;
         }
 
-        private DialogueNode Buy(LeaderDef def, GangDef gang, DrugDef product, int cost)
+        /// <summary>How much of it, once you have said what.</summary>
+        private DialogueNode LotList(LeaderDef def, GangDef gang, DrugDef product)
         {
-            var taken = _state.Stash.AddBulk(product.Id, LotGrams);
+            var node = Node(def, gang, "How much " + product.Name.ToLowerInvariant() + " you want?");
+
+            foreach (var grams in Lots)
+            {
+                var lot = grams;
+                var cost = _pricing.PurchaseCost(product, lot);
+
+                var canPay = Game.Player.Money >= cost;
+                var fits = _state.Stash.FreeSpace >= lot - 0.001f;
+
+                var blocked = !canPay ? "You are $" + (cost - Game.Player.Money).ToString("N0") + " short"
+                            : !fits ? "You cannot carry that much"
+                            : "";
+
+                node.SayIf(blocked.Length == 0, blocked,
+                           Weight(lot),
+                           () => Buy(def, gang, product, lot, cost),
+                           "$" + cost.ToString("N0"));
+            }
+
+            node.Say("Something else.", () => BuyList(def, gang));
+            return node;
+        }
+
+        /// <summary>
+        /// Weights as they are actually asked for.
+        ///
+        /// Nobody buying weight asks for 28 grams, they ask for an ounce. The gram figure is
+        /// still there because the stash is measured in grams and the two have to agree.
+        /// </summary>
+        private static string Weight(float grams)
+        {
+            if (grams >= 55f) return "Two ounces.  (" + grams.ToString("0") + "g)";
+            if (grams >= 27f) return "An ounce.  (" + grams.ToString("0") + "g)";
+            return "An eighth.  (" + grams.ToString("0.#") + "g)";
+        }
+
+        private DialogueNode Buy(LeaderDef def, GangDef gang, DrugDef product, float lotGrams, int cost)
+        {
+            var taken = _state.Stash.AddBulk(product.Id, lotGrams);
             if (taken <= 0.005f)
             {
                 return Node(def, gang, "You got nowhere to put it. Come back with empty pockets.");
             }
 
             // Charged for what actually fit, so a part-full pocket is not a part-paid robbery.
-            var charged = (int)Math.Round(cost * (taken / LotGrams));
+            var charged = (int)Math.Round(cost * (taken / lotGrams));
             Game.Player.Money -= charged;
 
             _state.Touch();
@@ -267,7 +305,7 @@ namespace Hoodrich.Gangs
                      " for $" + charged + ".");
 
             var node = Node(def, gang,
-                "That's " + taken.ToString("0") + " grams. " + product.SplitVerb +
+                "That is " + taken.ToString("0.#") + " grams. " + product.SplitVerb +
                 " it before you try and move it, and don't come back empty handed.");
 
             node.Say("Anything else.", () => BuyList(def, gang));

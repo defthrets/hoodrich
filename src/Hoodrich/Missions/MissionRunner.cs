@@ -46,6 +46,13 @@ namespace Hoodrich.Missions
         /// <summary>Targets are placed this far out, so the ground is streamed before they land.</summary>
         private const float PreSpawnRange = 200f;
         private const float TargetSpread = 9f;
+
+        /// <summary>Idles for people who are not expecting you.</summary>
+        private static readonly string[] IdleScenarios =
+        {
+            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_DRINKING",
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_STAND_IMPATIENT"
+        };
         private const int UpdateIntervalMs = 500;
 
         /// <summary>Rep lost for each of your own you get killed out there.</summary>
@@ -55,6 +62,26 @@ namespace Hoodrich.Missions
         {
             "WEAPON_PISTOL", "WEAPON_MICROSMG", "WEAPON_PUMPSHOTGUN"
         };
+
+        /// <summary>
+        /// What they carry on a hit. Machine pistols and micro SMGs, nothing with a stock.
+        ///
+        /// A shotgun at a distance is a man walking into open ground to use it, and a hit on a
+        /// yard full of people wants volume, not one loud noise every two seconds.
+        /// </summary>
+        private static readonly string[] HitWeapons =
+        {
+            "WEAPON_MACHINEPISTOL", "WEAPON_MICROSMG", "WEAPON_MINISMG"
+        };
+
+        /// <summary>
+        /// The car a drive-by turns up in, left where the job says and nowhere else.
+        ///
+        /// Always the same one. A drive-by you did in whatever happened to be parked nearby is
+        /// a drive-by you did in a stranger car -- the point of a set car is that it becomes
+        /// the car, and you learn to leave it somewhere afterwards.
+        /// </summary>
+        private static readonly string[] DriveByCars = { "vorschlafhammer", "vorschlaghammer", "buccaneer2", "faction" };
 
         private readonly PlayerState _state;
         private readonly Affiliation _crew;
@@ -76,6 +103,7 @@ namespace Hoodrich.Missions
         private MissionDef _def;
         private Vector3 _site;
         private Blip _siteBlip;
+        private Vehicle _jobCar;
         private int _lastUpdate;
         private int _startedAt;
         private int _homiesLost;
@@ -196,6 +224,8 @@ namespace Hoodrich.Missions
             MarkSite();
             SpawnHomies(player, def);
 
+            if (def.Kind == MissionKind.DriveBy) SpawnJobCar(def);
+
             Notify.Important("~g~Job on.~s~ " + Objective + ".");
             Log.Info("Mission " + def.Id + " started, site " + _site + ".");
             return null;
@@ -233,9 +263,17 @@ namespace Hoodrich.Missions
 
             var group = Function.Call<int>(Hash.GET_PED_GROUP_INDEX, player.Handle);
 
+            // A drive-by crew waits at the car, not at your elbow. The walk round to where
+            // the car is parked is the start of the job.
+            var muster = def.Kind == MissionKind.DriveBy
+                ? Ground(new Vector3(def.CarX, def.CarY, def.CarZ))
+                : Vector3.Zero;
+
+            if (muster == Vector3.Zero) muster = player.Position;
+
             for (var i = 0; i < def.Homies; i++)
             {
-                var ped = SpawnGangMember(gang, player.Position.Around(3f + i));
+                var ped = SpawnGangMember(gang, muster.Around(3f + i));
                 if (ped == null) continue;
 
                 _homies.Add(ped);
@@ -251,9 +289,11 @@ namespace Hoodrich.Missions
                     // A ride-out is hands, so they only draw when the job says so.
                     if (!Fists(def.Kind))
                     {
-                        var weapon = HomieWeapons[_rng.Next(HomieWeapons.Length)];
+                        var list = def.Kind == MissionKind.Hit ? HitWeapons : HomieWeapons;
+                        var weapon = list[_rng.Next(list.Length)];
+
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
-                                      Function.Call<uint>(Hash.GET_HASH_KEY, weapon), 200, false, true);
+                                      Function.Call<uint>(Hash.GET_HASH_KEY, weapon), 250, false, true);
                     }
 
                     var blip = ped.AddBlip();
@@ -272,6 +312,86 @@ namespace Hoodrich.Missions
             }
 
             if (_homies.Count > 0) Notify.Ticker("~g~" + _homies.Count + " of the homies rolled out with you.~s~");
+        }
+
+        /// <summary>
+        /// Leaves the car and the people who ride in it at the spot the job names.
+        ///
+        /// Stock, with one change: competition suspension, so it sits where it should. Anything
+        /// more would be somebody else deciding what your car looks like.
+        /// </summary>
+        private void SpawnJobCar(MissionDef def)
+        {
+            var where = Ground(new Vector3(def.CarX, def.CarY, def.CarZ));
+            if (where == Vector3.Zero) return;
+
+            foreach (var name in DriveByCars)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    _jobCar = World.CreateVehicle(model, where, def.CarHeading);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_jobCar == null || !_jobCar.Exists()) continue;
+
+                    _jobCar.IsPersistent = true;
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _jobCar.Handle, true, true);
+
+                    // Stock everywhere else. SET_VEHICLE_MOD_KIT must be called before any mod
+                    // will take, and 15 is the suspension slot; 3 is competition.
+                    Function.Call(Hash.SET_VEHICLE_MOD_KIT, _jobCar.Handle, 0);
+                    Function.Call(Hash.SET_VEHICLE_MOD, _jobCar.Handle, 15, 3, false);
+
+                    var blip = _jobCar.AddBlip();
+                    if (blip != null && blip.Exists())
+                    {
+                        blip.Color = BlipColor.Green;
+                        blip.Scale = 0.8f;
+                        blip.Name = "The car";
+                        _blips.Add(blip);
+                    }
+
+                    Log.Info("Mission " + def.Id + ": car left at " + where + " as " + name + ".");
+                    return;
+                }
+                catch
+                {
+                    // Try the next model.
+                }
+            }
+
+            Log.Warn("No drive-by car model would load for " + def.Id + ".");
+        }
+
+        /// <summary>
+        /// Settles onto the ground, but only when the ground agrees with the authored height.
+        ///
+        /// Authored spots are read off the HUD while stood on them, so they are already right.
+        /// A probe from high above a narrow alley finds a balcony, which is how things ended up
+        /// on roofs.
+        /// </summary>
+        private static Vector3 Ground(Vector3 where)
+        {
+            if (Math.Abs(where.X) < 0.01f && Math.Abs(where.Y) < 0.01f) return Vector3.Zero;
+
+            try
+            {
+                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                    groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
+                {
+                    where.Z = groundZ;
+                }
+            }
+            catch
+            {
+                // Keep the authored height.
+            }
+
+            return where;
         }
 
         private Ped SpawnGangMember(GangDef gang, Vector3 near)
@@ -404,8 +524,11 @@ namespace Hoodrich.Missions
                                       Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_PISTOL"), 150, false, true);
                     }
 
+                    // Standing about doing something rather than standing about doing nothing.
+                    // Which idle they get is per-man, so five of them on a forecourt look like
+                    // five people and not one man copied five times.
                     Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle,
-                                  "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
+                                  IdleScenarios[_rng.Next(IdleScenarios.Length)], 0, true);
 
                     var blip = ped.AddBlip();
                     if (blip != null && blip.Exists())
@@ -432,12 +555,23 @@ namespace Hoodrich.Missions
             // Late arrival: they were never placed, so place them now rather than fail.
             if (_targets.Count == 0) SpawnTargets(player);
 
+            // A hit starts when YOU start it. They carry on with whatever they were doing until
+            // somebody puts a round through it, which is the difference between walking up on
+            // people and walking into an ambush that was waiting for you to arrive.
+            var theyStartIt = _def.Kind != MissionKind.Hit;
+
             foreach (var ped in _targets)
             {
                 if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
 
-                try { Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16); }
-                catch { /* the game's AI takes over */ }
+                try
+                {
+                    // Unblocked either way, so being shot at is something they can react to.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+
+                    if (theyStartIt) Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16);
+                }
+                catch { /* the game AI takes over */ }
             }
 
             if (_targets.Count == 0)
@@ -589,6 +723,13 @@ namespace Hoodrich.Missions
                 catch { /* teardown */ }
             }
             _homies.Clear();
+
+            // Let go rather than deleted. A car you drove to a job and back should still be
+            // sitting outside afterwards, the same as the bikes.
+            try { if (_jobCar != null && _jobCar.Exists()) _jobCar.MarkAsNoLongerNeeded(); }
+            catch { /* teardown */ }
+
+            _jobCar = null;
 
             _def = null;
             State = MissionState.None;

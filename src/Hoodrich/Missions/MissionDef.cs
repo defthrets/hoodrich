@@ -64,6 +64,17 @@ namespace Hoodrich.Missions
         public int Targets = 3;
 
         /// <summary>
+        /// Where the car and the people who ride in it are left, for the jobs that need one.
+        ///
+        /// Its own coordinate rather than "near the player", because a drive-by starts with
+        /// walking round the back to where the car is, and that walk is part of the job.
+        /// </summary>
+        public float CarX;
+        public float CarY;
+        public float CarZ;
+        public float CarHeading;
+
+        /// <summary>
         /// Whether the law turns up on the way home.
         ///
         /// Put on the job rather than derived from the kind, because whether a piece of work
@@ -125,6 +136,10 @@ namespace Hoodrich.Missions
                     Y = node["y"].AsFloat(),
                     Z = node["z"].AsFloat(),
                     Targets = Math.Max(1, node["targets"].AsInt(3)),
+                    CarX = node["carX"].AsFloat(),
+                    CarY = node["carY"].AsFloat(),
+                    CarZ = node["carZ"].AsFloat(),
+                    CarHeading = node["carHeading"].AsFloat(),
                     EscapeHeat = node["escapeHeat"].AsBool(false),
                     HeatStars = Math.Max(1, Math.Min(5, node["heatStars"].AsInt(2))),
                     PayMin = Math.Max(0, node["payMin"].AsInt(600)),

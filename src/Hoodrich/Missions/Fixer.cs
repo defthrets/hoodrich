@@ -124,7 +124,7 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, Sprite);
                 Function.Call(Hash.SET_BLIP_COLOUR, _blip.Handle, 2);
 
-                _blip.Name = "Lamar -- work";
+                _blip.Name = "Lamar -- The Families";
                 _blip.IsShortRange = false;
                 _blip.Scale = 0.85f;
             }
@@ -213,6 +213,8 @@ namespace Hoodrich.Missions
             if (root == null) return;
 
             HoldForTalk();
+
+            Talk.Speaker = _ped;
             Talk.Open(root, this);
         }
 

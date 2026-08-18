@@ -74,10 +74,20 @@ namespace Hoodrich.UI
         // as close to purpose-made art as this mod is ever going to get.
         public static readonly Icon Weed = new Icon(Inventory, "mp_specitem_weed");
         public static readonly Icon Coke = new Icon(Inventory, "mp_specitem_coke");
-        public static readonly Icon Crack = new Icon(Inventory, "mp_specitem_crack");
+        /// <summary>
+        /// Crack, ecstasy and heroin have no sprite of their own anywhere in the game, so each
+        /// borrows one that reads at a glance: the rocket for a rock, the pill for a pill, and
+        /// the yoga figure for the nod. Several candidates each, because these live in the
+        /// activity and shop dictionaries and which names an install actually has varies --
+        /// anything that resolves wins, and if none do the item keeps its text glyph.
+        /// </summary>
+        public static readonly Icon Crack = new Icon(Menu,
+            "mp_specitem_crack", "shop_ammo_icon_a", "shop_franklin_icon_a");
         public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth");
-        public static readonly Icon Heroin = new Icon(Inventory, "mp_specitem_heroin");
-        public static readonly Icon Ecstasy = new Icon(Inventory, "mp_specitem_ecstasy");
+        public static readonly Icon Heroin = new Icon(Menu,
+            "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a");
+        public static readonly Icon Ecstasy = new Icon(Menu,
+            "mp_specitem_pills", "mp_specitem_ecstasy", "shop_health_icon_a");
 
         // Actions.
         public static readonly Icon Money = new Icon(Menu, "shop_money_icon_a");

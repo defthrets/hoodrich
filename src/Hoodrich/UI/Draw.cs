@@ -158,7 +158,7 @@ namespace Hoodrich.UI
         /// filled, which looked like broken geometry and was really the game refusing to draw
         /// any more rectangles.
         /// </summary>
-        private const float RowHeight = 0.0022f;
+        private const float RowHeight = 0.0016f;
 
         /// <summary>A span wider than this is split, so the half-plane clip stays valid.</summary>
         private const float MaxSpanDegrees = 170f;
@@ -276,7 +276,10 @@ namespace Hoodrich.UI
 
             // dy is measured upward; screen y grows downward. The slight overlap hides seams
             // between rows without visibly thickening the shape.
-            Rect(cx + ToX(centreDx), cy - dy, ToX(width), RowHeight * 1.6f, c);
+            // Rows ABUT rather than overlap. A 1.6x overlap on a semi-transparent fill blends
+            // twice at every seam, which is what drew the wheel as a stack of horizontal bands.
+            // A hairline join is invisible; a darker line every two pixels is not.
+            Rect(cx + ToX(centreDx), cy - dy, ToX(width), RowHeight * 1.02f, c);
         }
 
         /// <summary>
@@ -336,7 +339,7 @@ namespace Hoodrich.UI
                 var half = (float)Math.Sqrt(r2 - dy2);
                 if (half <= 0f) continue;
 
-                Rect(cx, cy - dy, ToX(half * 2f), RowHeight * 1.6f, c);
+                Rect(cx, cy - dy, ToX(half * 2f), RowHeight * 1.02f, c);
             }
         }
 
@@ -387,7 +390,7 @@ namespace Hoodrich.UI
             if (shadow) Function.Call(Hash.SET_TEXT_DROP_SHADOW);
             if (outline) Function.Call(Hash.SET_TEXT_OUTLINE);
 
-            Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_TEXT, "STRING");
+            Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_TEXT, FormatFor(text));
             AddLongString(text);
             Function.Call(Hash.END_TEXT_COMMAND_DISPLAY_TEXT, x, y);
         }
@@ -411,7 +414,7 @@ namespace Hoodrich.UI
             Function.Call(Hash.SET_TEXT_WRAP, 0f, rightX);
             if (shadow) Function.Call(Hash.SET_TEXT_DROP_SHADOW);
 
-            Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_TEXT, "STRING");
+            Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_TEXT, FormatFor(text));
             AddLongString(text);
             Function.Call(Hash.END_TEXT_COMMAND_DISPLAY_TEXT, 0f, y);
 
@@ -430,9 +433,25 @@ namespace Hoodrich.UI
 
             Function.Call(Hash.SET_TEXT_FONT, font);
             Function.Call(Hash.SET_TEXT_SCALE, scale, scale);
-            Function.Call(Hash.BEGIN_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, "STRING");
+            Function.Call(Hash.BEGIN_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, FormatFor(text));
             AddLongString(text);
             return Function.Call<float>(Hash.END_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, true);
+        }
+
+        /// <summary>
+        /// Format string to open a text command with.
+        ///
+        /// "STRING" honours exactly ONE substring component, so anything pushed after the first
+        /// 96-character chunk is thrown away without a word -- which silently cut every line of
+        /// dialogue longer than that, and made the wrap measure the truncated version and decide
+        /// it all fitted on one line. "CELL_EMAIL_BCON" is the game's own multi-component
+        /// format and concatenates every chunk, which is what the chunking assumed all along.
+        /// </summary>
+        private const int ChunkSize = 96;
+
+        private static string FormatFor(string text)
+        {
+            return text != null && text.Length > ChunkSize ? "CELL_EMAIL_BCON" : "STRING";
         }
 
         /// <summary>
@@ -441,10 +460,9 @@ namespace Hoodrich.UI
         /// </summary>
         private static void AddLongString(string text)
         {
-            const int chunk = 96;
-            for (var i = 0; i < text.Length; i += chunk)
+            for (var i = 0; i < text.Length; i += ChunkSize)
             {
-                var len = Math.Min(chunk, text.Length - i);
+                var len = Math.Min(ChunkSize, text.Length - i);
                 Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, text.Substring(i, len));
             }
         }

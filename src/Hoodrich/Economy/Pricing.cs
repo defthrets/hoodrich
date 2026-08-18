@@ -127,6 +127,9 @@ namespace Hoodrich.Economy
         public float WholesalePrice(DrugDef drug, float supplierMultiplier = 1f)
         {
             if (drug == null) return 0f;
+            // A price the catalogue actually states beats one worked out from a percentage.
+            if (drug.BulkPrice > 0f) return Math.Max(0.5f, drug.BulkPrice * supplierMultiplier);
+
             var discount = 1f - _cfg.BulkPurchaseDiscountPercent / 100f;
             return Math.Max(0.5f, drug.BasePrice * discount * supplierMultiplier);
         }
