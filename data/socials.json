@@ -35,490 +35,902 @@
       "name": "Tanya",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "lil_dree",
       "name": "Dree",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "bigmoe_cham",
       "name": "Big Moe",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "kesha_onforum",
       "name": "Kesha",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "dtwo_gsf",
       "name": "D-Two",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "marcusonfoot",
       "name": "Marcus",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "auntiepat_ls",
       "name": "Auntie Pat",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "jaydagreen",
       "name": "Jayda",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "smokeyfromdavis",
       "name": "Smokey",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "nay_nay213",
       "name": "Nay Nay",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "terrell_tt",
       "name": "Terrell",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "bookie_bee",
       "name": "Bookie",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "shonda_c",
       "name": "Shonda",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "young_pree",
       "name": "Pree",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "gee_from_grove",
       "name": "Gee",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "mama_dubois",
       "name": "Mrs Dubois",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "ricky_rideout",
       "name": "Ricky",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "tashaaaa_",
       "name": "Tasha",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "cuzzo_kev",
       "name": "Kev",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "darnell_dnl",
       "name": "Darnell",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "bre_onthelow",
       "name": "Bre",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "juju_chamhills",
       "name": "Juju",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "oldheadray",
       "name": "Ray",
       "gang": "families",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "kimmy_forumdr",
       "name": "Kimmy",
       "gang": "families",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "purple_reign_ls",
       "name": "Reign",
       "gang": "ballas",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "balla_bee_",
       "name": "Bee",
       "gang": "ballas",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "kdot_ontheblock",
       "name": "K-Dot",
       "gang": "ballas",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "grove_iz_ours",
       "name": "Trey",
       "gang": "ballas",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "lavender_lo",
       "name": "Lo",
       "gang": "ballas",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "bigshotta_ls",
       "name": "Shotta",
       "gang": "ballas",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "elguero_rancho",
       "name": "El Guero",
       "gang": "vagos",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "vagos_vic",
       "name": "Vic",
       "gang": "vagos",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "chuy_lmesa",
       "name": "Chuy",
       "gang": "vagos",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "yellowtape_ls",
       "name": "Nando",
       "gang": "vagos",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "rancho_rosa",
       "name": "Rosa",
       "gang": "vagos",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "davisdaily",
       "name": "Davis Daily",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "chamblocktalk",
       "name": "Block Talk",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "ls_scanner_feed",
       "name": "LS Scanner",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "weazelnewsla",
       "name": "Weazel News LS",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "southsidesports",
       "name": "Southside Sports",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "forumdrfoodie",
       "name": "Forum Dr Foodie",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "lspd_watch_ls",
       "name": "LSPD Watch",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "cluckin_deals",
       "name": "Cluckin Bell Deals",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "bettapharma",
       "name": "Betta Pharmaceuticals",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "lifeinvader_ls",
       "name": "Lifeinvader LS",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "radio_westcoast",
       "name": "West Coast Classics",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "vinewood_gossip",
       "name": "Vinewood Gossip",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "ls_traffic",
       "name": "LS Traffic",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "puravidadeals",
       "name": "Pura Vida Deals",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "bennys_ls",
       "name": "Benny's",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "straw_neighbours",
       "name": "Strawberry Neighbours",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "elrancho_news",
       "name": "El Rancho News",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "dogwalker_ls",
       "name": "Marnie",
       "gang": "",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "uberdriver_ls",
       "name": "Ahmed",
       "gang": "",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "busdriver_248",
       "name": "Ronnie",
       "gang": "",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "cornerstore_sam",
       "name": "Sam",
       "gang": "",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "barber_on_grove",
       "name": "Deon",
       "gang": "",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "towtruck_terry",
       "name": "Terry",
       "gang": "",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "ls_weather",
       "name": "LS Weather",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "bailbonds_ls",
       "name": "Cheap Bail LS",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "pastor_willis",
       "name": "Pastor Willis",
       "gang": "",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "nailtech_niecy",
       "name": "Niecy",
       "gang": "",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "mechanic_hector",
       "name": "Hector",
       "gang": "",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "teacher_ms_ruiz",
       "name": "Ms Ruiz",
       "gang": "",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "delivery_dave",
       "name": "Dave",
       "gang": "",
       "verified": false,
-      "gender": "male"
+      "gender": "male",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "nightshift_nina",
       "name": "Nina",
       "gang": "",
       "verified": false,
-      "gender": "female"
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "fishtaco_truck",
       "name": "Fish Taco Truck",
       "gang": "",
       "verified": false,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "weazelnews",
       "name": "Weazel News",
       "gang": "",
       "verified": true,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "lifeinvader",
       "name": "Lifeinvader",
       "gang": "",
       "verified": true,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     },
     {
       "handle": "bleeter_ls",
       "name": "Bleeter LS",
       "gang": "",
       "verified": true,
-      "gender": "none"
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "m_desanta",
+      "name": "Michael De Santa",
+      "gender": "male",
+      "pic": "CHAR_MICHAEL",
+      "verified": true,
+      "voice": "m_desanta"
+    },
+    {
+      "handle": "tpindustries",
+      "name": "Trevor Philips",
+      "gender": "male",
+      "pic": "CHAR_TREVOR",
+      "verified": true,
+      "voice": "tpindustries"
+    },
+    {
+      "handle": "lamar_d_ls",
+      "name": "Lamar Davis",
+      "gender": "male",
+      "pic": "CHAR_LAMAR",
+      "verified": true,
+      "voice": "lamar_d_ls"
+    },
+    {
+      "handle": "stretch_gsf",
+      "name": "Stretch",
+      "gender": "male",
+      "pic": "CHAR_MP_STRETCH",
+      "verified": false,
+      "voice": "stretch_gsf"
+    },
+    {
+      "handle": "grimes_ls",
+      "name": "Grimes",
+      "gender": "male",
+      "pic": "CHAR_MP_GERALD",
+      "verified": false,
+      "voice": "grimes_ls"
+    },
+    {
+      "handle": "auntie_denise",
+      "name": "Denise Clinton",
+      "gender": "female",
+      "pic": "CHAR_DENISE",
+      "verified": false,
+      "voice": "auntie_denise"
+    },
+    {
+      "handle": "tanisha_j",
+      "name": "Tanisha Jackson",
+      "gender": "female",
+      "pic": "CHAR_TANISHA",
+      "verified": false,
+      "voice": "tanisha_j"
+    },
+    {
+      "handle": "chop_the_dog",
+      "name": "Chop",
+      "gender": "male",
+      "pic": "CHAR_CHOP",
+      "verified": false,
+      "voice": "chop_the_dog"
+    },
+    {
+      "handle": "lc_technical",
+      "name": "Lester Crest",
+      "gender": "male",
+      "pic": "CHAR_LESTER",
+      "verified": false,
+      "voice": "lc_technical"
+    },
+    {
+      "handle": "ron_conspiracy",
+      "name": "Ron Jakowski",
+      "gender": "male",
+      "pic": "CHAR_RON",
+      "verified": false,
+      "voice": "ron_conspiracy"
+    },
+    {
+      "handle": "wade_h",
+      "name": "Wade Hebert",
+      "gender": "male",
+      "pic": "CHAR_WADE",
+      "verified": false,
+      "voice": "wade_h"
+    },
+    {
+      "handle": "jimmydsvinewood",
+      "name": "Jimmy De Santa",
+      "gender": "male",
+      "pic": "CHAR_JIMMY",
+      "verified": false,
+      "voice": "jimmydsvinewood"
+    },
+    {
+      "handle": "traceyd_official",
+      "name": "Tracey De Santa",
+      "gender": "female",
+      "pic": "CHAR_TRACEY",
+      "verified": true,
+      "voice": "traceyd_official"
+    },
+    {
+      "handle": "amanda_ds",
+      "name": "Amanda De Santa",
+      "gender": "female",
+      "pic": "CHAR_AMANDA",
+      "verified": false,
+      "voice": "amanda_ds"
+    },
+    {
+      "handle": "drfriedlander",
+      "name": "Dr Friedlander",
+      "gender": "male",
+      "pic": "CHAR_DR_FRIEDLANDER",
+      "verified": true,
+      "voice": "drfriedlander"
+    },
+    {
+      "handle": "devinweston",
+      "name": "Devin Weston",
+      "gender": "male",
+      "pic": "CHAR_DEVIN",
+      "verified": true,
+      "voice": "devinweston"
+    },
+    {
+      "handle": "simeon_premium",
+      "name": "Simeon Yetarian",
+      "gender": "male",
+      "pic": "CHAR_SIMEON",
+      "verified": true,
+      "voice": "simeon_premium"
+    },
+    {
+      "handle": "m_madrazo",
+      "name": "Martin Madrazo",
+      "gender": "male",
+      "pic": "CHAR_MARTIN",
+      "verified": false,
+      "voice": "m_madrazo"
+    },
+    {
+      "handle": "molly_s_esq",
+      "name": "Molly Schultz",
+      "gender": "female",
+      "pic": "CHAR_MOLLY",
+      "verified": true,
+      "voice": "molly_s_esq"
+    },
+    {
+      "handle": "agenthaines_fib",
+      "name": "Steve Haines",
+      "gender": "male",
+      "pic": "CHAR_STEVE",
+      "verified": true,
+      "voice": "agenthaines_fib"
+    },
+    {
+      "handle": "d_norton",
+      "name": "Dave Norton",
+      "gender": "male",
+      "pic": "CHAR_DAVE",
+      "verified": false,
+      "voice": "d_norton"
+    },
+    {
+      "handle": "maude_bailbonds",
+      "name": "Maude Eccles",
+      "gender": "female",
+      "pic": "CHAR_MAUDE",
+      "verified": false,
+      "voice": "maude_bailbonds"
+    },
+    {
+      "handle": "lazlow",
+      "name": "Lazlow",
+      "gender": "male",
+      "pic": "CHAR_LAZLOW",
+      "verified": true,
+      "voice": "lazlow"
+    },
+    {
+      "handle": "beverly_paparazzi",
+      "name": "Beverly Felton",
+      "gender": "male",
+      "pic": "CHAR_BEVERLY",
+      "verified": false,
+      "voice": "beverly_paparazzi"
+    },
+    {
+      "handle": "solomon_richards",
+      "name": "Solomon Richards",
+      "gender": "male",
+      "pic": "CHAR_SOLOMON",
+      "verified": true,
+      "voice": "solomon_richards"
+    },
+    {
+      "handle": "nigel_and_mrs_t",
+      "name": "Nigel",
+      "gender": "male",
+      "pic": "CHAR_NIGEL",
+      "verified": false,
+      "voice": "nigel_and_mrs_t"
+    },
+    {
+      "handle": "barry_legalize",
+      "name": "Barry",
+      "gender": "male",
+      "pic": "CHAR_BARRY",
+      "verified": false,
+      "voice": "barry_legalize"
+    },
+    {
+      "handle": "tonya_towing",
+      "name": "Tonya Wiggins",
+      "gender": "female",
+      "pic": "CHAR_TOW_TONYA",
+      "verified": false,
+      "voice": "tonya_towing"
+    },
+    {
+      "handle": "maryann_fitness",
+      "name": "Mary-Ann Quinn",
+      "gender": "female",
+      "pic": "CHAR_MARY_ANN",
+      "verified": true,
+      "voice": "maryann_fitness"
+    },
+    {
+      "handle": "marnie_epsilon",
+      "name": "Marnie Allen",
+      "gender": "female",
+      "pic": "CHAR_MARNIE",
+      "verified": false,
+      "voice": "marnie_epsilon"
+    },
+    {
+      "handle": "brucie_kibbutz",
+      "name": "Brucie Kibbutz",
+      "gender": "male",
+      "pic": "CHAR_MP_BRUCIE",
+      "verified": true,
+      "voice": "brucie_kibbutz"
+    },
+    {
+      "handle": "gerald_ls",
+      "name": "Gerald",
+      "gender": "male",
+      "pic": "CHAR_MP_GERALD",
+      "verified": false,
+      "voice": "gerald_ls"
+    },
+    {
+      "handle": "tao_cheng_ls",
+      "name": "Tao Cheng",
+      "gender": "male",
+      "pic": "CHAR_CHENG",
+      "verified": false,
+      "voice": "tao_cheng_ls"
+    },
+    {
+      "handle": "hao_tuner",
+      "name": "Hao",
+      "gender": "male",
+      "pic": "CHAR_HAO",
+      "verified": false,
+      "voice": "hao_tuner"
     }
   ],
   "slots": {
@@ -959,5 +1371,450 @@
       "{source} {hearsay} the same car been coming to {here} every few days",
       "Nice whip on {here}. Way too nice for round here"
     ]
+  },
+  "voices": {
+    "m_desanta": {
+      "Ambient": [
+        "Watched a classic this morning. They don't make them like that. They don't make anything like that",
+        "My therapist says I have to stop saying I'm retired. I AM retired",
+        "Kids are home. Wonderful. Truly",
+        "Sat by the pool for four hours today and called it self care",
+        "Nobody in this city knows how to merge. NOBODY",
+        "Went to the movies alone. Best decision I made all year"
+      ],
+      "MissionDone": [
+        "Heard about {here}. Kid's got potential. Terrible instincts, but potential",
+        "Somebody's been busy over in {here}. Not my business. Genuinely, not my business",
+        "That's how you end up with a therapist and a boat you can't afford. Ask me how I know",
+        "You know what happens to guys who do that in {here}? They get a nice house and a lot of regret"
+      ],
+      "RankUp": [
+        "So the kid's a somebody now. Great. That's how it starts",
+        "Everybody wants to be the guy. Nobody wants to be the guy at 45"
+      ],
+      "RivalKilled": [
+        "Another one in {here}. This city eats people and asks for seconds"
+      ]
+    },
+    "tpindustries": {
+      "Ambient": [
+        "WHO TOOK MY TRUCK",
+        "Woke up in a ditch outside {hood}, feel INCREDIBLE",
+        "Trevor Philips Industries is HIRING. No questions. No references. No survivors",
+        "Somebody explain why the government hates ME specifically",
+        "Ate something I found. Would recommend. Would not recommend",
+        "I don't have anger issues, I have RESULTS",
+        "Made a new friend today. He's in the trunk but we're working through it"
+      ],
+      "MissionDone": [
+        "SOMEBODY out in {here} is having a BEAUTIFUL day and it is NOT the {rival}",
+        "Now THAT is what I'm talking about. {reaction}. Absolutely feral. Ten out of ten",
+        "Whoever did that in {here}, call me. I have OPPORTUNITIES",
+        "See this is what I mean. THIS is passion. The rest of you are asleep"
+      ],
+      "RivalKilled": [
+        "One less. Beautiful. Poetic. Somebody get me a drink",
+        "Death is just nature's way of telling you to stand somewhere else"
+      ],
+      "DriveBy": [
+        "WAS THAT GUNFIRE. IN THE AFTERNOON. I'M SO PROUD"
+      ],
+      "Brawl": [
+        "HANDS ONLY? In THIS economy? Respect. Genuinely. That's craftsmanship"
+      ]
+    },
+    "lamar_d_ls": {
+      "Ambient": [
+        "Y'all be posting like anybody asked",
+        "Just so everybody know, I invented that",
+        "Somebody in {hood} owe me money and he KNOW he owe me money",
+        "Chop been eating better than me",
+        "New chain came in. It's aight. It's aight? It's PHENOMENAL",
+        "I'm not saying I'm the best in {hood}, I'm saying nobody else is"
+      ],
+      "MissionTaken": [
+        "Got my boy on something. Watch",
+        "Bout to be a movie out here {filler}"
+      ],
+      "MissionDone": [
+        "AYE. That's my boy right there. Told y'all",
+        "See, THAT'S what I'm talking about. Whole {here} know now",
+        "Homie went out there and handled that like it was nothing. NOTHING",
+        "Y'all was doubting. I wasn't doubting. I was NEVER doubting",
+        "That's what happen when you send a professional. Professional. Me. I sent him"
+      ],
+      "MissionFailed": [
+        "Nah man. NAH. We gon talk about this",
+        "I sent you ONE place. ONE"
+      ],
+      "RankUp": [
+        "That's MY dawg. Remember I said it first",
+        "From nothing to somebody and I was there the whole time. Just saying"
+      ],
+      "Brawl": [
+        "HANDS. No guns. Old school. That's the LD influence right there"
+      ]
+    },
+    "stretch_gsf": {
+      "Ambient": [
+        "Everybody friendly til it's time to be friendly",
+        "I been home two years and this city still owe me",
+        "Loyalty a word people say when they want something",
+        "Somebody always watching. Remember that"
+      ],
+      "MissionDone": [
+        "Somebody did what needed doing in {here}. Good",
+        "Word gets to me before it gets to you. Always has",
+        "That's the work. Now do it again"
+      ],
+      "RivalKilled": [
+        "That's how it go. Ain't nothing new about it"
+      ],
+      "JoinedGang": [
+        "We put somebody on. We'll see what he made of"
+      ]
+    },
+    "grimes_ls": {
+      "Ambient": [
+        "Stock came in. Ain't saying what. Ain't saying where",
+        "If you gotta ask the price you can't afford the price",
+        "Somebody tried to pay me in exposure. In THIS courtyard",
+        "Cash. That's the whole post",
+        "Everything I sell is tested. By somebody. Somewhere"
+      ],
+      "MissionDone": [
+        "Somebody put my merchandise to work in {here} {filler}",
+        "That's a repeat customer right there"
+      ],
+      "RivalKilled": [
+        "Business been good this week. That's all I'll say"
+      ]
+    },
+    "auntie_denise": {
+      "Ambient": [
+        "The system is DESIGNED this way and y'all just accept it",
+        "Went to a workshop about reclaiming space. Transformative",
+        "Somebody explain to me why the store on {hood} charges what it charges",
+        "My nephew don't call. Just putting that out there",
+        "Signed three petitions before breakfast",
+        "Patriarchy in the DMV again today"
+      ],
+      "MissionDone": [
+        "Whatever's going on in {here}, it's a symptom of a much larger problem",
+        "Y'all fighting each other while the real enemy sits downtown"
+      ],
+      "Busted": [
+        "And THERE it is. Every time. Every single time"
+      ]
+    },
+    "tanisha_j": {
+      "Ambient": [
+        "Some of y'all need to grow up. That's the post",
+        "Long shift. Longer week",
+        "It's possible to want better for people and still not answer their calls"
+      ],
+      "MissionDone": [
+        "I heard about {here}. I'm not saying anything. I'm just saying I heard",
+        "Y'all still doing this. In your THIRTIES"
+      ],
+      "MissionFailed": [
+        "And what exactly was the plan there"
+      ]
+    },
+    "chop_the_dog": {
+      "Ambient": [
+        "BARK",
+        "someone left the gate open. i did not go through it. this time",
+        "there is a cat on the wall. this is my formal complaint",
+        "walked. fed. content. no notes",
+        "the mailman and i have an understanding and he is losing"
+      ],
+      "MissionDone": [
+        "he came home smelling like other people. we will discuss",
+        "good boy energy all round today"
+      ],
+      "Brawl": [
+        "wish i was there. would have helped. would have bit somebody"
+      ]
+    },
+    "lc_technical": {
+      "Ambient": [
+        "People underestimate how much of this city is held together by one server in Rockford Hills",
+        "I have not left this room in nine days and productivity is UP",
+        "Everything you post is permanent. Everything. Sleep well",
+        "Somebody bought a boat with money they should not have. I know because I watched it happen",
+        "The interesting thing about surveillance is how little of it is actually necessary"
+      ],
+      "MissionDone": [
+        "The activity in {here} is showing up in three places it shouldn't. Whoever you are: tidy up",
+        "Somebody's leaving a paper trail. Not judging. Well. Slightly judging",
+        "Fascinating. Sloppy, but fascinating"
+      ],
+      "Busted": [
+        "This is what happens without planning. Planning is the entire job"
+      ],
+      "RankUp": [
+        "Somebody's name is coming up in places names should not come up"
+      ]
+    },
+    "ron_conspiracy": {
+      "Ambient": [
+        "They're testing something over the desert again. I have PHOTOS. Blurry ones",
+        "The government put something in the {priceofthing} supply and nobody will talk about it",
+        "Wake up. Please. I'm begging",
+        "Every plane that goes over my trailer is the SAME plane"
+      ],
+      "MissionDone": [
+        "What happened in {here} was NOT what they're telling you happened",
+        "This is exactly what they want you looking at. EXACTLY"
+      ]
+    },
+    "wade_h": {
+      "Ambient": [
+        "i like it here. everybody's real nice",
+        "does anybody know where my cousin went",
+        "found a dollar today. good day",
+        "the lights at the club make my head go funny but in a good way"
+      ],
+      "MissionDone": [
+        "sounds like somebody had a real busy day. hope they're ok"
+      ]
+    },
+    "jimmydsvinewood": {
+      "Ambient": [
+        "just went 40 and 3. no one cares. that's fine. that's genuinely fine",
+        "dad won't get me a car so basically i live in a prison",
+        "does anyone else feel like the algorithm is against them specifically",
+        "ordered food to the pool house so i wouldn't have to talk to anyone. self care"
+      ],
+      "MissionDone": [
+        "wait people actually DO stuff out there?? like in real life??",
+        "my dad definitely knows something about {here} and he definitely won't say"
+      ]
+    },
+    "traceyd_official": {
+      "Ambient": [
+        "auditioned today and they said they'd CALL so basically i booked it",
+        "if you're not supporting my content are you even my friend",
+        "brand deals in the DMs and none of them are real. still opening them",
+        "my family is literally so embarrassing you have no idea"
+      ],
+      "MissionDone": [
+        "everyone's talking about {here} and no one will tell me what happened"
+      ]
+    },
+    "amanda_ds": {
+      "Ambient": [
+        "Tennis at ten. Yoga at twelve. Peace at no point whatsoever",
+        "Some of us are doing the WORK on ourselves. Some of us are sat by a pool",
+        "The house is beautiful and I have never been more bored",
+        "Retail therapy is still therapy. My therapist disagrees. My therapist is wrong"
+      ],
+      "MissionDone": [
+        "Whatever is happening in {here}, I guarantee somebody's husband is involved"
+      ]
+    },
+    "drfriedlander": {
+      "Ambient": [
+        "Reminder that missed sessions are still billed. This is a boundary. I am modelling boundaries",
+        "New book out. It's about you. All of you. Available everywhere",
+        "A patient shouted at me today and I have decided that is a breakthrough"
+      ],
+      "MissionDone": [
+        "The violence in {here} is displaced rage and I could help, for a fee"
+      ]
+    },
+    "devinweston": {
+      "Ambient": [
+        "Ownership is a mindset. I own the mindset too",
+        "I don't buy companies. I buy the people who were going to buy the company",
+        "Failure is just success that hasn't been monetised yet",
+        "Someone asked what I do. I said yes"
+      ],
+      "MissionDone": [
+        "There's a business opportunity in whatever just happened in {here}. There always is"
+      ]
+    },
+    "simeon_premium": {
+      "Ambient": [
+        "My friend. MY FRIEND. Have I got a vehicle for you",
+        "Zero down. Zero. That is less than nothing and I am giving it to you",
+        "The banks are the real criminals. I am merely a facilitator of dreams",
+        "Somebody defaulted again. I am hurt. Emotionally. And financially"
+      ],
+      "MissionDone": [
+        "Whoever was in {here} today, you owe me for a windscreen"
+      ]
+    },
+    "m_madrazo": {
+      "Ambient": [
+        "I am a legitimate businessman with a legitimate temper",
+        "You break something of mine, you buy me two",
+        "My family has been in this valley a long time. We remember everything"
+      ],
+      "MissionDone": [
+        "Somebody has been making noise in {here}. I hope for their sake it stays there"
+      ]
+    },
+    "molly_s_esq": {
+      "Ambient": [
+        "Legal has reviewed my personality and cleared it for release",
+        "Working weekends again. My employer is my whole entire life. This is fine"
+      ],
+      "MissionDone": [
+        "Anything occurring in {here} is not affiliated with my employer. Legally. At all"
+      ]
+    },
+    "agenthaines_fib": {
+      "Ambient": [
+        "New season drops soon. The camera does NOT do the job justice",
+        "I keep this city safe and I do it with excellent hair",
+        "Some people call it a conflict of interest. I call it a full schedule"
+      ],
+      "MissionDone": [
+        "We are AWARE of the situation in {here} and we are handling it. On camera",
+        "Nobody does anything in this city I don't hear about eventually"
+      ],
+      "Busted": [
+        "Another win for the good guys. Tag me in the clip"
+      ]
+    },
+    "d_norton": {
+      "Ambient": [
+        "Twenty two years in and I still can't sleep",
+        "Some days the paperwork is the only honest part of this job"
+      ],
+      "MissionDone": [
+        "Something happened in {here} and I already know I'm going to be asked about it"
+      ]
+    },
+    "maude_bailbonds": {
+      "Ambient": [
+        "Skipped bail? I will find you. I always find you. I have hobbies but this is the main one",
+        "Sent a lovely man to collect. He was not lovely about it"
+      ],
+      "MissionDone": [
+        "Half the people in {here} have outstanding warrants. Just so we're all aware"
+      ]
+    },
+    "lazlow": {
+      "Ambient": [
+        "Still relevant. Ask anyone. Ask ME",
+        "New show, new network, same me, slightly worse",
+        "Signed a girl's phone case today. She thought I was somebody else. I let it happen"
+      ],
+      "MissionDone": [
+        "Whatever went down in {here} would make GREAT television and I am available"
+      ]
+    },
+    "beverly_paparazzi": {
+      "Ambient": [
+        "Got the shot. GOT it. Nobody will buy it but I GOT it",
+        "Photography is journalism. I will not be debating this",
+        "Restraining orders are just fan mail with a lawyer"
+      ],
+      "MissionDone": [
+        "MISSED it. I was in {hood} and it happened in {here}. My LIFE"
+      ]
+    },
+    "solomon_richards": {
+      "Ambient": [
+        "They don't make pictures any more. They make content. It's a tragedy",
+        "In my day a stunt man got a name in the credits and a limp for life"
+      ],
+      "MissionDone": [
+        "There's a picture in what happened in {here}. There's a picture in everything"
+      ]
+    },
+    "nigel_and_mrs_t": {
+      "Ambient": [
+        "Mrs Thornhill and I are on a bit of a pilgrimage. Nothing sinister",
+        "Spotted somebody FAMOUS. Followed them a reasonable distance. Perfectly normal"
+      ],
+      "MissionDone": [
+        "One does hear the most thrilling things about {here}"
+      ]
+    },
+    "barry_legalize": {
+      "Ambient": [
+        "LEGALIZE IT. that's it that's the campaign",
+        "went to city hall. fell asleep. still counts as activism",
+        "the petition has four signatures and one of them is my mom and she's a legend"
+      ],
+      "MissionDone": [
+        "somebody out in {here} doing something and i bet it's the government"
+      ]
+    },
+    "tonya_towing": {
+      "Ambient": [
+        "JD better answer this phone",
+        "Truck's out again. Somebody's car is sitting somewhere getting a ticket right now",
+        "I'm not asking for much. I'm asking for a LITTLE"
+      ],
+      "MissionDone": [
+        "Whatever happened in {here}, somebody's car got left behind and that's MY business"
+      ]
+    },
+    "maryann_fitness": {
+      "Ambient": [
+        "Beat my time again. Nobody cheered. Doesn't matter. I know",
+        "If you can't keep up don't get in my way",
+        "Ran past somebody eating {priceofthing} at 6am. Disgusting. Jealous"
+      ],
+      "MissionDone": [
+        "Ran through {here} this morning. Pace was excellent. Atmosphere was not"
+      ]
+    },
+    "marnie_epsilon": {
+      "Ambient": [
+        "Kifflom to everybody except one person and they know who they are",
+        "Gave away everything I owned again. Feels amazing. Slightly cold",
+        "The truth costs money and that is how you know it is the truth"
+      ],
+      "MissionDone": [
+        "The energy in {here} is very loud today and not in a healing way"
+      ]
+    },
+    "brucie_kibbutz": {
+      "Ambient": [
+        "BULL SHARK. every morning. every SINGLE morning",
+        "if your veins ain't visible what are you even doing",
+        "gym, sun, chicken, repeat. that's the whole philosophy bro"
+      ],
+      "MissionDone": [
+        "somebody in {here} got that AGGRESSION. respect. channel it bro"
+      ]
+    },
+    "gerald_ls": {
+      "Ambient": [
+        "Got work if anybody want it. Don't ask what kind",
+        "Phone been ringing all day and none of it good"
+      ],
+      "MissionDone": [
+        "Heard my people was busy in {here}. Good"
+      ]
+    },
+    "tao_cheng_ls": {
+      "Ambient": [
+        "LOS SANTOS. LOS. SANTOS",
+        "my uncle says i am an embarrassment. my uncle is not at this party",
+        "does anyone know where i am. genuinely"
+      ],
+      "MissionDone": [
+        "something happen in {here}?? i was there. maybe. probably"
+      ]
+    },
+    "hao_tuner": {
+      "Ambient": [
+        "Under the bridge tonight if anybody's serious",
+        "Stock cars belong in stock car museums"
+      ],
+      "MissionDone": [
+        "Somebody drove through {here} like they meant it. Noted"
+      ],
+      "DriveBy": [
+        "Whoever that was, the driving was better than the shooting"
+      ]
+    }
   }
 }

@@ -49,9 +49,32 @@ namespace Hoodrich.Social
         /// <summary>How many posts are kept. Older ones fall off the bottom, as they would.</summary>
         private const int Capacity = 80;
 
-        /// <summary>Ambient posting rate, in real seconds, when you are just walking around.</summary>
-        private const int AmbientGapMinMs = 26000;
-        private const int AmbientGapMaxMs = 75000;
+        /// <summary>
+        /// How often the block says something, and how often it interrupts you about it.
+        ///
+        /// Two different rates on purpose. The TIMELINE fills at the first one, so opening it
+        /// after an hour out shows an hour of chatter. NOTIFICATIONS come at the second, which
+        /// is far slower -- a phone that buzzes every forty seconds is a phone you turn off,
+        /// and then the whole system may as well not exist.
+        /// </summary>
+        private const int AmbientGapMinMs = 55000;
+        private const int AmbientGapMaxMs = 150000;
+
+        /// <summary>Nothing pops within this of the last one, whatever happened.</summary>
+        private const int NotifyCooldownMs = 150000;
+
+        /// <summary>
+        /// How often a post comes from somebody with a name.
+        ///
+        /// Higher on events than on ambient, because the cast comment on things that happen and
+        /// the neighbourhood comments on everything. Too high either way and the feed becomes a
+        /// group chat between eight famous people, which is not what a block sounds like.
+        /// </summary>
+        private const float VoicedEventChance = 0.55f;
+        private const float VoicedAmbientChance = 0.30f;
+
+        /// <summary>How much of the everyday chatter is worth interrupting you for.</summary>
+        private const float AmbientNotifyChance = 0.22f;
 
         /// <summary>
         /// Nobody, to begin with.
@@ -119,7 +142,12 @@ namespace Hoodrich.Social
         private readonly Dictionary<string, List<string>> _slots =
             new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>voice -> post set -> that character's own lines.</summary>
+        private readonly Dictionary<string, Dictionary<string, List<string>>> _voices =
+            new Dictionary<string, Dictionary<string, List<string>>>(StringComparer.OrdinalIgnoreCase);
+
         private int _nextAmbient;
+        private int _lastNotify;
 
         public SocialFeed()
         {
@@ -177,6 +205,8 @@ namespace Hoodrich.Social
                         Gang = node["gang"].AsString(""),
                         Verified = node["verified"].AsBool(false),
                         Gender = node["gender"].AsString("male"),
+                        Pic = node["pic"].AsString(""),
+                        Voice = node["voice"].AsString(""),
                         Tint = TintFor(handle)
                     });
                 }
@@ -193,6 +223,26 @@ namespace Hoodrich.Social
                     if (list.Count > 0) feed._templates[key] = list;
                 }
 
+                foreach (var voice in doc["voices"].Keys)
+                {
+                    var sets = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var set in doc["voices"][voice].Keys)
+                    {
+                        var lines = new List<string>();
+
+                        foreach (var line in doc["voices"][voice][set].Items)
+                        {
+                            var text = line.AsString("");
+                            if (!string.IsNullOrEmpty(text)) lines.Add(text);
+                        }
+
+                        if (lines.Count > 0) sets[set] = lines;
+                    }
+
+                    if (sets.Count > 0) feed._voices[voice] = sets;
+                }
+
                 foreach (var key in doc["slots"].Keys)
                 {
                     var list = new List<string>();
@@ -205,7 +255,8 @@ namespace Hoodrich.Social
                     if (list.Count > 0) feed._slots[key] = list;
                 }
 
-                Log.Info("Socials loaded: " + feed._authors.Count + " people, " +
+                Log.Info("Socials loaded: " + feed._authors.Count + " people (" +
+                         feed._voices.Count + " with their own voice), " +
                          feed._templates.Count + " post sets, " + feed._slots.Count + " word lists.");
             }
             catch (Exception ex)
@@ -308,7 +359,9 @@ namespace Hoodrich.Social
             }
 
             Add(post);
-            Notify(post);
+
+            // Most of the everyday stuff just lands on the timeline for you to find later.
+            if (_rng.NextDouble() < AmbientNotifyChance) Notify(post, false);
         }
 
         // ---- things that happened ----------------------------------------------
@@ -330,7 +383,10 @@ namespace Hoodrich.Social
 
             post.AboutYou = true;
             Add(post);
-            Notify(post);
+
+            // A post about something you just did always comes through, cooldown or not. That
+            // is the one moment the system exists for.
+            Notify(post, true);
 
             var gained = FollowersFor(kind, amount);
             if (gained == 0) return;
@@ -395,14 +451,60 @@ namespace Hoodrich.Social
 
         private Post Build(string set, string subject, int amount = 0)
         {
-            List<string> templates;
-            if (!_templates.TryGetValue(set, out templates) || templates.Count == 0) return null;
             if (_authors.Count == 0) return null;
+
+            Author by = null;
+            List<string> templates = null;
+
+            // Somebody with their own words gets first refusal, weighted by whether this is the
+            // kind of thing they would bother commenting on. Michael is more likely to have a
+            // view about a job going down than about the price of chicken.
+            var voicedChance = string.Equals(set, "Ambient", StringComparison.OrdinalIgnoreCase)
+                ? VoicedAmbientChance
+                : VoicedEventChance;
+
+            if (_rng.NextDouble() < voicedChance)
+            {
+                var candidates = new List<Author>();
+
+                foreach (var author in _authors)
+                {
+                    if (!author.HasVoice) continue;
+
+                    Dictionary<string, List<string>> sets;
+                    if (!_voices.TryGetValue(author.Voice, out sets)) continue;
+
+                    List<string> lines;
+                    if (!sets.TryGetValue(set, out lines) || lines.Count == 0) continue;
+
+                    candidates.Add(author);
+                }
+
+                if (candidates.Count > 0)
+                {
+                    by = candidates[_rng.Next(candidates.Count)];
+                    templates = _voices[by.Voice][set];
+                }
+            }
+
+            if (by == null)
+            {
+                if (!_templates.TryGetValue(set, out templates) || templates.Count == 0) return null;
+
+                // A voiced character never delivers a generic line -- that is exactly how a
+                // character stops sounding like one.
+                var open = new List<Author>();
+                foreach (var author in _authors)
+                {
+                    if (!author.HasVoice) open.Add(author);
+                }
+
+                if (open.Count == 0) return null;
+                by = open[_rng.Next(open.Count)];
+            }
 
             var body = Fill(templates[_rng.Next(templates.Count)], subject, amount);
             if (string.IsNullOrEmpty(body)) return null;
-
-            var by = _authors[_rng.Next(_authors.Count)];
 
             var post = new Post
             {
@@ -497,9 +599,14 @@ namespace Hoodrich.Social
         /// every one of these would be unbearable within ten minutes, and the point is that the
         /// block is talking whether or not you are listening.
         /// </summary>
-        private void Notify(Post post)
+        private void Notify(Post post, bool important)
         {
             if (post == null || post.By == null) return;
+
+            // Quiet spell after anything lands, so two posts never arrive on top of each other.
+            if (!important && Game.GameTime - _lastNotify < NotifyCooldownMs) return;
+
+            _lastNotify = Game.GameTime;
 
             try
             {
@@ -536,6 +643,9 @@ namespace Hoodrich.Social
         /// </summary>
         private static string PicFor(Author by)
         {
+            // Anybody the game already has a face for wears their own.
+            if (!string.IsNullOrEmpty(by.Pic)) return by.Pic;
+
             var pool = string.Equals(by.Gender, "female", StringComparison.OrdinalIgnoreCase) ? FemalePics
                      : string.Equals(by.Gender, "none", StringComparison.OrdinalIgnoreCase) ? OrgPics
                      : MalePics;

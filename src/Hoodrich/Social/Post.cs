@@ -23,6 +23,25 @@ namespace Hoodrich.Social
         /// </summary>
         public string Gender = "male";
 
+        /// <summary>
+        /// An explicit contact picture, for people the game already has a face for.
+        ///
+        /// Everybody else draws from the pool by gender. The named cast do not, because Trevor
+        /// turning up wearing somebody else's face is worse than any amount of variety is worth.
+        /// </summary>
+        public string Pic = "";
+
+        /// <summary>
+        /// Key into the voice table, for characters who write their own lines.
+        ///
+        /// This is the whole difference between a name on a post and a character. A generic
+        /// template can be handed to any of seventy people; a Trevor line cannot be handed to
+        /// Lester, and if it can then it was never really a Trevor line.
+        /// </summary>
+        public string Voice = "";
+
+        public bool HasVoice => !string.IsNullOrEmpty(Voice);
+
         /// <summary>Avatar colour, derived once from the handle so it never changes on them.</summary>
         public Color Tint = Color.FromArgb(255, 90, 96, 92);
 
