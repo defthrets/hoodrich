@@ -47,6 +47,18 @@ namespace Hoodrich.State
         public bool SleptAtStashHouse;
 
         /// <summary>
+        /// People who follow you.
+        ///
+        /// Saved, because it is the one number in the mod that only ever reflects what you have
+        /// actually done -- respect can be ground out on a corner, but nobody follows you for
+        /// standing still.
+        /// </summary>
+        public int Followers;
+
+        /// <summary>Raised when a rank is crossed, so the block can notice.</summary>
+        public Action<int> RankedUp;
+
+        /// <summary>
         /// Jobs finished for Lamar, by id.
         ///
         /// He works through his list in order and only opens up the choice once you have been
@@ -128,6 +140,10 @@ namespace Hoodrich.State
             {
                 Notify.Important("~y~Rank up:~s~ " + RankName);
                 Log.Info("Rank up to " + after + " (" + RankName + ") at " + Respect.ToString("F0") + " respect.");
+
+                // Crossing a threshold is an event with a moment attached rather than something
+                // a later tick notices, so whoever cares is told here.
+                if (RankedUp != null) RankedUp(after);
             }
             else if (after < before)
             {
@@ -160,6 +176,7 @@ namespace Hoodrich.State
                 .Set("gramsSold", Math.Round(GramsSold, 2))
                 .Set("docksUnlocked", DocksUnlocked)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
+                .Set("followers", Followers)
                 .Set("missionsDone", MissionsJson())
                 .Set("stash", Stash.ToJson());
         }
@@ -177,6 +194,7 @@ namespace Hoodrich.State
                 GramsSold = Math.Max(0f, doc["gramsSold"].AsFloat(0f));
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
+                Followers = Math.Max(0, doc["followers"].AsInt(0));
 
                 MissionsDone.Clear();
                 foreach (var node in doc["missionsDone"].Items)

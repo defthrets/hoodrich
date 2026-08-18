@@ -1,0 +1,891 @@
+{
+  "_comment": [
+    "The block, talking about itself.",
+    "",
+    "Posts are TEMPLATES, not finished sentences. Anything in {braces} is filled in when the",
+    "post is written, so one line here becomes hundreds of different posts in play. That is",
+    "the only honest way to promise you will rarely read the same thing twice -- a fixed list",
+    "runs out in an evening.",
+    "",
+    "SLOTS you can use anywhere:",
+    "  {here}     the zone the player is actually standing in",
+    "  {yours}    the gang the player runs with",
+    "  {subject}  whatever the event passed in -- a gang, a product, a job",
+    "  {money}    an amount, with thousands separators",
+    "  {count}    a plain number",
+    "  ...plus every list under \"slots\" below, by its key.",
+    "",
+    "POST SETS under \"posts\": Ambient is the everyday chatter, and the rest are keyed to",
+    "things that happen. Add lines to any of them and they are picked up on next launch.",
+    "An unknown slot prints its own braces, so a typo is visible rather than silent.",
+    "",
+    "Authors are just people. The avatar colour is derived from the handle, so somebody always",
+    "looks the same without a colour being stored for them."
+  ],
+  "you": {
+    "handle": "@franklin_c",
+    "name": "Franklin Clinton",
+    "following": 118
+  },
+  "authors": [
+    {
+      "handle": "tanya445gsf",
+      "name": "Tanya",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "lil_dree",
+      "name": "Dree",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "bigmoe_cham",
+      "name": "Big Moe",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "kesha_onforum",
+      "name": "Kesha",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "dtwo_gsf",
+      "name": "D-Two",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "marcusonfoot",
+      "name": "Marcus",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "auntiepat_ls",
+      "name": "Auntie Pat",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "jaydagreen",
+      "name": "Jayda",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "smokeyfromdavis",
+      "name": "Smokey",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "nay_nay213",
+      "name": "Nay Nay",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "terrell_tt",
+      "name": "Terrell",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "bookie_bee",
+      "name": "Bookie",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "shonda_c",
+      "name": "Shonda",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "young_pree",
+      "name": "Pree",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "gee_from_grove",
+      "name": "Gee",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "mama_dubois",
+      "name": "Mrs Dubois",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "ricky_rideout",
+      "name": "Ricky",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "tashaaaa_",
+      "name": "Tasha",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "cuzzo_kev",
+      "name": "Kev",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "darnell_dnl",
+      "name": "Darnell",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "bre_onthelow",
+      "name": "Bre",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "juju_chamhills",
+      "name": "Juju",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "oldheadray",
+      "name": "Ray",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "kimmy_forumdr",
+      "name": "Kimmy",
+      "gang": "families",
+      "verified": false
+    },
+    {
+      "handle": "purple_reign_ls",
+      "name": "Reign",
+      "gang": "ballas",
+      "verified": false
+    },
+    {
+      "handle": "balla_bee_",
+      "name": "Bee",
+      "gang": "ballas",
+      "verified": false
+    },
+    {
+      "handle": "kdot_ontheblock",
+      "name": "K-Dot",
+      "gang": "ballas",
+      "verified": false
+    },
+    {
+      "handle": "grove_iz_ours",
+      "name": "Trey",
+      "gang": "ballas",
+      "verified": false
+    },
+    {
+      "handle": "lavender_lo",
+      "name": "Lo",
+      "gang": "ballas",
+      "verified": false
+    },
+    {
+      "handle": "bigshotta_ls",
+      "name": "Shotta",
+      "gang": "ballas",
+      "verified": false
+    },
+    {
+      "handle": "elguero_rancho",
+      "name": "El Guero",
+      "gang": "vagos",
+      "verified": false
+    },
+    {
+      "handle": "vagos_vic",
+      "name": "Vic",
+      "gang": "vagos",
+      "verified": false
+    },
+    {
+      "handle": "chuy_lmesa",
+      "name": "Chuy",
+      "gang": "vagos",
+      "verified": false
+    },
+    {
+      "handle": "yellowtape_ls",
+      "name": "Nando",
+      "gang": "vagos",
+      "verified": false
+    },
+    {
+      "handle": "rancho_rosa",
+      "name": "Rosa",
+      "gang": "vagos",
+      "verified": false
+    },
+    {
+      "handle": "davisdaily",
+      "name": "Davis Daily",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "chamblocktalk",
+      "name": "Block Talk",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "ls_scanner_feed",
+      "name": "LS Scanner",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "weazelnewsla",
+      "name": "Weazel News LS",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "southsidesports",
+      "name": "Southside Sports",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "forumdrfoodie",
+      "name": "Forum Dr Foodie",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "lspd_watch_ls",
+      "name": "LSPD Watch",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "cluckin_deals",
+      "name": "Cluckin Bell Deals",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "bettapharma",
+      "name": "Betta Pharmaceuticals",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "lifeinvader_ls",
+      "name": "Lifeinvader LS",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "radio_westcoast",
+      "name": "West Coast Classics",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "vinewood_gossip",
+      "name": "Vinewood Gossip",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "ls_traffic",
+      "name": "LS Traffic",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "puravidadeals",
+      "name": "Pura Vida Deals",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "bennys_ls",
+      "name": "Benny's",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "straw_neighbours",
+      "name": "Strawberry Neighbours",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "elrancho_news",
+      "name": "El Rancho News",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "dogwalker_ls",
+      "name": "Marnie",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "uberdriver_ls",
+      "name": "Ahmed",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "busdriver_248",
+      "name": "Ronnie",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "cornerstore_sam",
+      "name": "Sam",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "barber_on_grove",
+      "name": "Deon",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "towtruck_terry",
+      "name": "Terry",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "ls_weather",
+      "name": "LS Weather",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "bailbonds_ls",
+      "name": "Cheap Bail LS",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "pastor_willis",
+      "name": "Pastor Willis",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "nailtech_niecy",
+      "name": "Niecy",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "mechanic_hector",
+      "name": "Hector",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "teacher_ms_ruiz",
+      "name": "Ms Ruiz",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "delivery_dave",
+      "name": "Dave",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "nightshift_nina",
+      "name": "Nina",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "fishtaco_truck",
+      "name": "Fish Taco Truck",
+      "gang": "",
+      "verified": false
+    },
+    {
+      "handle": "weazelnews",
+      "name": "Weazel News",
+      "gang": "",
+      "verified": true
+    },
+    {
+      "handle": "lifeinvader",
+      "name": "Lifeinvader",
+      "gang": "",
+      "verified": true
+    },
+    {
+      "handle": "bleeter_ls",
+      "name": "Bleeter LS",
+      "gang": "",
+      "verified": true
+    }
+  ],
+  "slots": {
+    "hood": [
+      "Chamberlain",
+      "Chamberlain Hills",
+      "Forum Dr",
+      "Grove",
+      "Grove St",
+      "Davis",
+      "Strawberry",
+      "Carson",
+      "Innocence Blvd",
+      "the courts",
+      "the projects",
+      "Roy Lowenstein",
+      "Jamestown",
+      "Rancho",
+      "La Mesa",
+      "Little Seoul",
+      "Vespucci"
+    ],
+    "localspot": [
+      "the 24/7",
+      "the chicken spot",
+      "Cluckin Bell",
+      "the laundromat",
+      "the barbers",
+      "the liquor store",
+      "the car wash",
+      "the corner store",
+      "the bus stop",
+      "the basketball courts",
+      "the taco truck",
+      "the gas station",
+      "the wash"
+    ],
+    "timeofday": [
+      "this morning",
+      "last night",
+      "round midday",
+      "just now",
+      "about an hour ago",
+      "yesterday",
+      "at like 3am",
+      "before work",
+      "on my way home",
+      "this afternoon"
+    ],
+    "filler": [
+      "smh",
+      "lmaooo",
+      "I can't",
+      "not even playing",
+      "on everything",
+      "deadass",
+      "man listen",
+      "for real",
+      "no lie",
+      "swear down",
+      "I'm weak",
+      "y'all not ready"
+    ],
+    "opinion": [
+      "wild",
+      "crazy",
+      "mad disrespectful",
+      "hilarious",
+      "so dumb",
+      "actually impressive",
+      "kinda scary",
+      "long overdue",
+      "embarrassing",
+      "about time",
+      "not surprising at all"
+    ],
+    "rival": [
+      "Ballas",
+      "Vagos",
+      "them boys",
+      "the purple",
+      "the yellow"
+    ],
+    "weathertalk": [
+      "It's too hot",
+      "Rain finally",
+      "Marine layer ain't lifting",
+      "It's freezing for LA",
+      "Smoggy as hell",
+      "Perfect day",
+      "Wind is stupid"
+    ],
+    "priceofthing": [
+      "gas",
+      "rent",
+      "chicken",
+      "a haircut",
+      "eggs",
+      "a bus pass",
+      "insurance"
+    ],
+    "excuse": [
+      "traffic on the 5",
+      "my car got towed",
+      "I overslept",
+      "the bus never came",
+      "my phone died",
+      "I lost my keys",
+      "my sister took the car"
+    ],
+    "reaction": [
+      "I'm not even shocked",
+      "y'all wild",
+      "that's LS for you",
+      "this city man",
+      "somebody's mama seeing this",
+      "screenshotting this",
+      "the block don't forget",
+      "this gonna be a whole thing",
+      "here we go again",
+      "it's only Tuesday"
+    ],
+    "source": [
+      "My cousin",
+      "My neighbour",
+      "Somebody at work",
+      "The barber",
+      "This lady at the store",
+      "My little brother",
+      "Dude at the bus stop",
+      "The old head on the corner",
+      "My auntie"
+    ],
+    "hearsay": [
+      "heard",
+      "swear he seen",
+      "been saying",
+      "told me",
+      "posted about",
+      "was going on about"
+    ],
+    "bodypart": [
+      "jaw",
+      "nose",
+      "pride",
+      "whole face",
+      "ego"
+    ]
+  },
+  "posts": {
+    "Ambient": [
+      "Somebody dumped a whole couch outside {localspot} again {filler}",
+      "{weathertalk} out here today",
+      "Why is {priceofthing} so expensive now. {filler}",
+      "Traffic on {hood} is a joke {timeofday}",
+      "Whoever keeps parking across my driveway on {hood}, we gonna have a conversation",
+      "{localspot} closed early again {timeofday}. Third time this week",
+      "Power went out on {hood} {timeofday}. Whole block dark",
+      "They finally fixed the light at {localspot}. Only took two years",
+      "Somebody's alarm been going off on {hood} for forty minutes {filler}",
+      "Ice cream truck out on {hood} in this weather. Respect the hustle",
+      "Helicopter been circling {hood} for twenty minutes. What's going on",
+      "Sirens all up {hood} {timeofday}. Everybody good?",
+      "New potholes on {hood}. City doing nothing as usual",
+      "Whoever been letting their dog out on {hood}, pick it up",
+      "{localspot} got new management and the prices went up immediately",
+      "Line at {localspot} is around the block {timeofday}",
+      "They towing everything on {hood} today. Move your cars",
+      "Somebody left a shopping cart in the middle of {hood} {filler}",
+      "Bus was 25 minutes late. {excuse} is what they told me",
+      "Street sweeper came at 6am. On a Sunday. Make it make sense",
+      "The chicken at {localspot} hit different {timeofday} {filler}",
+      "{localspot} raised their prices AGAIN. That's {opinion}",
+      "Whoever runs the taco truck on {hood}, you're doing gods work",
+      "Went to {localspot} and they were out of everything. {filler}",
+      "Best breakfast in {hood} is {localspot} and I'm not taking questions",
+      "New spot opened on {hood}. Gave it a week, it's already gone",
+      "Free refills at {localspot} again. We up",
+      "{localspot} charging four dollars for a soda now. In THIS economy",
+      "My cousin swears he saw somebody famous at {localspot} {timeofday}. Sure you did",
+      "Everybody on {hood} needs to mind their business {filler}",
+      "Not my neighbour arguing on the phone at 4am again",
+      "Somebody's kid been selling candy outside {localspot}. Supporting that",
+      "Shoutout to whoever cleaned up the lot on {hood}. That was {opinion}",
+      "Y'all seen the new mural on {hood}? Actually {opinion}",
+      "My auntie been telling the same story since I was ten and I still listen",
+      "The old head outside {localspot} knows everything about everybody",
+      "Whoever put a basketball hoop back up at the courts, thank you",
+      "The barber on {hood} talked me out of a bad decision today",
+      "Ms from the corner store gave my little brother a free drink. Good people",
+      "Somebody proposed outside {localspot} {timeofday}. LS still got love",
+      "Block party on {hood} this weekend. Bring something",
+      "RIP to the tree they cut down on {hood}. That thing was older than all of us",
+      "Third shift got me looking crazy",
+      "Got laid off {timeofday}. If anybody hiring, let me know",
+      "First day at the new job. Wish me luck",
+      "Passed my test finally. Nobody can tell me nothing",
+      "Rent went up 200 and the landlord still won't fix the sink",
+      "Applied to twelve places this week. Zero calls back. {filler}",
+      "Working doubles all week. See y'all in a month",
+      "My car made a noise I've never heard before and I'm choosing to ignore it",
+      "Insurance denied it. Of course they did",
+      "Finally paid off that loan. Small win but it's a win",
+      "{weathertalk}. Every year we act surprised",
+      "Sun going down over LS never gets old",
+      "Woke up at 5 for no reason. Body just decided",
+      "It's too hot to argue with anybody today",
+      "Foggy as hell on {hood} {timeofday}. Drive careful",
+      "Pickup game at the courts {timeofday} was {opinion}",
+      "Whoever been hogging the court all afternoon, share",
+      "West Coast Classics been carrying my whole commute",
+      "Turned the radio up and forgot where I was going",
+      "Somebody at the courts hit a shot from the parking lot. {filler}",
+      "Y'all sleeping on the local team. They been putting in work",
+      "Another car window smashed on {hood}. Take your stuff inside",
+      "Police been posted at {localspot} all day. Nobody knows why",
+      "Somebody's bike got taken off the porch on {hood}. That's low",
+      "Heard shots somewhere near {hood} {timeofday}. Everybody stay safe",
+      "They found a whole car stripped on {hood} {timeofday}. Down to the frame",
+      "Scanner's been busy tonight",
+      "Whoever been tagging the wall behind {localspot}, at least learn to spell",
+      "Two dudes fighting outside {localspot} over a parking space. {opinion}",
+      "BREAKING: Nothing happened today. Details at 11",
+      "City announced another plan for {hood}. We'll believe it when we see it",
+      "Council meeting about {hood} again. Nobody from {hood} invited",
+      "Poll: is {localspot} still good or are we lying to ourselves",
+      "Reminder that street cleaning is Tuesday and they WILL ticket you",
+      "The mayor visited {hood} for eleven minutes and left",
+      "Somebody's grandma out here watering plants at sunrise. That's peace",
+      "Kids playing in the sprinkler on {hood}. Summer's here",
+      "Free furniture on the corner of {hood}. Move fast",
+      "My neighbour brought over food for no reason. Good people still exist",
+      "Dog on {hood} got a whole outfit on. Better dressed than me",
+      "{source} {hearsay} they raising rent on {hood} again",
+      "{source} {hearsay} {localspot} changing hands",
+      "{reaction}. It is always something on {hood}",
+      "Somebody put speed bumps on {hood} and I have never been angrier",
+      "Whoever been playing music at 3am on {hood}, we know which house",
+      "Free kittens outside {localspot}. Somebody take these kittens",
+      "Lost dog on {hood}, brown, answers to Biscuit. Please",
+      "Found a wallet outside {localspot}. DM me and describe it",
+      "{source} {hearsay} the bus route changing again",
+      "My car got booted outside {localspot}. Over ONE ticket",
+      "{weathertalk} and my AC picked today to die",
+      "The kids on {hood} built a whole ramp out of scrap. Engineers",
+      "Somebody peacock is loose on {hood}. I said what I said",
+      "Barber gave me exactly what I asked for. Miracle",
+      "Been on hold with the city for 45 minutes about {hood}",
+      "{source} {hearsay} they finally paving {hood}. Believe it when I see it",
+      "Everybody on {hood} outside because the power went out. Best block party we had",
+      "Somebody selling plates out their kitchen on {hood} and they are better than any restaurant",
+      "Church let out and {hood} is gridlocked",
+      "Nobody told me {priceofthing} went up again. {reaction}",
+      "That old blue car been parked on {hood} for three years. Who owns it",
+      "Somebody grandad still washing his car by hand every Sunday on {hood}. Legend",
+      "Whole family cookout in the front yard on {hood}. Smells incredible",
+      "{excuse}, so I am late. Again",
+      "Somebody fixed the swing at the park on {hood}. Small thing, big deal",
+      "It is a good day on {hood} and I am not gonna jinx it"
+    ],
+    "MissionTaken": [
+      "Seen {yours} pulling up on {here}. Something about to happen",
+      "Why is everybody moving at once on {here} {filler}",
+      "{yours} rolling deep {timeofday}. Staying inside",
+      "Something's going on over {here}. Y'all be safe",
+      "Whatever {yours} got planned, I don't wanna know",
+      "Green shirts everywhere on {here} right now",
+      "{source} {hearsay} {yours} got something planned",
+      "Everybody with a green shirt is walking fast on {here}",
+      "It is about to be a long night on {here}",
+      "{reaction}. Locking my door"
+    ],
+    "MissionDone": [
+      "Seen some YNs riding down and whooping ass on {rival} at {here} {filler}",
+      "Whatever just happened over {here}, {yours} handled it",
+      "{rival} got dealt with at {here} {timeofday}. That was {opinion}",
+      "Word travelling fast about what went down on {here}",
+      "Y'all see what {yours} did {timeofday}? {filler}",
+      "{here} been loud all afternoon and now it's dead quiet. Draw your own conclusions",
+      "My cousin sent me a video from {here}. I can't post it but wow",
+      "Whoever that was on {here} {timeofday}, they don't play",
+      "{rival} thought it was sweet. It was not sweet",
+      "That's what happens when you get comfortable on somebody else's block",
+      "Everybody on {here} talking about the same thing right now",
+      "Respect to whoever handled that at {here}. Long overdue",
+      "The block feels different today {filler}",
+      "Whatever happened at {here}, somebody earned their stripes",
+      "{yours} put on a whole show {timeofday}",
+      "{source} {hearsay} {yours} ran down on {rival} at {here} {timeofday}. {reaction}",
+      "{rival} got sent home from {here} {timeofday}. {reaction}",
+      "Whatever went on at {here}, {rival} came off worse. {filler}",
+      "Everybody outside {localspot} talking about {here} right now",
+      "{here} was {opinion} {timeofday}. Wish I had my phone out",
+      "{source} {hearsay} it was over in about a minute",
+      "Somebody stock went UP today and it was not mine",
+      "They gonna be talking about {here} for a week",
+      "{rival} not gonna post about this one",
+      "Whatever {yours} paying, it worked",
+      "That was {opinion}. And it was deserved",
+      "Been quiet on {here} for months. Not anymore",
+      "{source} {hearsay} {yours} handled it clean. No police, no nothing",
+      "Whoever led that at {here}, the block noticed",
+      "Y'all remember when {rival} was acting like they ran {here}? Good times",
+      "One phone call and {here} changed hands. {filler}",
+      "{reaction}. {here} is different now",
+      "The way {rival} scattered off {here} {timeofday} {filler}"
+    ],
+    "MissionFailed": [
+      "Whatever {yours} tried on {here} did NOT work {filler}",
+      "Seen somebody running from {here} {timeofday}. That's embarrassing",
+      "That was {opinion}. Should've stayed home",
+      "Heard it went bad over {here}. Real bad",
+      "Somebody bit off more than they could chew at {here}",
+      "{rival} still standing. Try again",
+      "{source} {hearsay} it fell apart on {here}. {reaction}",
+      "{rival} laughing about {here} right now and honestly, fair",
+      "That is gonna be a long ride home",
+      "Whoever planned that one, sit down"
+    ],
+    "RivalKilled": [
+      "Another one of {rival} down near {here} {timeofday}",
+      "Scanner said {here}. That's the third this month",
+      "It's getting dangerous round {here} {filler}",
+      "Somebody caught one on {here}. Y'all stay inside",
+      "{rival} losing people every week now",
+      "Ambulance on {here} again {timeofday}",
+      "This beef is getting out of hand",
+      "Whoever's doing this to {rival}, they're not slowing down",
+      "{source} {hearsay} somebody from {rival} caught it near {here}",
+      "Scanner saying {here}. {reaction}",
+      "That is somebody son. Regardless of colours",
+      "{rival} down another one and it is not even the weekend",
+      "Pray for {here}. It has been a month",
+      "The corner store on {here} closing early now. Cannot blame them",
+      "This the fourth time this year on {here}. {reaction}",
+      "{source} {hearsay} it was quick. Small mercy",
+      "Whole block on {here} standing outside watching. Nobody saying nothing"
+    ],
+    "Brawl": [
+      "Whole fight broke out at {here} {timeofday}. No guns, all hands. Respect",
+      "{filler} the fade at {here} was CINEMA",
+      "Somebody got their whole set beat down at {here}",
+      "Old school straightener at {here}. Nobody pulled nothing. That's how it used to be",
+      "Y'all missed the fight at {here}. I did NOT miss it",
+      "Two sets squared up at {here} and nobody got shot. Progress?",
+      "Somebody {bodypart} is NOT okay after {here} {timeofday}",
+      "{source} {hearsay} it was hands only at {here}. That is rare now",
+      "That fight at {here} was {opinion}. No weapons, just work",
+      "{reaction}. {here} turned into a whole boxing gym",
+      "Whoever from {rival} thought that was a good idea at {here}, {filler}",
+      "Respect to both sides for keeping it hands at {here}",
+      "The way that ended at {here} {filler}"
+    ],
+    "DriveBy": [
+      "Shots on {here} {timeofday}. Everybody down",
+      "Car came through {here} letting off. That's {opinion}",
+      "My window's gone. Thanks whoever did that on {here}",
+      "Scanner going crazy about {here} right now",
+      "Somebody sprayed the whole corner on {here}. This is out of control",
+      "Heard about eight shots from {here}. Called it in",
+      "{source} {hearsay} a car came through {here} and lit it up",
+      "My whole street on {here} is outside right now",
+      "{reaction}. {here} is not safe today",
+      "Police took an hour to get to {here}. An HOUR",
+      "That is somebody window, somebody car, somebody kid asleep",
+      "Whoever was in that car on {here}, you are gonna get somebody hurt"
+    ],
+    "Busted": [
+      "LSPD got somebody on {here} {timeofday}",
+      "Police everywhere on {here}. Somebody got caught slipping",
+      "Watched a whole arrest outside {localspot}. {filler}",
+      "That's what happens when you get too comfortable",
+      "Somebody's mother about to be very disappointed",
+      "Blue lights all up {here} again",
+      "{source} {hearsay} somebody got taken off {here} {timeofday}",
+      "Four cars for one person on {here}. {reaction}",
+      "Watched the whole thing outside {localspot}. {filler}",
+      "Somebody about to need {source} to post bail",
+      "That is what the corner gets you eventually"
+    ],
+    "Tagged": [
+      "Somebody went over the {rival} tag on {here} {timeofday}. Bold",
+      "New paint on the wall by {localspot}. Somebody's making a point",
+      "That wall on {here} been repainted three times this month {filler}",
+      "Whoever tagging over {rival}, you got some nerve. Respect though",
+      "The wall on {here} is a whole conversation at this point",
+      "{source} {hearsay} somebody been going round painting over {rival} all week",
+      "That wall on {here} is a whole war at this point {filler}",
+      "New tag on {here} and it is actually clean",
+      "{rival} gonna repaint that by tomorrow. Watch",
+      "{reaction}. It is just paint and yet"
+    ],
+    "BigSale": [
+      "It's busy on {here} {timeofday}. Everybody knows why",
+      "Traffic on {here} at 2am is not normal",
+      "Whatever's moving on {here}, it's moving fast",
+      "Same corner, all day, every day. Somebody's eating",
+      "{source} {hearsay} {here} been busy all week",
+      "There is a QUEUE on {here}. In broad daylight",
+      "Everybody on {here} suddenly got somewhere to be"
+    ],
+    "Sale": [
+      "It's active on {here} again {filler}",
+      "Same faces on the same corner on {here}"
+    ],
+    "RankUp": [
+      "Somebody just moved up. You can tell by how people talking",
+      "The whole block know that name now",
+      "Remember when nobody knew who that was? Different story today",
+      "{yours} got a new face out front and he's earned it",
+      "Whoever's running things now, they moving different",
+      "That's not a young'n anymore. That's somebody",
+      "{source} been {hearsay} that name all week",
+      "From nobody to somebody in about six months. {reaction}",
+      "{yours} got a new problem-solver and everybody knows it",
+      "Whoever that is, they earned every bit of it",
+      "You can tell who is running things by who does not have to say it"
+    ],
+    "JoinedGang": [
+      "Heard {yours} put somebody on {timeofday}",
+      "New face with {yours}. We'll see how long that lasts",
+      "Congratulations I guess?",
+      "{yours} recruiting again. Block's about to be busy",
+      "{source} {hearsay} {yours} put on somebody new",
+      "Another one for {yours}. Block getting crowded"
+    ],
+    "LeftGang": [
+      "Somebody walked away from {yours}. That's rare",
+      "Heard somebody left the set. Bold move",
+      "You don't just leave. We'll see",
+      "{source} {hearsay} somebody walked away clean. Do not happen often",
+      "That is a brave phone call to make"
+    ],
+    "Delivery": [
+      "Nice car parked up on {here} that definitely don't live here",
+      "Blacked out whip on {here} {timeofday}. Sat there ten minutes and left",
+      "Who's the guy in the tinted car on {here}",
+      "{source} {hearsay} the same car been coming to {here} every few days",
+      "Nice whip on {here}. Way too nice for round here"
+    ]
+  }
+}

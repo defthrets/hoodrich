@@ -8,6 +8,7 @@ using Hoodrich.Economy;
 using Hoodrich.Gangs;
 using Hoodrich.Locations;
 using Hoodrich.Missions;
+using Hoodrich.Social;
 using Hoodrich.State;
 using Hoodrich.Supply;
 using Hoodrich.Territory;
@@ -64,6 +65,16 @@ namespace Hoodrich
         private readonly MissionBook _missions;
         private readonly Fixer _fixer;
         private readonly Armourer _bigj;
+
+        /// <summary>
+        /// The block, talking about itself, and the screen it is read on.
+        ///
+        /// The feed keeps filling whether or not the screen is open, because a timeline that
+        /// only writes itself while you are looking at it is a timeline you can watch being
+        /// written, and that is the one thing it must never look like.
+        /// </summary>
+        private readonly SocialFeed _social;
+        private readonly SocialScreen _socialScreen;
 
         /// <summary>
         /// The people who stand near the people who matter. One each for Lamar and Stretch;
@@ -129,6 +140,9 @@ namespace Hoodrich
                 _fixer = new Fixer(_crew);
                 _bigj = new Armourer(_crew, _gangs);
 
+                _social = SocialFeed.Load();
+                _socialScreen = new SocialScreen(_social);
+
                 _lamarCrew = new Entourage(_gangs, "families", Fixer.Spot, 206f, "Lamar");
 
                 var stretch = _leaders.Get("families");
@@ -138,6 +152,20 @@ namespace Hoodrich
                                     new Vector3(stretch.SpotX, stretch.SpotY, stretch.SpotZ),
                                     stretch.Heading, stretch.Name);
 
+
+                // Handed over as functions rather than references, so the feed never holds on
+                // to a system that can be torn down under it.
+                _social.WhereYouAre = ZoneNameHere;
+                _social.YourGang = () => _crew.IsAffiliated ? _crew.Current.Name : "";
+                _social.Changed = () => { _state.Followers = _social.Followers; _state.Touch(); };
+
+                _social.Start(_state.Followers);
+
+                _state.RankedUp = rank => _social.On(SocialEvent.RankUp);
+
+                _jobs.Social = _social;
+                _postUp.Social = _social;
+                _crew.Social = _social;
 
                 _talk = new Conversation();
 
@@ -165,6 +193,8 @@ namespace Hoodrich
                 pages.Info = _info;
                 pages.Delivery = _delivery;
                 pages.StashScreen = _stashScreen;
+                pages.ShowSocials = () => _socialScreen.Open();
+                pages.Followers = () => _social.Followers;
 
                 
 
@@ -289,6 +319,7 @@ namespace Hoodrich
                     _bigj.Update();
                     _bigj.UpdatePrompt();
 
+                    _social.Update();
                     _lamarCrew.Update();
                     if (_stretchCrew != null) _stretchCrew.Update();
                     _jobs.Update();
@@ -299,6 +330,9 @@ namespace Hoodrich
                 // and because a narc's clock does not stop just because a cutscene started.
                 _bust.Update();
                 _postUp.Update();
+                _socialScreen.Update();
+                _socialScreen.Draw();
+
                 _cutting.Draw();
                 _bust.Draw();
                 _postUp.Draw();
@@ -428,6 +462,31 @@ namespace Hoodrich
             }
         }
 
+        /// <summary>
+        /// The neighbourhood the player is actually in, in words.
+        ///
+        /// Asked of the game rather than worked out from coordinates, because the game already
+        /// knows and its answer is the one the map agrees with.
+        /// </summary>
+        private string ZoneNameHere()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return "";
+
+                var pos = player.Position;
+                var code = Function.Call<string>(Hash.GET_NAME_OF_ZONE, pos.X, pos.Y, pos.Z);
+
+                var zone = _zoneMap == null ? null : _zoneMap.Get(code);
+                return zone == null || string.IsNullOrEmpty(zone.Name) ? "the block" : zone.Name;
+            }
+            catch
+            {
+                return "the block";
+            }
+        }
+
         private void OnAborted(object sender, EventArgs e)
         {
             TryRestore();
@@ -462,6 +521,7 @@ namespace Hoodrich
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
             try { _bigj?.RestoreWorld(); } catch { /* teardown */ }
+            try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _chop?.RestoreWorld(); } catch { /* teardown */ }

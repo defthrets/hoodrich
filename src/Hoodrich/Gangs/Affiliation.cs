@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GTA;
 using GTA.Native;
 using Hoodrich.Core;
+using Hoodrich.Social;
 using Hoodrich.Territory;
 using Hoodrich.UI;
 
@@ -28,6 +29,10 @@ namespace Hoodrich.Gangs
 
         /// <summary>Relationships get reapplied on this cadence; other scripts can stomp them.</summary>
         private const int ReapplyIntervalMs = 15_000;
+
+        /// <summary>Set by Main. Null-checked everywhere, so the feed is never load-bearing.</summary>
+        public SocialFeed Social;
+
 
         private const float AllyScanRadius = 45f;
         private const int KillScanIntervalMs = 1200;
@@ -128,6 +133,8 @@ namespace Hoodrich.Gangs
 
             Notify.Important("~g~Running with " + gang.Name + ".~s~ " + gang.TurfHint);
             Log.Info("Affiliated with " + gang.Id + ".");
+
+            if (Social != null) Social.On(SocialEvent.JoinedGang, gang.Name);
             return null;
         }
 
@@ -144,6 +151,8 @@ namespace Hoodrich.Gangs
             Current = null;
             Notify.Ticker("~o~You are running solo.~s~");
             Log.Info("Left " + gang.Id + ".");
+
+            if (Social != null) Social.On(SocialEvent.LeftGang, gang.Name);
         }
 
         /// <summary>Restores the affiliation loaded from a save without the join checks or messaging.</summary>
@@ -342,6 +351,11 @@ namespace Hoodrich.Gangs
 
                     var theirs = StandingFor(gang.Id);
                     theirs.Rep = Math.Max(-100f, theirs.Rep - 5f);
+
+                    // The block hears about some of them and not others, which is the feed's
+                    // own decision -- a neighbourhood that comments on every single one is a
+                    // neighbourhood watching you rather than living in the same place as you.
+                    if (Social != null) Social.On(SocialEvent.RivalKilled, gang.Name);
                 }
             }
             catch (Exception ex)

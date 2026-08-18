@@ -6,6 +6,7 @@ using GTA;
 using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
+using Hoodrich.Social;
 using Hoodrich.Gangs;
 using Hoodrich.UI;
 using Hud = Hoodrich.UI.Draw;
@@ -95,6 +96,9 @@ namespace Hoodrich.Missions
 
         private readonly HashSet<string> _done =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Set by the runner. Null-checked, so the feed is never load-bearing.</summary>
+        public SocialFeed Social;
 
         private MissionDef _def;
         private Prop _can;
@@ -591,6 +595,8 @@ namespace Hoodrich.Missions
 
             Notify.Ticker("~g~That is ours now.~s~  " + _done.Count + " of " + _spots.Count);
             Log.Info("Tag " + _spraying.Id + " gone over.");
+
+            if (Social != null) Social.On(SocialEvent.Tagged);
 
             EndSpray(player);
             MarkAll();

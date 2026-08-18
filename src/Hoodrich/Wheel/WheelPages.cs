@@ -61,6 +61,10 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main. Moving product between your pockets and the house.</summary>
         public StashScreen StashScreen;
 
+        /// <summary>Set by Main: opens the feed, and reads the follower count for the wedge.</summary>
+        public Action ShowSocials;
+        public Func<int> Followers;
+
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
@@ -461,6 +465,14 @@ namespace Hoodrich.Wheel
                 detail: _stash.AtDoor ? "Move product between your pockets and the house" : "Everything you are carrying",
                 value: _stash.AtDoor ? "at the house" : CarriedSummary());
             page.WithIcon(Icons.Stash);
+
+            // Its own wedge rather than a line inside something else. What the block is saying
+            // about you is not a sub-heading of your inventory, and burying it two levels down
+            // would mean nobody ever reads it -- which defeats the entire point of writing it.
+            page.Add("Socials", "@", () => ShowSocials?.Invoke(),
+                detail: "What the block is saying",
+                value: Followers == null ? "" : Followers() .ToString("N0") + " followers");
+            page.WithIcon(Icons.Tattoo);
 
             return page;
         }

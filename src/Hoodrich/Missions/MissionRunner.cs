@@ -5,6 +5,7 @@ using GTA;
 using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
+using Hoodrich.Social;
 using Hoodrich.Gangs;
 using Hoodrich.State;
 using Hoodrich.Territory;
@@ -117,6 +118,16 @@ namespace Hoodrich.Missions
         /// follow than either is on its own.
         /// </summary>
         private readonly BikeRide _bike;
+
+        /// <summary>Set by Main. Null-checked everywhere, so the feed is never load-bearing.</summary>
+        public SocialFeed Social
+        {
+            get { return _social; }
+            set { _social = value; _tags.Social = value; }
+        }
+
+        private SocialFeed _social;
+
 
         /// <summary>
         /// The tag run, and the walls it draws from.
@@ -256,6 +267,8 @@ namespace Hoodrich.Missions
 
             Notify.Important("~g~Job on.~s~ " + Objective + ".");
             Log.Info("Mission " + def.Id + " started, site " + _site + ".");
+
+            if (Social != null) Social.On(SocialEvent.MissionTaken, def.Name);
             return null;
         }
 
@@ -715,6 +728,22 @@ namespace Hoodrich.Missions
 
             var line = string.IsNullOrEmpty(def.Done) ? "Good look. Take that." : def.Done;
 
+            if (Social != null)
+            {
+                // Reported as the thing it actually was. "A job got done" is a press release;
+                // "somebody sprayed a corner on Grove" is what a neighbour would post.
+                switch (def.Kind)
+                {
+                    case MissionKind.BikeRide: Social.On(SocialEvent.Brawl); break;
+                    case MissionKind.DriveBy: Social.On(SocialEvent.DriveBy); break;
+                    case MissionKind.Tags: Social.On(SocialEvent.Tagged); break;
+                    default: Social.On(SocialEvent.MissionDone); break;
+                }
+
+                // And the job itself, so a run of work reads as a run of work.
+                Social.On(SocialEvent.MissionDone, def.Name, pay);
+            }
+
             Clear();
             return line;
         }
@@ -728,6 +757,8 @@ namespace Hoodrich.Missions
 
             if (!string.IsNullOrEmpty(reason)) Notify.Failure(reason);
             Log.Info("Mission " + id + " failed: " + reason);
+
+            if (Social != null) Social.On(SocialEvent.MissionFailed);
         }
 
         private void Clear()

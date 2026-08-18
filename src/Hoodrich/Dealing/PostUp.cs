@@ -6,6 +6,7 @@ using GTA;
 using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
+using Hoodrich.Social;
 using Hoodrich.Economy;
 using Hoodrich.Gangs;
 using Hoodrich.State;
@@ -169,6 +170,10 @@ namespace Hoodrich.Dealing
         private readonly Dictionary<int, int> _served = new Dictionary<int, int>();
 
         public TurfWatch Turf;
+
+        /// <summary>Set by Main. Null-checked everywhere, so the feed is never load-bearing.</summary>
+        public SocialFeed Social;
+
 
         /// <summary>The undercover roll. Owned by Main so a call outlives the pitch.</summary>
         public Bust Bust;
@@ -610,6 +615,12 @@ namespace Hoodrich.Dealing
             _sales++;
             _earned += payout;
 
+            if (Social != null)
+            {
+                Social.On(payout >= 400 ? SocialEvent.BigSale : SocialEvent.Sale,
+                          product.Name, payout);
+            }
+
             _state.AddRespect(1f + product.Tier * 0.4f);
             _state.GramsSold += sold;
             _state.TotalDealsMade++;
@@ -653,6 +664,8 @@ namespace Hoodrich.Dealing
             {
                 Notify.Failure("a cop watched that.");
                 Wanted(1);
+
+                if (Social != null) Social.On(SocialEvent.Busted);
 
                 // The patrol has to actually react. Left in its parked task it sat there while
                 // the stars appeared, which reads as the game punishing you rather than as
