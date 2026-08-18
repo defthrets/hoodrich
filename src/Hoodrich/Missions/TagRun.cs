@@ -39,6 +39,18 @@ namespace Hoodrich.Missions
     /// </summary>
     internal sealed class TagRun
     {
+        /// <summary>Where the bike is left, and where the homie comes from -- Lamar's block.</summary>
+        private static readonly Vector3 BikeSpot = new Vector3(-97.042f, -1610.761f, 32.313f);
+        private const float BikeHeading = 56.429f;
+
+        private static readonly Vector3 HomieSpot = new Vector3(-115.933f, -1609.875f, 31.249f);
+
+        private const float MountRange = 25f;
+        private const float HomeRange = 25f;
+        private const int RetaskGapMs = 4000;
+
+        private static readonly string[] BikeModels = { "bmx", "cruiser", "scorcher", "tribike" };
+
         private const float ArriveRange = 3.5f;
         private const int SprayMs = 8000;
         private const int UpdateIntervalMs = 300;
@@ -87,6 +99,14 @@ namespace Hoodrich.Missions
         private MissionDef _def;
         private Prop _can;
 
+        private Vehicle _playerBike;
+        private Vehicle _homieBike;
+        private Ped _homie;
+        private Blip _marker;
+
+        private bool _rolling;
+        private int _nextRetask;
+
         private int _lastUpdate;
         private int _sprayingSince;
         private TagSpot _spraying;
@@ -100,18 +120,22 @@ namespace Hoodrich.Missions
 
         public bool IsRunning { get; private set; }
 
-        public bool ReadyToCollect => IsRunning && _done.Count >= _spots.Count && _spots.Count > 0;
+        public bool ReadyToCollect { get; private set; }
 
         public string Objective
         {
             get
             {
                 if (!IsRunning) return "";
-                if (ReadyToCollect) return "Go back to Lamar for the money";
+                if (!_rolling) return "Get on the bike";
+                if (Painted) return "Ride back to Lamar";
 
                 return "Go over their tags  --  " + _done.Count + " of " + _spots.Count;
             }
         }
+
+        /// <summary>Every wall done. Getting home is still between you and the money.</summary>
+        private bool Painted => _spots.Count > 0 && _done.Count >= _spots.Count;
 
         // ---- the list ----------------------------------------------------------
 
@@ -178,7 +202,17 @@ namespace Hoodrich.Missions
             }
 
             IsRunning = true;
-            MarkAll();
+            ReadyToCollect = false;
+            _rolling = false;
+
+            _playerBike = SpawnBike(BikeSpot, BikeHeading);
+            if (_playerBike == null)
+            {
+                IsRunning = false;
+                return "There was no bike out there.";
+            }
+
+            Mark(BikeSpot, "Your bike");
 
             Log.Info("Tag run started with " + _spots.Count + " walls.");
             return null;
@@ -226,13 +260,38 @@ namespace Hoodrich.Missions
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
+            // ---- get on the bike -----------------------------------------------
+            if (!_rolling)
+            {
+                if (_playerBike == null || !_playerBike.Exists()) return;
+                if (!player.IsInVehicle(_playerBike)) return;
+
+                _rolling = true;
+
+                SpawnHomie(player);
+                MarkAll();
+
+                Notify.Ticker("~g~Rolling out.~s~ Their blocks, our set.");
+                return;
+            }
+
+            KeepUp(player, now);
+
             if (_spraying != null)
             {
                 TickSpraying(player, now);
                 return;
             }
 
-            if (ReadyToCollect) return;
+            // ---- and home again -------------------------------------------------
+            if (Painted)
+            {
+                if (player.Position.DistanceTo(Fixer.Spot) > HomeRange) return;
+
+                ReadyToCollect = true;
+                ClearMarker();
+                return;
+            }
 
             var near = Nearest(player);
             if (near == null) return;
@@ -300,6 +359,194 @@ namespace Hoodrich.Missions
             return null;
         }
 
+        // ---- riding ------------------------------------------------------------
+
+        /// <summary>
+        /// One of the homies, on his own bike, and no more.
+        ///
+        /// Two men on bicycles with a can each is a couple of lads doing something daft on
+        /// somebody else's block, which is exactly what this is. A convoy would make it look
+        /// like a raid, and it is not one.
+        /// </summary>
+        private void SpawnHomie(Ped player)
+        {
+            var gang = _crew.Current;
+            if (gang == null) return;
+
+            var spot = Ground(HomieSpot);
+
+            _homieBike = SpawnBike(spot, player.Heading);
+            if (_homieBike == null) return;
+
+            _homie = SpawnMember(gang, spot);
+
+            if (_homie == null)
+            {
+                Release(_homieBike);
+                _homieBike = null;
+                return;
+            }
+
+            try
+            {
+                _homie.SetIntoVehicle(_homieBike, VehicleSeat.Driver);
+                Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, _homie.Handle, gang.GroupHash);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _homie.Handle, 46, true);
+
+                Escort(player);
+
+                var blip = _homie.AddBlip();
+                if (blip != null && blip.Exists())
+                {
+                    blip.Color = BlipColor.Green;
+                    blip.Scale = 0.6f;
+                    blip.Name = "Homie";
+                    _blips.Add(blip);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put the homie on a bike: " + ex.Message);
+            }
+        }
+
+        private void Escort(Ped player)
+        {
+            if (_homie == null || !_homie.Exists() || _homieBike == null || !_homieBike.Exists()) return;
+
+            try
+            {
+                var target = player.CurrentVehicle;
+                if (target == null || !target.Exists()) return;
+
+                // Mode 0 is rear, so he rides behind rather than cutting across your wheel.
+                Function.Call(Hash.TASK_VEHICLE_ESCORT, _homie.Handle, _homieBike.Handle,
+                              target.Handle, 0, 20f, 786603, 15f, 0, 10f);
+            }
+            catch
+            {
+                // The game's own driving takes over.
+            }
+        }
+
+        /// <summary>Puts him back on the bike and back on your wheel. Tasks do not survive a trip.</summary>
+        private void KeepUp(Ped player, int now)
+        {
+            if (_homie == null || !_homie.Exists() || !_homie.IsAlive) return;
+            if (now < _nextRetask) return;
+
+            _nextRetask = now + RetaskGapMs;
+
+            if (_homieBike == null || !_homieBike.Exists()) return;
+
+            // Standing beside you while you paint is right; standing in an alley two streets
+            // back is not. He only remounts once you are moving again.
+            if (!player.IsInVehicle()) return;
+
+            if (!_homie.IsInVehicle(_homieBike))
+            {
+                try
+                {
+                    Function.Call(Hash.TASK_ENTER_VEHICLE, _homie.Handle, _homieBike.Handle,
+                                  -1, (int)VehicleSeat.Driver, 2f, 1, 0);
+                }
+                catch { /* he will walk it */ }
+
+                return;
+            }
+
+            Escort(player);
+        }
+
+        private Vehicle SpawnBike(Vector3 where, float heading)
+        {
+            var spot = Ground(where);
+            spot.Z += 0.4f;
+
+            foreach (var name in BikeModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    var bike = World.CreateVehicle(model, spot, heading);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (bike == null || !bike.Exists()) continue;
+
+                    bike.IsPersistent = true;
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, bike.Handle, true, true);
+
+                    return bike;
+                }
+                catch
+                {
+                    // Try the next model.
+                }
+            }
+
+            Log.Warn("No push bike model would load for the tag run.");
+            return null;
+        }
+
+        /// <summary>Only believes a ground probe that agrees with the authored height.</summary>
+        private static Vector3 Ground(Vector3 where)
+        {
+            try
+            {
+                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                    groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
+                {
+                    where.Z = groundZ;
+                }
+            }
+            catch
+            {
+                // Keep the authored height.
+            }
+
+            return where;
+        }
+
+        private void Mark(Vector3 where, string name)
+        {
+            ClearMarker();
+
+            try
+            {
+                _marker = World.CreateBlip(where);
+                if (_marker == null || !_marker.Exists()) return;
+
+                _marker.Color = BlipColor.Yellow;
+                _marker.ShowRoute = true;
+                _marker.Name = name;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not mark the next leg: " + ex.Message);
+            }
+        }
+
+        private void ClearMarker()
+        {
+            try { if (_marker != null && _marker.Exists()) _marker.Delete(); }
+            catch { /* teardown */ }
+
+            _marker = null;
+        }
+
+        private static void Release(Vehicle car)
+        {
+            try
+            {
+                if (car == null || !car.Exists()) return;
+                car.MarkAsNoLongerNeeded();
+            }
+            catch { /* teardown */ }
+        }
+
         // ---- painting ----------------------------------------------------------
 
         private void BeginSpray(Ped player, TagSpot spot)
@@ -348,7 +595,11 @@ namespace Hoodrich.Missions
             EndSpray(player);
             MarkAll();
 
-            if (ReadyToCollect) Notify.Important("~g~That is all of them.~s~ Go back to Lamar.");
+            if (Painted)
+            {
+                Mark(Fixer.Spot, "Lamar");
+                Notify.Important("~g~That is all of them.~s~ Ride back to Lamar.");
+            }
         }
 
         private void EndSpray(Ped player)
@@ -545,6 +796,28 @@ namespace Hoodrich.Missions
 
             TakeCan();
             ClearBlips();
+            ClearMarker();
+
+            // The bikes are left where they ended up rather than deleted, same as the ride out.
+            Release(_playerBike);
+            Release(_homieBike);
+
+            _playerBike = null;
+            _homieBike = null;
+
+            try
+            {
+                if (_homie != null && _homie.Exists())
+                {
+                    Function.Call(Hash.REMOVE_PED_FROM_GROUP, _homie.Handle);
+                    _homie.MarkAsNoLongerNeeded();
+                }
+            }
+            catch { /* teardown */ }
+
+            _homie = null;
+            _rolling = false;
+            ReadyToCollect = false;
 
             foreach (var ped in _trouble)
             {
