@@ -179,8 +179,11 @@ namespace Hoodrich.Gangs
 
             try
             {
-                Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelNeutral, gang.GroupHash, _playerGroupHash);
-                Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelNeutral, _playerGroupHash, gang.GroupHash);
+                // CLEAR takes the relationship you want REMOVED, not the one you want left
+                // behind. Passing Neutral here cleared a relationship that was never set and
+                // left our Respect in place, so every gang we had ever joined stayed friendly
+                // for the rest of the session -- including after leaving them.
+                ClearBoth(RelRespect, gang.GroupHash);
                 _touchedGroups.Remove(gang.GroupHash);
             }
             catch (Exception ex)
@@ -195,6 +198,13 @@ namespace Hoodrich.Gangs
             Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, intensity, b, a);
         }
 
+        /// <summary>Removes the relationship we set, in both directions.</summary>
+        private void ClearBoth(int intensity, int hash)
+        {
+            Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, intensity, hash, _playerGroupHash);
+            Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, intensity, _playerGroupHash, hash);
+        }
+
         /// <summary>Puts every relationship we changed back. Called on script unload.</summary>
         public void RestoreWorld()
         {
@@ -202,8 +212,7 @@ namespace Hoodrich.Gangs
             {
                 try
                 {
-                    Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelNeutral, hash, _playerGroupHash);
-                    Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelNeutral, _playerGroupHash, hash);
+                    ClearBoth(RelRespect, hash);
                 }
                 catch
                 {

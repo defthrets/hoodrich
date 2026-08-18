@@ -35,6 +35,12 @@ namespace Hoodrich.Locations
         /// <summary>How close somebody has to be for their shouting to be our problem.</summary>
         private const float QuietRange = 22f;
 
+        /// <summary>Who actually lives here. Nobody else gets touched.</summary>
+        private static readonly string[] HouseholdModels =
+        {
+            "ig_denise", "csb_denise", "cs_denise",
+        };
+
         private readonly Settings _cfg;
 
         private Blip _blip;
@@ -132,23 +138,43 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.STOP_CURRENT_PLAYING_SPEECH, player.Handle);
                 Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, player.Handle);
 
+                // Only the people who live here, and only for as long as we are stood in it.
+                // This used to sweep every ped within 22 m and blank their ambient voice, which
+                // is permanent and irreversible -- so anybody who had ever walked past the house
+                // was mute for the rest of the session, our own leaders and homies included.
                 foreach (var ped in World.GetNearbyPeds(player, QuietRange))
                 {
                     if (ped == null || !ped.Exists() || ped.Handle == player.Handle) continue;
+                    if (!IsHousehold(ped)) continue;
 
                     Function.Call(Hash.STOP_CURRENT_PLAYING_SPEECH, ped.Handle);
                     Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, ped.Handle);
-                    Function.Call(Hash.DISABLE_PED_PAIN_AUDIO, ped.Handle, true);
-
-                    // An empty voice leaves the game nothing to pick a line from, which stops
-                    // the next one before it starts rather than cutting it off mid-word.
-                    Function.Call(Hash.SET_AMBIENT_VOICE_NAME, ped.Handle, "");
                 }
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not quieten the house: " + ex.Message);
             }
+        }
+
+        /// <summary>True for the household models -- Denise and Franklin's own kin.</summary>
+        private static bool IsHousehold(Ped ped)
+        {
+            try
+            {
+                var model = (uint)ped.Model.Hash;
+
+                foreach (var name in HouseholdModels)
+                {
+                    if (model == (uint)Function.Call<int>(Hash.GET_HASH_KEY, name)) return true;
+                }
+            }
+            catch
+            {
+                // A ped we cannot identify is somebody else's, so leave them alone.
+            }
+
+            return false;
         }
 
         /// <summary>Nothing is drawn at the house. It is a building, not a checkpoint.</summary>

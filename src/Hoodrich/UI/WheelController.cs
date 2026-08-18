@@ -120,13 +120,17 @@ namespace Hoodrich.UI
                 return;
             }
 
-            if (_cfg.WheelMode == WheelMode.Replace) SuppressVanillaWheel();
-
             if (!available)
             {
+                // Suppression happens AFTER this check, never before. Holding the weapon button
+                // down is disabled every frame we suppress, and "not available" covers the whole
+                // of a story mission when PauseDuringMission is on -- so suppressing first took
+                // the weapon wheel away for the entire mission and gave nothing back in its place.
                 if (_menu.IsOpen) CloseWheel();
                 return;
             }
+
+            if (_cfg.WheelMode == WheelMode.Replace) SuppressVanillaWheel();
 
             var held = ReadOpenInput();
 
