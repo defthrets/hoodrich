@@ -161,7 +161,10 @@ namespace Hoodrich.UI
             // Left and right are the transfer, in the direction the columns are laid out.
             if (Game.GameTime < _nextRepeat) return;
 
-            var all = Game.IsControlPressed(Control.Sprint) || Game.IsControlPressed(Control.Jump);
+            // Read through the DISABLED path. Both of these are turned off by LockControls a few
+            // lines up, and IsControlPressed reports false for a disabled control -- so "hold
+            // sprint to move the lot" has never once worked.
+            var all = Held(Control.Sprint) || Held(Control.Jump);
 
             if (Held(Control.PhoneRight)) Transfer(toHouse: true, everything: all);
             else if (Held(Control.PhoneLeft)) Transfer(toHouse: false, everything: all);

@@ -175,12 +175,29 @@ namespace Hoodrich.Missions
             return yes;
         }
 
+        /// <summary>
+        /// Handing the job in.
+        ///
+        /// The payout used to happen while this node was being BUILT, which meant the money
+        /// landed the instant the conversation opened -- before his line was on screen, and even
+        /// if you walked off without pressing anything. Now the choice does it, so getting paid
+        /// is something you do rather than something that happens at you.
+        /// </summary>
         private DialogueNode HandIn()
         {
-            var line = _runner.Collect();
+            var def = _runner.Current;
 
-            var node = Node(string.IsNullOrEmpty(line) ? "Good look. Take that." : line);
-            node.Say("Anytime.", () => null, "Paid");
+            var node = Node(def == null || string.IsNullOrEmpty(def.Done)
+                ? "Good look. Come get this."
+                : def.Done);
+
+            node.Say("Appreciate it.", () =>
+            {
+                _runner.Collect();
+                return null;
+            }, "Take the money");
+
+            node.WithIcon(Icons.Money);
             return node;
         }
     }

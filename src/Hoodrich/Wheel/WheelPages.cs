@@ -1260,7 +1260,7 @@ namespace Hoodrich.Wheel
             else
             {
                 // Joining is a conversation with the man himself, never a wedge.
-                page.Add("You are not with them", "-", null,
+                page.Add("You don't run with them", "-", null,
                     detail: "Find their leader on the map and ask him yourself",
                     value: "",
                     enabled: false,
@@ -1368,7 +1368,7 @@ namespace Hoodrich.Wheel
             if (cap < 100)
             {
                 page.Add("Nothing", "-", null,
-                    detail: "You are not worth lending to yet",
+                    detail: "You ain't worth lending to yet",
                     enabled: false, disabledReason: "Make a name first");
                 page.WithIcon(Icons.Locked);
                 return page;

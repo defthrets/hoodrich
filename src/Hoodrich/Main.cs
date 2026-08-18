@@ -263,6 +263,26 @@ namespace Hoodrich
                     }
                 }
 
+                // The feed owns the screen like every other full UI. It was the one screen that
+                // did not, so the wheel could be opened on top of it, both fought over up and
+                // down, and every walk-up prompt in the mod carried on showing behind it.
+                if (_socialScreen.IsOpen)
+                {
+                    if (!available) _socialScreen.Close();
+                    else
+                    {
+                        _socialScreen.Update();
+                        _socialScreen.Draw();
+
+                        // The block keeps talking while you read it, which is the entire point.
+                        _social.Update();
+
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 // A popup readout owns the screen the same way a conversation does: the wheel
                 // would fight it for the same buttons.
                 if (_info.IsOpen)
@@ -336,8 +356,6 @@ namespace Hoodrich
                 // and because a narc's clock does not stop just because a cutscene started.
                 _bust.Update();
                 _postUp.Update();
-                _socialScreen.Update();
-                _socialScreen.Draw();
 
                 _cutting.Draw();
                 _bust.Draw();

@@ -259,7 +259,8 @@ namespace Hoodrich.UI
 
             y += 0.030f;
 
-            var note = !fits ? "No room for " + yield.ToString("0") + "g -- leave some at home first"
+            var note = !fits ? "Need " + Math.Max(0f, yield - batch).ToString("0") +
+                               "g more room -- leave some at home first"
                      : risk < 0.01f ? "Nobody is going to complain about this"
                      : risk < 0.2f ? "The odd buyer might notice"
                      : "Expect people to hand it back";

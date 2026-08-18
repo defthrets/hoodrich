@@ -48,6 +48,17 @@ namespace Hoodrich.UI
         private int _scroll;
         private int _openedAt;
 
+        /// <summary>
+        /// How many posts existed when the reader last touched the scroll.
+        ///
+        /// New posts go on at the TOP, so on a feed that writes itself every few seconds a
+        /// reader who has scrolled down watches the thing they were reading slide away from
+        /// them. The scroll index is nudged by however many arrived, so the post under your eye
+        /// stays under your eye -- except at the very top, where staying pinned to the newest
+        /// post is exactly what you want.
+        /// </summary>
+        private int _seenCount;
+
         /// <summary>Franklin's actual head, borrowed from the game's own contact-photo system.</summary>
         private int _mugshot;
         private string _mugshotTxd = "";
@@ -63,6 +74,7 @@ namespace Hoodrich.UI
         {
             IsOpen = true;
             _scroll = 0;
+            _seenCount = _feed.Timeline.Count;
             _openedAt = Game.GameTime;
 
             RequestMugshot();
@@ -138,6 +150,7 @@ namespace Hoodrich.UI
         {
             if (!IsOpen) return;
 
+            HoldPosition();
             LockControls();
 
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
@@ -151,12 +164,28 @@ namespace Hoodrich.UI
             }
         }
 
+        /// <summary>Keeps the reader looking at the same post when new ones arrive above it.</summary>
+        private void HoldPosition()
+        {
+            var count = _feed.Timeline.Count;
+            var arrived = count - _seenCount;
+
+            _seenCount = count;
+
+            // At the top you want the newest; anywhere else you want to keep your place.
+            if (arrived <= 0 || _scroll == 0) return;
+
+            _scroll = Math.Min(count - 1, _scroll + arrived);
+        }
+
         private void Scroll(int step)
         {
             var count = _feed.Timeline.Count;
             if (count == 0) return;
 
             _scroll = Math.Max(0, Math.Min(count - 1, _scroll + step));
+            _seenCount = count;
+
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
