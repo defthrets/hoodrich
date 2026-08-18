@@ -124,7 +124,16 @@ namespace Hoodrich.UI
             {
                 if (!Draw.EnsureTextureDict(icon.Dict)) return false;
 
-                if (string.IsNullOrEmpty(item.IconTexture)) item.IconTexture = icon.Resolve();
+                if (string.IsNullOrEmpty(item.IconTexture))
+                {
+                    // Resolved once and kept. The aspect comes from the texture that actually
+                    // won, not from a guess -- without it every sprite was drawn square, which
+                    // cost wide art half its width and made a couple of wedges read as empty.
+                    float aspect;
+                    item.IconTexture = icon.Resolve(out aspect);
+                    item.IconAspect = aspect;
+                }
+
                 return !string.IsNullOrEmpty(item.IconTexture);
             };
 

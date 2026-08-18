@@ -372,14 +372,26 @@ namespace Hoodrich.UI
 
             if (item.HasIcon)
             {
-                // The game's weapon art is a white silhouette, so it is tinted the same colour the
-                // label uses -- dark when it sits on a highlighted wedge, white otherwise.
-                // Height is fixed and width follows the art's own aspect, so a square inventory
-                // sprite stays square and a long weapon silhouette stays long.
-                var iconWidth = Math.Min(IconWidth, IconHeight * Math.Max(0.2f, item.IconAspect));
+                // The game's weapon art is a white silhouette, so it is tinted the same colour
+                // the label uses -- dark when it sits on a highlighted wedge, white otherwise.
+                //
+                // Fitted INSIDE the box rather than clamped to it. Capping the width alone left
+                // anything wider than the box squashed to fit, which is how a banner-shaped
+                // sprite ended up looking like half an icon; overflowing the width now costs
+                // height instead, so the art keeps its own proportions whatever shape it is.
+                var aspect = item.IconAspect > 0.05f ? item.IconAspect : 1f;
+
+                var w = IconHeight * aspect;
+                var h = IconHeight;
+
+                if (w > IconWidth)
+                {
+                    h *= IconWidth / w;
+                    w = IconWidth;
+                }
 
                 Draw.Sprite(item.IconDict, item.IconTexture, px, py - 0.030f,
-                            Draw.ToX(iconWidth), IconHeight, 0f, colour);
+                            Draw.ToX(w), h, 0f, colour);
             }
             else if (!string.IsNullOrEmpty(item.Symbol))
             {

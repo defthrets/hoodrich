@@ -75,13 +75,31 @@ namespace Hoodrich.UI
         /// </summary>
         public static bool HasTexture(string dict, string texture)
         {
+            float aspect;
+            return HasTexture(dict, texture, out aspect);
+        }
+
+        /// <summary>
+        /// As above, and hands back the texture's own width-to-height ratio.
+        ///
+        /// The resolution is already being fetched to answer the existence question, so
+        /// throwing it away and drawing every sprite square was a waste of a native call and
+        /// the reason wide art came out squashed to half its width.
+        /// </summary>
+        public static bool HasTexture(string dict, string texture, out float aspect)
+        {
+            aspect = 1f;
+
             if (string.IsNullOrEmpty(dict) || string.IsNullOrEmpty(texture)) return false;
             if (!EnsureTextureDict(dict)) return false;
 
             try
             {
                 var size = Function.Call<GTA.Math.Vector3>(Hash.GET_TEXTURE_RESOLUTION, dict, texture);
-                return size.X > 0f && size.Y > 0f;
+                if (size.X <= 0f || size.Y <= 0f) return false;
+
+                aspect = size.X / size.Y;
+                return true;
             }
             catch
             {

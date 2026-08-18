@@ -24,13 +24,28 @@ namespace Hoodrich.UI
         /// <summary>The first name the game actually has, or the first as a last resort.</summary>
         public string Resolve()
         {
+            float aspect;
+            return Resolve(out aspect);
+        }
+
+        /// <summary>
+        /// As above, and reports the winning texture's own width-to-height ratio.
+        ///
+        /// Which candidate wins decides the shape, so the shape has to be measured here rather
+        /// than assumed at the call site: these dictionaries mix square shop icons with wide
+        /// banner art, and drawing both at 1:1 squashed the wide ones to half their width.
+        /// </summary>
+        public string Resolve(out float aspect)
+        {
+            aspect = 1f;
             if (!IsSet) return "";
 
             foreach (var name in Textures)
             {
-                if (Draw.HasTexture(Dict, name)) return name;
+                if (Draw.HasTexture(Dict, name, out aspect)) return name;
             }
 
+            aspect = 1f;
             return Textures[0];
         }
     }
