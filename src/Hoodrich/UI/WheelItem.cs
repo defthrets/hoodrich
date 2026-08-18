@@ -1,4 +1,5 @@
 using System;
+using Hoodrich.Core;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -132,6 +133,12 @@ namespace Hoodrich.UI
                     float aspect;
                     item.IconTexture = icon.Resolve(out aspect);
                     item.IconAspect = aspect;
+
+                    // Logged once per icon. What the game reports for these dictionaries is the
+                    // only thing that decides the shape, and it is not something you can read off
+                    // a screenshot -- so when a wedge looks wrong this is the line that says why.
+                    Log.Info("Icon " + item.Label + ": " + icon.Dict + "/" + item.IconTexture +
+                             " aspect " + aspect.ToString("0.00"));
                 }
 
                 return !string.IsNullOrEmpty(item.IconTexture);
