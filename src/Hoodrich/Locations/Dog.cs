@@ -32,6 +32,19 @@ namespace Hoodrich.Locations
         /// <summary>How long the fuss lasts before he goes back to what he was doing.</summary>
         private const int PetMs = 4200;
 
+        /// <summary>A game of fetch runs a bit longer than a pat does.</summary>
+        private const int PlayMs = 7000;
+
+        /// <summary>
+        /// How often we look for a second Chop, and how far out.
+        ///
+        /// The game keeps its own Chop at whichever house Franklin currently lives in, which
+        /// after the story is the place up in the hills. Two of them is worse than either, so
+        /// any Chop that is not ours is sent away wherever it turns up.
+        /// </summary>
+        private const int RivalScanMs = 4000;
+        private const float RivalScanRange = 220f;
+
         /// <summary>
         /// Model candidates. Enhanced ships a second Chop, and an install that has only one of
         /// them should still get a dog rather than an empty yard.
@@ -44,6 +57,9 @@ namespace Hoodrich.Locations
         private Ped _chop;
         private int _lastUpdate;
         private bool _gaveUp;
+
+        private int _lastRivalScan;
+        private bool _playing;
 
         private bool _following;
         private bool _petting;
@@ -62,6 +78,8 @@ namespace Hoodrich.Locations
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
             if (_petting && now >= _pettingUntil) EndPet();
+
+            SendAwayTheOtherOne(player, now);
 
             var distance = player.Position.DistanceTo(Yard);
 
@@ -176,6 +194,63 @@ namespace Hoodrich.Locations
             _chop = null;
             _following = false;
             _petting = false;
+            _playing = false;
+        }
+
+        /// <summary>
+        /// Makes sure there is exactly one Chop.
+        ///
+        /// Not a fix for the game so much as an agreement with it: the mod puts a Chop at the
+        /// house on Forum Drive because that is where he lived, and the game puts one wherever
+        /// Franklin currently lives. Two Chops is nobody's idea of anything, so the one that is
+        /// not ours is let go. The game brings its own back when the mod is unloaded.
+        /// </summary>
+        private void SendAwayTheOtherOne(Ped player, int now)
+        {
+            if (now - _lastRivalScan < RivalScanMs) return;
+            _lastRivalScan = now;
+
+            try
+            {
+                var ours = _chop != null && _chop.Exists() ? _chop.Handle : 0;
+
+                foreach (var ped in World.GetNearbyPeds(player, RivalScanRange))
+                {
+                    if (ped == null || !ped.Exists()) continue;
+                    if (ours != 0 && ped.Handle == ours) continue;
+                    if (!IsChop(ped)) continue;
+
+                    ped.IsPersistent = false;
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, false, true);
+                    ped.MarkAsNoLongerNeeded();
+                    ped.Delete();
+
+                    Log.Info("Sent away a second Chop.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not check for a second Chop: " + ex.Message);
+            }
+        }
+
+        private static bool IsChop(Ped ped)
+        {
+            try
+            {
+                var model = (uint)ped.Model.Hash;
+
+                foreach (var name in Models)
+                {
+                    if (model == (uint)Function.Call<int>(Hash.GET_HASH_KEY, name)) return true;
+                }
+            }
+            catch
+            {
+                // A ped we cannot identify is somebody else's.
+            }
+
+            return false;
         }
 
         // ---- being a dog -------------------------------------------------------
@@ -203,15 +278,16 @@ namespace Hoodrich.Locations
             if (!InReach || _petting) return;
 
             Help.ShowThisFrame(_following
-                ? "~INPUT_CONTEXT~ pet Chop     ~INPUT_CELLPHONE_RIGHT~ tell him to stay"
-                : "~INPUT_CONTEXT~ pet Chop     ~INPUT_CELLPHONE_RIGHT~ bring him with you");
+                ? "~INPUT_CONTEXT~ pet     ~INPUT_CELLPHONE_UP~ play     ~INPUT_CELLPHONE_RIGHT~ tell him to stay"
+                : "~INPUT_CONTEXT~ pet     ~INPUT_CELLPHONE_UP~ play     ~INPUT_CELLPHONE_RIGHT~ take him with you");
 
-            var pet = Tapped(Control.Context, System.Windows.Forms.Keys.E, ref _held);
-            if (pet) { Pet(); return; }
+            if (Tapped(Control.Context, System.Windows.Forms.Keys.E, ref _held)) { Pet(); return; }
+            if (Tapped(Control.PhoneUp, System.Windows.Forms.Keys.Up, ref _heldPlay)) { Play(); return; }
 
-            var call = Tapped(Control.PhoneRight, System.Windows.Forms.Keys.Right, ref _heldCall);
-            if (call) Follow(!_following);
+            if (Tapped(Control.PhoneRight, System.Windows.Forms.Keys.Right, ref _heldCall)) Follow(!_following);
         }
+
+        private bool _heldPlay;
 
         private bool _heldCall;
 
@@ -269,8 +345,73 @@ namespace Hoodrich.Locations
             Notify.Ticker("~g~Chop is pleased to see you.~s~");
         }
 
+        /// <summary>
+        /// A game in the yard.
+        ///
+        /// He runs off a little way, turns, and comes back at you -- which is as close to fetch
+        /// as the game's animal set gets without a ball entity to chase. Longer than a pat and
+        /// worth doing because it is the thing you actually did with him.
+        /// </summary>
+        private void Play()
+        {
+            if (_chop == null || !_chop.Exists()) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            _petting = true;
+            _playing = true;
+            _pettingUntil = Game.GameTime + PlayMs;
+
+            try
+            {
+                _chop.Task.ClearAll();
+
+                var away = player.Position.Around(7f);
+                away.Z = _chop.Position.Z;
+
+                // Out and back rather than a scenario: a dog that runs somewhere and returns to
+                // you reads as playing, and a dog stood still playing an animation does not.
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _chop.Handle,
+                              away.X, away.Y, away.Z, 2.5f, PlayMs / 2, 0f, 0f);
+
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _chop.Handle,
+                              "GENERIC_WAR_CRY", "SPEECH_PARAMS_FORCE");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Chop did not fancy a game: " + ex.Message);
+            }
+
+            Notify.Ticker("~g~Chop wants to play.~s~");
+        }
+
         private void EndPet()
         {
+            if (_playing && _chop != null && _chop.Exists())
+            {
+                // Second half of the game: he comes back to you.
+                _playing = false;
+                _pettingUntil = Game.GameTime + PlayMs / 2;
+
+                try
+                {
+                    var player = Game.Player.Character;
+
+                    if (player != null && player.Exists())
+                    {
+                        Function.Call(Hash.TASK_GO_TO_ENTITY, _chop.Handle, player.Handle,
+                                      PlayMs / 2, 1.5f, 2.5f, 0f, 0);
+                        return;
+                    }
+                }
+                catch
+                {
+                    // Fall through and settle.
+                }
+            }
+
+            _playing = false;
             _petting = false;
 
             if (_chop == null || !_chop.Exists()) return;
