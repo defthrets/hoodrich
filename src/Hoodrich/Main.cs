@@ -143,14 +143,20 @@ namespace Hoodrich
                 _social = SocialFeed.Load();
                 _socialScreen = new SocialScreen(_social);
 
-                _lamarCrew = new Entourage(_gangs, "families", Fixer.Spot, 206f, "Lamar");
+                // Two for Lamar, on their own marks -- one on watch, one smoking, because a
+                // courtyard where both men are doing the same thing looks staged.
+                _lamarCrew = new Entourage(_gangs, "families", Fixer.Spot, 206f, "Lamar")
+                    .Stand(new Vector3(-82.4f, -1613.8f, 31.485f), 120f, "WORLD_HUMAN_GUARD_STAND")
+                    .Stand(new Vector3(-89.1f, -1607.9f, 31.485f), 250f, "WORLD_HUMAN_SMOKING_POT");
 
+                // One for Stretch, on the spot it was read off the HUD at.
                 var stretch = _leaders.Get("families");
                 _stretchCrew = stretch == null
                     ? null
                     : new Entourage(_gangs, "families",
                                     new Vector3(stretch.SpotX, stretch.SpotY, stretch.SpotZ),
-                                    stretch.Heading, stretch.Name);
+                                    stretch.Heading, stretch.Name)
+                        .Stand(new Vector3(-161.084f, -1635.432f, 34.029f), 70.469f, "WORLD_HUMAN_GUARD_STAND");
 
 
                 // Handed over as functions rather than references, so the feed never holds on

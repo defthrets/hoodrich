@@ -55,30 +55,30 @@ namespace Hoodrich.Missions
             // The NEW thing comes first and on its own terms: he works down his list in order,
             // and until you have been through it he tells you what needs doing rather than
             // handing you a board to pick from.
-            var next = NextUndone();
-            var offered = 0;
+            // Everything up to one past the furthest you have got, which is what "unlocked"
+            // means when the list is worked through in order. Offering only the next undone one
+            // hid jobs that were plainly available -- finish the third and the fourth is open,
+            // whether or not you have gone back and done the second.
+            var reached = -1;
 
-            if (next != null && _state.Rank >= next.MinRank)
+            for (var i = 0; i < _missions.All.Count; i++)
             {
-                node.Say(next.Name, () => Brief(next),
-                         "$" + next.PayMin.ToString("N0") + "-" + next.PayMax.ToString("N0"));
-
-                node.WithIcon(IconFor(next));
-                offered++;
+                if (_state.HasDone(_missions.All[i].Id)) reached = i;
             }
 
-            // Then anything already behind you, because a job you liked should be a job you can
-            // go and do again. It pays the same and it counts the same; what it does not do is
-            // hold up the next one.
-            foreach (var def in _missions.All)
+            var offered = 0;
+
+            for (var i = 0; i <= reached + 1 && i < _missions.All.Count; i++)
             {
-                if (!_state.HasDone(def.Id)) continue;
+                var def = _missions.All[i];
                 if (_state.Rank < def.MinRank) continue;
 
-                var again = def;
+                var pick = def;
+                var done = _state.HasDone(def.Id);
 
-                node.Say(def.Name, () => Brief(again),
-                         "again  ·  $" + def.PayMin.ToString("N0") + "-" + def.PayMax.ToString("N0"));
+                node.Say(def.Name, () => Brief(pick),
+                         (done ? "again  ·  $" : "$") +
+                         def.PayMin.ToString("N0") + "-" + def.PayMax.ToString("N0"));
 
                 node.WithIcon(IconFor(def));
                 offered++;
@@ -86,7 +86,9 @@ namespace Hoodrich.Missions
 
             if (offered == 0)
             {
-                return Nothing(next == null
+                // Either the list is empty, or everything open to you wants a bigger name than
+                // you have. Those are different sentences, so which one he says depends on it.
+                return Nothing(_missions.All.Count == 0
                     ? "Ain't got nothing right now. Come see me later."
                     : "Got something for you, but not yet. Make more of a name first.");
             }

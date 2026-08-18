@@ -76,15 +76,31 @@ namespace Hoodrich.Missions
         };
 
         /// <summary>
-        /// Animations for painting a wall. Validated before use, because a scenario or clip
-        /// name that is not in this install fails silently and leaves Franklin standing there.
+        /// Animations for painting a wall, tried in order and checked before use.
+        ///
+        /// The first two are the game's own graffiti sets -- a man stood square on to a wall
+        /// with his arm working. The earlier guesses were nightclub and sleeping clips, which
+        /// is why he stood there doing nothing recognisable.
         /// </summary>
         private static readonly string[] SprayDicts =
         {
-            "anim@amb@nightclub@peds@", "switch@trevor@trailer_sleeping", "missfbi3_party_d"
+            "anim@heists@ornate_bank@grab_cash",
+            "amb@world_human_janitor@male@idle_a",
+            "amb@world_human_hammering@male@base",
+            "missfbi4prepp1@",
+            "amb@world_human_bum_wash@male@high@idle_a"
         };
 
-        private static readonly string[] SprayClips = { "base", "idle_a", "idle" };
+        private static readonly string[] SprayClips = { "idle_a", "base", "idle", "washing_face_idle" };
+
+        /// <summary>
+        /// The paint itself.
+        ///
+        /// A can with nothing coming out of it is a man miming, so the effect matters more than
+        /// the animation does -- it is the only part of this the wall actually gets.
+        /// </summary>
+        private const string PaintAsset = "core";
+        private const string PaintEffect = "ent_sht_steam";
 
         private readonly GangRegistry _gangs;
         private readonly Affiliation _crew;
@@ -566,6 +582,8 @@ namespace Hoodrich.Missions
                 GiveCan(player);
                 PlaySprayClip(player);
 
+                Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PaintAsset);
+
                 Function.Call(Hash.PLAY_SOUND_FRONTEND, -1, "Beep_Red",
                               "DLC_HEIST_HACKING_SNAKE_SOUNDS", true);
             }
@@ -580,14 +598,21 @@ namespace Hoodrich.Missions
 
         private void TickSpraying(Ped player, int now)
         {
-            // Walking off or being knocked over abandons it. The wall keeps their tag, and you
-            // can come back -- nothing is lost except the paint and the time.
-            if (player.Position.DistanceTo(_spraying.Where) > ArriveRange + 2f || !player.IsAlive)
+            // Walking off, being knocked over, or just pressing the button again abandons it.
+            // The wall keeps their tag and you can come back -- nothing is lost but the paint
+            // and the time. An animation you cannot get out of is a cutscene, and this is not
+            // one: it is eight seconds of standing still that you chose to spend.
+            var walked = player.Position.DistanceTo(_spraying.Where) > ArriveRange + 2f;
+            var cancelled = Tapped() || Moving(player);
+
+            if (walked || cancelled || !player.IsAlive)
             {
                 Notify.Problem("you left that one half done.");
                 EndSpray(player);
                 return;
             }
+
+            Paint(player);
 
             if (now - _sprayingSince < SprayMs) return;
 
@@ -615,12 +640,63 @@ namespace Hoodrich.Missions
 
             try
             {
+                // CLEAR_PED_TASKS_IMMEDIATELY as well as the managed call, because a looping
+                // TASK_PLAY_ANIM does not always let go of a ped on a plain ClearAll -- which
+                // is what left Franklin painting an invisible wall after the job was done.
                 player.Task.ClearAll();
+                Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, player.Handle);
+                Function.Call(Hash.STOP_ANIM_TASK, player.Handle, "", "", 3f);
+
                 TakeCan();
             }
             catch
             {
                 // He will stand up on his own.
+            }
+        }
+
+        /// <summary>Green paint, coming out of the can, at the wall.</summary>
+        private void Paint(Ped player)
+        {
+            if (_spraying == null) return;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, PaintAsset))
+                {
+                    Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PaintAsset);
+                    return;
+                }
+
+                Function.Call(Hash.USE_PARTICLE_FX_ASSET, PaintAsset);
+
+                // Tinted to the set rather than left grey. Green paint on a Ballas wall is the
+                // entire point of the errand, and it is the only bit of it the eye gets.
+                Function.Call(Hash.SET_PARTICLE_FX_NON_LOOPED_COLOUR, 0.15f, 0.85f, 0.25f);
+                Function.Call(Hash.SET_PARTICLE_FX_NON_LOOPED_ALPHA, 0.55f);
+
+                Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_PED_BONE,
+                              PaintEffect, player.Handle,
+                              0.25f, 0.35f, 0.05f, 0f, 0f, 0f,
+                              57005, 0.55f, false, false, false);
+            }
+            catch
+            {
+                // No paint is a quieter failure than no job.
+            }
+        }
+
+        /// <summary>True when the player is trying to walk away, which cancels it.</summary>
+        private static bool Moving(Ped player)
+        {
+            try
+            {
+                return Math.Abs(Function.Call<float>(Hash.GET_CONTROL_NORMAL, 0, (int)Control.MoveLeftRight)) > 0.35f
+                    || Math.Abs(Function.Call<float>(Hash.GET_CONTROL_NORMAL, 0, (int)Control.MoveUpDown)) > 0.35f;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -694,12 +770,12 @@ namespace Hoodrich.Missions
                 }
             }
 
-            // Nothing in this install fits, so he at least reaches up at the wall rather than
-            // standing to attention while paint appears.
+            // Nothing in this install fits, so he at least does something with his hands at a
+            // wall rather than standing to attention while paint appears.
             try
             {
                 Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, player.Handle,
-                              "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
+                              "WORLD_HUMAN_HAMMERING", 0, true);
             }
             catch { /* he will stand there */ }
 

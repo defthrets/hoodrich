@@ -39,11 +39,22 @@ namespace Hoodrich.Locations
         {
             var node = Node("Whatchu need? And don't touch nothing you ain't buying.");
 
+            // Each category wears the art of the first thing on that table, so the rows are
+            // told apart by shape before they are read.
             node.Say("Handguns.", () => Table("Handguns", Armourer.Handguns), Count(Armourer.Handguns));
+            node.WithWeapon(Armourer.Handguns[0].Weapon);
+
             node.Say("Something automatic.", () => Table("Automatics", Armourer.Automatics), Count(Armourer.Automatics));
+            node.WithWeapon(Armourer.Automatics[0].Weapon);
+
             node.Say("Shotguns.", () => Table("Shotguns", Armourer.Shotguns), Count(Armourer.Shotguns));
+            node.WithWeapon(Armourer.Shotguns[0].Weapon);
+
             node.Say("Something quiet.", () => Table("Blades and bats", Armourer.Melee), Count(Armourer.Melee));
+            node.WithWeapon(Armourer.Melee[0].Weapon);
+
             node.Say("Something I can throw.", () => Table("Throwables", Armourer.Throwables), Count(Armourer.Throwables));
+            node.WithWeapon(Armourer.Throwables[0].Weapon);
 
             node.Leave("Just looking.");
             return node;

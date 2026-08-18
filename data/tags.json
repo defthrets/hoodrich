@@ -2,101 +2,58 @@
   "_comment": [
     "Walls that already have somebody else's tag on them.",
     "",
-    "EVERY COORDINATE IN HERE IS A PLACEHOLDER. They are picked off the middle of the blocks",
-    "the mod already knows about, which puts them roughly in the right neighbourhood and",
-    "almost certainly not in front of an actual wall. This is the one thing in the mod that",
-    "cannot be got right from a desk: a tag has to be somewhere you can stand facing a flat",
-    "surface, on a block that belongs to somebody.",
+    "These four were stood on and read off the HUD, facing the wall. Any more you add want",
+    "the same treatment -- position AND heading, because the heading is what turns Franklin",
+    "square on to the paint.",
     "",
-    "TO FIX ONE: stand where Franklin should stand to paint, facing the wall, and read the X,",
-    "Y, Z and heading straight off the HUD into the entry below. The heading is what turns him",
-    "to face the wall, so it matters as much as the position.",
-    "",
-    "KEEP THEM CLOSE. The run is done on a push bike, so everything here is within a few",
-    "streets of Chamberlain and Davis. A wall out in El Burro or La Mesa is a ten minute ride",
-    "each way and turns a short job into a commute -- those were tried and taken back out.",
+    "KEEP THEM CLOSE. The run is done on a push bike, so a wall out in El Burro is a ten",
+    "minute ride each way and turns a short job into a commute.",
     "",
     "id       stable key; the run remembers which walls are done by it",
     "zone     GET_NAME_OF_ZONE code, for reference only",
     "gang     whose tag is on it -- decides the marker colour and who turns up",
     "x, y, z  where Franklin stands to paint",
-    "heading  which way he faces, which should be square on to the wall",
+    "heading  which way he faces, square on to the wall",
     "",
-    "The mission picks four of these at random, so more entries means a run you can do twice",
-    "without it being the same afternoon. Add as many as you like."
+    "The mission picks four at random, so more entries means a run you can do twice without",
+    "it being the same afternoon."
   ],
   "tags": [
     {
-      "id": "grove_1",
+      "id": "davis_billboard",
       "zone": "DAVIS",
       "gang": "ballas",
-      "x": 115.921,
-      "y": -1949.503,
-      "z": 20.698,
-      "heading": 0
+      "x": -10.597,
+      "y": -1817.075,
+      "z": 25.775,
+      "heading": 229.168
     },
     {
-      "id": "grove_2",
+      "id": "davis_fence",
       "zone": "DAVIS",
       "gang": "ballas",
-      "x": 88.5,
-      "y": -1961.2,
-      "z": 21.1,
-      "heading": 90
+      "x": 81.197,
+      "y": -1856.564,
+      "z": 24.542,
+      "heading": 145.268
     },
     {
-      "id": "davis_1",
+      "id": "davis_garage",
       "zone": "DAVIS",
       "gang": "ballas",
-      "x": 152.4,
-      "y": -1914.8,
-      "z": 22.6,
-      "heading": 180
+      "x": 182.595,
+      "y": -1677.965,
+      "z": 29.768,
+      "heading": 154.98
     },
     {
-      "id": "davis_2",
+      "id": "forum_wall",
       "zone": "DAVIS",
       "gang": "ballas",
-      "x": 62.8,
-      "y": -1888.4,
-      "z": 23.2,
-      "heading": 270
-    },
-    {
-      "id": "davis_3",
-      "zone": "DAVIS",
-      "gang": "ballas",
-      "x": 174.6,
-      "y": -1846.9,
-      "z": 26.4,
-      "heading": 45
-    },
-    {
-      "id": "chamh_1",
-      "zone": "CHAMH",
-      "gang": "ballas",
-      "x": -198.4,
-      "y": -1585.6,
-      "z": 34.2,
-      "heading": 135
-    },
-    {
-      "id": "chamh_2",
-      "zone": "CHAMH",
-      "gang": "ballas",
-      "x": -142.7,
-      "y": -1698.3,
-      "z": 32.8,
-      "heading": 225
-    },
-    {
-      "id": "straw_1",
-      "zone": "STRAW",
-      "gang": "ballas",
-      "x": 24.6,
-      "y": -1721.4,
-      "z": 29.3,
-      "heading": 315
+      "x": -20.333,
+      "y": -1421.158,
+      "z": 29.312,
+      "heading": 192.318
     }
   ]
 }

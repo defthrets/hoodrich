@@ -55,7 +55,18 @@ namespace Hoodrich.Locations
         {
             "creatures@rottweiler@amb@world_dog_sitting@base",
             "creatures@rottweiler@amb@world_dog_sitting@idle_a",
+            "creatures@rottweiler@amb@world_dog_barking@base",
             "creatures@rottweiler@move"
+        };
+
+        /// <summary>
+        /// Scenario names, which unlike animation dictionaries cannot be checked before use.
+        /// A wrong one does nothing at all and says nothing about it, so these are the ones the
+        /// game itself uses on dogs and the log records which was asked for.
+        /// </summary>
+        private static readonly string[] SitScenarios =
+        {
+            "WORLD_DOG_SITTING_ROTTWEILER", "WORLD_DOG_SITTING_SHEPHERD", "WORLD_DOG_SITTING_RETRIEVER"
         };
 
         private static readonly string[] SitClips = { "base", "idle_a", "idle" };
@@ -506,8 +517,7 @@ namespace Hoodrich.Locations
             // naming the button and what it does. The old one was a row of shorthand, which is
             // a debug readout rather than something the game would put on screen.
             Help.ShowThisFrame(
-                "Press ~INPUT_CONTEXT~ to pet Chop.~n~" +
-                "Press ~INPUT_CELLPHONE_UP~ to play with him.~n~" +
+                "Press ~INPUT_CONTEXT~ to pet Chop, ~INPUT_CELLPHONE_UP~ to play.~n~" +
                 (_following
                     ? "Press ~INPUT_CELLPHONE_RIGHT~ to leave him here."
                     : "Press ~INPUT_CELLPHONE_RIGHT~ to take him with you."));
@@ -564,8 +574,9 @@ namespace Hoodrich.Locations
                 // man waving at the air.
                 if (!PlayClip(SitDicts, SitClips, PetMs))
                 {
-                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _chop.Handle,
-                                  "WORLD_DOG_SITTING_ROTTWEILER", 0, true);
+                    var scenario = SitScenarios[0];
+                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _chop.Handle, scenario, 0, true);
+                    Log.Info("Chop petted, falling back to scenario " + scenario + ".");
                 }
 
                 Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _chop.Handle,
@@ -577,6 +588,7 @@ namespace Hoodrich.Locations
             }
 
             Notify.Ticker("~g~Chop is pleased to see you.~s~");
+            Log.Info("Chop petted.");
         }
 
         /// <summary>
@@ -621,6 +633,7 @@ namespace Hoodrich.Locations
             }
 
             Notify.Ticker("~g~Chop wants to play.~s~");
+            Log.Info("Chop is playing.");
         }
 
         private void EndPet()
@@ -686,6 +699,7 @@ namespace Hoodrich.Locations
             }
 
             Notify.Ticker(on ? "~g~Chop is coming with you.~s~" : "~o~Chop stays.~s~");
+            Log.Info(on ? "Chop is following." : "Chop is staying.");
         }
 
         private void Heel()

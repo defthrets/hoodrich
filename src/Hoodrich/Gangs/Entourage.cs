@@ -56,6 +56,18 @@ namespace Hoodrich.Gangs
         private readonly float _heading;
         private readonly string _who;
 
+        /// <summary>
+        /// Exactly where they stand and what each of them is doing.
+        ///
+        /// Positions given outright rather than worked out from the leader's heading, because
+        /// "a step back and to the right" is arithmetic and "on that corner, facing the stairs"
+        /// is a decision somebody made standing there. The scenario is per-man too: two people
+        /// doing the identical thing beside each other reads as one man copied.
+        /// </summary>
+        private readonly List<Vector3> _stations = new List<Vector3>();
+        private readonly List<float> _facings = new List<float>();
+        private readonly List<string> _doing = new List<string>();
+
         private readonly List<Ped> _crew = new List<Ped>();
         private readonly List<Vector3> _marks = new List<Vector3>();
 
@@ -68,6 +80,15 @@ namespace Hoodrich.Gangs
             _spot = spot;
             _heading = heading;
             _who = who;
+        }
+
+        /// <summary>Adds one of them, on his own mark, doing his own thing.</summary>
+        public Entourage Stand(Vector3 where, float facing, string scenario)
+        {
+            _stations.Add(where);
+            _facings.Add(facing);
+            _doing.Add(scenario);
+            return this;
         }
 
         public void Update()
@@ -97,28 +118,48 @@ namespace Hoodrich.Gangs
             var gang = _gangs.Get(_gangId);
             if (gang == null) return;
 
-            // Either side of him and a step back, so he is the one you walk up to and they are
-            // the two you walk past.
-            var rad = _heading * (float)(Math.PI / 180.0);
-            var right = new Vector3((float)Math.Cos(rad), -(float)Math.Sin(rad), 0f);
-            var back = new Vector3(-(float)Math.Sin(rad), -(float)Math.Cos(rad), 0f);
-
             _marks.Clear();
-            _marks.Add(_spot + right * StandOff + back * 1.2f);
-            _marks.Add(_spot - right * StandOff + back * 1.6f);
 
-            foreach (var mark in _marks)
+            if (_stations.Count > 0)
             {
-                var ped = SpawnMember(gang, mark);
+                _marks.AddRange(_stations);
+            }
+            else
+            {
+                // No marks given, so either side of him and a step back.
+                var rad = _heading * (float)(Math.PI / 180.0);
+                var right = new Vector3((float)Math.Cos(rad), -(float)Math.Sin(rad), 0f);
+                var back = new Vector3(-(float)Math.Sin(rad), -(float)Math.Cos(rad), 0f);
+
+                _marks.Add(_spot + right * StandOff + back * 1.2f);
+                _marks.Add(_spot - right * StandOff + back * 1.6f);
+            }
+
+            for (var i = 0; i < _marks.Count; i++)
+            {
+                var ped = SpawnMember(gang, _marks[i], Facing(i));
                 if (ped == null) continue;
 
                 _crew.Add(ped);
+                Idle(ped, Doing(i), Facing(i));
             }
 
             if (_crew.Count > 0) Log.Info(_crew.Count + " of " + gang.Name + " stood with " + _who + ".");
         }
 
-        private Ped SpawnMember(GangDef gang, Vector3 mark)
+        private float Facing(int index)
+        {
+            return index < _facings.Count ? _facings[index] : _heading;
+        }
+
+        private string Doing(int index)
+        {
+            if (index < _doing.Count && !string.IsNullOrEmpty(_doing[index])) return _doing[index];
+
+            return Scenarios[index % Scenarios.Length];
+        }
+
+        private Ped SpawnMember(GangDef gang, Vector3 mark, float facing)
         {
             foreach (var name in gang.MemberModels)
             {
@@ -130,7 +171,7 @@ namespace Hoodrich.Gangs
                     var spot = Ground(mark);
 
                     var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeCiv, model.Hash,
-                                                    spot.X, spot.Y, spot.Z, _heading, false, false);
+                                                    spot.X, spot.Y, spot.Z, facing, false, false);
 
                     model.MarkAsNoLongerNeeded();
                     if (handle == 0) continue;
@@ -154,7 +195,6 @@ namespace Hoodrich.Gangs
 
                     Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
 
-                    Idle(ped);
                     return ped;
                 }
                 catch
@@ -166,14 +206,12 @@ namespace Hoodrich.Gangs
             return null;
         }
 
-        private void Idle(Ped ped)
+        private static void Idle(Ped ped, string scenario, float facing)
         {
             try
             {
-                var pick = Scenarios[ped.Handle % Scenarios.Length];
-
-                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle, pick, 0, true);
-                ped.Heading = _heading;
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle, scenario, 0, true);
+                ped.Heading = facing;
             }
             catch
             {
@@ -203,7 +241,7 @@ namespace Hoodrich.Gangs
                 {
                     ped.Position = Ground(_marks[i]);
                     ped.Task.ClearAll();
-                    Idle(ped);
+                    Idle(ped, Doing(i), Facing(i));
                 }
                 catch
                 {

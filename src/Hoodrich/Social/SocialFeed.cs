@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using GTA;
+using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.UI;
 
@@ -52,8 +53,28 @@ namespace Hoodrich.Social
         private const int AmbientGapMinMs = 26000;
         private const int AmbientGapMaxMs = 75000;
 
-        /// <summary>Followers you start with. Enough that the numbers are not sad.</summary>
-        private const int StartingFollowers = 62;
+        /// <summary>
+        /// Nobody, to begin with.
+        ///
+        /// Starting at zero is the whole point: the number is the only thing in the mod that
+        /// records what you have actually done out there, and handing you sixty for turning the
+        /// game on makes it a decoration instead of a record.
+        /// </summary>
+        private const int StartingFollowers = 0;
+
+        /// <summary>
+        /// Contact pictures, assigned per handle so somebody always turns up looking the same.
+        ///
+        /// These are the game's own phone-contact textures. A real headshot needs a ped that
+        /// exists in the world, and the people writing these posts do not -- so the notification
+        /// borrows the same art the phone uses for people who are not on screen.
+        /// </summary>
+        private static readonly string[] ContactPics =
+        {
+            "CHAR_DEFAULT", "CHAR_BLOCKED", "CHAR_CHAT_CALL", "CHAR_SOCIAL_CLUB",
+            "CHAR_LAMAR", "CHAR_FRANKLIN", "CHAR_DENISE", "CHAR_SIMEON",
+            "CHAR_MP_MECHANIC", "CHAR_MP_GERALD", "CHAR_MP_STRETCH", "CHAR_MP_MERRYWEATHER"
+        };
 
         private readonly Random _rng = new Random();
         private readonly List<Post> _timeline = new List<Post>();
@@ -221,11 +242,12 @@ namespace Hoodrich.Social
 
         public void Start(int followers)
         {
-            Followers = followers > 0 ? followers : StartingFollowers;
+            Followers = Math.Max(0, followers);
             _nextAmbient = Game.GameTime + 4000;
 
             // A few already on the timeline, so opening it for the first time is not an empty
-            // screen with a spinner where a neighbourhood should be.
+            // screen where a neighbourhood should be. These are backdated and never notify --
+            // they are what you missed, not what just happened.
             for (var i = 0; i < 9; i++) Ambient(true);
         }
 
@@ -247,9 +269,12 @@ namespace Hoodrich.Social
                 // Spread the opening batch back over the last hour or so, so the first look at
                 // the feed is a morning's worth of chatter rather than nine posts at once.
                 post.At -= _rng.Next(120000, 3600000);
+                Add(post);
+                return;
             }
 
             Add(post);
+            Notify(post);
         }
 
         // ---- things that happened ----------------------------------------------
@@ -271,6 +296,7 @@ namespace Hoodrich.Social
 
             post.AboutYou = true;
             Add(post);
+            Notify(post);
 
             var gained = FollowersFor(kind, amount);
             if (gained == 0) return;
@@ -280,7 +306,8 @@ namespace Hoodrich.Social
 
             if (gained > 0 && gained >= 12)
             {
-                Notify.Ticker("~b~+" + gained + " followers~s~  ·  " + Followers.ToString("N0"));
+                Hoodrich.UI.Notify.Ticker("~b~+" + gained + " followers~s~  ·  " +
+                                          Followers.ToString("N0") + " followers");
             }
         }
 
@@ -425,6 +452,53 @@ namespace Hoodrich.Social
             // An unknown slot is a typo in the data file, and printing the braces is how you
             // find it. Silently swallowing it would leave a hole nobody notices.
             return "{" + key + "}";
+        }
+
+        /// <summary>
+        /// A post arriving, as the phone would deliver it.
+        ///
+        /// The game's own feed notification, with a contact picture, the display name in the
+        /// sender line and the handle under it -- which is exactly the shape of a text message,
+        /// because that is what a post arriving on a phone IS. Deliberately silent: a chime for
+        /// every one of these would be unbearable within ten minutes, and the point is that the
+        /// block is talking whether or not you are listening.
+        /// </summary>
+        private void Notify(Post post)
+        {
+            if (post == null || post.By == null) return;
+
+            try
+            {
+                Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, Draw.FormatFor(post.Body));
+
+                const int chunk = 96;
+                for (var i = 0; i < post.Body.Length; i += chunk)
+                {
+                    var len = Math.Min(chunk, post.Body.Length - i);
+                    Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME,
+                                  post.Body.Substring(i, len));
+                }
+
+                var pic = PicFor(post.By.Handle);
+
+                Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_MESSAGETEXT,
+                              pic, pic, false, 0, post.By.Name, post.By.Handle);
+
+                Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, false, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not deliver a post: " + ex.Message);
+            }
+        }
+
+        /// <summary>The same picture for the same person, every time, without storing one.</summary>
+        private static string PicFor(string handle)
+        {
+            var hash = 17;
+            foreach (var c in handle) hash = hash * 31 + c;
+
+            return ContactPics[Math.Abs(hash) % ContactPics.Length];
         }
 
         private void Add(Post post)

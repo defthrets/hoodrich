@@ -263,7 +263,9 @@ namespace Hoodrich.Missions
             MarkSite();
             SpawnHomies(player, def);
 
-            if (def.Kind == MissionKind.DriveBy) SpawnJobCar(def);
+            // Any job that names a car gets one. Keying this on the DriveBy kind meant the
+            // Rancho and Grove jobs had car coordinates in their data and no car in the street.
+            if (Math.Abs(def.CarX) > 0.01f || Math.Abs(def.CarY) > 0.01f) SpawnJobCar(def);
 
             Notify.Important("~g~Job on.~s~ " + Objective + ".");
             Log.Info("Mission " + def.Id + " started, site " + _site + ".");
@@ -306,9 +308,7 @@ namespace Hoodrich.Missions
 
             // A drive-by crew waits at the car, not at your elbow. The walk round to where
             // the car is parked is the start of the job.
-            var muster = def.Kind == MissionKind.DriveBy
-                ? Ground(new Vector3(def.CarX, def.CarY, def.CarZ))
-                : Vector3.Zero;
+            var muster = Ground(new Vector3(def.CarX, def.CarY, def.CarZ));
 
             if (muster == Vector3.Zero) muster = player.Position;
 
@@ -508,9 +508,19 @@ namespace Hoodrich.Missions
             _lastUpdate = now;
 
             var player = Game.Player.Character;
+
             if (player == null || !player.Exists() || !player.IsAlive)
             {
                 Fail("You went down out there.");
+                return;
+            }
+
+            // Being taken in ends it the same as being killed. Coming round in a cell with the
+            // job still marked live, and the blip still on the map, is the game pretending
+            // nothing happened.
+            if (Game.Player.IsDead || Function.Call<bool>(Hash.IS_PLAYER_BEING_ARRESTED, Game.Player.Handle, false))
+            {
+                Fail("They took you in.");
                 return;
             }
 

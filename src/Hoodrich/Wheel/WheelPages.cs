@@ -471,7 +471,7 @@ namespace Hoodrich.Wheel
             // would mean nobody ever reads it -- which defeats the entire point of writing it.
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
                 detail: "What the block is saying",
-                value: Followers == null ? "" : Followers() .ToString("N0") + " followers");
+                value: Followers == null ? "" : Followers().ToString("N0") + " followers");
             page.WithIcon(Icons.Tattoo);
 
             return page;
