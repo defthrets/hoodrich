@@ -149,7 +149,16 @@ namespace Hoodrich.UI
         /// 1.5px at 1080p, which reads as a clean edge, and the whole ring still costs only a
         /// few hundred DRAW_RECT calls.
         /// </summary>
-        private const float RowHeight = 0.0014f;
+        /// <summary>
+        /// Scanline height for the wedge filler.
+        ///
+        /// Every row is a DRAW_RECT, and the game quietly stops drawing them once a frame has
+        /// asked for too many -- so this is a budget, not just a quality dial. At 0.0014 the
+        /// wheel was asking for thousands per frame and the LAST wedge drawn came out part
+        /// filled, which looked like broken geometry and was really the game refusing to draw
+        /// any more rectangles.
+        /// </summary>
+        private const float RowHeight = 0.0022f;
 
         /// <summary>A span wider than this is split, so the half-plane clip stays valid.</summary>
         private const float MaxSpanDegrees = 170f;
@@ -270,18 +279,65 @@ namespace Hoodrich.UI
             Rect(cx + ToX(centreDx), cy - dy, ToX(width), RowHeight * 1.6f, c);
         }
 
-        /// <summary>Ring outline, drawn as a thin wedge covering the given sweep.</summary>
+        /// <summary>
+        /// Ring outline, walked around the circumference rather than filled row by row.
+        ///
+        /// Scanning rows to draw a hairline ring means covering the whole height of the disc to
+        /// light up a couple of pixels at each end of every row, which cost hundreds of
+        /// rectangles for a line you can barely see. Stepping along the arc costs one small
+        /// square per step and looks the same.
+        /// </summary>
         public static void Arc(float cx, float cy, float radius,
                                float angFromDeg, float angToDeg, float thickness, Color c)
         {
-            Wedge(cx, cy, radius - thickness * 0.5f, radius + thickness * 0.5f,
-                  angFromDeg, angToDeg, c);
+            if (radius <= 0f || thickness <= 0f || c.A <= 0) return;
+
+            var span = angToDeg - angFromDeg;
+            if (span <= 0f) return;
+
+            // One step per unit of arc length roughly equal to the line thickness, so the
+            // squares overlap into a continuous ring, with a ceiling so a big circle cannot
+            // run away with the frame.
+            var circumference = (float)(2.0 * Math.PI * radius) * (span / 360f);
+            var steps = (int)Math.Min(260f, Math.Max(24f, circumference / Math.Max(0.0015f, thickness)));
+
+            const double deg2rad = Math.PI / 180.0;
+            var size = thickness * 1.7f;
+
+            for (var i = 0; i <= steps; i++)
+            {
+                var ang = (angFromDeg + span * i / steps) * deg2rad;
+
+                var dx = (float)Math.Sin(ang) * radius;
+                var dy = (float)Math.Cos(ang) * radius;
+
+                Rect(cx + ToX(dx), cy - dy, ToX(size), size, c);
+            }
         }
 
-        /// <summary>Filled disc.</summary>
+        /// <summary>
+        /// Filled disc.
+        ///
+        /// Its own row scan rather than a full-circle wedge. Going through Wedge splits the
+        /// circle into four sectors, each of which walks every row of the whole disc to fill
+        /// its own quarter -- so three quarters of the work is thrown away four times over.
+        /// </summary>
         public static void Disc(float cx, float cy, float radius, Color c)
         {
-            Wedge(cx, cy, 0f, radius, 0f, 360f, c);
+            if (radius <= 0f || c.A <= 0) return;
+
+            var r2 = radius * radius;
+
+            for (var dy = -radius; dy <= radius; dy += RowHeight)
+            {
+                var dy2 = dy * dy;
+                if (dy2 > r2) continue;
+
+                var half = (float)Math.Sqrt(r2 - dy2);
+                if (half <= 0f) continue;
+
+                Rect(cx, cy - dy, ToX(half * 2f), RowHeight * 1.6f, c);
+            }
         }
 
         // ---- text --------------------------------------------------------------

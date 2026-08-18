@@ -45,8 +45,12 @@ namespace Hoodrich.UI
                 if (Draw.HasTexture(Dict, name, out aspect)) return name;
             }
 
+            // Nothing in the list is in this install, so say so. Handing back the first name
+            // anyway meant the wedge drew a texture that does not exist -- which renders as
+            // nothing at all and is indistinguishable from a broken icon. Empty lets the item
+            // fall back to its text glyph, which is the whole point of having one.
             aspect = 1f;
-            return Textures[0];
+            return "";
         }
     }
 

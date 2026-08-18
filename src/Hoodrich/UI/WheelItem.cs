@@ -125,6 +125,9 @@ namespace Hoodrich.UI
             {
                 if (!Draw.EnsureTextureDict(icon.Dict)) return false;
 
+                // Retried while it keeps failing rather than cached: a dictionary can report
+                // itself resident a frame before its textures answer to being measured, and
+                // locking in that first answer left the icon missing for good.
                 if (string.IsNullOrEmpty(item.IconTexture))
                 {
                     // Resolved once and kept. The aspect comes from the texture that actually
