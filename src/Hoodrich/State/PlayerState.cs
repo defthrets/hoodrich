@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Hoodrich.Core;
 using Hoodrich.Economy;
 using Hoodrich.UI;
@@ -44,6 +45,36 @@ namespace Hoodrich.State
         /// dropped you across the map from everything the mod is about.
         /// </summary>
         public bool SleptAtStashHouse;
+
+        /// <summary>
+        /// Jobs finished for Lamar, by id.
+        ///
+        /// He works through his list in order and only opens up the choice once you have been
+        /// through all of it, so what matters is which ones are behind you rather than how many.
+        /// Ids rather than a count, so reordering or adding a job does not silently re-lock work
+        /// somebody has already done.
+        /// </summary>
+        public readonly List<string> MissionsDone = new List<string>();
+
+        public bool HasDone(string missionId)
+        {
+            if (string.IsNullOrEmpty(missionId)) return false;
+
+            foreach (var id in MissionsDone)
+            {
+                if (string.Equals(id, missionId, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+
+            return false;
+        }
+
+        public void MarkDone(string missionId)
+        {
+            if (string.IsNullOrEmpty(missionId) || HasDone(missionId)) return;
+
+            MissionsDone.Add(missionId);
+            Touch();
+        }
 
         private bool _dirty;
 
@@ -112,6 +143,13 @@ namespace Hoodrich.State
 
         // ---- persistence -------------------------------------------------------
 
+        private Json MissionsJson()
+        {
+            var arr = Json.Array();
+            foreach (var id in MissionsDone) arr.Add(Json.Str(id));
+            return arr;
+        }
+
         public Json ToJson()
         {
             return Json.Object()
@@ -122,6 +160,7 @@ namespace Hoodrich.State
                 .Set("gramsSold", Math.Round(GramsSold, 2))
                 .Set("docksUnlocked", DocksUnlocked)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
+                .Set("missionsDone", MissionsJson())
                 .Set("stash", Stash.ToJson());
         }
 
@@ -138,6 +177,13 @@ namespace Hoodrich.State
                 GramsSold = Math.Max(0f, doc["gramsSold"].AsFloat(0f));
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
+
+                MissionsDone.Clear();
+                foreach (var node in doc["missionsDone"].Items)
+                {
+                    var id = node.AsString("");
+                    if (!string.IsNullOrEmpty(id) && !HasDone(id)) MissionsDone.Add(id);
+                }
 
                 // "inventory" is the 0.1.0 key; migrate it so old saves keep their product.
                 Stash.LoadFrom(doc.Has("stash") ? doc["stash"] : doc["inventory"]);

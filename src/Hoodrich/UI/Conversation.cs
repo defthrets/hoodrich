@@ -236,10 +236,12 @@ namespace Hoodrich.UI
             var bodyHeight = _wrapped.Count * LineHeight;
             var choiceHeight = _node.Choices.Count * ChoiceHeight;
 
-            // Grown from the content and pinned to the bottom, so a long line pushes the panel
-            // up rather than off the bottom of the screen.
+            // Grown from the content and centred, like every other panel in the mod. It used to
+            // be pinned near the bottom of the screen, which put a conversation you are reading
+            // down in the subtitle band and out of step with the readouts and the transfer
+            // screen -- so where a panel appears depended on which one it was.
             var total = 0.048f + bodyHeight + 0.012f + choiceHeight + 0.030f;
-            var top = 0.92f - total;
+            var top = Math.Max(0.06f, 0.5f - total * 0.5f);
 
             Hud.RectFrom(PanelX, top, PanelWidth, total, Color.FromArgb(228, 12, 13, 15));
             Hud.RectFrom(PanelX, top, PanelWidth, 0.0035f, _node.SpeakerColour);

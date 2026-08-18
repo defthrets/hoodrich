@@ -8,11 +8,21 @@ namespace Hoodrich.Missions
     /// <summary>What kind of work it is, which decides how it plays out.</summary>
     internal enum MissionKind
     {
-        /// <summary>Ride out with the homies and put hands on somebody.</summary>
+        /// <summary>Ride out with the homies and put hands on somebody. Fists, both sides.</summary>
         RideOut,
 
+        /// <summary>Same trip, but everybody is carrying and the corner shoots back.</summary>
+        Hit,
+
         /// <summary>Take a car past a rival corner and shoot it up.</summary>
-        DriveBy
+        DriveBy,
+
+        /// <summary>
+        /// The push-bike job: ride out together, a straightener at the courts, a drink
+        /// afterwards, and ride back. Scripted end to end rather than assembled from a site
+        /// and a target count, because the shape of it IS the job.
+        /// </summary>
+        BikeRide
     }
 
     /// <summary>One job Lamar can put your way.</summary>
@@ -52,6 +62,18 @@ namespace Hoodrich.Missions
         public float Z;
 
         public int Targets = 3;
+
+        /// <summary>
+        /// Whether the law turns up on the way home.
+        ///
+        /// Put on the job rather than derived from the kind, because whether a piece of work
+        /// draws police is a property of the work, not of how you did it -- and it is what
+        /// makes the trip back to Lamar a part of the job instead of a walk.
+        /// </summary>
+        public bool EscapeHeat;
+
+        /// <summary>Stars applied when the work is done, if EscapeHeat is set.</summary>
+        public int HeatStars = 2;
         public int PayMin = 600;
         public int PayMax = 1200;
         public float Rep = 40f;
@@ -103,6 +125,8 @@ namespace Hoodrich.Missions
                     Y = node["y"].AsFloat(),
                     Z = node["z"].AsFloat(),
                     Targets = Math.Max(1, node["targets"].AsInt(3)),
+                    EscapeHeat = node["escapeHeat"].AsBool(false),
+                    HeatStars = Math.Max(1, Math.Min(5, node["heatStars"].AsInt(2))),
                     PayMin = Math.Max(0, node["payMin"].AsInt(600)),
                     PayMax = Math.Max(0, node["payMax"].AsInt(1200)),
                     Rep = Math.Max(0f, node["rep"].AsFloat(40f)),

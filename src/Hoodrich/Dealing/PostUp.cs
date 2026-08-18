@@ -79,7 +79,14 @@ namespace Hoodrich.Dealing
         private static readonly float[] DealSizes = { 1f, 1f, 1f, 3.5f };
 
         /// <summary>A sale this close to a uniform is a sale a uniform saw.</summary>
-        private const float CopWitnessRange = 25f;
+        /// <summary>
+        /// How close a uniform has to be for a handoff to be in their view.
+        ///
+        /// Matched to the crawl range on purpose: a patrol easing past at walking pace is
+        /// plainly looking at you, and serving somebody while they do it should cost, whether
+        /// or not the car happens to be inside an arbitrary shorter radius.
+        /// </summary>
+        private const float CopWitnessRange = PatrolCrawlRange;
 
         /// <summary>
         /// How fast a pitch warms up, on top of the product and the crowd.
@@ -980,14 +987,28 @@ namespace Hoodrich.Dealing
         private const int PatrolGapMinMs = 50 * 1000;
         private const int PatrolGapMaxMs = 210 * 1000;
 
-        /// <summary>How long they sit at the kerb before moving on.</summary>
-        private const int PatrolWatchMs = 10000;
+        /// <summary>
+        /// How long the crawl lasts if they never quite get past you.
+        ///
+        /// A backstop, not the normal exit. They are meant to leave because they have driven
+        /// by, not because a timer ran out.
+        /// </summary>
+        private const int PatrolCrawlMs = 9000;
+
+        /// <summary>They drop to a crawl inside this, and pick up again once past you.</summary>
+        private const float PatrolCrawlRange = 34f;
+
+        /// <summary>Cruising speed on the way in and on the way out, and the crawl between.</summary>
+        private const float PatrolCruiseSpeed = 17f;
+        private const float PatrolCrawlSpeed = 3.2f;
+
+        /// <summary>How far beyond you they aim, so the drive-by is a pass and not an arrival.</summary>
+        private const float PatrolOvershoot = 70f;
 
         /// <summary>Where they set off from, so they arrive rather than appear.</summary>
         private const float PatrolStartDistance = 180f;
 
-        /// <summary>How close to you they try to stop.</summary>
-        private const float PatrolMaxDistance = 30f;
+
 
         /// <summary>Give up on the drive-in after this, rather than idling forever.</summary>
         private const int PatrolArriveTimeoutMs = 60000;
@@ -997,19 +1018,25 @@ namespace Hoodrich.Dealing
 
         private Vehicle _patrolCar;
         private readonly List<Ped> _patrolCops = new List<Ped>();
-        private int _patrolUntil;
+        private int _patrolCrawlUntil;
+        private bool _patrolCrawling;
         private int _nextPatrolAt;
         private int _patrolArrivedAt;
         private int _patrolDispatchedAt;
         private Vector3 _patrolStop;
+        private Vector3 _patrolAim;
 
         /// <summary>
-        /// A patrol pulling over to sit on the corner for a minute.
+        /// A patrol driving past, slowly, having a look.
         ///
-        /// Nothing happens on its own -- they park, they watch, they go. What they change is
-        /// the cost of the next sale: the existing witness check already turns a handoff in
-        /// front of a uniform into a star, so the decision is simply whether you can wait a
-        /// minute or whether you are greedy.
+        /// They never stop. A car that parks up is a car you can simply wait out, and waiting
+        /// is not a decision -- it is a pause. A car that comes down the road at speed, drops
+        /// to a crawl as it draws level with you and then picks up and goes gives you a window
+        /// instead of a wall: you can keep serving through it if you want to, and the witness
+        /// check decides what that costs.
+        ///
+        /// Nothing about the pass is scripted at you. What changes is the price of the next
+        /// sale while they are alongside.
         /// </summary>
         private void RollPatrol(Ped player)
         {
@@ -1035,8 +1062,18 @@ namespace Hoodrich.Dealing
                 var start = World.GetNextPositionOnStreet(far);
                 if (start == Vector3.Zero) { SchedulePatrol(); return; }
 
-                _patrolStop = World.GetNextPositionOnStreet(player.Position.Around(PatrolMaxDistance));
-                if (_patrolStop == Vector3.Zero) { SchedulePatrol(); return; }
+                // Aimed PAST you, not at you. Driving to a point beside the player is what made
+                // them arrive and sit; driving to one well beyond it makes the same journey read
+                // as a car going somewhere that happens to come by your corner.
+                var through = player.Position - start;
+                through.Z = 0f;
+
+                if (through.Length() < 1f) { SchedulePatrol(); return; }
+
+                _patrolAim = player.Position + Vector3.Normalize(through) * PatrolOvershoot;
+
+                _patrolStop = World.GetNextPositionOnStreet(_patrolAim);
+                if (_patrolStop == Vector3.Zero) _patrolStop = _patrolAim;
 
                 _patrolCar = World.CreateVehicle(carModel.Value, start);
                 if (_patrolCar == null || !_patrolCar.Exists()) { SchedulePatrol(); return; }
@@ -1056,10 +1093,11 @@ namespace Hoodrich.Dealing
                 {
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, _patrolCar.Handle,
                                   _patrolStop.X, _patrolStop.Y, _patrolStop.Z,
-                                  17f, 0, _patrolCar.Model.Hash, 786603, 4f, true);
+                                  PatrolCruiseSpeed, 0, _patrolCar.Model.Hash, 786603, 4f, true);
                 }
 
-                _patrolUntil = 0;
+                _patrolCrawlUntil = 0;
+                _patrolCrawling = false;
                 _patrolArrivedAt = 0;
                 _patrolDispatchedAt = Game.GameTime;
                 SchedulePatrol();
@@ -1085,33 +1123,45 @@ namespace Hoodrich.Dealing
         {
             if (_patrolCar == null || !_patrolCar.Exists()) return;
 
-            // Still driving in. They are announced when they actually arrive, not when they
-            // were dispatched -- a warning about a car that is 180m away is a warning about
-            // nothing.
-            if (_patrolArrivedAt == 0)
-            {
-                var reached = _patrolCar.Position.DistanceTo(_patrolStop) < 12f ||
-                              (_patrolCar.Speed < 1.5f &&
-                               player.Position.DistanceTo(_patrolCar.Position) < PatrolMaxDistance * 1.6f);
+            var driver = _patrolCops.Count > 0 ? _patrolCops[0] : null;
+            var near = player.Position.DistanceTo(_patrolCar.Position);
 
-                if (!reached)
+            // ---- coming down the road ------------------------------------------
+            if (!_patrolCrawling && _patrolArrivedAt == 0)
+            {
+                if (near > PatrolCrawlRange)
                 {
-                    // Never got here: send them away rather than leave a car circling.
+                    // Never got anywhere near: send them away rather than leave a car circling.
                     if (Game.GameTime - _patrolDispatchedAt > PatrolArriveTimeoutMs) ReleasePatrol();
                     return;
                 }
 
+                // Drawn level. Same destination, a fraction of the speed -- so they slow into
+                // the crawl on their own rather than snapping to it, and they are still driving.
+                _patrolCrawling = true;
                 _patrolArrivedAt = Game.GameTime;
-                _patrolUntil = Game.GameTime + PatrolWatchMs;
+                _patrolCrawlUntil = Game.GameTime + PatrolCrawlMs;
 
-                Notify.Problem("cops nearby. Be careful.");
-                Log.Info("Patrol pulled up.");
+                Drive(driver, _patrolStop, PatrolCrawlSpeed);
+
+                Notify.Problem("cops rolling past. Be careful.");
+                Log.Info("Patrol crawling past at " + near.ToString("0") + "m.");
                 return;
             }
 
-            if (Game.GameTime < _patrolUntil) return;
+            if (!_patrolCrawling) return;
 
-            // Ten seconds is up and nothing happened, so they move on.
+            // ---- crawling past --------------------------------------------------
+            // They leave because they have gone by, not because a clock ran out. The timer is
+            // only there for the case where the road does not actually take them past you.
+            var past = near > PatrolCrawlRange;
+            var outOfPatience = Game.GameTime >= _patrolCrawlUntil;
+
+            if (!past && !outOfPatience) return;
+
+            // ---- and away -------------------------------------------------------
+            _patrolCrawling = false;
+
             foreach (var cop in _patrolCops)
             {
                 if (cop == null || !cop.Exists() || !cop.IsAlive) continue;
@@ -1121,7 +1171,7 @@ namespace Hoodrich.Dealing
                     if (cop.SeatIndex == VehicleSeat.Driver)
                     {
                         Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, cop.Handle, _patrolCar.Handle,
-                                      15f, 786603);
+                                      PatrolCruiseSpeed, 786603);
                     }
 
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, cop.Handle, false);
@@ -1136,7 +1186,27 @@ namespace Hoodrich.Dealing
             _patrolCar = null;
             SchedulePatrol();
 
-            Log.Info("Patrol moved on.");
+            Log.Info("Patrol carried on down the road.");
+        }
+
+        /// <summary>Sends the driver somewhere at a given speed, obeying the road.</summary>
+        private static void Drive(Ped driver, Vector3 to, float speed)
+        {
+            if (driver == null || !driver.Exists() || !driver.IsAlive) return;
+
+            try
+            {
+                var car = driver.CurrentVehicle;
+                if (car == null || !car.Exists()) return;
+
+                // Drive mode 786603 obeys the road: lights, lanes, junctions.
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
+                              to.X, to.Y, to.Z, speed, 0, car.Model.Hash, 786603, 4f, true);
+            }
+            catch
+            {
+                // The game's own driving takes over.
+            }
         }
 
         private Ped SpawnCopInCar(Vehicle car, int seat)
@@ -1297,7 +1367,7 @@ namespace Hoodrich.Dealing
                 catch { /* the wanted system takes it from here */ }
             }
 
-            // They are the law''s problem now, not ours; the stars drive the rest.
+            // They are the law's problem now, not ours; the stars drive the rest.
             _patrolCops.Clear();
 
             try { if (_patrolCar != null && _patrolCar.Exists()) _patrolCar.MarkAsNoLongerNeeded(); }
@@ -1305,6 +1375,7 @@ namespace Hoodrich.Dealing
 
             _patrolCar = null;
             _patrolArrivedAt = 0;
+            _patrolCrawling = false;
         }
 
         /// <summary>Lets the patrol go without ceremony, on teardown.</summary>
@@ -1326,6 +1397,8 @@ namespace Hoodrich.Dealing
             catch { /* teardown */ }
 
             _patrolCar = null;
+            _patrolCrawling = false;
+            _patrolArrivedAt = 0;
         }
 
         /// <summary>Ambient speech, so a sale is something you hear as well as read.</summary>

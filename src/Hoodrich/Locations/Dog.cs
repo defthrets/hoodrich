@@ -24,8 +24,18 @@ namespace Hoodrich.Locations
         private const float WanderRadius = 12f;
         private const int UpdateIntervalMs = 900;
 
+        /// <summary>
+        /// Model candidates. Enhanced ships a second Chop, and an install that has only one of
+        /// them should still get a dog rather than an empty yard.
+        /// </summary>
+        private static readonly string[] Models = { "a_c_chop", "a_c_chop_02" };
+
+        /// <summary>CREATE_PED ped type. 28 is PED_TYPE_ANIMAL; a dog made as a civilian is not one.</summary>
+        private const int PedTypeAnimal = 28;
+
         private Ped _chop;
         private int _lastUpdate;
+        private bool _gaveUp;
 
         public Ped Ped => _chop != null && _chop.Exists() ? _chop : null;
 
@@ -48,35 +58,65 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            if (distance <= SpawnRange) Spawn();
+            if (distance <= SpawnRange && !_gaveUp) Spawn();
         }
 
         private void Spawn()
         {
+            var spot = Yard;
+
             try
             {
-                var model = new Model("a_c_chop");
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(2000)) return;
-
-                var spot = Yard;
-
-                try
+                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 15f),
+                                          out var groundZ, GetGroundHeightMode.Normal) && groundZ > 0f)
                 {
-                    if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 15f),
-                                              out var groundZ, GetGroundHeightMode.Normal) && groundZ > 0f)
-                    {
-                        spot.Z = groundZ;
-                    }
+                    spot.Z = groundZ;
                 }
-                catch
+            }
+            catch
+            {
+                // Use the authored height.
+            }
+
+            foreach (var name in Models)
+            {
+                if (TrySpawn(name, spot)) return;
+            }
+
+            // Said once, not every second. A yard with no dog in it is worth one line in the log;
+            // one that says so every tick for the rest of the session is not.
+            _gaveUp = true;
+            Log.Warn("No Chop model would load, so the yard stays empty.");
+        }
+
+        private bool TrySpawn(string name, Vector3 spot)
+        {
+            try
+            {
+                var model = new Model(name);
+                if (!model.IsValid || !model.IsInCdImage || !model.Request(2000))
                 {
-                    // Use the authored height.
+                    Log.Debug("Chop model " + name + " is not in this install.");
+                    return false;
                 }
 
-                _chop = World.CreatePed(model, spot);
+                // Made as an ANIMAL rather than through the generic ped helper, which asks for a
+                // civilian. A dog created as the wrong ped type for its model is how the yard
+                // ended up empty with nothing in the log to say why.
+                var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeAnimal, model.Hash,
+                                                spot.X, spot.Y, spot.Z, 0f, false, false);
+
                 model.MarkAsNoLongerNeeded();
 
-                if (_chop == null || !_chop.Exists()) return;
+                if (handle == 0) return false;
+
+                _chop = Entity.FromHandle(handle) as Ped;
+
+                if (_chop == null || !_chop.Exists())
+                {
+                    _chop = null;
+                    return false;
+                }
 
                 _chop.IsPersistent = true;
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _chop.Handle, true, true);
@@ -89,11 +129,13 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.TASK_WANDER_IN_AREA, _chop.Handle,
                               spot.X, spot.Y, spot.Z, WanderRadius, 2f, 6f);
 
-                Log.Info("Chop is in the yard.");
+                Log.Info("Chop is in the yard at " + spot + " as " + name + ".");
+                return true;
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not put Chop in the yard: " + ex.Message);
+                Log.Debug("Could not put Chop in the yard as " + name + ": " + ex.Message);
+                return false;
             }
         }
 

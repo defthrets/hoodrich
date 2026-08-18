@@ -24,6 +24,9 @@ namespace Hoodrich.Missions
         /// <summary>On the block, doing the thing.</summary>
         Work,
 
+        /// <summary>Work done, but the law is on you and Lamar is not taking delivery yet.</summary>
+        Escape,
+
         /// <summary>Done, on the way back to Lamar for the money.</summary>
         Collect
     }
@@ -77,17 +80,37 @@ namespace Hoodrich.Missions
         private int _startedAt;
         private int _homiesLost;
 
+        /// <summary>
+        /// The one job that is scripted rather than assembled.
+        ///
+        /// Kept as its own thing rather than folded in here: the bike ride has six legs, a
+        /// conversation, a shop and a rule about weapons, and threading all of that through a
+        /// runner built for "drive there, deal with them, come back" would leave both harder to
+        /// follow than either is on its own.
+        /// </summary>
+        private readonly BikeRide _bike;
+
         public MissionRunner(PlayerState state, Affiliation crew, GangRegistry gangs, ZoneMap zones)
         {
             _state = state;
             _crew = crew;
             _gangs = gangs;
             _zones = zones;
+            _bike = new BikeRide(crew, gangs);
+        }
+
+        /// <summary>Set by Main and handed straight to the bike job for its courtyard exchange.</summary>
+        public Conversation Talk
+        {
+            get { return _bike.Talk; }
+            set { _bike.Talk = value; }
         }
 
         public MissionState State { get; private set; } = MissionState.None;
 
-        public bool IsRunning => State != MissionState.None;
+        public bool IsRunning => State != MissionState.None || _bike.IsRunning;
+
+        private bool OnBike => _bike.IsRunning;
 
         public MissionDef Current => _def;
 
@@ -96,6 +119,8 @@ namespace Hoodrich.Missions
         {
             get
             {
+                if (OnBike) return _bike.Objective;
+
                 switch (State)
                 {
                     case MissionState.Travel:
@@ -104,9 +129,11 @@ namespace Hoodrich.Missions
                             : "Get to " + ZoneName();
 
                     case MissionState.Work:
-                        return _def.Kind == MissionKind.DriveBy
-                            ? "Shoot up the corner -- stay in the car"
-                            : "Put hands on them";
+                        if (_def.Kind == MissionKind.DriveBy) return "Shoot up the corner -- stay in the car";
+                        return Fists(_def.Kind) ? "Put hands on them" : "Put them down";
+
+                    case MissionState.Escape:
+                        return "Lose the cops, then get back to Lamar";
 
                     case MissionState.Collect:
                         return "Go back to Lamar for the money";
@@ -115,6 +142,12 @@ namespace Hoodrich.Missions
                         return "";
                 }
             }
+        }
+
+        /// <summary>True for the jobs that are hands only, on both sides.</summary>
+        private static bool Fists(MissionKind kind)
+        {
+            return kind == MissionKind.RideOut || kind == MissionKind.BikeRide;
         }
 
         private string ZoneName()
@@ -140,6 +173,19 @@ namespace Hoodrich.Missions
                 : _zones.GroundedCentre(def.Zone);
 
             if (site == Vector3.Zero) return "Nobody could tell you where that is.";
+
+            if (def.Kind == MissionKind.BikeRide)
+            {
+                var no = _bike.Start(def);
+                if (no != null) return no;
+
+                _def = def;
+                _homiesLost = 0;
+                _startedAt = Game.GameTime;
+
+                Log.Info("Mission " + def.Id + " started as a bike ride.");
+                return null;
+            }
 
             _def = def;
             _site = site;
@@ -203,7 +249,7 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
 
                     // A ride-out is hands, so they only draw when the job says so.
-                    if (def.Kind != MissionKind.RideOut)
+                    if (!Fists(def.Kind))
                     {
                         var weapon = HomieWeapons[_rng.Next(HomieWeapons.Length)];
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
@@ -278,6 +324,16 @@ namespace Hoodrich.Missions
 
         public void Update()
         {
+            if (OnBike)
+            {
+                _bike.Update();
+
+                var wentWrong = _bike.Failure;
+                if (!string.IsNullOrEmpty(wentWrong)) Fail(wentWrong);
+
+                return;
+            }
+
             if (!IsRunning) return;
 
             var now = Game.GameTime;
@@ -310,6 +366,10 @@ namespace Hoodrich.Missions
                 case MissionState.Work:
                     TickWork(player);
                     return;
+
+                case MissionState.Escape:
+                    TickEscape();
+                    return;
             }
         }
 
@@ -337,8 +397,8 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
                     Function.Call(Hash.SET_PED_ACCURACY, ped.Handle, 20);
 
-                    // A ride-out is a beating on both sides; a drive-by is not.
-                    if (_def.Kind != MissionKind.RideOut)
+                    // A ride-out is a beating on both sides; the rest are not.
+                    if (!Fists(_def.Kind))
                     {
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
                                       Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_PISTOL"), 150, false, true);
@@ -401,8 +461,45 @@ namespace Hoodrich.Missions
 
             if (standing > 0) return;
 
+            if (_def.EscapeHeat)
+            {
+                // The trip home is part of the job. Without this the drive back is a formality
+                // you spend looking at a blip, and the only thing that ever went wrong happened
+                // before you got in the car.
+                State = MissionState.Escape;
+
+                Wanted(_def.HeatStars);
+                Notify.Important("~r~Somebody called it in.~s~ Lose them, then get back to Lamar.");
+                return;
+            }
+
             State = MissionState.Collect;
             Notify.Important("~g~That is them done.~s~ Go back to Lamar.");
+        }
+
+        /// <summary>Waiting on the stars to drop before he will take it off you.</summary>
+        private void TickEscape()
+        {
+            if (Game.Player.Wanted.WantedLevel > 0) return;
+
+            State = MissionState.Collect;
+            Notify.Important("~g~You are clear.~s~ Go back to Lamar.");
+        }
+
+        /// <summary>Raises the wanted level, never lowers it.</summary>
+        private static void Wanted(int stars)
+        {
+            try
+            {
+                if (Game.Player.Wanted.WantedLevel >= stars) return;
+
+                Game.Player.Wanted.SetWantedLevel(stars, false);
+                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not set the wanted level: " + ex.Message);
+            }
         }
 
         private void CountLostHomies()
@@ -422,7 +519,7 @@ namespace Hoodrich.Missions
         // ---- finishing ---------------------------------------------------------
 
         /// <summary>True when the player can hand the job in.</summary>
-        public bool ReadyToCollect => State == MissionState.Collect;
+        public bool ReadyToCollect => OnBike ? _bike.ReadyToCollect : State == MissionState.Collect;
 
         /// <summary>Pays out and clears down. Returns what Lamar says.</summary>
         public string Collect()
@@ -438,6 +535,7 @@ namespace Hoodrich.Missions
 
             _crew.AddRep(rep, "for the work");
             _state.AddRespect(rep * 0.5f);
+            _state.MarkDone(def.Id);
             _state.Touch();
 
             Notify.Important("~g~+$" + pay.ToString("N0") + "~s~ and " + rep.ToString("0") + " rep.");
@@ -463,6 +561,8 @@ namespace Hoodrich.Missions
 
         private void Clear()
         {
+            _bike.Clear();
+
             ClearSiteBlip();
             ClearBlips();
 
@@ -520,7 +620,7 @@ namespace Hoodrich.Missions
         /// <summary>One line, top left, saying what you are meant to be doing.</summary>
         public void Draw()
         {
-            if (!IsRunning) return;
+            if (!IsRunning || _def == null) return;
 
             // Centred at the top: it belongs to the job, not to the corner of the screen.
             const float width = 0.26f;

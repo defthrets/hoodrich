@@ -52,6 +52,26 @@ namespace Hoodrich.Missions
 
             var node = Node("What's happening. You looking for work or you just walking past?");
 
+            // He works through his list in order. Until it is finished there is no menu, just
+            // the next thing -- picking your own jobs off a board is a shop, and he is not a
+            // shop, he is somebody who tells you what needs doing. Once you have been through
+            // the lot he stops deciding for you and the choice opens up.
+            var next = NextUndone();
+
+            if (next != null)
+            {
+                if (_state.Rank < next.MinRank)
+                {
+                    return Nothing("Got something for you, but not yet. Make more of a name first.");
+                }
+
+                node.Say(next.Name, () => Brief(next),
+                         "$" + next.PayMin.ToString("N0") + "-" + next.PayMax.ToString("N0"));
+
+                node.Leave("Not today.");
+                return node;
+            }
+
             var offered = 0;
 
             foreach (var def in _missions.All)
@@ -78,9 +98,23 @@ namespace Hoodrich.Missions
             return node;
         }
 
-        private DialogueNode Nothing()
+        /// <summary>The first job on his list you have not finished, or null once they are all behind you.</summary>
+        private MissionDef NextUndone()
         {
-            var node = Node("Ain't got nothing right now. Come see me later.");
+            foreach (var def in _missions.All)
+            {
+                if (!_state.HasDone(def.Id)) return def;
+            }
+
+            return null;
+        }
+
+        private DialogueNode Nothing(string line = null)
+        {
+            var node = Node(string.IsNullOrEmpty(line)
+                ? "Ain't got nothing right now. Come see me later."
+                : line);
+
             node.Leave("Alright.");
             return node;
         }
@@ -101,7 +135,8 @@ namespace Hoodrich.Missions
                      "$" + def.PayMin.ToString("N0") + "-" + def.PayMax.ToString("N0") +
                      "  ·  " + def.Rep.ToString("0") + " rep");
 
-            node.Say("Nah, what else you got?", Root);
+            if (NextUndone() == null) node.Say("Nah, what else you got?", Root);
+
             node.Leave("Forget it.");
             return node;
         }

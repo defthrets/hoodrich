@@ -121,6 +121,9 @@ namespace Hoodrich
 
                 _talk = new Conversation();
 
+                // The bike job runs its own exchange on the court, so it needs the same screen.
+                _jobs.Talk = _talk;
+
                 _info = new InfoPanel();
                 _stashScreen = new StashScreen();
                 _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing, _cfg);

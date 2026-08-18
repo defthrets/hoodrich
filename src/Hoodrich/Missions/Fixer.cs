@@ -21,7 +21,7 @@ namespace Hoodrich.Missions
     internal sealed class Fixer
     {
         /// <summary>The courtyard on Chamberlain, where he waits.</summary>
-        private static readonly Vector3 Spot = new Vector3(-84.972f, -1610.382f, 31.485f);
+        internal static readonly Vector3 Spot = new Vector3(-84.972f, -1610.382f, 31.485f);
         private const float Heading = 206f;
 
         private const float SpawnRange = 110f;
@@ -172,6 +172,8 @@ namespace Hoodrich.Missions
                     _ped.IsPersistent = true;
                     _ped.BlockPermanentEvents = true;
 
+                    GiveVoice(_ped);
+
                     Log.Info("Lamar is on his corner.");
                     return;
                 }
@@ -237,57 +239,47 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>Ambient lines, so walking up to him and leaving are things you hear.</summary>
-
-
-        private static readonly string[] HelloLines = { "GENERIC_HOWS_IT_GOING", "GENERIC_HI", "CHAT_STATE" };
-
-
+        private static readonly string[] HelloLines = { "GENERIC_HOWS_IT_GOING", "GENERIC_HI" };
         private static readonly string[] ByeLines = { "GENERIC_BYE", "GENERIC_THANKS" };
 
+        private static readonly Random Rng = new Random();
 
+        /// <summary>
+        /// Lamar's own voice, reasserted every time he spawns.
+        ///
+        /// The stash house used to blank the ambient voice of every ped within 22 m, which is
+        /// permanent -- so anybody who walked past Denise's before coming here found him mute
+        /// for the rest of the session and no amount of speech calls brought him back. The
+        /// sweep is gone, but a save made while it was live can still be carrying the damage,
+        /// so his voice is set rather than assumed.
+        /// </summary>
+        private const string Voice = "LAMAR";
 
-        private static void Say(Ped ped, string[] lines)
-
-
+        private static void GiveVoice(Ped ped)
         {
+            if (ped == null || !ped.Exists()) return;
 
-
-            if (ped == null || !ped.Exists() || lines.Length == 0) return;
-
-
-        
-
-
-            try
-
-
-            {
-
-
-                var line = lines[new Random().Next(lines.Length)];
-
-
-                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle, line, "SPEECH_PARAMS_FORCE");
-
-
-            }
-
-
-            catch
-
-
-            {
-
-
-                // A missing line costs nothing.
-
-
-            }
-
-
+            try { Function.Call(Hash.SET_AMBIENT_VOICE_NAME, ped.Handle, Voice); }
+            catch { /* he keeps whatever the model came with */ }
         }
 
+        private static void Say(Ped ped, string[] lines)
+        {
+            if (ped == null || !ped.Exists() || lines.Length == 0) return;
 
+            try
+            {
+                // Anything already coming out of him is in the way of the line we want.
+                Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, ped.Handle);
+
+                var line = lines[Rng.Next(lines.Length)];
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle, line, "SPEECH_PARAMS_FORCE");
+            }
+            catch
+            {
+                // A missing line costs nothing.
+            }
+        }
 
         public void HoldForTalk()
         {
@@ -316,7 +308,9 @@ namespace Hoodrich.Missions
             _held = false;
 
             Say(_ped, ByeLines);
-            try            {                _ped.Task.ClearAll();
+            try
+            {
+                _ped.Task.ClearAll();
                 Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _ped.Handle,
                               "WORLD_HUMAN_STAND_MOBILE", 0, true);
                 _ped.Heading = Heading;

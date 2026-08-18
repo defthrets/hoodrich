@@ -76,6 +76,7 @@ namespace Hoodrich.Locations
         {
             EnsureBlip();
             Hush();
+            ClearHousehold();
 
             var here = AtDoor;
             if (here == _inside) return;
@@ -138,10 +139,11 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.STOP_CURRENT_PLAYING_SPEECH, player.Handle);
                 Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, player.Handle);
 
-                // Only the people who live here, and only for as long as we are stood in it.
-                // This used to sweep every ped within 22 m and blank their ambient voice, which
-                // is permanent and irreversible -- so anybody who had ever walked past the house
-                // was mute for the rest of the session, our own leaders and homies included.
+                // The household is removed outright now rather than quietened, so this is only
+                // here for the frame or two before that lands. It used to sweep every ped within
+                // 22 m and blank their ambient voice, which is permanent and irreversible --
+                // anybody who had ever walked past the house was mute for the rest of the
+                // session, our own leaders and homies included.
                 foreach (var ped in World.GetNearbyPeds(player, QuietRange))
                 {
                     if (ped == null || !ped.Exists() || ped.Handle == player.Handle) continue;
@@ -156,6 +158,54 @@ namespace Hoodrich.Locations
                 Log.Debug("Could not quieten the house: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// Takes Denise off the couch.
+        ///
+        /// She is not ours -- she is placed by the game, or by Open All Interiors -- so this is
+        /// a deletion rather than anything we can politely undo. It is deliberate: the couch is
+        /// a vanilla activity spot, and a ped sat in it is what stops you sitting down, putting
+        /// the television on and rolling something. The house is meant to be a place you live
+        /// in, and you cannot live in a room somebody else is permanently occupying.
+        ///
+        /// The game repopulates the interior on its own when the area next streams back in, so
+        /// this holds only while the mod is loaded.
+        /// </summary>
+        private void ClearHousehold()
+        {
+            if (!AtDoor) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            try
+            {
+                foreach (var ped in World.GetNearbyPeds(player, QuietRange))
+                {
+                    if (ped == null || !ped.Exists() || ped.Handle == player.Handle) continue;
+                    if (!IsHousehold(ped)) continue;
+
+                    // Taken off the game's books first. Deleting a ped the game still considers
+                    // its own leaves a handle behind that other scripts can trip over.
+                    ped.IsPersistent = false;
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, false, true);
+                    ped.MarkAsNoLongerNeeded();
+                    ped.Delete();
+
+                    if (!_saidCouchIsFree)
+                    {
+                        _saidCouchIsFree = true;
+                        Log.Info("Denise cleared off the couch.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not clear the couch: " + ex.Message);
+            }
+        }
+
+        private bool _saidCouchIsFree;
 
         /// <summary>True for the household models -- Denise and Franklin's own kin.</summary>
         private static bool IsHousehold(Ped ped)
