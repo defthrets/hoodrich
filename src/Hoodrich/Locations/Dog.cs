@@ -122,11 +122,38 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>Walks him back if he has wandered off the yard.</summary>
+        /// <summary>How long he is left to walk back before he is told again.</summary>
+        private const int LeashRetaskMs = 9000;
+
+        /// <summary>Close enough that you are plainly with him, and he is yours to walk.</summary>
+        private const float WithYouRange = 14f;
+
+        private int _lastLeash;
+
+        /// <summary>
+        /// Walks him back if he has wandered off the yard, and otherwise leaves him alone.
+        ///
+        /// Two things were wrong with doing this every tick. Clearing his tasks is exactly what
+        /// stops the game's own Chop from being the game's own Chop -- petting him, playing with
+        /// him, walking him anywhere at all -- and this fired every second and a half the moment
+        /// he was fourteen metres from a kennel. And re-issuing the walk on every pass restarts
+        /// the path, so a dog told to come home four times a minute never gets there.
+        ///
+        /// So: if you are anywhere near him he is yours and nothing here touches him, and if he
+        /// is genuinely off on his own he is told once and given time to arrive.
+        /// </summary>
         private void Leash()
         {
             if (_chop == null || !_chop.Exists() || !_chop.IsAlive) return;
             if (_chop.Position.DistanceTo(Yard) <= LeashRange) return;
+
+            var player = Game.Player.Character;
+
+            if (player != null && player.Exists() &&
+                player.Position.DistanceTo(_chop.Position) <= WithYouRange)
+            {
+                return;
+            }
 
             // Far enough that he has plainly been picked up by something else -- the story, a
             // stream-in somewhere across the map -- so put him back rather than walk him.
@@ -136,11 +163,13 @@ namespace Hoodrich.Locations
                 return;
             }
 
+            if (Game.GameTime - _lastLeash < LeashRetaskMs) return;
+            _lastLeash = Game.GameTime;
+
             try
             {
                 var spot = Ground(Yard);
 
-                _chop.Task.ClearAll();
                 Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _chop.Handle,
                               spot.X, spot.Y, spot.Z, 1.6f, 20000, 0f, 0.5f);
             }

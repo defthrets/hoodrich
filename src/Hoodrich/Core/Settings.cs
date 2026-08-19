@@ -68,14 +68,8 @@ namespace Hoodrich.Core
         /// <summary>Seconds the game's own weapon wheel is held open after picking Weapons.</summary>
         public int VanillaWheelSeconds = 5;
 
-        /// <summary>Texture used to fill wedges. Overridable so a missing texture is a config fix, not a rebuild.</summary>
-        public string WheelTextureDict = "commonmenu";
-        public string WheelTexture = "gradient_bgd";
-
         // ---- economy -----------------------------------------------------------
-        public int StartingRespect = 0;
         public float BulkPurchaseDiscountPercent = 50f;
-        public float BulkSaleDiscountPercent = 25f;
 
         /// <summary>Grams that must be sold before a corner dealer will name his source.</summary>
         public float DocksUnlockGrams = 50f;
@@ -140,17 +134,8 @@ namespace Hoodrich.Core
 
         // ---- hideouts ----------------------------------------------------------
 
-        /// <summary>Price of a place on a block.</summary>
-        public int HideoutBasePrice = 15000;
-
-        /// <summary>How many places you can hold at once.</summary>
-        public int MaxHideouts = 2;
-
         /// <summary>Grams each hideout's stash holds.</summary>
         public float HideoutStashCapacity = 5000f;
-
-        /// <summary>Fraction of the purchase price returned when you sell one back.</summary>
-        public float HideoutSellbackPercent = 60f;
 
         // ---- posting up --------------------------------------------------------
 
@@ -172,13 +157,7 @@ namespace Hoodrich.Core
         /// <summary>Fine when a search finds product on you.</summary>
         public int PostUpFine = 2500;
 
-        // ---- map ---------------------------------------------------------------
-
-        /// <summary>Shade gang turf on the map in each gang's colour.</summary>
-        public bool ShowTurfOnMap = true;
-
-        /// <summary>Opacity of those turf shades, 0-255.</summary>
-        public int TurfBlipAlpha = 70;
+        // ---- joining -----------------------------------------------------------
 
         /// <summary>Grams a gang leader fronts you when he takes you on.</summary>
         public float LeaderFrontGrams = 20f;
@@ -207,14 +186,9 @@ namespace Hoodrich.Core
             s.MouseSensitivity = Clamp(ini.GetFloat("Wheel", "MouseSensitivity", s.MouseSensitivity), 0.1f, 5f);
             s.PlaySounds = ini.GetBool("Wheel", "PlaySounds", s.PlaySounds);
             s.VanillaWheelSeconds = (int)Clamp(ini.GetInt("Wheel", "VanillaWheelSeconds", s.VanillaWheelSeconds), 1f, 30f);
-            s.WheelTextureDict = ini.GetString("Wheel", "TextureDict", s.WheelTextureDict);
-            s.WheelTexture = ini.GetString("Wheel", "Texture", s.WheelTexture);
 
-            s.StartingRespect = ini.GetInt("Economy", "StartingRespect", s.StartingRespect);
             s.BulkPurchaseDiscountPercent =
                 Clamp(ini.GetFloat("Economy", "BulkPurchaseDiscountPercent", s.BulkPurchaseDiscountPercent), 0f, 90f);
-            s.BulkSaleDiscountPercent =
-                Clamp(ini.GetFloat("Economy", "BulkSaleDiscountPercent", s.BulkSaleDiscountPercent), 0f, 90f);
             s.DocksUnlockGrams = Math.Max(0f, ini.GetFloat("Economy", "DocksUnlockGrams", s.DocksUnlockGrams));
             s.MarketDriftIntervalMinutes =
                 Math.Max(0f, ini.GetFloat("Economy", "MarketDriftIntervalMinutes", s.MarketDriftIntervalMinutes));
@@ -250,12 +224,8 @@ namespace Hoodrich.Core
             s.LoanVigGrowthPercent =
                 Clamp(ini.GetFloat("Loans", "LoanVigGrowthPercent", s.LoanVigGrowthPercent), 0f, 200f);
 
-            s.HideoutBasePrice = Math.Max(0, ini.GetInt("Hideouts", "HideoutBasePrice", s.HideoutBasePrice));
-            s.MaxHideouts = (int)Clamp(ini.GetInt("Hideouts", "MaxHideouts", s.MaxHideouts), 1f, 20f);
             s.HideoutStashCapacity =
                 Math.Max(1f, ini.GetFloat("Hideouts", "HideoutStashCapacity", s.HideoutStashCapacity));
-            s.HideoutSellbackPercent =
-                Clamp(ini.GetFloat("Hideouts", "HideoutSellbackPercent", s.HideoutSellbackPercent), 0f, 100f);
 
             s.PostUpApproachChance =
                 Clamp(ini.GetFloat("PostUp", "PostUpApproachChance", s.PostUpApproachChance), 0f, 100f);
@@ -268,8 +238,6 @@ namespace Hoodrich.Core
                 Clamp(ini.GetFloat("PostUp", "PostUpSearchSeconds", s.PostUpSearchSeconds), 1f, 60f);
             s.PostUpFine = Math.Max(0, ini.GetInt("PostUp", "PostUpFine", s.PostUpFine));
 
-            s.ShowTurfOnMap = ini.GetBool("Map", "ShowTurfOnMap", s.ShowTurfOnMap);
-            s.TurfBlipAlpha = (int)Clamp(ini.GetInt("Map", "TurfBlipAlpha", s.TurfBlipAlpha), 0f, 255f);
             s.LeaderFrontGrams = Math.Max(0f, ini.GetFloat("Map", "LeaderFrontGrams", s.LeaderFrontGrams));
 
             // An inner radius at or past the outer one would render nothing at all.

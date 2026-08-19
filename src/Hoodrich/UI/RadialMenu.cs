@@ -346,8 +346,10 @@ namespace Hoodrich.UI
             var h = radialSize * 0.72f;
             var scale = hovered ? 1.06f : 1f;
 
+            // One rect. The second one drew the identical colour very slightly smaller on top
+            // of the first, which is invisible and costs a draw call out of a per-frame budget
+            // this wheel has already been over once.
             Draw.RectUniform(px, py, w * scale, h * scale, fill);
-            Draw.RectUniform(px, py, w * scale * 0.97f, h * scale * 0.9f, Palette.Alpha(fill, fill.A));
         }
 
         /// <summary>Weapon art is wider than it is tall; these are height-relative.</summary>
