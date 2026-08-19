@@ -39,9 +39,6 @@ namespace Hoodrich.UI
 
         public int Depth => _stack.Count;
 
-        /// <summary>Index of the hovered segment, or -1 when the cursor is in the dead zone.</summary>
-        public int Hovered => _hovered;
-
         public WheelItem HoveredItem
         {
             get

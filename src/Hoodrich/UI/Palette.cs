@@ -24,14 +24,10 @@ namespace Hoodrich.UI
         /// <summary>Present but not pickable.</summary>
         public static readonly Color SegmentDisabled = Color.FromArgb(120, 8, 9, 10);
 
-        public static readonly Color SegmentEdge = Color.FromArgb(190, 0, 0, 0);
-
         /// <summary>Thin bright ring around the wheel, as the vanilla wheel has.</summary>
         public static readonly Color Ring = Color.FromArgb(90, 255, 255, 255);
 
         public static readonly Color Hub = Color.FromArgb(200, 8, 9, 11);
-        public static readonly Color HubEdge = Color.FromArgb(120, 255, 255, 255);
-
         /// <summary>Solid header strip on a panel, the way GTA's own menus title a column.</summary>
         public static readonly Color PanelHeader = Color.FromArgb(235, 22, 24, 26);
 
@@ -57,18 +53,6 @@ namespace Hoodrich.UI
 
         /// <summary>Same colour at a different alpha.</summary>
         public static Color Alpha(Color c, int alpha) => Color.FromArgb(alpha, c.R, c.G, c.B);
-
-        /// <summary>Linear blend; t = 0 gives <paramref name="a"/>.</summary>
-        public static Color Lerp(Color a, Color b, float t)
-        {
-            if (t <= 0f) return a;
-            if (t >= 1f) return b;
-            return Color.FromArgb(
-                (int)(a.A + (b.A - a.A) * t),
-                (int)(a.R + (b.R - a.R) * t),
-                (int)(a.G + (b.G - a.G) * t),
-                (int)(a.B + (b.B - a.B) * t));
-        }
 
         /// <summary>
         /// Readable text colour for a given wedge fill. Gang tints range from pale yellow to deep

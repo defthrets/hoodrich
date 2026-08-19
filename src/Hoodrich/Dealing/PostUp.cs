@@ -227,8 +227,6 @@ namespace Hoodrich.Dealing
 
         public DrugDef Product => _product;
 
-        public float CornerHeat => _cornerHeat;
-
         /// <summary>Heat from something that happened here but is not ours to time.</summary>
         public void AddCornerHeat(float amount)
         {

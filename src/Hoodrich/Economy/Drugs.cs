@@ -144,22 +144,5 @@ namespace Hoodrich.Economy
             Register(new DrugDef { Id = "coke", Name = "Cocaine", Tag = "COKE", BasePrice = 100f, Tier = 3, HeatFactor = 1.6f, SplitVerb = "Cut", UnitName = "grams" });
         }
 
-        /// <summary>Writes the current catalogue out as a starting point for player edits.</summary>
-        public bool WriteTemplate(string path)
-        {
-            var arr = Json.Array();
-            foreach (var d in _ordered)
-            {
-                arr.Add(Json.Object()
-                    .Set("id", d.Id)
-                    .Set("name", d.Name)
-                    .Set("tag", d.Tag)
-                    .Set("basePrice", d.BasePrice)
-                    .Set("bulkPrice", d.BulkPrice)
-                    .Set("tier", d.Tier)
-                    .Set("heatFactor", d.HeatFactor));
-            }
-            return JsonFile.Write(path, Json.Object().Set("drugs", arr));
-        }
     }
 }

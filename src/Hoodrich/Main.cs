@@ -219,6 +219,7 @@ namespace Hoodrich
                 _fixerTalk = new FixerTalk(_fixer, _missions, _jobs, _crew, _state);
                 _fixer.Talk = _talk;
                 _fixer.TalkBuilder = () => _fixerTalk.Root();
+                _fixerTalk.BlockUnderAttack = () => _war != null && _war.IsRunning;
 
                 _bigjTalk = new ArmourerTalk(_bigj, _crew, _state);
                 _bigj.Talk = _talk;

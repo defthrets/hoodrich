@@ -50,8 +50,6 @@ namespace Hoodrich.Economy
 
         public float FreeSpace => Math.Max(0f, Capacity - Total);
 
-        public bool IsEmpty => Total < 0.005f;
-
         // ---- bulk --------------------------------------------------------------
 
         public float BulkOf(string drugId)
@@ -102,8 +100,6 @@ namespace Hoodrich.Economy
             return _packaged.TryGetValue(drugId, out var h) && h.Grams > 0.005f ? h.Purity : 1f;
         }
 
-        public bool HasPackaged(string drugId, float grams) => PackagedOf(drugId) >= grams - 0.0001f;
-
         /// <summary>
         /// Adds street-ready product, blending purity by weight. Returns how much fit.
         /// </summary>
@@ -143,16 +139,6 @@ namespace Hoodrich.Economy
         }
 
         // ---- queries -----------------------------------------------------------
-
-        public List<DrugDef> WithBulk(Drugs catalogue)
-        {
-            var list = new List<DrugDef>();
-            foreach (var d in catalogue.All)
-            {
-                if (BulkOf(d.Id) > 0.005f) list.Add(d);
-            }
-            return list;
-        }
 
         public List<DrugDef> WithPackaged(Drugs catalogue)
         {

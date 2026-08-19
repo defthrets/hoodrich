@@ -124,6 +124,15 @@ namespace Hoodrich.State
             var fraction = Clamp01(_cfg.LoseOnDeathPercent / 100f);
             if (fraction <= 0f) return;
 
+            // Going down twice without picking the first one up used to leave that bag behind
+            // as a persistent prop with a blip on it and nothing tracking either -- a marker
+            // pointing at a bag that no longer contained anything.
+            if (HasBag)
+            {
+                ClearBag();
+                Notify.Ticker("~o~Whatever was in the last bag is gone.~s~");
+            }
+
             _bagBulk.Clear();
             _bagPackaged.Clear();
 
@@ -264,24 +273,60 @@ namespace Hoodrich.State
             Recover();
         }
 
+        /// <summary>
+        /// Takes back as much as will fit, and leaves the rest in the bag.
+        ///
+        /// It used to empty the bag whatever happened -- walk over your own product with a full
+        /// bag and the message read "no room for any of it" while the bag was deleted and every
+        /// gram in it destroyed. Now what does not fit stays on the pavement where you dropped
+        /// it, and the bag stays with it, so you can go and make room.
+        /// </summary>
         private void Recover()
         {
             var stash = _state.Stash;
             var back = 0f;
 
-            foreach (var kv in _bagBulk) back += stash.AddBulk(kv.Key, kv.Value);
-            foreach (var kv in _bagPackaged) back += stash.AddPackaged(kv.Key, kv.Value.Grams, kv.Value.Purity);
+            var bulkLeft = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+            var packagedLeft = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var kv in _bagBulk)
+            {
+                var took = stash.AddBulk(kv.Key, kv.Value);
+                back += took;
+
+                var over = kv.Value - took;
+                if (over > 0.005f) bulkLeft[kv.Key] = over;
+            }
+
+            foreach (var kv in _bagPackaged)
+            {
+                var took = stash.AddPackaged(kv.Key, kv.Value.Grams, kv.Value.Purity);
+                back += took;
+
+                var over = kv.Value.Grams - took;
+                if (over > 0.005f) packagedLeft[kv.Key] = new Holding { Grams = over, Purity = kv.Value.Purity };
+            }
 
             _bagBulk.Clear();
             _bagPackaged.Clear();
-            ClearBag();
+
+            foreach (var kv in bulkLeft) _bagBulk[kv.Key] = kv.Value;
+            foreach (var kv in packagedLeft) _bagPackaged[kv.Key] = kv.Value;
+
+            var leftOver = _bagBulk.Count > 0 || _bagPackaged.Count > 0;
+
+            if (!leftOver) ClearBag();
+
             _state.Touch();
 
             Notify.Ticker(back > 0.005f
-                ? "~g~Picked your bag back up.~s~ " + back.ToString("0.#") + "g"
-                : "~o~No room for any of it.~s~");
+                ? (leftOver
+                    ? "~g~Took what fits.~s~ " + back.ToString("0.#") + "g -- the rest is still there"
+                    : "~g~Picked your bag back up.~s~ " + back.ToString("0.#") + "g")
+                : "~o~No room for any of it.~s~ It's still on the floor");
 
-            Log.Info("Dead drop recovered: " + back.ToString("0.##") + "g.");
+            Log.Info("Dead drop recovered: " + back.ToString("0.##") + "g" +
+                     (leftOver ? ", some left in the bag." : "."));
         }
 
         private void ClearBag()

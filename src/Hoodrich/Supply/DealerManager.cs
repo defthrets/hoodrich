@@ -70,9 +70,6 @@ namespace Hoodrich.Supply
 
         public IReadOnlyList<DealerDef> All => _defs;
 
-        /// <summary>The dealer currently standing in the world, or null.</summary>
-        public DealerDef LiveDealer => _liveDef;
-
         public float LiveDistance
         {
             get

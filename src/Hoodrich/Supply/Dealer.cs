@@ -82,12 +82,6 @@ namespace Hoodrich.Supply
 
         public string Farewell = "";
 
-        /// <summary>What a leader says when he takes you on.</summary>
-        public string JoinAccept = "";
-
-        /// <summary>What a leader says when he will not.</summary>
-        public string JoinRefuse = "";
-
         /// <summary>
         /// Ambient voice name, so the ped speaks in character. Applied with
         /// SET_AMBIENT_VOICE_NAME; a wrong name costs the voice, not the ped.
@@ -95,8 +89,6 @@ namespace Hoodrich.Supply
         public string Voice = "";
 
         public bool IsGangDealer => Kind == DealerKind.GangCorner && !string.IsNullOrEmpty(GangId);
-
-        public bool IsLeader => Kind == DealerKind.Leader && !string.IsNullOrEmpty(GangId);
 
         public bool IsOpenAt(int hour)
         {

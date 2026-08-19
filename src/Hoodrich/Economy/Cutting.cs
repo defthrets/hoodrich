@@ -195,6 +195,10 @@ namespace Hoodrich.Economy
             var taken = _stash.RemoveBulk(product.Id, bulk);
             if (taken <= 0f)
             {
+                // Stand him up first. Returning here without clearing the scenario left the
+                // player crouched over a counter with no batch running and no way out of it.
+                ClearWorkScenario();
+
                 Notify.Problem("the weight was gone before you finished.");
                 return;
             }
@@ -206,8 +210,6 @@ namespace Hoodrich.Economy
 
             ClearWorkScenario();
 
-
-
             Notify.Ticker("~g~" + made.ToString("0") + "~s~ " + product.UnitName + " of " + product.Name + " at " +
                           (purity * 100f).ToString("0") + "%");
             Log.Info("Cut " + taken.ToString("0.#") + "g bulk " + product.Id + " -> " +
@@ -215,9 +217,7 @@ namespace Hoodrich.Economy
         }
 
         private void Cancel(string reason)
-
         {
-
             ClearWorkScenario();
 
             _product = null;

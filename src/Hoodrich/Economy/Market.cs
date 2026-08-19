@@ -44,24 +44,6 @@ namespace Hoodrich.Economy
             return _drift.TryGetValue(drugId, out var d) ? d.Value : 1f;
         }
 
-        /// <summary>+1 rising, -1 falling, 0 flat since the last step. For the status board.</summary>
-        public int Trend(string drugId)
-        {
-            if (!_drift.TryGetValue(drugId, out var d)) return 0;
-            var delta = d.Value - d.Previous;
-            if (Math.Abs(delta) < 0.005f) return 0;
-            return delta > 0f ? 1 : -1;
-        }
-
-        /// <summary>Arrow plus percentage, ready to drop into a panel row.</summary>
-        public string TrendLabel(string drugId)
-        {
-            var mult = Multiplier(drugId);
-            var pct = (mult - 1f) * 100f;
-            var arrow = Trend(drugId) > 0 ? "^" : Trend(drugId) < 0 ? "v" : "-";
-            return arrow + " " + (pct >= 0f ? "+" : "") + pct.ToString("0") + "%";
-        }
-
         public void Update(Drugs catalogue)
         {
             if (_cfg.MarketDriftIntervalMinutes <= 0f) return;

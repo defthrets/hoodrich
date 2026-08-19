@@ -104,8 +104,6 @@ namespace Hoodrich.Gangs
         /// <summary>Registry lookup, exposed so callers do not need their own GangRegistry reference.</summary>
         public GangDef GangById(string gangId) => _gangs.Get(gangId);
 
-        public IEnumerable<GangStanding> AllStandings => _standings.Values;
-
         // ---- joining and leaving -----------------------------------------------
 
         /// <summary>Returns a player-facing refusal, or null on success.</summary>
@@ -427,9 +425,6 @@ namespace Hoodrich.Gangs
         /// <summary>Rep per minute simply spent on your gang's blocks.</summary>
         private const float PresenceRepPerMinute = 0.5f;
 
-        /// <summary>Rep for finishing a piece of work they put your way.</summary>
-        private const float MissionRep = 40f;
-
         /// <summary>Set by PostUp, so a kill on the corner counts for more than one in a car.</summary>
         public bool WorkingACorner;
 
@@ -462,9 +457,6 @@ namespace Hoodrich.Gangs
 
         /// <summary>Rep for buying weight. Called when a purchase lands.</summary>
         public void CreditPurchase() => AddRep(BuyRep);
-
-        /// <summary>Rep for a job finished. Called by mission code when there is any.</summary>
-        public void CreditMission() => AddRep(MissionRep, "for handling that");
 
         /// <summary>
         /// A slow drip for simply being seen on your own blocks. Being around is how anyone

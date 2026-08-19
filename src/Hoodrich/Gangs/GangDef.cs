@@ -114,13 +114,5 @@ namespace Hoodrich.Gangs
         /// <summary>In-game milliseconds spent affiliated. Informational only.</summary>
         public long TimeAffiliatedMs;
 
-        public Stance StanceTowardPlayer(bool affiliated)
-        {
-            if (affiliated) return Stance.Friendly;
-            if (Rep <= -50f) return Stance.Hostile;
-            if (Rep < 0f) return Stance.Wary;
-            if (Rep >= 100f) return Stance.Friendly;
-            return Stance.Neutral;
-        }
     }
 }

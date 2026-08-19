@@ -113,35 +113,6 @@ namespace Hoodrich.Weapons
 
         // ---- what the player is carrying ---------------------------------------
 
-        /// <summary>Weapons the player actually has, grouped into the slot they belong to.</summary>
-        public List<WeaponDef> CarriedInSlot(string slot)
-        {
-            var found = new List<WeaponDef>();
-
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists()) return found;
-
-            foreach (var def in _all)
-            {
-                if (!string.Equals(def.Slot, slot, StringComparison.OrdinalIgnoreCase)) continue;
-                if (!HasWeapon(player, def.Hash)) continue;
-                found.Add(def);
-            }
-
-            return found;
-        }
-
-        /// <summary>Slots the player has at least one weapon in, in vanilla wheel order.</summary>
-        public List<string> OccupiedSlots()
-        {
-            var slots = new List<string>();
-            foreach (var slot in SlotOrder)
-            {
-                if (CarriedInSlot(slot).Count > 0) slots.Add(slot);
-            }
-            return slots;
-        }
-
         private static bool HasWeapon(Ped ped, uint hash)
         {
             try
@@ -168,37 +139,6 @@ namespace Hoodrich.Weapons
             catch
             {
                 return 0;
-            }
-        }
-
-        /// <summary>Ammo in reserve for a weapon the player is carrying.</summary>
-        public static int AmmoFor(uint hash)
-        {
-            try
-            {
-                var player = Game.Player.Character;
-                if (player == null || !player.Exists()) return 0;
-                return Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, player.Handle, hash);
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-
-        public static void Equip(uint hash)
-        {
-            try
-            {
-                var player = Game.Player.Character;
-                if (player == null || !player.Exists()) return;
-
-                // forceInHand = true so the swap is immediate rather than played as a draw.
-                Function.Call(Hash.SET_CURRENT_PED_WEAPON, player.Handle, hash, true);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Could not equip weapon " + hash, ex);
             }
         }
 
@@ -260,7 +200,5 @@ namespace Hoodrich.Weapons
             }
         }
 
-        /// <summary>How many icon dicts failed to stream, for the log.</summary>
-        public int MissingIconCount => _missing.Count;
     }
 }

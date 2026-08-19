@@ -39,12 +39,31 @@ namespace Hoodrich.Missions
         private DialogueNode Node(string line) =>
             new DialogueNode(_fixer.Name, line) { SpeakerColour = Tint };
 
+        /// <summary>
+        /// Set by Main: whether one of ours is being hit right now.
+        ///
+        /// He will still take a finished job off you -- money is money -- but he is not handing
+        /// out new work while there are people on the block. It is also the only way the escape
+        /// phase makes any sense: a raid holds the wanted level at zero for its whole length, so
+        /// "lose them, then get back to me" would complete the instant it started.
+        /// </summary>
+        public Func<bool> BlockUnderAttack;
+
         public DialogueNode Root()
         {
             // Job in hand: he does not want to hear about anything else.
             if (_runner.IsRunning)
             {
                 return _runner.ReadyToCollect ? HandIn() : StillOn();
+            }
+
+            if (BlockUnderAttack != null && BlockUnderAttack())
+            {
+                var busy = Node("Not now, nigga. They on the block right now. " +
+                                "Go handle that and come back when it's quiet.");
+
+                busy.Leave("On it.");
+                return busy;
             }
 
             var node = Node("What's happening. You looking for work, or you just walking past?");

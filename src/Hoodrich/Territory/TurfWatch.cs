@@ -131,20 +131,6 @@ namespace Hoodrich.Territory
             }
         }
 
-        public string StatusLine
-        {
-            get
-            {
-                switch (_status)
-                {
-                    case TurfStatus.Home: return "Your block";
-                    case TurfStatus.Hostile: return _owner.Name + " turf -- they will jump you";
-                    case TurfStatus.Foreign: return _owner.Name + " turf";
-                    default: return "Nobody's block";
-                }
-            }
-        }
-
         // ---- per-tick ----------------------------------------------------------
 
         public void Update()

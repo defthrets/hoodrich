@@ -94,10 +94,8 @@ namespace Hoodrich.UI
         public static readonly Icon Cash = new Icon(Inventory, "mp_specitem_cash");
         public static readonly Icon Guns = new Icon(Menu, "shop_gunclub_icon_a");
         public static readonly Icon Garage = new Icon(Menu, "shop_garage_icon_a");
-        public static readonly Icon Clothes = new Icon(Menu, "shop_clothing_icon_a");
         public static readonly Icon Mask = new Icon(Menu, "shop_mask_icon_a");
         public static readonly Icon Health = new Icon(Menu, "shop_health_icon_a");
-        public static readonly Icon Armour = new Icon(Menu, "shop_armour_icon_a");
         public static readonly Icon Ammo = new Icon(Menu, "shop_ammo_icon_a");
         public static readonly Icon Tattoo = new Icon(Menu, "shop_tattoos_icon_a");
 
