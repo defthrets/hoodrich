@@ -121,7 +121,7 @@ namespace Hoodrich.Locations
         private bool _following;
         private bool _petting;
         private int _pettingUntil;
-        private bool _held;
+        
 
         public Ped Ped => _chop != null && _chop.Exists() ? _chop : null;
 
@@ -502,53 +502,73 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>Set by Main: the same conversation screen every other NPC uses.</summary>
+        public Conversation Talk;
+
         /// <summary>
-        /// The prompt, and what the two buttons do.
+        /// Walking up on him.
         ///
-        /// Two things only, because a dog is not a menu: make a fuss of him, and tell him
-        /// whether he is coming. Everything else is the game own dog behaviour, which is
-        /// already better than anything a script would put on top of it.
+        /// This was three bespoke buttons read straight off the control natives, and it did not
+        /// work, and after three attempts I could not tell you why from outside the game. Every
+        /// other interaction in the mod -- Stretch, Lamar, Grimes -- goes through the dialogue
+        /// screen on d-pad right, and every one of those is confirmed working. So this does too.
+        ///
+        /// It reads better anyway. A dog is not a row of button hints, and "what do you want to
+        /// do with Chop" is a genuinely small list.
         /// </summary>
         public void UpdatePrompt()
         {
-            if (!InReach || _petting) return;
+            if (Talk == null || Talk.IsOpen || !InReach || _petting) return;
 
-            // Written the way the game writes its own prompts -- a sentence per line, each
-            // naming the button and what it does. The old one was a row of shorthand, which is
-            // a debug readout rather than something the game would put on screen.
-            Help.ShowThisFrame(
-                "Press ~INPUT_CONTEXT~ to pet Chop, ~INPUT_CELLPHONE_UP~ to play with him.~n~" +
-                (_following
-                    ? "Press ~INPUT_CELLPHONE_RIGHT~ to leave him home."
-                    : "Press ~INPUT_CELLPHONE_RIGHT~ to bring him with you."));
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ for Chop.");
 
-            if (Tapped(Control.Context, System.Windows.Forms.Keys.E, ref _held)) { Pet(); return; }
-            if (Tapped(Control.PhoneUp, System.Windows.Forms.Keys.Up, ref _heldPlay)) { Play(); return; }
+            if (!Pressed()) return;
 
-            if (Tapped(Control.PhoneRight, System.Windows.Forms.Keys.Right, ref _heldCall)) Follow(!_following);
+            Talk.Speaker = null;
+            Talk.Open(Menu(), this);
         }
 
-        private bool _heldPlay;
+        /// <summary>What you can do with him, as a conversation with a dog.</summary>
+        private DialogueNode Menu()
+        {
+            var node = new DialogueNode("Chop", _following
+                ? "He is right behind you, waiting to see what you do next."
+                : "He is up on his feet the second he sees you.")
+            {
+                SpeakerColour = Palette.Cash
+            };
 
-        private bool _heldCall;
+            node.Say("Make a fuss of him.", () => { Pet(); return null; }, "Pet Chop");
+            node.Say("Throw something.", () => { Play(); return null; }, "Play with him");
 
-        private static bool Tapped(Control control, System.Windows.Forms.Keys key, ref bool held)
+            if (_following) node.Say("Stay here, boy.", () => { Follow(false); return null; }, "He stays home");
+            else node.Say("Come on then.", () => { Follow(true); return null; }, "He comes with you");
+
+            node.Leave("Later, Chop.");
+            return node;
+        }
+
+        private bool _held;
+
+        private bool Pressed()
         {
             var down = false;
 
             try
             {
-                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)control)
-                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)control)
-                    || Game.IsKeyPressed(key);
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Right)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E);
             }
             catch
             {
                 // Unreadable control is simply not pressed.
             }
 
-            var pressed = down && !held;
-            held = down;
+            var pressed = down && !_held;
+            _held = down;
             return pressed;
         }
 

@@ -288,6 +288,15 @@ namespace Hoodrich.Dealing
             ReleaseCustomer();
             ReleaseCop();
 
+            // Everything else the corner spawned, or it stays in the road forever.
+            //
+            // These are all IsPersistent, which is what stops the game streaming them out while
+            // you are working -- and it does not stop being true when you pack up. A patrol car
+            // and two rivals left persistent on every pitch you ever stood on is a city that
+            // slowly fills with parked cars nobody can move, which is exactly what happened.
+            ReleasePatrol();
+            ReleaseRivals();
+
             State = PostState.Idle;
             _product = null;
             _cornerHeat = 0f;

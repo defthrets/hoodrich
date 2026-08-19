@@ -208,7 +208,18 @@ namespace Hoodrich.UI
             var rOut2 = rOuter * rOuter;
             var rIn2 = rInner * rInner;
 
-            for (var dy = -rOuter; dy <= rOuter; dy += RowHeight)
+            // Only the band this wedge can possibly occupy. The boundary rays cap how high and
+            // low it reaches, so walking the whole disc for a quarter of it was three quarters
+            // wasted on every wedge, five times a frame.
+            var reach = rOuter * 1.02f;
+
+            var topY = Math.Min(reach, Math.Max(d0y, d1y) * rOuter + RowHeight * 2f);
+            var botY = Math.Max(-reach, Math.Min(d0y, d1y) * rOuter - RowHeight * 2f);
+
+            if (angToDeg > 0f && angFromDeg < 0f) topY = reach;
+            if (Math.Abs(angToDeg - angFromDeg) > 100f) { topY = reach; botY = -reach; }
+
+            for (var dy = botY; dy <= topY; dy += RowHeight)
             {
                 var dy2 = dy * dy;
                 if (dy2 > rOut2) continue;
@@ -302,7 +313,10 @@ namespace Hoodrich.UI
             // squares overlap into a continuous ring, with a ceiling so a big circle cannot
             // run away with the frame.
             var circumference = (float)(2.0 * Math.PI * radius) * (span / 360f);
-            var steps = (int)Math.Min(260f, Math.Max(24f, circumference / Math.Max(0.0015f, thickness)));
+            // Capped lower than it wants to be. This is a hairline: past about a hundred and
+            // thirty steps nobody can tell, and every step is a rectangle the wedges are not
+            // getting -- and the wedges are the thing people actually look at.
+            var steps = (int)Math.Min(130f, Math.Max(24f, circumference / Math.Max(0.0015f, thickness)));
 
             const double deg2rad = Math.PI / 180.0;
             var size = thickness * 1.7f;
@@ -331,7 +345,11 @@ namespace Hoodrich.UI
 
             var r2 = radius * radius;
 
-            for (var dy = -radius; dy <= radius; dy += RowHeight)
+            // Twice the row height of a wedge. This is solid fill with opaque text on top of it,
+            // so the extra resolution was being spent somewhere nobody was ever going to look.
+            var step = RowHeight * 2f;
+
+            for (var dy = -radius; dy <= radius; dy += step)
             {
                 var dy2 = dy * dy;
                 if (dy2 > r2) continue;
@@ -339,7 +357,7 @@ namespace Hoodrich.UI
                 var half = (float)Math.Sqrt(r2 - dy2);
                 if (half <= 0f) continue;
 
-                Rect(cx, cy - dy, ToX(half * 2f), RowHeight * 1.02f, c);
+                Rect(cx, cy - dy, ToX(half * 2f), step * 1.02f, c);
             }
         }
 

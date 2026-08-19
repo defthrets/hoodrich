@@ -57,8 +57,25 @@ namespace Hoodrich.Social
         /// same order when you open the tab. Holding some back would mean the feed you read and
         /// the feed you were shown are two different feeds, which is worse than either.
         /// </summary>
-        private const int AmbientGapMinMs = 6000;
-        private const int AmbientGapMaxMs = 12000;
+        private const int AmbientGapMinMs = 10000;
+        private const int AmbientGapMaxMs = 20000;
+
+        /// <summary>
+        /// A burst is several posts about the same thing, seconds apart.
+        ///
+        /// One post about a shooting is a notification. Four, arriving on top of each other from
+        /// four different people who each saw a different piece of it, is a neighbourhood
+        /// reacting -- and that is the difference between a feed that reports at you and a feed
+        /// that is happening around you.
+        /// </summary>
+        private const int BurstGapMs = 2600;
+        private const int BurstMax = 4;
+
+        /// <summary>How many recent bodies are remembered, so nobody repeats anybody.</summary>
+        private const int RecentMemory = 45;
+
+        /// <summary>How hard to try for something nobody has said yet.</summary>
+        private const int UniqueTries = 14;
 
         /// <summary>
         /// How often a post comes from somebody with a name.
@@ -144,6 +161,23 @@ namespace Hoodrich.Social
 
         private int _nextAmbient;
         private int _lastNotify;
+
+        /// <summary>
+        /// What has been said lately, so nobody says it again.
+        ///
+        /// Two people posting the same sentence word for word is the single thing that gives the
+        /// whole system away, and with a few hundred templates and a post every ten seconds it
+        /// happens constantly on its own. A post is rerolled until it is something nobody has
+        /// said recently, and only settled for after enough tries that the pool is plainly out.
+        /// </summary>
+        private readonly Queue<string> _recent = new Queue<string>();
+        private readonly HashSet<string> _recentSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>An event still spilling out across several posts.</summary>
+        private string _burstSet = "";
+        private string _burstSubject = "";
+        private int _burstLeft;
+        private int _burstNext;
 
         public SocialFeed()
         {
@@ -334,15 +368,44 @@ namespace Hoodrich.Social
 
         public void Update()
         {
+            // A burst outranks the clock. Something just happened and the block is still talking
+            // about it, so the ordinary chatter waits its turn.
+            if (_burstLeft > 0 && Game.GameTime >= _burstNext)
+            {
+                _burstLeft--;
+                _burstNext = Game.GameTime + BurstGapMs;
+
+                var post = Build(_burstSet, _burstSubject);
+
+                if (post != null)
+                {
+                    post.AboutYou = true;
+                    Add(post);
+                    Notify(post);
+                }
+
+                _nextAmbient = Game.GameTime + AmbientGapMinMs;
+                return;
+            }
+
             if (Game.GameTime < _nextAmbient) return;
 
             _nextAmbient = Game.GameTime + AmbientGapMinMs + _rng.Next(AmbientGapMaxMs - AmbientGapMinMs);
-            Ambient(false);
+
+            var roll = _rng.NextDouble();
+
+            // Businesses post on the same clock as everybody else, just less often -- there are
+            // fewer of them and they have less to say. The other sets run their mouths on the
+            // same clock too, because a rivalry that only speaks when you poke it is a reaction
+            // rather than a rivalry.
+            if (roll < 0.14) { Taunt(); return; }
+
+            Ambient(false, roll < 0.34);
         }
 
-        private void Ambient(bool backdated)
+        private void Ambient(bool backdated, bool business = false)
         {
-            var post = Build("Ambient", null);
+            var post = Build(business ? "AmbientOrg" : "Ambient", null);
             if (post == null) return;
 
             if (backdated)
@@ -379,6 +442,9 @@ namespace Hoodrich.Social
             Add(post);
             Notify(post);
 
+            // Then everybody else's reaction to the same thing, seconds apart.
+            React(kind, subject);
+
             var gained = FollowersFor(kind, amount);
             if (gained == 0) return;
 
@@ -390,6 +456,81 @@ namespace Hoodrich.Social
                 Hoodrich.UI.Notify.Ticker("~b~+" + gained + " followers~s~  ·  " +
                                           Followers.ToString("N0") + " followers");
             }
+        }
+
+        /// <summary>
+        /// Sets the block talking about what just happened, from more than one mouth.
+        ///
+        /// The second and third posts are the ones that sell it. A gang losing somebody says so;
+        /// the other side says something about it; the shops nearby shut their doors. None of
+        /// that is a report -- it is people who were all in the same place at the same time.
+        /// </summary>
+        private void React(SocialEvent kind, string subject)
+        {
+            string follow;
+            var count = 2;
+
+            switch (kind)
+            {
+                case SocialEvent.RivalKilled:
+                    // Their side grieves, our side gloats, and every so often somebody records.
+                    follow = _rng.NextDouble() < 0.30 ? "DissTrack"
+                           : _rng.NextDouble() < 0.55 ? "RivalMourns" : "OursGloats";
+                    count = 2 + _rng.Next(BurstMax - 1);
+                    break;
+
+                case SocialEvent.DriveBy:
+                    follow = _rng.NextDouble() < 0.5 ? "RivalMourns" : "OrgEvent";
+                    count = 2 + _rng.Next(BurstMax - 1);
+                    break;
+
+                case SocialEvent.Brawl:
+                    follow = _rng.NextDouble() < 0.5 ? "OursGloats" : "BallasTaunt";
+                    break;
+
+                case SocialEvent.MissionDone:
+                    follow = _rng.NextDouble() < 0.45 ? "OursGloats"
+                           : _rng.NextDouble() < 0.5 ? "BallasTaunt" : "VagosTaunt";
+                    break;
+
+                case SocialEvent.MissionFailed:
+                    follow = _rng.NextDouble() < 0.5 ? "RivalGloats" : "BallasTaunt";
+                    break;
+
+                case SocialEvent.Busted:
+                    follow = _rng.NextDouble() < 0.5 ? "RivalGloats" : "OrgEvent";
+                    break;
+
+                case SocialEvent.Tagged:
+                    follow = "BallasTaunt";
+                    break;
+
+                default:
+                    return;
+            }
+
+            _burstSet = follow;
+            _burstSubject = subject;
+            _burstLeft = Math.Min(BurstMax, Math.Max(1, count));
+            _burstNext = Game.GameTime + BurstGapMs;
+        }
+
+        /// <summary>
+        /// The other sets, running their mouths when nothing in particular has happened.
+        ///
+        /// Called on the ambient clock rather than off an event, because a rivalry that only
+        /// speaks when you poke it is not a rivalry, it is a reaction. They should be talking
+        /// while you are stood in your own kitchen doing nothing at all.
+        /// </summary>
+        public void Taunt()
+        {
+            var set = _rng.NextDouble() < 0.5 ? "BallasTaunt" : "VagosTaunt";
+
+            var post = Build(set, null);
+            if (post == null) return;
+
+            Add(post);
+            Notify(post);
         }
 
         private static float ChanceFor(SocialEvent kind)
@@ -442,6 +583,20 @@ namespace Hoodrich.Social
 
         private Post Build(string set, string subject, int amount = 0)
         {
+            for (var attempt = 0; attempt < UniqueTries; attempt++)
+            {
+                var post = BuildOnce(set, subject, amount);
+                if (post == null) return null;
+
+                if (!_recentSet.Contains(post.Body)) return post;
+            }
+
+            // The pool for this set is genuinely exhausted, so a repeat is better than silence.
+            return BuildOnce(set, subject, amount);
+        }
+
+        private Post BuildOnce(string set, string subject, int amount = 0)
+        {
             if (_authors.Count == 0) return null;
 
             Author by = null;
@@ -480,17 +635,37 @@ namespace Hoodrich.Social
 
             if (by == null)
             {
-                if (!_templates.TryGetValue(set, out templates) || templates.Count == 0) return null;
-
-                // A voiced character never delivers a generic line -- that is exactly how a
-                // character stops sounding like one.
+                // Who is even eligible depends on what is being said. A chicken shop does not
+                // post about a shooting the way a neighbour does, and a Balla does not commiserate
+                // about one of ours -- so the author pool is chosen first and the words follow.
                 var open = new List<Author>();
+
+                var wantOrg = string.Equals(set, "AmbientOrg", StringComparison.OrdinalIgnoreCase)
+                           || string.Equals(set, "OrgEvent", StringComparison.OrdinalIgnoreCase);
+
+                var wantGang = GangFor(set);
+
                 foreach (var author in _authors)
                 {
-                    if (!author.HasVoice) open.Add(author);
+                    if (author.HasVoice) continue;
+
+                    var isOrg = string.Equals(author.Gender, "none", StringComparison.OrdinalIgnoreCase);
+
+                    if (wantOrg != isOrg) continue;
+
+                    if (!string.IsNullOrEmpty(wantGang) &&
+                        !string.Equals(author.Gang, wantGang, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    open.Add(author);
                 }
 
                 if (open.Count == 0) return null;
+
+                if (!_templates.TryGetValue(set, out templates) || templates.Count == 0) return null;
+
                 by = open[_rng.Next(open.Count)];
             }
 
@@ -513,6 +688,28 @@ namespace Hoodrich.Social
             post.Replies = _rng.Next(0, Math.Max(2, post.Likes / 8));
 
             return post;
+        }
+
+        /// <summary>
+        /// Which set has to be posting, for the sets that only one side would ever say.
+        ///
+        /// Empty means anybody. This is what stops a Families member gloating over one of their
+        /// own going down, which is the sort of thing that reads as a bug even when nobody can
+        /// say why.
+        /// </summary>
+        private static string GangFor(string set)
+        {
+            switch (set)
+            {
+                case "BallasTaunt": return "ballas";
+                case "VagosTaunt": return "vagos";
+                case "RivalMourns":
+                case "RivalGloats": return "ballas";
+                case "OursGloats":
+                case "OursMourns":
+                case "DissTrack": return "families";
+                default: return "";
+            }
         }
 
         /// <summary>
@@ -648,6 +845,10 @@ namespace Hoodrich.Social
         {
             _timeline.Insert(0, post);
 
+            _recent.Enqueue(post.Body);
+            _recentSet.Add(post.Body);
+
+            while (_recent.Count > RecentMemory) _recentSet.Remove(_recent.Dequeue());
             while (_timeline.Count > Capacity) _timeline.RemoveAt(_timeline.Count - 1);
         }
 

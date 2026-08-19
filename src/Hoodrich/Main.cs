@@ -191,6 +191,7 @@ namespace Hoodrich
                 _bigjTalk = new ArmourerTalk(_bigj, _crew, _state);
                 _bigj.Talk = _talk;
                 _bigj.TalkBuilder = () => _bigjTalk.Root();
+                _chop.Talk = _talk;
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _cutting,
                                            _gangs, _crew, _turf, _dealers, _weapons, _market, _stash, _postUp, _leaders);
@@ -441,11 +442,19 @@ namespace Hoodrich
         /// </summary>
         private bool WalkedAwayFromTalk()
         {
-            var subject = _talk.Subject as LeaderDef;
-            if (subject == null) return false;
-
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return true;
+
+            // Chop wanders while you are stood there reading, so his conversation has to end on
+            // distance the same as anybody's -- otherwise the panel follows a dog down the road.
+            if (_talk.Subject is Dog)
+            {
+                var dog = _chop == null ? null : _chop.Ped;
+                return dog == null || !dog.Exists() || player.Position.DistanceTo(dog.Position) > 6f;
+            }
+
+            var subject = _talk.Subject as LeaderDef;
+            if (subject == null) return false;
 
             // Measured to the MAN, on the ground plane. Measuring to his authored spot closed
             // the conversation the instant it opened: that spot's height is probed from across
