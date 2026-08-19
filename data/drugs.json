@@ -78,8 +78,8 @@
       "name": "Heroin",
       "tag": "H",
       "tier": 5,
-      "basePrice": 200,
-      "bulkPrice": 72,
+      "basePrice": 80,
+      "bulkPrice": 26,
       "heatFactor": 1.5,
       "splitVerb": "Cut",
       "unitName": "grams"

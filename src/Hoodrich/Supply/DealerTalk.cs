@@ -44,8 +44,13 @@ namespace Hoodrich.Supply
         /// What he breaks it down into.
         ///
         /// Sized per product so every one of them clears the floor on its own -- twelve kilos of
-        /// weed and one of heroin are both about fifty-odd thousand, which is what makes them
+        /// weed and three of heroin both come to fifty-odd thousand, which is what makes them
         /// the same rung on the same ladder rather than two unrelated numbers.
+        ///
+        /// These have to be re-checked whenever a price moves. Heroin dropping from $200 to $80
+        /// a gram took its kilo down to nineteen thousand, and the floor would then have quietly
+        /// charged you fifty for it -- $50 a gram wholesale on something that sells at $80.
+        /// A floor that rounds UP is only safe while every brick is genuinely above it.
         /// </summary>
         private static readonly Brick[] Bricks =
         {
@@ -54,7 +59,7 @@ namespace Hoodrich.Supply
             new Brick("meth",     4000f, "Four kilos of meth"),
             new Brick("crack",    2500f, "Two and a half of crack"),
             new Brick("coke",     1500f, "A kilo and a half of coke"),
-            new Brick("heroin",   1000f, "A kilo of heroin"),
+            new Brick("heroin",   3000f, "Three kilos of heroin"),
         };
 
         /// <summary>How many of one thing you can take at once.</summary>
