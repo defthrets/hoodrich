@@ -16,7 +16,6 @@ namespace Hoodrich.UI
     internal sealed class RadialMenu
     {
         private const float SegmentGapDegrees = 1.6f;
-        private const int SlicesPerSegment = 14;
         private const int OpenAnimationMs = 140;
 
         private readonly Settings _cfg;

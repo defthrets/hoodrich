@@ -157,9 +157,6 @@ namespace Hoodrich.Supply
         /// <summary>How often the route is re-aimed at a player who keeps moving.</summary>
         private const int RetaskIntervalMs = 4000;
 
-        /// <summary>Only re-aim once you have actually gone somewhere.</summary>
-        private const float RetaskMoveDistance = 35f;
-
         /// <summary>Far enough that he stops bothering to follow you.</summary>
         private const float AbandonDistance = 500f;
 
@@ -709,8 +706,10 @@ namespace Hoodrich.Supply
 
                 try
                 {
-                    // Reverse out of whatever it is, then take the route again.
-                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _driver.Handle, _car.Handle, 3, 1200);
+                    // 9, not 3. Three is brake-and-turn-left, which is a car sitting exactly
+                    // where it was but pointing somewhere new -- nine is reverse, which is what
+                    // "back him out of it" was supposed to mean.
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _driver.Handle, _car.Handle, 9, 1400);
                     _lastRetask = 0;
 
                     Log.Info("Delivery: backing him out of something.");
@@ -720,9 +719,18 @@ namespace Hoodrich.Supply
                 return;
             }
 
-            // Given up on him driving it. Put him on the road near the house instead.
+            // Given up on him driving it. Put him on the road near the house instead -- but
+            // not while you are watching. A car that vanishes and reappears fifty metres up the
+            // street in plain sight is worse than the problem it is solving, so if he is on
+            // screen he keeps trying until he is not.
             try
             {
+                if (Function.Call<bool>(Hash.IS_ENTITY_ON_SCREEN, _car.Handle) &&
+                    _car.Position.DistanceTo(Game.Player.Character.Position) < 120f)
+                {
+                    return;
+                }
+
                 var west = ParkSpot;
                 west.X -= ApproachWest;
 
@@ -821,14 +829,18 @@ namespace Hoodrich.Supply
                 _driver.Task.ClearAll();
                 Function.Call(Hash.TASK_LEAVE_VEHICLE, _driver.Handle, _car.Handle, 0);
 
-                GiveBox();
-
                 // FOLLOW_NAV_MESH, not GO_STRAIGHT. Straight-line walking sends him into the
                 // fence and leaves him pressed against it for the whole timeout; the nav mesh
                 // takes him round the gate and up the path the way a person would.
                 Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _driver.Handle,
                               _dropSpot.X, _dropSpot.Y, _dropSpot.Z,
                               1.0f, CarryTimeoutMs, 1.0f, 0, 0f);
+
+                // AFTER the walk, not before it. The carry animation was issued first and the
+                // walk task replaced it on the very next line, so in every delivery ever made
+                // he strolled up the path with a box welded to his hand and his arms by his
+                // sides. It is an upper-body clip, so layered on top of the walk it plays.
+                GiveBox();
             }
             catch (Exception ex)
             {
@@ -1061,6 +1073,17 @@ namespace Hoodrich.Supply
                 var spot = _dropSpot;
                 spot.Z += 0.2f;
 
+                // Only ever one on the floor. Left there deliberately -- it is the receipt --
+                // but a house with fourteen identical packages stacked in the living room after
+                // an evening of re-ups is a bug wearing a detail's clothes.
+                if (_lastDropped != null && _lastDropped.Exists())
+                {
+                    try { _lastDropped.Delete(); }
+                    catch { /* it will stream out on its own */ }
+                }
+
+                _lastDropped = _box;
+
                 _box.Position = spot;
                 _box.IsPersistent = false;
 
@@ -1076,6 +1099,9 @@ namespace Hoodrich.Supply
 
             _box = null;
         }
+
+        /// <summary>The last package left on the floor of the house.</summary>
+        private Prop _lastDropped;
 
         private void TakeBox()
         {

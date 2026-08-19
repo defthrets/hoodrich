@@ -51,7 +51,6 @@ namespace Hoodrich.Gangs
         private const float WarHeat = 0.35f;
         private const float HatredHeat = 0.70f;
 
-        /// <summary>Gap between carloads. Irregular on purpose.</summary>
         /// <summary>
         /// Gap between carloads.
         /// 
@@ -70,9 +69,6 @@ namespace Hoodrich.Gangs
         /// </summary>
         private const int OpeningCars = 2;
         private const float DoubleCarChance = 0.3f;
-
-        /// <summary>Extra cars in the opening wave when they hate you outright.</summary>
-        private const int OpeningCarsAtWorst = 2;
 
         /// <summary>Added to the odds of two arriving together, at worst.</summary>
         private const float DoubleCarChanceAtWorst = 0.5f;
@@ -179,6 +175,10 @@ namespace Hoodrich.Gangs
         private int _startedAt;
         private int _nextWave;
         private int _kills;
+
+        /// <summary>Every one of theirs put down, by anybody. Drives the bar, not the reward.</summary>
+        private int _downed;
+
         private bool _showedUp;
 
         public GangWar(GangRegistry gangs, Affiliation crew, PlayerState state)
@@ -246,6 +246,7 @@ namespace Hoodrich.Gangs
             _startedAt = Game.GameTime;
             _nextWave = 0;
             _kills = 0;
+            _downed = 0;
             _showedUp = false;
             IsRunning = true;
 
@@ -299,24 +300,10 @@ namespace Hoodrich.Gangs
         /// </summary>
         private void HoldTheLaw(bool held)
         {
-            try
-            {
-                if (held)
-                {
-                    Game.Player.Wanted.SetWantedLevel(0, false);
-                    Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
-                }
-
-                Function.Call(Hash.SET_MAX_WANTED_LEVEL, held ? 0 : 5);
-                Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, Game.Player.Handle, held);
-                Function.Call(Hash.SET_CREATE_RANDOM_COPS, !held);
-
-                Log.Info(held ? "Gang war: the law is off until it is over." : "Gang war: the law is back on.");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not change the wanted rules: " + ex.Message);
-            }
+            // Through the shared switch, because a mission can be running at the same time and
+            // whichever of the two finished first used to turn the police back on for the other.
+            if (held) LawHold.Hold(this);
+            else LawHold.Release(this);
         }
 
         /// <summary>
@@ -334,7 +321,12 @@ namespace Hoodrich.Gangs
         /// </summary>
         private void SetWarRelationships(bool on)
         {
-            var mine = _crew.Current;
+            // The set that was being defended when it started, NOT whoever you happen to run
+            // with now. Sign on with somebody else halfway through a raid and the old pair
+            // would never be put back, so the two of them would hate each other permanently.
+            if (on) _defender = _crew.Current;
+
+            var mine = _defender;
 
             if (mine == null || _attacker == null) return;
             if (mine.GroupHash == 0 || _attacker.GroupHash == 0) return;
@@ -359,6 +351,8 @@ namespace Hoodrich.Gangs
                     Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelHate,
                                   _attacker.GroupHash, PlayerGroup);
 
+                    _relationshipsHeld = true;
+
                     Log.Info("Gang war: " + _attacker.Id + " and " + mine.Id + " now hate each other.");
                     return;
                 }
@@ -369,6 +363,8 @@ namespace Hoodrich.Gangs
                               mine.GroupHash, _attacker.GroupHash);
                 Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, _wasOnUs,
                               _attacker.GroupHash, PlayerGroup);
+
+                _relationshipsHeld = false;
 
                 Log.Info("Gang war: relationships put back the way they were.");
             }
@@ -389,6 +385,12 @@ namespace Hoodrich.Gangs
         private int _wasTheirs = 4;
         private int _wasOurs = 4;
         private int _wasOnUs = 3;
+
+        /// <summary>Whose block this is, fixed when it kicks off.</summary>
+        private GangDef _defender;
+
+        /// <summary>Whether the relationships are currently rewritten.</summary>
+        private bool _relationshipsHeld;
 
         /// <summary>
         /// How badly one set wants you, from nothing at all to all the way.
@@ -488,11 +490,15 @@ namespace Hoodrich.Gangs
             }
 
             CountKills();
+            CullTheDead();
             ListenForShots(player);
             PushIn(now);
 
-            // More of them, until the clock runs out.
-            if (elapsed < _warMs - WaveGapMinMs && now >= _nextWave)
+            // More of them, until the clock runs out -- but only if this is more than a beef.
+            // One carload for two minutes means one carload: sending another every half minute
+            // made the smallest tier busier than the one above it, which is the opposite of
+            // what the tiers are for.
+            if (_heat >= WarHeat && elapsed < _warMs - WaveGapMinMs && now >= _nextWave)
             {
                 var twoUp = _rng.NextDouble() < DoubleCarChance + _heat * DoubleCarChanceAtWorst;
                 SendWave(twoUp ? 2 : 1);
@@ -530,6 +536,10 @@ namespace Hoodrich.Gangs
         private void SendCar()
         {
             if (_attacker == null || _target == null) return;
+
+            // A street can only hold so many people. Past this, the next carload waits for the
+            // current one to be dealt with, which is also better pacing than a pile-up.
+            if (AliveIn(_rivals) >= MaxLive) return;
 
             var model = PickCar(_attacker);
             if (model == null) return;
@@ -572,8 +582,11 @@ namespace Hoodrich.Gangs
                     var drop = World.GetNextPositionOnStreet(_target.Where.Around(DropRange));
                     if (drop == Vector3.Zero) drop = _target.Where;
 
+                    // 786606 rather than 786603: the same "go round it" style the delivery uses.
+                    // Stopping dead behind stationary traffic is how a raid quietly never
+                    // arrives, and nobody driving to a fight waits politely behind a parked van.
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
-                                  drop.X, drop.Y, drop.Z, 22f, 0, car.Model.Hash, 786603, 8f, true);
+                                  drop.X, drop.Y, drop.Z, 22f, 0, car.Model.Hash, 786606, 8f, true);
                 }
 
                 Log.Info("Gang war: a carload of " + _attacker.Id + " on the way in.");
@@ -703,15 +716,16 @@ namespace Hoodrich.Gangs
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, _attacker.GroupHash);
                     Function.Call(Hash.SET_PED_ACCURACY, ped.Handle, 22);
 
-                    // The combat attributes that make somebody actually fight rather than stand
-                    // in a street holding a rifle. 46 is "always fight", 5 is "leave the car to
-                    // do it", 3 is "chase on foot", 1 is "use cover". Without these they arrive,
-                    // get out, and look at each other -- which is exactly what happened.
+                    // The combat attributes that make somebody fight rather than stand in a
+                    // street holding a rifle. Numbered correctly this time: 0 is use cover,
+                    // 1 is use vehicles, 2 is drive-bys, 3 is get out of the car to fight,
+                    // 5 is take on an armed man while empty-handed, 46 is always fight.
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 3, true);
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 1, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 2, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 1, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 0, true);
 
                     Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, ped.Handle, 2);
                     Function.Call(Hash.SET_PED_COMBAT_RANGE, ped.Handle, 2);
@@ -734,7 +748,9 @@ namespace Hoodrich.Gangs
                         blip.Color = BlipColor.Red;
                         blip.Scale = 0.65f;
                         blip.Name = _attacker.Name;
+
                         _blips.Add(blip);
+                        _pedBlips[ped.Handle] = blip;
                     }
 
                     return ped;
@@ -760,6 +776,11 @@ namespace Hoodrich.Gangs
             var mine = _crew.Current;
             if (mine == null) return;
 
+            var room = MaxLive - AliveIn(_defenders);
+            if (room <= 0) return;
+
+            if (count > room) count = room;
+
             // Everybody comes out of the same doorway -- the muster point for whoever is being
             // hit -- and then wanders, so they spread across the block and find the fight
             // themselves rather than being placed in a firing line.
@@ -776,9 +797,14 @@ namespace Hoodrich.Gangs
                         var model = new Model(name);
                         if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
 
-                        // On the mark itself, height and all. These spots are on walkways and
-                        // stairs, so the authored Z is the whole point of them.
+                        // On the mark, spread across a couple of metres of it. The Z is used
+                        // verbatim -- two of these spots are on walkways and a ground probe
+                        // would drop everybody standing on them into the courtyard below -- but
+                        // putting four men on one exact coordinate has them stood inside each
+                        // other, shoving their way apart in front of you.
                         var at = muster;
+                        at.X += (float)(_rng.NextDouble() * 3.0 - 1.5);
+                        at.Y += (float)(_rng.NextDouble() * 3.0 - 1.5);
 
                         var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeCiv, model.Hash,
                                                         at.X, at.Y, at.Z, 0f, false, false);
@@ -797,8 +823,9 @@ namespace Hoodrich.Gangs
                         Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
                         Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);
                         Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 3, true);
-                        Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 1, true);
                         Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 2, true);
+                        Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 1, true);
+                        Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 0, true);
 
                         Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, ped.Handle, 2);
                         Function.Call(Hash.SET_PED_ALERTNESS, ped.Handle, 3);
@@ -827,7 +854,9 @@ namespace Hoodrich.Gangs
                             blip.Color = BlipColor.Green;
                             blip.Scale = 0.55f;
                             blip.Name = mine.Name;
+
                             _blips.Add(blip);
+                            _pedBlips[ped.Handle] = blip;
                         }
 
                         _defenders.Add(ped);
@@ -896,9 +925,28 @@ namespace Hoodrich.Gangs
                     var arrived = car == null || !car.Exists() ||
                                   car.Position.DistanceTo(_target.Where) <= DismountRange;
 
+                    // Or the car is not going anywhere. A carload wedged behind a bin lorry two
+                    // streets away has a perfectly valid drive task and will sit in it until the
+                    // raid is over, which from the block looks exactly like nobody turning up.
+                    // They get out and walk the rest, the way people actually would.
+                    if (!arrived)
+                    {
+                        if (car != null && car.Exists() && car.Speed < 1.2f)
+                        {
+                            if (order.CarStuckSince == 0) order.CarStuckSince = now;
+                            else if (now - order.CarStuckSince > StuckOutMs) arrived = true;
+                        }
+                        else
+                        {
+                            order.CarStuckSince = 0;
+                        }
+                    }
+
                     if (!arrived) return;
 
                     Function.Call(Hash.TASK_LEAVE_ANY_VEHICLE, ped.Handle, 0, 0);
+
+                    order.CarStuckSince = 0;
                     order.Target = 0;
                     return;
                 }
@@ -1042,9 +1090,20 @@ namespace Hoodrich.Gangs
 
             /// <summary>Thinks in a row where they were told to fight and still are not.</summary>
             public int Swings;
+
+            /// <summary>When the car they are riding in stopped moving, or zero.</summary>
+            public int CarStuckSince;
         }
 
         private readonly Dictionary<int, WarOrder> _orders = new Dictionary<int, WarOrder>();
+
+        /// <summary>
+        /// Whose marker is whose.
+        ///
+        /// SHVDN has no way back from a ped to the blip attached to it, and the alternative is
+        /// leaving a marker on the map for somebody who has been dead for five minutes.
+        /// </summary>
+        private readonly Dictionary<int, Blip> _pedBlips = new Dictionary<int, Blip>();
 
         private int _nextPush;
 
@@ -1062,6 +1121,9 @@ namespace Hoodrich.Gangs
 
         /// <summary>How close the car gets to the block before they get out of it.</summary>
         private const float DismountRange = 55f;
+
+        /// <summary>A car stopped this long is a car they finish the journey without.</summary>
+        private const int StuckOutMs = 9000;
 
         /// <summary>
         /// Lets the feed start the moment the first round goes off.
@@ -1107,6 +1169,72 @@ namespace Hoodrich.Gangs
             }
         }
 
+        /// <summary>
+        /// Clears up as it goes rather than all at the end.
+        ///
+        /// Eight minutes of the worst tier is a couple of dozen carloads and the same again of
+        /// ours, and none of them were ever let go until the whole thing finished -- every body
+        /// held in memory, every blip still on the map, including for people who had been dead
+        /// for six minutes. A map covered in markers for corpses is worse than no markers, and
+        /// a hundred persistent peds on one street is how a session stops being playable.
+        /// </summary>
+        private void CullTheDead()
+        {
+            for (var i = _defenders.Count - 1; i >= 0; i--)
+            {
+                var ped = _defenders[i];
+                if (ped != null && ped.Exists() && ped.IsAlive) continue;
+
+                Forget(ped);
+                _defenders.RemoveAt(i);
+            }
+        }
+
+        /// <summary>Takes somebody's marker off the map and hands the body back to the game.</summary>
+        private void Forget(Ped ped)
+        {
+            if (ped == null) return;
+
+            try
+            {
+                _orders.Remove(ped.Handle);
+
+                if (!ped.Exists()) return;
+
+                Blip blip;
+
+                if (_pedBlips.TryGetValue(ped.Handle, out blip))
+                {
+                    _pedBlips.Remove(ped.Handle);
+
+                    if (blip != null && blip.Exists())
+                    {
+                        _blips.Remove(blip);
+                        blip.Delete();
+                    }
+                }
+
+                ped.MarkAsNoLongerNeeded();
+            }
+            catch { /* it is being cleared up either way */ }
+        }
+
+        /// <summary>How many of one side can be on the block at once.</summary>
+        private const int MaxLive = 14;
+
+        private static int AliveIn(List<Ped> pool)
+        {
+            var n = 0;
+
+            for (var i = 0; i < pool.Count; i++)
+            {
+                var ped = pool[i];
+                if (ped != null && ped.Exists() && ped.IsAlive) n++;
+            }
+
+            return n;
+        }
+
         private void CountKills()
         {
             for (var i = _rivals.Count - 1; i >= 0; i--)
@@ -1120,9 +1248,12 @@ namespace Hoodrich.Gangs
 
                 if (byYou) _kills++;
 
-                try { if (ped != null && ped.Exists()) ped.MarkAsNoLongerNeeded(); }
-                catch { /* teardown */ }
+                // Everybody down, however they went down. The bar on screen is about the fight
+                // rather than about your share of it -- one of theirs dropped by one of ours is
+                // still one fewer of theirs, and a bar that ignored it jumped every time.
+                _downed++;
 
+                Forget(ped);
                 _rivals.RemoveAt(i);
             }
         }
@@ -1296,13 +1427,26 @@ namespace Hoodrich.Gangs
             }
             _cars.Clear();
 
+            // Keyed on ped handle, and the game reuses handles -- so an order left in here can
+            // be inherited by somebody spawned in a later raid, who then sits out the fight
+            // waiting on a think time from twenty minutes ago.
+            _orders.Clear();
+            _pedBlips.Clear();
+
             _attacker = null;
             _target = null;
+            _defender = null;
         }
 
         public void RestoreWorld()
         {
             if (IsRunning) HoldTheLaw(false);
+
+            // This one matters more than anything else in here. Two sets are rewritten to hate
+            // each other for the length of a raid; if the script unloads while that is true,
+            // they stay that way for the rest of the session and a gang you have never spoken
+            // to opens fire on sight, with nothing the player can do about it.
+            if (_relationshipsHeld) SetWarRelationships(false);
 
             Scatter();
             ClearMarker();
@@ -1345,8 +1489,8 @@ namespace Hoodrich.Gangs
                 if (ped != null && ped.Exists() && ped.IsAlive) standing++;
             }
 
-            var sent = standing + _kills;
-            var done = sent <= 0 ? 0f : _kills / (float)sent;
+            var sent = standing + _downed;
+            var done = sent <= 0 ? 0f : _downed / (float)sent;
 
             Hud.Rect(x, y, w + 0.004f, h + 0.004f, System.Drawing.Color.FromArgb(190, 8, 8, 10));
             Hud.Rect(x, y, w, h, System.Drawing.Color.FromArgb(160, 30, 32, 34));

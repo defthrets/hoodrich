@@ -44,11 +44,8 @@ namespace Hoodrich.Missions
         private static readonly Vector3 BikeSpot = new Vector3(-97.042f, -1610.761f, 32.313f);
         private const float BikeHeading = 56.429f;
 
-        private static readonly Vector3 HomieSpot = new Vector3(-115.933f, -1609.875f, 31.249f);
 
-        private const float MountRange = 25f;
         private const float HomeRange = 25f;
-        private const int RetaskGapMs = 4000;
 
         private static readonly string[] BikeModels = { "bmx", "cruiser", "scorcher", "tribike" };
 
@@ -150,7 +147,6 @@ namespace Hoodrich.Missions
         private Blip _marker;
 
         private bool _rolling;
-        private int _nextRetask;
 
         private int _lastUpdate;
         private int _sprayingSince;
@@ -406,104 +402,6 @@ namespace Hoodrich.Missions
         }
 
         // ---- riding ------------------------------------------------------------
-
-        /// <summary>
-        /// One of the homies, on his own bike, and no more.
-        ///
-        /// Two men on bicycles with a can each is a couple of lads doing something daft on
-        /// somebody else's block, which is exactly what this is. A convoy would make it look
-        /// like a raid, and it is not one.
-        /// </summary>
-        private void SpawnHomie(Ped player)
-        {
-            var gang = _crew.Current;
-            if (gang == null) return;
-
-            var spot = Ground(HomieSpot);
-
-            _homieBike = SpawnBike(spot, player.Heading);
-            if (_homieBike == null) return;
-
-            _homie = SpawnMember(gang, spot);
-
-            if (_homie == null)
-            {
-                Release(_homieBike);
-                _homieBike = null;
-                return;
-            }
-
-            try
-            {
-                _homie.SetIntoVehicle(_homieBike, VehicleSeat.Driver);
-                Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, _homie.Handle, gang.GroupHash);
-                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _homie.Handle, 46, true);
-
-                Escort(player);
-
-                var blip = _homie.AddBlip();
-                if (blip != null && blip.Exists())
-                {
-                    blip.Color = BlipColor.Green;
-                    blip.Scale = 0.6f;
-                    blip.Name = "Homie";
-                    _blips.Add(blip);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not put the homie on a bike: " + ex.Message);
-            }
-        }
-
-        private void Escort(Ped player)
-        {
-            if (_homie == null || !_homie.Exists() || _homieBike == null || !_homieBike.Exists()) return;
-
-            try
-            {
-                var target = player.CurrentVehicle;
-                if (target == null || !target.Exists()) return;
-
-                // Mode 0 is rear, so he rides behind rather than cutting across your wheel.
-                Function.Call(Hash.TASK_VEHICLE_FOLLOW, _homie.Handle, _homieBike.Handle,
-                              target.Handle, 25f, 786603, 8);
-            }
-            catch
-            {
-                // The game's own driving takes over.
-            }
-        }
-
-        /// <summary>Puts him back on the bike and back on your wheel. Tasks do not survive a trip.</summary>
-        private void KeepUp(Ped player, int now)
-        {
-            if (_homie == null || !_homie.Exists() || !_homie.IsAlive) return;
-            if (now < _nextRetask) return;
-
-            _nextRetask = now + RetaskGapMs;
-
-            if (_homieBike == null || !_homieBike.Exists()) return;
-
-            // Standing beside you while you paint is right; standing in an alley two streets
-            // back is not. He only remounts once you are moving again.
-            if (!player.IsInVehicle()) return;
-
-            if (!_homie.IsInVehicle(_homieBike))
-            {
-                try
-                {
-                    Function.Call(Hash.TASK_ENTER_VEHICLE, _homie.Handle, _homieBike.Handle,
-                                  -1, (int)VehicleSeat.Driver, 2f, 1, 0);
-                }
-                catch { /* he will walk it */ }
-
-                return;
-            }
-
-            Escort(player);
-        }
-
         private Vehicle SpawnBike(Vector3 where, float heading)
         {
             var spot = Ground(where);

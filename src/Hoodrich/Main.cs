@@ -584,6 +584,11 @@ namespace Hoodrich
         /// </summary>
         private void TryRestore()
         {
+            // First, and outside every other try. Everything else in here is litter; this one
+            // is the player being unable to attract a police car for the rest of the session
+            // because the script unloaded while somebody was holding the switch.
+            try { LawHold.ReleaseAll(); } catch { /* teardown */ }
+
             try { _wheel?.RestoreWorld(); }
             catch { try { Game.TimeScale = 1f; } catch { /* nothing more we can do */ } }
 

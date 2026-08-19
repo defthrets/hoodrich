@@ -19,7 +19,13 @@ namespace Hoodrich.Gangs
     /// </summary>
     internal sealed class Affiliation
     {
-        // SET_RELATIONSHIP_BETWEEN_GROUPS intensities.
+        /// <summary>
+        /// The SET_RELATIONSHIP_BETWEEN_GROUPS scale, in full.
+        ///
+        /// Only Respect is currently read. The rest are kept deliberately: the point of a
+        /// numbered scale is being able to see where the number you are using sits on it, and a
+        /// lone "= 1" with nothing around it is a magic number waiting to be got wrong.
+        /// </summary>
         private const int RelCompanion = 0;
         private const int RelRespect = 1;
         private const int RelLike = 2;

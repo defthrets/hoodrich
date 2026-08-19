@@ -25,9 +25,6 @@ namespace Hoodrich.Wheel
     /// </summary>
     internal sealed class WheelPages
     {
-        /// <summary>Grams moved in a single hand-to-hand sale.</summary>
-        private const float DealSize = 5f;
-
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
         private readonly Pricing _pricing;
@@ -551,135 +548,10 @@ namespace Hoodrich.Wheel
             return page;
         }
 
-        private string StashDetail()
-        {
-            if (_stash.AtDoor) return "Move product in and out";
-
-            var away = _stash.DistanceTo();
-            return away > 8000f
-                ? "Aunt Denise's, on Forum Drive"
-                : "Aunt Denise's -- " + away.ToString("0") + "m away";
-        }
-
-        private string StashValue()
-        {
-            var total = _stash.Stash.Total;
-            return total > 0.005f ? total.ToString("0.#") + "g at home" : "";
-        }
-
-        /// <summary>
-        /// The stash house: what is at home, what is on you, and moving it between the two.
-        ///
-        /// Product left here is off your person, so neither a death nor a bust can touch it.
-        /// The trip back to Forum Drive is the price of keeping it safe.
-        /// </summary>
-        private WheelPage BuildStashPage()
-        {
-            if (!_stash.AtDoor)
-            {
-                var away = new WheelPage("Stash house", _stash.Name);
-                away.Add("Not there", "-", null,
-                    detail: StashDetail(),
-                    value: StashValue(),
-                    enabled: false, disabledReason: "Go to Aunt Denise's");
-                away.WithIcon(Icons.Locked);
-                return away;
-            }
-
-            var den = _stash.Stash;
-            var page = new WheelPage("Stash house", _stash.Name);
-
-            page.PanelTitle = "At home";
-            page.Row("Bagged", den.TotalPackaged.ToString("0.#") + "g", Palette.Cash);
-            page.Row("Weight", den.TotalBulk.ToString("0.#") + "g", Palette.Warn);
-            page.Row("Room here", den.FreeSpace.ToString("0") + "g");
-            page.Row("On you", Stash.Total.ToString("0.#") + "g");
-
-            // Item by item, on its own screen. Doing this on the wheel meant one wedge per
-            // product per direction, which is a lot of flicking to move two things.
-            page.Add("Move product", "=", OpenStashScreen,
-                detail: "Pockets on the left, house on the right",
-                value: "");
-            page.WithIcon(Icons.Stash);
-
-            page.Add("Leave it all", "v", DepositAll,
-                detail: "Everything on you, into the house",
-                value: Stash.Total.ToString("0.#") + "g",
-                enabled: Stash.Total > 0.005f,
-                disabledReason: "You ain't holding nothing");
-            page.WithIcon(Icons.Cash);
-
-            page.Add("Take it all", "^", WithdrawAll,
-                detail: "As much as you can carry, out of the house",
-                value: den.Total.ToString("0.#") + "g",
-                enabled: den.Total > 0.005f && Stash.FreeSpace > 0.005f,
-                disabledReason: den.Total <= 0.005f ? "There is nothing here" : "You are full");
-            page.WithIcon(Icons.Tick);
-
-            return page;
-        }
-
         private void OpenStashScreen()
         {
             StashScreen?.Open(Stash, _stash.Stash, _drugs, () => _state.Touch());
         }
-        private void DepositAll()
-        {
-            var moved = 0f;
-            foreach (var d in _drugs.All) moved += MoveDrug(Stash, _stash.Stash, d.Id);
-
-            _state.Touch();
-            Notify.Ticker(moved > 0.005f
-                ? "~g~Stashed " + moved.ToString("0.#") + "g.~s~"
-                : "~o~Nothing moved.~s~");
-        }
-
-        private void WithdrawAll()
-        {
-            var moved = 0f;
-            foreach (var d in _drugs.All) moved += MoveDrug(_stash.Stash, Stash, d.Id);
-
-            _state.Touch();
-            Notify.Ticker(moved > 0.005f
-                ? "~g~Took " + moved.ToString("0.#") + "g out.~s~"
-                : "~o~No room for any of it.~s~");
-        }
-
-
-        /// <summary>
-        /// Moves one product between two stashes, preserving purity. Only ever removes what the
-        /// destination actually accepted, so nothing can be lost to a full container.
-        /// </summary>
-        private static float MoveDrug(Stash from, Stash to, string drugId)
-        {
-            var moved = 0f;
-
-            var bulk = from.BulkOf(drugId);
-            if (bulk > 0.005f)
-            {
-                var accepted = to.AddBulk(drugId, bulk);
-                if (accepted > 0.005f)
-                {
-                    from.RemoveBulk(drugId, accepted);
-                    moved += accepted;
-                }
-            }
-
-            var packaged = from.PackagedOf(drugId);
-            if (packaged > 0.005f)
-            {
-                var purity = from.PurityOf(drugId);
-                var accepted = to.AddPackaged(drugId, packaged, purity);
-                if (accepted > 0.005f)
-                {
-                    from.RemovePackaged(drugId, accepted);
-                    moved += accepted;
-                }
-            }
-
-            return moved;
-        }
-
         /// <summary>One-line state of a supply line, for the import board.</summary>
         private string ImportStatus(DealerDef def)
         {
@@ -732,72 +604,6 @@ namespace Hoodrich.Wheel
             var def = _weapons.Get(WeaponRegistry.CurrentWeaponHash());
             return def == null ? "Unarmed" : def.Name;
         }
-
-        /// <summary>
-        /// The eight vanilla wheel slots, minus any the player has nothing in. Slot positions are
-        /// not held stable here the way the business pages are: an empty Sniper wedge would be
-        /// dead space on the one page that needs to be fast.
-        /// </summary>
-        private WheelPage BuildWeaponsPage()
-        {
-            var page = new WheelPage("Weapons", CurrentWeaponName());
-            var currentHash = WeaponRegistry.CurrentWeaponHash();
-
-            page.Add("Unarmed", "-", () => Equip(WeaponRegistry.UnarmedHash, "Unarmed"),
-                detail: "Put it away",
-                value: currentHash == WeaponRegistry.UnarmedHash ? "EQUIPPED" : "");
-
-            foreach (var slot in _weapons.OccupiedSlots())
-            {
-                var name = slot;
-                var carried = _weapons.CarriedInSlot(name);
-
-                // Show the slot's own equipped weapon in the hub if it holds one.
-                var equipped = carried.Find(w => w.Hash == currentHash);
-
-                page.AddSub(name, "o", () => BuildWeaponSlotPage(name),
-                    detail: carried.Count + (carried.Count == 1 ? " weapon" : " weapons"),
-                    value: equipped != null ? equipped.Name : "");
-            }
-
-            return page;
-        }
-
-        private WheelPage BuildWeaponSlotPage(string slot)
-        {
-            var carried = _weapons.CarriedInSlot(slot);
-            var currentHash = WeaponRegistry.CurrentWeaponHash();
-
-            var page = new WheelPage(slot, CurrentWeaponName());
-
-            foreach (var w in carried)
-            {
-                var def = w;
-                var ammo = WeaponRegistry.AmmoFor(def.Hash);
-                var isMelee = string.Equals(slot, "Melee", StringComparison.OrdinalIgnoreCase);
-                var equipped = def.Hash == currentHash;
-
-                var item = new WheelItem
-                {
-                    Label = def.Name,
-                    Symbol = "o",
-                    IconDict = def.Icon,
-                    IconTexture = def.Icon,
-                    IconReady = () => _weapons.IconReady(def),
-
-                    // Weapon art is a long letterbox, unlike the square menu sprites.
-                    IconAspect = 2f,
-                    Detail = equipped ? "In your hands" : "Equip",
-                    Value = isMelee ? (equipped ? "EQUIPPED" : "") : ammo.ToString("N0") + " rounds",
-                    OnSelect = () => Equip(def.Hash, def.Name)
-                };
-
-                page.Add(item);
-            }
-
-            return page;
-        }
-
         private void Equip(uint hash, string name)
         {
             WeaponRegistry.Equip(hash);
@@ -1618,28 +1424,6 @@ namespace Hoodrich.Wheel
         }
 
         // ---- reputation ---------------------------------------------------------
-
-        /// <summary>
-        /// What a rank buys you, derived from the live data rather than hardcoded, so editing
-        /// suppliers.json keeps this honest.
-        /// </summary>
-        private string RankUnlocks(int rank)
-        {
-            var opened = new List<string>();
-            foreach (var s in _dealers.All)
-            {
-                if (s.MinRank == rank && rank > 0) opened.Add(s.Tag);
-            }
-
-            // LotSizeFor()'s base, before the per-product tier divide.
-            var lot = 20f + rank * 20f;
-            var text = "Lots up to " + lot.ToString("0") + "g";
-
-            if (opened.Count > 0) text += ";  " + string.Join(", ", opened.ToArray()) + " take your call";
-
-            return text;
-        }
-
         // ---- shared readouts ----------------------------------------------------
 
         /// <summary>Progress toward the next rank, phrased for a panel row.</summary>

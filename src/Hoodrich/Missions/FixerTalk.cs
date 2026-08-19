@@ -18,9 +18,6 @@ namespace Hoodrich.Missions
     /// </summary>
     internal sealed class FixerTalk
     {
-        /// <summary>How many he puts in front of you at a time.</summary>
-        private const int Offers = 3;
-
         private readonly Fixer _fixer;
         private readonly MissionBook _missions;
         private readonly MissionRunner _runner;
@@ -114,18 +111,6 @@ namespace Hoodrich.Missions
                 default: return Icons.Mask;
             }
         }
-
-        /// <summary>The first job on his list you have not finished, or null once they are all behind you.</summary>
-        private MissionDef NextUndone()
-        {
-            foreach (var def in _missions.All)
-            {
-                if (!_state.HasDone(def.Id)) return def;
-            }
-
-            return null;
-        }
-
         private DialogueNode Nothing(string line = null)
         {
             var node = Node(string.IsNullOrEmpty(line)

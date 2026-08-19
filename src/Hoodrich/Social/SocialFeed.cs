@@ -93,8 +93,6 @@ namespace Hoodrich.Social
         /// </summary>
         private const int OnScreen = 3;
 
-        /// <summary>How long one stays up before it falls off on its own.</summary>
-        private const int PopupLifeMs = 11000;
         private const int BurstMax = 4;
 
         /// <summary>How many recent bodies are remembered, so nobody repeats anybody.</summary>
@@ -114,83 +112,6 @@ namespace Hoodrich.Social
         private const float VoicedAmbientChance = 0.30f;
 
 
-
-        /// <summary>
-        /// Nobody, to begin with.
-        ///
-        /// Starting at zero is the whole point: the number is the only thing in the mod that
-        /// records what you have actually done out there, and handing you sixty for turning the
-        /// game on makes it a decoration instead of a record.
-        /// </summary>
-        private const int StartingFollowers = 0;
-
-        /// <summary>
-        /// Contact pictures, split by who is holding the phone.
-        ///
-        /// These are the game's own phone-contact textures -- every face it ships that belongs
-        /// to a nobody, which is most of them. A real headshot needs a ped that exists in the
-        /// world and the people writing these posts do not, so the notification borrows the
-        /// same art the phone uses for anybody who is not on screen.
-        ///
-        /// The story leads are deliberately absent. Franklin, Michael, Trevor, Lamar and
-        /// Stretch are people who exist in this mod and can be stood in front of; seeing one of
-        /// their faces on a stranger complaining about the price of chicken breaks the whole
-        /// illusion in a way no amount of good writing recovers from.
-        /// </summary>
-        private static readonly string[] MalePics =
-        {
-            "CHAR_ANDREAS", "CHAR_BARRY", "CHAR_BEVERLY", "CHAR_CASTRO", "CHAR_CHEF",
-            "CHAR_CHENG", "CHAR_CHENGSR", "CHAR_CRIS", "CHAR_DAVE", "CHAR_DEVIN",
-            "CHAR_DOM", "CHAR_DREYFUSS", "CHAR_DR_FRIEDLANDER", "CHAR_FLOYD", "CHAR_HAO",
-            "CHAR_JIMMY", "CHAR_JIMMY_BOSTON", "CHAR_JOE", "CHAR_JOSEF", "CHAR_JOSH",
-            "CHAR_LAZLOW", "CHAR_LESTER", "CHAR_MANUEL", "CHAR_MARTIN", "CHAR_MECHANIC",
-            "CHAR_NIGEL", "CHAR_OMEGA", "CHAR_ONEIL", "CHAR_ORTEGA", "CHAR_OSCAR",
-            "CHAR_RON", "CHAR_SIMEON", "CHAR_SOLOMON", "CHAR_STEVE", "CHAR_WADE",
-            "CHAR_MP_BRUCIE", "CHAR_MP_GERALD", "CHAR_MP_JULIO", "CHAR_MP_MECHANIC",
-            "CHAR_MP_RAY_LAVOY", "CHAR_MP_ROBERTO", "CHAR_MP_FAM_BOSS", "CHAR_MP_MEX_BOSS",
-            "CHAR_MP_MEX_DOCKS", "CHAR_MP_MEX_LT", "CHAR_MP_BIKER_BOSS",
-            "CHAR_MP_BIKER_MECHANIC", "CHAR_MP_PROF_BOSS", "CHAR_MP_SNITCH",
-            "CHAR_MP_ARMY_CONTACT", "CHAR_MP_FIB_CONTACT"
-        };
-
-        private static readonly string[] FemalePics =
-        {
-            "CHAR_ABIGAIL", "CHAR_AMANDA", "CHAR_ANTONIA", "CHAR_BROKEN_DOWN_GIRL",
-            "CHAR_DENISE", "CHAR_HITCHER_GIRL", "CHAR_MARNIE", "CHAR_MARY_ANN",
-            "CHAR_MAUDE", "CHAR_MOLLY", "CHAR_PATRICIA", "CHAR_SAEEDA", "CHAR_TANISHA",
-            "CHAR_TAXI_LIZ", "CHAR_TENNIS_COACH", "CHAR_TOW_TONYA", "CHAR_TRACEY",
-            "CHAR_MP_STRIPCLUB_PR", "CHAR_MP_FM_CONTACT"
-        };
-
-        /// <summary>
-        /// Faces for people who run with a set.
-        ///
-        /// The game's contact art is mostly Vinewood, which is how a Balla ended up posting with
-        /// somebody's holiday photo attached. This is every face it ships that could plausibly
-        /// be stood on a corner in Davis -- a short list, because that is genuinely all there is
-        /// without shipping texture files.
-        /// </summary>
-        private static readonly string[] GangMalePics =
-        {
-            "CHAR_MP_FAM_BOSS", "CHAR_MP_GERALD", "CHAR_MP_JULIO", "CHAR_MP_ROBERTO",
-            "CHAR_MP_MEX_BOSS", "CHAR_MP_MEX_LT", "CHAR_MP_MEX_DOCKS", "CHAR_MP_SNITCH",
-            "CHAR_MP_RAY_LAVOY", "CHAR_ORTEGA", "CHAR_MANUEL", "CHAR_MP_BIKER_BOSS"
-        };
-
-        private static readonly string[] GangFemalePics =
-        {
-            "CHAR_TANISHA", "CHAR_MP_STRIPCLUB_PR", "CHAR_MP_FM_CONTACT",
-            "CHAR_DENISE", "CHAR_BROKEN_DOWN_GIRL"
-        };
-
-        /// <summary>Everything that is not a person: papers, shops, radio stations.</summary>
-        private static readonly string[] OrgPics =
-        {
-            "CHAR_LIFEINVADER", "CHAR_SOCIAL_CLUB", "CHAR_LS_CUSTOMS", "CHAR_BUGSTARS",
-            "CHAR_EPSILON", "CHAR_MERRYWEATHER", "CHAR_LS_TOURIST_BOARD", "CHAR_PEGASUS_DELIVERY",
-            "CHAR_MP_MORS_MUTUAL", "CHAR_TAXI", "CHAR_CALL911", "CHAR_BLOCKED",
-            "CHAR_CHAT_CALL", "CHAR_DIAL_A_SUB", "CHAR_MINOTAUR", "CHAR_SASQUATCH"
-        };
 
         private readonly Random _rng = new Random();
         private readonly List<Post> _timeline = new List<Post>();
@@ -1035,7 +956,7 @@ namespace Hoodrich.Social
                 // itself, because a ticker has nowhere else to put it.
                 var line = string.IsNullOrEmpty(PicFor(post.By))
                     ? Colour(post.By) + "[" + post.By.Initial + "] " + post.By.Name + "~s~  " +
-                      post.By.Handle + "\n" + post.Body
+                      post.By.Handle + "~n~" + post.Body
                     : post.Body;
 
                 Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, Draw.FormatFor(line));
@@ -1048,21 +969,16 @@ namespace Hoodrich.Social
                                   line.Substring(i, len));
                 }
 
+                // A blank contact rather than a borrowed face. Everybody made up loses the
+                // photograph -- a fabricated Balla wearing a stock picture of a middle-aged man
+                // from the phone contacts is the most obviously wrong thing the feed can do --
+                // but they keep the shape of a message, with the name and the handle in the
+                // header where a phone puts them, and the colour and initial on the line below.
+                //
+                // Dropping to a plain ticker would have taken that shape away from ninety-five
+                // posts in a hundred to fix the face on all of them.
                 var pic = PicFor(post.By);
-
-                if (string.IsNullOrEmpty(pic))
-                {
-                    // Nobody the game has a face for, so nobody borrows one. The name goes on
-                    // the front of the line in their set colour with their initial in front of
-                    // it, which is the same identity the timeline gives them -- rather than a
-                    // stock photograph of a stranger, which is what it used to be, and which
-                    // made every fabricated account look like it belonged to somebody else.
-                    _onScreen.Enqueue(Function.Call<int>(
-                        Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, false, true));
-
-                    Trim();
-                    return;
-                }
+                if (string.IsNullOrEmpty(pic)) pic = BlankFace;
 
                 Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_MESSAGETEXT,
                               pic, pic, false, 0, post.By.Name, post.By.Handle);
@@ -1134,6 +1050,9 @@ namespace Hoodrich.Social
         {
             return by.Pic ?? "";
         }
+
+        /// <summary>The game's own empty contact picture. No face, same layout.</summary>
+        private const string BlankFace = "CHAR_BLANK_ENTRY";
 
         private void Add(Post post)
         {

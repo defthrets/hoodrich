@@ -397,7 +397,7 @@ namespace Hoodrich.UI
             Function.Call(Hash.SET_TEXT_COLOUR, (int)c.R, (int)c.G, (int)c.B, (int)c.A);
             Function.Call(Hash.SET_TEXT_CENTRE, centre);
 
-            // Never inherit somebody else''s wrap region.
+            // Never inherit somebody else's wrap region.
             Function.Call(Hash.SET_TEXT_JUSTIFICATION, centre ? 0 : 1);
             Function.Call(Hash.SET_TEXT_WRAP, 0f, 1f);
 

@@ -17,7 +17,6 @@ namespace Hoodrich.Economy
     /// </summary>
     internal sealed class PrepAnimation
     {
-        private const int DictTimeoutMs = 1200;
 
         /// <summary>Loop forever; the caller stops it when the batch finishes.</summary>
         private const int LoopFlag = 1;

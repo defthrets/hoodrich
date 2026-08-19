@@ -458,8 +458,29 @@ namespace Hoodrich.Gangs
             var node = Node(def, gang,
                 "You still holding " + left.ToString("0") + " of it. Come back when it's gone.");
 
+            // There has to be a way out of this. Product can be lost -- robbed, arrested, wiped
+            // by a reset -- and without this the promise stays open forever, which locks the one
+            // option in the mod that exists for players with nothing, behind having lost
+            // something. It costs, because it should.
+            node.Say("I lost it.", () => LostWork(def, gang), "Write it off, and wear it");
+
             node.Say("Back up.", () => Root(def));
             node.Leave();
+            return node;
+        }
+
+        private DialogueNode LostWork(LeaderDef def, GangDef gang)
+        {
+            _state.ClearFronted();
+            _state.Touch();
+
+            _crew.AddRep(-12f, "for losing his work");
+
+            var node = Node(def, gang,
+                "You lost it. Course you did. That's on your tab and everybody's gonna hear " +
+                "about it. Get out my face and come back when you ready to work it off.");
+
+            node.Leave("Aight.");
             return node;
         }
 

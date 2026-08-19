@@ -65,7 +65,6 @@ namespace Hoodrich.Missions
 
         // ---- ranges and timings ------------------------------------------------
 
-        private const float MountRange = 6f;
         private const float ArriveRange = 45f;
         private const float TalkRange = 6f;
         private const float ShopRange = 30f;
@@ -700,24 +699,15 @@ namespace Hoodrich.Missions
         /// </summary>
         private void HoldTheLaw(bool held)
         {
-            try
-            {
-                if (held)
-                {
-                    Game.Player.Wanted.SetWantedLevel(0, false);
-                    Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
-                }
-
-                Function.Call(Hash.SET_MAX_WANTED_LEVEL, held ? 0 : 5);
-                Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, Game.Player.Handle, held);
-                Function.Call(Hash.SET_EVERYONE_IGNORE_PLAYER, Game.Player.Handle, false);
-
-                Log.Info(held ? "BikeRide: the law is off for the job." : "BikeRide: the law is back on.");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not change the wanted rules: " + ex.Message);
-            }
+            // Through the shared switch. A gang war can start while this job is running -- they
+            // roll on separate clocks and nothing stops them overlapping -- and whichever of the
+            // two ended first used to turn the police back on for the other. Either a fist
+            // fight on a basketball court brought a helicopter, or a raid on your own block did.
+            //
+            // The old SET_EVERYONE_IGNORE_PLAYER call that used to live here passed false on
+            // both sides of the branch, so it never did anything in either direction.
+            if (held) LawHold.Hold(this);
+            else LawHold.Release(this);
         }
 
         private void Chatter()

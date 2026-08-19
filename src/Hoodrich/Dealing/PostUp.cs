@@ -338,28 +338,15 @@ namespace Hoodrich.Dealing
 
 
             // The buyer's answer is on a short fuse so it lands after the player's line.
-
-
             if (_pendingSpeaker != null && Game.GameTime >= _pendingSpeakAt)
-
-
             {
-
-
                 Say(_pendingSpeaker, BuyerLines);
-
-
                 _pendingSpeaker = null;
-
-
             }
 
-
-
-            
-
-
-            switch (State)            {                case PostState.Dealing:
+            switch (State)
+            {
+                case PostState.Dealing:
                     TickDeal(player);
                     return;
                 case PostState.Approaching:
