@@ -40,8 +40,15 @@ namespace Hoodrich.Gangs
         private const int WarMs = 300000;
 
         /// <summary>Gap between carloads. Irregular on purpose.</summary>
-        private const int WaveGapMinMs = 42000;
-        private const int WaveGapMaxMs = 78000;
+        /// <summary>
+        /// Gap between carloads.
+        /// 
+        /// Short enough that the next lot is on the block before the last is finished, which is
+        /// what keeps it a fight rather than four separate skirmishes with quiet in between.
+        /// Still irregular, so it never sounds like a metronome.
+        /// </summary>
+        private const int WaveGapMinMs = 22000;
+        private const int WaveGapMaxMs = 42000;
 
         /// <summary>Two turn up together at the start; after that it is usually one.</summary>
         private const int OpeningCars = 2;
@@ -273,6 +280,7 @@ namespace Hoodrich.Gangs
 
             CountKills();
             ListenForShots(player);
+            PushIn(now);
 
             // More of them, until the clock runs out.
             if (elapsed < WarMs - WaveGapMinMs && now >= _nextWave)
@@ -617,6 +625,48 @@ namespace Hoodrich.Gangs
 
             Log.Info("Gang war: " + _defenders.Count + " of ours holding " + _target.Who + ".");
         }
+
+        /// <summary>
+        /// Keeps them moving toward the man they came for.
+        ///
+        /// Combat tasks make a ped fight whoever is in front of them, which is right until the
+        /// nearest enemy is dead and they stand in the road having achieved their objective.
+        /// Anybody not currently in a fight gets sent at the target again, so the pressure keeps
+        /// arriving at the same place instead of dissolving into the street.
+        /// </summary>
+        private void PushIn(int now)
+        {
+            if (now < _nextPush) return;
+            _nextPush = now + PushIntervalMs;
+
+            foreach (var ped in _rivals)
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                try
+                {
+                    if (Function.Call<bool>(Hash.IS_PED_IN_COMBAT, ped.Handle, 0)) continue;
+
+                    // Out of the car first if they are still in it, then on foot to the block.
+                    if (ped.IsInVehicle()) Function.Call(Hash.TASK_LEAVE_ANY_VEHICLE, ped.Handle, 0, 0);
+
+                    Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, ped.Handle,
+                                  _target.Where.X, _target.Where.Y, _target.Where.Z,
+                                  2.0f, 20000, 6f, 0, 0f);
+
+                    Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, ped.Handle, 120f, 0);
+                }
+                catch
+                {
+                    // They will find it or they will not.
+                }
+            }
+        }
+
+        private int _nextPush;
+
+        /// <summary>How often anybody idle is pointed back at the block.</summary>
+        private const int PushIntervalMs = 6000;
 
         /// <summary>
         /// Lets the feed start the moment the first round goes off.
