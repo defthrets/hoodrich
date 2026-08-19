@@ -23,7 +23,7 @@
   "dealers": [
     {
       "id": "docks",
-      "name": "Dock Worker",
+      "name": "Juan",
       "tag": "DOCK",
       "kind": "Docks",
       "gangId": "",
@@ -46,10 +46,10 @@
       "openHour": 5,
       "closeHour": 21,
       "greeting": "Stretch's people, right? Keep it quiet and keep it quick. Whatever's in the box, I can get it off the box.",
-      "buyLine": "Anything you want, in weight. Say what and say how much.",
+      "buyLine": "I deal in bricks. Nothing smaller. Say what and say how many.",
       "sourceReply": "Where do I get it? Man, I AM where you get it.",
       "sourceTooSoon": "",
-      "farewell": "Off you go. Don't come back in daylight if you're carrying."
+      "farewell": "Go on. And don't come back in daylight if you're carrying."
     }
   ]
 }

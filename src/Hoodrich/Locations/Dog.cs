@@ -1,5 +1,4 @@
 using System;
-using Control = GTA.Control;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -9,119 +8,40 @@ using Hoodrich.UI;
 namespace Hoodrich.Locations
 {
     /// <summary>
-    /// Chop, in the yard at Aunt Denise's.
+    /// Chop, moved home.
     ///
-    /// He is not a mechanic, he is furniture with a heartbeat: something alive at the house so
-    /// the place reads as somewhere you live rather than a container you visit. The game's own
-    /// dog behaviour does the rest -- he wanders, he follows, and if you take him out with you
-    /// that is between you and him.
+    /// This used to spawn a Chop of its own and give him a menu. That was the wrong idea twice
+    /// over: the interactions never worked, and even when they did it was a copy of the dog
+    /// rather than the dog. The game already has a Chop with his own petting, his own tricks
+    /// and his own app -- all of it better than anything a script bolts on.
+    ///
+    /// So this spawns nothing and adds nothing. It finds the game's own Chop, wherever the story
+    /// has put him, and puts him back in the yard on Forum Drive -- then leaves him alone to be
+    /// the game's dog, at the house he used to live at.
+    ///
+    /// The honest limitation: he has to EXIST to be moved, and the game only creates him near
+    /// whichever house Franklin currently lives in. So the first move happens when you are up at
+    /// the mansion. After that he is held here, and held is the whole job.
     /// </summary>
     internal sealed class Dog
     {
-        /// <summary>
-        /// Where Chop actually is, read off the HUD standing on the spot.
-        ///
-        /// The height was not in the reading, so it is taken from the house: the bed sits at
-        /// 31.102 barely seven metres north of here on the same X, so this is the same floor.
-        /// The probe below corrects it if the ground turns out to be within a storey of that.
-        /// </summary>
+        /// <summary>The kennel in the yard, read off the HUD standing on it.</summary>
         private static readonly Vector3 Yard = new Vector3(-11.095f, -1423.223f, 30.678f);
 
-        private const float SpawnRange = 90f;
-        private const float DespawnRange = 160f;
-        /// <summary>
-        /// Kept tight, and centred on the kennel. He is meant to be found there most of the
-        /// time, with a bit of drift -- twelve metres was enough to put him in the road.
-        /// </summary>
-        private const float WanderRadius = 6f;
+        /// <summary>How far he may drift from the kennel before he is walked back.</summary>
+        private const float LeashRange = 14f;
 
-        /// <summary>How far he is allowed to drift before he is walked back to the kennel.</summary>
-        private const float LeashRange = 11f;
+        /// <summary>How far out we look for him. Wide, because he is usually somewhere else.</summary>
+        private const float FindRange = 400f;
 
-        /// <summary>Following is a task the game drops; it gets put back on this often.</summary>
-        private const int RetaskGapMs = 3000;
+        private const int UpdateIntervalMs = 1500;
 
-        /// <summary>How long he is given to climb in before he is simply put in the seat.</summary>
-        private const int BoardTimeoutMs = 6000;
-
-        /// <summary>
-        /// Animations, tried in order and validated before use.
-        ///
-        /// DOES_ANIM_DICT_EXIST is the only honest way to find out whether a clip is in this
-        /// install, and the animal sets differ between editions. Whichever one answers is used
-        /// and logged, so a dog that does nothing is a question the log can answer.
-        /// </summary>
-        private static readonly string[] SitDicts =
-        {
-            "creatures@rottweiler@amb@world_dog_sitting@base",
-            "creatures@rottweiler@amb@world_dog_sitting@idle_a",
-            "creatures@rottweiler@amb@world_dog_barking@base",
-            "creatures@rottweiler@move"
-        };
-
-        /// <summary>
-        /// Scenario names, which unlike animation dictionaries cannot be checked before use.
-        /// A wrong one does nothing at all and says nothing about it, so these are the ones the
-        /// game itself uses on dogs and the log records which was asked for.
-        /// </summary>
-        private static readonly string[] SitScenarios =
-        {
-            "WORLD_DOG_SITTING_ROTTWEILER", "WORLD_DOG_SITTING_SHEPHERD", "WORLD_DOG_SITTING_RETRIEVER"
-        };
-
-        private static readonly string[] SitClips = { "base", "idle_a", "idle" };
-
-        private static readonly string[] TrickDicts =
-        {
-            "creatures@rottweiler@tricks@",
-            "creatures@rottweiler@amb@world_dog_barking@base",
-            "creatures@rottweiler@move"
-        };
-
-        private static readonly string[] TrickClips = { "beg_loop", "base", "idle" };
-        private const int UpdateIntervalMs = 900;
-
-        /// <summary>Close enough to put a hand on him.</summary>
-        private const float ReachRange = 2.6f;
-
-        /// <summary>How long the fuss lasts before he goes back to what he was doing.</summary>
-        private const int PetMs = 4200;
-
-        /// <summary>A game of fetch runs a bit longer than a pat does.</summary>
-        private const int PlayMs = 7000;
-
-        /// <summary>
-        /// How often we look for a second Chop, and how far out.
-        ///
-        /// The game keeps its own Chop at whichever house Franklin currently lives in, which
-        /// after the story is the place up in the hills. Two of them is worse than either, so
-        /// any Chop that is not ours is sent away wherever it turns up.
-        /// </summary>
-        private const int RivalScanMs = 4000;
-        private const float RivalScanRange = 220f;
-
-        /// <summary>
-        /// Model candidates. Enhanced ships a second Chop, and an install that has only one of
-        /// them should still get a dog rather than an empty yard.
-        /// </summary>
+        /// <summary>Both Chop models. Enhanced ships a second one.</summary>
         private static readonly string[] Models = { "a_c_chop", "a_c_chop_02" };
-
-        /// <summary>CREATE_PED ped type. 28 is PED_TYPE_ANIMAL; a dog made as a civilian is not one.</summary>
-        private const int PedTypeAnimal = 28;
 
         private Ped _chop;
         private int _lastUpdate;
-        private bool _gaveUp;
-
-        private int _lastRivalScan;
-        private int _nextRetask;
-        private int _boardingSince;
-        private bool _playing;
-
-        private bool _following;
-        private bool _petting;
-        private int _pettingUntil;
-        
+        private bool _moved;
 
         public Ped Ped => _chop != null && _chop.Exists() ? _chop : null;
 
@@ -134,163 +54,99 @@ namespace Hoodrich.Locations
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
-            if (_petting && now >= _pettingUntil) EndPet();
+            if (_chop != null && !_chop.Exists()) _chop = null;
 
-            SendAwayTheOtherOne(player, now);
-            KeepUp(player, now);
+            if (_chop == null) Find(player);
+            if (_chop == null) return;
+
             Leash();
-
-            var distance = player.Position.DistanceTo(Yard);
-
-            // Only despawn on distance from the HOUSE, not from him -- taking him for a walk is
-            // the entire point, and a dog that vanishes two streets away is not a dog.
-            if (_chop != null && _chop.Exists())
-            {
-                // Despawn on distance from HIM, not from the house -- taking him out with you is
-                // the whole point of a dog you can call.
-                if (player.Position.DistanceTo(_chop.Position) > DespawnRange) Despawn();
-                return;
-            }
-
-            if (distance <= SpawnRange && !_gaveUp) Spawn();
-        }
-
-        private void Spawn()
-        {
-            // Probed from just above the authored height, and only believed if it agrees.
-            // Firing a probe down from fifteen metres up in a yard hemmed in by two-storey
-            // flats finds the first thing it hits, which is a balcony -- and that is how a dog
-            // ended up on a roof.
-            var spot = Yard;
-
-            try
-            {
-                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 1.5f),
-                                          out var groundZ, GetGroundHeightMode.Normal) &&
-                    groundZ > 0f && Math.Abs(groundZ - spot.Z) <= 3f)
-                {
-                    spot.Z = groundZ;
-                }
-            }
-            catch
-            {
-                // Use the authored height.
-            }
-
-            foreach (var name in Models)
-            {
-                if (TrySpawn(name, spot)) return;
-            }
-
-            // Said once, not every second. A yard with no dog in it is worth one line in the log;
-            // one that says so every tick for the rest of the session is not.
-            _gaveUp = true;
-            Log.Warn("No Chop model would load, so the yard stays empty.");
-        }
-
-        private bool TrySpawn(string name, Vector3 spot)
-        {
-            try
-            {
-                var model = new Model(name);
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(2000))
-                {
-                    Log.Debug("Chop model " + name + " is not in this install.");
-                    return false;
-                }
-
-                // Made as an ANIMAL rather than through the generic ped helper, which asks for a
-                // civilian. A dog created as the wrong ped type for its model is how the yard
-                // ended up empty with nothing in the log to say why.
-                var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeAnimal, model.Hash,
-                                                spot.X, spot.Y, spot.Z, 0f, false, false);
-
-                model.MarkAsNoLongerNeeded();
-
-                if (handle == 0) return false;
-
-                _chop = Entity.FromHandle(handle) as Ped;
-
-                if (_chop == null || !_chop.Exists())
-                {
-                    _chop = null;
-                    return false;
-                }
-
-                _chop.IsPersistent = true;
-                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _chop.Handle, true, true);
-                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _chop.Handle, false);
-
-                // Friendly to the player, so he is a pet rather than an animal that bites.
-                Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, _chop.Handle,
-                              Function.Call<int>(Hash.GET_HASH_KEY, "PLAYER"));
-
-                Function.Call(Hash.TASK_WANDER_IN_AREA, _chop.Handle,
-                              spot.X, spot.Y, spot.Z, WanderRadius, 2f, 6f);
-
-                Log.Info("Chop is in the yard at " + spot + " as " + name + ".");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not put Chop in the yard as " + name + ": " + ex.Message);
-                return false;
-            }
-        }
-
-        private void Despawn()
-        {
-            try
-            {
-                if (_chop != null && _chop.Exists())
-                {
-                    _chop.MarkAsNoLongerNeeded();
-                    _chop.Delete();
-                }
-            }
-            catch { /* teardown */ }
-
-            _chop = null;
-            _following = false;
-            _petting = false;
-            _playing = false;
-            _boardingSince = 0;
         }
 
         /// <summary>
-        /// Makes sure there is exactly one Chop.
+        /// Looks for the game's own Chop and, having found him, moves him home once.
         ///
-        /// Not a fix for the game so much as an agreement with it: the mod puts a Chop at the
-        /// house on Forum Drive because that is where he lived, and the game puts one wherever
-        /// Franklin currently lives. Two Chops is nobody's idea of anything, so the one that is
-        /// not ours is let go. The game brings its own back when the mod is unloaded.
+        /// Nothing is created here. If the story has him in the hills then that is where he is
+        /// found, and the drive up there is the price of fetching your dog.
         /// </summary>
-        private void SendAwayTheOtherOne(Ped player, int now)
+        private void Find(Ped player)
         {
-            if (now - _lastRivalScan < RivalScanMs) return;
-            _lastRivalScan = now;
-
             try
             {
-                var ours = _chop != null && _chop.Exists() ? _chop.Handle : 0;
-
-                foreach (var ped in World.GetNearbyPeds(player, RivalScanRange))
+                foreach (var ped in World.GetNearbyPeds(player, FindRange))
                 {
-                    if (ped == null || !ped.Exists()) continue;
-                    if (ours != 0 && ped.Handle == ours) continue;
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
                     if (!IsChop(ped)) continue;
 
-                    ped.IsPersistent = false;
-                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, false, true);
-                    ped.MarkAsNoLongerNeeded();
-                    ped.Delete();
+                    _chop = ped;
 
-                    Log.Info("Sent away a second Chop.");
+                    // Held, so the game stops streaming him out from under us the moment the
+                    // player drives away. Everything else about him stays the game's business.
+                    _chop.IsPersistent = true;
+
+                    if (!_moved)
+                    {
+                        _moved = true;
+                        SendHome();
+
+                        Notify.Ticker("~g~Chop's back at the house.~s~");
+                        Log.Info("Found the game's Chop and moved him to the yard.");
+                    }
+
+                    return;
                 }
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not check for a second Chop: " + ex.Message);
+                Log.Debug("Could not look for Chop: " + ex.Message);
+            }
+        }
+
+        private void SendHome()
+        {
+            if (_chop == null || !_chop.Exists()) return;
+
+            try
+            {
+                var spot = Ground(Yard);
+
+                _chop.Task.ClearAll();
+                _chop.Position = spot;
+                _chop.Heading = 200f;
+
+                Function.Call(Hash.TASK_WANDER_IN_AREA, _chop.Handle,
+                              spot.X, spot.Y, spot.Z, 6f, 3f, 10f);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put Chop in the yard: " + ex.Message);
+            }
+        }
+
+        /// <summary>Walks him back if he has wandered off the yard.</summary>
+        private void Leash()
+        {
+            if (_chop == null || !_chop.Exists() || !_chop.IsAlive) return;
+            if (_chop.Position.DistanceTo(Yard) <= LeashRange) return;
+
+            // Far enough that he has plainly been picked up by something else -- the story, a
+            // stream-in somewhere across the map -- so put him back rather than walk him.
+            if (_chop.Position.DistanceTo(Yard) > 120f)
+            {
+                SendHome();
+                return;
+            }
+
+            try
+            {
+                var spot = Ground(Yard);
+
+                _chop.Task.ClearAll();
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _chop.Handle,
+                              spot.X, spot.Y, spot.Z, 1.6f, 20000, 0f, 0.5f);
+            }
+            catch
+            {
+                // He will find his own way.
             }
         }
 
@@ -313,438 +169,41 @@ namespace Hoodrich.Locations
             return false;
         }
 
-        /// <summary>
-        /// Puts the follow task back on, because the game drops it.
-        ///
-        /// TASK_FOLLOW_TO_OFFSET_OF_ENTITY is issued once and abandoned the moment anything
-        /// interrupts it -- a door, a fence, being knocked over. Once abandoned he simply stops,
-        /// which is exactly what "he does not follow" looked like.
-        /// </summary>
-        private void KeepUp(Ped player, int now)
+        private static Vector3 Ground(Vector3 where)
         {
-            if (!_following || _petting) return;
-            if (_chop == null || !_chop.Exists() || !_chop.IsAlive) return;
-
-            // Cars come first and are checked every tick, not on the retask clock. A dog left
-            // standing in the road while you drive off is the one failure nobody forgives, and
-            // three seconds is long enough to be out of the street.
-            if (Ride(player)) return;
-
-            if (now < _nextRetask) return;
-
-            _nextRetask = now + RetaskGapMs;
-            Heel();
-        }
-
-        /// <summary>
-        /// Getting in and out of the car with you.
-        ///
-        /// He climbs in himself, using the game's own animal entry animation, because a dog
-        /// that appears in the passenger seat is a teleport and a dog that scrambles in is a
-        /// dog. He is only put there outright if the climb has not landed in six seconds --
-        /// which happens when the door he wants is against a wall, and being in the car late is
-        /// better than being left on the pavement.
-        ///
-        /// Returns true when the car is handling him, so the follow task does not fight it.
-        /// </summary>
-        private bool Ride(Ped player)
-        {
-            var car = player.CurrentVehicle;
-
-            if (car == null || !car.Exists())
-            {
-                // You got out, so he gets out.
-                if (_chop.IsInVehicle())
-                {
-                    try { _chop.Task.LeaveVehicle(); }
-                    catch { /* he will jump out on his own */ }
-                }
-
-                _boardingSince = 0;
-                return false;
-            }
-
-            if (_chop.IsInVehicle(car))
-            {
-                _boardingSince = 0;
-                return true;
-            }
-
-            var seat = FreeSeat(car);
-            if (seat == VehicleSeat.None) return false;
-
-            if (_boardingSince == 0) _boardingSince = Game.GameTime;
-
-            if (Game.GameTime - _boardingSince > BoardTimeoutMs)
-            {
-                try
-                {
-                    _chop.SetIntoVehicle(car, seat);
-                    Log.Info("Chop could not climb in, so he was put in.");
-                }
-                catch { /* nothing more to try */ }
-
-                _boardingSince = 0;
-                return true;
-            }
-
             try
             {
-                // Flag 8 is the animal entry set -- without it he plays the human get-in and
-                // slides through the door on his side.
-                Function.Call(Hash.TASK_ENTER_VEHICLE, _chop.Handle, car.Handle,
-                              BoardTimeoutMs, (int)seat, 2.5f, 8, 0);
+                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                    groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
+                {
+                    where.Z = groundZ;
+                }
             }
             catch
             {
-                // The timeout above will put him in.
+                // Keep the authored height.
             }
 
-            return true;
-        }
-
-        /// <summary>A seat that is not the driver's and not already taken.</summary>
-        private static VehicleSeat FreeSeat(Vehicle car)
-        {
-            // Back seats first, which is where a dog goes, then the front passenger.
-            var order = new[]
-            {
-                VehicleSeat.RightRear, VehicleSeat.LeftRear, VehicleSeat.Passenger
-            };
-
-            foreach (var seat in order)
-            {
-                try
-                {
-                    if (!car.IsSeatFree(seat)) continue;
-                    return seat;
-                }
-                catch
-                {
-                    // A seat the vehicle does not have.
-                }
-            }
-
-            return VehicleSeat.None;
-        }
-
-        /// <summary>Walks him back to the kennel if he has wandered off the yard.</summary>
-        private void Leash()
-        {
-            if (_following || _petting) return;
-            if (_chop == null || !_chop.Exists() || !_chop.IsAlive) return;
-            if (_chop.Position.DistanceTo(Yard) <= LeashRange) return;
-
-            try
-            {
-                _chop.Task.ClearAll();
-                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _chop.Handle,
-                              Yard.X, Yard.Y, Yard.Z, 1.6f, 20000, 0f, 0.5f);
-            }
-            catch
-            {
-                // He will find his own way.
-            }
+            return where;
         }
 
         /// <summary>
-        /// Plays a clip from the first dictionary this install actually has.
+        /// Hands him back.
         ///
-        /// Scenario names fail silently when they are wrong, which is how a dog ended up with
-        /// no pet animation and nothing to show for it. An anim dictionary can be asked whether
-        /// it exists before it is used.
+        /// He is not ours to delete -- he is the game's dog and we only ever borrowed a handle,
+        /// so unloading releases him exactly where he stands rather than removing him.
         /// </summary>
-        private bool PlayClip(string[] dicts, string[] clips, int durationMs)
+        public void RestoreWorld()
         {
-            if (_chop == null || !_chop.Exists()) return false;
-
-            foreach (var dict in dicts)
-            {
-                try
-                {
-                    if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) continue;
-
-                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
-
-                    // One frame is usually enough for a small animal clip; if it is not, the
-                    // call below simply does nothing and he keeps his scenario.
-                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
-
-                    foreach (var clip in clips)
-                    {
-                        Function.Call(Hash.TASK_PLAY_ANIM, _chop.Handle, dict, clip,
-                                      4f, -4f, durationMs, 1, 0f, false, false, false);
-
-                        Log.Info("Chop is playing " + dict + " / " + clip + ".");
-                        return true;
-                    }
-                }
-                catch
-                {
-                    // Try the next dictionary.
-                }
-            }
-
-            Log.Debug("No dog animation dictionary in this install answered.");
-            return false;
-        }
-
-        // ---- being a dog -------------------------------------------------------
-
-        private bool InReach
-        {
-            get
-            {
-                var player = Game.Player.Character;
-                if (player == null || !player.Exists() || _chop == null || !_chop.Exists()) return false;
-
-                return player.Position.DistanceTo(_chop.Position) <= ReachRange;
-            }
-        }
-
-        /// <summary>Set by Main: the same conversation screen every other NPC uses.</summary>
-        public Conversation Talk;
-
-        /// <summary>
-        /// Walking up on him.
-        ///
-        /// This was three bespoke buttons read straight off the control natives, and it did not
-        /// work, and after three attempts I could not tell you why from outside the game. Every
-        /// other interaction in the mod -- Stretch, Lamar, Grimes -- goes through the dialogue
-        /// screen on d-pad right, and every one of those is confirmed working. So this does too.
-        ///
-        /// It reads better anyway. A dog is not a row of button hints, and "what do you want to
-        /// do with Chop" is a genuinely small list.
-        /// </summary>
-        public void UpdatePrompt()
-        {
-            if (Talk == null || Talk.IsOpen || !InReach || _petting) return;
-
-            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ for Chop.");
-
-            if (!Pressed()) return;
-
-            Talk.Speaker = null;
-            Talk.Open(Menu(), this);
-        }
-
-        /// <summary>What you can do with him, as a conversation with a dog.</summary>
-        private DialogueNode Menu()
-        {
-            var node = new DialogueNode("Chop", _following
-                ? "He is right behind you, waiting to see what you do next."
-                : "He is up on his feet the second he sees you.")
-            {
-                SpeakerColour = Palette.Cash
-            };
-
-            node.Say("Make a fuss of him.", () => { Pet(); return null; }, "Pet Chop");
-            node.Say("Throw something.", () => { Play(); return null; }, "Play with him");
-
-            if (_following) node.Say("Stay here, boy.", () => { Follow(false); return null; }, "He stays home");
-            else node.Say("Come on then.", () => { Follow(true); return null; }, "He comes with you");
-
-            node.Leave("Later, Chop.");
-            return node;
-        }
-
-        private bool _held;
-
-        private bool Pressed()
-        {
-            var down = false;
-
             try
             {
-                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
-                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
-                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context)
-                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Right)
-                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E);
+                if (_chop != null && _chop.Exists()) _chop.MarkAsNoLongerNeeded();
             }
-            catch
-            {
-                // Unreadable control is simply not pressed.
-            }
+            catch { /* teardown */ }
 
-            var pressed = down && !_held;
-            _held = down;
-            return pressed;
+            _chop = null;
+            _moved = false;
         }
-
-        private void Pet()
-        {
-            if (_chop == null || !_chop.Exists()) return;
-
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists()) return;
-
-            _petting = true;
-            _pettingUntil = Game.GameTime + PetMs;
-
-            try
-            {
-                _chop.Task.ClearAll();
-
-                Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _chop.Handle, player.Handle, PetMs);
-                Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, player.Handle, _chop.Handle, PetMs);
-
-                // A real clip if this install has one, and the sitting scenario if it does not,
-                // so he does SOMETHING either way rather than standing there being petted by a
-                // man waving at the air.
-                if (!PlayClip(SitDicts, SitClips, PetMs))
-                {
-                    var scenario = SitScenarios[0];
-                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _chop.Handle, scenario, 0, true);
-                    Log.Info("Chop petted, falling back to scenario " + scenario + ".");
-                }
-
-                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _chop.Handle,
-                              "GENERIC_HOWS_IT_GOING", "SPEECH_PARAMS_FORCE");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not make a fuss of Chop: " + ex.Message);
-            }
-
-            Notify.Ticker("~g~Chop's happy to see you.~s~");
-            Log.Info("Chop petted.");
-        }
-
-        /// <summary>
-        /// A game in the yard.
-        ///
-        /// He runs off a little way, turns, and comes back at you -- which is as close to fetch
-        /// as the game's animal set gets without a ball entity to chase. Longer than a pat and
-        /// worth doing because it is the thing you actually did with him.
-        /// </summary>
-        private void Play()
-        {
-            if (_chop == null || !_chop.Exists()) return;
-
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists()) return;
-
-            _petting = true;
-            _playing = true;
-            _pettingUntil = Game.GameTime + PlayMs;
-
-            try
-            {
-                _chop.Task.ClearAll();
-
-                var away = player.Position.Around(7f);
-                away.Z = _chop.Position.Z;
-
-                // A trick if the install has one, then out and back. A dog that runs somewhere
-                // and returns to you reads as playing; one stood still playing an animation
-                // does not, so the clip is the flourish and the running is the game.
-                PlayClip(TrickDicts, TrickClips, 1200);
-
-                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _chop.Handle,
-                              away.X, away.Y, away.Z, 3.2f, PlayMs / 2, 0f, 0f);
-
-                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _chop.Handle,
-                              "GENERIC_WAR_CRY", "SPEECH_PARAMS_FORCE");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Chop did not fancy a game: " + ex.Message);
-            }
-
-            Notify.Ticker("~g~Chop wants to play.~s~");
-            Log.Info("Chop is playing.");
-        }
-
-        private void EndPet()
-        {
-            if (_playing && _chop != null && _chop.Exists())
-            {
-                // Second half of the game: he comes back to you.
-                _playing = false;
-                _pettingUntil = Game.GameTime + PlayMs / 2;
-
-                try
-                {
-                    var player = Game.Player.Character;
-
-                    if (player != null && player.Exists())
-                    {
-                        Function.Call(Hash.TASK_GO_TO_ENTITY, _chop.Handle, player.Handle,
-                                      PlayMs / 2, 1.5f, 2.5f, 0f, 0);
-                        return;
-                    }
-                }
-                catch
-                {
-                    // Fall through and settle.
-                }
-            }
-
-            _playing = false;
-            _petting = false;
-
-            if (_chop == null || !_chop.Exists()) return;
-
-            try
-            {
-                _chop.Task.ClearAll();
-
-                if (_following) Heel();
-                else Wander();
-            }
-            catch
-            {
-                // He will settle.
-            }
-        }
-
-        /// <summary>Whether he is coming with you or staying in the yard.</summary>
-        public void Follow(bool on)
-        {
-            if (_chop == null || !_chop.Exists()) return;
-
-            _following = on;
-
-            try
-            {
-                _chop.Task.ClearAll();
-
-                if (on) Heel();
-                else Wander();
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Chop did not hear that: " + ex.Message);
-            }
-
-            Notify.Ticker(on ? "~g~Chop's coming with you.~s~" : "~o~Chop stays.~s~");
-            Log.Info(on ? "Chop is following." : "Chop is staying.");
-        }
-
-        private void Heel()
-        {
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists()) return;
-
-            // Just behind and to one side, which is where a dog walks. Speed is well above a
-            // walk so he can catch up after a corner rather than trailing further behind at
-            // every turn.
-            Function.Call(Hash.TASK_FOLLOW_TO_OFFSET_OF_ENTITY, _chop.Handle, player.Handle,
-                          -0.6f, -1.4f, 0f, 4.0f, -1, 2.0f, true);
-        }
-
-        private void Wander()
-        {
-            // Anchored on the kennel, not on wherever he happens to be standing. Wandering from
-            // where you last were compounds: every wander starts a little further out than the
-            // last one, and after a while he lives down the street.
-            var spot = Yard;
-
-            Function.Call(Hash.TASK_WANDER_IN_AREA, _chop.Handle,
-                          spot.X, spot.Y, spot.Z, WanderRadius, 2f, 6f);
-        }
-
-        public void RestoreWorld() => Despawn();
     }
 }

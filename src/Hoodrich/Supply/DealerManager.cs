@@ -233,7 +233,7 @@ namespace Hoodrich.Supply
             var docks = new DealerDef
             {
                 Id = "docks",
-                Name = "Dock Worker",
+                Name = "Juan",
                 Tag = "DOCK",
                 Kind = DealerKind.Docks,
                 PriceMultiplier = 0.75f,

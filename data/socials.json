@@ -1493,6 +1493,36 @@
       "\"they say Davis ours, they say Rancho theirs / everybody claimin, nobody there\"",
       "\"put a set on your chest and a lie in your mouth / every block in this city got somebody's doubt\"",
       "\"we don't do subliminals, we do addresses / come outside and settle it, forget the messages\""
+    ],
+    "CopKilled": [
+      "Officer down on {hood}. This whole city about to be hell for a week",
+      "Do NOT go near {hood} right now. I'm serious",
+      "Every unit in the division is on {hood}. Every single one",
+      "They killed a cop. On {hood}. {reaction}",
+      "Choppers up, roads shut, whole block on lockdown. {filler}",
+      "Whatever just happened on {hood}, somebody has lost their mind",
+      "Been on this block twenty years and I ain't never seen a response like this",
+      "{source} {hearsay} it was on {hood}. Everybody inside. Now",
+      "Not a single person on this street is going out tonight",
+      "They gon sweep every corner from here to Davis behind this",
+      "This ain't a stick up, this is a manhunt",
+      "Whoever did that has made life worse for everybody who lives here",
+      "Roadblocks going up on {hood}. Take the long way. Take ANY other way",
+      "My scanner has not stopped in forty minutes",
+      "Praying for everybody caught up on {hood} tonight",
+      "The heat behind this is gonna last months. Watch"
+    ],
+    "WarStarted": [
+      "Cars just pulled up deep on {here}. Everybody get inside",
+      "{rival} rolling through {here} four cars deep. This ain't a drive-by, this is a visit",
+      "It's going OFF on {here} right now",
+      "Get off the street. Get off the street NOW",
+      "{source} {hearsay} {rival} is on {here} in numbers",
+      "Whole block outside on {here}. This about to be bad",
+      "They came for somebody specific. That's what it looks like from here",
+      "Shots on {here}. A lot of them. Not stopping",
+      "If you're anywhere near {here}, turn around",
+      "This is what everybody been saying was coming"
     ]
   },
   "voices": {

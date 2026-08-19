@@ -208,18 +208,14 @@ namespace Hoodrich.UI
             var rOut2 = rOuter * rOuter;
             var rIn2 = rInner * rInner;
 
-            // Only the band this wedge can possibly occupy. The boundary rays cap how high and
-            // low it reaches, so walking the whole disc for a quarter of it was three quarters
-            // wasted on every wedge, five times a frame.
-            var reach = rOuter * 1.02f;
-
-            var topY = Math.Min(reach, Math.Max(d0y, d1y) * rOuter + RowHeight * 2f);
-            var botY = Math.Max(-reach, Math.Min(d0y, d1y) * rOuter - RowHeight * 2f);
-
-            if (angToDeg > 0f && angFromDeg < 0f) topY = reach;
-            if (Math.Abs(angToDeg - angFromDeg) > 100f) { topY = reach; botY = -reach; }
-
-            for (var dy = botY; dy <= topY; dy += RowHeight)
+            // Every row of the disc, every time.
+            //
+            // A previous version worked out the band each wedge could occupy and scanned only
+            // that, to save the three quarters of the loop a quarter-circle wedge throws away.
+            // The band was wrong -- the extreme of a sector is not always at a boundary ray, it
+            // is at the top of the arc whenever the sector crosses an axis -- and it cut chunks
+            // out of wedges. The loop is cheap; being right is not optional.
+            for (var dy = -rOuter; dy <= rOuter; dy += RowHeight)
             {
                 var dy2 = dy * dy;
                 if (dy2 > rOut2) continue;

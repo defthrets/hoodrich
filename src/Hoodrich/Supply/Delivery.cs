@@ -1,4 +1,5 @@
 using System;
+using Control = GTA.Control;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -96,6 +97,78 @@ namespace Hoodrich.Supply
 
         /// <summary>The driver, once he is in the world -- the man you actually trade with.</summary>
         public Ped Driver => _driver != null && _driver.Exists() ? _driver : null;
+
+        /// <summary>Set by Main: the conversation screen, and what he has to say.</summary>
+        public Conversation Talk;
+        public Func<DialogueNode> TalkBuilder;
+
+        /// <summary>
+        /// How he drives.
+        ///
+        /// Normal road driving with StopForVehicles dropped and SwerveAroundAllCars added, so a
+        /// van double-parked on Innocence does not end the delivery -- he goes round it. He sat
+        /// behind traffic indefinitely before, which reads as a broken errand rather than a
+        /// careful driver.
+        /// </summary>
+        private const int DriveStyle = 786606;
+
+        /// <summary>Close enough to do business over the roof of the car.</summary>
+        private const float TalkRange = 4.5f;
+
+        private bool _talkHeld;
+
+        /// <summary>
+        /// Walking up on him once he has parked.
+        ///
+        /// He used to be bought from through the wheel, which meant standing next to a man and
+        /// opening a menu about him -- and if the range check the wheel used disagreed with
+        /// where you were standing, there was nothing to press at all. Everybody else in this
+        /// mod is talked to; so is he.
+        /// </summary>
+        public void UpdatePrompt()
+        {
+            if (Talk == null || Talk.IsOpen) return;
+            if (State != DeliveryState.Waiting) return;
+
+            var driver = Driver;
+            if (driver == null) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+            if (player.Position.DistanceTo(driver.Position) > TalkRange) return;
+
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to do business with " + Def.Name + ".");
+
+            if (!Pressed()) return;
+
+            var root = TalkBuilder == null ? null : TalkBuilder();
+            if (root == null) return;
+
+            Talk.Speaker = driver;
+            Talk.Open(root, this);
+        }
+
+        private bool Pressed()
+        {
+            var down = false;
+
+            try
+            {
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Right)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E);
+            }
+            catch
+            {
+                // Unreadable control is simply not pressed.
+            }
+
+            var pressed = down && !_talkHeld;
+            _talkHeld = down;
+            return pressed;
+        }
 
         public float Distance
         {
@@ -319,7 +392,7 @@ namespace Hoodrich.Supply
         /// <summary>
         /// Points the car at somewhere and lets the game drive it there.
         ///
-        /// Drive mode 786603 is the normal "obey the road" set: stops at lights, avoids traffic,
+        /// Drive mode DriveStyle is the normal "obey the road" set: stops at lights, avoids traffic,
         /// takes junctions properly. He is delivering, not fleeing.
         /// </summary>
         private void DriveTo(Vector3 where)
@@ -332,7 +405,7 @@ namespace Hoodrich.Supply
             {
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _driver.Handle, _car.Handle,
                               where.X, where.Y, where.Z,
-                              20f, 0, _car.Model.Hash, 786603, ArriveDistance * 0.5f, true);
+                              20f, 0, _car.Model.Hash, DriveStyle, ArriveDistance * 0.5f, true);
             }
             catch (Exception ex)
             {
@@ -474,7 +547,7 @@ namespace Hoodrich.Supply
                 if (_driver != null && _driver.Exists() && _car != null && _car.Exists())
                 {
                     Function.Call(Hash.TASK_ENTER_VEHICLE, _driver.Handle, _car.Handle, 10000, -1, 2f, 1, 0);
-                    Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _driver.Handle, _car.Handle, 20f, 786603);
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _driver.Handle, _car.Handle, 20f, DriveStyle);
                 }
             }
             catch { /* he can walk if he likes */ }

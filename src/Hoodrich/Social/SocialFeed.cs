@@ -26,7 +26,14 @@ namespace Hoodrich.Social
         RankUp,
         JoinedGang,
         LeftGang,
-        Delivery
+        Delivery,
+
+        /// <summary>Police down. The city notices this one more than anything else you do.</summary>
+        CopKilled,
+
+        WarStarted,
+        WarHeld,
+        WarLost
     }
 
     /// <summary>
@@ -69,6 +76,7 @@ namespace Hoodrich.Social
         /// that is happening around you.
         /// </summary>
         private const int BurstGapMs = 2600;
+        private const int BurstGapFastMs = 1100;
         private const int BurstMax = 4;
 
         /// <summary>How many recent bodies are remembered, so nobody repeats anybody.</summary>
@@ -136,6 +144,27 @@ namespace Hoodrich.Social
             "CHAR_MP_STRIPCLUB_PR", "CHAR_MP_FM_CONTACT"
         };
 
+        /// <summary>
+        /// Faces for people who run with a set.
+        ///
+        /// The game's contact art is mostly Vinewood, which is how a Balla ended up posting with
+        /// somebody's holiday photo attached. This is every face it ships that could plausibly
+        /// be stood on a corner in Davis -- a short list, because that is genuinely all there is
+        /// without shipping texture files.
+        /// </summary>
+        private static readonly string[] GangMalePics =
+        {
+            "CHAR_MP_FAM_BOSS", "CHAR_MP_GERALD", "CHAR_MP_JULIO", "CHAR_MP_ROBERTO",
+            "CHAR_MP_MEX_BOSS", "CHAR_MP_MEX_LT", "CHAR_MP_MEX_DOCKS", "CHAR_MP_SNITCH",
+            "CHAR_MP_RAY_LAVOY", "CHAR_ORTEGA", "CHAR_MANUEL", "CHAR_MP_BIKER_BOSS"
+        };
+
+        private static readonly string[] GangFemalePics =
+        {
+            "CHAR_TANISHA", "CHAR_MP_STRIPCLUB_PR", "CHAR_MP_FM_CONTACT",
+            "CHAR_DENISE", "CHAR_BROKEN_DOWN_GIRL"
+        };
+
         /// <summary>Everything that is not a person: papers, shops, radio stations.</summary>
         private static readonly string[] OrgPics =
         {
@@ -178,6 +207,7 @@ namespace Hoodrich.Social
         private string _burstSubject = "";
         private int _burstLeft;
         private int _burstNext;
+        private int _burstGap = 2600;
 
         public SocialFeed()
         {
@@ -373,7 +403,7 @@ namespace Hoodrich.Social
             if (_burstLeft > 0 && Game.GameTime >= _burstNext)
             {
                 _burstLeft--;
-                _burstNext = Game.GameTime + BurstGapMs;
+                _burstNext = Game.GameTime + _burstGap;
 
                 var post = Build(_burstSet, _burstSubject);
 
@@ -479,6 +509,27 @@ namespace Hoodrich.Social
                     count = 2 + _rng.Next(BurstMax - 1);
                     break;
 
+                case SocialEvent.CopKilled:
+                    // The one thing the whole city has an opinion about, and it arrives fast.
+                    follow = _rng.NextDouble() < 0.55 ? "CopKilled" : "OrgEvent";
+                    count = BurstMax;
+                    break;
+
+                case SocialEvent.WarStarted:
+                    follow = _rng.NextDouble() < 0.5 ? "WarStarted" : "OrgEvent";
+                    count = BurstMax;
+                    break;
+
+                case SocialEvent.WarHeld:
+                    follow = _rng.NextDouble() < 0.6 ? "OursGloats" : "RivalMourns";
+                    count = 2 + _rng.Next(BurstMax - 1);
+                    break;
+
+                case SocialEvent.WarLost:
+                    follow = _rng.NextDouble() < 0.6 ? "RivalGloats" : "BallasTaunt";
+                    count = 2 + _rng.Next(BurstMax - 1);
+                    break;
+
                 case SocialEvent.DriveBy:
                     follow = _rng.NextDouble() < 0.5 ? "RivalMourns" : "OrgEvent";
                     count = 2 + _rng.Next(BurstMax - 1);
@@ -512,7 +563,14 @@ namespace Hoodrich.Social
             _burstSet = follow;
             _burstSubject = subject;
             _burstLeft = Math.Min(BurstMax, Math.Max(1, count));
-            _burstNext = Game.GameTime + BurstGapMs;
+
+            // Police and a raid on your own block arrive on top of each other. Everything else
+            // has time to breathe.
+            _burstGap = kind == SocialEvent.CopKilled || kind == SocialEvent.WarStarted
+                ? BurstGapFastMs
+                : BurstGapMs;
+
+            _burstNext = Game.GameTime + _burstGap;
         }
 
         /// <summary>
@@ -547,6 +605,11 @@ namespace Hoodrich.Social
                 case SocialEvent.DriveBy:
                     return 1f;
 
+                case SocialEvent.CopKilled: return 1f;
+                case SocialEvent.WarStarted: return 1f;
+                case SocialEvent.WarHeld: return 1f;
+                case SocialEvent.WarLost: return 1f;
+
                 case SocialEvent.RivalKilled: return 0.45f;
                 case SocialEvent.Busted: return 0.7f;
                 case SocialEvent.Tagged: return 0.5f;
@@ -567,6 +630,11 @@ namespace Hoodrich.Social
                 case SocialEvent.MissionDone: return 18 + _rng.Next(26);
                 case SocialEvent.MissionFailed: return -(4 + _rng.Next(9));
                 case SocialEvent.RankUp: return 60 + _rng.Next(90);
+                case SocialEvent.CopKilled: return 20 + _rng.Next(45);
+                case SocialEvent.WarHeld: return 45 + _rng.Next(60);
+                case SocialEvent.WarLost: return -(25 + _rng.Next(30));
+                case SocialEvent.WarStarted: return 0;
+
                 case SocialEvent.RivalKilled: return 3 + _rng.Next(7);
                 case SocialEvent.Brawl: return 6 + _rng.Next(12);
                 case SocialEvent.DriveBy: return 10 + _rng.Next(18);
@@ -708,6 +776,9 @@ namespace Hoodrich.Social
                 case "OursGloats":
                 case "OursMourns":
                 case "DissTrack": return "families";
+
+                // CopKilled and WarStarted are deliberately absent: everybody in the city has a
+                // view on a dead officer, and everybody on the block can see cars pulling up.
                 default: return "";
             }
         }
@@ -831,8 +902,13 @@ namespace Hoodrich.Social
             // Anybody the game already has a face for wears their own.
             if (!string.IsNullOrEmpty(by.Pic)) return by.Pic;
 
-            var pool = string.Equals(by.Gender, "female", StringComparison.OrdinalIgnoreCase) ? FemalePics
-                     : string.Equals(by.Gender, "none", StringComparison.OrdinalIgnoreCase) ? OrgPics
+            var female = string.Equals(by.Gender, "female", StringComparison.OrdinalIgnoreCase);
+            var org = string.Equals(by.Gender, "none", StringComparison.OrdinalIgnoreCase);
+            var banger = !org && !string.IsNullOrEmpty(by.Gang);
+
+            var pool = org ? OrgPics
+                     : banger ? (female ? GangFemalePics : GangMalePics)
+                     : female ? FemalePics
                      : MalePics;
 
             var hash = 17;

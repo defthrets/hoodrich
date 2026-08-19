@@ -82,7 +82,19 @@ namespace Hoodrich
         /// </summary>
         private readonly Entourage _lamarCrew;
         private readonly Entourage _stretchCrew;
+
+        /// <summary>
+        /// People who live here, and the other sets coming to take it off them.
+        ///
+        /// Kept together because they are the same idea from two ends: a block is only worth
+        /// attacking if somebody is standing on it, and people standing on it are only
+        /// interesting if somebody might come.
+        /// </summary>
+        private readonly CopWatch _copWatch;
+        private readonly BlockLife _block;
+        private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
+        private DealerTalk _juanTalk;
         private readonly FixerTalk _fixerTalk;
         private readonly MissionRunner _jobs;
         private readonly CookScreen _cook;
@@ -145,6 +157,19 @@ namespace Hoodrich
 
                 // Two for Lamar, on their own marks -- one on watch, one smoking, because a
                 // courtyard where both men are doing the same thing looks staged.
+                // The four stoops, read off the HUD standing on each of them.
+                _block = new BlockLife(_gangs, "families")
+                    .At(new Vector3(-163.535f, -1631.383f, 33.656f))
+                    .At(new Vector3(-106.646f, -1602.541f, 31.748f))
+                    .At(new Vector3(-119.707f, -1431.674f, 33.822f))
+                    .At(new Vector3(-154.226f, -1690.887f, 32.872f));
+
+                _copWatch = new CopWatch();
+
+                _war = new GangWar(_gangs, _crew, _state)
+                    .Defend("Lamar", Fixer.Spot)
+                    .Defend("Grimes", new Vector3(-129.187f, -1461.375f, 33.823f));
+
                 _lamarCrew = new Entourage(_gangs, "families", Fixer.Spot, 206f, "Lamar")
                     .Stand(new Vector3(-82.4f, -1613.8f, 31.485f), 120f, "WORLD_HUMAN_GUARD_STAND")
                     .Stand(new Vector3(-89.1f, -1607.9f, 31.485f), 250f, "WORLD_HUMAN_SMOKING_POT");
@@ -158,6 +183,11 @@ namespace Hoodrich
                                     stretch.Heading, stretch.Name)
                         .Stand(new Vector3(-161.084f, -1635.432f, 34.029f), 70.469f, "WORLD_HUMAN_GUARD_STAND");
 
+                if (stretch != null)
+                {
+                    _war.Defend(stretch.Name, new Vector3(stretch.SpotX, stretch.SpotY, stretch.SpotZ));
+                }
+
 
                 // Handed over as functions rather than references, so the feed never holds on
                 // to a system that can be torn down under it.
@@ -170,6 +200,8 @@ namespace Hoodrich
                 _state.RankedUp = rank => _social.On(SocialEvent.RankUp);
 
                 _jobs.Social = _social;
+                _war.Social = _social;
+                _copWatch.Social = _social;
                 _postUp.Social = _social;
                 _crew.Social = _social;
 
@@ -191,7 +223,13 @@ namespace Hoodrich
                 _bigjTalk = new ArmourerTalk(_bigj, _crew, _state);
                 _bigj.Talk = _talk;
                 _bigj.TalkBuilder = () => _bigjTalk.Root();
-                _chop.Talk = _talk;
+                _juanTalk = new DealerTalk(_delivery, _drugs, _pricing, _state, _crew)
+                {
+                    House = _stash.Stash
+                };
+
+                _delivery.Talk = _talk;
+                _delivery.TalkBuilder = () => _juanTalk.Root();
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _cutting,
                                            _gangs, _crew, _turf, _dealers, _weapons, _market, _stash, _postUp, _leaders);
@@ -330,6 +368,7 @@ namespace Hoodrich
                     _dealers.Update(_turf, _crew, _state);
                     _dealers.GreetIfNeeded();
                     _delivery.Update();
+                    _delivery.UpdatePrompt();
                     _cutting.Update();
                     _deadDrop.Update();
                     _market.Update(_drugs);
@@ -337,7 +376,6 @@ namespace Hoodrich
                     _sleep.Update();
                     _kitchen.Update();
                     _chop.Update();
-                    _chop.UpdatePrompt();
                     _sleep.RestoreOnLoad();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
@@ -347,6 +385,10 @@ namespace Hoodrich
                     _bigj.UpdatePrompt();
 
                     _social.Update();
+                    _copWatch.Update();
+                    _block.Update();
+                    _war.Update();
+
                     _lamarCrew.Update();
                     if (_stretchCrew != null) _stretchCrew.Update();
                     _jobs.Update();
@@ -358,6 +400,7 @@ namespace Hoodrich
                 _bust.Update();
                 _postUp.Update();
 
+                _war.Draw();
                 _cutting.Draw();
                 _bust.Draw();
                 _postUp.Draw();
@@ -444,14 +487,6 @@ namespace Hoodrich
         {
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return true;
-
-            // Chop wanders while you are stood there reading, so his conversation has to end on
-            // distance the same as anybody's -- otherwise the panel follows a dog down the road.
-            if (_talk.Subject is Dog)
-            {
-                var dog = _chop == null ? null : _chop.Ped;
-                return dog == null || !dog.Exists() || player.Position.DistanceTo(dog.Position) > 6f;
-            }
 
             var subject = _talk.Subject as LeaderDef;
             if (subject == null) return false;
@@ -555,6 +590,8 @@ namespace Hoodrich
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
             try { _bigj?.RestoreWorld(); } catch { /* teardown */ }
             try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
+            try { _block?.RestoreWorld(); } catch { /* teardown */ }
+            try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _chop?.RestoreWorld(); } catch { /* teardown */ }
