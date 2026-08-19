@@ -157,12 +157,10 @@ namespace Hoodrich
 
                 // Two for Lamar, on their own marks -- one on watch, one smoking, because a
                 // courtyard where both men are doing the same thing looks staged.
-                // The four stoops, read off the HUD standing on each of them.
-                _block = new BlockLife(_gangs, "families")
-                    .At(new Vector3(-163.535f, -1631.383f, 33.656f))
-                    .At(new Vector3(-106.646f, -1602.541f, 31.748f))
-                    .At(new Vector3(-119.707f, -1431.674f, 33.822f))
-                    .At(new Vector3(-154.226f, -1690.887f, 32.872f));
+                // No standing crowds any more. Four stoops of people who did nothing mostly got
+                // in the way of the fight, and the block reading as occupied during a war and
+                // quiet the rest of the time is closer to true anyway.
+                _block = new BlockLife(_gangs, "families");
 
                 _copWatch = new CopWatch();
 

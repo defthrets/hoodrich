@@ -71,6 +71,9 @@ namespace Hoodrich.Missions
         private const float ShopRange = 30f;
         private const float HomeRange = 25f;
 
+        /// <summary>Further behind than this and they are put back on your wheel.</summary>
+        private const float CatchUpRange = 90f;
+
         /// <summary>They are put on the court before you can see it, so nobody drops in.</summary>
         private const float PreSpawnRange = 170f;
         private const float CourtSpread = 5f;
@@ -81,7 +84,7 @@ namespace Hoodrich.Missions
         private const int ChatterGapMs = 14000;
 
         /// <summary>How often the escort task is put back on anybody who has lost it.</summary>
-        private const int RetaskGapMs = 4000;
+        private const int RetaskGapMs = 2500;
 
         private static readonly string[] RideLines =
         {
@@ -441,10 +444,14 @@ namespace Hoodrich.Missions
 
                 if (target != null && target.Exists())
                 {
-                    // Mode 0 is "rear", so they sit behind you rather than trying to overtake
-                    // and cut across the front wheel of the man they are escorting.
-                    Function.Call(Hash.TASK_VEHICLE_ESCORT, ped.Handle, bike.Handle, target.Handle,
-                                  0, 20f, 786603, 15f, 0, 10f);
+                    // FOLLOW, not ESCORT.
+                    //
+                    // An escort has its own idea of where it should be relative to you and will
+                    // happily carry on to that position when you stop, which is why they rode
+                    // off. Following a vehicle means what it says: they go where you went, at
+                    // your speed, and they stop when you stop.
+                    Function.Call(Hash.TASK_VEHICLE_FOLLOW, ped.Handle, bike.Handle, target.Handle,
+                                  25f, 786603, 8);
                     return;
                 }
 
@@ -489,6 +496,20 @@ namespace Hoodrich.Missions
                     catch { /* they will walk it */ }
 
                     continue;
+                }
+
+                // Anybody who has drifted a long way behind is brought back rather than left to
+                // ride the whole route on their own. Four streets back is not following.
+                if (ped.Position.DistanceTo(player.Position) > CatchUpRange)
+                {
+                    try
+                    {
+                        var behind = player.Position - player.ForwardVector * 6f;
+
+                        bike.Position = behind;
+                        bike.Heading = player.Heading;
+                    }
+                    catch { /* they will catch up or they will not */ }
                 }
 
                 Escort(ped, bike, player);

@@ -466,8 +466,8 @@ namespace Hoodrich.Missions
                 if (target == null || !target.Exists()) return;
 
                 // Mode 0 is rear, so he rides behind rather than cutting across your wheel.
-                Function.Call(Hash.TASK_VEHICLE_ESCORT, _homie.Handle, _homieBike.Handle,
-                              target.Handle, 0, 20f, 786603, 15f, 0, 10f);
+                Function.Call(Hash.TASK_VEHICLE_FOLLOW, _homie.Handle, _homieBike.Handle,
+                              target.Handle, 25f, 786603, 8);
             }
             catch
             {

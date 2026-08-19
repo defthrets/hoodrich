@@ -414,7 +414,20 @@ namespace Hoodrich.Dealing
         {
             if (ped == null || !ped.Exists() || !ped.IsAlive) return false;
             if (ped.Handle == player.Handle) return false;
-            if (!ped.IsHuman || ped.IsInVehicle() || ped.IsInCombat || ped.IsRagdoll) return false;
+            if (!ped.IsHuman || ped.IsInCombat || ped.IsRagdoll) return false;
+
+            // ON FOOT, definitively.
+            //
+            // IsInVehicle answers the "sat in a seat" question and says no for somebody halfway
+            // through a door, or on a bike, or being carried -- so a car full of people driving
+            // past counted as footfall, the corner announced a customer, and nobody ever walked
+            // up. IS_PED_ON_FOOT is the question actually being asked.
+            if (!Function.Call<bool>(Hash.IS_PED_ON_FOOT, ped.Handle)) return false;
+            if (Function.Call<bool>(Hash.IS_PED_IN_ANY_VEHICLE, ped.Handle, true)) return false;
+
+            // And on roughly the same ground. Without this the freeway overhead counts as a
+            // pavement, and people six metres above you are queueing to buy crack.
+            if (Math.Abs(ped.Position.Z - player.Position.Z) > 3.5f) return false;
 
             var type = Function.Call<int>(Hash.GET_PED_TYPE, ped.Handle);
             if (type == 6 || type == 27 || type == 29) return false; // police never buy
@@ -425,6 +438,60 @@ namespace Hoodrich.Dealing
 
             return true;
         }
+
+        /// <summary>
+        /// Whether this is somebody who would pick up a phone about you.
+        ///
+        /// Gang models never do -- a Balla who watches you serve somebody has other options and
+        /// none of them involve the police. Neither do the street models from round here, who
+        /// live on this block and know how that goes. Everybody else might: the woman walking a
+        /// dog, the man in a shirt on his way to work, the tourist who has never seen any of
+        /// this before. It is the difference between a system that punishes you and a
+        /// neighbourhood that has opinions about you.
+        /// </summary>
+        internal static bool WouldCallItIn(Ped ped)
+        {
+            if (ped == null || !ped.Exists()) return false;
+
+            try
+            {
+                var model = (uint)ped.Model.Hash;
+
+                foreach (var quiet in NeverCalls)
+                {
+                    if (model == (uint)Function.Call<int>(Hash.GET_HASH_KEY, quiet)) return false;
+                }
+            }
+            catch
+            {
+                // Cannot tell, so assume they might.
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Who never rings the police.
+        ///
+        /// Every gang model in the game, and the south-central civilians -- the people who
+        /// actually live where you are standing. Listed rather than derived, because there is no
+        /// flag on a ped that means "from round here".
+        /// </summary>
+        private static readonly string[] NeverCalls =
+        {
+            "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01",
+            "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01", "g_f_y_ballas_01",
+            "g_m_y_mexgang_01", "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03",
+            "g_m_y_salvaboss_01", "g_m_y_salvagoon_01", "g_m_y_salvagoon_02", "g_m_y_salvagoon_03",
+            "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03", "g_f_y_lost_01",
+            "g_m_y_korean_01", "g_m_y_korean_02", "g_m_y_armgoon_01", "g_m_y_armgoon_02",
+            "g_m_m_armboss_01", "g_m_m_chiboss_01", "g_m_m_chicold_01", "g_m_m_chigoon_01",
+            "a_m_y_soucent_01", "a_m_y_soucent_02", "a_m_y_soucent_03", "a_m_y_soucent_04",
+            "a_m_m_soucent_01", "a_m_m_soucent_02", "a_m_m_soucent_03", "a_m_m_soucent_04",
+            "a_f_y_soucent_01", "a_f_y_soucent_02", "a_f_y_soucent_03",
+            "a_f_m_soucent_01", "a_f_m_soucent_02",
+            "a_m_y_methhead_01", "a_m_m_tramp_01", "a_m_y_dhill_01", "a_f_m_trampbeac_01",
+        };
 
         private void RollCustomer(Ped player)
         {

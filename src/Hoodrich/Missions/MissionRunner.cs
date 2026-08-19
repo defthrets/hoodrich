@@ -306,6 +306,20 @@ namespace Hoodrich.Missions
 
             var group = Function.Call<int>(Hash.GET_PED_GROUP_INDEX, player.Handle);
 
+            // Tight formation, close spacing. The default has group members trailing far enough
+            // back that they arrive at a fight after it has finished -- and on the drive out it
+            // reads as three men who did not come with you.
+            try
+            {
+                Function.Call(Hash.SET_GROUP_FORMATION, group, 1);
+                Function.Call(Hash.SET_GROUP_FORMATION_SPACING, group, 2.5f, 1.5f, 4f);
+                Function.Call(Hash.SET_GROUP_SEPARATION_RANGE, group, 250f);
+            }
+            catch
+            {
+                // The default formation still follows.
+            }
+
             // A drive-by crew waits at the car, not at your elbow. The walk round to where
             // the car is parked is the start of the job.
             var muster = Ground(new Vector3(def.CarX, def.CarY, def.CarZ));

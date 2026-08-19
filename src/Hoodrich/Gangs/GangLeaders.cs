@@ -235,7 +235,28 @@ namespace Hoodrich.Gangs
             if (spot == Vector3.Zero) return spot;
 
             // An authored height is deliberate; never second-guess it.
-            if (Math.Abs(def.SpotZ) > 0.01f) return spot;
+            // Probed even when a height was authored. Skipping it meant a spot read a metre
+            // high stayed a metre high and the man dropped out of the air every time you saw
+            // him -- and the guard against a probe finding a balcony is that it has to AGREE
+            // with the authored height, not that it never runs.
+            if (Math.Abs(def.SpotZ) > 0.01f)
+            {
+                try
+                {
+                    if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 1.5f),
+                                              out var settled, GetGroundHeightMode.Normal) &&
+                        settled > 0f && Math.Abs(settled - spot.Z) <= 3f)
+                    {
+                        spot.Z = settled;
+                    }
+                }
+                catch
+                {
+                    // Keep the authored height.
+                }
+
+                return spot;
+            }
 
             try
             {
@@ -923,17 +944,8 @@ namespace Hoodrich.Gangs
                 var gang = _gangs.Get(def.GangId);
                 var colour = gang?.Colour ?? Color.White;
 
-                try
-                {
-                    World.DrawMarker(MarkerType.Cylinder, spot, Vector3.Zero, Vector3.Zero,
-                                     new Vector3(1.2f, 1.2f, 0.7f),
-                                     Color.FromArgb(140, colour.R, colour.G, colour.B),
-                                     false, false, false, null, null, false);
-                }
-                catch
-                {
-                    // Cosmetic only.
-                }
+                // No marker. He is a man stood on a corner with a blip on the map -- a glowing
+                // ring round his feet is how you mark a pickup, and he is not one.
             }
         }
 

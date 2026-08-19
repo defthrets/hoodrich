@@ -85,6 +85,11 @@ namespace Hoodrich.Dealing
                          * (Turf == null ? 1f : Turf.TurfHeatMultiplier)
                          * (product == null ? 1f : product.HeatFactor);
 
+            // Somebody who would actually make the call. A Balla who watched you serve is a
+            // problem, but he is not a phone call, and having him ring the police is the one
+            // detail that makes the whole system read as a dice roll wearing a costume.
+            if (!PostUp.WouldCallItIn(buyer)) return false;
+
             if (_rng.NextDouble() > chance) return false;
 
             StartCall(buyer);

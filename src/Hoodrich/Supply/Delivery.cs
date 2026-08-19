@@ -42,6 +42,23 @@ namespace Hoodrich.Supply
     {
         // ---- the drop ---------------------------------------------------------
 
+        /// <summary>
+        /// Exactly where he stops, and which way he is pointing when he does.
+        ///
+        /// Read off the HUD sitting in the spot. He is routed to a point up the street to the
+        /// WEST first so he enters facing the right way, and sent off east afterwards -- pulling
+        /// a U-turn outside the house every time reads as a car that cannot drive rather than a
+        /// man who does this for a living.
+        /// </summary>
+        private static readonly Vector3 ParkSpot = new Vector3(-21.817f, -1455.482f, 30.424f);
+        private const float ParkHeading = 276.921f;
+
+        /// <summary>How far west he is aimed before the final approach.</summary>
+        private const float ApproachWest = 55f;
+
+        /// <summary>And how far east he heads once the box is down.</summary>
+        private const float DepartEast = 90f;
+
         /// <summary>How long he spends walking it in before it counts as delivered.</summary>
         private const int CarryTimeoutMs = 45000;
 
@@ -57,10 +74,16 @@ namespace Hoodrich.Supply
         /// Tried in order, and an install without any of them still gets the delivery -- it just
         /// gets it without a box in shot, which is a worse scene rather than a broken one.
         /// </summary>
+        /// <summary>
+        /// Something he can carry in two hands without it looking like furniture.
+        ///
+        /// Small ones first -- a shoebox held against the chest reads as a delivery; a crate the
+        /// size of a washing machine reads as a bug.
+        /// </summary>
         private static readonly string[] BoxProps =
         {
-            "prop_box_wood04a", "prop_boxpile_07d", "prop_cs_cardbox_01",
-            "prop_box_ammo04a", "prop_paper_box_01"
+            "prop_cs_cardbox_01", "prop_paper_box_01", "prop_box_ammo01a",
+            "prop_cs_box_clothes", "prop_box_wood01a"
         };
 
         /// <summary>
@@ -102,7 +125,14 @@ namespace Hoodrich.Supply
         public Economy.Stash House;
 
         /// <summary>How long the player holds the phone before he sets off.</summary>
-        private const int CallMs = 4200;
+        /// <summary>
+        /// How long he is on the phone.
+        ///
+        /// Longer than it was, because a four-second call reads as a text message. The player is
+        /// never frozen for it -- the animation runs over the top of whatever they are doing and
+        /// they can walk off mid-sentence, the way anybody does on a phone.
+        /// </summary>
+        private const int CallMs = 11000;
 
         /// <summary>Spawned this far out, so the car is never seen appearing.</summary>
         private const float SpawnMinDistance = 220f;
@@ -309,11 +339,31 @@ namespace Hoodrich.Supply
         {
             try
             {
-                Function.Call(Hash.TASK_USE_MOBILE_PHONE_TIMED, player.Handle, CallMs);
+                // The UNTIMED form. The timed one is a full task and nails the player to the
+                // spot for its whole duration, which is why a longer call was unbearable --
+                // this one runs alongside walking, driving and everything else, exactly like
+                // holding a phone to your ear does.
+                Function.Call(Hash.TASK_USE_MOBILE_PHONE, player.Handle, true);
             }
             catch (Exception ex)
             {
                 Log.Debug("Phone animation failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>Puts it away again, whether the call landed or was called off.</summary>
+        private static void EndPhoneAnimation()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return;
+
+                Function.Call(Hash.TASK_USE_MOBILE_PHONE, player.Handle, false);
+            }
+            catch
+            {
+                // It puts itself away eventually.
             }
         }
 
@@ -333,7 +383,11 @@ namespace Hoodrich.Supply
             switch (State)
             {
                 case DeliveryState.Calling:
-                    if (Game.GameTime - _stateSince >= CallMs) Dispatch(player);
+                    if (Game.GameTime - _stateSince >= CallMs)
+                    {
+                        EndPhoneAnimation();
+                        Dispatch(player);
+                    }
                     return;
 
                 case DeliveryState.Driving:
@@ -544,7 +598,8 @@ namespace Hoodrich.Supply
                 if (Game.GameTime - _lastRetask > RetaskIntervalMs &&
                     player.Position.DistanceTo(_target) > RetaskMoveDistance)
                 {
-                    // Aimed at the HOUSE, never at the player. He is delivering to an address.
+                    // Aimed at the ADDRESS, never at the player, and approached from the west so
+                    // he comes down the street the right way round.
                     _lastRetask = Game.GameTime;
                     DriveTo(Kerb());
                 }
@@ -553,6 +608,23 @@ namespace Hoodrich.Supply
             }
 
             State = DeliveryState.Waiting;
+
+            // Put on the mark facing east, so he is never sat across the pavement at an angle.
+            try
+            {
+                if (_car != null && _car.Exists() && _car.Position.DistanceTo(ParkSpot) < 14f)
+                {
+                    _car.Position = ParkSpot;
+                    _car.Heading = ParkHeading;
+
+                    Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, _car.Handle);
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _driver.Handle, _car.Handle, 1, 1000);
+                }
+            }
+            catch
+            {
+                // He will park where he stopped.
+            }
             _stateSince = Game.GameTime;
 
             try
@@ -569,20 +641,40 @@ namespace Hoodrich.Supply
             Notify.Important("~g~" + _def.Name + " has pulled up.~s~ Go and see him.");
         }
 
-        /// <summary>The kerb outside the house, which is where he parks.</summary>
+        /// <summary>
+        /// Where he is aiming right now.
+        ///
+        /// A point up the street to the west until he is close, then the park spot itself. Two
+        /// legs rather than one, because a car routed straight at a kerb from whichever side it
+        /// happened to be on arrives facing the wrong way and then spends a minute shuffling.
+        /// </summary>
         private Vector3 Kerb()
         {
-            try
+            var here = Game.Player.Character != null && Game.Player.Character.Exists()
+                ? Game.Player.Character.Position
+                : ParkSpot;
+
+            var carAt = _car != null && _car.Exists() ? _car.Position : here;
+
+            if (carAt.DistanceTo(ParkSpot) > ApproachWest * 1.4f)
             {
-                var street = World.GetNextPositionOnStreet(HouseDoor);
-                if (street != Vector3.Zero) return street;
-            }
-            catch
-            {
-                // Fall through to the door itself.
+                var west = ParkSpot;
+                west.X -= ApproachWest;
+
+                try
+                {
+                    var onRoad = World.GetNextPositionOnStreet(west);
+                    if (onRoad != Vector3.Zero) return onRoad;
+                }
+                catch
+                {
+                    // Fall through to the raw point.
+                }
+
+                return west;
             }
 
-            return HouseDoor;
+            return ParkSpot;
         }
 
         /// <summary>
@@ -611,8 +703,12 @@ namespace Hoodrich.Supply
 
                 GiveBox();
 
-                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _driver.Handle,
-                              _dropSpot.X, _dropSpot.Y, _dropSpot.Z, 1.2f, CarryTimeoutMs, 0f, 0.5f);
+                // FOLLOW_NAV_MESH, not GO_STRAIGHT. Straight-line walking sends him into the
+                // fence and leaves him pressed against it for the whole timeout; the nav mesh
+                // takes him round the gate and up the path the way a person would.
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _driver.Handle,
+                              _dropSpot.X, _dropSpot.Y, _dropSpot.Z,
+                              1.0f, CarryTimeoutMs, 1.0f, 0, 0f);
             }
             catch (Exception ex)
             {
@@ -688,8 +784,9 @@ namespace Hoodrich.Supply
 
                     try
                     {
-                        Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _driver.Handle,
-                                      _dropSpot.X, _dropSpot.Y, _dropSpot.Z, 1.2f, 8000, 0f, 0.5f);
+                        Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _driver.Handle,
+                                      _dropSpot.X, _dropSpot.Y, _dropSpot.Z,
+                                      1.0f, 8000, 1.0f, 0, 0f);
                     }
                     catch { /* he will get there or he will not */ }
                 }
@@ -731,8 +828,17 @@ namespace Hoodrich.Supply
 
                     try
                     {
-                        Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _driver.Handle, _car.Handle,
-                                      18f, DriveStyle);
+                        // East, up the street he came down, rather than wandering off the moment
+                        // the door shuts and turning round in somebody's driveway.
+                        var east = ParkSpot;
+                        east.X += DepartEast;
+
+                        var away = World.GetNextPositionOnStreet(east);
+                        if (away == Vector3.Zero) away = east;
+
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _driver.Handle, _car.Handle,
+                                      away.X, away.Y, away.Z, 18f, 0, _car.Model.Hash,
+                                      DriveStyle, 12f, true);
                     }
                     catch { /* the game drives him */ }
 
@@ -887,6 +993,10 @@ namespace Hoodrich.Supply
         public void Cancel(string reason)
         {
             var name = _def == null ? "Your contact" : _def.Name;
+
+            // Whatever happened, the phone comes down. A call that is called off leaving the
+            // player walking round with a handset up is worse than no animation at all.
+            EndPhoneAnimation();
 
             try
             {

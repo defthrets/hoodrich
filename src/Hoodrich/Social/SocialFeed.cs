@@ -77,6 +77,18 @@ namespace Hoodrich.Social
         /// </summary>
         private const int BurstGapMs = 2600;
         private const int BurstGapFastMs = 1100;
+
+        /// <summary>
+        /// How many popups can be on screen at once.
+        ///
+        /// The game's own feed stacks forever, so a burst of four during a war put a column of
+        /// text down the side of the screen in the middle of a gunfight. Three, and a fourth
+        /// pushes the oldest out -- a scrolling feed rather than a growing wall.
+        /// </summary>
+        private const int OnScreen = 3;
+
+        /// <summary>How long one stays up before it falls off on its own.</summary>
+        private const int PopupLifeMs = 11000;
         private const int BurstMax = 4;
 
         /// <summary>How many recent bodies are remembered, so nobody repeats anybody.</summary>
@@ -208,6 +220,22 @@ namespace Hoodrich.Social
         private int _burstLeft;
         private int _burstNext;
         private int _burstGap = 2600;
+
+        /// <summary>
+        /// Notification handles currently up, oldest first.
+        ///
+        /// Held so the oldest can be taken down when a fourth arrives. The game will not do it
+        /// for us -- its feed grows until it runs out of screen.
+        /// </summary>
+        private readonly Queue<int> _onScreen = new Queue<int>();
+
+        /// <summary>
+        /// Set while a war is on and nobody has fired yet.
+        ///
+        /// Cars pulling up is not news. The block starts posting when the shooting starts, which
+        /// is both truer and stops the whole raid being narrated over the top of itself.
+        /// </summary>
+        public bool HoldUntilShots;
 
         public SocialFeed()
         {
@@ -886,6 +914,11 @@ namespace Hoodrich.Social
         {
             if (post == null || post.By == null) return;
 
+            // Nothing at all until the first shot of a raid. The timeline still fills, so it is
+            // all there to read afterwards -- it just does not narrate itself at you while you
+            // are driving over.
+            if (HoldUntilShots) return;
+
             _lastNotify = Game.GameTime;
 
             try
@@ -905,7 +938,18 @@ namespace Hoodrich.Social
                 Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_MESSAGETEXT,
                               pic, pic, false, 0, post.By.Name, post.By.Handle);
 
-                Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, false, false);
+                var handle = Function.Call<int>(Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, false, false);
+
+                _onScreen.Enqueue(handle);
+
+                // A fourth pushes the first one off, so the column never grows past three.
+                while (_onScreen.Count > OnScreen)
+                {
+                    var oldest = _onScreen.Dequeue();
+
+                    try { Function.Call(Hash.THEFEED_REMOVE_ITEM, oldest); }
+                    catch { /* it will time out on its own */ }
+                }
             }
             catch (Exception ex)
             {
