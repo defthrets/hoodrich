@@ -141,9 +141,11 @@ namespace Hoodrich.Missions
         private MissionDef _def;
         private Prop _can;
 
+        // No homie. The brief says go by yourself and it means it -- two men on bikes with
+        // spray cans is a story somebody tells the police, one is somebody riding home. The
+        // fields for a second rider were left behind by an older version of the job and had
+        // nothing filling them in.
         private Vehicle _playerBike;
-        private Vehicle _homieBike;
-        private Ped _homie;
         private Blip _marker;
 
         private bool _rolling;
@@ -824,24 +826,10 @@ namespace Hoodrich.Missions
             ClearBlips();
             ClearMarker();
 
-            // The bikes are left where they ended up rather than deleted, same as the ride out.
+            // The bike is left where it ended up rather than deleted, same as the ride out.
             Release(_playerBike);
-            Release(_homieBike);
-
             _playerBike = null;
-            _homieBike = null;
 
-            try
-            {
-                if (_homie != null && _homie.Exists())
-                {
-                    Function.Call(Hash.REMOVE_PED_FROM_GROUP, _homie.Handle);
-                    _homie.MarkAsNoLongerNeeded();
-                }
-            }
-            catch { /* teardown */ }
-
-            _homie = null;
             _rolling = false;
             ReadyToCollect = false;
 

@@ -53,7 +53,7 @@ namespace Hoodrich.Gangs
 
         /// <summary>
         /// Gap between carloads.
-        /// 
+        ///
         /// Short enough that the next lot is on the block before the last is finished, which is
         /// what keeps it a fight rather than four separate skirmishes with quiet in between.
         /// Still irregular, so it never sounds like a metronome.
@@ -108,6 +108,9 @@ namespace Hoodrich.Gangs
         /// the weather.
         /// </summary>
         private const int RollIntervalMs = 600000;
+
+        /// <summary>How long before it looks again, if you were on a job when it did.</summary>
+        private const int BusyRetryMs = 90000;
         private const float WarChance = 0.08f;
 
         /// <summary>
@@ -191,6 +194,17 @@ namespace Hoodrich.Gangs
         /// <summary>Set by Main. Null-checked, so the feed is never load-bearing.</summary>
         public SocialFeed Social;
 
+        /// <summary>
+        /// Set by Main: whether you are in the middle of a job.
+        ///
+        /// A raid on your own block while you are stood in La Mesa on somebody else's business
+        /// is not a choice, it is a punishment -- you cannot be in both places, the block loses,
+        /// and you lose rep for not turning up to something you were never able to attend. Two
+        /// scripted fights also share one feed, one set of blips and one police switch, and
+        /// neither was written expecting the other.
+        /// </summary>
+        public Func<bool> Busy;
+
         public bool IsRunning { get; private set; }
 
         public GangWar Defend(string who, Vector3 where)
@@ -217,6 +231,15 @@ namespace Hoodrich.Gangs
             if (IsRunning) { Tick(player, now); return; }
 
             if (now < _nextRoll) return;
+
+            // Not while you are working. Looked at again shortly rather than burning the roll,
+            // so finishing a job does not also cost you the raid that would have happened.
+            if (Busy != null && Busy())
+            {
+                _nextRoll = now + BusyRetryMs;
+                return;
+            }
+
             _nextRoll = now + RollIntervalMs;
 
             // Only somebody who runs with a set has a set worth attacking.

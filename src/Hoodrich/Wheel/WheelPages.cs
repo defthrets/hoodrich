@@ -427,9 +427,6 @@ namespace Hoodrich.Wheel
             // the time the player flicks into the weapons page rather than popping in under them.
             _weapons.PrewarmCarried();
 
-            var packaged = Stash.TotalPackaged;
-            var bulk = Stash.TotalBulk;
-
             var page = new WheelPage("Hoodrich",
                 _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated");
 
@@ -604,12 +601,6 @@ namespace Hoodrich.Wheel
             var def = _weapons.Get(WeaponRegistry.CurrentWeaponHash());
             return def == null ? "Unarmed" : def.Name;
         }
-        private void Equip(uint hash, string name)
-        {
-            WeaponRegistry.Equip(hash);
-            Log.Debug("Equipped " + name + ".");
-        }
-
         // ---- sell --------------------------------------------------------------
 
         private WheelPage BuildSellPage()
@@ -660,8 +651,6 @@ namespace Hoodrich.Wheel
             var failure = _postUp.Start(product);
             if (failure != null) Notify.Problem(failure);
         }
-
-        // ---- cut ---------------------------------------------------------------
 
         // ---- supply ------------------------------------------------------------
 
@@ -851,7 +840,6 @@ namespace Hoodrich.Wheel
 
         private WheelPage BuildDealerStock(WheelPage page, DealerDef def, float mult)
         {
-
             // An empty Drugs list means this contact carries the whole catalogue.
             var stock = new List<DrugDef>();
             if (def.Drugs.Count == 0) stock.AddRange(_drugs.All);
@@ -1232,12 +1220,16 @@ namespace Hoodrich.Wheel
                             string.Equals(loan.GangId, gang.Id, StringComparison.OrdinalIgnoreCase);
 
             page.AddSub("Borrow money", "$", () => BuildLoanPage(gang),
-                detail: theirLoan                        ? "You owe $" + loan.TotalOwed.ToString("N0") + ", due in " + loan.DaysLeft + " days"                        : mine ? "They will front you against your name"
-                           : "They will not front you anything",
+                detail: theirLoan
+                    ? "You owe $" + loan.TotalOwed.ToString("N0") + ", due in " + loan.DaysLeft + " days"
+                    : mine
+                        ? "They will front you against your name"
+                        : "They will not front you anything",
                 value: theirLoan ? "$" + loan.TotalOwed.ToString("N0") + " owed" : "",
                 enabled: mine || theirLoan,
-                disabledReason: loan != null && loan.IsActive ? "You already owe " + loan.GangId
-                                                              : "Not the gang you run with");
+                disabledReason: loan != null && loan.IsActive
+                    ? "You already owe " + (_gangs.Get(loan.GangId)?.Name ?? loan.GangId)
+                    : "Not the gang you run with");
             page.WithIcon(Icons.Cash);
 
             page.Add("How you stand", "*", () => ShowGangDetail(gang),
@@ -1423,7 +1415,6 @@ namespace Hoodrich.Wheel
             }
         }
 
-        // ---- reputation ---------------------------------------------------------
         // ---- shared readouts ----------------------------------------------------
 
         /// <summary>Progress toward the next rank, phrased for a panel row.</summary>

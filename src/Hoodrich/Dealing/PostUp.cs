@@ -79,7 +79,6 @@ namespace Hoodrich.Dealing
         /// </summary>
         private static readonly float[] DealSizes = { 1f, 1f, 1f, 3.5f };
 
-        /// <summary>A sale this close to a uniform is a sale a uniform saw.</summary>
         /// <summary>
         /// How close a uniform has to be for a handoff to be in their view.
         ///
@@ -300,6 +299,12 @@ namespace Hoodrich.Dealing
             State = PostState.Idle;
             _product = null;
             _cornerHeat = 0f;
+
+            // A buyer's reply is queued a second into the future. Packing up inside that second
+            // left it to fire on the NEXT pitch, so the first thing a fresh corner did was have
+            // a stranger from the last one thank you.
+            _pendingSpeaker = null;
+
             if (Crew != null) Crew.WorkingACorner = false;
 
             if (!string.IsNullOrEmpty(reason)) Notify.Ticker("~o~" + reason + "~s~");
@@ -646,7 +651,7 @@ namespace Hoodrich.Dealing
 
             ReleaseCustomer();
             State = PostState.Posted;
-            
+
             if (product == null) return;
 
             var asked = DealSizes[_rng.Next(DealSizes.Length)];
@@ -702,7 +707,8 @@ namespace Hoodrich.Dealing
             if (Crew != null && Crew.IsAffiliated)
             {
                 var standing = Crew.CurrentStanding;
-                standing.MoneyEarned += payout;                standing.Deals++;
+                standing.MoneyEarned += payout;
+                standing.Deals++;
                 Crew.CreditSale();
             }
 
@@ -1360,107 +1366,40 @@ namespace Hoodrich.Dealing
         }
 
         /// <summary>
-
-
         /// One of these models, chosen at random rather than in order.
-
-
         ///
-
-
         /// Walking the list and taking the first that loads means the first entry wins every
-
-
         /// single time, so the "random" police car was always the same police car.
-
-
         /// </summary>
-
-
         private Model? PickModel(string[] names)
-
-
         {
-
-
             var order = new List<string>(names);
 
-
-        
-
-
             for (var i = order.Count - 1; i > 0; i--)
-
-
             {
-
-
                 var j = _rng.Next(i + 1);
-
-
                 var swap = order[i];
-
-
                 order[i] = order[j];
-
-
                 order[j] = swap;
-
-
             }
-
-
-        
-
 
             foreach (var name in order)
-
-
             {
-
-
                 try
-
-
                 {
-
-
                     var model = new Model(name);
-
-
                     if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
 
-
                     return model;
-
-
                 }
-
-
                 catch
-
-
                 {
-
-
                     // Try the next.
-
-
                 }
-
-
             }
 
-
-        
-
-
             return null;
-
-
         }
-
-
 
         /// <summary>
         /// The parked patrol stops being scenery and comes for you.
@@ -1820,8 +1759,13 @@ namespace Hoodrich.Dealing
                 {
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _cop.Handle, false);
                     _cop.Task.ClearAll();
-                    _cop.MarkAsNoLongerNeeded();
-                    if (_copSpawned) _cop.MarkAsNoLongerNeeded();
+                    // One we put there is one we take away. A cop conjured up to walk over and
+                    // search you has no life outside this pitch, and leaving him to wander the
+                    // neighbourhood afterwards slowly fills the block with officers who arrived
+                    // for a corner that no longer exists. Anybody who was already on the street
+                    // is simply let go.
+                    if (_copSpawned && !_cop.IsOnScreen) _cop.Delete();
+                    else _cop.MarkAsNoLongerNeeded();
                 }
                 catch { }
             }

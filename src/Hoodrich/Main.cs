@@ -199,6 +199,7 @@ namespace Hoodrich
 
                 _jobs.Social = _social;
                 _war.Social = _social;
+                _war.Busy = () => _jobs != null && _jobs.IsRunning;
                 _copWatch.Social = _social;
                 _postUp.Social = _social;
                 _crew.Social = _social;
@@ -248,7 +249,7 @@ namespace Hoodrich
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
 
-                
+
 
                 _menu = new RadialMenu(_cfg);
                 _wheel = new WheelController(_cfg, _menu, pages.BuildRoot);

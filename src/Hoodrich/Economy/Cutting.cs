@@ -206,7 +206,7 @@ namespace Hoodrich.Economy
 
             ClearWorkScenario();
 
-            
+
 
             Notify.Ticker("~g~" + made.ToString("0") + "~s~ " + product.UnitName + " of " + product.Name + " at " +
                           (purity * 100f).ToString("0") + "%");

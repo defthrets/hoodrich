@@ -661,7 +661,7 @@ namespace Hoodrich.Gangs
 
             if (ped == null || !ped.Exists() || lines.Length == 0) return;
 
-        
+
 
             try
 
@@ -709,7 +709,7 @@ namespace Hoodrich.Gangs
 
         /// <summary>Puts him back on his corner once you have finished with him.</summary>
         public void ReleaseFromTalk()        {            if (!_held) return;
-            
+
             Say(_livePed, ByeLines);
             StandAtSpot();
         }
