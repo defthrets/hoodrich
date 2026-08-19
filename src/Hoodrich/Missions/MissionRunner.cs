@@ -106,7 +106,6 @@ namespace Hoodrich.Missions
         private Blip _siteBlip;
         private Vehicle _jobCar;
         private int _lastUpdate;
-        private int _startedAt;
         private int _homiesLost;
 
         /// <summary>
@@ -145,7 +144,7 @@ namespace Hoodrich.Missions
             _gangs = gangs;
             _zones = zones;
             _bike = new BikeRide(crew, gangs);
-            _tags = new TagRun(gangs, crew);
+            _tags = new TagRun(gangs);
             _walls = TagRun.Load();
         }
 
@@ -234,7 +233,6 @@ namespace Hoodrich.Missions
 
                 _def = def;
                 _homiesLost = 0;
-                _startedAt = Game.GameTime;
 
                 Notify.Important("~g~Job on.~s~ " + _tags.Objective + ".");
                 Log.Info("Mission " + def.Id + " started as a tag run.");
@@ -248,7 +246,6 @@ namespace Hoodrich.Missions
 
                 _def = def;
                 _homiesLost = 0;
-                _startedAt = Game.GameTime;
 
                 Log.Info("Mission " + def.Id + " started as a bike ride.");
                 return null;
@@ -257,7 +254,6 @@ namespace Hoodrich.Missions
             _def = def;
             _site = site;
             _homiesLost = 0;
-            _startedAt = Game.GameTime;
             State = MissionState.Travel;
 
             MarkSite();

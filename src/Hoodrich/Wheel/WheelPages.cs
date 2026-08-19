@@ -34,7 +34,6 @@ namespace Hoodrich.Wheel
         private readonly TurfWatch _turf;
         private readonly DealerManager _dealers;
         private readonly Core.Settings _cfg;
-        private readonly Market _market;
         private readonly StashHouse _stash;
         private readonly PostUp _postUp;
         private readonly GangLeaders _leaders;
@@ -67,7 +66,7 @@ namespace Hoodrich.Wheel
 
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
-                          DealerManager suppliers, WeaponRegistry weapons, Market market,
+                          DealerManager suppliers, WeaponRegistry weapons,
                           StashHouse stash, PostUp postUp, GangLeaders leaders)
         {
             _cfg = cfg;
@@ -80,7 +79,6 @@ namespace Hoodrich.Wheel
             _turf = turf;
             _dealers = suppliers;
             _weapons = weapons;
-            _market = market;
             _stash = stash;
             _postUp = postUp;
             _leaders = leaders;

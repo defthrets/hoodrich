@@ -216,7 +216,7 @@ namespace Hoodrich.UI
             if (node == null) return;
 
             _node = node;
-            _subjectSet(subject);
+            Subject = subject;
             _selected = FirstEnabled(node);
             _openedAt = Game.GameTime;
             _wrapped = Wrap(node.Line, PanelWidth - 0.03f, BodyScale);
@@ -232,8 +232,6 @@ namespace Hoodrich.UI
                 Speak(Speaker, TheirLines);
             }
         }
-
-        private void _subjectSet(object subject) => Subject = subject;
 
         public void Close()
         {

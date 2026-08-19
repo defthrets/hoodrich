@@ -150,7 +150,7 @@ namespace Hoodrich
                 _jobs = new MissionRunner(_state, _crew, _gangs, _zoneMap);
 
                 _fixer = new Fixer(_crew);
-                _bigj = new Armourer(_crew, _gangs);
+                _bigj = new Armourer(_gangs);
 
                 _social = SocialFeed.Load();
                 _socialScreen = new SocialScreen(_social);
@@ -239,7 +239,8 @@ namespace Hoodrich
                 _delivery.House = _stash.Stash;
 
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _cutting,
-                                           _gangs, _crew, _turf, _dealers, _weapons, _market, _stash, _postUp, _leaders);
+                                           _gangs, _crew, _turf, _dealers, _weapons,
+                                           _stash, _postUp, _leaders);
 
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
                 pages.Info = _info;
@@ -281,6 +282,13 @@ namespace Hoodrich
                 Draw.BeginFrame();
 
                 var available = IsPlayable();
+
+                // Before any of the full-screen UIs, every one of which returns early. A narc
+                // on the phone and a corner you are stood on both run on wall time, and a
+                // countdown that stops because you opened a menu is a countdown you can beat by
+                // opening a menu.
+                _bust.Update();
+                _postUp.Update();
 
                 // Moving product owns the screen outright, the same as any other full UI.
                 if (_stashScreen.IsOpen)
@@ -403,16 +411,10 @@ namespace Hoodrich
                     UpdateLoan();
                 }
 
-                // In-flight work keeps ticking even when unavailable so it can abort cleanly --
-                // and because a narc's clock does not stop just because a cutscene started.
-                _bust.Update();
-                _postUp.Update();
-
                 _war.Draw();
                 _cutting.Draw();
                 _bust.Draw();
                 _postUp.Draw();
-                _leaders.Draw();
                 _stash.Draw();
                 _sleep.Draw();
                 _kitchen.Draw();

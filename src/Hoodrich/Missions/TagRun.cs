@@ -125,7 +125,6 @@ namespace Hoodrich.Missions
         private int _paintFx = -1;
 
         private readonly GangRegistry _gangs;
-        private readonly Affiliation _crew;
         private readonly Random _rng = new Random();
 
         private readonly List<TagSpot> _spots = new List<TagSpot>();
@@ -138,7 +137,6 @@ namespace Hoodrich.Missions
         /// <summary>Set by the runner. Null-checked, so the feed is never load-bearing.</summary>
         public SocialFeed Social;
 
-        private MissionDef _def;
         private Prop _can;
 
         // No homie. The brief says go by yourself and it means it -- two men on bikes with
@@ -155,10 +153,9 @@ namespace Hoodrich.Missions
         private TagSpot _spraying;
         private bool _held;
 
-        public TagRun(GangRegistry gangs, Affiliation crew)
+        public TagRun(GangRegistry gangs)
         {
             _gangs = gangs;
-            _crew = crew;
         }
 
         public bool IsRunning { get; private set; }
@@ -227,7 +224,6 @@ namespace Hoodrich.Missions
         {
             if (all == null || all.Count == 0) return "Nobody could tell you where they're at.";
 
-            _def = def;
             _spots.Clear();
             _done.Clear();
 
@@ -847,7 +843,6 @@ namespace Hoodrich.Missions
             _spots.Clear();
             _done.Clear();
 
-            _def = null;
             _spraying = null;
             IsRunning = false;
         }

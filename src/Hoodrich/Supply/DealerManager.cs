@@ -456,11 +456,52 @@ namespace Hoodrich.Supply
             _meetDef = def;
             _meetStartedAt = Game.GameTime;
 
+            MarkMeet(def);
+
             Dialogue.Say(def.Name, "Yeah, alright. I'll come to you. Don't keep me standing there.");
             Notify.Important("~y~" + def.Name + "~s~ is on their way. Marked on your map.");
             Log.Info("Meet arranged with " + def.Id + " at " + _meetSpot + ".");
             return null;
         }
+
+        /// <summary>
+        /// Puts the rendezvous on the map the moment it is arranged.
+        ///
+        /// The notification says "marked on your map" and, until now, nothing was: the only
+        /// blip came off the DEALER, and he does not exist until you are already within a
+        /// hundred and sixty metres of the spot -- which is most of the way there. So you were
+        /// told to go somewhere and given no way to find it.
+        /// </summary>
+        private void MarkMeet(DealerDef def)
+        {
+            ClearMeetBlip();
+
+            try
+            {
+                _meetBlip = World.CreateBlip(_meetSpot);
+                if (_meetBlip == null || !_meetBlip.Exists()) return;
+
+                _meetBlip.Sprite = BlipSprite.Friend;
+                _meetBlip.Color = BlipColor.Yellow;
+                _meetBlip.Name = def.Name;
+                _meetBlip.ShowRoute = true;
+                _meetBlip.Scale = 0.9f;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not mark the meet: " + ex.Message);
+            }
+        }
+
+        private void ClearMeetBlip()
+        {
+            try { if (_meetBlip != null && _meetBlip.Exists()) _meetBlip.Delete(); }
+            catch { /* teardown */ }
+
+            _meetBlip = null;
+        }
+
+        private Blip _meetBlip;
 
         public void CancelMeet(string reason)
         {
@@ -468,6 +509,8 @@ namespace Hoodrich.Supply
 
             var name = _meetDef.Name;
             _meetDef = null;
+
+            ClearMeetBlip();
             Despawn();
 
             if (!string.IsNullOrEmpty(reason)) Notify.Ticker("~o~Meet with " + name + " is off.~s~ " + reason);
@@ -511,7 +554,6 @@ namespace Hoodrich.Supply
             return false;
         }
 
-        /// <summary>Why this dealer will not deal with you, or null if they will.</summary>
         /// <summary>Set by Main: whether the player is at the stash house right now.</summary>
         public Func<bool> AtHome;
 
@@ -588,6 +630,9 @@ namespace Hoodrich.Supply
                 if (_livePed == null && toMeet <= DespawnRange)
                 {
                     SpawnAt(_meetDef, _meetSpot, "", player, route: true);
+
+                    // He is here, so the marker on the spot gives way to the one on the man.
+                    ClearMeetBlip();
                 }
                 else if (_livePed != null && toMeet > DespawnRange)
                 {
@@ -842,6 +887,10 @@ namespace Hoodrich.Supply
             Dialogue.Say(_liveDef.Name, _liveDef.Greeting);
         }
 
-        public void RestoreWorld() => Despawn();
+        public void RestoreWorld()
+        {
+            ClearMeetBlip();
+            Despawn();
+        }
     }
 }

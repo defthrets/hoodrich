@@ -18,6 +18,16 @@ namespace Hoodrich.Gangs
         public int Loafers = 2;
 
         public float Roam = 10f;
+
+        /// <summary>
+        /// The people this stoop made.
+        ///
+        /// Held per spot rather than in one flat list. They used to be cleared up by measuring
+        /// how far each of them was from the spot -- which meant anybody who had wandered past
+        /// that radius was never cleared up at all and stayed loaded for the rest of the
+        /// session. A stoop knows its own people.
+        /// </summary>
+        public readonly List<Ped> People = new List<Ped>();
     }
 
     /// <summary>
@@ -75,7 +85,6 @@ namespace Hoodrich.Gangs
         private readonly string _gangId;
         private readonly List<BlockSpot> _spots = new List<BlockSpot>();
 
-        private readonly List<Ped> _people = new List<Ped>();
         private readonly Random _rng = new Random();
 
         private int _lastUpdate;
@@ -104,27 +113,17 @@ namespace Hoodrich.Gangs
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
-            Prune();
             Chatter(now);
 
             foreach (var spot in _spots)
             {
+                Prune(spot);
+
                 var away = player.Position.DistanceTo(spot.Where);
 
-                if (away <= SpawnRange && !Populated(spot)) Populate(spot);
+                if (away <= SpawnRange && spot.People.Count == 0) Populate(spot);
                 else if (away > DespawnRange) Clear(spot);
             }
-        }
-
-        private bool Populated(BlockSpot spot)
-        {
-            foreach (var ped in _people)
-            {
-                if (ped == null || !ped.Exists()) continue;
-                if (ped.Position.DistanceTo(spot.Where) <= spot.Roam * 2.2f) return true;
-            }
-
-            return false;
         }
 
         private void Populate(BlockSpot spot)
@@ -192,7 +191,7 @@ namespace Hoodrich.Gangs
                         Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle, scenario, 0, true);
                     }
 
-                    _people.Add(ped);
+                    spot.People.Add(ped);
                     return true;
                 }
                 catch
@@ -235,9 +234,10 @@ namespace Hoodrich.Gangs
             if (now < _nextChat) return;
             _nextChat = now + ChatGapMinMs + _rng.Next(ChatGapMaxMs - ChatGapMinMs);
 
-            if (_people.Count == 0) return;
+            var spot = _spots.Count == 0 ? null : _spots[_rng.Next(_spots.Count)];
+            if (spot == null || spot.People.Count == 0) return;
 
-            var who = _people[_rng.Next(_people.Count)];
+            var who = spot.People[_rng.Next(spot.People.Count)];
             if (who == null || !who.Exists() || !who.IsAlive) return;
 
             try
@@ -251,11 +251,11 @@ namespace Hoodrich.Gangs
             }
         }
 
-        private void Prune()
+        private static void Prune(BlockSpot spot)
         {
-            for (var i = _people.Count - 1; i >= 0; i--)
+            for (var i = spot.People.Count - 1; i >= 0; i--)
             {
-                var ped = _people[i];
+                var ped = spot.People[i];
                 if (ped != null && ped.Exists() && ped.IsAlive) continue;
 
                 // Dead ones are let go rather than deleted. Somebody who was shot on this stoop
@@ -263,27 +263,25 @@ namespace Hoodrich.Gangs
                 try { if (ped != null && ped.Exists()) ped.MarkAsNoLongerNeeded(); }
                 catch { /* teardown */ }
 
-                _people.RemoveAt(i);
+                spot.People.RemoveAt(i);
             }
         }
 
-        private void Clear(BlockSpot spot)
+        private static void Clear(BlockSpot spot)
         {
-            for (var i = _people.Count - 1; i >= 0; i--)
+            foreach (var ped in spot.People)
             {
-                var ped = _people[i];
-                if (ped == null || !ped.Exists()) { _people.RemoveAt(i); continue; }
-                if (ped.Position.DistanceTo(spot.Where) > spot.Roam * 2.2f) continue;
-
                 try
                 {
+                    if (ped == null || !ped.Exists()) continue;
+
                     ped.MarkAsNoLongerNeeded();
                     ped.Delete();
                 }
                 catch { /* teardown */ }
-
-                _people.RemoveAt(i);
             }
+
+            spot.People.Clear();
         }
 
         private static Vector3 Ground(Vector3 where)
@@ -307,18 +305,7 @@ namespace Hoodrich.Gangs
 
         public void RestoreWorld()
         {
-            foreach (var ped in _people)
-            {
-                try
-                {
-                    if (ped == null || !ped.Exists()) continue;
-                    ped.MarkAsNoLongerNeeded();
-                    ped.Delete();
-                }
-                catch { /* teardown */ }
-            }
-
-            _people.Clear();
+            foreach (var spot in _spots) Clear(spot);
         }
     }
 }

@@ -301,7 +301,6 @@ namespace Hoodrich.UI
         /// <summary>Undoes only the world effects, leaving any vanilla-wheel handoff alone.</summary>
         private void RestoreTimeAndBlur()
         {
-
             if (_timeScaleApplied)
             {
                 Game.TimeScale = 1f;

@@ -118,7 +118,6 @@ namespace Hoodrich.Locations
             new Piece("Flare",                "WEAPON_FLARE",            80,  10, "For seeing"),
         };
 
-        private readonly Affiliation _crew;
         private readonly GangRegistry _gangs;
 
         private Ped _ped;
@@ -127,9 +126,8 @@ namespace Hoodrich.Locations
         private bool _held;
         private bool _talkHeld;
 
-        public Armourer(Affiliation crew, GangRegistry gangs)
+        public Armourer(GangRegistry gangs)
         {
-            _crew = crew;
             _gangs = gangs;
         }
 

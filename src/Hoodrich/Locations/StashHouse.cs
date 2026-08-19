@@ -41,13 +41,11 @@ namespace Hoodrich.Locations
             "ig_denise", "csb_denise", "cs_denise",
         };
 
-        private readonly Settings _cfg;
 
         private Blip _blip;
 
         public StashHouse(Settings cfg)
         {
-            _cfg = cfg;
             Stash = new Stash { Capacity = cfg.HideoutStashCapacity };
         }
 

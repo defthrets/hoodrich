@@ -88,7 +88,6 @@ namespace Hoodrich.Gangs
         private const float SpawnRange = 120f;
         private const float DespawnRange = 200f;
         private const float TalkRange = 3.0f;
-        private const float MarkerRange = 60f;
         private const int UpdateIntervalMs = 800;
 
         private readonly List<LeaderDef> _defs = new List<LeaderDef>();
@@ -234,7 +233,6 @@ namespace Hoodrich.Gangs
             var spot = SpotFor(def);
             if (spot == Vector3.Zero) return spot;
 
-            // An authored height is deliberate; never second-guess it.
             // Probed even when a height was authored. Skipping it meant a spot read a metre
             // high stayed a metre high and the man dropped out of the air every time you saw
             // him -- and the guard against a probe finding a balcony is that it has to AGREE
@@ -644,46 +642,39 @@ namespace Hoodrich.Gangs
             }
         }
 
-        /// <summary>
-        /// Stops him and turns him to face you, for as long as the conversation lasts. Called
-        /// when the dialogue opens; <see cref="StandAtSpot"/> puts him back on his mark afterwards.
-        /// </summary>
         /// <summary>Ambient lines, so walking up and walking off are things you hear.</summary>
-
         private static readonly string[] HelloLines = { "GENERIC_HOWS_IT_GOING", "GENERIC_HI", "CHAT_STATE" };
 
         private static readonly string[] ByeLines = { "GENERIC_BYE", "GENERIC_THANKS" };
 
+        /// <summary>
+        /// One shared source of randomness.
+        ///
+        /// This used to be `new Random()` inside the call. Random is seeded from the clock, and
+        /// two greetings a few milliseconds apart got the same seed and therefore the same line
+        /// -- so a man with three hellos said one of them, and always the same one.
+        /// </summary>
+        private static readonly Random Rng = new Random();
 
         private static void Say(Ped ped, string[] lines)
-
         {
-
             if (ped == null || !ped.Exists() || lines.Length == 0) return;
 
-
-
             try
-
             {
-
-                var line = lines[new Random().Next(lines.Length)];
-
-                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle, line, "SPEECH_PARAMS_FORCE");
-
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
+                              lines[Rng.Next(lines.Length)], "SPEECH_PARAMS_FORCE");
             }
-
             catch
-
             {
-
                 // A missing line costs nothing.
-
             }
-
         }
 
-
+        /// <summary>
+        /// Stops him and turns him to face you, for as long as the conversation lasts. Called
+        /// when the dialogue opens; <see cref="StandAtSpot"/> puts him back on his mark after.
+        /// </summary>
         public void HoldForTalk()
         {
             if (_livePed == null || !_livePed.Exists() || _held) return;
@@ -708,7 +699,9 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>Puts him back on his corner once you have finished with him.</summary>
-        public void ReleaseFromTalk()        {            if (!_held) return;
+        public void ReleaseFromTalk()
+        {
+            if (!_held) return;
 
             Say(_livePed, ByeLines);
             StandAtSpot();
@@ -925,29 +918,11 @@ namespace Hoodrich.Gangs
             Log.Info("Fronted " + given.ToString("0.#") + "g " + product.Id + " on joining " + gang.Id + ".");
         }
 
-        /// <summary>Ground marker so a leader reads as somewhere to go, not just a blip.</summary>
-        public void Draw()
-        {
-            foreach (var def in _defs)
-            {
-                var mine = _crew.IsAffiliated &&
-                           string.Equals(_crew.Current.Id, def.GangId, StringComparison.OrdinalIgnoreCase);
-                if (mine) continue;
-
-                var spot = SpotFor(def);
-                if (spot == Vector3.Zero) continue;
-
-                var player = Game.Player.Character;
-                if (player == null || !player.Exists()) continue;
-                if (player.Position.DistanceTo(spot) > MarkerRange) continue;
-
-                var gang = _gangs.Get(def.GangId);
-                var colour = gang?.Colour ?? Color.White;
-
-                // No marker. He is a man stood on a corner with a blip on the map -- a glowing
-                // ring round his feet is how you mark a pickup, and he is not one.
-            }
-        }
+        // There is deliberately no ground marker under a leader. He is a man stood on a corner
+        // with a blip on the map -- a glowing ring round his feet is how you mark a pickup, and
+        // he is not one. What used to be here was the loop that decided that: it worked out a
+        // spot, a distance and a gang colour for all seven of them every frame, and drew
+        // nothing with any of it.
 
         public void RestoreWorld()
         {

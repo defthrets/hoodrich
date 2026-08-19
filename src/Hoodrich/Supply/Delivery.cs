@@ -187,7 +187,6 @@ namespace Hoodrich.Supply
 
         private int _stateSince;
         private int _lastRetask;
-        private Vector3 _target;
 
         public DeliveryState State { get; private set; } = DeliveryState.None;
 
@@ -541,8 +540,6 @@ namespace Hoodrich.Supply
         private void DriveTo(Vector3 where)
         {
             if (_driver == null || !_driver.Exists() || _car == null || !_car.Exists()) return;
-
-            _target = where;
 
             try
             {

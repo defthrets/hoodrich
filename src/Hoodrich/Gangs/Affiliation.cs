@@ -57,7 +57,6 @@ namespace Hoodrich.Gangs
         private int _lastReapply;
         private int _lastKillScan;
         private int _lastAllyCount;
-        private int _lastAllyCountAt;
 
         /// <summary>Groups we have altered, so they can be put back on unload.</summary>
         private readonly HashSet<int> _touchedGroups = new HashSet<int>();
@@ -288,7 +287,9 @@ namespace Hoodrich.Gangs
 
             if (now - _lastKillScan >= KillScanIntervalMs)
             {
-                _lastKillScan = now;                ScanKills();
+                _lastKillScan = now;
+
+                ScanKills();
                 TickPresence(Turf);
                 ScanAllies();
             }
@@ -327,7 +328,6 @@ namespace Hoodrich.Gangs
         private void ScanAllies()
         {
             _lastAllyCount = 0;
-            _lastAllyCountAt = Game.GameTime;
             if (Current == null) return;
 
             var player = Game.Player.Character;
@@ -507,8 +507,8 @@ namespace Hoodrich.Gangs
                     if (!IsAlly(ped)) continue;
                     if (ped.IsInCombat) continue;
 
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);  // always fight
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);   // can use vehicles
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true); // always fight
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);  // will take on an armed man
                     Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, target.Handle, 0, 16);
                     Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
                     sent++;

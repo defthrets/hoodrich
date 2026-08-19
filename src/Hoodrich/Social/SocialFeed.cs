@@ -128,7 +128,6 @@ namespace Hoodrich.Social
             new Dictionary<string, Dictionary<string, List<string>>>(StringComparer.OrdinalIgnoreCase);
 
         private int _nextAmbient;
-        private int _lastNotify;
 
         /// <summary>
         /// What has been said lately, so nobody says it again.
@@ -947,8 +946,6 @@ namespace Hoodrich.Social
             // all there to read afterwards -- it just does not narrate itself at you while you
             // are driving over.
             if (HoldUntilShots) return;
-
-            _lastNotify = Game.GameTime;
 
             try
             {
