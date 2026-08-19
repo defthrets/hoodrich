@@ -69,21 +69,22 @@ namespace Hoodrich.Supply
         private const int LeaveMs = 25000;
 
         /// <summary>
-        /// Something big enough to be worth carrying with two hands.
+        /// What he is actually carrying: a package, not a parcel.
         ///
-        /// Tried in order, and an install without any of them still gets the delivery -- it just
-        /// gets it without a box in shot, which is a worse scene rather than a broken one.
-        /// </summary>
-        /// <summary>
-        /// Something he can carry in two hands without it looking like furniture.
+        /// The game has purpose-made drug props from the story missions -- the taped bale from
+        /// the trash-run, the brick from the meth deals -- and one of those in his hands says
+        /// what this is without a word of dialogue. A cardboard carton says he is helping
+        /// somebody move house.
         ///
-        /// Small ones first -- a shoebox held against the chest reads as a delivery; a crate the
-        /// size of a washing machine reads as a bug.
+        /// Tried in order, and an install missing all of them still gets the delivery: it just
+        /// gets it with nothing in shot, which is a worse scene rather than a broken one, so
+        /// the ordinary boxes stay on the end of the list as a last resort.
         /// </summary>
         private static readonly string[] BoxProps =
         {
-            "prop_cs_cardbox_01", "prop_paper_box_01", "prop_box_ammo01a",
-            "prop_cs_box_clothes", "prop_box_wood01a"
+            "prop_drug_package_02", "prop_drug_package", "prop_meth_bag_01",
+            "prop_cash_case_01", "prop_michael_backpack",
+            "prop_cs_cardbox_01", "prop_paper_box_01"
         };
 
         /// <summary>
@@ -139,7 +140,13 @@ namespace Hoodrich.Supply
         private const float SpawnMaxDistance = 340f;
 
         /// <summary>He parks about here and waits.</summary>
-        private const float ArriveDistance = 18f;
+        /// <summary>
+        /// How close to the mark counts as parked.
+        ///
+        /// Tight, because the mark is an exact spot outside a specific house rather than a
+        /// vague "near the player" -- eighteen metres of slack put him round the corner.
+        /// </summary>
+        private const float ArriveDistance = 9f;
 
         /// <summary>Give up if the drive takes longer than this -- traffic, cliffs, the ocean.</summary>
         private const int DriveTimeoutMs = 5 * 60 * 1000;
@@ -480,6 +487,7 @@ namespace Hoodrich.Supply
 
                 State = DeliveryState.Driving;
                 _stateSince = Game.GameTime;
+                _stillSince = 0;
 
                 Notify.Important("~y~" + _def.Name + "~s~ is on his way to you.");
                 Log.Info("Delivery dispatched from " + start + ".");
@@ -541,9 +549,24 @@ namespace Hoodrich.Supply
 
             try
             {
+                var far = _car.Position.DistanceTo(where) > 70f;
+
+                if (far)
+                {
+                    // The long-range task is the one built for crossing a city. The ordinary
+                    // drive-to-coord plans a route from where it is issued and gives up at the
+                    // far end of it, which on a two-hundred-metre run across junctions is how
+                    // you end up with a car stopped in a live lane waiting for a task that has
+                    // already finished.
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD_LONGRANGE,
+                                  _driver.Handle, _car.Handle,
+                                  where.X, where.Y, where.Z, 22f, DriveStyle, 18f);
+                    return;
+                }
+
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _driver.Handle, _car.Handle,
                               where.X, where.Y, where.Z,
-                              20f, 0, _car.Model.Hash, DriveStyle, ArriveDistance * 0.5f, true);
+                              16f, 0, _car.Model.Hash, DriveStyle, 3f, true);
             }
             catch (Exception ex)
             {
@@ -585,25 +608,28 @@ namespace Hoodrich.Supply
                 return;
             }
 
-            if (Distance > AbandonDistance)
-            {
-                Cancel("You went too far. He turned round.");
-                return;
-            }
+            // Measured against the ADDRESS, not the player.
+            //
+            // This is what had him stopping up the street: he drives to a fixed spot now, but
+            // arrival was still being judged on how close he was to YOU. Stood at the house
+            // waiting, you were inside the arrival radius while his car was still fifty metres
+            // west at the approach point -- so he "arrived" without arriving, and the re-task
+            // that would have given him his second leg only fired if the PLAYER moved, which
+            // standing at your own front door you never do.
+            var toSpot = _car != null && _car.Exists()
+                ? _car.Position.DistanceTo(ParkSpot)
+                : float.MaxValue;
 
-            if (Distance > ArriveDistance)
+            if (toSpot > ArriveDistance)
             {
-                // The drive task aims at a fixed coordinate, so a player who keeps walking is a
-                // player he never reaches. Re-aimed whenever you have moved far enough to matter.
-                if (Game.GameTime - _lastRetask > RetaskIntervalMs &&
-                    player.Position.DistanceTo(_target) > RetaskMoveDistance)
+                // Re-aimed on a plain clock, so the two legs chain whether or not anybody moves.
+                if (Game.GameTime - _lastRetask > RetaskIntervalMs)
                 {
-                    // Aimed at the ADDRESS, never at the player, and approached from the west so
-                    // he comes down the street the right way round.
                     _lastRetask = Game.GameTime;
                     DriveTo(Kerb());
                 }
 
+                Unstick();
                 return;
             }
 
@@ -612,7 +638,7 @@ namespace Hoodrich.Supply
             // Put on the mark facing east, so he is never sat across the pavement at an angle.
             try
             {
-                if (_car != null && _car.Exists() && _car.Position.DistanceTo(ParkSpot) < 14f)
+                if (_car != null && _car.Exists() && _car.Position.DistanceTo(ParkSpot) < ArriveDistance + 4f)
                 {
                     _car.Position = ParkSpot;
                     _car.Heading = ParkHeading;
@@ -642,6 +668,93 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>
+        /// Notices when he has stopped moving, and does something about it.
+        ///
+        /// A car with a perfectly valid drive task and a speed of zero is the single most common
+        /// way any of this goes wrong: wedged on a kerb, nose to nose with a parked van, boxed
+        /// in at a junction by traffic that is itself waiting for him. Nothing in the game will
+        /// resolve that on its own, and the player just sees a delivery that never came.
+        ///
+        /// So it escalates. A few seconds still means nothing -- he could be at a light. Longer
+        /// than that and he backs up and is re-routed. Longer still and he is put on the road by
+        /// hand, behind you where possible so it is not done in front of your face. Being moved
+        /// is a bad outcome; a man frozen in the road forever is a worse one.
+        /// </summary>
+        private void Unstick()
+        {
+            if (_car == null || !_car.Exists() || _driver == null || !_driver.Exists()) return;
+
+            var now = Game.GameTime;
+
+            if (_car.Speed > 1.2f)
+            {
+                _stillSince = 0;
+                return;
+            }
+
+            if (_stillSince == 0)
+            {
+                _stillSince = now;
+                return;
+            }
+
+            var stuck = now - _stillSince;
+
+            if (stuck < StuckNudgeMs) return;
+
+            if (stuck < StuckMoveMs)
+            {
+                if (now - _lastNudge < 3000) return;
+                _lastNudge = now;
+
+                try
+                {
+                    // Reverse out of whatever it is, then take the route again.
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _driver.Handle, _car.Handle, 3, 1200);
+                    _lastRetask = 0;
+
+                    Log.Info("Delivery: backing him out of something.");
+                }
+                catch { /* the move below is the fallback */ }
+
+                return;
+            }
+
+            // Given up on him driving it. Put him on the road near the house instead.
+            try
+            {
+                var west = ParkSpot;
+                west.X -= ApproachWest;
+
+                var road = World.GetNextPositionOnStreet(west);
+                if (road == Vector3.Zero || road.DistanceTo(west) > 25f) road = west;
+
+                _car.Position = road;
+                Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, _car.Handle);
+
+                _stillSince = 0;
+                _lastRetask = 0;
+
+                DriveTo(ParkSpot);
+
+                Log.Warn("Delivery: he was wedged, so he has been put back on the road.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not unstick the delivery: " + ex.Message);
+            }
+        }
+
+        private int _stillSince;
+        private int _lastNudge;
+
+        /// <summary>Stopped this long and he gets backed out of it.</summary>
+        private const int StuckNudgeMs = 7000;
+
+        /// <summary>Stopped this long and he gets moved.</summary>
+        private const int StuckMoveMs = 22000;
+
+        /// <summary>
         /// Where he is aiming right now.
         ///
         /// A point up the street to the west until he is close, then the park spot itself. Two
@@ -663,8 +776,15 @@ namespace Hoodrich.Supply
 
                 try
                 {
+                    // Checked, not trusted. GetNextPositionOnStreet hands back the nearest road
+                    // node to a point, and the nearest node to a spot in the middle of a block
+                    // can be on another street entirely -- which he would then drive to, stop
+                    // at, and never leave, because as far as the task was concerned he had
+                    // arrived. Anything that comes back more than a bus length from where the
+                    // approach was meant to be is thrown away.
                     var onRoad = World.GetNextPositionOnStreet(west);
-                    if (onRoad != Vector3.Zero) return onRoad;
+
+                    if (onRoad != Vector3.Zero && onRoad.DistanceTo(west) < 25f) return onRoad;
                 }
                 catch
                 {

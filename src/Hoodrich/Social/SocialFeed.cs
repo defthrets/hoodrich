@@ -33,7 +33,13 @@ namespace Hoodrich.Social
 
         WarStarted,
         WarHeld,
-        WarLost
+        WarLost,
+
+        /// <summary>Took a package off somebody because you had nothing of your own.</summary>
+        FrontedWork,
+
+        /// <summary>Moved it and got paid the few hundred for it.</summary>
+        FrontedPaid
     }
 
     /// <summary>
@@ -295,7 +301,7 @@ namespace Hoodrich.Social
                         Gender = node["gender"].AsString("male"),
                         Pic = node["pic"].AsString(""),
                         Voice = node["voice"].AsString(""),
-                        Tint = TintFor(handle)
+                        Tint = TintFor(handle, node["gang"].AsString(""))
                     });
                 }
 
@@ -383,8 +389,25 @@ namespace Hoodrich.Social
         /// without a colour field on every one of them -- and so a handle you have never seen
         /// still gets one that looks deliberate.
         /// </summary>
-        private static Color TintFor(string handle)
+        private static Color TintFor(string handle, string gang = "")
         {
+            // Anybody who runs with a set wears the set. It is the first thing you would know
+            // about them from a glance at a timeline, and it means a screen full of purple is
+            // information rather than decoration.
+            if (!string.IsNullOrEmpty(gang))
+            {
+                switch (gang.ToLowerInvariant())
+                {
+                    case "families": return Color.FromArgb(255, 46, 138, 62);
+                    case "ballas":   return Color.FromArgb(255, 118, 62, 158);
+                    case "vagos":    return Color.FromArgb(255, 196, 158, 38);
+                    case "lost":     return Color.FromArgb(255, 132, 42, 38);
+                    case "koreans":  return Color.FromArgb(255, 52, 96, 152);
+                    case "armenian": return Color.FromArgb(255, 92, 84, 76);
+                    case "marabunta":return Color.FromArgb(255, 38, 132, 128);
+                }
+            }
+
             var hash = 17;
             foreach (var c in handle) hash = hash * 31 + c;
 
@@ -427,6 +450,7 @@ namespace Hoodrich.Social
 
             _burstLeft = 0;
             _burstSet = "";
+            _argueUntil = 0;
 
             Followers = 0;
             if (Changed != null) Changed();
@@ -448,8 +472,60 @@ namespace Hoodrich.Social
             for (var i = 0; i < 12; i++) Ambient(true);
         }
 
+        /// <summary>
+        /// The two sets going back and forth about a raid, for a while after it is over.
+        ///
+        /// A fight that produces one post and then silence reads as a scoreboard. A fight that
+        /// people are still arguing about four minutes later reads as something that happened
+        /// between people who have to keep living near each other -- so whoever lost it keeps
+        /// talking, whoever won it keeps answering, and it dies down on its own.
+        /// </summary>
+        public void Argue(string rival, bool held, int forMs = 150000)
+        {
+            _argueUntil = Game.GameTime + forMs;
+            _argueNext = Game.GameTime + 6000;
+            _argueSubject = rival ?? "";
+            _argueHeld = held;
+            _argueTheirTurn = !held; // whoever came off worse speaks first
+        }
+
+        private int _argueUntil;
+        private int _argueNext;
+        private string _argueSubject = "";
+        private bool _argueHeld;
+        private bool _argueTheirTurn;
+
+        /// <summary>Gap between one side and the other having their say.</summary>
+        private const int ArgueGapMinMs = 9000;
+        private const int ArgueGapMaxMs = 22000;
+
         public void Update()
         {
+            // Still arguing about the last one. Slower than a burst -- this is a conversation
+            // across an afternoon, not a reaction.
+            if (Game.GameTime < _argueUntil && Game.GameTime >= _argueNext && _burstLeft <= 0)
+            {
+                _argueNext = Game.GameTime + ArgueGapMinMs + _rng.Next(ArgueGapMaxMs - ArgueGapMinMs);
+
+                var set = _argueTheirTurn
+                    ? (_argueHeld ? "RivalMourns" : "RivalGloats")
+                    : (_argueHeld ? "OursGloats" : "OursMourns");
+
+                _argueTheirTurn = !_argueTheirTurn;
+
+                var said = Build(set, _argueSubject);
+
+                if (said != null)
+                {
+                    said.AboutYou = true;
+                    Add(said);
+                    Notify(said);
+                }
+
+                _nextAmbient = Game.GameTime + AmbientGapMinMs;
+                return;
+            }
+
             // A burst outranks the clock. Something just happened and the block is still talking
             // about it, so the ordinary chatter waits its turn.
             if (_burstLeft > 0 && Game.GameTime >= _burstNext)
@@ -608,6 +684,15 @@ namespace Hoodrich.Social
                     follow = "BallasTaunt";
                     break;
 
+                case SocialEvent.FrontedWork:
+                    // Somebody always notices, and half of them enjoy it.
+                    follow = _rng.NextDouble() < 0.5 ? "Ambient" : "BallasTaunt";
+                    break;
+
+                case SocialEvent.FrontedPaid:
+                    follow = "Ambient";
+                    break;
+
                 default:
                     return;
             }
@@ -663,6 +748,8 @@ namespace Hoodrich.Social
                 case SocialEvent.WarLost: return 1f;
 
                 case SocialEvent.RivalKilled: return 0.45f;
+                case SocialEvent.FrontedWork: return 0.55f;
+                case SocialEvent.FrontedPaid: return 0.40f;
                 case SocialEvent.Busted: return 0.7f;
                 case SocialEvent.Tagged: return 0.5f;
                 case SocialEvent.BigSale: return 0.35f;
@@ -700,6 +787,20 @@ namespace Hoodrich.Social
         }
 
         // ---- building a post ---------------------------------------------------
+
+        /// <summary>Whether anybody of this kind is still writing from the shared pool.</summary>
+        private bool AnyVoiceless(bool org)
+        {
+            foreach (var author in _authors)
+            {
+                if (author.HasVoice) continue;
+
+                var isOrg = string.Equals(author.Gender, "none", StringComparison.OrdinalIgnoreCase);
+                if (isOrg == org) return true;
+            }
+
+            return false;
+        }
 
         private Post Build(string set, string subject, int amount = 0)
         {
@@ -765,9 +866,16 @@ namespace Hoodrich.Social
 
                 var wantGang = GangFor(set);
 
+                // Somebody with a voice is normally excluded here -- they had their chance
+                // above and generic words in a written character's mouth is the whole thing
+                // this avoids. The exception is the businesses: every one of them now has its
+                // own voice, so there are no voice-less organisations left, and without this
+                // every business post would come back empty.
+                var noneLeft = wantOrg && !AnyVoiceless(true);
+
                 foreach (var author in _authors)
                 {
-                    if (author.HasVoice) continue;
+                    if (author.HasVoice && !noneLeft) continue;
 
                     var isOrg = string.Equals(author.Gender, "none", StringComparison.OrdinalIgnoreCase);
 
@@ -923,17 +1031,38 @@ namespace Hoodrich.Social
 
             try
             {
-                Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, Draw.FormatFor(post.Body));
+                // A post from somebody with no face has to say who it is from inside the line
+                // itself, because a ticker has nowhere else to put it.
+                var line = string.IsNullOrEmpty(PicFor(post.By))
+                    ? Colour(post.By) + "[" + post.By.Initial + "] " + post.By.Name + "~s~  " +
+                      post.By.Handle + "\n" + post.Body
+                    : post.Body;
+
+                Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, Draw.FormatFor(line));
 
                 const int chunk = 96;
-                for (var i = 0; i < post.Body.Length; i += chunk)
+                for (var i = 0; i < line.Length; i += chunk)
                 {
-                    var len = Math.Min(chunk, post.Body.Length - i);
+                    var len = Math.Min(chunk, line.Length - i);
                     Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME,
-                                  post.Body.Substring(i, len));
+                                  line.Substring(i, len));
                 }
 
                 var pic = PicFor(post.By);
+
+                if (string.IsNullOrEmpty(pic))
+                {
+                    // Nobody the game has a face for, so nobody borrows one. The name goes on
+                    // the front of the line in their set colour with their initial in front of
+                    // it, which is the same identity the timeline gives them -- rather than a
+                    // stock photograph of a stranger, which is what it used to be, and which
+                    // made every fabricated account look like it belonged to somebody else.
+                    _onScreen.Enqueue(Function.Call<int>(
+                        Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, false, true));
+
+                    Trim();
+                    return;
+                }
 
                 Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_MESSAGETEXT,
                               pic, pic, false, 0, post.By.Name, post.By.Handle);
@@ -941,20 +1070,45 @@ namespace Hoodrich.Social
                 var handle = Function.Call<int>(Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, false, false);
 
                 _onScreen.Enqueue(handle);
-
-                // A fourth pushes the first one off, so the column never grows past three.
-                while (_onScreen.Count > OnScreen)
-                {
-                    var oldest = _onScreen.Dequeue();
-
-                    try { Function.Call(Hash.THEFEED_REMOVE_ITEM, oldest); }
-                    catch { /* it will time out on its own */ }
-                }
+                Trim();
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not deliver a post: " + ex.Message);
             }
+        }
+
+        /// <summary>A fourth pushes the first one off, so the column never grows past three.</summary>
+        private void Trim()
+        {
+            while (_onScreen.Count > OnScreen)
+            {
+                var oldest = _onScreen.Dequeue();
+
+                try { Function.Call(Hash.THEFEED_REMOVE_ITEM, oldest); }
+                catch { /* it will time out on its own */ }
+            }
+        }
+
+        /// <summary>
+        /// The nearest text colour the game has to somebody's set.
+        ///
+        /// Notifications only take the handful of named colour codes, so this is as close as a
+        /// ticker can get to the disc the timeline draws.
+        /// </summary>
+        private static string Colour(Author by)
+        {
+            switch ((by.Gang ?? "").ToLowerInvariant())
+            {
+                case "families": return "~g~";
+                case "ballas":   return "~p~";
+                case "vagos":    return "~y~";
+                case "lost":     return "~r~";
+                case "koreans":  return "~b~";
+                case "marabunta":return "~b~";
+            }
+
+            return "~s~";
         }
 
         /// <summary>
@@ -965,24 +1119,20 @@ namespace Hoodrich.Social
         /// faces means the rotation is wide enough that two posts in a row rarely wear the
         /// same one.
         /// </summary>
+        /// <summary>
+        /// A photograph, or nothing at all.
+        ///
+        /// Only people the game actually has a face for get one. Everybody else used to be
+        /// handed a stock contact picture from a pool by gender, which meant a Balla with a
+        /// name you invented posting under a photograph of somebody who exists in this game
+        /// as somebody else entirely -- and one borrowed face gives the lie to all of it.
+        ///
+        /// An empty string here sends the post out as a ticker with the colour and the initial
+        /// instead, which is what the timeline shows for them anyway.
+        /// </summary>
         private static string PicFor(Author by)
         {
-            // Anybody the game already has a face for wears their own.
-            if (!string.IsNullOrEmpty(by.Pic)) return by.Pic;
-
-            var female = string.Equals(by.Gender, "female", StringComparison.OrdinalIgnoreCase);
-            var org = string.Equals(by.Gender, "none", StringComparison.OrdinalIgnoreCase);
-            var banger = !org && !string.IsNullOrEmpty(by.Gang);
-
-            var pool = org ? OrgPics
-                     : banger ? (female ? GangFemalePics : GangMalePics)
-                     : female ? FemalePics
-                     : MalePics;
-
-            var hash = 17;
-            foreach (var c in by.Handle) hash = hash * 31 + c;
-
-            return pool[Math.Abs(hash) % pool.Length];
+            return by.Pic ?? "";
         }
 
         private void Add(Post post)

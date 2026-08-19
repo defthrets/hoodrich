@@ -352,7 +352,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "davisdaily"
     },
     {
       "handle": "chamblocktalk",
@@ -361,7 +361,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "chamblocktalk"
     },
     {
       "handle": "ls_scanner_feed",
@@ -370,7 +370,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "ls_scanner_feed"
     },
     {
       "handle": "weazelnewsla",
@@ -379,7 +379,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "weazelnewsla"
     },
     {
       "handle": "southsidesports",
@@ -388,7 +388,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "southsidesports"
     },
     {
       "handle": "forumdrfoodie",
@@ -397,7 +397,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "forumdrfoodie"
     },
     {
       "handle": "lspd_watch_ls",
@@ -406,7 +406,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "lspd_watch_ls"
     },
     {
       "handle": "cluckin_deals",
@@ -415,7 +415,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "cluckin_deals"
     },
     {
       "handle": "bettapharma",
@@ -424,7 +424,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "bettapharma"
     },
     {
       "handle": "lifeinvader_ls",
@@ -433,7 +433,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "lifeinvader_ls"
     },
     {
       "handle": "radio_westcoast",
@@ -442,7 +442,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "radio_westcoast"
     },
     {
       "handle": "vinewood_gossip",
@@ -451,7 +451,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "vinewood_gossip"
     },
     {
       "handle": "ls_traffic",
@@ -460,7 +460,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "ls_traffic"
     },
     {
       "handle": "puravidadeals",
@@ -469,7 +469,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "puravidadeals"
     },
     {
       "handle": "bennys_ls",
@@ -478,7 +478,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "bennys_ls"
     },
     {
       "handle": "straw_neighbours",
@@ -487,7 +487,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "straw_neighbours"
     },
     {
       "handle": "elrancho_news",
@@ -496,7 +496,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "elrancho_news"
     },
     {
       "handle": "dogwalker_ls",
@@ -532,7 +532,7 @@
       "verified": false,
       "gender": "male",
       "pic": "",
-      "voice": ""
+      "voice": "cornerstore_sam"
     },
     {
       "handle": "barber_on_grove",
@@ -541,7 +541,7 @@
       "verified": false,
       "gender": "male",
       "pic": "",
-      "voice": ""
+      "voice": "barber_on_grove"
     },
     {
       "handle": "towtruck_terry",
@@ -550,7 +550,7 @@
       "verified": false,
       "gender": "male",
       "pic": "",
-      "voice": ""
+      "voice": "towtruck_terry"
     },
     {
       "handle": "ls_weather",
@@ -559,7 +559,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "ls_weather"
     },
     {
       "handle": "bailbonds_ls",
@@ -568,7 +568,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "bailbonds_ls"
     },
     {
       "handle": "pastor_willis",
@@ -577,7 +577,7 @@
       "verified": false,
       "gender": "male",
       "pic": "",
-      "voice": ""
+      "voice": "pastor_willis"
     },
     {
       "handle": "nailtech_niecy",
@@ -595,7 +595,7 @@
       "verified": false,
       "gender": "male",
       "pic": "",
-      "voice": ""
+      "voice": "mechanic_hector"
     },
     {
       "handle": "teacher_ms_ruiz",
@@ -631,7 +631,7 @@
       "verified": false,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "fishtaco_truck"
     },
     {
       "handle": "weazelnews",
@@ -640,7 +640,7 @@
       "verified": true,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "weazelnews"
     },
     {
       "handle": "lifeinvader",
@@ -649,7 +649,7 @@
       "verified": true,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "lifeinvader"
     },
     {
       "handle": "bleeter_ls",
@@ -658,7 +658,7 @@
       "verified": true,
       "gender": "none",
       "pic": "",
-      "voice": ""
+      "voice": "bleeter_ls"
     },
     {
       "handle": "m_desanta",
@@ -1570,6 +1570,28 @@
       "{source} {hearsay} the same car been coming to {here} every few days",
       "Nice whip on {here}. Way too nice for round here"
     ],
+    "FrontedWork": [
+      "Somebody back out on {here} holding work that ain't theirs. We all been there",
+      "{source} {hearsay} that package on {here} belongs to somebody else",
+      "Ain't no shame in fronting. Shame is sitting in the house with nothing",
+      "New face on the corner at {localspot}. Same corner, different week",
+      "You can always tell fronted work by how careful a man stands with it",
+      "{source} {hearsay} somebody had to go ask for a package this week",
+      "Out there in the {weathertalk} for twenty a gram. That's how it starts",
+      "Everybody act brand new til they gotta go ask somebody for work",
+      "Half this block eating off somebody else's package and pretending otherwise",
+      "Man on {here} grinding from zero {timeofday}. Respect where it's due"
+    ],
+    "FrontedPaid": [
+      "Somebody cleared a whole package on {here} and walked off paid",
+      "${money} for a day stood on {here}. Nobody writing songs about it",
+      "{source} {hearsay} the work on {here} got moved and the money went back straight",
+      "That's the difference right there. Half this block would've smoked it",
+      "Gave it back clean. Watch how quick they front him again",
+      "${money} today. Ain't nothing. Beats yesterday",
+      "Package gone off {here} by {timeofday}. Somebody put the hours in",
+      "Small money, honest count. That gets you the next one"
+    ],
     "AmbientOrg": [
       "Two for one on wings all weekend. No, we will not explain the meat",
       "Open til 2am all week. Your life choices are your own",
@@ -2167,6 +2189,353 @@
       ],
       "DriveBy": [
         "Whoever that was, the driving was better than the shooting"
+      ]
+    },
+    "weazelnews": {
+      "AmbientOrg": [
+        "BREAKING: sources say the story is developing. More as we get it",
+        "Our correspondent is at the scene. Our correspondent is always at the scene",
+        "POLL: is crime up, or are you just noticing it? Vote now",
+        "Tonight at 11: the thing you already saw on your phone, read out slowly",
+        "We stand by the report. We have amended the report. Both of these are true",
+        "An earlier bulletin named the wrong street. We regret the error and move on",
+        "EXCLUSIVE: a man has opinions about the mayor",
+        "Weazel News. You'd be a fool to watch anything else"
+      ],
+      "OrgEvent": [
+        "BREAKING: shots reported in {hood}. We are going live",
+        "Developing in {hood}. Police on scene, details thin",
+        "Our crew is heading to {hood} now. Stay with us",
+        "SOURCES: multiple down in {hood}. Unconfirmed"
+      ]
+    },
+    "weazelnewsla": {
+      "AmbientOrg": [
+        "LOCAL: residents describe the incident as loud",
+        "Police have not returned our calls. Police have never returned our calls",
+        "We are told to expect a statement within the hour. We are always told this",
+        "Traffic and weather on the tens, whether or not anything has changed",
+        "Our thoughts are with the affected families this evening"
+      ],
+      "OrgEvent": [
+        "LOCAL: gunfire in {hood} this evening. Residents told to stay inside",
+        "We have a reporter on the corner in {hood}. More at the top of the hour",
+        "Police have not confirmed numbers in {hood}"
+      ]
+    },
+    "lifeinvader": {
+      "AmbientOrg": [
+        "Your data is safe with us. Define safe. Define your. Define data",
+        "New feature nobody asked for is now mandatory",
+        "We have updated our terms. You have already agreed to them",
+        "Stalk your friends. LEGALLY. Lifeinvader",
+        "Somebody you may know has been standing outside your house"
+      ],
+      "OrgEvent": [
+        "Marking friends in {hood} as safe. Because that is a feature now",
+        "{hood} is trending. Congratulations, {hood}"
+      ]
+    },
+    "lifeinvader_ls": {
+      "AmbientOrg": [
+        "Trending in Los Santos right now, and none of it is good",
+        "Your memories from three years ago. You looked worse. Sorry",
+        "Ten people you barely know have updated their status"
+      ],
+      "OrgEvent": [
+        "Everyone in {hood} is posting the same eleven seconds of video",
+        "{hood} is the number one trend in Los Santos tonight"
+      ]
+    },
+    "bleeter_ls": {
+      "AmbientOrg": [
+        "Trending: something happened somewhere and everyone is furious",
+        "You have 47 unread notifications. None of them matter",
+        "Bleet responsibly. Or don't. We sell either one"
+      ],
+      "OrgEvent": [
+        "{hood} is all anybody is bleeting about tonight",
+        "Trending: {hood}. Nobody agrees on what happened"
+      ]
+    },
+    "davisdaily": {
+      "AmbientOrg": [
+        "Council has scheduled another consultation about Davis. Attendance expected: eleven",
+        "Rezoning meeting Thursday. The rezoning has already happened",
+        "Letters page is full again and it is all about parking",
+        "Our reporter walked the block and spoke to nobody. A classic",
+        "Davis crime figures released. Interpret them however suits you"
+      ],
+      "OrgEvent": [
+        "Gunfire reported in {hood}. We will run the council response nobody reads",
+        "Third incident in {hood} this month. We are counting even if nobody else is",
+        "Statement expected from the councilman about {hood}. It will say very little"
+      ]
+    },
+    "chamblocktalk": {
+      "AmbientOrg": [
+        "Anybody know what the sirens on Chamberlain were about? Asking for the group",
+        "Block meeting moved to Sunday. Bring a chair",
+        "Reminder: this page is for the neighborhood, not for arguing",
+        "Somebody's grandmother is looking for her cat. Grey, one ear"
+      ],
+      "OrgEvent": [
+        "Was that shots on {hood}? Everybody check in on here please",
+        "Kids are inside, doors are locked. Somebody say what happened in {hood}",
+        "Please stop posting videos of {hood} and go check on your neighbours"
+      ]
+    },
+    "straw_neighbours": {
+      "AmbientOrg": [
+        "Strawberry residents association meets first Tuesday. Nobody comes. We meet anyway",
+        "Reporting a broken street light for the fourth time",
+        "Please slow down on the residential streets. There are children"
+      ],
+      "OrgEvent": [
+        "We are hearing it from {hood} all the way over here",
+        "Reminder that the association has asked for lighting on {hood} for two years"
+      ]
+    },
+    "elrancho_news": {
+      "AmbientOrg": [
+        "Rancho: what the city promised, and what Rancho got",
+        "Community center hours cut again",
+        "Photo essay: the same corner, twenty years apart"
+      ],
+      "OrgEvent": [
+        "Shots in {hood}. The same block, the same story, the same silence after",
+        "We will cover {hood} properly. Nobody else will"
+      ]
+    },
+    "ls_scanner_feed": {
+      "AmbientOrg": [
+        "Units responding to a disturbance, Davis area",
+        "Shots heard call, Chamberlain. Multiple callers",
+        "Vehicle pursuit terminated. Supervisor called it off",
+        "Ambulance requested, no further details",
+        "Quiet night on the south side scanner. Enjoy it"
+      ],
+      "OrgEvent": [
+        "Multiple shots-fired calls, {hood}. Units en route",
+        "{hood}: officers requesting a second unit and an ambulance",
+        "Scanner going constant on {hood} right now"
+      ]
+    },
+    "lspd_watch_ls": {
+      "AmbientOrg": [
+        "Four units for a noise complaint. Four",
+        "Filming from the sidewalk is legal. Know your rights",
+        "Another use-of-force report filed and quietly closed",
+        "We log every stop we see. Somebody has to"
+      ],
+      "OrgEvent": [
+        "Logging the response time to {hood}. We will publish it",
+        "If you filmed anything in {hood}, keep it. Do not post it. Keep it",
+        "{hood} again. Watch how this gets written up"
+      ]
+    },
+    "southsidesports": {
+      "AmbientOrg": [
+        "Pickup at the Chamberlain courts tonight. Bring your own ball",
+        "Local kid got a scholarship. Whole block proud",
+        "League standings updated. Davis still top",
+        "Court resurfacing delayed again. Play around the cracks"
+      ],
+      "OrgEvent": [
+        "Court in {hood} is closed tonight. Obviously",
+        "Game is off. Everybody get home safe"
+      ]
+    },
+    "forumdrfoodie": {
+      "AmbientOrg": [
+        "Reviewed the taco truck on Forum. Nine out of ten. Lost a point for the queue",
+        "Cluckin Bell has changed the batter and I will be writing about it at length",
+        "Best breakfast under five dollars in Davis, ranked. Number one will not surprise you",
+        "The chicken spot is not what it was and we all know it",
+        "New place opened. Gave it a week. Reviewing the ashes"
+      ],
+      "OrgEvent": [
+        "Not reviewing anything in {hood} tonight. Hope everyone is alright",
+        "The taco truck packed up early. That tells you what {hood} sounded like"
+      ]
+    },
+    "cluckin_deals": {
+      "AmbientOrg": [
+        "Two for one Cluckin Little all week. Cluck yeah",
+        "Now hiring. No experience necessary. Genuinely none",
+        "Our fryers are back online. Thank you for your patience",
+        "Free Sprunk with any Bell Combo. While stocks last",
+        "The drive-thru speaker is fixed. Please stop shouting"
+      ],
+      "OrgEvent": [
+        "The {hood} location is closed for the evening. Staff are all fine",
+        "Doors are shut in {hood} tonight. Cluck safe out there"
+      ]
+    },
+    "fishtaco_truck": {
+      "AmbientOrg": [
+        "Parked on Innocence til we run out. We always run out",
+        "Cash only. Card machine is a rumour",
+        "Two fish, one shrimp, five dollars. That's the whole menu",
+        "Sold out. Sorry. Back tomorrow, earlier, with more"
+      ],
+      "OrgEvent": [
+        "Packing up early, {hood} is not it tonight",
+        "We are off the street. Back when it is quiet"
+      ]
+    },
+    "bettapharma": {
+      "AmbientOrg": [
+        "Betta Pharmaceuticals: ask your doctor whether feeling anything is right for you",
+        "Side effects may include the condition we are treating",
+        "Our latest trial had results. We are not obliged to say which",
+        "Now available without a prescription in select counties",
+        "Betta. Because you deserve to not feel this"
+      ],
+      "OrgEvent": [
+        "Our thoughts are with the community of {hood}",
+        "Betta Pharmaceuticals has no comment on {hood}"
+      ]
+    },
+    "radio_westcoast": {
+      "AmbientOrg": [
+        "Nothing but the classics all night. No talking. You're welcome",
+        "Requests are open. Please stop requesting the same record",
+        "Turn it up on the freeway. That's what it's for",
+        "Playing something your uncle put you on to. You know the one"
+      ],
+      "OrgEvent": [
+        "Taking the request line down for a bit. Something is going on in {hood}",
+        "Keeping it going for whoever is stuck inside in {hood} right now"
+      ]
+    },
+    "vinewood_gossip": {
+      "AmbientOrg": [
+        "A source close to the situation says there is a situation",
+        "SPOTTED: somebody famous doing something ordinary",
+        "The rumour is true. The other rumour is also true",
+        "Publicist denies it. Publicist would"
+      ],
+      "OrgEvent": [
+        "Nobody famous in {hood} tonight so we are not covering it. We are being honest",
+        "A source says a source heard something about {hood}"
+      ]
+    },
+    "ls_traffic": {
+      "AmbientOrg": [
+        "Backed up both directions on the Olympic. Take surface streets",
+        "Signal fault at Innocence and Davis. Treat as a four-way",
+        "Collision cleared. Delays remain because this is Los Santos",
+        "Roadworks overnight. There is no good time and they picked one"
+      ],
+      "OrgEvent": [
+        "Avoid {hood}. Police activity, road is shut both ways",
+        "Diversion in place around {hood}. Take the long way",
+        "{hood} is closed off. Expect it for the next hour"
+      ]
+    },
+    "puravidadeals": {
+      "AmbientOrg": [
+        "New stock in. First come, first served, no holds",
+        "We do not price match. We never have. Please stop asking",
+        "Closing an hour early Sunday. Family thing"
+      ],
+      "OrgEvent": [
+        "Closing up. {hood} can have the rest of the night",
+        "Shutters down early. Everybody get in"
+      ]
+    },
+    "bennys_ls": {
+      "AmbientOrg": [
+        "Lowriders done right. Hydraulics, paint, the whole thing",
+        "If it bounces, we built it",
+        "Booked out three weeks. Worth the wait, ask anybody",
+        "Bring the car, bring the money, leave the opinions"
+      ],
+      "OrgEvent": [
+        "Shop is shut. If your car is in here it is safe in here",
+        "Not opening tonight. {hood} needs a minute"
+      ]
+    },
+    "ls_weather": {
+      "AmbientOrg": [
+        "Marine layer through the morning, burning off by noon",
+        "Heat advisory for the basin. Check on your neighbors",
+        "Rain. Actual rain. Drive like you have seen it before",
+        "Clear and eighty-two. Same as yesterday. Same as tomorrow"
+      ],
+      "OrgEvent": [
+        "Clear and warm tonight, which is not what {hood} needed",
+        "Still eighty-one degrees at midnight. Nobody in {hood} is sleeping anyway"
+      ]
+    },
+    "bailbonds_ls": {
+      "AmbientOrg": [
+        "Ten percent down. We do not judge. We do collect",
+        "Arrested? Call. We answer at 4am because that is when you call",
+        "Skipping is a decision. So is what happens next"
+      ],
+      "OrgEvent": [
+        "Somebody from {hood} is going to need us before morning. We are open",
+        "Phones are on. They always are on nights like this"
+      ]
+    },
+    "towtruck_terry": {
+      "AmbientOrg": [
+        "Towing all night on the south side. Move your car or meet me",
+        "Your vehicle is at the yard. Bring ID and cash",
+        "I do not set the parking rules. I just profit from them"
+      ],
+      "OrgEvent": [
+        "Two cars shot up in {hood}. Not touching them til the police release them",
+        "If your car is stuck behind the tape in {hood}, call me tomorrow"
+      ]
+    },
+    "cornerstore_sam": {
+      "AmbientOrg": [
+        "Open til 2am all week. Your life choices are your own",
+        "Card machine is down. Cash only. I am as annoyed as you are",
+        "Somebody left a jacket. It is nice. Come get it before I do",
+        "No, I will not break a hundred for a soda"
+      ],
+      "OrgEvent": [
+        "Shutters are down. I have seen enough of {hood} tonight",
+        "Closed early. Sorry. You know why",
+        "Everybody in the shop when it started is alright. That is all I am saying"
+      ]
+    },
+    "barber_on_grove": {
+      "AmbientOrg": [
+        "Chair's open til seven. Walk-ins welcome, patience required",
+        "Fade, line-up, or both. Nothing exotic",
+        "Bring cash and a picture. Preferably a realistic picture"
+      ],
+      "OrgEvent": [
+        "Chair is closed tonight. Come back tomorrow, I will be here",
+        "Everybody in the shop got home. That is the only thing I care about"
+      ]
+    },
+    "mechanic_hector": {
+      "AmbientOrg": [
+        "It is the alternator. It is always the alternator",
+        "Quote is a quote. It is not a starting position",
+        "If it makes that noise, stop driving it and call me"
+      ],
+      "OrgEvent": [
+        "Half of {hood} is going to need bodywork by morning",
+        "Locked the gate. Cars can wait"
+      ]
+    },
+    "pastor_willis": {
+      "AmbientOrg": [
+        "Doors open Sunday, nine and eleven. Everybody is welcome. Everybody",
+        "Praying for this block tonight and every night",
+        "Food pantry restocked. Take what you need, no questions"
+      ],
+      "OrgEvent": [
+        "Doors are open tonight for anybody in {hood} who needs somewhere to sit",
+        "Praying for {hood}. Praying for whoever is on the ground",
+        "Come by the church. Nobody has to be on their own tonight"
       ]
     }
   }

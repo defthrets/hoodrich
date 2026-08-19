@@ -123,7 +123,7 @@ namespace Hoodrich.Missions
         public SocialFeed Social
         {
             get { return _social; }
-            set { _social = value; _tags.Social = value; }
+            set { _social = value; _tags.Social = value; _bike.Social = value; }
         }
 
         private SocialFeed _social;

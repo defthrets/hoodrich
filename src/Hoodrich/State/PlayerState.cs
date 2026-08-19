@@ -59,6 +59,32 @@ namespace Hoodrich.State
         public Action<int> RankedUp;
 
         /// <summary>
+        /// A package Stretch has fronted you, and where your sales counter stood when he did.
+        ///
+        /// Held here rather than in the stash, because the stash cannot tell his grams from
+        /// yours and should not have to -- once it is in the bag it is just product. What makes
+        /// it his is the promise, and this is the promise.
+        /// </summary>
+        public string FrontedDrug = "";
+        public float FrontedGrams;
+        public float FrontedAtGrams;
+
+        public bool HasFrontedWork => !string.IsNullOrEmpty(FrontedDrug) && FrontedGrams > 0f;
+
+        /// <summary>How much of his you have shifted since he handed it over.</summary>
+        public float FrontedMoved => Math.Max(0f, GramsSold - FrontedAtGrams);
+
+        /// <summary>Whether the package is gone and he owes you for it.</summary>
+        public bool FrontedWorkDone => HasFrontedWork && FrontedMoved >= FrontedGrams - 0.001f;
+
+        public void ClearFronted()
+        {
+            FrontedDrug = "";
+            FrontedGrams = 0f;
+            FrontedAtGrams = 0f;
+        }
+
+        /// <summary>
         /// Jobs finished for Lamar, by id.
         ///
         /// He works through his list in order and only opens up the choice once you have been
@@ -184,6 +210,9 @@ namespace Hoodrich.State
                 .Set("docksUnlocked", DocksUnlocked)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("followers", Followers)
+                .Set("frontedDrug", FrontedDrug)
+                .Set("frontedGrams", FrontedGrams)
+                .Set("frontedAtGrams", FrontedAtGrams)
                 .Set("missionsDone", MissionsJson())
                 .Set("stash", Stash.ToJson());
         }
@@ -202,6 +231,10 @@ namespace Hoodrich.State
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
                 Followers = Math.Max(0, doc["followers"].AsInt(0));
+
+                FrontedDrug = doc["frontedDrug"].AsString("");
+                FrontedGrams = doc["frontedGrams"].AsFloat(0f);
+                FrontedAtGrams = doc["frontedAtGrams"].AsFloat(0f);
 
                 MissionsDone.Clear();
                 foreach (var node in doc["missionsDone"].Items)

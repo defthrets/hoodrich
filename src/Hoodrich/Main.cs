@@ -213,6 +213,7 @@ namespace Hoodrich
                 _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing, _cfg);
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
+                _leaderTalk.Social = _social;
 
                 _fixerTalk = new FixerTalk(_fixer, _missions, _jobs, _crew, _state);
                 _fixer.Talk = _talk;

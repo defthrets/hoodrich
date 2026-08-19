@@ -36,8 +36,20 @@ namespace Hoodrich.Gangs
     {
         // ---- shape ------------------------------------------------------------
 
-        /// <summary>How long it runs before the last of them break off.</summary>
+        /// <summary>
+        /// How long it runs before the last of them break off, by how bad it is between you.
+        ///
+        /// A set with a small grievance sends a car and is gone in two minutes. A set at war
+        /// sends two and stays five. A set that hates you sends three and is still coming after
+        /// eight, which is long enough to run out of ammunition on your own block.
+        /// </summary>
+        private const int BeefMs = 120000;
         private const int WarMs = 300000;
+        private const int HatredMs = 480000;
+
+        /// <summary>Where one becomes the other.</summary>
+        private const float WarHeat = 0.35f;
+        private const float HatredHeat = 0.70f;
 
         /// <summary>Gap between carloads. Irregular on purpose.</summary>
         /// <summary>
@@ -50,9 +62,20 @@ namespace Hoodrich.Gangs
         private const int WaveGapMinMs = 22000;
         private const int WaveGapMaxMs = 42000;
 
-        /// <summary>Two turn up together at the start; after that it is usually one.</summary>
+        /// <summary>
+        /// Two turn up together at the start; after that it is usually one.
+        ///
+        /// That is the floor, for a set that barely knows you. Everything below scales up from
+        /// here with how badly they want you -- see Heat.
+        /// </summary>
         private const int OpeningCars = 2;
         private const float DoubleCarChance = 0.3f;
+
+        /// <summary>Extra cars in the opening wave when they hate you outright.</summary>
+        private const int OpeningCarsAtWorst = 2;
+
+        /// <summary>Added to the odds of two arriving together, at worst.</summary>
+        private const float DoubleCarChanceAtWorst = 0.5f;
 
         /// <summary>
         /// Where ours stand when a given man is the one being hit.
@@ -89,10 +112,30 @@ namespace Hoodrich.Gangs
         /// the weather.
         /// </summary>
         private const int RollIntervalMs = 600000;
-        private const float WarChance = 0.16f;
+        private const float WarChance = 0.08f;
+
+        /// <summary>
+        /// Added to the odds when the worst of them hates you outright.
+        ///
+        /// Somebody you have not crossed is a once-in-a-session event. Somebody whose people you
+        /// have been putting down all week is coming, and coming soon, and the difference
+        /// between those two is the entire point of keeping standings at all.
+        /// </summary>
+        private const float WarChanceAtWorst = 0.42f;
 
         /// <summary>Nothing starts within this of the last one ending.</summary>
         private const int CalmMs = 1800000;
+
+        /// <summary>How little quiet you get when they hate you. Half an hour becomes eight minutes.</summary>
+        private const int CalmAtWorstMs = 480000;
+
+        /// <summary>
+        /// How far standing has to fall before it counts as all the way bad.
+        ///
+        /// Rep with a rival starts at zero and drops five every time you drop one of theirs, so
+        /// this is roughly a dozen of their people. It bottoms out at -100 either way.
+        /// </summary>
+        private const float WorstRep = -60f;
 
         /// <summary>Stars handed over once it is finished, and not a moment before.</summary>
         private const int StarsAfter = 2;
@@ -179,7 +222,9 @@ namespace Hoodrich.Gangs
             // Only somebody who runs with a set has a set worth attacking.
             if (!_crew.IsAffiliated) return;
             if (_targets.Count == 0) return;
-            if (_rng.NextDouble() > WarChance) return;
+
+            // How likely this is at all is set by whoever currently hates you most.
+            if (_rng.NextDouble() > WarChance + WorstHeat() * WarChanceAtWorst) return;
 
             Begin();
         }
@@ -191,6 +236,13 @@ namespace Hoodrich.Gangs
 
             _target = _targets[_rng.Next(_targets.Count)];
 
+            _heat = Heat(_attacker);
+
+            // One number decides the whole shape of it.
+            if (_heat >= HatredHeat)      { _cars0 = 3; _warMs = HatredMs; }
+            else if (_heat >= WarHeat)    { _cars0 = 2; _warMs = WarMs; }
+            else                          { _cars0 = 1; _warMs = BeefMs; }
+
             _startedAt = Game.GameTime;
             _nextWave = 0;
             _kills = 0;
@@ -199,10 +251,20 @@ namespace Hoodrich.Gangs
 
             Mark();
             HoldTheLaw(true);
-            SpawnDefenders(DefendersPerCar * OpeningCars);
 
-            Notify.Important("~r~" + _attacker.Name + " rolling up on " + _target.Who + ".~s~ Get over there.");
-            Log.Info("Gang war: " + _attacker.Id + " attacking " + _target.Who + ".");
+            // Before a single ped exists. A ped works out who it hates when it is created and
+            // tasked, so setting this afterwards leaves the opening wave standing about.
+            SetWarRelationships(true);
+
+            SpawnDefenders(DefendersPerCar * _cars0);
+
+            Notify.Important("~r~" + _attacker.Name + " rolling up on " + _target.Who + ".~s~ " +
+                             (_heat > 0.6f ? "Deep this time. Get over there."
+                                           : "Get over there."));
+
+            Log.Info("Gang war: " + _attacker.Id + " attacking " + _target.Who +
+                     " (heat " + _heat.ToString("0.00") + ", " + _cars0 + " cars opening, " +
+                     (_warMs / 1000) + "s).");
 
             // Held until somebody actually fires. Cars pulling up is not news, and narrating
             // the drive over defeats the arrival.
@@ -212,8 +274,17 @@ namespace Hoodrich.Gangs
                 Social.On(SocialEvent.WarStarted, _attacker.Name);
             }
 
-            SendWave(OpeningCars);
+            SendWave(_cars0);
         }
+
+        /// <summary>How badly this particular lot want you, worked out when it kicks off.</summary>
+        private float _heat;
+
+        /// <summary>How many turned up in the opening wave.</summary>
+        private int _cars0 = OpeningCars;
+
+        /// <summary>How long this one runs for.</summary>
+        private int _warMs = WarMs;
 
         /// <summary>
         /// Switches the police off for the length of the raid, and back on when it ends.
@@ -248,12 +319,114 @@ namespace Hoodrich.Gangs
             }
         }
 
-        private GangDef PickAttacker()
+        /// <summary>
+        /// Makes the two sets hate each other for the length of the raid.
+        ///
+        /// This was the whole problem. Every ped was given the combat attributes, the alertness
+        /// and the standing order to fight hated targets around them -- and then found that
+        /// nobody nearby was hated, because the ambient gang relationship groups do not hate
+        /// each other by default. Thirty men stood in a street holding rifles, technically at
+        /// war, waiting for an enemy the game would not let them see.
+        ///
+        /// The previous relationship is read back first and restored on the way out, so a raid
+        /// does not permanently rewrite how those two sets treat each other everywhere else in
+        /// the game.
+        /// </summary>
+        private void SetWarRelationships(bool on)
         {
             var mine = _crew.Current;
-            if (mine == null) return null;
 
-            var options = new List<GangDef>();
+            if (mine == null || _attacker == null) return;
+            if (mine.GroupHash == 0 || _attacker.GroupHash == 0) return;
+
+            try
+            {
+                if (on)
+                {
+                    _wasTheirs = Function.Call<int>(Hash.GET_RELATIONSHIP_BETWEEN_GROUPS,
+                                                    _attacker.GroupHash, mine.GroupHash);
+                    _wasOurs = Function.Call<int>(Hash.GET_RELATIONSHIP_BETWEEN_GROUPS,
+                                                  mine.GroupHash, _attacker.GroupHash);
+                    _wasOnUs = Function.Call<int>(Hash.GET_RELATIONSHIP_BETWEEN_GROUPS,
+                                                  _attacker.GroupHash, PlayerGroup);
+
+                    Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelHate,
+                                  _attacker.GroupHash, mine.GroupHash);
+                    Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelHate,
+                                  mine.GroupHash, _attacker.GroupHash);
+
+                    // They came for the set you run with, so they came for you as well.
+                    Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelHate,
+                                  _attacker.GroupHash, PlayerGroup);
+
+                    Log.Info("Gang war: " + _attacker.Id + " and " + mine.Id + " now hate each other.");
+                    return;
+                }
+
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, _wasTheirs,
+                              _attacker.GroupHash, mine.GroupHash);
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, _wasOurs,
+                              mine.GroupHash, _attacker.GroupHash);
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, _wasOnUs,
+                              _attacker.GroupHash, PlayerGroup);
+
+                Log.Info("Gang war: relationships put back the way they were.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not set the war relationships: " + ex.Message);
+            }
+        }
+
+        /// <summary>SET_RELATIONSHIP_BETWEEN_GROUPS intensity for hate.</summary>
+        private const int RelHate = 5;
+
+        private static int PlayerGroup
+        {
+            get { return Function.Call<int>(Hash.GET_HASH_KEY, "PLAYER"); }
+        }
+
+        private int _wasTheirs = 4;
+        private int _wasOurs = 4;
+        private int _wasOnUs = 3;
+
+        /// <summary>
+        /// How badly one set wants you, from nothing at all to all the way.
+        ///
+        /// Standing with a rival is a single number that only ever goes down -- five off every
+        /// time you put one of their people on the floor. This turns it into the shape of what
+        /// comes back: how often, how many, and how little peace you get in between.
+        /// </summary>
+        private float Heat(GangDef gang)
+        {
+            if (gang == null) return 0f;
+
+            var rep = _crew.StandingFor(gang.Id).Rep;
+            if (rep >= 0f) return 0f;
+
+            var heat = rep / WorstRep;
+            return heat > 1f ? 1f : heat;
+        }
+
+        /// <summary>The worst of them. What the odds of anything happening at all are set by.</summary>
+        private float WorstHeat()
+        {
+            var worst = 0f;
+
+            foreach (var gang in Rivals())
+            {
+                var heat = Heat(gang);
+                if (heat > worst) worst = heat;
+            }
+
+            return worst;
+        }
+
+        /// <summary>Everybody your set is at odds with who has people to send.</summary>
+        private IEnumerable<GangDef> Rivals()
+        {
+            var mine = _crew.Current;
+            if (mine == null) yield break;
 
             foreach (var gang in _gangs.All)
             {
@@ -261,10 +434,46 @@ namespace Hoodrich.Gangs
                 if (!mine.IsRivalOf(gang.Id) && !gang.IsRivalOf(mine.Id)) continue;
                 if (gang.MemberModels.Count == 0) continue;
 
+                yield return gang;
+            }
+        }
+
+        /// <summary>
+        /// Whose turn it is.
+        ///
+        /// Weighted, not drawn from a hat. Everybody your set is at odds with is in with a
+        /// chance, but the one you have taken the most from is several times more likely to be
+        /// the one at the end of the street -- which is how it should read, because they are the
+        /// ones with something to come back for.
+        /// </summary>
+        private GangDef PickAttacker()
+        {
+            var options = new List<GangDef>();
+            var weights = new List<float>();
+            var total = 0f;
+
+            foreach (var gang in Rivals())
+            {
+                // A baseline so somebody you have never touched can still decide today is the
+                // day, and heat on top so somebody you have been at war with usually is.
+                var weight = 0.35f + Heat(gang) * 3f;
+
                 options.Add(gang);
+                weights.Add(weight);
+                total += weight;
             }
 
-            return options.Count == 0 ? null : options[_rng.Next(options.Count)];
+            if (options.Count == 0) return null;
+
+            var roll = (float)_rng.NextDouble() * total;
+
+            for (var i = 0; i < options.Count; i++)
+            {
+                roll -= weights[i];
+                if (roll <= 0f) return options[i];
+            }
+
+            return options[options.Count - 1];
         }
 
         private void Tick(Ped player, int now)
@@ -283,12 +492,13 @@ namespace Hoodrich.Gangs
             PushIn(now);
 
             // More of them, until the clock runs out.
-            if (elapsed < WarMs - WaveGapMinMs && now >= _nextWave)
+            if (elapsed < _warMs - WaveGapMinMs && now >= _nextWave)
             {
-                SendWave(_rng.NextDouble() < DoubleCarChance ? 2 : 1);
+                var twoUp = _rng.NextDouble() < DoubleCarChance + _heat * DoubleCarChanceAtWorst;
+                SendWave(twoUp ? 2 : 1);
             }
 
-            if (elapsed < WarMs) return;
+            if (elapsed < _warMs) return;
 
             // Time. Anybody still standing decides they have made their point.
             End(_showedUp && _kills > 0, null);
@@ -296,7 +506,11 @@ namespace Hoodrich.Gangs
 
         private void SendWave(int cars)
         {
-            _nextWave = Game.GameTime + WaveGapMinMs + _rng.Next(WaveGapMaxMs - WaveGapMinMs);
+            // Bad blood means less breathing room between carloads as well as more of them.
+            var gap = WaveGapMinMs + _rng.Next(WaveGapMaxMs - WaveGapMinMs);
+            gap = (int)(gap * (1f - _heat * 0.45f));
+
+            _nextWave = Game.GameTime + gap;
 
             for (var i = 0; i < cars; i++) SendCar();
 
@@ -591,13 +805,16 @@ namespace Hoodrich.Gangs
                         Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
                         Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
 
-                        // Wander first, fight on sight. Sent straight into combat they all run
-                        // to the same corner; left to wander they spread out and meet whatever
-                        // arrives, which looks like a block defending itself.
+                        // Wander, and nothing else. The combat task used to be issued on the
+                        // very next line, which immediately replaced the wander and then ended
+                        // by itself a moment later with nothing hated in range -- so instead of
+                        // walking the block they stood exactly where they were put, forever.
+                        //
+                        // They are given somebody to fight by Order(), the moment one of theirs
+                        // comes within sight of them. Until then this is a block, not a firing
+                        // line, and it should look like one.
                         Function.Call(Hash.TASK_WANDER_IN_AREA, ped.Handle,
                                       muster.X, muster.Y, muster.Z, 45f, 3f, 10f);
-
-                        Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, ped.Handle, 90f, 0);
 
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
                                       Function.Call<uint>(Hash.GET_HASH_KEY,
@@ -627,46 +844,184 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>
-        /// Keeps them moving toward the man they came for.
+        /// Gives everybody on both sides something to be doing, and names who.
         ///
-        /// Combat tasks make a ped fight whoever is in front of them, which is right until the
-        /// nearest enemy is dead and they stand in the road having achieved their objective.
-        /// Anybody not currently in a fight gets sent at the target again, so the pressure keeps
-        /// arriving at the same place instead of dissolving into the street.
+        /// Three separate things were stopping the raid from being a raid. Everybody was told to
+        /// get out of the car on the first tick, a hundred and fifty metres out, so a carload
+        /// arrived on foot as stragglers. Everybody was re-issued a nav task every six seconds,
+        /// which restarts the path from scratch, so nobody ever finished walking anywhere. And
+        /// nobody was ever given a NAME to fight -- "engage hated targets around you" is a
+        /// one-shot task that ends the moment there is nothing hated in range, which, before the
+        /// relationship fix above, there never was.
+        ///
+        /// So: they ride in until the car is on the block, then they get out. On foot, if there
+        /// is somebody to fight within sight they are told about that specific person, by
+        /// handle, and left alone until that person goes down. Only somebody with nobody to
+        /// fight gets walked toward the block, and only every ten seconds.
         /// </summary>
         private void PushIn(int now)
         {
             if (now < _nextPush) return;
             _nextPush = now + PushIntervalMs;
 
-            foreach (var ped in _rivals)
+            var player = Game.Player.Character;
+
+            for (var i = 0; i < _rivals.Count; i++) Order(_rivals[i], true, player, now);
+            for (var i = 0; i < _defenders.Count; i++) Order(_defenders[i], false, player, now);
+        }
+
+        /// <summary>One person, one order.</summary>
+        private void Order(Ped ped, bool theirs, Ped player, int now)
+        {
+            if (ped == null || !ped.Exists() || !ped.IsAlive) return;
+            if (_target == null) return;
+
+            WarOrder order;
+            if (!_orders.TryGetValue(ped.Handle, out order))
             {
-                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                order = new WarOrder();
+                _orders[ped.Handle] = order;
+            }
 
-                try
+            if (now < order.NextThink) return;
+            order.NextThink = now + ThinkMs;
+
+            try
+            {
+                // Still riding in. The driver is left to drive: they get out when the car is on
+                // the block, not the moment they spawn three streets away.
+                if (ped.IsInVehicle())
                 {
-                    if (Function.Call<bool>(Hash.IS_PED_IN_COMBAT, ped.Handle, 0)) continue;
+                    var car = ped.CurrentVehicle;
+                    var arrived = car == null || !car.Exists() ||
+                                  car.Position.DistanceTo(_target.Where) <= DismountRange;
 
-                    // Out of the car first if they are still in it, then on foot to the block.
-                    if (ped.IsInVehicle()) Function.Call(Hash.TASK_LEAVE_ANY_VEHICLE, ped.Handle, 0, 0);
+                    if (!arrived) return;
 
-                    Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, ped.Handle,
-                                  _target.Where.X, _target.Where.Y, _target.Where.Z,
-                                  2.0f, 20000, 6f, 0, 0f);
-
-                    Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, ped.Handle, 120f, 0);
+                    Function.Call(Hash.TASK_LEAVE_ANY_VEHICLE, ped.Handle, 0, 0);
+                    order.Target = 0;
+                    return;
                 }
-                catch
+
+                var foe = NearestFoe(ped, theirs, player);
+
+                if (foe != null)
                 {
-                    // They will find it or they will not.
+                    // Already on this one and it is still standing, so leave them to it.
+                    if (order.Target == foe.Handle) return;
+
+                    order.Target = foe.Handle;
+                    order.NextWalk = 0;
+                    order.Wandering = false;
+
+                    Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, foe.Handle, 0, 16);
+                    return;
                 }
+
+                var wasFighting = order.Target != 0;
+                order.Target = 0;
+
+                // Ours, with nobody left in front of them, go back to walking their own block
+                // rather than marching on the middle of it. Issued once, on the way out of a
+                // fight, and then left alone -- a wander task re-sent every few seconds is a
+                // man taking one step and starting again.
+                if (!theirs)
+                {
+                    var muster = _target != null && Musters.ContainsKey(_target.Who)
+                        ? Musters[_target.Who]
+                        : _target.Where;
+
+                    if (!wasFighting && order.Wandering) return;
+                    if (now < order.NextWalk) return;
+
+                    order.NextWalk = now + WalkIntervalMs;
+                    order.Wandering = true;
+
+                    Function.Call(Hash.TASK_WANDER_IN_AREA, ped.Handle,
+                                  muster.X, muster.Y, muster.Z, 45f, 3f, 10f);
+                    return;
+                }
+
+                // Theirs came for a specific place, so with nobody in front of them they walk
+                // in at it on foot. The car got them to the street; the last stretch is theirs.
+                if (now < order.NextWalk) return;
+                order.NextWalk = now + WalkIntervalMs;
+
+                if (ped.Position.DistanceTo(_target.Where) <= 10f) return;
+
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, ped.Handle,
+                              _target.Where.X, _target.Where.Y, _target.Where.Z,
+                              2.0f, 30000, 4f, 0, 0f);
+            }
+            catch
+            {
+                // They will find it or they will not.
             }
         }
 
+        /// <summary>
+        /// The closest person this one came here to fight.
+        ///
+        /// Theirs look for ours and for you; ours look for theirs. Handed over by handle, so the
+        /// combat task gets a name rather than a hope.
+        /// </summary>
+        private Ped NearestFoe(Ped ped, bool theirs, Ped player)
+        {
+            Ped best = null;
+            var bestDist = EngageRange;
+
+            var pool = theirs ? _defenders : _rivals;
+
+            for (var i = 0; i < pool.Count; i++)
+            {
+                var other = pool[i];
+                if (other == null || !other.Exists() || !other.IsAlive) continue;
+
+                var d = ped.Position.DistanceTo(other.Position);
+                if (d >= bestDist) continue;
+
+                bestDist = d;
+                best = other;
+            }
+
+            // As far as they are concerned you are one of ours.
+            if (theirs && player != null && player.Exists() && player.IsAlive)
+            {
+                var d = ped.Position.DistanceTo(player.Position);
+                if (d < bestDist) best = player;
+            }
+
+            return best;
+        }
+
+        private sealed class WarOrder
+        {
+            public int NextThink;
+            public int NextWalk;
+            public int Target;
+
+            /// <summary>Ours, currently walking their own block rather than fighting.</summary>
+            public bool Wandering;
+        }
+
+        private readonly Dictionary<int, WarOrder> _orders = new Dictionary<int, WarOrder>();
+
         private int _nextPush;
 
-        /// <summary>How often anybody idle is pointed back at the block.</summary>
-        private const int PushIntervalMs = 6000;
+        /// <summary>How often the whole street is looked at.</summary>
+        private const int PushIntervalMs = 1500;
+
+        /// <summary>How often any one person is given a new order.</summary>
+        private const int ThinkMs = 2500;
+
+        /// <summary>How often somebody with nobody to fight is re-pointed at the block.</summary>
+        private const int WalkIntervalMs = 10000;
+
+        /// <summary>How far off somebody will be picked as a target.</summary>
+        private const float EngageRange = 90f;
+
+        /// <summary>How close the car gets to the block before they get out of it.</summary>
+        private const float DismountRange = 55f;
 
         /// <summary>
         /// Lets the feed start the moment the first round goes off.
@@ -771,6 +1126,7 @@ namespace Hoodrich.Gangs
             // Before anything else. A cleanup that throws must not leave the player unable to
             // attract police for the rest of the session.
             HoldTheLaw(false);
+            SetWarRelationships(false);
 
             if (Social != null) Social.HoldUntilShots = false;
 
@@ -778,7 +1134,10 @@ namespace Hoodrich.Gangs
             Scatter();
 
             IsRunning = false;
-            _nextRoll = Game.GameTime + CalmMs;
+
+            // The worse it is between you, the sooner the next one. Somebody who has just lost
+            // four men on your block does not wait half an hour to come back.
+            _nextRoll = Game.GameTime + (int)(CalmMs - (CalmMs - CalmAtWorstMs) * _heat);
 
             ClearMarker();
             Clear();
@@ -811,7 +1170,14 @@ namespace Hoodrich.Gangs
                 _state.Touch();
 
                 Notify.Important("~g~You held it.~s~ " + kills + " of theirs down.");
-                if (Social != null) Social.On(SocialEvent.WarHeld, attacker == null ? "" : attacker.Name);
+
+                if (Social != null)
+                {
+                    Social.On(SocialEvent.WarHeld, attacker == null ? "" : attacker.Name);
+
+                    // And then they argue about it for a few minutes, the way people do.
+                    Social.Argue(attacker == null ? "" : attacker.Name, true);
+                }
 
                 return;
             }
@@ -825,11 +1191,19 @@ namespace Hoodrich.Gangs
                 Notify.Failure("they hit " + (_target == null ? "the block" : _target.Who) +
                                " and you were nowhere.");
 
-                if (Social != null) Social.On(SocialEvent.WarLost, attacker == null ? "" : attacker.Name);
+                if (Social != null)
+                {
+                    Social.On(SocialEvent.WarLost, attacker == null ? "" : attacker.Name);
+                    Social.Argue(attacker == null ? "" : attacker.Name, false);
+                }
+
                 return;
             }
 
             Notify.Ticker("~o~They pulled off.~s~ Nobody's calling that a win.");
+
+            // Nobody won it, so both sides claim they did.
+            if (Social != null) Social.Argue(attacker == null ? "" : attacker.Name, kills > 0);
         }
 
         /// <summary>Sends the survivors home rather than deleting them out from under you.</summary>
@@ -898,14 +1272,20 @@ namespace Hoodrich.Gangs
 
         // ---- hud ---------------------------------------------------------------
 
-        /// <summary>How long is left, and how it is going.</summary>
+        /// <summary>Who is on the block, and how it is going. No clock.</summary>
         public void Draw()
         {
             if (!IsRunning || _target == null) return;
 
-            var left = Math.Max(0, WarMs - (Game.GameTime - _startedAt));
-            var done = 1f - left / (float)WarMs;
-
+            // A countdown is deliberately not here. A draining clock makes a raid into a timed
+            // objective -- you watch the bar instead of the street, and the moment it empties
+            // you know it is over before it is over. Nobody standing in that yard knows how long
+            // this lasts.
+            //
+            // The bar is still worth having, so it shows something you could actually see from
+            // where you are standing: how many of them are still up. It fills as you put them
+            // down, so it reads as progress without ever telling you how long is left -- and a
+            // fresh carload pulling in pushes it back, which a clock could never do.
             const float x = 0.5f;
             const float y = 0.115f;
             const float w = 0.22f;
@@ -917,13 +1297,24 @@ namespace Hoodrich.Gangs
             Hud.Text(_attacker == null ? "" : _attacker.Name.ToUpperInvariant(),
                      x, y - 0.018f, 0.28f, Palette.TextDim, Hud.FontLabel);
 
+            var standing = 0;
+
+            for (var i = 0; i < _rivals.Count; i++)
+            {
+                var ped = _rivals[i];
+                if (ped != null && ped.Exists() && ped.IsAlive) standing++;
+            }
+
+            var sent = standing + _kills;
+            var done = sent <= 0 ? 0f : _kills / (float)sent;
+
             Hud.Rect(x, y, w + 0.004f, h + 0.004f, System.Drawing.Color.FromArgb(190, 8, 8, 10));
             Hud.Rect(x, y, w, h, System.Drawing.Color.FromArgb(160, 30, 32, 34));
 
             var filled = w * done;
-            Hud.Rect(x - (w - filled) * 0.5f, y, filled, h, Palette.Danger);
+            if (filled > 0f) Hud.Rect(x - (w - filled) * 0.5f, y, filled, h, Palette.Danger);
 
-            Hud.Text((left / 1000) + "s   ·   " + _kills + " down", x, y + 0.016f, 0.26f,
+            Hud.Text(standing + " still up   ·   " + _kills + " down", x, y + 0.016f, 0.26f,
                      Palette.TextDim, Hud.FontBody);
         }
     }

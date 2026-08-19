@@ -127,6 +127,17 @@ namespace Hoodrich.Missions
         /// <summary>Set by Main: the dialogue screen the courtyard exchange opens in.</summary>
         public Conversation Talk;
 
+        /// <summary>
+        /// Set by the runner. The block posts about the brawl WHILE it is happening.
+        ///
+        /// A fight that gets written up after the fact is a result. A fight that people are
+        /// posting about while you are still swinging is an event, and it is the same content
+        /// either way -- the only difference is when it arrives.
+        /// </summary>
+        public Hoodrich.Social.SocialFeed Social;
+
+        private int _nextFightPost;
+
         public BikePhase Phase { get; private set; } = BikePhase.None;
 
         public bool IsRunning => Phase != BikePhase.None;
@@ -258,7 +269,7 @@ namespace Hoodrich.Missions
             }
 
             Phase = BikePhase.Words;
-            GatherStragglers();
+            CallThemUp();
             ClearMarker();
 
             Notify.Important("~r~They're already here.~s~ " + Objective + ".");
@@ -322,6 +333,13 @@ namespace Hoodrich.Missions
 
         private void TickFight()
         {
+            // Somebody posts about it every few seconds while it is still going on.
+            if (Social != null && Game.GameTime >= _nextFightPost)
+            {
+                _nextFightPost = Game.GameTime + 4500 + _rng.Next(4000);
+                Social.On(Hoodrich.Social.SocialEvent.Brawl);
+            }
+
             var standing = 0;
 
             foreach (var ped in _rivals)
@@ -500,16 +518,19 @@ namespace Hoodrich.Missions
 
                 // Anybody who has drifted a long way behind is brought back rather than left to
                 // ride the whole route on their own. Four streets back is not following.
+                // Sent after you rather than moved to you. A bike that jumps to your back wheel
+                // is a homie who was never really riding with you, and the ride out IS the job.
                 if (ped.Position.DistanceTo(player.Position) > CatchUpRange)
                 {
                     try
                     {
-                        var behind = player.Position - player.ForwardVector * 6f;
-
-                        bike.Position = behind;
-                        bike.Heading = player.Heading;
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, ped.Handle, bike.Handle,
+                                      player.Position.X, player.Position.Y, player.Position.Z,
+                                      24f, 0, bike.Model.Hash, 786603, 8f, true);
                     }
                     catch { /* they will catch up or they will not */ }
+
+                    continue;
                 }
 
                 Escort(ped, bike, player);
@@ -517,12 +538,14 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// Anybody who never made it is put on the court when it goes off.
+        /// Tells anybody still on the road where it is kicking off.
         ///
-        /// A homie stuck on a kerb two neighbourhoods back is not a consequence of anything you
-        /// did, so he should not cost you the fight. Nobody is duplicated -- they are moved.
+        /// They used to be teleported onto the court, so a homie who came off two streets back
+        /// simply appeared beside you -- and the moment that can happen, none of the riding
+        /// matters. Now they are told and they ride there. If one of them misses the fight
+        /// because he clipped a kerb at a junction, that is a thing that happened.
         /// </summary>
-        private void GatherStragglers()
+        private void CallThemUp()
         {
             foreach (var ped in _homies)
             {
@@ -531,16 +554,25 @@ namespace Hoodrich.Missions
 
                 try
                 {
-                    if (ped.IsInVehicle()) ped.Task.LeaveVehicle();
+                    var bike = ped.CurrentVehicle;
 
-                    ped.Position = Ground(Courts).Around(4f);
-                    ped.Task.ClearAll();
+                    if (bike != null && bike.Exists())
+                    {
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, ped.Handle, bike.Handle,
+                                      Courts.X, Courts.Y, Courts.Z, 24f, 0, bike.Model.Hash,
+                                      786603, 8f, true);
+                    }
+                    else
+                    {
+                        Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, ped.Handle,
+                                      Courts.X, Courts.Y, Courts.Z, 2f, 60000, 5f, 0, 0f);
+                    }
 
-                    Log.Info("BikeRide: brought a straggler up to the court.");
+                    Log.Info("BikeRide: told a straggler where it is.");
                 }
                 catch (Exception ex)
                 {
-                    Log.Debug("Could not bring a homie up: " + ex.Message);
+                    Log.Debug("Could not call a homie up: " + ex.Message);
                 }
             }
         }
@@ -625,6 +657,7 @@ namespace Hoodrich.Missions
             if (player == null || !player.Exists()) return;
 
             Phase = BikePhase.Fight;
+            _nextFightPost = Game.GameTime + 2000;
 
             foreach (var ped in _rivals)
             {

@@ -337,6 +337,27 @@ namespace Hoodrich.Gangs
             node.Say("Where's it all coming from?", () => AskSource(def, gang),
                      _state.DocksUnlocked ? "You already know" : "Ask about his supply");
 
+            // Stretch, and only Stretch. He is the one who put you on in the first place, so
+            // he is the one you can go back to with nothing in your pockets.
+            if (FrontsWork(def) && _state.MissionsDone.Count > 0)
+            {
+                if (_state.FrontedWorkDone)
+                {
+                    node.Say("Moved all your work.", () => PayForWork(def, gang),
+                             "Get paid for his package");
+                }
+                else if (_state.HasFrontedWork)
+                {
+                    node.Say("Still got your work.", () => WorkProgress(def, gang),
+                             "You're still holding his package");
+                }
+                else
+                {
+                    node.Say("I'm broke. Front me something.", () => OfferWork(def, gang),
+                             "Sell a package for him");
+                }
+            }
+
             node.SayIf(false, "Coming soon",
                        "Got any work for me?", () => null,
                        "Ask for a job");
@@ -344,6 +365,128 @@ namespace Hoodrich.Gangs
             node.Leave("I'm out.");
             return node;
         }
+
+        // ---- his package -------------------------------------------------------
+
+        /// <summary>How much of his he hands over. Small: this is bus fare, not a re-up.</summary>
+        private const float FrontGrams = 20f;
+
+        /// <summary>What he pays when it is all gone.</summary>
+        private const int FrontPayMin = 250;
+        private const int FrontPayMax = 500;
+
+        /// <summary>
+        /// Whether this man will front you work.
+        ///
+        /// Stretch, by name. It is a Stretch thing to do -- he is the one who put you on, he
+        /// takes his cut off the top, and the arrangement is exactly as generous as he is.
+        /// </summary>
+        private static bool FrontsWork(LeaderDef def)
+        {
+            return def != null &&
+                   string.Equals(def.Name, "Stretch", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private DialogueNode OfferWork(LeaderDef def, GangDef gang)
+        {
+            var product = gang.Drugs.Count == 0 ? null : _drugs.Get(gang.Drugs[0]);
+
+            if (product == null)
+            {
+                var nothing = Node(def, gang, "Ain't got nothing spare right now.");
+                nothing.Say("Back up.", () => Root(def));
+                nothing.Leave();
+                return nothing;
+            }
+
+            if (_state.Stash.FreeSpace < FrontGrams)
+            {
+                var full = Node(def, gang,
+                    "Nigga, your bag is already full. What you asking me for?");
+
+                full.Say("Back up.", () => Root(def));
+                full.Leave();
+                return full;
+            }
+
+            var node = Node(def, gang,
+                "Look at you. Aight, check it -- " + FrontGrams.ToString("0") + " of my " +
+                product.Name.ToLowerInvariant() + ". You go stand on a corner and move all of " +
+                "it, then you come back and I break you off a lil something. That's it. " +
+                "You smoke it, you sell it and run off with my money, we gon have a whole " +
+                "different conversation.");
+
+            node.Say("Give it here.", () => TakeWork(def, gang, product), "Take his package");
+            node.Say("Nah.", () => Root(def));
+
+            return node;
+        }
+
+        private DialogueNode TakeWork(LeaderDef def, GangDef gang, DrugDef product)
+        {
+            var took = _state.Stash.AddBulk(product.Id, FrontGrams);
+
+            if (took <= 0f)
+            {
+                var no = Node(def, gang, "You got nowhere to put it. Sort yourself out first.");
+                no.Say("Back up.", () => Root(def));
+                no.Leave();
+                return no;
+            }
+
+            _state.FrontedDrug = product.Id;
+            _state.FrontedGrams = took;
+            _state.FrontedAtGrams = _state.GramsSold;
+            _state.Touch();
+
+            Notify.Important("~g~" + took.ToString("0") + "g of " + product.Name.ToLowerInvariant() +
+                             "~s~ off Stretch. Move all of it and go back to him.");
+
+            if (Social != null) Social.On(Hoodrich.Social.SocialEvent.FrontedWork, def.Name);
+
+            var node = Node(def, gang,
+                "Go on then. And don't be standing round here with it neither, that's my corner.");
+
+            node.Leave("Say less.");
+            return node;
+        }
+
+        private DialogueNode WorkProgress(LeaderDef def, GangDef gang)
+        {
+            var left = Math.Max(0f, _state.FrontedGrams - _state.FrontedMoved);
+
+            var node = Node(def, gang,
+                "You still holding " + left.ToString("0") + " of it. Come back when it's gone.");
+
+            node.Say("Back up.", () => Root(def));
+            node.Leave();
+            return node;
+        }
+
+        private DialogueNode PayForWork(LeaderDef def, GangDef gang)
+        {
+            var pay = FrontPayMin + _rng.Next(FrontPayMax - FrontPayMin);
+
+            _state.ClearFronted();
+            _state.Touch();
+
+            Game.Player.Money += pay;
+            _crew.AddRep(6f, "for moving his work");
+
+            if (Social != null) Social.On(Hoodrich.Social.SocialEvent.FrontedPaid, def.Name, pay);
+
+            var node = Node(def, gang,
+                "There you go. " + pay.ToString("N0") + ". Don't spend it all on nothing stupid. " +
+                "Come see me when you need another one.");
+
+            node.Leave("Appreciate it.");
+            return node;
+        }
+
+        private readonly Random _rng = new Random();
+
+        /// <summary>Set by Main, so the block hears when he puts you back on your feet.</summary>
+        public Hoodrich.Social.SocialFeed Social;
 
         private DialogueNode WhereToWork(LeaderDef def, GangDef gang)
         {

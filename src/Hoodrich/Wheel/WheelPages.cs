@@ -949,8 +949,8 @@ namespace Hoodrich.Wheel
             {
                 var toGo = DealerManager.GramsUntilSource(_state, _cfg.DocksUnlockGrams);
 
-                list.Add("Call the docks", "=", null,
-                    detail: "Ask Stretch where it comes from, once you've moved enough",
+                list.Add("Call the plug", "=", null,
+                    detail: "Dock worker. Ask Stretch about him once you've moved enough",
                     value: toGo.ToString("0") + "g more to sell",
                     enabled: false, disabledReason: "You don't know nobody at the port");
                 list.WithIcon(Icons.Locked);
@@ -959,9 +959,9 @@ namespace Hoodrich.Wheel
 
             var blocked = _dealers.RefusalReason(docks, _state, _crew);
 
-            list.Add("Call the docks", "=", () => Call(docks),
+            list.Add("Call the plug", "=", () => Call(docks),
                 detail: blocked == null
-                    ? docks.Name + " drives out to you with whatever you want"
+                    ? "Dock worker. " + docks.Name + " pulls up out front with whatever you want"
                     : blocked,
                 value: "everything, cheapest",
                 enabled: blocked == null,
