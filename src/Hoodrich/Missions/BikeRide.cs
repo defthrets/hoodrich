@@ -532,9 +532,19 @@ namespace Hoodrich.Missions
                     continue;
                 }
 
-                Escort(ped, bike, player);
+                // Only when they have actually fallen behind. Re-issuing a follow task every
+                // couple of seconds restarts it, so a homie riding perfectly well beside you
+                // was being told to start following you again, over and over, all the way
+                // across two neighbourhoods.
+                if (ped.Position.DistanceTo(player.Position) > TrailingRange)
+                {
+                    Escort(ped, bike, player);
+                }
             }
         }
+
+        /// <summary>Far enough back to be worth telling again. Anything closer is riding with you.</summary>
+        private const float TrailingRange = 28f;
 
         /// <summary>
         /// Tells anybody still on the road where it is kicking off.
