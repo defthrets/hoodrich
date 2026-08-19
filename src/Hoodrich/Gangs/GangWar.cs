@@ -903,20 +903,57 @@ namespace Hoodrich.Gangs
                     return;
                 }
 
+                // Already fighting somebody who is still standing. Whoever it is, it is not
+                // this code's business -- a man in a gunfight does not need new instructions.
+                //
+                // Asked this way rather than with IS_PED_IN_COMBAT, which wants a specific
+                // target to ask about and cannot answer "anybody at all".
+                var current = Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0);
+
+                if (current != 0)
+                {
+                    var busy = Entity.FromHandle(current) as Ped;
+
+                    if (busy != null && busy.Exists() && busy.IsAlive)
+                    {
+                        order.Target = current;
+                        order.Wandering = false;
+                        order.Swings = 0;
+                        return;
+                    }
+                }
+
                 var foe = NearestFoe(ped, theirs, player);
 
                 if (foe != null)
                 {
-                    // Already on this one and it is still standing, so leave them to it.
-                    if (order.Target == foe.Handle) return;
-
-                    order.Target = foe.Handle;
                     order.NextWalk = 0;
                     order.Wandering = false;
 
-                    Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, foe.Handle, 0, 16);
+                    // Anybody in reach, not one particular person. The game finds whoever is
+                    // nearest and in sight, and finds the next one by itself the moment that
+                    // one goes down -- which is the whole behaviour being asked for here.
+                    Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED,
+                                  ped.Handle, EngageRange + 30f, 0);
+
+                    order.Swings++;
+
+                    // Twice round and still nothing. Somebody is behind a wall or across a
+                    // fence and the area order cannot see a way to them, so he gets a name --
+                    // which makes him walk. He goes back to fighting whoever is in front of him
+                    // the moment he is actually in it, because of the check above.
+                    if (order.Swings >= 2)
+                    {
+                        order.Swings = 0;
+                        order.Target = foe.Handle;
+
+                        Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, foe.Handle, 0, 16);
+                    }
+
                     return;
                 }
+
+                order.Swings = 0;
 
                 var wasFighting = order.Target != 0;
                 order.Target = 0;
@@ -1002,6 +1039,9 @@ namespace Hoodrich.Gangs
 
             /// <summary>Ours, currently walking their own block rather than fighting.</summary>
             public bool Wandering;
+
+            /// <summary>Thinks in a row where they were told to fight and still are not.</summary>
+            public int Swings;
         }
 
         private readonly Dictionary<int, WarOrder> _orders = new Dictionary<int, WarOrder>();
