@@ -19,8 +19,14 @@ namespace Hoodrich.Supply
         /// <summary>He is driving over.</summary>
         Driving,
 
-        /// <summary>He has pulled up and is waiting on you.</summary>
-        Waiting
+        /// <summary>He has pulled up outside the house and is waiting on you.</summary>
+        Waiting,
+
+        /// <summary>Box out of the boot, walking it to the door.</summary>
+        Carrying,
+
+        /// <summary>Box down. Back to the car and gone.</summary>
+        Leaving
     }
 
     /// <summary>
@@ -34,6 +40,67 @@ namespace Hoodrich.Supply
     /// </summary>
     internal sealed class Delivery
     {
+        // ---- the drop ---------------------------------------------------------
+
+        /// <summary>How long he spends walking it in before it counts as delivered.</summary>
+        private const int CarryTimeoutMs = 45000;
+
+        /// <summary>Close enough to the door to put it down.</summary>
+        private const float DropRange = 2.2f;
+
+        /// <summary>Once the box is down, this long before he is let go entirely.</summary>
+        private const int LeaveMs = 25000;
+
+        /// <summary>
+        /// Something big enough to be worth carrying with two hands.
+        ///
+        /// Tried in order, and an install without any of them still gets the delivery -- it just
+        /// gets it without a box in shot, which is a worse scene rather than a broken one.
+        /// </summary>
+        private static readonly string[] BoxProps =
+        {
+            "prop_box_wood04a", "prop_boxpile_07d", "prop_cs_cardbox_01",
+            "prop_box_ammo04a", "prop_paper_box_01"
+        };
+
+        /// <summary>
+        /// Carrying a box with both hands. Checked before use, because a clip that is not in
+        /// this install fails silently and leaves him strolling with a crate glued to his hip.
+        /// </summary>
+        private static readonly string[] CarryDicts =
+        {
+            "anim@heists@box_carry@", "anim@heists@narcotics@trash", "missfinale_c2mcs_1"
+        };
+
+        private static readonly string[] CarryClips = { "idle", "walk", "base" };
+
+        /// <summary>
+        /// What he says, and when.
+        ///
+        /// Three moments worth a voice: taking the order, putting the box down, and pulling
+        /// off. A man who does the whole delivery in silence is a delivery system; a man who
+        /// grunts on the way past you is somebody doing you a favour at some personal risk.
+        /// </summary>
+        private static readonly string[] TakingLines = { "GENERIC_YES", "GENERIC_HOWS_IT_GOING" };
+        private static readonly string[] DroppedLines = { "GENERIC_THANKS", "GENERIC_YES" };
+        private static readonly string[] LeavingLines = { "GENERIC_BYE", "GENERIC_THANKS" };
+
+        private static readonly Random Rng = new Random();
+
+        private Prop _box;
+        private Vector3 _dropSpot;
+        private int _carryingSince;
+        private int _nextNudge;
+
+        /// <summary>What has been paid for and is still in the boot.</summary>
+        private string _owedDrug = "";
+        private float _owedGrams;
+
+        /// <summary>Set by Main: the house, its door, and what is kept there.</summary>
+        public Func<bool> AtHome;
+        public Vector3 HouseDoor;
+        public Economy.Stash House;
+
         /// <summary>How long the player holds the phone before he sets off.</summary>
         private const int CallMs = 4200;
 
@@ -206,6 +273,13 @@ namespace Hoodrich.Supply
         /// <summary>Returns a player-facing refusal, or null once the call is placed.</summary>
         public string Call(DealerDef def)
         {
+            // Only from the house. He is bringing a box to a door, so there has to be a door --
+            // and it stops the plug being a vending machine you carry around with you.
+            if (AtHome != null && !AtHome())
+            {
+                return "Call him from the house. He ain't meeting you on a corner.";
+            }
+
             if (def == null) return "No such contact.";
             if (IsActive) return _def.Name + " is already on his way.";
 
@@ -264,6 +338,14 @@ namespace Hoodrich.Supply
 
                 case DeliveryState.Driving:
                     TickDriving(player);
+                    return;
+
+                case DeliveryState.Carrying:
+                    TickCarrying();
+                    return;
+
+                case DeliveryState.Leaving:
+                    TickLeaving();
                     return;
 
                 case DeliveryState.Waiting:
@@ -382,6 +464,8 @@ namespace Hoodrich.Supply
 
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, car.Handle, 0f);
                 Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle, "HOODRCH");
+
+                OpenHisWindow(car);
             }
             catch (Exception ex)
             {
@@ -460,8 +544,9 @@ namespace Hoodrich.Supply
                 if (Game.GameTime - _lastRetask > RetaskIntervalMs &&
                     player.Position.DistanceTo(_target) > RetaskMoveDistance)
                 {
+                    // Aimed at the HOUSE, never at the player. He is delivering to an address.
                     _lastRetask = Game.GameTime;
-                    DriveTo(player.Position);
+                    DriveTo(Kerb());
                 }
 
                 return;
@@ -484,8 +569,303 @@ namespace Hoodrich.Supply
             Notify.Important("~g~" + _def.Name + " has pulled up.~s~ Go and see him.");
         }
 
+        /// <summary>The kerb outside the house, which is where he parks.</summary>
+        private Vector3 Kerb()
+        {
+            try
+            {
+                var street = World.GetNextPositionOnStreet(HouseDoor);
+                if (street != Vector3.Zero) return street;
+            }
+            catch
+            {
+                // Fall through to the door itself.
+            }
+
+            return HouseDoor;
+        }
+
+        /// <summary>
+        /// Takes the order and starts him walking it in.
+        ///
+        /// Nothing is credited here. It goes in the stash when the box is on the floor of the
+        /// house, because the whole point of watching a man carry it inside is that it has not
+        /// arrived until he has.
+        /// </summary>
+        public void Deliver(string drugId, float grams)
+        {
+            if (State != DeliveryState.Waiting) return;
+            if (_driver == null || !_driver.Exists()) return;
+
+            _owedDrug = drugId;
+            _owedGrams = grams;
+
+            _dropSpot = HouseDoor;
+            _carryingSince = Game.GameTime;
+            State = DeliveryState.Carrying;
+
+            try
+            {
+                _driver.Task.ClearAll();
+                Function.Call(Hash.TASK_LEAVE_VEHICLE, _driver.Handle, _car.Handle, 0);
+
+                GiveBox();
+
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _driver.Handle,
+                              _dropSpot.X, _dropSpot.Y, _dropSpot.Z, 1.2f, CarryTimeoutMs, 0f, 0.5f);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not start the drop-off: " + ex.Message);
+            }
+
+            Say(TakingLines);
+            Notify.Ticker("~g~He's bringing it in.~s~");
+        }
+
+        /// <summary>
+        /// Both front windows, down and staying down.
+        ///
+        /// Everything else about the car is blacked out to limo tint, which is the point of it
+        /// -- and it also means anybody sat inside is a silhouette. With the front windows down
+        /// he is a person you can see and talk through, which is what makes walking up to the
+        /// car feel like walking up to somebody rather than to a vehicle. The back stays dark.
+        ///
+        /// Re-asserted rather than set once: a window can come back up when the game reloads
+        /// the vehicle's state, and there is no cost to saying it again.
+        /// </summary>
+        private static readonly int[] FrontWindows = { 0, 1 };
+
+        private static void OpenHisWindow(Vehicle car)
+        {
+            if (car == null || !car.Exists()) return;
+
+            foreach (var window in FrontWindows)
+            {
+                try { Function.Call(Hash.ROLL_DOWN_WINDOW, car.Handle, window); }
+                catch { /* a shut window is not worth an exception */ }
+            }
+        }
+
+        /// <summary>One ambient line, over whatever he was already saying.</summary>
+        private void Say(string[] lines)
+        {
+            if (_driver == null || !_driver.Exists() || !_driver.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, _driver.Handle);
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _driver.Handle,
+                              lines[Rng.Next(lines.Length)], "SPEECH_PARAMS_FORCE");
+            }
+            catch
+            {
+                // A missing line costs nothing.
+            }
+        }
+
+        private void TickCarrying()
+        {
+            if (_driver == null || !_driver.Exists() || !_driver.IsAlive)
+            {
+                // He is gone but you have paid, so the goods are yours regardless.
+                Land();
+                State = DeliveryState.Leaving;
+                _stateSince = Game.GameTime;
+                return;
+            }
+
+            var arrived = _driver.Position.DistanceTo(_dropSpot) <= DropRange;
+            var late = Game.GameTime - _carryingSince > CarryTimeoutMs;
+
+            if (!arrived && !late)
+            {
+                // Re-issued, because a walk task through a gate and up a path does not always
+                // survive the first thing that gets in his way.
+                if (Game.GameTime >= _nextNudge)
+                {
+                    _nextNudge = Game.GameTime + 4000;
+
+                    try
+                    {
+                        Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _driver.Handle,
+                                      _dropSpot.X, _dropSpot.Y, _dropSpot.Z, 1.2f, 8000, 0f, 0.5f);
+                    }
+                    catch { /* he will get there or he will not */ }
+                }
+
+                return;
+            }
+
+            PutDown();
+            Land();
+            Say(DroppedLines);
+
+            State = DeliveryState.Leaving;
+            _stateSince = Game.GameTime;
+
+            try
+            {
+                _driver.Task.ClearAll();
+
+                if (_car != null && _car.Exists())
+                {
+                    Function.Call(Hash.TASK_ENTER_VEHICLE, _driver.Handle, _car.Handle,
+                                  20000, -1, 2f, 1, 0);
+                }
+            }
+            catch { /* he will find his own way back */ }
+        }
+
+        private void TickLeaving()
+        {
+            if (Game.GameTime - _stateSince < LeaveMs)
+            {
+                // Once he is behind the wheel, he goes.
+                if (_driver != null && _driver.Exists() && _car != null && _car.Exists() &&
+                    _driver.IsInVehicle(_car))
+                {
+                    // Said from the driver's seat, with the door shut, the way anybody says
+                    // goodbye when they are already leaving.
+                    Say(LeavingLines);
+
+                    try
+                    {
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _driver.Handle, _car.Handle,
+                                      18f, DriveStyle);
+                    }
+                    catch { /* the game drives him */ }
+
+                    Cancel(null);
+                }
+
+                return;
+            }
+
+            Cancel(null);
+        }
+
+        /// <summary>Puts the goods in the house. This is the moment it is actually yours.</summary>
+        private void Land()
+        {
+            if (string.IsNullOrEmpty(_owedDrug) || _owedGrams <= 0f) return;
+
+            var taken = House == null ? 0f : House.AddBulk(_owedDrug, _owedGrams);
+
+            Notify.Important("~g~Delivered.~s~ " + (taken / 1000f).ToString("0.#") +
+                             " kilos in the house.");
+
+            Log.Info("Delivery landed: " + taken.ToString("0") + "g " + _owedDrug + ".");
+
+            _owedDrug = "";
+            _owedGrams = 0f;
+        }
+
+        private void GiveBox()
+        {
+            TakeBox();
+
+            foreach (var name in BoxProps)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(900)) continue;
+
+                    _box = World.CreateProp(model, _driver.Position, false, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_box == null || !_box.Exists()) continue;
+
+                    // Held out in front with both hands, on the left hand bone, which is where
+                    // the carry animation puts a crate.
+                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
+                                  Function.Call<int>(Hash.GET_PED_BONE_INDEX, _driver.Handle, 60309),
+                                  0.05f, 0.10f, -0.18f, 0f, 0f, 0f,
+                                  false, false, false, false, 2, true);
+
+                    PlayCarry();
+                    return;
+                }
+                catch
+                {
+                    // Try the next prop.
+                }
+            }
+
+            Log.Debug("No box prop in this install; he will carry it in his hands.");
+        }
+
+        private void PlayCarry()
+        {
+            foreach (var dict in CarryDicts)
+            {
+                try
+                {
+                    if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) continue;
+
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
+
+                    foreach (var clip in CarryClips)
+                    {
+                        Function.Call(Hash.TASK_PLAY_ANIM, _driver.Handle, dict, clip,
+                                      4f, -4f, -1, 49, 0f, false, false, false);
+
+                        Log.Info("Delivery carry: " + dict + " / " + clip + ".");
+                        return;
+                    }
+                }
+                catch
+                {
+                    // Try the next dictionary.
+                }
+            }
+        }
+
+        /// <summary>Box off him and on the floor, where it stays.</summary>
+        private void PutDown()
+        {
+            if (_box == null || !_box.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.DETACH_ENTITY, _box.Handle, true, true);
+
+                var spot = _dropSpot;
+                spot.Z += 0.2f;
+
+                _box.Position = spot;
+                _box.IsPersistent = false;
+
+                // Left there rather than deleted. A box on the floor of the house is the
+                // receipt, and it disappearing the instant he turns round would undo the whole
+                // reason for watching him carry it in.
+                _box.MarkAsNoLongerNeeded();
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put the box down: " + ex.Message);
+            }
+
+            _box = null;
+        }
+
+        private void TakeBox()
+        {
+            try
+            {
+                if (_box != null && _box.Exists()) _box.Delete();
+            }
+            catch { /* teardown */ }
+
+            _box = null;
+        }
+
         private void TickWaiting(Ped player)
         {
+            OpenHisWindow(_car);
+
             if (_driver == null || !_driver.Exists() || !_driver.IsAlive)
             {
                 Cancel("Your delivery is gone.");

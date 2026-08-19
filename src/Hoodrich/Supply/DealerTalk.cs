@@ -168,33 +168,37 @@ namespace Hoodrich.Supply
             return Math.Max(Floor * lot, rounded);
         }
 
+        /// <summary>
+        /// Paying for it. Nothing arrives yet.
+        ///
+        /// The money leaves now and the goods land when the box is on the floor inside, because
+        /// the whole reason he walks it in is that it has not been delivered until he has. It
+        /// also means the only way to lose an order is to make it impossible for him to reach
+        /// the door -- which is a thing you did, not a thing that happened to you.
+        /// </summary>
         private DialogueNode Buy(DrugDef product, float grams, int cost)
         {
-            var taken = House.AddBulk(product.Id, grams);
-
-            if (taken <= 0.5f)
+            if (House.FreeSpace < grams - 0.5f)
             {
                 return Node("You got nowhere to put it. Sort that out first.");
             }
 
-            var charged = (int)Math.Round(cost * (taken / grams));
-
-            Game.Player.Money -= charged;
+            Game.Player.Money -= cost;
             _state.Touch();
 
             if (_crew != null) _crew.CreditPurchase();
 
-            Notify.Important("~y~-$" + charged.ToString("N0") + "~s~  " +
-                             (taken / 1000f).ToString("0.#") + " kilos of " +
-                             product.Name.ToLowerInvariant() + " at the house");
+            _delivery.Deliver(product.Id, grams);
 
-            Log.Info("Bought " + taken.ToString("0") + "g " + product.Id + " off " + Name +
-                     " for $" + charged + ".");
+            Notify.Important("~y~-$" + cost.ToString("N0") + "~s~  " +
+                             (grams / 1000f).ToString("0.#") + " kilos of " +
+                             product.Name.ToLowerInvariant());
 
-            var node = Node("It's at the house. Don't call me again this week.");
+            Log.Info("Bought " + grams.ToString("0") + "g " + product.Id + " off " + Name +
+                     " for $" + cost + "; he is walking it in.");
 
-            node.Say("Anything else.", Root);
-            node.Leave("We good.");
+            var node = Node("Stand aside. I'll put it inside for you.");
+            node.Leave("Go on then.");
             return node;
         }
     }

@@ -231,6 +231,13 @@ namespace Hoodrich
                 _delivery.Talk = _talk;
                 _delivery.TalkBuilder = () => _juanTalk.Root();
 
+                // He delivers to an address, so he needs the address -- and the only place you
+                // can call him from is standing at it.
+                _delivery.AtHome = () => _stash.AtDoor;
+                _dealers.AtHome = () => _stash.AtDoor;
+                _delivery.HouseDoor = _stash.Position;
+                _delivery.House = _stash.Stash;
+
                 var pages = new WheelPages(_cfg, _state, _drugs, _pricing, _cutting,
                                            _gangs, _crew, _turf, _dealers, _weapons, _market, _stash, _postUp, _leaders);
 

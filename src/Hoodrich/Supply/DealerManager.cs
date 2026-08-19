@@ -512,6 +512,9 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>Why this dealer will not deal with you, or null if they will.</summary>
+        /// <summary>Set by Main: whether the player is at the stash house right now.</summary>
+        public Func<bool> AtHome;
+
         public string RefusalReason(DealerDef def, PlayerState state, Affiliation crew)
         {
             if (def == null) return "No such contact.";
@@ -519,6 +522,14 @@ namespace Hoodrich.Supply
             if (def.Kind == DealerKind.Docks && !state.DocksUnlocked)
             {
                 return "You don't know nobody at the port";
+            }
+
+            // He brings a box to a door, so there has to be a door. Checked here as well as in
+            // Delivery itself, so the wheel greys the option out and says why rather than
+            // letting you press it and be told no.
+            if (def.Kind == DealerKind.Docks && AtHome != null && !AtHome())
+            {
+                return "Call him from the house";
             }
 
             if (state.Rank < def.MinRank)
