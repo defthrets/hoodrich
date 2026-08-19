@@ -65,6 +65,9 @@ namespace Hoodrich.Wheel
         public Action ShowSocials;
         public Func<int> Followers;
 
+        /// <summary>Set by Main: clears the feed and the follower count.</summary>
+        public Action WipeSocials;
+
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons, Market market,
@@ -1213,7 +1216,131 @@ namespace Hoodrich.Wheel
                 value: _state.RankName);
             page.WithIcon(Icons.Tattoo);
 
+            // Behind its own page, because none of it can be undone and a wheel is a thing you
+            // flick through. One accidental commit should never erase a save's worth of
+            // standing -- so the flick lands on a list of questions rather than on the act.
+            page.AddSub("Start over", "x", BuildStartOverPage,
+                detail: "Undo what you have done, in pieces or all at once",
+                value: "");
+            page.WithIcon(Icons.Warning);
+
             return page;
+        }
+
+        /// <summary>
+        /// Everything you can undo, in pieces.
+        ///
+        /// Separate entries rather than one big reset, because the reasons people want these are
+        /// unrelated: wanting to run with a different set has nothing to do with wanting to play
+        /// Lamar's chain again, and neither has anything to do with a follower count that ran
+        /// away with itself. One button for all three would make two of them collateral.
+        /// </summary>
+        private WheelPage BuildStartOverPage()
+        {
+            var page = new WheelPage("Start over", "None of this can be undone");
+
+            page.PanelTitle = "Where you are";
+            page.Row("Running with", _crew.IsAffiliated ? _crew.Current.Name : "nobody",
+                     _crew.IsAffiliated ? _crew.Current.Colour : (Color?)Palette.TextDim);
+            page.Row("Jobs finished", _state.MissionsDone.Count.ToString());
+            page.Row("Followers", Followers == null ? "0" : Followers().ToString("N0"), Palette.Cash);
+            page.Row("Respect", _state.Respect.ToString("N0"));
+
+            page.AddSub("The gangs", "%", () => Confirm(
+                    "Wipe the gangs",
+                    "Every standing, every body, every dollar you made them, and whoever you run " +
+                    "with. Your respect, your money and your product are untouched.",
+                    () => _crew.ResetEverything()),
+                detail: "Standings, affiliation and any debt",
+                value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
+            page.WithIcon(Icons.Mask);
+
+            page.AddSub("Lamar's work", "!", () => Confirm(
+                    "Forget the jobs",
+                    "He works down his list from the top again. What he already paid you stays paid.",
+                    () => _state.ForgetMissions()),
+                detail: "Play his chain from the beginning",
+                value: _state.MissionsDone.Count + " done",
+                enabled: _state.MissionsDone.Count > 0,
+                disabledReason: "You have not finished any yet");
+            page.WithIcon(Icons.Tick);
+
+            page.AddSub("Your socials", "@", () => Confirm(
+                    "Wipe your socials",
+                    "Followers back to nobody and the timeline cleared. The block carries on " +
+                    "talking; it just stops knowing who you are.",
+                    () => WipeSocials?.Invoke()),
+                detail: "Followers and the whole timeline",
+                value: Followers == null ? "" : Followers().ToString("N0") + " followers",
+                enabled: WipeSocials != null,
+                disabledReason: "Nothing to wipe");
+            page.WithIcon(Icons.Tattoo);
+
+            page.AddSub("All of it", "x", () => Confirm(
+                    "Wipe all of it",
+                    "Gangs, jobs and socials together. Respect, rank, money and product survive -- " +
+                    "wanting a clean slate almost never means wanting to be broke.",
+                    () =>
+                    {
+                        _crew.ResetEverything();
+                        _state.ForgetMissions();
+                        WipeSocials?.Invoke();
+                    }),
+                detail: "Gangs, jobs and socials at once",
+                value: "");
+            page.WithIcon(Icons.Warning);
+
+            return page;
+        }
+
+        /// <summary>
+        /// A page that asks before it does.
+        ///
+        /// Built rather than written out four times, and the wording is always specific about
+        /// what survives -- "are you sure" tells nobody anything they can weigh.
+        /// </summary>
+        private WheelPage Confirm(string title, string what, Action act)
+        {
+            var page = new WheelPage(title, "There is no undo");
+
+            page.PanelTitle = title;
+            foreach (var line in Split(what)) page.Row(line, "");
+
+            page.Add("Do it", "!", act,
+                detail: what,
+                value: "no undo");
+            page.WithIcon(Icons.Warning);
+
+            page.Add("Leave it", "-", null,
+                detail: "Nothing changes",
+                value: "",
+                enabled: false,
+                disabledReason: "Back out with LT");
+            page.WithIcon(Icons.Tick);
+
+            return page;
+        }
+
+        /// <summary>Breaks a sentence into panel rows, since a row is not a paragraph.</summary>
+        private static IEnumerable<string> Split(string text)
+        {
+            const int width = 46;
+
+            var line = "";
+
+            foreach (var word in text.Split(' '))
+            {
+                if (line.Length + word.Length + 1 > width)
+                {
+                    yield return line;
+                    line = word;
+                    continue;
+                }
+
+                line = line.Length == 0 ? word : line + " " + word;
+            }
+
+            if (line.Length > 0) yield return line;
         }
 
         /// <summary>How this gang currently reads to the player, in two words.</summary>

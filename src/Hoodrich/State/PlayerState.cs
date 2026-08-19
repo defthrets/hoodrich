@@ -80,6 +80,13 @@ namespace Hoodrich.State
             return false;
         }
 
+        /// <summary>Forgets every job, so Lamar works down his list from the top again.</summary>
+        public void ForgetMissions()
+        {
+            MissionsDone.Clear();
+            Touch();
+        }
+
         public void MarkDone(string missionId)
         {
             if (string.IsNullOrEmpty(missionId) || HasDone(missionId)) return;

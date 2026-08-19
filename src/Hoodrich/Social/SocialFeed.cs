@@ -385,6 +385,30 @@ namespace Hoodrich.Social
 
         // ---- the timeline ------------------------------------------------------
 
+        /// <summary>
+        /// Back to nobody knowing who you are.
+        ///
+        /// The timeline goes as well as the number. Followers at zero under a feed still full of
+        /// people talking about what you did last week is a contradiction you can read.
+        /// </summary>
+        public void Wipe()
+        {
+            _timeline.Clear();
+            _recent.Clear();
+            _recentSet.Clear();
+
+            _burstLeft = 0;
+            _burstSet = "";
+
+            Followers = 0;
+            if (Changed != null) Changed();
+
+            // A few pieces of ordinary chatter, so it is a quiet feed rather than a broken one.
+            for (var i = 0; i < 6; i++) Ambient(true);
+
+            Log.Info("Socials wiped by the player.");
+        }
+
         public void Start(int followers)
         {
             Followers = Math.Max(0, followers);

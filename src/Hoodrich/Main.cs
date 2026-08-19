@@ -240,6 +240,7 @@ namespace Hoodrich
                 pages.StashScreen = _stashScreen;
                 pages.ShowSocials = () => _socialScreen.Open();
                 pages.Followers = () => _social.Followers;
+                pages.WipeSocials = () => _social.Wipe();
 
                 
 

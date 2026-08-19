@@ -138,6 +138,44 @@ namespace Hoodrich.Gangs
             return null;
         }
 
+        /// <summary>
+        /// Wipes everything the gangs know about you.
+        ///
+        /// Affiliation, every standing, every body counted, every dollar credited -- back to the
+        /// day you arrived. Deliberately does NOT touch respect, rank, money or product: those
+        /// are yours, not theirs, and somebody wanting a clean slate with the sets almost never
+        /// means they also want to be broke.
+        ///
+        /// The relationship groups are put back first. Leaving those set while clearing the
+        /// record is how you end up in a world where every gang still likes you and nothing in
+        /// the readout explains why.
+        /// </summary>
+        public void ResetEverything()
+        {
+            var had = Current;
+
+            if (had != null) ClearRelationsFor(had);
+
+            foreach (var hash in _touchedGroups)
+            {
+                try { ClearBoth(RelRespect, hash); }
+                catch { /* teardown */ }
+            }
+
+            _touchedGroups.Clear();
+            _standings.Clear();
+
+            Current = null;
+            WorkingACorner = false;
+
+            if (Loan != null) Loan.Clear();
+
+            Notify.Important("~o~You're nobody to any of them again.~s~ Standings wiped.");
+            Log.Info("Gang standings and affiliation reset by the player.");
+
+            if (Social != null && had != null) Social.On(SocialEvent.LeftGang, had.Name);
+        }
+
         public void Leave()
         {
             if (Current == null) return;

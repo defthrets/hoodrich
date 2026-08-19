@@ -40,6 +40,16 @@ namespace Hoodrich.Gangs
 
         public bool IsActive => Principal > 0;
 
+        /// <summary>Wipes the debt without paying it. Used only by the full gang reset.</summary>
+        public void Clear()
+        {
+            GangId = "";
+            Principal = 0;
+            Vig = 0;
+            DueDay = 0;
+            MissedPeriods = 0;
+        }
+
         public bool IsOverdue => IsActive && CurrentDay() >= DueDay;
 
         /// <summary>Days until the vig is due; negative once it is late.</summary>
