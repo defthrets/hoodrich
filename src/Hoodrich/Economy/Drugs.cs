@@ -10,6 +10,21 @@ namespace Hoodrich.Economy
     {
         public float Quantity = 1f;
         public int Price = 20;
+
+        /// <summary>
+        /// What it is called out loud, when it is called something.
+        ///
+        /// An eighth of coke is an 8-ball and a tenth of a gram of meth is a point. Nobody
+        /// standing on a corner says "0.1 grams". Blank falls back to the plain amount.
+        /// </summary>
+        public string Label = "";
+
+        /// <summary>The name if it has one, otherwise the amount.</summary>
+        public string Say(DrugDef drug)
+        {
+            if (!string.IsNullOrEmpty(Label)) return Label;
+            return drug == null ? Quantity.ToString("0.#") : drug.Amount(Quantity);
+        }
     }
 
     /// <summary>A product line the player can buy, hold and sell.</summary>
@@ -123,6 +138,45 @@ namespace Hoodrich.Economy
                 ? UnitName.Substring(0, UnitName.Length - 1)
                 : UnitName;
 
+        /// <summary>
+        /// The whole ladder on one line -- "1g $20  ·  3.5g $50  ·  ounce $200".
+        ///
+        /// Every price here is exactly the price that gets paid. No multipliers are applied to
+        /// it anywhere, so what this line says is what the money will be.
+        /// </summary>
+        public string Ladder()
+        {
+            if (Deals.Count == 0) return "$" + BasePrice.ToString("0") + " a " + Singular;
+
+            var line = "";
+            foreach (var deal in Deals)
+            {
+                if (line.Length > 0) line += "  ·  ";
+                line += deal.Say(this) + " $" + deal.Price.ToString("N0");
+            }
+
+            return line;
+        }
+
+        /// <summary>The smallest thing anybody buys, which is what a unit is worth.</summary>
+        public int UnitPrice
+        {
+            get
+            {
+                if (Deals.Count == 0) return (int)Math.Round(BasePrice);
+
+                var best = Deals[0];
+                foreach (var deal in Deals)
+                {
+                    if (deal.Quantity < best.Quantity) best = deal;
+                }
+
+                return best.Quantity <= 0f
+                    ? (int)Math.Round(BasePrice)
+                    : (int)Math.Round(best.Price / best.Quantity);
+            }
+        }
+
         public override string ToString() => Id;
     }
 
@@ -200,7 +254,8 @@ namespace Hoodrich.Economy
                         def.Deals.Add(new Deal
                         {
                             Quantity = Math.Max(0.1f, deal["quantity"].AsFloat(1f)),
-                            Price = Math.Max(1, deal["price"].AsInt(1))
+                            Price = Math.Max(1, deal["price"].AsInt(1)),
+                            Label = deal["label"].AsString("")
                         });
                     }
                 }

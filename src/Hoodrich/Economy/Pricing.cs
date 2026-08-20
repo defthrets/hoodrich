@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.Gangs;
@@ -8,11 +9,17 @@ using Hoodrich.Territory;
 namespace Hoodrich.Economy
 {
     /// <summary>
-    /// Works out what product is worth right now.
+    /// What product is worth, and how busy the corner is.
     ///
-    /// The model is deliberately transparent: a base price walked through a handful of named
-    /// multipliers, each of which the player can feel and reason about. Night is the loudest,
-    /// then purity, then whose block you are standing on.
+    /// The price is the price. A gram of weed is twenty dollars at four in the afternoon on
+    /// your own block at rank one, and it is twenty dollars at two in the morning on somebody
+    /// else's at rank nine. Every figure in the catalogue is paid out literally, so a number
+    /// on screen can always be checked against the number you were quoted.
+    ///
+    /// What the hour and the block and the rank move instead is DEMAND -- how often somebody
+    /// walks up to you. That is the same idea told honestly: a corner at 2am is busier, not
+    /// dearer. Purity keeps its teeth through <see cref="BadCutChance"/> rather than through
+    /// price; nobody knocks money off for a weak gram, they take it, clock it, and stop coming.
     /// </summary>
     internal sealed class Pricing
     {
@@ -24,10 +31,13 @@ namespace Hoodrich.Economy
         private const float NightPeakMultiplier = 3.0f;
 
         /// <summary>
-        /// Price floor for worthless product. At 100% purity this is 1.0; at the 20% floor it
-        /// is 0.48, so cutting 1g into 5g grosses far more but each unit is near-garbage.
+        /// Demand never dies completely and never runs away, whatever the multipliers do.
+        ///
+        /// Without a ceiling a rank-nine dealer on friendly turf with lookouts at 2am gets a
+        /// customer on essentially every scan, which is not a corner, it is a queue.
         /// </summary>
-        private const float PurityFloor = 0.35f;
+        private const float MinDemand = 0.35f;
+        private const float MaxDemand = 2.6f;
 
         private readonly Settings _cfg;
         private readonly PlayerState _state;
@@ -94,30 +104,40 @@ namespace Hoodrich.Economy
         /// <summary>Heat makes buyers jumpy and they haggle harder.</summary>
         public float NotorietyMultiplier => 1f - Math.Min(0.35f, _state.Notoriety / 100f * 0.35f);
 
-        /// <summary>Cut product is worth less per gram, but never nothing.</summary>
-        public static float PurityMultiplier(float purity)
-        {
-            purity = purity < Stash.MinPurity ? Stash.MinPurity : purity > Stash.MaxPurity ? Stash.MaxPurity : purity;
-            return PurityFloor + (1f - PurityFloor) * purity;
-        }
-
         public float TurfMultiplier => Turf == null ? 1f : Turf.TurfPriceMultiplier;
 
         public float LookoutMultiplier => Crew == null ? 1f : Crew.LookoutMultiplier;
 
-        /// <summary>Per-gram street price for packaged product of a given purity.</summary>
+        /// <summary>
+        /// How busy it is out here.
+        ///
+        /// Everything that used to bend the price bends this instead: the hour, your rank, the
+        /// heat on you, whose block it is, whether anybody is watching your back, and what the
+        /// market is doing to that particular product. High demand means people keep walking
+        /// up. It does not mean they pay more, because they do not.
+        /// </summary>
+        public float Demand(DrugDef drug)
+        {
+            var d = NightMultiplier
+                    * RankMultiplier
+                    * NotorietyMultiplier
+                    * TurfMultiplier
+                    * LookoutMultiplier
+                    * (Market == null || drug == null ? 1f : Market.Multiplier(drug.Id));
+
+            return d < MinDemand ? MinDemand : d > MaxDemand ? MaxDemand : d;
+        }
+
+        /// <summary>
+        /// What one unit sells for -- a gram, a pill, a joint.
+        ///
+        /// Straight off the bottom of the deal ladder, unmodified. The purity argument is kept
+        /// because plenty of callers have it to hand, and ignored because weak product does not
+        /// sell cheaper, it gets refused.
+        /// </summary>
         public float StreetPrice(DrugDef drug, float purity)
         {
-            if (drug == null) return 0f;
-
-            return drug.BasePrice
-                   * NightMultiplier
-                   * RankMultiplier
-                   * NotorietyMultiplier
-                   * PurityMultiplier(purity)
-                   * TurfMultiplier
-                   * LookoutMultiplier
-                   * (Market == null ? 1f : Market.Multiplier(drug.Id));
+            return drug == null ? 0f : drug.UnitPrice;
         }
 
         /// <summary>
@@ -135,29 +155,49 @@ namespace Hoodrich.Economy
         }
 
         /// <summary>
-        /// Everything that moves a price, without the price.
+        /// What a named deal pays. The number written in the catalogue, and nothing else.
         ///
-        /// So a deal with a written-down headline -- an ounce for two hundred -- can still be
-        /// worth more at 2am on somebody else's block and less when it has been stepped on,
-        /// which is the entire economy, without the headline being recomputed into $560.
+        /// An ounce is two hundred dollars. Not two hundred adjusted for the hour, or two
+        /// hundred less what the cut did to it -- two hundred.
         /// </summary>
-        public float Multiplier(DrugDef drug, float purity)
-        {
-            if (drug == null || drug.BasePrice <= 0f) return 1f;
-            return StreetPrice(drug, purity) / drug.BasePrice;
-        }
-
-        /// <summary>What a named deal is worth right now.</summary>
         public int DealValue(DrugDef drug, Deal deal, float purity)
         {
-            if (drug == null || deal == null) return 0;
-            return Math.Max(1, (int)Math.Round(deal.Price * Multiplier(drug, purity)));
+            return deal == null ? 0 : Math.Max(1, deal.Price);
         }
 
+        /// <summary>
+        /// What a loose quantity is worth, valued off the ladder rather than a flat per-unit
+        /// rate: the biggest deal that fits gets used first, and whatever is left over goes at
+        /// the single-unit price. So 30g of weed is an ounce and two singles -- $240 -- which is
+        /// what somebody would actually get for it, not 30 x $20.
+        /// </summary>
         public int SaleValue(DrugDef drug, float grams, float purity)
         {
             if (drug == null || grams <= 0f) return 0;
-            return Math.Max(1, (int)Math.Round(StreetPrice(drug, purity) * grams));
+            if (drug.Deals.Count == 0) return Math.Max(1, (int)Math.Round(drug.BasePrice * grams));
+
+            var left = grams;
+            var total = 0f;
+
+            // Largest first, so weight goes at weight prices.
+            var order = new List<Deal>(drug.Deals);
+            order.Sort((a, b) => b.Quantity.CompareTo(a.Quantity));
+
+            foreach (var deal in order)
+            {
+                if (deal.Quantity <= 0f) continue;
+
+                var lots = (int)(left / deal.Quantity);
+                if (lots <= 0) continue;
+
+                total += lots * deal.Price;
+                left -= lots * deal.Quantity;
+            }
+
+            // The tail goes at the single-unit rate, which is the dearest way to sell it.
+            if (left > 0.005f) total += left * drug.UnitPrice;
+
+            return Math.Max(1, (int)Math.Round(total));
         }
 
         public int PurchaseCost(DrugDef drug, float grams, float supplierMultiplier = 1f)
@@ -167,19 +207,32 @@ namespace Hoodrich.Economy
         }
 
         /// <summary>
-        /// Chance a buyer notices the product is stepped on. Heavily cut product gets you
-        /// refused, and sometimes gets you a problem.
+        /// Chance a buyer notices the product is stepped on.
+        ///
+        /// This is now the only thing purity does, so it has to do it properly. Cutting a kilo
+        /// into three used to just lower the per-gram price, which still left you ahead -- the
+        /// maths always said cut it further. Now the price never moves and the refusals do, so
+        /// stretching product is a straight gamble against how much of it you can move before
+        /// the block decides you sell rubbish.
+        ///
+        /// Clean product is never refused. At the 20% floor it is turned down two times in
+        /// three, which is what garbage deserves.
         /// </summary>
         public static float BadCutChance(float purity)
         {
             if (purity >= 0.9f) return 0f;
-            return Math.Min(0.45f, (0.9f - purity) * 0.6f);
+            return Math.Min(0.68f, (0.9f - purity) * 0.98f);
         }
 
-        /// <summary>Short human-readable reason the current price is what it is.</summary>
+        /// <summary>
+        /// Short human-readable reason the corner is as busy as it is.
+        ///
+        /// Deliberately not a price context any more: the prices do not move, so a line
+        /// explaining why they had would be a lie printed under the numbers it was lying about.
+        /// </summary>
         public string PriceContext()
         {
-            var parts = IsNight ? "night x" + NightMultiplier.ToString("0.0") : "daytime";
+            var parts = IsNight ? "night, busy" : "daytime";
 
             if (Turf != null && Math.Abs(TurfMultiplier - 1f) > 0.01f)
             {

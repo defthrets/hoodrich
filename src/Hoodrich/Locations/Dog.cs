@@ -19,9 +19,14 @@ namespace Hoodrich.Locations
     /// has put him, and puts him back in the yard on Forum Drive -- then leaves him alone to be
     /// the game's dog, at the house he used to live at.
     ///
-    /// The honest limitation: he has to EXIST to be moved, and the game only creates him near
-    /// whichever house Franklin currently lives in. So the first move happens when you are up at
-    /// the mansion. After that he is held here, and held is the whole job.
+    /// The limitation that used to come with that: he has to EXIST to be moved, and the game
+    /// only creates him near whichever house Franklin currently lives in -- post-story, the
+    /// mansion. So getting him home began with a drive up the hill to fetch him.
+    ///
+    /// Now there is a fallback. If there is no Chop anywhere near and you are at the house, one
+    /// is put in the yard. The real one is still always preferred and always wins: if the
+    /// game's own dog turns up later, ours is removed on sight and his is kept. The fallback is
+    /// there to fill a gap, not to compete for the job.
     /// </summary>
     internal sealed class Dog
     {
@@ -57,7 +62,20 @@ namespace Hoodrich.Locations
             if (_chop != null && !_chop.Exists()) _chop = null;
 
             if (_chop == null) Find(player);
-            if (_chop == null) return;
+
+            // Ours was standing in for a dog that has since arrived. His is the one with the
+            // interactions, so ours goes without ceremony.
+            if (_chop != null && _ours && RealOneNearby(player))
+            {
+                Remove();
+                Find(player);
+            }
+
+            if (_chop == null)
+            {
+                MakeOne(player);
+                return;
+            }
 
             Leash();
         }
@@ -78,6 +96,7 @@ namespace Hoodrich.Locations
                     if (!IsChop(ped)) continue;
 
                     _chop = ped;
+                    _ours = false;
 
                     // Deliberately NOT held persistent, and deliberately not tasked.
                     //
@@ -103,6 +122,112 @@ namespace Hoodrich.Locations
                 Log.Debug("Could not look for Chop: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// Whether the game's own Chop is about, ignoring the one we made.
+        /// </summary>
+        private bool RealOneNearby(Ped player)
+        {
+            try
+            {
+                foreach (var ped in World.GetNearbyPeds(player, FindRange))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (_chop != null && ped.Handle == _chop.Handle) continue;
+                    if (!IsChop(ped)) continue;
+
+                    return true;
+                }
+            }
+            catch
+            {
+                // If we cannot tell, assume not, and keep the one we have.
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Puts a dog in the yard when the game has not got round to it.
+        ///
+        /// Only at the house, and only when there is genuinely no Chop anywhere -- spawning one
+        /// while the real one is two streets away would give you two, and one of them would be
+        /// the wrong one.
+        ///
+        /// Created and then left completely alone, for the same reason the real one is: whatever
+        /// the game wants to do with a dog standing in a yard is better than anything scripted
+        /// on top of it.
+        /// </summary>
+        private void MakeOne(Ped player)
+        {
+            if (_madeOne) return;
+            if (player.Position.DistanceTo(Yard) > MakeRange) return;
+
+            foreach (var name in Models)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    var spot = Ground(Yard);
+
+                    var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeAnimal, model.Hash,
+                                                    spot.X, spot.Y, spot.Z, 200f, false, false);
+
+                    model.MarkAsNoLongerNeeded();
+                    if (handle == 0) continue;
+
+                    var dog = Entity.FromHandle(handle) as Ped;
+                    if (dog == null || !dog.Exists()) continue;
+
+                    _chop = dog;
+                    _ours = true;
+                    _madeOne = true;
+                    _moved = true;
+
+                    Notify.Ticker("~g~Chop's out in the yard.~s~");
+                    Log.Info("No Chop anywhere; put one in the yard at " + spot + ".");
+                    return;
+                }
+                catch
+                {
+                    // Try the other model.
+                }
+            }
+        }
+
+        /// <summary>Takes ours away again. Only ever called on one we made.</summary>
+        private void Remove()
+        {
+            try
+            {
+                if (_chop != null && _chop.Exists())
+                {
+                    _chop.MarkAsNoLongerNeeded();
+                    _chop.Delete();
+                }
+
+                Log.Info("The game's own Chop turned up; ours has been removed.");
+            }
+            catch { /* it will stream out */ }
+
+            _chop = null;
+            _ours = false;
+            _madeOne = false;
+        }
+
+        /// <summary>PED_TYPE_ANIMAL, so the game treats him as the animal he is.</summary>
+        private const int PedTypeAnimal = 28;
+
+        /// <summary>Close enough to the yard to be the one putting a dog in it.</summary>
+        private const float MakeRange = 60f;
+
+        /// <summary>True when the dog we are holding is one we made rather than the game's.</summary>
+        private bool _ours;
+
+        /// <summary>So a dog that gets shot is not immediately replaced by another one.</summary>
+        private bool _madeOne;
 
         private void SendHome()
         {
@@ -229,12 +354,20 @@ namespace Hoodrich.Locations
         {
             try
             {
-                if (_chop != null && _chop.Exists()) _chop.MarkAsNoLongerNeeded();
+                if (_chop != null && _chop.Exists())
+                {
+                    // One we made is ours to take away. The game's dog is only ever borrowed,
+                    // so he is let go exactly where he stands.
+                    if (_ours) _chop.Delete();
+                    else _chop.MarkAsNoLongerNeeded();
+                }
             }
             catch { /* teardown */ }
 
             _chop = null;
             _moved = false;
+            _ours = false;
+            _madeOne = false;
         }
     }
 }

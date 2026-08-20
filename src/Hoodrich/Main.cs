@@ -192,7 +192,7 @@ namespace Hoodrich
                 _block = new BlockLife(_gangs, "families");
 
                 // Dragged out into the courtyard and left there, the way they are.
-                _couch = new Fixture(new Vector3(-85.251f, -1608.008f, 31.485f), 40.880f,
+                _couch = new Fixture(new Vector3(-86.429f, -1609.917f, 31.485f), 40.880f,
                                      "prop_couch_03", "prop_couch_04", "prop_couch_01",
                                      "prop_old_couch_01", "prop_rub_couch01");
 

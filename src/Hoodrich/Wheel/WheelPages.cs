@@ -238,12 +238,28 @@ namespace Hoodrich.Wheel
         {
             var sections = new List<InfoSection>();
 
-            var holding = new InfoSection { Title = "Holding" };
-            holding.Row("Ready to sell", Stash.TotalPackaged.ToString("0.#") + "g", Palette.Cash);
-            holding.Row("Still to bag", Stash.TotalBulk.ToString("0.#") + "g", Palette.Warn);
+            var holding = new InfoSection { Title = "On you" };
+            var carried = DrugLines(Stash);
+
+            if (carried.Count == 0) holding.Row("Nothing on you", "", Palette.TextDim);
+            foreach (var line in carried) holding.Row(line[0], line[1], Palette.Cash);
+
             holding.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
             holding.Row("Worth", "$" + PackagedValue().ToString("N0"), Palette.Cash);
             sections.Add(holding);
+
+            var atHouse = new InfoSection { Title = "At the house" };
+            var stored = _stash == null ? new List<string[]>() : DrugLines(_stash.Stash);
+
+            if (stored.Count == 0) atHouse.Row("Nothing at the house", "", Palette.TextDim);
+            foreach (var line in stored) atHouse.Row(line[0], line[1]);
+
+            if (_stash != null)
+            {
+                atHouse.Row("Free space", _stash.Stash.FreeSpace.ToString("0") + "g");
+            }
+
+            sections.Add(atHouse);
 
             sections.Add(BlockSection());
 
@@ -254,12 +270,13 @@ namespace Hoodrich.Wheel
             }
             sections.Add(contacts);
 
-            var market = new InfoSection { Title = "Street prices" };
+            var market = new InfoSection { Title = "What things go for" };
             foreach (var drug in _drugs.All)
             {
-                // Quoted at full purity: what the street pays for the real thing, before
-                // whatever the player has done to it.
-                market.Row(drug.Name, "$" + _pricing.StreetPrice(drug, 1f).ToString("N0") + "/g");
+                // The ladder, literally. These are the numbers that get paid -- nothing on this
+                // line is an estimate or a quote-before-modifiers, because there are no
+                // modifiers left. The hour and the block change how often somebody buys.
+                market.Row(drug.Name, drug.Ladder());
             }
             sections.Add(market);
 
@@ -479,11 +496,89 @@ namespace Hoodrich.Wheel
 
             if (packaged > 0.005f && bulk > 0.005f)
             {
-                return packaged.ToString("0.#") + "g bagged, " + bulk.ToString("0.#") + "g bulk";
+                return packaged.ToString("0.#") + " ready, " + bulk.ToString("0.#") + " to prep";
             }
-            if (packaged > 0.005f) return packaged.ToString("0.#") + "g bagged";
-            if (bulk > 0.005f) return bulk.ToString("0.#") + "g bulk";
+            if (packaged > 0.005f) return packaged.ToString("0.#") + " ready to sell";
+            if (bulk > 0.005f) return bulk.ToString("0.#") + " still to prep";
             return "empty";
+        }
+
+        /// <summary>
+        /// What is ready to sell, said properly -- "40 pills" when that is all there is, and
+        /// "3 kinds ready" when it is a mixture, because adding pills to grams gives a number
+        /// that is not true about anything.
+        /// </summary>
+        private string ReadyWord()
+        {
+            DrugDef only = null;
+            var kinds = 0;
+
+            foreach (var drug in _drugs.All)
+            {
+                if (Stash.PackagedOf(drug.Id) <= 0.005f) continue;
+                kinds++;
+                only = drug;
+            }
+
+            if (kinds == 0) return "";
+            if (kinds == 1) return only.Amount(Stash.PackagedOf(only.Id)) + " ready";
+
+            return kinds + " kinds ready";
+        }
+
+        /// <summary>
+        /// Two lists: what is in your pockets, and what is at the house. Each one names the
+        /// product and says the amount in that product's own units, so pills are counted in
+        /// pills and weight is weighed.
+        ///
+        /// Packaged and bulk are shown on one line per product rather than as two separate
+        /// lists, because "40 pills, 60 to press" is one fact about ecstasy, not two.
+        /// </summary>
+        private void HoldingRows(WheelPage page)
+        {
+            var house = _stash == null ? null : _stash.Stash;
+
+            var onYou = DrugLines(Stash);
+            var atHouse = house == null ? new List<string[]>() : DrugLines(house);
+
+            page.Row("ON YOU", "", Palette.TextDim);
+
+            if (onYou.Count == 0) page.Row("nothing", "", Palette.TextDim);
+            foreach (var line in onYou) page.Row(line[0], line[1], Palette.Cash);
+
+            page.Row("AT THE HOUSE", "", Palette.TextDim);
+
+            if (atHouse.Count == 0) page.Row("nothing", "", Palette.TextDim);
+            foreach (var line in atHouse) page.Row(line[0], line[1], Palette.Text);
+        }
+
+        /// <summary>
+        /// One line per product that is present at all, reading "40 pills · 60 to press".
+        /// Anything the container has none of is left out entirely rather than listed as zero.
+        /// </summary>
+        private List<string[]> DrugLines(Stash from)
+        {
+            var lines = new List<string[]>();
+            if (from == null) return lines;
+
+            foreach (var drug in _drugs.All)
+            {
+                var ready = from.PackagedOf(drug.Id);
+                var raw = from.BulkOf(drug.Id);
+                if (ready <= 0.005f && raw <= 0.005f) continue;
+
+                var text = ready > 0.005f ? drug.Amount(ready) : "";
+
+                if (raw > 0.005f)
+                {
+                    if (text.Length > 0) text += "  ·  ";
+                    text += drug.Short(raw) + " to prep";
+                }
+
+                lines.Add(new[] { drug.Name, text });
+            }
+
+            return lines;
         }
 
         private string SupplyDetail()
@@ -499,18 +594,16 @@ namespace Hoodrich.Wheel
         /// <summary>Everything to do with product, in the order you actually do it.</summary>
         private WheelPage BuildDrugsPage()
         {
-            var packaged = Stash.TotalPackaged;
-            var bulk = Stash.TotalBulk;
-
             var page = new WheelPage("Dealing", DrugsSummary());
 
-            // Two lines, in the words you would use out loud. Grams, multipliers and market
-            // prices are a screenful on their own -- they live behind The numbers.
-            page.PanelTitle = "On you";
-            page.Row("Ready to sell", packaged > 0.005f ? packaged.ToString("0.#") + "g" : "nothing",
-                     packaged > 0.005f ? Palette.Cash : (Color?)Palette.TextDim);
-            page.Row("Still to prep", bulk > 0.005f ? bulk.ToString("0.#") + "g" : "nothing",
-                     bulk > 0.005f ? Palette.Warn : (Color?)Palette.TextDim);
+            // What you have, by name, in both places it can be.
+            //
+            // A single grams figure was meaningless the moment the catalogue held pills and
+            // joints alongside weight -- "53g ready" when forty of those were pills. And a
+            // count of what is on you says nothing about the far bigger pile sitting at Aunt
+            // Denise's, which is usually the number you actually wanted.
+            page.PanelTitle = "What you're holding";
+            HoldingRows(page);
 
             page.AddSub("Re-up", "+", BuildSupplyPage,
                 detail: SupplyDetail(),
@@ -526,11 +619,14 @@ namespace Hoodrich.Wheel
             }
             else
             {
+                var packaged = Stash.TotalPackaged;
+                var bulk = Stash.TotalBulk;
+
                 page.AddSub("Post up", "$", BuildSellPage,
                     detail: "Stand on a corner and let it come to you",
-                    value: packaged > 0.005f ? packaged.ToString("0.#") + "g ready" : "",
+                    value: packaged > 0.005f ? ReadyWord() : "",
                     enabled: packaged > 0.005f,
-                    disabledReason: bulk > 0.005f ? "All you have is weight -- bag it up first"
+                    disabledReason: bulk > 0.005f ? "All you have is weight -- prep it first"
                                                   : "You are holding nothing");
                 page.WithIcon(Icons.Cash);
             }
@@ -625,14 +721,13 @@ namespace Hoodrich.Wheel
                 var product = drug;
                 var stock = Stash.PackagedOf(product.Id);
                 var purity = Stash.PurityOf(product.Id);
-                var value = _pricing.SaleValue(product, _cfg.PostUpDealGrams, purity);
                 var risk = Pricing.BadCutChance(purity);
 
                 page.Add(product.Name, product.Tag,
                     () => PostUpWith(product),
-                    detail: PurityWord(purity) +
-                            (risk > 0.15f ? " -- buyers will notice" : ""),
-                    value: stock.ToString("0.#") + "g  ·  $" + value.ToString("N0") + " a sale",
+                    detail: product.Ladder() +
+                            (risk > 0.15f ? "  ·  " + PurityWord(purity) + ", they'll notice" : ""),
+                    value: product.Amount(stock),
                     enabled: true);
                 page.WithIcon(DrugIcon(product));
             }

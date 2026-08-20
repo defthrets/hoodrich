@@ -1,13 +1,17 @@
 {
   "_comment": [
-    "The catalogue. Prices are per GRAM and are meant to sit near what these things really",
-    "cost on an American street, so a number in the wheel means something outside the game.",
+    "The catalogue.",
+    "",
+    "Every price in a deals[] block is LITERAL. It is what changes hands, exactly, with",
+    "nothing applied on top -- no night rate, no turf, no rank, no purity. What those things",
+    "move is how OFTEN somebody buys, not what they pay. So if this file says an ounce is",
+    "two hundred dollars, the player gets two hundred dollars for an ounce, always.",
     "",
     "id          stable key; never change it once a save references it",
     "name        what it is called in the UI",
     "tag         three or four letters for the wheel glyph",
     "tier        0-5, used for how much respect a sale is worth",
-    "basePrice   STREET price per gram, before night, turf, rank and market",
+    "basePrice   fallback street price for one unit, used only when deals[] is empty",
     "bulkPrice   WHOLESALE price per gram, what a supplier charges you for weight.",
     "            Set per product rather than derived from a flat discount: the gap between",
     "            wholesale and street is much wider on powder than it is on weed, and a single",
@@ -15,7 +19,8 @@
     "            product free money. Leave it at 0 to fall back to the old flat discount.",
     "heatFactor  how much attention a sale draws, relative to 1.0",
     "splitVerb   what cutting it is called -- Cut, Bag up, Press",
-    "unitName    what a unit of it is called -- grams, baggies, pills"
+    "unitName    what a unit of it is called -- grams, baggies, pills",
+    "deals       the ladder: quantity, price, and label -- the words said out loud for it"
   ],
   "drugs": [
     {
@@ -24,7 +29,7 @@
       "tag": "WEED",
       "tier": 0,
       "basePrice": 20,
-      "bulkPrice": 6,
+      "bulkPrice": 4,
       "heatFactor": 0.55,
       "splitVerb": "Bag up",
       "unitName": "baggies",
@@ -32,14 +37,17 @@
       "deals": [
         {
           "quantity": 1,
+          "label": "a gram",
           "price": 20
         },
         {
           "quantity": 3.5,
+          "label": "an eighth",
           "price": 50
         },
         {
           "quantity": 28,
+          "label": "an ounce",
           "price": 200
         }
       ],
@@ -52,7 +60,7 @@
       "tag": "E",
       "tier": 1,
       "basePrice": 25,
-      "bulkPrice": 8,
+      "bulkPrice": 7,
       "heatFactor": 0.9,
       "splitVerb": "Press",
       "unitName": "pills",
@@ -61,14 +69,17 @@
       "deals": [
         {
           "quantity": 1,
+          "label": "a pill",
           "price": 25
         },
         {
           "quantity": 2,
+          "label": "two pills",
           "price": 50
         },
         {
           "quantity": 4,
+          "label": "four pills",
           "price": 100
         }
       ]
@@ -79,7 +90,7 @@
       "tag": "CRK",
       "tier": 2,
       "basePrice": 100,
-      "bulkPrice": 28,
+      "bulkPrice": 26,
       "heatFactor": 1.35,
       "splitVerb": "Cook up",
       "unitName": "rocks",
@@ -87,14 +98,17 @@
       "deals": [
         {
           "quantity": 0.2,
+          "label": "a dub rock",
           "price": 20
         },
         {
           "quantity": 0.5,
+          "label": "a fifty rock",
           "price": 50
         },
         {
           "quantity": 1.0,
+          "label": "a hundred rock",
           "price": 100
         }
       ]
@@ -105,7 +119,7 @@
       "tag": "METH",
       "tier": 3,
       "basePrice": 200,
-      "bulkPrice": 17,
+      "bulkPrice": 48,
       "heatFactor": 1.4,
       "splitVerb": "Cut",
       "unitName": "grams",
@@ -113,10 +127,12 @@
       "deals": [
         {
           "quantity": 0.1,
+          "label": "a point",
           "price": 20
         },
         {
           "quantity": 1,
+          "label": "a gram",
           "price": 200
         }
       ]
@@ -127,7 +143,7 @@
       "tag": "COKE",
       "tier": 4,
       "basePrice": 200,
-      "bulkPrice": 52,
+      "bulkPrice": 55,
       "heatFactor": 1.25,
       "splitVerb": "Cut",
       "unitName": "grams",
@@ -135,10 +151,12 @@
       "deals": [
         {
           "quantity": 1,
+          "label": "a gram",
           "price": 200
         },
         {
           "quantity": 3.5,
+          "label": "an 8-ball",
           "price": 850
         }
       ]
@@ -149,7 +167,7 @@
       "tag": "H",
       "tier": 5,
       "basePrice": 80,
-      "bulkPrice": 26,
+      "bulkPrice": 21,
       "heatFactor": 1.5,
       "splitVerb": "Cut",
       "unitName": "grams",
@@ -157,14 +175,17 @@
       "deals": [
         {
           "quantity": 0.1,
+          "label": "a point",
           "price": 10
         },
         {
           "quantity": 0.5,
+          "label": "a half",
           "price": 40
         },
         {
           "quantity": 1.0,
+          "label": "a gram",
           "price": 80
         }
       ]
@@ -185,6 +206,7 @@
       "deals": [
         {
           "quantity": 1,
+          "label": "a joint",
           "price": 25
         }
       ]

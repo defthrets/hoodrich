@@ -495,7 +495,16 @@ namespace Hoodrich.Dealing
         private void RollCustomer(Ped player)
         {
             // Each passer-by gets their own roll, so a busy pavement really is busier.
-            var chance = 1f - (float)Math.Pow(1f - _cfg.PostUpApproachChance / 100f, Footfall);
+            //
+            // And this is where the night, the block, your rank, the heat on you and what the
+            // market is doing to that particular product all land. They used to be applied to
+            // the price, which meant a gram of weed quietly became $34 at two in the morning.
+            // They move how often somebody walks up instead: a good corner at a good hour is
+            // busier, and busier is the whole reward.
+            var per = _cfg.PostUpApproachChance / 100f * _pricing.Demand(_product);
+            if (per > 0.9f) per = 0.9f;
+
+            var chance = 1f - (float)Math.Pow(1f - per, Footfall);
             if (_rng.NextDouble() > chance) return;
 
             Ped pick = null;

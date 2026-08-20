@@ -198,7 +198,12 @@ namespace Hoodrich.Gangs
                 new[] { "ballas", "vagos" },
                 new[] { "DAVIS", "CHAMH", "STRAW" },
                 "Davis, Chamberlain Hills, Strawberry",
-                new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01", "a_m_y_soucent_01" }));
+                // The three Families models and nothing else. A generic South Central civilian
+                // used to sit on the end of this list for variety, and it is how a man in a
+                // pink shirt and a blazer ended up guarding Lamar's yard with a rifle.
+                // Variety is randomised clothing on these three, not a fourth ped who is not
+                // in the set.
+                new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01" }));
 
             Register(Make("ballas", "Ballas", "BALL", "AMBIENT_GANG_BALLAS",
                 Color.FromArgb(145, 70, 190), 27,
