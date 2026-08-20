@@ -1,4 +1,6 @@
 using System;
+using Hoodrich.Locations;
+using GTA;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
@@ -78,27 +80,15 @@ namespace Hoodrich.Core
         public bool TweetsOnTheRight = true;
 
         /// <summary>
-        /// The grow room: a door near Stretch that warps you into a Bikers DLC warehouse.
+        /// Doors into the game's own interiors, read straight out of the ini.
         ///
-        /// Both ends live here rather than in the code, because both need correcting from
-        /// inside the game. An MLO cannot be moved -- it is baked into the map at one fixed
-        /// coordinate -- so GrowInside is WHERE THAT WAREHOUSE ACTUALLY IS, and it is a guess
-        /// until somebody stands in it and reads the HUD. GrowDoor is where the way in should
-        /// be, which is a matter of taste and a metre either way.
+        /// Every value is here rather than in the code because every value needs correcting
+        /// from inside the game. An MLO cannot be moved -- it is baked into the map at one
+        /// fixed coordinate -- so Inside is WHERE THAT ROOM ACTUALLY IS, and it is a guess
+        /// until somebody stands in it and reads the HUD. Door is where the way in should be,
+        /// which is a matter of taste and a metre either way.
         /// </summary>
-        public string GrowIpl = "bkr_biker_dlc_int_ware02";
-
-        public float GrowDoorX = -157.500f;
-        public float GrowDoorY = -1636.000f;
-        public float GrowDoorZ = 34.029f;
-        public float GrowDoorHeading = 2f;
-
-        public float GrowInsideX = 1039.000f;
-        public float GrowInsideY = -3098.000f;
-        public float GrowInsideZ = -39.000f;
-        public float GrowInsideHeading = 180f;
-
-        public bool GrowBlip = true;
+        public readonly List<DoorSpec> Doors = new List<DoorSpec>();
 
         /// <summary>Seconds the game's own weapon wheel is held open after picking Weapons.</summary>
         public int VanillaWheelSeconds = 5;
@@ -221,18 +211,17 @@ namespace Hoodrich.Core
             s.MouseSensitivity = Clamp(ini.GetFloat("Wheel", "MouseSensitivity", s.MouseSensitivity), 0.1f, 5f);
             s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
 
-            s.GrowIpl = ini.GetString("GrowRoom", "Ipl", s.GrowIpl);
-            s.GrowBlip = ini.GetBool("GrowRoom", "Blip", s.GrowBlip);
+            // One block per door, all read the same way. Adding a third room is a section in
+            // the ini and a line here, not another class.
+            s.Doors.Add(ReadDoor(ini, "GrowRoom", "grow room", "bkr_biker_dlc_int_ware02",
+                                 BlipSprite.Weed,
+                                 -157.500f, -1636.000f, 34.029f, 2f,
+                                 1039.000f, -3098.000f, -39.000f, 180f));
 
-            s.GrowDoorX = ini.GetFloat("GrowRoom", "DoorX", s.GrowDoorX);
-            s.GrowDoorY = ini.GetFloat("GrowRoom", "DoorY", s.GrowDoorY);
-            s.GrowDoorZ = ini.GetFloat("GrowRoom", "DoorZ", s.GrowDoorZ);
-            s.GrowDoorHeading = ini.GetFloat("GrowRoom", "DoorHeading", s.GrowDoorHeading);
-
-            s.GrowInsideX = ini.GetFloat("GrowRoom", "InsideX", s.GrowInsideX);
-            s.GrowInsideY = ini.GetFloat("GrowRoom", "InsideY", s.GrowInsideY);
-            s.GrowInsideZ = ini.GetFloat("GrowRoom", "InsideZ", s.GrowInsideZ);
-            s.GrowInsideHeading = ini.GetFloat("GrowRoom", "InsideHeading", s.GrowInsideHeading);
+            s.Doors.Add(ReadDoor(ini, "MethLab", "meth lab", "tr_tuner_methlab_1",
+                                 BlipSprite.Meth,
+                                 -330.000f, -1470.000f, 30.500f, 90f,
+                                 1000.000f, -3200.000f, -38.000f, 180f));
             s.PlaySounds = ini.GetBool("Wheel", "PlaySounds", s.PlaySounds);
             s.VanillaWheelSeconds = (int)Clamp(ini.GetInt("Wheel", "VanillaWheelSeconds", s.VanillaWheelSeconds), 1f, 30f);
 
@@ -301,6 +290,38 @@ namespace Hoodrich.Core
             Log.Info("Settings loaded: mode=" + s.WheelMode + " render=" + s.RenderMode +
                      " key=" + s.WheelKey + " timescale=" + s.WheelTimeScale);
             return s;
+        }
+
+        /// <summary>
+        /// One door out of one ini section, falling back to the seeded coordinates.
+        ///
+        /// The defaults are what ships; the ini is what wins. Both interior coordinates below
+        /// are guesses and are meant to be corrected -- InteriorDoor bounces the player back
+        /// out with a message naming the section when the room turns out not to be there.
+        /// </summary>
+        private static DoorSpec ReadDoor(IniFile ini, string section, string name, string ipl,
+                                         BlipSprite sprite,
+                                         float dx, float dy, float dz, float dh,
+                                         float ix, float iy, float iz, float ih)
+        {
+            return new DoorSpec
+            {
+                Section = section,
+                Name = ini.GetString(section, "Name", name),
+                Ipl = ini.GetString(section, "Ipl", ipl),
+                Blip = ini.GetBool(section, "Blip", true),
+                Sprite = sprite,
+
+                DoorX = ini.GetFloat(section, "DoorX", dx),
+                DoorY = ini.GetFloat(section, "DoorY", dy),
+                DoorZ = ini.GetFloat(section, "DoorZ", dz),
+                DoorHeading = ini.GetFloat(section, "DoorHeading", dh),
+
+                InsideX = ini.GetFloat(section, "InsideX", ix),
+                InsideY = ini.GetFloat(section, "InsideY", iy),
+                InsideZ = ini.GetFloat(section, "InsideZ", iz),
+                InsideHeading = ini.GetFloat(section, "InsideHeading", ih),
+            };
         }
 
         private static float Clamp(float v, float min, float max) => v < min ? min : v > max ? max : v;

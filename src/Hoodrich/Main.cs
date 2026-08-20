@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -126,7 +127,7 @@ namespace Hoodrich
         private readonly Fixture _stove;
         private readonly Fixture _grimesStockA;
         private readonly Fixture _grimesStockB;
-        private readonly GrowRoom _grow;
+        private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
         private readonly BlockLife _block;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
@@ -234,7 +235,7 @@ namespace Hoodrich
                     .Stand(new Vector3(-128.394f, -1458.440f, 33.823f), 225.844f,
                            "WORLD_HUMAN_GUARD_STAND");
 
-                _grow = new GrowRoom(_cfg);
+                foreach (var spec in _cfg.Doors) _doors.Add(new InteriorDoor(spec));
 
                 _copWatch = new CopWatch();
 
@@ -598,7 +599,7 @@ namespace Hoodrich
                     _stove.Update();
                     _grimesStockA.Update();
                     _grimesStockB.Update();
-                    _grow.Update();
+                    foreach (var door in _doors) door.Update();
                     _traffic.Update();
                     _payback.Update();
                     _war.Update();
@@ -880,7 +881,10 @@ namespace Hoodrich
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesStockA?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesStockB?.RestoreWorld(); } catch { /* teardown */ }
-            try { _grow?.RestoreWorld(); } catch { /* teardown */ }
+            foreach (var door in _doors)
+            {
+                try { door.RestoreWorld(); } catch { /* teardown */ }
+            }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }

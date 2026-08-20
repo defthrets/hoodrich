@@ -9,26 +9,48 @@ using Control = GTA.Control;
 namespace Hoodrich.Locations
 {
     /// <summary>
-    /// The grow room: a door near Stretch that puts you inside a Bikers DLC weed warehouse.
+    /// One door and the room behind it, read out of the ini.
+    ///
+    /// Section is carried so the "that room is not there" message can name the exact block of
+    /// settings to correct, rather than telling somebody a coordinate is wrong and leaving them
+    /// to work out which of them.
+    /// </summary>
+    internal sealed class DoorSpec
+    {
+        public string Section = "";
+        public string Name = "room";
+        public string Ipl = "";
+        public bool Blip = true;
+        public BlipSprite Sprite = BlipSprite.Standard;
+
+        public float DoorX, DoorY, DoorZ, DoorHeading;
+        public float InsideX, InsideY, InsideZ, InsideHeading;
+    }
+
+    /// <summary>
+    /// A door that puts you inside one of the game's own interiors.
     ///
     /// One thing about interiors that is worth stating plainly, because it shapes all of this.
     /// An MLO is not a prop and cannot be placed. It is baked into the map at one fixed
     /// coordinate, and REQUEST_IPL only decides whether that coordinate has anything in it -- it
-    /// cannot decide WHERE. So "put an interior near Stretch" is really "put a DOOR near
-    /// Stretch", and the door warps you across the map to wherever the interior actually lives.
-    /// That is how every mod that uses a base-game interior does it, and from inside it is
+    /// cannot decide WHERE. So "put an interior over there" is really "put a DOOR over there",
+    /// and the door warps you across the map to wherever the interior actually lives. That is
+    /// how every mod that uses a base-game interior does it, and from inside it is
     /// indistinguishable, because there are no windows.
     ///
-    /// Both coordinates live in Hoodrich.ini rather than in here. The door needs moving to
-    /// wherever it should really stand, and the interior coordinate below is my best guess at
-    /// where that particular warehouse sits -- neither is something to need a rebuild for.
+    /// Every coordinate lives in Hoodrich.ini rather than in here. The door needs moving to
+    /// wherever it should really stand, and the interior coordinate is a guess at where that
+    /// particular room sits -- neither is worth a rebuild.
+    ///
+    /// One class rather than one per room. A second copy of this file with different constants
+    /// in it is how a mod ends up with two of everything and a bug fixed in only one of them.
     ///
     /// The guess has a safety net. After the warp, the game is asked whether there is actually
     /// an interior where we just put you; if there is not, you come straight back out and get
     /// told the coordinate is wrong, rather than being left standing in a black void under the
     /// map wondering whether the mod has crashed.
     /// </summary>
-    internal sealed class GrowRoom
+    internal sealed class InteriorDoor
     {
         /// <summary>How close to the door before it offers to let you in.</summary>
         private const float DoorRange = 1.8f;
@@ -42,19 +64,19 @@ namespace Hoodrich.Locations
         /// <summary>How long the interior gets to stream before we judge whether it is there.</summary>
         private const int StreamMs = 2500;
 
-        private readonly Settings _cfg;
+        private readonly DoorSpec _spec;
 
         private Blip _blip;
         private bool _inside;
         private bool _busy;
 
-        public GrowRoom(Settings cfg)
+        public InteriorDoor(DoorSpec spec)
         {
-            _cfg = cfg;
+            _spec = spec;
         }
 
-        private Vector3 Door => new Vector3(_cfg.GrowDoorX, _cfg.GrowDoorY, _cfg.GrowDoorZ);
-        private Vector3 Inside => new Vector3(_cfg.GrowInsideX, _cfg.GrowInsideY, _cfg.GrowInsideZ);
+        private Vector3 Door => new Vector3(_spec.DoorX, _spec.DoorY, _spec.DoorZ);
+        private Vector3 Inside => new Vector3(_spec.InsideX, _spec.InsideY, _spec.InsideZ);
 
         public bool IsInside => _inside;
 
@@ -71,7 +93,7 @@ namespace Hoodrich.Locations
             {
                 if (player.Position.DistanceTo(Inside) > ExitRange) return;
 
-                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to leave the grow room.");
+                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to leave the " + _spec.Name + ".");
 
                 if (Game.IsControlJustPressed(Control.Context)) Leave(player);
                 return;
@@ -82,7 +104,7 @@ namespace Hoodrich.Locations
             if (player.IsInVehicle()) return;
             if (player.Position.DistanceTo(Door) > DoorRange) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to go into the grow room.");
+            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to go into the " + _spec.Name + ".");
 
             if (Game.IsControlJustPressed(Control.Context)) Enter(player);
         }
@@ -102,11 +124,11 @@ namespace Hoodrich.Locations
             {
                 Fade(false);
 
-                Function.Call(Hash.REQUEST_IPL, _cfg.GrowIpl);
+                Function.Call(Hash.REQUEST_IPL, _spec.Ipl);
 
                 var to = Inside;
                 player.Position = to;
-                player.Heading = _cfg.GrowInsideHeading;
+                player.Heading = _spec.InsideHeading;
 
                 // Pin the interior so the game does not decide the room is not worth streaming
                 // while we are stood in the middle of it.
@@ -129,14 +151,14 @@ namespace Hoodrich.Locations
 
                 if (interior == 0)
                 {
-                    Log.Warn("No interior at " + to + " for " + _cfg.GrowIpl +
+                    Log.Warn("No interior at " + to + " for " + _spec.Ipl +
                              "; the coordinate in Hoodrich.ini is wrong.");
 
                     player.Position = Door;
                     Wait(400);
                     Fade(true);
 
-                    Notify.Problem("that room ain't there. check GrowInside in the ini.");
+                    Notify.Problem("that room ain't there. check [" + _spec.Section + "] Inside in the ini.");
                     return;
                 }
 
@@ -145,11 +167,11 @@ namespace Hoodrich.Locations
                 Wait(200);
                 Fade(true);
 
-                Notify.Ticker("~g~The grow room.~s~");
+                Notify.Ticker("~g~" + Capital(_spec.Name) + ".~s~");
             }
             catch (Exception ex)
             {
-                Log.Error("Could not enter the grow room", ex);
+                Log.Error("Could not enter the " + _spec.Name, ex);
 
                 try { player.Position = Door; } catch { /* nothing else to try */ }
                 Fade(true);
@@ -169,7 +191,7 @@ namespace Hoodrich.Locations
                 Fade(false);
 
                 player.Position = Door;
-                player.Heading = _cfg.GrowDoorHeading;
+                player.Heading = _spec.DoorHeading;
 
                 _inside = false;
 
@@ -178,7 +200,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Error("Could not leave the grow room", ex);
+                Log.Error("Could not leave the " + _spec.Name, ex);
                 Fade(true);
             }
             finally
@@ -213,7 +235,7 @@ namespace Hoodrich.Locations
 
         private void EnsureBlip()
         {
-            if (!_cfg.GrowBlip)
+            if (!_spec.Blip)
             {
                 if (_blip != null && _blip.Exists()) { _blip.Delete(); _blip = null; }
                 return;
@@ -226,16 +248,23 @@ namespace Hoodrich.Locations
                 _blip = World.CreateBlip(Door);
                 if (_blip == null || !_blip.Exists()) return;
 
-                _blip.Sprite = BlipSprite.Weed;
+                _blip.Sprite = _spec.Sprite;
                 _blip.Color = BlipColor.Green;
                 _blip.Scale = 0.8f;
                 _blip.IsShortRange = true;
-                _blip.Name = "Grow room";
+                _blip.Name = Capital(_spec.Name);
             }
             catch
             {
                 // A blip is a nicety.
             }
+        }
+
+        /// <summary>Sentence case, for a blip name and a ticker.</summary>
+        private static string Capital(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            return char.ToUpperInvariant(text[0]) + text.Substring(1);
         }
 
         public void RestoreWorld()
