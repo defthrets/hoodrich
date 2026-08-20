@@ -91,10 +91,16 @@ namespace Hoodrich.Missions
         /// </summary>
         private static readonly string[] SprayDicts =
         {
-            // The spray can. This is the one -- the upper-body action the player character does
-            // when a can is chosen from the interaction menu, which is an arm working a wall in
-            // front of them with a can in the hand. Everything under it was a guess, and the
-            // hammering clip in particular is a man swinging at a wall, which is not tagging.
+            // The real one, and it is not a clip -- it is a whole scripted sequence built for
+            // exactly this, from the Cayo Perico poster tagging. A man steps up to a wall,
+            // shakes the can, and paints.
+            //
+            // Everything under it was a guess at which dictionary might contain something
+            // wall-shaped: an interaction-menu upper body, a janitor, a man hammering. They
+            // stay as a fallback for an install that does not have this, and for no other
+            // reason.
+            SprayDict,
+
             "anim@mp_player_intupperspray_can",
             "anim@mp_player_intuppersmoke_cig",
 
@@ -108,6 +114,23 @@ namespace Hoodrich.Missions
             "amb@world_human_janitor@male@idle_a",
             "amb@world_human_window_shop_browse@male@base"
         };
+
+        /// <summary>
+        /// The poster-tagging set. Every clip in it is suffixed by who it drives: _male is the
+        /// ped, _spraycan is the can in his hand, _cam is the camera.
+        /// </summary>
+        private const string SprayDict = "anim@scripted@freemode@postertag@graffiti_spray@male@";
+
+        /// <summary>
+        /// The sequence, in order. Step up, shake it, paint.
+        ///
+        /// The painting clip is the long one and the one that loops; the two before it are a
+        /// second each and are what makes it read as a person rather than an animation
+        /// starting. Nobody walks up to a wall already spraying.
+        /// </summary>
+        private static readonly string[] SprayIntro = { "intro_male", "shake_can_male" };
+
+        private const string SprayLoop = "spray_can_male";
 
         private static readonly string[] SprayClips =
         {
@@ -695,10 +718,62 @@ namespace Hoodrich.Missions
             _can = null;
         }
 
+        /// <summary>
+        /// The poster-tagging sequence: step up, shake the can, paint.
+        ///
+        /// A task sequence rather than three calls, because three TASK_PLAY_ANIMs back to back
+        /// replace each other -- the third one wins and the first two never play, which is the
+        /// same trap the plug's phone fell into. In a sequence they run in order.
+        ///
+        /// The painting clip loops for the rest of the timer. Flag 1 is the looping flag, and
+        /// the intro pair are deliberately not looped: a man who shakes the can forever is
+        /// worse than a man who never shakes it at all.
+        /// </summary>
+        private static bool PlayTheProperOne(Ped player)
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, SprayDict)) return false;
+
+                Function.Call(Hash.REQUEST_ANIM_DICT, SprayDict);
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, SprayDict)) return false;
+
+                var seq = new OutputArgument();
+                Function.Call(Hash.OPEN_SEQUENCE_TASK, seq);
+                var handle = seq.GetResult<int>();
+
+                foreach (var clip in SprayIntro)
+                {
+                    Function.Call(Hash.TASK_PLAY_ANIM, 0, SprayDict, clip,
+                                  4f, -4f, -1, 0, 0f, false, false, false);
+                }
+
+                Function.Call(Hash.TASK_PLAY_ANIM, 0, SprayDict, SprayLoop,
+                              4f, -4f, SprayMs, 1, 0f, false, false, false);
+
+                Function.Call(Hash.CLOSE_SEQUENCE_TASK, handle);
+                Function.Call(Hash.TASK_PERFORM_SEQUENCE, player.Handle, handle);
+                Function.Call(Hash.CLEAR_SEQUENCE_TASK, seq);
+
+                Log.Info("Painting with the poster-tag set.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Poster-tag set would not play: " + ex.Message);
+                return false;
+            }
+        }
+
         private static void PlaySprayClip(Ped player)
         {
+            // The real set first, played as the sequence it is rather than as one clip.
+            if (PlayTheProperOne(player)) return;
+
             foreach (var dict in SprayDicts)
             {
+                if (dict == SprayDict) continue;
+
                 try
                 {
                     if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) continue;
