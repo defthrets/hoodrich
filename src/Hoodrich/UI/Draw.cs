@@ -173,12 +173,16 @@ namespace Hoodrich.UI
         /// number never fixed it -- 0.0022, 0.0010 and 0.0018 are all fractions of a pixel, so
         /// each one simply moved the stripes somewhere else.
         ///
-        /// Two pixels is also the budget. Every row is a DRAW_RECT and the game quietly stops
-        /// drawing them once a frame has asked for too many; at one pixel the wheel asked for
-        /// thousands and the LAST wedge came out part filled, which read as broken geometry and
-        /// was really the game refusing to draw any more rectangles.
+        /// Three pixels rather than two is the budget. Every row is a DRAW_RECT and the game
+        /// quietly stops drawing them once a frame has asked for too many; it stops on whatever
+        /// was asked for LAST, so the final segments came out as missing chunks and detached
+        /// blobs. That is the broken wheel, and it was never a geometry bug.
+        ///
+        /// Three still tiles perfectly -- whole pixels are whole pixels -- and costs a third
+        /// fewer rows. The only thing lost is a little smoothness on the curve, which the
+        /// hairline arc along the edge covers anyway.
         /// </summary>
-        private const int RowPixels = 2;
+        private const int RowPixels = 3;
 
         /// <summary>The row height as the game wants it: a fraction of screen height.</summary>
         private static float RowHeight => RowPixels / (float)ScreenHeight;
@@ -200,6 +204,87 @@ namespace Hoodrich.UI
         /// rays are half-planes that clip it -- so there is no sampling and no approximation
         /// beyond the row height itself.
         /// </summary>
+        /// <summary>
+        /// A whole annulus, with no angular clipping at all.
+        ///
+        /// This exists because the wheel was drawing one Wedge per segment and running the game
+        /// out of rectangles. DRAW_RECT has a per-frame cap; past it the game simply stops
+        /// drawing, and it stops on whatever was asked for LAST -- so the final two segments
+        /// came out as broken shapes and missing chunks. Not a rendering artefact: the game
+        /// refusing to draw any more.
+        ///
+        /// Five segments in the same colour do not need five fills. The ring is laid down once
+        /// here, in one pass with no half-plane maths and at most two runs per row, and only the
+        /// segments that differ -- the one under the cursor, and anything disabled -- are drawn
+        /// on top of it. That is two or three fills instead of seven, and the budget stops being
+        /// something the wheel can run into.
+        /// </summary>
+        public static void Ring(float cx, float cy, float rInner, float rOuter, Color c)
+        {
+            if (rOuter <= rInner || c.A <= 0) return;
+
+            var rOut2 = rOuter * rOuter;
+            var rIn2 = rInner * rInner;
+
+            var pxTop = (int)Math.Floor((cy - rOuter) * ScreenHeight);
+            var pxBottom = (int)Math.Ceiling((cy + rOuter) * ScreenHeight);
+
+            var pxCentre = (int)Math.Round(cy * ScreenHeight);
+            pxTop -= ((pxTop - pxCentre) % RowPixels + RowPixels) % RowPixels;
+
+            var rowHeight = RowHeight;
+
+            for (var py = pxTop; py < pxBottom; py += RowPixels)
+            {
+                var rowY = (py + RowPixels * 0.5f) / ScreenHeight;
+                var dy = cy - rowY;
+
+                var dy2 = dy * dy;
+                if (dy2 > rOut2) continue;
+
+                var hi = (float)Math.Sqrt(rOut2 - dy2);
+                var lo = dy2 < rIn2 ? (float)Math.Sqrt(rIn2 - dy2) : 0f;
+
+                if (lo <= 0f)
+                {
+                    EmitRow(cx, rowY, rowHeight, -hi, hi, c);
+                }
+                else
+                {
+                    EmitRow(cx, rowY, rowHeight, -hi, -lo, c);
+                    EmitRow(cx, rowY, rowHeight, lo, hi, c);
+                }
+            }
+        }
+
+        /// <summary>
+        /// A radial line from the inner edge to the outer one.
+        ///
+        /// Used to cut the ring back into segments once it is drawn in one piece. Walked along
+        /// the spoke rather than rasterised, so it costs a couple of dozen small squares rather
+        /// than a fill.
+        /// </summary>
+        public static void Spoke(float cx, float cy, float rInner, float rOuter,
+                                 float angleDeg, float thickness, Color c)
+        {
+            if (rOuter <= rInner || c.A <= 0) return;
+
+            var rad = angleDeg * (float)(Math.PI / 180.0);
+            var dx = (float)Math.Sin(rad);
+            var dy = (float)Math.Cos(rad);
+
+            // One step per two pixels along the spoke, so the line is solid without being
+            // drawn more times than the screen can show.
+            var steps = Math.Max(2, (int)((rOuter - rInner) * ScreenHeight / 2f));
+
+            for (var i = 0; i <= steps; i++)
+            {
+                var r = rInner + (rOuter - rInner) * (i / (float)steps);
+
+                Rect(cx + ToX(dx * r), cy - dy * r, ToX(thickness), thickness, c);
+            }
+        }
+
         public static void Wedge(float cx, float cy, float rInner, float rOuter,
                                  float angFromDeg, float angToDeg, Color c)
         {

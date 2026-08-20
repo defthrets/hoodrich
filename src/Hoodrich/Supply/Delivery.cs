@@ -349,7 +349,7 @@ namespace Hoodrich.Supply
         /// idle, and it ends by itself -- so there is no prop to attach and nothing left stuck
         /// in the player's hand if the script is interrupted mid-call.
         /// </summary>
-        private static void PlayPhoneAnimation(Ped player)
+        private void PlayPhoneAnimation(Ped player)
         {
             try
             {
@@ -357,6 +357,10 @@ namespace Hoodrich.Supply
                 // spot for its whole duration, which is why a longer call was unbearable --
                 // this one runs alongside walking, driving and everything else, exactly like
                 // holding a phone to your ear does.
+                // Counted as an ask, so the watchdog below does not put it in his hand again
+                // on the very next tick while this one is still lifting.
+                _phoneAskedAt = Game.GameTime;
+
                 Function.Call(Hash.TASK_USE_MOBILE_PHONE, player.Handle, true);
             }
             catch (Exception ex)
@@ -377,7 +381,7 @@ namespace Hoodrich.Supply
         /// is already running restarts it, and a phone idle restarted every frame is an arm
         /// that never finishes lifting -- which is the same bug in the opposite direction.
         /// </summary>
-        private static void HoldThePhone(Ped player)
+        private void HoldThePhone(Ped player)
         {
             try
             {
@@ -392,6 +396,16 @@ namespace Hoodrich.Supply
 
                 if (Function.Call<bool>(Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, player.Handle)) return;
 
+                // Rate-limited, and that is not a nicety.
+                //
+                // IS_PED_RUNNING_MOBILE_PHONE_TASK reports false during the lift -- the second
+                // or so where the arm is on its way up and the task has not registered yet. So
+                // the check said "not running", this re-issued, the lift restarted, the check
+                // said "not running" again, and Franklin raised the phone three times before it
+                // stuck. Once it has been given, it gets a chance to take hold.
+                if (Game.GameTime - _phoneAskedAt < PhoneSettleMs) return;
+
+                _phoneAskedAt = Game.GameTime;
                 Function.Call(Hash.TASK_USE_MOBILE_PHONE, player.Handle, true);
             }
             catch
@@ -399,6 +413,12 @@ namespace Hoodrich.Supply
                 // If the check is unavailable the call still ends on the clock.
             }
         }
+
+        /// <summary>When the phone task was last handed out, so it is not handed out again mid-lift.</summary>
+        private int _phoneAskedAt;
+
+        /// <summary>Long enough for the lift to finish and the task to register.</summary>
+        private const int PhoneSettleMs = 2200;
 
         /// <summary>Puts it away again, whether the call landed or was called off.</summary>
         private static void EndPhoneAnimation()

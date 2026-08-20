@@ -231,6 +231,22 @@ namespace Hoodrich.UI
             var step = 360f / n;
             var gap = n > 1 ? SegmentGapDegrees : 0f;
 
+            // The ring is laid down ONCE, then only what differs goes on top.
+            //
+            // It used to be one filled wedge per segment. Every fill is a stack of DRAW_RECTs
+            // and DRAW_RECT has a per-frame cap -- past it the game silently stops drawing, and
+            // it stops on whatever was asked for last. That is what the broken wheel was: the
+            // final segments came out as missing chunks and detached blobs because the game had
+            // run out of rectangles, not because the geometry was wrong.
+            //
+            // Five segments in one colour do not need five fills. One ring, then the segment
+            // under the cursor, then anything disabled. Two or three fills instead of seven.
+            if (_wedgeMode)
+            {
+                Draw.Ring(cx, cy, rInner, rOuter,
+                          Palette.Alpha(Palette.Segment, (int)(Palette.Segment.A * t)));
+            }
+
             for (var i = 0; i < n; i++)
             {
                 var item = items[i];
@@ -249,19 +265,25 @@ namespace Hoodrich.UI
 
                 if (_wedgeMode)
                 {
-                    // A hovered segment reaches slightly further out, the way the vanilla wheel
-                    // does. Slightly. At 1.045 it cleared the ring by enough that it stopped
-                    // reading as the same wheel and started reading as a fan stuck to the side
-                    // of one; the point is to lift the segment, not to detach it.
-                    var outer = hovered ? rOuter * 1.022f : rOuter;
-                    Draw.Wedge(cx, cy, rInner, outer, from, to, fill);
-
-                    // Its own arc along the top, so the grown edge is a deliberate line rather
-                    // than wherever the last row of the fill happened to stop.
+                    // Already covered by the ring underneath. Anything else is a fill nobody
+                    // can see costing rectangles everything else needs.
                     if (hovered)
                     {
+                        // A hovered segment reaches slightly further out, the way the vanilla
+                        // wheel does. Slightly -- the point is to lift the segment, not to
+                        // detach it into a fan stuck on the side of the wheel.
+                        var outer = rOuter * 1.022f;
+
+                        Draw.Wedge(cx, cy, rInner, outer, from, to, fill);
+
+                        // Its own arc along the top, so the grown edge is a deliberate line
+                        // rather than wherever the last row of the fill happened to stop.
                         Draw.Arc(cx, cy, outer, from, to, 0.0022f,
                                  Palette.Alpha(fill, (int)(255 * t)));
+                    }
+                    else if (!item.Enabled)
+                    {
+                        Draw.Wedge(cx, cy, rInner, rOuter, from, to, fill);
                     }
                 }
                 else
@@ -272,12 +294,25 @@ namespace Hoodrich.UI
                 DrawSegmentLabel(cx, cy, (rInner + rOuter) * 0.5f, mid, item, fill, t);
             }
 
-            // Hairline ring on the outer edge, as the vanilla wheel has. Drawn after the
-            // segments so a hovered wedge reaching past it still reads as breaking the line.
-            if (_wedgeMode)
+            if (_wedgeMode && n > 1)
             {
+                // The ring is one piece now, so the divisions have to be drawn back in. A spoke
+                // costs a couple of dozen small squares against a fill's several hundred.
+                var seam = Palette.Alpha(Palette.Ring, (int)(120 * t));
+
+                for (var i = 0; i < n; i++)
+                {
+                    Draw.Spoke(cx, cy, rInner, rOuter, i * step - step * 0.5f, 0.0022f, seam);
+                }
+
+                // Hairline along the outer edge, as the vanilla wheel has. After the segments,
+                // so a hovered one reaching past it still reads as breaking the line.
                 Draw.Arc(cx, cy, rOuter, 0f, 360f, 0.0022f,
                          Palette.Alpha(Palette.Ring, (int)(Palette.Ring.A * t)));
+
+                // And along the inner edge, which the hub was previously left to imply.
+                Draw.Arc(cx, cy, rInner, 0f, 360f, 0.0018f,
+                         Palette.Alpha(Palette.Ring, (int)(Palette.Ring.A * 0.7f * t)));
             }
 
             DrawHub(cx, cy, rInner, page, t);
