@@ -206,7 +206,7 @@ namespace Hoodrich
 
                 _copWatch = new CopWatch();
 
-                _traffic = new TrafficWatch(_stash.Position)
+                _traffic = new TrafficWatch()
                 {
                     // The plug is parked there because he was told to park there.
                     Ours = car => _delivery != null && _delivery.IsActive &&
