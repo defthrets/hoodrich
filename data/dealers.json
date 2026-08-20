@@ -23,15 +23,12 @@
   "dealers": [
     {
       "id": "docks",
-      "name": "Juan",
+      "name": "Ruban",
       "tag": "DOCK",
       "kind": "Docks",
       "gangId": "",
       "models": [
-        "s_m_y_dockwork_01",
-        "s_m_m_dockwork_01",
-        "s_m_y_construct_01",
-        "s_m_m_linecook"
+        "a_m_m_hasjew_01"
       ],
       "drugs": [],
       "zones": [

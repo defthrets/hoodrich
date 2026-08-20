@@ -1,5 +1,6 @@
 using System;
 using GTA;
+using Control = GTA.Control;
 using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
@@ -76,6 +77,11 @@ namespace Hoodrich.Locations
                 MakeOne(player);
                 return;
             }
+
+            // Not while he is being petted. The leash re-tasks him, and re-tasking a ped in the
+            // middle of a synchronised scene ends the scene -- so walking him back to the kennel
+            // would cut the animation off halfway through.
+            if (Petting) return;
 
             Leash();
         }
@@ -216,6 +222,131 @@ namespace Hoodrich.Locations
             _ours = false;
             _madeOne = false;
         }
+
+        /// <summary>
+        /// The prompt, every frame you are stood next to him.
+        ///
+        /// Separate from Update because Update runs on an interval -- a prompt that appears for
+        /// one frame in every ninety is a prompt that flickers.
+        /// </summary>
+        public void UpdatePrompt()
+        {
+            if (Petting)
+            {
+                Tick();
+                return;
+            }
+
+            if (_chop == null || !_chop.Exists() || !_chop.IsAlive) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            // On foot and actually next to him. Leaning out of a car at a dog is not petting it.
+            if (player.IsInVehicle()) return;
+            if (player.Position.DistanceTo(_chop.Position) > ReachRange) return;
+
+            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to pet Chop.");
+
+            if (!Game.IsControlJustPressed(Control.Context)) return;
+
+            Pet(player);
+        }
+
+        /// <summary>True while the petting scene is playing.</summary>
+        public bool Petting => _pettingUntil != 0;
+
+        /// <summary>
+        /// The game's own petting scene.
+        ///
+        /// creatures@rottweiler@tricks@ carries a matched pair -- petting_franklin for the man
+        /// and petting_chop for the dog -- which is what vanilla plays. Run as a SYNCHRONISED
+        /// scene rather than two animations started together: started separately they drift, and
+        /// a hand stroking eight inches to the left of a dog is worse than no animation at all.
+        ///
+        /// The scene is anchored on Chop and faces the way he does, so Franklin comes to the dog
+        /// rather than the dog being snapped into position in front of Franklin.
+        /// </summary>
+        private void Pet(Ped player)
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, PetDict))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, PetDict);
+
+                    // Not loaded yet. The prompt is still up, so pressing again in a moment
+                    // works -- better than standing him in a T-pose to prove a point.
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, PetDict)) return;
+                }
+
+                var at = _chop.Position;
+
+                var scene = Function.Call<int>(Hash.CREATE_SYNCHRONIZED_SCENE,
+                                               at.X, at.Y, at.Z, 0f, 0f, _chop.Heading, 2);
+
+                Function.Call(Hash.TASK_SYNCHRONIZED_SCENE, player.Handle, scene,
+                              PetDict, "petting_franklin", 1000f, -8f, 0, 0, 0f, 0);
+
+                Function.Call(Hash.TASK_SYNCHRONIZED_SCENE, _chop.Handle, scene,
+                              PetDict, "petting_chop", 1000f, -8f, 0, 0, 0f, 0);
+
+                Function.Call(Hash.SET_SYNCHRONIZED_SCENE_LOOPED, scene, false);
+
+                _pettingUntil = Game.GameTime + PetMs;
+                _scene = scene;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not pet Chop: " + ex.Message);
+                _pettingUntil = 0;
+            }
+        }
+
+        /// <summary>
+        /// Holds the scene for its length, then lets go of both of them.
+        ///
+        /// Movement is blocked for the duration rather than the player being frozen: a scene you
+        /// can walk out of halfway leaves an arm stroking thin air, and a player nailed to the
+        /// floor by a script is worse than either.
+        /// </summary>
+        private void Tick()
+        {
+            if (Game.GameTime < _pettingUntil)
+            {
+                Game.DisableControlThisFrame(Control.MoveLeftRight);
+                Game.DisableControlThisFrame(Control.MoveUpDown);
+                Game.DisableControlThisFrame(Control.Sprint);
+                Game.DisableControlThisFrame(Control.Jump);
+                Game.DisableControlThisFrame(Control.Attack);
+                Game.DisableControlThisFrame(Control.Aim);
+                Game.DisableControlThisFrame(Control.Enter);
+                return;
+            }
+
+            _pettingUntil = 0;
+            _scene = 0;
+
+            try
+            {
+                // The dict is only wanted for the length of the scene. Held forever it is a few
+                // hundred kilobytes of animation the game cannot page out.
+                Function.Call(Hash.REMOVE_ANIM_DICT, PetDict);
+            }
+            catch { /* it releases itself */ }
+        }
+
+        /// <summary>The animation pair the story uses for this exact thing.</summary>
+        private const string PetDict = "creatures@rottweiler@tricks@";
+
+        /// <summary>Close enough to reach a dog.</summary>
+        private const float ReachRange = 2.2f;
+
+        /// <summary>Roughly the length of the clip.</summary>
+        private const int PetMs = 4200;
+
+        private int _pettingUntil;
+        private int _scene;
 
         /// <summary>PED_TYPE_ANIMAL, so the game treats him as the animal he is.</summary>
         private const int PedTypeAnimal = 28;

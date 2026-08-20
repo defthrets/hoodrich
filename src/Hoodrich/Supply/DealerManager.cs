@@ -230,7 +230,7 @@ namespace Hoodrich.Supply
             var docks = new DealerDef
             {
                 Id = "docks",
-                Name = "Juan",
+                Name = "Ruban",
                 Tag = "DOCK",
                 Kind = DealerKind.Docks,
                 PriceMultiplier = 0.75f,
@@ -245,10 +245,10 @@ namespace Hoodrich.Supply
                 SourceTooSoon = "",
                 Farewell = "Off you go. Don't come back in daylight if you're carrying."
             };
-            docks.Models.AddRange(new[]
-            {
-                "s_m_y_dockwork_01", "s_m_m_dockwork_01", "s_m_y_construct_01", "s_m_m_linecook"
-            });
+            // One model, not four. He is somebody you ring up and meet by name, and turning
+            // up with a different face every delivery is what made him read as a spawn rather
+            // than a contact.
+            docks.Models.AddRange(new[] { "a_m_m_hasjew_01" });
             // Drugs deliberately empty: the docks carry the whole catalogue.
             docks.Zones.AddRange(new[] { "ELYSIAN", "ZP_ORT", "TERMINA", "BANNING" });
             _defs.Add(docks);

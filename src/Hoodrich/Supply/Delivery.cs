@@ -375,7 +375,7 @@ namespace Hoodrich.Supply
         /// The untimed mobile task is not a task the game protects. Aiming drops it, drawing a
         /// weapon drops it, taking a hit drops it, and the phone control puts it away outright
         /// -- so the call that is supposed to last six seconds routinely lasted one, and you
-        /// watched Franklin lower an invisible phone and then stand there until Juan turned up.
+        /// watched Franklin lower an invisible phone and then stand there until Ruban turned up.
         ///
         /// So it is re-asserted, but only when it has actually stopped. Re-issuing a task that
         /// is already running restarts it, and a phone idle restarted every frame is an arm

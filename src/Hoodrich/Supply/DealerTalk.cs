@@ -9,7 +9,7 @@ using Hoodrich.UI;
 
 namespace Hoodrich.Supply
 {
-    /// <summary>One thing Juan will sell you, in the quantity he sells it in.</summary>
+    /// <summary>One thing Ruban will sell you, in the quantity he sells it in.</summary>
     internal sealed class Brick
     {
         public readonly string DrugId;
@@ -25,11 +25,11 @@ namespace Hoodrich.Supply
     }
 
     /// <summary>
-    /// Buying weight off Juan.
+    /// Buying weight off Ruban.
     ///
     /// He does not do grams and he does not do ounces. Everything on this list is a brick or
     /// several, and nothing on it comes to less than fifty thousand dollars -- that is the whole
-    /// point of him. Stretch sells you enough to work a corner tonight; Juan sells you enough
+    /// point of him. Stretch sells you enough to work a corner tonight; Ruban sells you enough
     /// that the corner stops being the interesting part.
     ///
     /// It all goes to the house, not your pockets. You cannot walk around with twelve kilos of
@@ -84,7 +84,7 @@ namespace Hoodrich.Supply
             _crew = crew;
         }
 
-        private string Name => _delivery.Def == null ? "Juan" : _delivery.Def.Name;
+        private string Name => _delivery.Def == null ? "Ruban" : _delivery.Def.Name;
 
         private float Multiplier => _delivery.Def == null ? 0.75f : _delivery.Def.PriceMultiplier;
 

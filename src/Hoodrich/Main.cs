@@ -553,6 +553,7 @@ namespace Hoodrich
                     _sleep.Update();
                     _kitchen.Update();
                     _chop.Update();
+                    _chop.UpdatePrompt();
                     _sleep.RestoreOnLoad();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
