@@ -48,6 +48,38 @@ namespace Hoodrich.UI
 
         private static readonly string[] SizeNames = { "Singles", "Eighths", "Quarters", "Ounces" };
 
+        /// <summary>
+        /// The same decision for things that are counted rather than weighed.
+        ///
+        /// You do bag pills in tens. It is the same trade weight makes -- singles move slowly
+        /// for more, bulk moves at once for less -- and it is a real choice, which is why this
+        /// exists instead of the screen greying the whole row out and writing "one at a time"
+        /// next to it.
+        /// </summary>
+        private static readonly float[] CountedSizes = { 1f, 5f, 10f, 25f };
+
+        private static readonly string[] CountedNames = { "Singles", "Fives", "Tens", "Twenty-fives" };
+
+        /// <summary>Sizes for a product, in its own units.</summary>
+        private static float[] SizesOf(DrugDef made)
+        {
+            if (made == null) return Sizes;
+
+            // Made-only things come out finished. A joint is a joint -- there is no second way
+            // to package one, so there is nothing to choose and nothing shown.
+            if (made.MadeOnly) return new[] { 1f };
+
+            return made.Counted ? CountedSizes : Sizes;
+        }
+
+        private static string[] NamesOf(DrugDef made)
+        {
+            if (made == null) return SizeNames;
+            if (made.MadeOnly) return new[] { "" };
+
+            return made.Counted ? CountedNames : SizeNames;
+        }
+
         private int _size;
 
         /// <summary>One line at the counter: what you work, and what comes off it.</summary>
@@ -234,22 +266,42 @@ namespace Hoodrich.UI
             if (_selected < 0) _selected = _rows.Count - 1;
             if (_selected >= _rows.Count) _selected = 0;
 
+            // Products do not all have the same number of ways to be packaged. Moving from
+            // weed on ounces to joints, which have one, would leave the highlight pointing at
+            // an option that is not drawn -- nothing lit up and the screen looking broken.
+            var sizes = SizesOf(Made()).Length;
+            if (_size >= sizes) _size = sizes - 1;
+
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
         /// <summary>Steps through what it gets bagged into.</summary>
         private void Bag(int step)
         {
-            _size = (_size + step) % Sizes.Length;
-            if (_size < 0) _size += Sizes.Length;
+            // Within this product's own list. Four steps through a list of one is four presses
+            // that do nothing and look broken.
+            var count = Math.Max(1, SizesOf(Made()).Length);
+
+            _size = (_size + step) % count;
+            if (_size < 0) _size += count;
 
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
         /// <summary>The size actually used, which a counted product has no say in.</summary>
+        /// <summary>What is coming off the counter, which is what the sizes are for.</summary>
+        private DrugDef Made()
+        {
+            if (_rows.Count == 0) return null;
+
+            var row = _rows[Math.Max(0, Math.Min(_selected, _rows.Count - 1))];
+            return row.Output ?? row.Source;
+        }
+
         private float SizeFor(DrugDef made)
         {
-            return made != null && made.Counted ? 1f : Sizes[_size];
+            var sizes = SizesOf(made);
+            return sizes[Math.Max(0, Math.Min(_size, sizes.Length - 1))];
         }
 
         private void Step(int step)
@@ -423,15 +475,19 @@ namespace Hoodrich.UI
 
             y += 0.032f;
 
-            // And what it gets bagged into. Greyed for anything counted, because a pill is a
-            // pill however you package it and pretending otherwise would be a lie on screen.
-            var counted = made.Counted;
+            // And what it gets bagged into, in this product's own units -- grams for weight,
+            // counts for pills. A product with only one way to be packaged shows nothing at
+            // all rather than three struck-through options, because an option greyed out is
+            // still an option on screen and there is no decision here to explain.
+            var names = NamesOf(made);
             var bx = x;
 
-            for (var i = 0; i < Sizes.Length; i++)
+            for (var i = 0; i < names.Length; i++)
             {
-                var on = !counted && i == _size;
-                var label = SizeNames[i];
+                if (string.IsNullOrEmpty(names[i])) continue;
+
+                var on = i == _size;
+                var label = names[i];
                 var width = Hud.MeasureText(label, 0.28f, Hud.FontBody) + 0.014f;
 
                 if (on)
@@ -441,15 +497,17 @@ namespace Hoodrich.UI
                 }
 
                 Hud.Text(label, bx + 0.003f, y + 0.001f, 0.28f,
-                         counted ? Palette.TextDisabled
-                                 : on ? Palette.TextOnHover : Palette.TextDim,
+                         on ? Palette.TextOnHover : Palette.TextDim,
                          Hud.FontBody, centre: false);
 
                 bx += width + 0.006f;
             }
 
-            Hud.TextRight(counted ? "counted, one at a time"
-                                  : Bags(made, yield) + " to sell",
+            // What comes off the counter, in whatever this thing is counted in. The old
+            // version said "counted, one at a time" for anything countable, which was the
+            // screen explaining why its own options did not apply -- there is nothing to
+            // explain now, so it just says how many bags.
+            Hud.TextRight(Bags(made, yield) + " to sell",
                           right, y + 0.001f, 0.28f, Palette.TextDim, Hud.FontLabel);
 
             y += 0.030f;
@@ -484,7 +542,12 @@ namespace Hoodrich.UI
             if (size <= 0f) return "0";
 
             var count = (int)Math.Floor(yield / size);
-            var name = SizeNames[_size].ToLowerInvariant();
+
+            var names = NamesOf(made);
+            var name = names[Math.Max(0, Math.Min(_size, names.Length - 1))].ToLowerInvariant();
+
+            // Nothing to say about how it is bagged, so say what it is instead.
+            if (string.IsNullOrEmpty(name)) return made.Amount(yield);
 
             return count + " " + (count == 1 ? name.TrimEnd('s') : name);
         }
