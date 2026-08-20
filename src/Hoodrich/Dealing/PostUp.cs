@@ -277,6 +277,8 @@ namespace Hoodrich.Dealing
             _driveBys = 0;
             State = PostState.Posted;
 
+            CarryTheBag(player);
+
 
             Notify.Ticker("~g~Posted up.~s~ Moving " + product.Name.ToLowerInvariant() +
                           ". A busy sidewalk sells faster and burns hotter.");
@@ -284,12 +286,81 @@ namespace Hoodrich.Dealing
             return null;
         }
 
+        /// <summary>
+        /// The bag, while he is working.
+        ///
+        /// Component 5 is the slot the game keeps a ped's bag in -- the same one the heists put
+        /// a duffle in. So this is not a prop stuck to his back, it is the bag the model already
+        /// has, which means it moves with him and survives everything the game does to a player
+        /// ped.
+        ///
+        /// What was there before is remembered rather than assumed to be nothing, because
+        /// somebody in a heist outfit is already wearing something in that slot and taking it
+        /// off him would be this mod undressing him.
+        /// </summary>
+        private void CarryTheBag(Ped player)
+        {
+            if (_bagOn) return;
+
+            try
+            {
+                if (player == null || !player.Exists()) return;
+
+                _bagWas = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, player.Handle, BagSlot);
+                _bagTexWas = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, player.Handle, BagSlot);
+
+                // Already carrying something. Leave it -- he can work with his own bag.
+                if (_bagWas > 0) return;
+
+                Function.Call(Hash.SET_PED_COMPONENT_VARIATION, player.Handle,
+                              BagSlot, Duffle, 0, 0);
+
+                _bagOn = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put the bag on: " + ex.Message);
+            }
+        }
+
+        /// <summary>Puts him back exactly as he was.</summary>
+        private void DropTheBag()
+        {
+            if (!_bagOn) return;
+            _bagOn = false;
+
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return;
+
+                Function.Call(Hash.SET_PED_COMPONENT_VARIATION, player.Handle,
+                              BagSlot, _bagWas, _bagTexWas, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not take the bag off: " + ex.Message);
+            }
+        }
+
+        /// <summary>PED_COMPONENT_HAND -- the slot a ped's bag lives in.</summary>
+        private const int BagSlot = 5;
+
+        /// <summary>The duffle. Drawable 1 on this slot is a bag on every player model.</summary>
+        private const int Duffle = 1;
+
+        private bool _bagOn;
+        private int _bagWas;
+        private int _bagTexWas;
+
         public void Stop(string reason)
         {
             if (!IsPosted) return;
 
             var sales = _sales;
             var earned = _earned;
+
+            DropTheBag();
 
             ReleaseCustomer();
             ReleaseCop();
@@ -1818,6 +1889,11 @@ namespace Hoodrich.Dealing
 
         public void RestoreWorld()
         {
+            // The bag first. Unloading the script with it still on him would leave Franklin
+            // wearing a duffle for the rest of the save, which is the mod not cleaning up
+            // after itself in the most visible way possible.
+            DropTheBag();
+
             ReleaseCustomer();
             ReleaseCop();
             ReleaseRivals();
