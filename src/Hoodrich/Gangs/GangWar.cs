@@ -74,6 +74,17 @@ namespace Hoodrich.Gangs
         /// what keeps it a fight rather than four separate skirmishes with quiet in between.
         /// Still irregular, so it never sounds like a metronome.
         /// </summary>
+        /// <summary>
+        /// How near the end a wave stops being worth sending.
+        ///
+        /// A carload that spawns three streets out with fifteen seconds left arrives to find it
+        /// already over, which reads as a raid that turned up after the raid.
+        /// </summary>
+        private const int LastWaveMs = 20000;
+
+        /// <summary>How long an empty block waits before the next lot arrive.</summary>
+        private const int EmptyBlockMs = 6000;
+
         private const int WaveGapMinMs = 22000;
         private const int WaveGapMaxMs = 42000;
 
@@ -547,15 +558,37 @@ namespace Hoodrich.Gangs
             ListenForShots(player);
             PushIn(now);
 
-            // More of them, until the clock runs out -- but only if this is more than a beef.
-            // One carload for two minutes means one carload: sending another every half minute
-            // made the smallest tier busier than the one above it, which is the opposite of
-            // what the tiers are for.
-            if (_heat >= WarHeat && elapsed < _warMs - WaveGapMinMs && now >= _nextWave)
+            // More of them, until they run out or the clock does.
+            //
+            // This used to be gated on the tier, so at a beef the opening carload was the only
+            // carload ever sent -- while the reserve was still set to six, so the bar advertised
+            // four men who were never coming, and the "they are spent" ending waits on a reserve
+            // that could never reach zero. You killed the two who turned up and then stood in an
+            // empty street for the rest of the two minutes.
+            //
+            // The reserve is the promise. If the bar says four more are coming, four more come.
+            // What the tier decides is how many there are altogether and how long the gap is,
+            // which is what made a beef smaller than a war to begin with.
+            if (_reserve > 0 && elapsed < _warMs - LastWaveMs && now >= _nextWave)
             {
                 var twoUp = _rng.NextDouble() < DoubleCarChance + _heat * DoubleCarChanceAtWorst;
                 SendWave(twoUp ? 2 : 1);
             }
+
+            // Nothing left standing and people still to send: they come now.
+            //
+            // Waiting out a forty second gap with an empty street and a bar counting down
+            // reinforcements is the single most broken-looking state this thing has. Whoever is
+            // left hears it went badly and turns up, which is also how it would actually go.
+            if (_reserve > 0 && AliveIn(_rivals) == 0 && now < _nextWave - EmptyBlockMs
+                && elapsed < _warMs - LastWaveMs)
+            {
+                _nextWave = now + EmptyBlockMs;
+            }
+
+            // Out of time to send anybody else, so stop advertising them. The bar promising
+            // people who cannot arrive before the clock ends is the same lie in a smaller way.
+            if (_reserve > 0 && elapsed >= _warMs - LastWaveMs) _reserve = 0;
 
             // Spent. They brought a number of people and that number is on the floor, so it
             // is over -- and it is over because of something you did rather than because a
