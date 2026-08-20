@@ -2235,6 +2235,83 @@
       "if you owe me you know you owe me"
     ],
 
+    "GangOnGang": [
+      "{rival} been quiet lately. suspiciously quiet",
+      "everybody wanna be {rival} till it's time to be {rival}",
+      "we don't got a problem with nobody except {rival}",
+      "{rival} still owe from last year and they know it",
+      "tell {rival} the arrangement changed"
+    ],
+
+    "GangOnGangBallas": [
+      "{rival} out here acting brand new. we remember",
+      "purple don't answer to {rival}. never did",
+      "{rival} got a lot to say for people who moved twice this year",
+      "we let {rival} eat and they got greedy. that's on us",
+      "davis is ours end to end. ask {rival} what they got",
+      "every problem in this city start with {rival}"
+    ],
+
+    "GangOnGangVagos": [
+      "{rival} think rancho is a suggestion",
+      "we been on the east side since before {rival} had a name",
+      "{rival} buy from us and then talk about us. pick one",
+      "yellow don't run from {rival} or nobody",
+      "jamestown is ours. {rival} can read a map",
+      "{rival} loud on here and polite in person, funny that"
+    ],
+
+    "GangOnGangAztecas": [
+      "we small. we ain't quiet. {rival} keep forgetting",
+      "{rival} got twenty blocks and still worried about our two",
+      "everybody grew and we stayed. ask {rival} why that scare them",
+      "{rival} been trying to take this corner for years",
+      "the hospital side is ours. {rival} know where the line is"
+    ],
+
+    "GangOnGangMarabunta": [
+      "{rival} don't come down el burro after dark and they know why",
+      "we came here with nothing. {rival} inherited theirs",
+      "the canals ain't neutral. tell {rival}",
+      "{rival} talk about family. we ARE the family",
+      "vespucci is ours too. {rival} can share the sand",
+      "{rival} count money. we count people"
+    ],
+
+    "GangOnGangLost": [
+      "{rival} wouldn't last one night in blaine county",
+      "city boys. {rival} have never been cold in their lives",
+      "we ride past {rival} every week and nothing happens. every week",
+      "{rival} think the freeway ends where their block does",
+      "stab city don't negotiate with {rival}",
+      "half of {rival} buy their crank off us and the other half will"
+    ],
+
+    "GangOnGangTriads": [
+      "{rival} confuse noise with business",
+      "we have been here a very long time. {rival} have not",
+      "{rival} will find the arrangement is no longer available",
+      "there is nothing to discuss with {rival}",
+      "cypress flats is not open to {rival}",
+      "{rival} should ask who they are actually buying from"
+    ],
+
+    "GangOnGangArmenians": [
+      "{rival} do not understand paperwork and it shows",
+      "we own the paper on half of what {rival} drive",
+      "{rival} are a temporary problem",
+      "la puerta is not a negotiation, {rival}",
+      "somebody should explain to {rival} how a business works"
+    ],
+
+    "GangOnGangFamilies": [
+      "{rival} been on borrowed time since forever",
+      "chamberlain ain't never been {rival} and never will be",
+      "we don't chase {rival}. they come to us",
+      "{rival} got the numbers and we got the block. we'll see",
+      "every one of {rival} know somebody who used to be with us"
+    ],
+
     "Hospital": [
       "praying for my boy franklin. speedy recovery bro",
       "heard franklin got hit. get well soon my guy, block need you",

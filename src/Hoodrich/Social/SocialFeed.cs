@@ -688,8 +688,28 @@ namespace Hoodrich.Social
             Ambient(false, roll < 0.34);
         }
 
+        /// <summary>
+        /// Set by Main: one gang with a problem, and the name of who they have it with.
+        ///
+        /// Comes in from outside because this class has no gang registry and should not grow
+        /// one -- it knows about authors and words, and the city's politics are somebody else's
+        /// business. Returns [gangId, theirName], or null when nobody is feuding.
+        /// </summary>
+        public Func<string[]> BickerPair;
+
+        /// <summary>How often an ambient post is one gang being rude about another.</summary>
+        private const double BickerChance = 0.22;
+
         private void Ambient(bool backdated, bool business = false)
         {
+            // Roughly one ambient post in five is two other gangs going at each other.
+            //
+            // Everything on this feed used to point at the Families -- every taunt, every
+            // gloat, every RIP was somebody talking to us or about us, which makes a city of
+            // eight gangs read as one gang and seven audiences. The Vagos and the Marabunta
+            // have their own problem and it has nothing to do with Franklin.
+            if (!business && _rng.NextDouble() < BickerChance && Bicker(backdated)) return;
+
             var post = Build(business ? "AmbientOrg" : "Ambient", null);
             if (post == null) return;
 
@@ -704,6 +724,48 @@ namespace Hoodrich.Social
 
             Add(post);
             Notify(post);
+        }
+
+        /// <summary>
+        /// One gang, being rude about another, in their own voice.
+        ///
+        /// The author pool is forced to the gang doing the talking, and the set is theirs --
+        /// GangOnGangTriads for Cheng's people, GangOnGangLost for the bikers. A Triad does not
+        /// post like a Balla, and if he can then neither line was worth writing. The general
+        /// set is the fallback for a gang nobody has written lines for yet.
+        /// </summary>
+        private bool Bicker(bool backdated)
+        {
+            if (BickerPair == null) return false;
+
+            string[] pair;
+            try { pair = BickerPair(); }
+            catch { return false; }
+
+            if (pair == null || pair.Length < 2) return false;
+            if (string.IsNullOrEmpty(pair[0]) || string.IsNullOrEmpty(pair[1])) return false;
+
+            _forceGang = pair[0];
+
+            var post = Build("GangOnGang" + Pretty(pair[0]), pair[1])
+                       ?? Build("GangOnGang", pair[1]);
+
+            _forceGang = "";
+
+            if (post == null) return false;
+
+            // Not about you. It goes on the timeline and, when it is live, it notifies the same
+            // as anything else -- but nothing in it is aimed at Franklin.
+            if (backdated)
+            {
+                post.At -= _rng.Next(120000, 3600000);
+                Add(post);
+                return true;
+            }
+
+            Add(post);
+            Notify(post);
+            return true;
         }
 
         // ---- things that happened ----------------------------------------------
@@ -1302,6 +1364,17 @@ namespace Hoodrich.Social
                 // it goes off outside is not repping a set, they are a person who lives there.
                 case "WarLiveRival":
                 case "WarLiveOurs":
+
+                // One set being rude about another is the most gang thing on here.
+                case "GangOnGang":
+                case "GangOnGangFamilies":
+                case "GangOnGangBallas":
+                case "GangOnGangVagos":
+                case "GangOnGangAztecas":
+                case "GangOnGangMarabunta":
+                case "GangOnGangLost":
+                case "GangOnGangTriads":
+                case "GangOnGangArmenians":
                 case "Brawl":
                 case "DriveBy":
                 case "Tagged":

@@ -215,7 +215,7 @@ namespace Hoodrich.Gangs
             Register(Make("families", "The Families", "FAM", "AMBIENT_GANG_FAMILY",
                 Color.FromArgb(60, 180, 75), 2,
                 new[] { "weed", "crack" },
-                new[] { "ballas", "vagos" },
+                new[] { "ballas", "vagos", "lost", "aztecas" },
                 new[] { "CHAMH", "STRAW", "DAVIS" },
                 "Chamberlain Hills, Strawberry, Davis",
                 // The three Families models and nothing else. A generic South Central civilian
@@ -228,7 +228,7 @@ namespace Hoodrich.Gangs
             Register(Make("ballas", "Ballas", "BALL", "AMBIENT_GANG_BALLAS",
                 Color.FromArgb(145, 70, 190), 27,
                 new[] { "crack", "weed" },
-                new[] { "families", "vagos" },
+                new[] { "families", "vagos", "marabunta", "aztecas" },
                 new[] { "DAVIS", "CHAMH" },
                 "Rancho, Murrieta Heights, Davis Quartz",
                 new[] { "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01", "a_m_m_soucent_02" }));
@@ -236,7 +236,7 @@ namespace Hoodrich.Gangs
             Register(Make("vagos", "Los Santos Vagos", "VAGO", "AMBIENT_GANG_MEXICAN",
                 Color.FromArgb(235, 195, 40), 5,
                 new[] { "coke", "meth" },
-                new[] { "families", "ballas" },
+                new[] { "families", "ballas", "marabunta", "aztecas" },
                 new[] { "RANCHO" },
                 "El Burro Heights, La Mesa, Tataviam Mountains",
                 new[] { "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03", "a_m_y_mexthug_01" }));
@@ -244,7 +244,7 @@ namespace Hoodrich.Gangs
             Register(Make("marabunta", "Marabunta Grande", "MARA", "AMBIENT_GANG_MARABUNTE",
                 Color.FromArgb(70, 200, 200), 3,
                 new[] { "meth", "coke" },
-                new[] { "vagos", "families" },
+                new[] { "vagos", "ballas", "lost" },
                 new[] { "ELBURRO", "VESP" },
                 "Cypress Flats, Textile City, Elysian Island",
                 new[] { "g_m_y_salvaboss_01", "g_m_y_salvagoon_01", "g_m_y_salvagoon_02", "a_m_y_mexthug_01" }));
@@ -252,7 +252,7 @@ namespace Hoodrich.Gangs
             Register(Make("lost", "The Lost MC", "LOST", "AMBIENT_GANG_LOST",
                 Color.FromArgb(200, 200, 200), 40,
                 new[] { "meth", "heroin" },
-                new[] { "families", "vagos" },
+                new[] { "families", "marabunta", "triads" },
                 new[] { "SLAB", "GRAPES" },
                 "Stab City, Sandy Shores, Grapeseed",
                 new[] { "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03", "a_m_m_hillbilly_01" }));
@@ -260,7 +260,7 @@ namespace Hoodrich.Gangs
             Register(Make("triads", "Wei Cheng Triads", "TRI", "AMBIENT_GANG_WEICHENG",
                 Color.FromArgb(220, 60, 60), 1,
                 new[] { "ecstasy", "heroin" },
-                new[] { "marabunta", "armenians" },
+                new[] { "lost", "armenians" },
                 new[] { "CYPRE" },
                 "Little Seoul, Mirror Park, Hawick",
                 new[] { "g_m_m_chiboss_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02", "a_m_y_ktown_01" }));
@@ -268,7 +268,7 @@ namespace Hoodrich.Gangs
             Register(Make("armenians", "Armenian Mob", "ARM", "AMBIENT_GANG_ARMENIAN",
                 Color.FromArgb(150, 40, 60), 76,
                 new[] { "heroin" },
-                new[] { "triads" },
+                new[] { "triads", "lost" },
                 new[] { "LAPUER" },
                 "Alta, Burton, Pillbox Hill",
                 new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_y_armgoon_02", "a_m_m_eastsa_02" }));

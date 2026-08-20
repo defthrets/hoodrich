@@ -491,6 +491,27 @@ namespace Hoodrich
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
 
+                // Two other gangs with a problem, picked fresh each time.
+                //
+                // Every gang with rivals is a candidate, including the ones Franklin has
+                // nothing to do with -- Cheng's people and Simeon's people being rude about
+                // each other is the city carrying on without him, which is the whole point.
+                _social.BickerPair = () =>
+                {
+                    var speakers = new List<GangDef>();
+                    foreach (var g in _gangs.All)
+                    {
+                        if (g != null && g.Rivals.Count > 0) speakers.Add(g);
+                    }
+
+                    if (speakers.Count == 0) return null;
+
+                    var who = speakers[_rng.Next(speakers.Count)];
+                    var about = _gangs.Get(who.Rivals[_rng.Next(who.Rivals.Count)]);
+
+                    return about == null ? null : new[] { who.Id, about.Name };
+                };
+
                 pages.SayDaily = () =>
                 {
                     var said = _social.PostAsYou("YouDaily", "");
