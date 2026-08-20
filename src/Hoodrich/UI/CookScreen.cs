@@ -36,6 +36,20 @@ namespace Hoodrich.UI
         /// <summary>How far it can be stretched, cleanest first.</summary>
         private static readonly float[] Purities = { 1.0f, 0.75f, 0.5f, 0.33f };
 
+        /// <summary>
+        /// What the batch gets packaged into.
+        ///
+        /// Not an amount so much as a decision about who you are selling to. Singles move fast
+        /// on a corner and take all afternoon; ounces move once and are gone. The product
+        /// decides what these actually mean -- a counted product packages into ones whatever
+        /// you pick, because a half a pill is not a thing.
+        /// </summary>
+        private static readonly float[] Sizes = { 1f, 3.5f, 7f, 28f };
+
+        private static readonly string[] SizeNames = { "Singles", "Eighths", "Quarters", "Ounces" };
+
+        private int _size;
+
         /// <summary>One line at the counter: what you work, and what comes off it.</summary>
         private sealed class CookRow
         {
@@ -52,7 +66,7 @@ namespace Hoodrich.UI
         private Stash _stash;
         private Drugs _catalogue;
         private Pricing _pricing;
-        private Func<DrugDef, DrugDef, float, float, string> _start;
+        private Func<DrugDef, DrugDef, float, float, float, string> _start;
 
         private int _selected;
         private int _purity;
@@ -61,7 +75,7 @@ namespace Hoodrich.UI
         public bool IsOpen { get; private set; }
 
         public void Open(Stash stash, Drugs catalogue, Pricing pricing,
-                         Func<DrugDef, DrugDef, float, float, string> start)
+                         Func<DrugDef, DrugDef, float, float, float, string> start)
         {
             if (stash == null || catalogue == null || pricing == null) return;
 
@@ -72,6 +86,7 @@ namespace Hoodrich.UI
 
             _selected = 0;
             _purity = 0;
+            _size = 0;
             _openedAt = Game.GameTime;
             IsOpen = true;
 
@@ -146,6 +161,7 @@ namespace Hoodrich.UI
             else if (Pressed(Control.PhoneDown)) Move(1);
             else if (Pressed(Control.PhoneLeft)) Step(-1);
             else if (Pressed(Control.PhoneRight)) Step(1);
+            else if (Pressed(Control.Jump) || Pressed(Control.Cover)) Bag(1);
             else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) Begin();
         }
 
@@ -163,6 +179,21 @@ namespace Hoodrich.UI
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
+        /// <summary>Steps through what it gets bagged into.</summary>
+        private void Bag(int step)
+        {
+            _size = (_size + step) % Sizes.Length;
+            if (_size < 0) _size += Sizes.Length;
+
+            Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>The size actually used, which a counted product has no say in.</summary>
+        private float SizeFor(DrugDef made)
+        {
+            return made != null && made.Counted ? 1f : Sizes[_size];
+        }
+
         private void Step(int step)
         {
             _purity = Math.Max(0, Math.Min(Purities.Length - 1, _purity + step));
@@ -174,7 +205,8 @@ namespace Hoodrich.UI
             var row = _rows[_selected];
             var batch = Math.Min(MaxBatch, _stash.BulkOf(row.Source.Id));
 
-            var failure = _start?.Invoke(row.Source, row.Output, batch, Purities[_purity]);
+            var failure = _start?.Invoke(row.Source, row.Output, batch, Purities[_purity],
+                                         SizeFor(row.Output ?? row.Source));
             if (failure != null)
             {
                 Notify.Problem(failure);
@@ -213,7 +245,7 @@ namespace Hoodrich.UI
         {
             if (!IsOpen || _rows.Count == 0) return;
 
-            var height = 0.214f + _rows.Count * RowHeight;
+            var height = 0.268f + _rows.Count * RowHeight;
 
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
@@ -228,12 +260,19 @@ namespace Hoodrich.UI
             var right = left + panelWidth - pad;
             var y = top + 0.013f;
 
-            Hud.Text("THE KITCHEN", x, y, 0.34f, Palette.Text, Hud.FontLabel, centre: false);
-            y += 0.030f;
+            // The house script, the same face every other screen in the mod is titled in.
+            Hud.Text("THE KITCHEN", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
 
-            Hud.Text("Pick what you're working, then how far you stretch it.",
-                     x, y, 0.26f, Palette.TextDim, Hud.FontBody, centre: false);
-            y += 0.030f;
+            Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
+                          Palette.Cash, Hud.FontChaletLondon);
+
+            y += 0.044f;
+
+            Hud.RectFrom(x, y, panelWidth - pad * 2f, 0.0022f, Palette.Accent);
+            y += 0.012f;
+
+            Hud.Text("WHAT YOU'RE WORKING", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+            y += 0.026f;
 
             foreach (var row in _rows)
             {
@@ -242,9 +281,12 @@ namespace Hoodrich.UI
 
                 if (picked)
                 {
-                    Hud.RectFrom(x - pad * 0.35f, y - 0.004f,
+                    Hud.RectFrom(x - pad * 0.35f, y - 0.005f,
                                  panelWidth - pad * 1.3f, RowHeight,
-                                 Color.FromArgb(45, 255, 255, 255));
+                                 Color.FromArgb(52, 255, 255, 255));
+
+                    // A rail on the selected row, the way the readouts mark what is yours.
+                    Hud.RectFrom(x - pad * 0.35f, y - 0.005f, 0.0022f, RowHeight, Palette.Accent);
                 }
 
                 Hud.Text((picked ? "> " : "  ") + row.Label, x, y, 0.30f,
@@ -301,6 +343,37 @@ namespace Hoodrich.UI
             Hud.TextRight((chosen.Rolling ? made.WorkVerb : product.WorkVerb) + "  ·  " + PurityWord(purity),
                           right, y + 0.002f, 0.28f, Palette.Accent, Hud.FontLabel);
 
+            y += 0.032f;
+
+            // And what it gets bagged into. Greyed for anything counted, because a pill is a
+            // pill however you package it and pretending otherwise would be a lie on screen.
+            var counted = made.Counted;
+            var bx = x;
+
+            for (var i = 0; i < Sizes.Length; i++)
+            {
+                var on = !counted && i == _size;
+                var label = SizeNames[i];
+                var width = Hud.MeasureText(label, 0.28f, Hud.FontBody) + 0.014f;
+
+                if (on)
+                {
+                    Hud.RectFrom(bx - 0.004f, y - 0.002f, width, 0.024f,
+                                 Color.FromArgb(210, 240, 242, 240));
+                }
+
+                Hud.Text(label, bx + 0.003f, y + 0.001f, 0.28f,
+                         counted ? Palette.TextDisabled
+                                 : on ? Palette.TextOnHover : Palette.TextDim,
+                         Hud.FontBody, centre: false);
+
+                bx += width + 0.006f;
+            }
+
+            Hud.TextRight(counted ? "counted, one at a time"
+                                  : Bags(made, yield) + " to sell",
+                          right, y + 0.001f, 0.28f, Palette.TextDim, Hud.FontLabel);
+
             y += 0.030f;
 
             Hud.Text(product.Amount(batch) + "  ->  " + made.Amount(yield), x, y, 0.30f,
@@ -321,8 +394,21 @@ namespace Hoodrich.UI
                      Hud.FontBody, centre: false);
             y += 0.026f;
 
-            Hud.Text("UP / DOWN  PRODUCT     LEFT / RIGHT  HOW FAR     ENTER  START     BACKSPACE  LEAVE",
+            Hud.Text("UP / DOWN  PRODUCT      LEFT / RIGHT  HOW FAR      SPACE  BAG SIZE      " +
+                     "ENTER  START      BACKSPACE  LEAVE",
                      x, top + height - 0.020f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
+        }
+
+        /// <summary>How many packages a yield comes out as, at the chosen size.</summary>
+        private string Bags(DrugDef made, float yield)
+        {
+            var size = SizeFor(made);
+            if (size <= 0f) return "0";
+
+            var count = (int)Math.Floor(yield / size);
+            var name = SizeNames[_size].ToLowerInvariant();
+
+            return count + " " + (count == 1 ? name.TrimEnd('s') : name);
         }
 
         private static string PurityWord(float purity)

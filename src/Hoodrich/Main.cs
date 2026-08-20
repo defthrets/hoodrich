@@ -569,7 +569,8 @@ namespace Hoodrich
         private void OpenKitchen()
         {
             _cook.Open(_state.Stash, _drugs, _pricing,
-                       (drug, output, grams, purity) => _cutting.TryStart(drug, output, grams, purity));
+                       (drug, output, grams, purity, size) =>
+                           _cutting.TryStart(drug, output, grams, purity, size));
         }
 
         /// <summary>True when the player is in normal control and the mod should be live.</summary>

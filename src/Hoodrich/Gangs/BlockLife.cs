@@ -72,10 +72,17 @@ namespace Hoodrich.Gangs
         /// often, aimed at whoever is nearest, and they read as a conversation you happen to be
         /// walking past -- which is what they are.
         /// </summary>
+        /// <summary>
+        /// Chatter between them.
+        ///
+        /// Nothing rude in here. These are Families and Franklin runs with them -- a man on his
+        /// own stoop calling him something as he walks past is not banter, it is the game
+        /// picking a line at random, and it undoes the one thing this whole system is for.
+        /// </summary>
         private static readonly string[] Chat =
         {
             "GENERIC_HOWS_IT_GOING", "GENERIC_HI", "CHAT_STATE", "GENERIC_YES",
-            "GENERIC_INSULT_MED", "GENERIC_THANKS",
+            "GENERIC_THANKS", "CHAT_RESP",
         };
 
         private const int ChatGapMinMs = 9000;

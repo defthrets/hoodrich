@@ -24,6 +24,9 @@ namespace Hoodrich.Economy
         private const float MsPerGram = 90f;
         private const int MaxDurationMs = 30_000;
 
+        /// <summary>Every bag has to be filled, tied and put somewhere.</summary>
+        private const int MsPerPackage = 260;
+
         private readonly Stash _stash;
         private readonly PlayerState _state;
 
@@ -95,6 +98,21 @@ namespace Hoodrich.Economy
         /// </summary>
         public string TryStart(DrugDef product, DrugDef output, float bulkGrams, float targetPurity)
         {
+            return TryStart(product, output, bulkGrams, targetPurity, 1f);
+        }
+
+        /// <summary>
+        /// The same, told what it is being bagged into.
+        ///
+        /// The size is not a different product -- an ounce and twenty-eight singles are the same
+        /// weight of the same thing -- it is how long you are stood at that counter. Twenty-eight
+        /// little bags is an afternoon; one ounce bag is a minute, and the corner will take all
+        /// day to move it. That is the trade, and it is the only honest thing a bag size can do
+        /// in a stash measured by weight.
+        /// </summary>
+        public string TryStart(DrugDef product, DrugDef output, float bulkGrams,
+                               float targetPurity, float packageSize)
+        {
             if (output == null) output = product;
             if (IsBusy) return "Already working.";
             if (product == null) return "Nothing selected.";
@@ -120,7 +138,13 @@ namespace Hoodrich.Economy
             _bulkGrams = bulkGrams;
             _targetPurity = targetPurity;
             _startedAt = Game.GameTime;
-            _durationMs = Math.Min(MaxDurationMs, BaseDurationMs + (int)(bulkGrams * MsPerGram));
+            // How long depends on how many bags come out of it, not just how much went in.
+            var yieldNow = YieldOf(product, output, bulkGrams, targetPurity);
+            var bags = packageSize <= 0f ? yieldNow : yieldNow / packageSize;
+
+            var work = BaseDurationMs + (int)(bulkGrams * MsPerGram) + (int)(bags * MsPerPackage);
+
+            _durationMs = Math.Min(MaxDurationMs, Math.Max(BaseDurationMs, work));
             _startPosition = Game.Player.Character.Position;
 
             Notify.Ticker(product.SplitVerb + " " + product.Amount(bulkGrams) + " of " + product.Name +

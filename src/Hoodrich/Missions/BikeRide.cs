@@ -85,10 +85,17 @@ namespace Hoodrich.Missions
         /// <summary>How often the escort task is put back on anybody who has lost it.</summary>
         private const int RetaskGapMs = 2500;
 
+        /// <summary>
+        /// What they shout on the way out.
+        ///
+        /// Wound up rather than rude. They are riding out with him, not at him, so the insults
+        /// come off -- whatever is being shouted is aimed at the people on the court, and the
+        /// ones aimed at nobody in particular should sound like men enjoying themselves.
+        /// </summary>
         private static readonly string[] RideLines =
         {
-            "GENERIC_HOWS_IT_GOING", "GENERIC_INSULT_MED", "CHASE_SUSPECT",
-            "GENERIC_CURSE_MED", "GENERIC_WAR_CRY"
+            "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "CHASE_SUSPECT",
+            "GENERIC_WAR_CRY", "CHAT_STATE"
         };
 
         private static readonly string[] BikeModels = { "bmx", "cruiser", "scorcher", "tribike" };
