@@ -173,16 +173,16 @@ namespace Hoodrich.UI
         /// number never fixed it -- 0.0022, 0.0010 and 0.0018 are all fractions of a pixel, so
         /// each one simply moved the stripes somewhere else.
         ///
-        /// Three pixels rather than two is the budget. Every row is a DRAW_RECT and the game
+        /// Two pixels, and it fits now that a sector only scans the rows it can reach. Every row is a DRAW_RECT and the game
         /// quietly stops drawing them once a frame has asked for too many; it stops on whatever
         /// was asked for LAST, so the final segments came out as missing chunks and detached
         /// blobs. That is the broken wheel, and it was never a geometry bug.
         ///
-        /// Three still tiles perfectly -- whole pixels are whole pixels -- and costs a third
-        /// fewer rows. The only thing lost is a little smoothness on the curve, which the
-        /// hairline arc along the edge covers anyway.
+        /// Three pixels was a stopgap while every segment scanned the whole disc. Two is
+        /// noticeably smoother on the diagonals and still tiles perfectly, because whole pixels
+        /// are whole pixels.
         /// </summary>
-        private const int RowPixels = 3;
+        private const int RowPixels = 2;
 
         /// <summary>The row height as the game wants it: a fraction of screen height.</summary>
         private static float RowHeight => RowPixels / (float)ScreenHeight;
@@ -275,7 +275,7 @@ namespace Hoodrich.UI
 
             // One step per two pixels along the spoke, so the line is solid without being
             // drawn more times than the screen can show.
-            var steps = Math.Max(2, (int)((rOuter - rInner) * ScreenHeight / 2f));
+            var steps = Math.Max(2, (int)((rOuter - rInner) * ScreenHeight / 3f));
 
             for (var i = 0; i <= steps; i++)
             {
@@ -330,10 +330,27 @@ namespace Hoodrich.UI
             // consecutive rows tile: no gap for the background to show through, and no overlap
             // for a semi-transparent fill to blend twice at. Stepping a float by 0.0018 did
             // neither, and the stripes it left are the whole reason this is written this way.
-            var pxTop = (int)Math.Floor((cy - rOuter) * ScreenHeight);
-            var pxBottom = (int)Math.Ceiling((cy + rOuter) * ScreenHeight);
+            // The band the sector can actually reach, worked out exactly.
+            //
+            // An earlier version of this tried the same saving and got it wrong: it took the
+            // extremes from the two boundary rays alone, which is only true for a sector that
+            // does not cross an axis. One that straddles straight-up reaches rOuter at the top
+            // whatever its rays say, and chunks came out of wedges. Both cases are handled here,
+            // and the difference is worth having -- a 72 degree sector scanning the full height
+            // of the disc throws away two rows in three, and those rows are rectangles the rest
+            // of the wheel needs.
+            var topDy = Crosses(angFromDeg, angToDeg, 0f)
+                ? rOuter
+                : Math.Max(Reach(a0, rInner, rOuter), Reach(a1, rInner, rOuter));
 
-            // Anchor the phase to the wheel's centre rather than to the top of the disc, so a
+            var bottomDy = Crosses(angFromDeg, angToDeg, 180f)
+                ? -rOuter
+                : Math.Min(Reach(a0, rInner, rOuter), Reach(a1, rInner, rOuter));
+
+            var pxTop = (int)Math.Floor((cy - topDy) * ScreenHeight);
+            var pxBottom = (int)Math.Ceiling((cy - bottomDy) * ScreenHeight);
+
+            // Anchor the phase to the wheel's centre rather than to the top of the band, so a
             // hovered wedge that reaches further out still lands on the same pixel grid as its
             // neighbours. Otherwise growing one wedge shifts its rows half a pixel and draws a
             // seam down both of its edges.
@@ -372,6 +389,28 @@ namespace Hoodrich.UI
                     EmitRow(cx, rowY, rowHeight, Math.Max(min, lo), max, c);
                 }
             }
+        }
+
+        /// <summary>
+        /// How far up a boundary ray reaches, in the dy the scan measures.
+        ///
+        /// Up the ray it is rOuter that matters; down it, rInner -- the annulus has a hole in
+        /// it, so the lowest point of a downward ray is on the INNER edge, not the outer one.
+        /// </summary>
+        private static float Reach(double angleRad, float rInner, float rOuter)
+        {
+            var c = (float)Math.Cos(angleRad);
+            return c > 0f ? rOuter * c : rInner * c;
+        }
+
+        /// <summary>Whether a sector spans a given bearing, wrapping properly at 360.</summary>
+        private static bool Crosses(float fromDeg, float toDeg, float bearing)
+        {
+            var from = ((fromDeg % 360f) + 360f) % 360f;
+            var span = toDeg - fromDeg;
+            var at = (((bearing - fromDeg) % 360f) + 360f) % 360f;
+
+            return at <= span;
         }
 
         /// <summary>
@@ -446,7 +485,10 @@ namespace Hoodrich.UI
             // Capped lower than it wants to be. This is a hairline: past about a hundred and
             // thirty steps nobody can tell, and every step is a rectangle the wedges are not
             // getting -- and the wedges are the thing people actually look at.
-            var steps = (int)Math.Min(130f, Math.Max(24f, circumference / Math.Max(0.0015f, thickness)));
+            // Capped lower than it was. A full circle at 130 steps is 130 rectangles for a line
+            // one pixel wide, twice over for the inner and outer edges, and past about ninety
+            // nobody can tell the difference -- while the rectangles are ones the fills need.
+            var steps = (int)Math.Min(96f, Math.Max(24f, circumference / Math.Max(0.0015f, thickness)));
 
             const double deg2rad = Math.PI / 180.0;
             var size = thickness * 1.7f;

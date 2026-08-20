@@ -357,11 +357,14 @@ namespace Hoodrich.Supply
                 // spot for its whole duration, which is why a longer call was unbearable --
                 // this one runs alongside walking, driving and everything else, exactly like
                 // holding a phone to your ear does.
-                // Counted as an ask, so the watchdog below does not put it in his hand again
-                // on the very next tick while this one is still lifting.
-                _phoneAskedAt = Game.GameTime;
-
-                Function.Call(Hash.TASK_USE_MOBILE_PHONE, player.Handle, true);
+                // The TIMED form, given once and left alone.
+                //
+                // The untimed one was chosen originally because the timed one holds the player
+                // still, and that was thought unbearable for a long call. It is six seconds, he
+                // is stood outside his own house, and the alternative turned out to be an
+                // animation that replayed three times -- which is far worse than standing still
+                // while you make a phone call, because standing still is what people do.
+                Function.Call(Hash.TASK_USE_MOBILE_PHONE_TIMED, player.Handle, CallMs);
             }
             catch (Exception ex)
             {
@@ -370,55 +373,27 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>
-        /// Keeps the phone at his ear for the whole six seconds.
+        /// Keeps the player's hands off it for the length of the call.
         ///
-        /// The untimed mobile task is not a task the game protects. Aiming drops it, drawing a
-        /// weapon drops it, taking a hit drops it, and the phone control puts it away outright
-        /// -- so the call that is supposed to last six seconds routinely lasted one, and you
-        /// watched Franklin lower an invisible phone and then stand there until Ruban turned up.
+        /// No re-issuing any more. The previous version watched
+        /// IS_PED_RUNNING_MOBILE_PHONE_TASK and handed the task out again whenever it read
+        /// false -- but it reads false for this task the whole way through, so the "watchdog"
+        /// simply re-issued on its own cooldown and Franklin raised the phone three times in
+        /// six seconds. Once every 2.2 seconds, three times. Exactly as reported.
         ///
-        /// So it is re-asserted, but only when it has actually stopped. Re-issuing a task that
-        /// is already running restarts it, and a phone idle restarted every frame is an arm
-        /// that never finishes lifting -- which is the same bug in the opposite direction.
+        /// The task below is the TIMED one now, which runs for its duration and ends itself, so
+        /// there is nothing left to watch. All this does is block the three controls that would
+        /// cancel it -- half-drawing a weapon and having nothing happen reads better than the
+        /// phone vanishing mid-sentence.
         /// </summary>
         private void HoldThePhone(Ped player)
         {
-            try
-            {
-                // The three controls that end a call on purpose. Blocked rather than ignored:
-                // half-drawing a weapon and having nothing happen reads better than the phone
-                // vanishing mid-sentence.
-                Game.DisableControlThisFrame(Control.Phone);
-                Game.DisableControlThisFrame(Control.Aim);
-                Game.DisableControlThisFrame(Control.Attack);
-                Game.DisableControlThisFrame(Control.Attack2);
-                Game.DisableControlThisFrame(Control.SelectWeapon);
-
-                if (Function.Call<bool>(Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, player.Handle)) return;
-
-                // Rate-limited, and that is not a nicety.
-                //
-                // IS_PED_RUNNING_MOBILE_PHONE_TASK reports false during the lift -- the second
-                // or so where the arm is on its way up and the task has not registered yet. So
-                // the check said "not running", this re-issued, the lift restarted, the check
-                // said "not running" again, and Franklin raised the phone three times before it
-                // stuck. Once it has been given, it gets a chance to take hold.
-                if (Game.GameTime - _phoneAskedAt < PhoneSettleMs) return;
-
-                _phoneAskedAt = Game.GameTime;
-                Function.Call(Hash.TASK_USE_MOBILE_PHONE, player.Handle, true);
-            }
-            catch
-            {
-                // If the check is unavailable the call still ends on the clock.
-            }
+            Game.DisableControlThisFrame(Control.Phone);
+            Game.DisableControlThisFrame(Control.Aim);
+            Game.DisableControlThisFrame(Control.Attack);
+            Game.DisableControlThisFrame(Control.Attack2);
+            Game.DisableControlThisFrame(Control.SelectWeapon);
         }
-
-        /// <summary>When the phone task was last handed out, so it is not handed out again mid-lift.</summary>
-        private int _phoneAskedAt;
-
-        /// <summary>Long enough for the lift to finish and the task to register.</summary>
-        private const int PhoneSettleMs = 2200;
 
         /// <summary>Puts it away again, whether the call landed or was called off.</summary>
         private static void EndPhoneAnimation()
