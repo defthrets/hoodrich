@@ -123,6 +123,7 @@ namespace Hoodrich
 
         /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
         private readonly Fixture _couch;
+        private readonly Fixture _stove;
         private readonly BlockLife _block;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
@@ -198,6 +199,15 @@ namespace Hoodrich
                 _couch = new Fixture(new Vector3(-86.429f, -1609.917f, 31.485f), 40.880f,
                                      "prop_couch_03", "prop_couch_04", "prop_couch_01",
                                      "prop_old_couch_01", "prop_rub_couch01");
+
+                // A stove going, a couple of metres along from the couch. Set square to it
+                // rather than square to the world, so the two read as one arrangement somebody
+                // made rather than two props that happen to be near each other.
+                //
+                // Placed by eye off the couch's own coordinate -- send a HUD readout from where
+                // it should actually stand and it moves.
+                _stove = new Fixture(new Vector3(-84.610f, -1611.480f, 31.470f), 40.880f,
+                                     "gr_prop_gr_hobo_stove_01");
 
                 // Grimes has people now. His corner is one of the three a raid comes for and
                 // he was stood on it alone, which is not how anybody holds anything.
@@ -566,6 +576,7 @@ namespace Hoodrich
                     _copWatch.Update();
                     _block.Update();
                     _couch.Update();
+                    _stove.Update();
                     _traffic.Update();
                     _payback.Update();
                     _war.Update();
@@ -844,6 +855,7 @@ namespace Hoodrich
             try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
+            try { _stove?.RestoreWorld(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
