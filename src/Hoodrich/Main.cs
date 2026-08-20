@@ -97,6 +97,23 @@ namespace Hoodrich
         private readonly Entourage _labCrew;
         private readonly ParkedCar _labCar;
 
+        private readonly Entourage _party;
+        private readonly Fixture _partyBarrel;
+        private readonly Fixture _partyFire;
+        private readonly Fixture _partyCouch;
+
+        /// <summary>
+        /// Women from round here.
+        ///
+        /// Not the set's models, because the set has none -- all three Families peds are men.
+        /// These are the game's own South Central women, which is who is actually on these
+        /// blocks.
+        /// </summary>
+        private static readonly string[] Women =
+        {
+            "a_f_y_soucent_01", "a_f_y_soucent_02", "a_f_y_soucent_03", "a_f_m_soucent_01",
+        };
+
         /// <summary>
         /// The three Families models, one at a time, by index.
         ///
@@ -263,6 +280,44 @@ namespace Hoodrich
                 _labCar = new ParkedCar(new Vector3(-196.745f, -1718.838f, 32.664f), 319.530f,
                                         _gangs.Get("families")?.Colour ?? System.Drawing.Color.FromArgb(60, 180, 75),
                                         "voodoo", "buccaneer2", "chino2");
+
+                // The lot behind the lab, of an evening.
+                //
+                // Everybody is placed on a ring around the fire and turned to face it, worked
+                // out from the fire's own coordinate rather than typed one at a time -- people
+                // stood round a fire stand round it evenly and look at it, and five hand-picked
+                // positions never quite land on a circle.
+                //
+                // The women are ambient South Central models rather than the set's own. There
+                // is no female Families ped in the game; all three are men. They are at the
+                // party rather than in it, which is also how a party works.
+                _party = new Entourage(_gangs, "families",
+                                       new Vector3(-199.604f, -1728.764f, 32.664f), 186.646f, "the lot")
+
+                    .Stand(new Vector3(-199.196f, -1726.450f, 32.664f), 190.000f,
+                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
+
+                    .Stand(new Vector3(-197.277f, -1728.437f, 32.664f), 262.000f,
+                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false)
+
+                    .Stand(new Vector3(-198.574f, -1730.876f, 32.664f), 334.000f,
+                           "WORLD_HUMAN_PARTYING", Women, armed: false)
+
+                    .Stand(new Vector3(-201.294f, -1730.396f, 32.664f), 46.000f,
+                           "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false)
+
+                    .Stand(new Vector3(-201.679f, -1727.661f, 32.664f), 118.000f,
+                           "WORLD_HUMAN_PARTYING", Women, armed: false);
+
+                // The fire itself, and something to sit on.
+                _partyBarrel = new Fixture(new Vector3(-199.604f, -1728.764f, 32.664f), 0f,
+                                           "gr_prop_gr_hobo_stove_01", "prop_barrel_02a");
+
+                _partyFire = new Fixture(new Vector3(-199.604f, -1728.764f, 33.284f), 0f,
+                                         "prop_beach_fire");
+
+                _partyCouch = new Fixture(new Vector3(-202.400f, -1727.000f, 32.664f), 118.000f,
+                                          "prop_couch_03", "prop_old_couch_01", "prop_rub_couch01");
 
                 _copWatch = new CopWatch();
 
@@ -639,6 +694,10 @@ namespace Hoodrich
                     _grimesCrew.Update();
                     _labCrew.Update();
                     _labCar.Update();
+                    _party.Update();
+                    _partyBarrel.Update();
+                    _partyFire.Update();
+                    _partyCouch.Update();
                     _jobs.Update();
                     UpdateLoan();
                 }
@@ -924,6 +983,10 @@ namespace Hoodrich
             try { _grimesCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _labCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _labCar?.RestoreWorld(); } catch { /* teardown */ }
+            try { _party?.RestoreWorld(); } catch { /* teardown */ }
+            try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
+            try { _partyFire?.RestoreWorld(); } catch { /* teardown */ }
+            try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }
         }

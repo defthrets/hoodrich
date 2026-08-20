@@ -218,8 +218,8 @@ namespace Hoodrich.Core
                                  -154.355f, -1641.424f, 36.851f, 219.848f,
                                  1039.000f, -3098.000f, -39.000f, 180f));
 
-            s.Doors.Add(ReadDoor(ini, "MethLab", "meth lab", "tr_tuner_methlab_1",
-                                 BlipSprite.Meth,
+            s.Doors.Add(ReadDoor(ini, "CrackDen", "crack den", "tr_tuner_methlab_1",
+                                 BlipSprite.Cocaine,
                                  -201.384f, -1707.909f, 32.664f, 313.362f,
                                  1000.000f, -3200.000f, -38.000f, 180f));
             s.PlaySounds = ini.GetBool("Wheel", "PlaySounds", s.PlaySounds);
