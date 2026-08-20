@@ -1584,8 +1584,19 @@ namespace Hoodrich.Gangs
             Hud.Text(_target.Who.ToUpperInvariant() + " UNDER ATTACK", x, y - 0.052f, 0.60f,
                      Palette.Danger, Hud.FontCursive);
 
+            // Sat above the bar rather than through it.
+            //
+            // Hud.Text places text by its TOP edge, and the bar is centred on y -- so a label
+            // at y - 0.018 with a line height around 0.018 finished exactly where the bar
+            // started, and "THE LOST MC" was printed across the top of it. The gap below is
+            // measured from the top of the bar (y - h/2) rather than from y, so the two cannot
+            // drift back into each other if the bar ever changes height.
+            const float labelHeight = 0.018f;
+            const float labelGap = 0.006f;
+
             Hud.Text(_attacker == null ? "" : _attacker.Name.ToUpperInvariant(),
-                     x, y - 0.018f, 0.28f, Palette.TextDim, Hud.FontLabel);
+                     x, y - h * 0.5f - labelGap - labelHeight, 0.28f,
+                     Palette.TextDim, Hud.FontLabel);
 
             var standing = 0;
 
