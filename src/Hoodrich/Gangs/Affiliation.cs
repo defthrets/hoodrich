@@ -161,7 +161,11 @@ namespace Hoodrich.Gangs
 
             foreach (var hash in _touchedGroups)
             {
-                try { ClearBoth(RelRespect, hash); }
+                try
+                {
+                    ClearBoth(RelCompanion, hash);
+                    ClearBoth(RelRespect, hash);
+                }
                 catch { /* teardown */ }
             }
 
@@ -213,7 +217,14 @@ namespace Hoodrich.Gangs
 
             try
             {
-                SetBoth(RelRespect, gang.GroupHash, _playerGroupHash);
+                // COMPANION rather than respect.
+                //
+                // The street lines -- what you doing round here, why you here -- are what the
+                // game has a gang say to somebody who is not one of them stood on their block.
+                // Respect is good terms with an outsider and still gets them. Companion is the
+                // level the game uses for people who are actually with you, and it is the only
+                // thing that stops your own set challenging you outside your own house.
+                SetBoth(RelCompanion, gang.GroupHash, _playerGroupHash);
                 _touchedGroups.Add(gang.GroupHash);
                 _lastReapply = Game.GameTime;
             }
@@ -233,7 +244,12 @@ namespace Hoodrich.Gangs
                 // behind. Passing Neutral here cleared a relationship that was never set and
                 // left our Respect in place, so every gang we had ever joined stayed friendly
                 // for the rest of the session -- including after leaving them.
+                // Both, because older saves set Respect and this now sets Companion -- and a
+                // relationship left behind is a gang that likes you for reasons nothing in the
+                // readout explains.
+                ClearBoth(RelCompanion, gang.GroupHash);
                 ClearBoth(RelRespect, gang.GroupHash);
+
                 _touchedGroups.Remove(gang.GroupHash);
             }
             catch (Exception ex)
@@ -262,6 +278,7 @@ namespace Hoodrich.Gangs
             {
                 try
                 {
+                    ClearBoth(RelCompanion, hash);
                     ClearBoth(RelRespect, hash);
                 }
                 catch
