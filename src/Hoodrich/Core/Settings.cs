@@ -220,7 +220,7 @@ namespace Hoodrich.Core
 
             s.Doors.Add(ReadDoor(ini, "MethLab", "meth lab", "tr_tuner_methlab_1",
                                  BlipSprite.Meth,
-                                 -330.000f, -1470.000f, 30.500f, 90f,
+                                 -201.384f, -1707.909f, 32.664f, 313.362f,
                                  1000.000f, -3200.000f, -38.000f, 180f));
             s.PlaySounds = ini.GetBool("Wheel", "PlaySounds", s.PlaySounds);
             s.VanillaWheelSeconds = (int)Clamp(ini.GetInt("Wheel", "VanillaWheelSeconds", s.VanillaWheelSeconds), 1f, 30f);
