@@ -192,6 +192,26 @@ namespace Hoodrich.Gangs
         /// </summary>
         private void AddDefaults()
         {
+            // Varrios Los Aztecas.
+            //
+            // A couple of streets in Rancho, wedged between Ballas turf to the west and the
+            // Vagos strip to the south and east -- the smallest named thing on the map, which
+            // is the point of them. Going at the Aztecas is not the same kind of job as going
+            // at the Ballas.
+            //
+            // No vanilla relationship group: the game ships the ped but has no ambient Azteca
+            // gang, and the Latino groups belong to the Vagos and the Marabunta. Leaving the
+            // name blank makes ResolveGroups build "Hoodrich_AZTECAS" and register it, which is
+            // the honest way round -- a made-up group we own rather than borrowing somebody
+            // else's and making every Vago in the city an Azteca.
+            Register(Make("aztecas", "Varrios Los Aztecas", "VLA", "",
+                Color.FromArgb(0, 190, 185), 3,
+                new[] { "weed", "coke" },
+                new[] { "vagos", "ballas", "families" },
+                new[] { "RANCHO" },
+                "a couple of streets in Rancho",
+                new[] { "g_m_y_azteca_01" }));
+
             Register(Make("families", "The Families", "FAM", "AMBIENT_GANG_FAMILY",
                 Color.FromArgb(60, 180, 75), 2,
                 new[] { "weed", "crack" },

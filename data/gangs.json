@@ -19,6 +19,32 @@
   ],
   "gangs": [
     {
+      "id": "aztecas",
+      "name": "Varrios Los Aztecas",
+      "tag": "VLA",
+      "colour": [
+        0,
+        190,
+        185
+      ],
+      "blipColour": 3,
+      "drugs": [
+        "weed",
+        "coke"
+      ],
+      "rivals": [
+        "vagos",
+        "ballas",
+        "families"
+      ],
+      "turf": [
+        "RANCHO"
+      ],
+      "turfHint": "a couple of streets in Rancho",
+      "joinRespect": 0,
+      "joinable": false
+    },
+    {
       "id": "families",
       "name": "The Families",
       "tag": "FAM",
