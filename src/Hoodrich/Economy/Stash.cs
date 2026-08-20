@@ -160,10 +160,18 @@ namespace Hoodrich.Economy
 
         // ---- persistence -------------------------------------------------------
 
+        /// <summary>
+        /// What is in it. Deliberately NOT how much it holds.
+        ///
+        /// Capacity used to be written here and read back on load, which meant the number baked
+        /// into a save the first time it was written outlived every later change to the ini --
+        /// so raising the house limit did nothing at all to a game already in progress, and
+        /// there was no way to tell from the outside why. Whoever owns a container decides how
+        /// big it is when they build it; the save only remembers what was inside.
+        /// </summary>
         public Json ToJson()
         {
             var obj = Json.Object();
-            obj.Set("capacity", Capacity);
 
             var bulk = Json.Object();
             foreach (var kv in _bulk) bulk.Set(kv.Key, Math.Round(kv.Value, 3));
@@ -185,8 +193,6 @@ namespace Hoodrich.Economy
         {
             Clear();
             if (node == null || node.IsNull) return;
-
-            Capacity = Math.Max(1f, node["capacity"].AsFloat(Capacity));
 
             var bulk = node["bulk"];
             foreach (var key in bulk.Keys)

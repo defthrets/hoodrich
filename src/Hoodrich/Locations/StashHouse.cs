@@ -44,9 +44,12 @@ namespace Hoodrich.Locations
 
         private Blip _blip;
 
+        private readonly float _capacity;
+
         public StashHouse(Settings cfg)
         {
-            Stash = new Stash { Capacity = cfg.HideoutStashCapacity };
+            _capacity = Math.Max(1f, cfg.HideoutStashCapacity);
+            Stash = new Stash { Capacity = _capacity };
         }
 
         /// <summary>What is being kept here.</summary>
@@ -243,7 +246,13 @@ namespace Hoodrich.Locations
         public void LoadFrom(Json node)
         {
             if (node == null) return;
+
             Stash.LoadFrom(node);
+
+            // Said again after loading, deliberately. Saves written by older builds still carry
+            // a capacity of their own, and this is the one place that decides how big the house
+            // is -- the ini, on every load, whatever the file happens to remember.
+            Stash.Capacity = _capacity;
         }
     }
 }
