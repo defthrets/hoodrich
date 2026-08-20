@@ -380,6 +380,10 @@ namespace Hoodrich.Social
         /// </summary>
         public void Wipe()
         {
+            // The cards on screen as well. Wiping the feed and leaving three of them sat in the
+            // corner is wiping the part nobody was looking at.
+            if (Toasts != null) Toasts.Clear();
+
             _timeline.Clear();
             _recent.Clear();
             _recentSet.Clear();
@@ -1149,6 +1153,12 @@ namespace Hoodrich.Social
         /// every one of these would be unbearable within ten minutes, and the point is that the
         /// block is talking whether or not you are listening.
         /// </summary>
+        /// <summary>
+        /// Set by Main. When present, tweets are drawn down the right-hand side instead of
+        /// being posted into the game's own notification stack on the left.
+        /// </summary>
+        public UI.TweetToast Toasts;
+
         private void Notify(Post post)
         {
             if (post == null || post.By == null) return;
@@ -1157,6 +1167,15 @@ namespace Hoodrich.Social
             // all there to read afterwards -- it just does not narrate itself at you while you
             // are driving over.
             if (HoldUntilShots) return;
+
+            // The right-hand stack, when it is switched on. Everything else the mod says --
+            // busts, deliveries, money, warnings -- carries on going out the native way on the
+            // left, which is the entire point of splitting them.
+            if (Toasts != null && Toasts.Enabled)
+            {
+                Toasts.Show(post);
+                return;
+            }
 
             try
             {

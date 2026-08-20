@@ -118,6 +118,7 @@ namespace Hoodrich
         /// <summary>Keeps the street outside the house from silting up with stopped cars.</summary>
         private readonly TrafficWatch _traffic;
         private readonly Payback _payback;
+        private readonly TweetToast _toasts;
         private readonly Random _rng = new Random();
 
         /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
@@ -220,6 +221,18 @@ namespace Hoodrich
                 };
 
                 _payback = new Payback(_gangs);
+
+                _toasts = new TweetToast
+                {
+                    Enabled = _cfg.TweetsOnTheRight,
+
+                    // Not over a full-screen UI. They keep queueing and keep ageing while it is
+                    // up, so nothing is lost -- they are simply not drawn across a menu.
+                    Hidden = () => _wheel.IsOpen || _socialScreen.IsOpen || _stashScreen.IsOpen
+                                   || _info.IsOpen || _talk.IsOpen || _cook.IsOpen,
+                };
+
+                _social.Toasts = _toasts;
 
                 _war = new GangWar(_gangs, _crew, _state)
                     .Defend("Lamar", Fixer.Spot)
@@ -420,6 +433,12 @@ namespace Hoodrich
             try
             {
                 Draw.BeginFrame();
+
+                // Before every early return below. The cards age inside Draw, so a full-screen
+                // UI that returns early would freeze the stack rather than hide it -- and you
+                // would close a menu to find four tweets from a minute ago still sat there. It
+                // skips the actual drawing while a UI is up on its own.
+                _toasts.Draw();
 
                 var available = IsPlayable();
 

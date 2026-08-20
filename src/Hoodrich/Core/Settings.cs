@@ -65,6 +65,18 @@ namespace Hoodrich.Core
         public float MouseSensitivity = 1.0f;
         public bool PlaySounds = true;
 
+        /// <summary>
+        /// Tweets drawn down the right-hand side instead of posted to the game's feed.
+        ///
+        /// The native notification stack is anchored top-left and cannot be moved, so the feed
+        /// shared a column with busts, deliveries and warnings -- two unrelated kinds of message
+        /// in one place, with the important one buried under chatter. Drawn on the right they
+        /// also get the author's own coloured avatar, which the native feed could never do.
+        ///
+        /// Set false and everything goes back through the notification system exactly as it was.
+        /// </summary>
+        public bool TweetsOnTheRight = true;
+
         /// <summary>Seconds the game's own weapon wheel is held open after picking Weapons.</summary>
         public int VanillaWheelSeconds = 5;
 
@@ -184,6 +196,7 @@ namespace Hoodrich.Core
             s.OuterRadius = Clamp(ini.GetFloat("Wheel", "OuterRadius", s.OuterRadius), 0.05f, 0.48f);
             s.DeadZone = Clamp(ini.GetFloat("Wheel", "DeadZone", s.DeadZone), 0f, 0.9f);
             s.MouseSensitivity = Clamp(ini.GetFloat("Wheel", "MouseSensitivity", s.MouseSensitivity), 0.1f, 5f);
+            s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
             s.PlaySounds = ini.GetBool("Wheel", "PlaySounds", s.PlaySounds);
             s.VanillaWheelSeconds = (int)Clamp(ini.GetInt("Wheel", "VanillaWheelSeconds", s.VanillaWheelSeconds), 1f, 30f);
 
