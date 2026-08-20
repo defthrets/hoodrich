@@ -35,17 +35,6 @@ namespace Hoodrich
         /// Named here rather than inside Entourage because Entourage is about a gang and she is
         /// not in one -- she is somebody who works this block, which is a different fact.
         /// </summary>
-        /// <summary>
-        /// The game's own dealer models, for somebody stood on a corner doing the dealing idle.
-        ///
-        /// Not one of ours -- there is nothing to talk to and nothing to buy. He is furniture
-        /// with a habit.
-        /// </summary>
-        private static readonly string[] StreetDealers =
-        {
-            "s_m_y_dealer_01", "g_m_y_famdnf_01", "a_m_y_soucent_01"
-        };
-
         private static readonly string[] WorkingGirls =
         {
             "s_f_y_hooker_01", "s_f_y_hooker_02", "s_f_y_hooker_03", "a_f_y_soucent_02"
@@ -302,12 +291,12 @@ namespace Hoodrich
                         .Stand(new Vector3(-165.765f, -1630.464f, 33.655f), 288.636f,
                                "WORLD_HUMAN_SMOKING_POT", armed: false)
 
-                        // Somebody working the gate. The game's own dealer model doing the
-                        // game's own dealing idle -- nothing to walk up to and nothing to buy.
-                        // He is scenery, and the point of him is that the block looks like a
+                        // On the gate, armed, and one of the set. He was a dealer model
+                        // doing the dealing idle -- scenery, to make the block look like a
                         // place where this happens whether or not you are the one doing it.
+                        // The gate is a way in, and a way in gets somebody who can hold it.
                         .Stand(new Vector3(-172.341f, -1632.777f, 33.463f), 101.654f,
-                               "WORLD_HUMAN_DRUG_DEALER", StreetDealers, armed: false)
+                               "WORLD_HUMAN_GUARD_STAND")
 
                         // Down the south end, facing back up the walkway.
                         .Stand(new Vector3(-159.851f, -1681.244f, 36.966f), 181.575f,
