@@ -35,10 +35,22 @@ relationship group **created at runtime** via `ADD_RELATIONSHIP_GROUP` rather
 than a vanilla group name that does not exist. `Payback` already does exactly
 this for its attackers and is the pattern to copy.
 
-Their turf also has to be picked. Varrios Los Aztecas were El Corona in San
-Andreas; the nearest equivalents here are the Latino blocks — Cypress Flats,
-El Burro Heights, La Mesa. Worth confirming with Michael rather than guessing,
-since he has been specific about turf every other time.
+Their turf is settled: **wherever the game itself spawns Azteca peds**. Not an
+invented block and not a San Andreas memory — the drive-by happens where you
+would actually run into them.
+
+That has to be looked up rather than guessed. The ped model is
+`g_m_y_azteca_01`, and which zones it appears in lives in `popgroups.ymt` and
+`popcycle.dat` inside the game's own RPFs — which means OpenIV to read, since
+nothing outside it can open an RPF. Michael handles the OpenIV side.
+
+Worth being straight about the likely answer before anyone goes looking: the
+Aztecas may well have **no ambient spawn at all** in single player. The model
+ships with the game, but plenty of gang models do without ever being placed in
+a population group — they exist for missions and for the online creator. If
+that turns out to be the case, the honest fallback is the Latino blocks next to
+Vagos turf, Cypress Flats or El Burro Heights, and it should be called what it
+is: a choice, not a lookup.
 
 Adding them properly also closes an older gap: the Triads and the Armenians
 currently have no rivals, so they can never take part in a turf war.
