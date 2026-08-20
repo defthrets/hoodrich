@@ -111,7 +111,14 @@ namespace Hoodrich.Gangs
 
         /// <summary>Where they come in from, and where they aim for.</summary>
         private const float ApproachDistance = 150f;
-        private const float DropRange = 32f;
+        /// <summary>
+        /// How far off the target the car is allowed to aim.
+        ///
+        /// This picks a point on the nearest street within this radius, so it doubles as how
+        /// far away they park. At 32m that was reliably round the corner and out of sight,
+        /// which is why a raid looked like people jogging in from somewhere else.
+        /// </summary>
+        private const float DropRange = 14f;
 
         /// <summary>Close enough to count as having turned up.</summary>
         private const float DefendRange = 70f;
@@ -995,7 +1002,17 @@ namespace Hoodrich.Gangs
                         if (car != null && car.Exists() && car.Speed < 1.2f)
                         {
                             if (order.CarStuckSince == 0) order.CarStuckSince = now;
-                            else if (now - order.CarStuckSince > StuckOutMs) arrived = true;
+                            else
+                            {
+                                // Right outside and stopped is arrived, near enough. Waiting out
+                                // the full stuck timer for a driver who parked at thirty metres
+                                // because there was a bin in the way keeps a whole carload
+                                // sitting there while the fight happens without them.
+                                var close = car.Position.DistanceTo(_target.Where) <= CloseEnoughRange;
+                                var waited = now - order.CarStuckSince;
+
+                                if (waited > (close ? CloseEnoughStopMs : StuckOutMs)) arrived = true;
+                            }
                         }
                         else
                         {
@@ -1180,8 +1197,26 @@ namespace Hoodrich.Gangs
         /// <summary>How far off somebody will be picked as a target.</summary>
         private const float EngageRange = 90f;
 
-        /// <summary>How close the car gets to the block before they get out of it.</summary>
-        private const float DismountRange = 55f;
+        /// <summary>
+        /// How close the car has to be before anybody gets out.
+        ///
+        /// It was 55m -- a block -- so the ride-in ended early and the last stretch was always
+        /// on foot. They stay in the car until they are outside the place, and the stuck check
+        /// below is what stops that becoming a carload sat in traffic for the whole raid.
+        /// </summary>
+        private const float DismountRange = 20f;
+
+        /// <summary>
+        /// Near enough that a car which has stopped moving has effectively arrived.
+        ///
+        /// Holding out for the full 20m means a driver who parks at 30 because a bin is in the
+        /// way keeps everybody sat inside until the long stuck timer runs out. Within this,
+        /// stopped means here.
+        /// </summary>
+        private const float CloseEnoughRange = 45f;
+
+        /// <summary>How long a stopped car this close has to sit before they just get out.</summary>
+        private const int CloseEnoughStopMs = 1400;
 
         /// <summary>A car stopped this long is a car they finish the journey without.</summary>
         private const int StuckOutMs = 9000;
@@ -1195,6 +1230,16 @@ namespace Hoodrich.Gangs
         /// </summary>
         private void ListenForShots(Ped player)
         {
+            // While it is going on, the feed goes on with it.
+            //
+            // Called every tick rather than started once, so it lapses by itself the moment the
+            // raid stops -- there is no switch to forget to turn off, and a war that ends the
+            // untidy way does not leave the block reporting gunfire into an empty street.
+            if (Social != null && !Social.HoldUntilShots && _attacker != null)
+            {
+                Social.WarRunning(_attacker.Name);
+            }
+
             if (Social == null || !Social.HoldUntilShots) return;
 
             try

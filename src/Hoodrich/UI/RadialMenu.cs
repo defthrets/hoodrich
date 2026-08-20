@@ -249,9 +249,20 @@ namespace Hoodrich.UI
 
                 if (_wedgeMode)
                 {
-                    // A hovered segment reaches slightly further out, the way the vanilla wheel does.
-                    var outer = hovered ? rOuter * 1.045f : rOuter;
+                    // A hovered segment reaches slightly further out, the way the vanilla wheel
+                    // does. Slightly. At 1.045 it cleared the ring by enough that it stopped
+                    // reading as the same wheel and started reading as a fan stuck to the side
+                    // of one; the point is to lift the segment, not to detach it.
+                    var outer = hovered ? rOuter * 1.022f : rOuter;
                     Draw.Wedge(cx, cy, rInner, outer, from, to, fill);
+
+                    // Its own arc along the top, so the grown edge is a deliberate line rather
+                    // than wherever the last row of the fill happened to stop.
+                    if (hovered)
+                    {
+                        Draw.Arc(cx, cy, outer, from, to, 0.0022f,
+                                 Palette.Alpha(fill, (int)(255 * t)));
+                    }
                 }
                 else
                 {

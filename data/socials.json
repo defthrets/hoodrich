@@ -2078,6 +2078,48 @@
       "Shots on {here}. A lot of them. Not stopping",
       "If you're anywhere near {here}, turn around",
       "This is what everybody been saying was coming"
+    ],
+
+    "WarLive": [
+      "shots on {here} right now. i'm on the floor of my own kitchen",
+      "that's been going ten minutes straight. where is anybody",
+      "whole block is out here filming instead of getting inside. y'all not right",
+      "my little brother is asleep through all this somehow",
+      "you can hear it from the store. everyone in here just stopped talking",
+      "police helicopter circling {here} and doing absolutely nothing about it",
+      "count em. that's three cars deep on {here}",
+      "someone's hit. they got him behind the wall",
+      "i cannot get to my car. it is parked in the middle of that",
+      "still going. STILL going",
+      "why is it always right when i finish a shift",
+      "that's not fireworks. it has not been fireworks for twenty minutes",
+      "{rival} came deep. i'll give em that",
+      "one of them is stuck on the wrong side of the street and he knows it",
+      "i've never seen {here} empty this quick"
+    ],
+
+    "WarLiveRival": [
+      "we out here. where they at",
+      "told y'all we was coming. no warning next time either",
+      "they run inside every time. every time",
+      "hold this block then. go on. hold it",
+      "{here} ours for the next ten minutes at least",
+      "we ain't leaving till it's done",
+      "that's one. keep count",
+      "they said what on here last week? say it now",
+      "empty street. empty set",
+      "y'all was loud yesterday"
+    ],
+
+    "WarLiveOurs": [
+      "they came to the wrong one. again",
+      "everybody stay off the street and let us work",
+      "we still here. we always still here",
+      "they gonna run out of cars before we run out of us",
+      "count how many of them go home",
+      "you hear how quick they get quiet",
+      "this is {here}. it don't change hands over one afternoon",
+      "don't come outside. we got it"
     ]
   },
   "voices": {

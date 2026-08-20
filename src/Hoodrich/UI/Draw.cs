@@ -24,6 +24,15 @@ namespace Hoodrich.UI
         /// <summary>Screen aspect (width / height). Recomputed each frame by <see cref="BeginFrame"/>.</summary>
         public static float Aspect { get; private set; } = 16f / 9f;
 
+        /// <summary>
+        /// Screen height in real device pixels.
+        ///
+        /// Needed because the wedge filler has to land its rows on whole pixels. Everything
+        /// else in here is happily resolution-independent; a stack of rectangles pretending to
+        /// be a solid shape is the one thing that is not.
+        /// </summary>
+        public static int ScreenHeight { get; private set; } = 1080;
+
         public static void BeginFrame()
         {
             try
@@ -34,6 +43,8 @@ namespace Hoodrich.UI
                     var a = (float)res.Width / res.Height;
                     // Guard against a bogus resolution report during a resolution change.
                     if (a > 0.5f && a < 5f) Aspect = a;
+
+                    if (res.Height >= 240 && res.Height <= 8192) ScreenHeight = res.Height;
                 }
             }
             catch (Exception ex)
@@ -150,15 +161,27 @@ namespace Hoodrich.UI
         /// few hundred DRAW_RECT calls.
         /// </summary>
         /// <summary>
-        /// Scanline height for the wedge filler.
+        /// Scanline height for the wedge filler, in whole device pixels.
         ///
-        /// Every row is a DRAW_RECT, and the game quietly stops drawing them once a frame has
-        /// asked for too many -- so this is a budget, not just a quality dial. At 0.0014 the
-        /// wheel was asking for thousands per frame and the LAST wedge drawn came out part
-        /// filled, which looked like broken geometry and was really the game refusing to draw
-        /// any more rectangles.
+        /// This used to be a normalised fraction -- 0.0018 of the screen height, which at 1080p
+        /// is 1.94 pixels. Not two. Every row therefore started on a different sub-pixel phase,
+        /// and the game resolved each one slightly differently: two pixels here, one there, a
+        /// half-lit edge somewhere else. The fills are semi-transparent, so wherever the phase
+        /// drift left two rows overlapping, that sliver blended twice and came out darker.
+        ///
+        /// That is what the horizontal banding across the wheel was. It is also why tuning the
+        /// number never fixed it -- 0.0022, 0.0010 and 0.0018 are all fractions of a pixel, so
+        /// each one simply moved the stripes somewhere else.
+        ///
+        /// Two pixels is also the budget. Every row is a DRAW_RECT and the game quietly stops
+        /// drawing them once a frame has asked for too many; at one pixel the wheel asked for
+        /// thousands and the LAST wedge came out part filled, which read as broken geometry and
+        /// was really the game refusing to draw any more rectangles.
         /// </summary>
-        private const float RowHeight = 0.0018f;
+        private const int RowPixels = 2;
+
+        /// <summary>The row height as the game wants it: a fraction of screen height.</summary>
+        private static float RowHeight => RowPixels / (float)ScreenHeight;
 
         /// <summary>A span wider than this is split, so the half-plane clip stays valid.</summary>
         private const float MaxSpanDegrees = 170f;
@@ -208,15 +231,38 @@ namespace Hoodrich.UI
             var rOut2 = rOuter * rOuter;
             var rIn2 = rInner * rInner;
 
-            // Every row of the disc, every time.
+            // Every row of the disc, every time, walked in whole device pixels.
             //
-            // A previous version worked out the band each wedge could occupy and scanned only
-            // that, to save the three quarters of the loop a quarter-circle wedge throws away.
-            // The band was wrong -- the extreme of a sector is not always at a boundary ray, it
-            // is at the top of the arc whenever the sector crosses an axis -- and it cut chunks
+            // Two things are going on here. The first is that the loop covers the full height
+            // of the disc rather than the band the wedge occupies: a previous version worked
+            // out that band to skip the three quarters a quarter-circle wedge throws away, and
+            // got it wrong, because the extreme of a sector is not always at a boundary ray --
+            // it is at the top of the arc whenever the sector crosses an axis. It cut chunks
             // out of wedges. The loop is cheap; being right is not optional.
-            for (var dy = -rOuter; dy <= rOuter; dy += RowHeight)
+            //
+            // The second is that the iteration is over integer pixel rows, not over a float
+            // stepped by a fraction. Row n covers exactly the pixels [n, n + RowPixels), so
+            // consecutive rows tile: no gap for the background to show through, and no overlap
+            // for a semi-transparent fill to blend twice at. Stepping a float by 0.0018 did
+            // neither, and the stripes it left are the whole reason this is written this way.
+            var pxTop = (int)Math.Floor((cy - rOuter) * ScreenHeight);
+            var pxBottom = (int)Math.Ceiling((cy + rOuter) * ScreenHeight);
+
+            // Anchor the phase to the wheel's centre rather than to the top of the disc, so a
+            // hovered wedge that reaches further out still lands on the same pixel grid as its
+            // neighbours. Otherwise growing one wedge shifts its rows half a pixel and draws a
+            // seam down both of its edges.
+            var pxCentre = (int)Math.Round(cy * ScreenHeight);
+            pxTop -= ((pxTop - pxCentre) % RowPixels + RowPixels) % RowPixels;
+
+            var rowHeight = RowHeight;
+
+            for (var py = pxTop; py < pxBottom; py += RowPixels)
             {
+                // The centre of this row, on the pixel grid.
+                var rowY = (py + RowPixels * 0.5f) / ScreenHeight;
+                var dy = cy - rowY;
+
                 var dy2 = dy * dy;
                 if (dy2 > rOut2) continue;
 
@@ -233,12 +279,12 @@ namespace Hoodrich.UI
                 // The inner radius punches a hole, leaving up to two runs on this row.
                 if (lo <= 0f)
                 {
-                    EmitRow(cx, cy, dy, min, max, c);
+                    EmitRow(cx, rowY, rowHeight, min, max, c);
                 }
                 else
                 {
-                    EmitRow(cx, cy, dy, min, Math.Min(max, -lo), c);
-                    EmitRow(cx, cy, dy, Math.Max(min, lo), max, c);
+                    EmitRow(cx, rowY, rowHeight, min, Math.Min(max, -lo), c);
+                    EmitRow(cx, rowY, rowHeight, Math.Max(min, lo), max, c);
                 }
             }
         }
@@ -274,19 +320,22 @@ namespace Hoodrich.UI
             return min < max;
         }
 
-        private static void EmitRow(float cx, float cy, float dy, float x0, float x1, Color c)
+        /// <summary>
+        /// One horizontal run of a wedge, at an already pixel-aligned y.
+        ///
+        /// Exactly the row height -- no fudge factor. Rows tile because they are placed on the
+        /// pixel grid, so there is nothing left to paper over, and the 1.02x that used to be
+        /// here was itself part of the problem: a two percent overlap on a translucent fill is
+        /// a darker line every two pixels.
+        /// </summary>
+        private static void EmitRow(float cx, float rowY, float rowHeight, float x0, float x1, Color c)
         {
             if (x1 <= x0) return;
 
             var width = x1 - x0;
             var centreDx = (x0 + x1) * 0.5f;
 
-            // dy is measured upward; screen y grows downward. The slight overlap hides seams
-            // between rows without visibly thickening the shape.
-            // Rows ABUT rather than overlap. A 1.6x overlap on a semi-transparent fill blends
-            // twice at every seam, which is what drew the wheel as a stack of horizontal bands.
-            // A hairline join is invisible; a darker line every two pixels is not.
-            Rect(cx + ToX(centreDx), cy - dy, ToX(width), RowHeight * 1.02f, c);
+            Rect(cx + ToX(centreDx), rowY, ToX(width), rowHeight, c);
         }
 
         /// <summary>
@@ -343,7 +392,9 @@ namespace Hoodrich.UI
 
             // Twice the row height of a wedge. This is solid fill with opaque text on top of it,
             // so the extra resolution was being spent somewhere nobody was ever going to look.
-            var step = RowHeight * 2f;
+            // Same pixel grid as the wedges. A hub drawn on its own phase banded exactly the
+            // way they did, which is why the centre of the wheel had stripes across it too.
+            var step = RowPixels * 2 / (float)ScreenHeight;
 
             for (var dy = -radius; dy <= radius; dy += step)
             {

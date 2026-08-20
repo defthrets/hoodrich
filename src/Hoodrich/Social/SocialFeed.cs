@@ -422,6 +422,39 @@ namespace Hoodrich.Social
             _argueTheirTurn = !held; // whoever came off worse speaks first
         }
 
+        /// <summary>
+        /// Keeps the feed talking while a raid is actually happening.
+        ///
+        /// There was a burst when it kicked off and an argument once it was over, and in
+        /// between -- while people were shooting at each other on somebody's front lawn --
+        /// silence. Which is the wrong way round: the loudest the block ever is, is while it is
+        /// going on.
+        ///
+        /// Called every tick by the war rather than once at the start, so it lapses on its own
+        /// the moment the war stops calling it. Nothing has to remember to switch it off, and a
+        /// war that ends badly -- script error, save load, the player driving off -- does not
+        /// leave the feed reporting a fight that finished ten minutes ago.
+        /// </summary>
+        public void WarRunning(string rival)
+        {
+            _warRival = rival ?? "";
+            _warUntil = Game.GameTime + WarLapseMs;
+
+            if (_warNext == 0) _warNext = Game.GameTime + 4000;
+        }
+
+        /// <summary>How long after the last WarRunning call the commentary gives up.</summary>
+        private const int WarLapseMs = 3000;
+
+        /// <summary>Faster than the argument afterwards. This is people reacting, not debating.</summary>
+        private const int WarGapMinMs = 6500;
+        private const int WarGapMaxMs = 15000;
+
+        private int _warUntil;
+        private int _warNext;
+        private string _warRival = "";
+        private int _warTurn;
+
         private int _argueUntil;
         private int _argueNext;
         private string _argueSubject = "";
@@ -434,6 +467,43 @@ namespace Hoodrich.Social
 
         public void Update()
         {
+            // It is happening right now, so this goes first.
+            //
+            // Two neighbours calling it for every one gang post: most people watching a raid
+            // are not in either set, they are the ones on the floor of their own kitchen, and a
+            // feed made only of the two gangs taunting each other reads like a chatroom rather
+            // than a street.
+            if (Game.GameTime < _warUntil && Game.GameTime >= _warNext && _burstLeft <= 0)
+            {
+                _warNext = Game.GameTime + WarGapMinMs + _rng.Next(WarGapMaxMs - WarGapMinMs);
+
+                string set;
+                switch (_warTurn % 4)
+                {
+                    case 1: set = "WarLiveRival"; break;
+                    case 3: set = "WarLiveOurs"; break;
+                    default: set = "WarLive"; break;
+                }
+
+                _warTurn++;
+
+                var live = Build(set, _warRival);
+
+                if (live != null)
+                {
+                    live.AboutYou = true;
+                    Add(live);
+                    Notify(live);
+                }
+
+                _nextAmbient = Game.GameTime + AmbientGapMinMs;
+                return;
+            }
+
+            // Nothing going on. Reset so the next raid opens promptly rather than inheriting a
+            // gap left over from the last one.
+            if (Game.GameTime >= _warUntil && _warNext != 0) _warNext = 0;
+
             // Still arguing about the last one. Slower than a burst -- this is a conversation
             // across an afternoon, not a reaction.
             if (Game.GameTime < _argueUntil && Game.GameTime >= _argueNext && _burstLeft <= 0)
@@ -855,13 +925,16 @@ namespace Hoodrich.Social
                 case "BallasTaunt": return "ballas";
                 case "VagosTaunt": return "vagos";
                 case "RivalMourns":
-                case "RivalGloats": return "ballas";
+                case "RivalGloats":
+                case "WarLiveRival": return "ballas";
                 case "OursGloats":
                 case "OursMourns":
+                case "WarLiveOurs":
                 case "DissTrack": return "families";
 
-                // CopKilled and WarStarted are deliberately absent: everybody in the city has a
-                // view on a dead officer, and everybody on the block can see cars pulling up.
+                // CopKilled, WarStarted and WarLive are deliberately absent: everybody in the
+                // city has a view on a dead officer, and everybody on the block can see cars
+                // pulling up and hear what happens next.
                 default: return "";
             }
         }
@@ -1070,6 +1143,11 @@ namespace Hoodrich.Social
                 case "DissTrack":
                 case "RivalKilled":
                 case "WarStarted":
+
+                // WarLive is deliberately absent. Somebody lying on their kitchen floor while
+                // it goes off outside is not repping a set, they are a person who lives there.
+                case "WarLiveRival":
+                case "WarLiveOurs":
                 case "Brawl":
                 case "DriveBy":
                 case "Tagged":
