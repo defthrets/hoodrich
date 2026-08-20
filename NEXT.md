@@ -68,6 +68,27 @@ point for a turf pass and not a source. What the thread adds, worth keeping:
 Merryweather is still worth a look on its own terms, being an actual separate
 outfit rather than a reskin.
 
+### The source to work from
+
+**https://www.gta-xtreme.com/en/gang-locations-gta-5** — Michael's reference for
+the turf pass. Read it and set every gang's `turf` zone list from it, in
+`data/gangs.json` AND in the built-in defaults in `GangRegistry.AddDefaults`,
+which have to agree or the fallback disagrees with the file.
+
+Two things to hold on to while doing it:
+
+- Zone codes are checked, not guessed. `Turf > Log zone` in game confirms one.
+  A code that does not match costs a gang its turf silently.
+- The Madrazo Cartel still do not get an entry, however the page lists them.
+  The game treats them as Vagos.
+
+## Also outstanding
+
+**Lamar's chain gets reordered so the Aztecas drive-by is his second job.**
+Touches `data/missions.json`, the unlock chain in `MissionRunner`, and the
+wheel's job list -- all three, or a save ends up half-renumbered. Best done in
+the same pass as building the mission, since both edit the same entry.
+
 None of the thread disputes the Aztecas sitting in Rancho, which is the only bit
 needed to build the mission.
 
