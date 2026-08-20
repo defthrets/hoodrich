@@ -18,6 +18,15 @@ namespace Hoodrich.Missions
         DriveBy,
 
         /// <summary>
+        /// A drive-by you have to clean up after.
+        ///
+        /// Shoot up the corner, and it is done the moment one of them notices you -- it is a
+        /// message, not a body count. Then the law wants you, and the car you did it in is
+        /// evidence: drive it somewhere quiet, get out, and burn it.
+        /// </summary>
+        TorchJob,
+
+        /// <summary>
         /// The push-bike job: ride out together, a straightener at the courts, a drink
         /// afterwards, and ride back. Scripted end to end rather than assembled from a site
         /// and a target count, because the shape of it IS the job.
@@ -98,6 +107,25 @@ namespace Hoodrich.Missions
         /// <summary>Homies who ride with you.</summary>
         public int Homies = 2;
 
+        /// <summary>
+        /// Where the car gets left, for a <see cref="MissionKind.TorchJob"/>.
+        ///
+        /// Somewhere you would actually leave a car nobody should find, which in practice means
+        /// off the road and out of sight rather than a marker in a street.
+        /// </summary>
+        public float DumpX;
+        public float DumpY;
+        public float DumpZ;
+
+        /// <summary>
+        /// What you do the job in.
+        ///
+        /// Named per mission rather than picked from a pool, because on a job that ends with
+        /// the car on fire it matters that it looked disposable from the moment you got in. A
+        /// clean car nobody minds burning is a different story from a rusty one.
+        /// </summary>
+        public string CarModel = "";
+
         public override string ToString() => Id;
     }
 
@@ -141,6 +169,11 @@ namespace Hoodrich.Missions
                     Y = node["y"].AsFloat(),
                     Z = node["z"].AsFloat(),
                     Targets = Math.Max(1, node["targets"].AsInt(3)),
+                    DumpX = node["dumpX"].AsFloat(),
+                    DumpY = node["dumpY"].AsFloat(),
+                    DumpZ = node["dumpZ"].AsFloat(),
+                    CarModel = node["carModel"].AsString(""),
+
                     CarX = node["carX"].AsFloat(),
                     CarY = node["carY"].AsFloat(),
                     CarZ = node["carZ"].AsFloat(),

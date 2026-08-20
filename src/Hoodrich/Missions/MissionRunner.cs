@@ -28,6 +28,15 @@ namespace Hoodrich.Missions
         /// <summary>Work done, but the law is on you and Lamar is not taking delivery yet.</summary>
         Escape,
 
+        /// <summary>
+        /// The shooting is over and the law has been lost, but you are still driving the car
+        /// you did it in. It has to go somewhere quiet.
+        /// </summary>
+        Dump,
+
+        /// <summary>Stood next to it with a can of petrol.</summary>
+        Torch,
+
         /// <summary>Done, on the way back to Lamar for the money.</summary>
         Collect
     }
@@ -176,16 +185,27 @@ namespace Hoodrich.Missions
                 switch (State)
                 {
                     case MissionState.Travel:
-                        return _def.Kind == MissionKind.DriveBy
+                        return _def.Kind == MissionKind.DriveBy || _def.Kind == MissionKind.TorchJob
                             ? "Get a car and roll out to " + ZoneName()
                             : "Get to " + ZoneName();
 
                     case MissionState.Work:
+                        if (_def.Kind == MissionKind.TorchJob) return "Let 'em know you're there";
                         if (_def.Kind == MissionKind.DriveBy) return "Shoot up the corner -- stay in the car";
                         return Fists(_def.Kind) ? "Put hands on them" : "Put 'em down";
 
                     case MissionState.Escape:
-                        return "Lose the cops, then get back to Lamar";
+                        return _def.Kind == MissionKind.TorchJob && !_burned
+                            ? "Lose the cops"
+                            : "Lose the cops, then get back to Lamar";
+
+                    case MissionState.Dump:
+                        return "Dump the car somewhere quiet";
+
+                    case MissionState.Torch:
+                        return _poured
+                            ? "Light it up"
+                            : "Pour it over the car";
 
                     case MissionState.Collect:
                         return "Get back to Lamar for the money";
@@ -376,7 +396,14 @@ namespace Hoodrich.Missions
             var where = Ground(new Vector3(def.CarX, def.CarY, def.CarZ));
             if (where == Vector3.Zero) return;
 
-            foreach (var name in DriveByCars)
+            // A job that names a car gets that car, and the pool is the fallback. On a job
+            // that ends with the thing on fire it matters that it looked disposable from the
+            // moment you got in -- a clean car nobody minds burning is a different story.
+            var choices = new List<string>();
+            if (!string.IsNullOrEmpty(def.CarModel)) choices.Add(def.CarModel);
+            choices.AddRange(DriveByCars);
+
+            foreach (var name in choices)
             {
                 try
                 {
@@ -556,6 +583,14 @@ namespace Hoodrich.Missions
 
                 case MissionState.Escape:
                     TickEscape();
+                    return;
+
+                case MissionState.Dump:
+                    TickDump(player);
+                    return;
+
+                case MissionState.Torch:
+                    TickTorch(player);
                     return;
             }
         }
@@ -786,6 +821,7 @@ namespace Hoodrich.Missions
             switch (_def.Kind)
             {
                 case MissionKind.DriveBy:
+                case MissionKind.TorchJob:
                     Social.On(SocialEvent.DriveBy, named);
                     break;
 
@@ -815,6 +851,22 @@ namespace Hoodrich.Missions
                 if (ped != null && ped.Exists() && ped.IsAlive) standing++;
             }
 
+            // A torch job is done the moment one of them notices you.
+            //
+            // It is a message, not a body count -- and grinding four kills from a car seat is
+            // the least interesting version of every mission in this mod. Anybody dead counts
+            // as noticed, obviously, for the case where the first thing they notice is that.
+            if (_def.Kind == MissionKind.TorchJob)
+            {
+                if (standing == _targets.Count && !AnyoneNoticed(player)) return;
+
+                Notify.Important("~r~They seen you.~s~ Now get gone.");
+
+                State = MissionState.Escape;
+                Wanted(_def.HeatStars);
+                return;
+            }
+
             if (standing > 0) return;
 
             if (_def.EscapeHeat)
@@ -834,11 +886,291 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>Waiting on the stars to drop before he will take it off you.</summary>
+        /// <summary>
+        /// Driving the thing you did it in, looking for somewhere to leave it.
+        ///
+        /// The car is whatever you are actually in rather than the one we spawned. If you
+        /// crashed the beater into a wall and took somebody's Sultan the rest of the way, the
+        /// Sultan is the car with your fingerprints and the witnesses, and that is the one that
+        /// has to burn.
+        /// </summary>
+        private void TickDump(Ped player)
+        {
+            TalkAboutIt();
+
+            var here = player.Position.DistanceTo(DumpSpot) <= DumpRange;
+            if (!here) return;
+
+            // Still sitting in it. The prompt only makes sense once you are out.
+            if (player.IsInVehicle())
+            {
+                _dumpCar = player.CurrentVehicle;
+                Help.ShowThisFrame("Get out and burn it.");
+                return;
+            }
+
+            if (_dumpCar == null || !_dumpCar.Exists())
+            {
+                // Arrived on foot, or the car is gone. Nothing to burn, so nothing to do but
+                // take the job as done -- standing here waiting for a car that does not exist
+                // is a mission that cannot be finished.
+                Notify.Ticker("~o~No car to burn.~s~ Get back to Lamar.");
+
+                State = MissionState.Collect;
+                ClearDumpBlip();
+                return;
+            }
+
+            HandTheCan(player);
+
+            State = MissionState.Torch;
+            _poured = false;
+            _pourStartedAt = 0;
+
+            ClearDumpBlip();
+            Notify.Important("~o~Pour it over the car.~s~ Then light it.");
+        }
+
+        /// <summary>
+        /// Petrol, then a light.
+        ///
+        /// Both are the game's own: the jerry can is a real weapon with real fuel in it, and
+        /// firing it lays a trail on the ground that burns when anything ignites it. So this
+        /// does not simulate anything -- it watches for the car to catch, which happens because
+        /// you actually set it on fire.
+        /// </summary>
+        private void TickTorch(Ped player)
+        {
+            TalkAboutIt();
+
+            // The car is gone -- blown up on the way, despawned, driven off by somebody else.
+            // Whatever happened to it, it is not evidence any more, so the job is done.
+            if (_dumpCar == null || !_dumpCar.Exists())
+            {
+                Burned();
+                return;
+            }
+
+            var near = player.Position.DistanceTo(_dumpCar.Position) <= TorchRange;
+
+            // Pouring counts once you have been near it with the can out and the trigger down
+            // for a moment. A splash from across the car park is not pouring it over the car.
+            if (!_poured)
+            {
+                var pouring = near && HoldingTheCan(player) &&
+                              Game.IsControlPressed(Control.Attack);
+
+                if (pouring)
+                {
+                    if (_pourStartedAt == 0) _pourStartedAt = Game.GameTime;
+                    else if (Game.GameTime - _pourStartedAt >= PourMs)
+                    {
+                        _poured = true;
+                        Notify.Ticker("~o~That'll do.~s~ Now light it.");
+                    }
+                }
+                else
+                {
+                    _pourStartedAt = 0;
+                }
+
+                if (!_poured)
+                {
+                    if (near && !HoldingTheCan(player)) Help.ShowThisFrame("Get the can out.");
+                    return;
+                }
+            }
+
+            if (Function.Call<bool>(Hash.IS_ENTITY_ON_FIRE, _dumpCar.Handle) ||
+                _dumpCar.IsDead || _dumpCar.HealthFloat <= 0f)
+            {
+                Burned();
+                return;
+            }
+
+            if (near) Help.ShowThisFrame("Light it up.");
+        }
+
+        /// <summary>Car's gone up. Everything after this is the walk back.</summary>
+        private void Burned()
+        {
+            // Handed back so the wreck is the game's problem, not a persistent car parked on
+            // fire forever in a field.
+            try
+            {
+                if (_dumpCar != null && _dumpCar.Exists())
+                {
+                    _dumpCar.IsPersistent = false;
+                    _dumpCar.MarkAsNoLongerNeeded();
+                }
+            }
+            catch { /* it is on fire; it will sort itself out */ }
+
+            _dumpCar = null;
+            _poured = false;
+
+            TakeTheCan();
+
+            if (Social != null) Social.On(SocialEvent.DriveBy, TargetName());
+
+            // A car going up in a field is not quiet. If anybody is still looking for you --
+            // and setting fire to a vehicle is its own good reason for them to start -- that
+            // gets lost on foot before Lamar wants to see you.
+            if (Game.Player.Wanted.WantedLevel > 0)
+            {
+                State = MissionState.Escape;
+                _burned = true;
+
+                Notify.Important("~r~That went up loud.~s~ Lose 'em, then get back to Lamar.");
+                return;
+            }
+
+            State = MissionState.Collect;
+            Notify.Important("~g~That's the car gone.~s~ Walk back to Lamar.");
+        }
+
+        /// <summary>
+        /// Puts a full can in his hands, already out.
+        ///
+        /// Given rather than found. He has been driving a car he needs rid of for the last five
+        /// minutes; the petrol is the one part of this nobody wants to go shopping for.
+        /// </summary>
+        private void HandTheCan(Ped player)
+        {
+            try
+            {
+                var can = Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_PETROLCAN");
+
+                _hadCan = Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, player.Handle, can, false);
+
+                Function.Call(Hash.GIVE_WEAPON_TO_PED, player.Handle, can, 4500, false, true);
+                Function.Call(Hash.SET_PED_AMMO, player.Handle, can, 4500);
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, player.Handle, can, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not hand over the petrol: " + ex.Message);
+            }
+        }
+
+        /// <summary>Takes it away again, unless he turned up with one of his own.</summary>
+        private void TakeTheCan()
+        {
+            if (_hadCan) return;
+
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return;
+
+                var can = Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_PETROLCAN");
+                Function.Call(Hash.REMOVE_WEAPON_FROM_PED, player.Handle, can);
+            }
+            catch { /* he can keep it */ }
+        }
+
+        private static bool HoldingTheCan(Ped player)
+        {
+            try
+            {
+                var can = Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_PETROLCAN");
+                return Function.Call<uint>(Hash.GET_SELECTED_PED_WEAPON, player.Handle) == can;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Whether anybody on that corner has actually clocked you.</summary>
+        private bool AnyoneNoticed(Ped player)
+        {
+            foreach (var ped in _targets)
+            {
+                if (ped == null || !ped.Exists()) continue;
+                if (!ped.IsAlive) return true;
+
+                try
+                {
+                    if (Function.Call<bool>(Hash.IS_PED_IN_COMBAT, ped.Handle, player.Handle)) return true;
+                    if (Function.Call<bool>(Hash.IS_PED_FLEEING, ped.Handle)) return true;
+                }
+                catch
+                {
+                    // If we cannot tell, they have not.
+                }
+            }
+
+            return false;
+        }
+
+        private Vector3 DumpSpot => new Vector3(_def.DumpX, _def.DumpY, _def.DumpZ);
+
+        private void MarkDump()
+        {
+            ClearDumpBlip();
+
+            try
+            {
+                _dumpBlip = World.CreateBlip(DumpSpot);
+                if (_dumpBlip == null || !_dumpBlip.Exists()) return;
+
+                _dumpBlip.Sprite = BlipSprite.Standard;
+                _dumpBlip.Color = BlipColor.Yellow;
+                _dumpBlip.Name = "Dump the car";
+                _dumpBlip.ShowRoute = true;
+            }
+            catch { /* a blip is a nicety */ }
+        }
+
+        private void ClearDumpBlip()
+        {
+            try { if (_dumpBlip != null && _dumpBlip.Exists()) _dumpBlip.Delete(); }
+            catch { /* teardown */ }
+
+            _dumpBlip = null;
+        }
+
+        private string TargetName()
+        {
+            var gang = _def == null ? null : _gangs.Get(_def.TargetGang);
+            return gang == null ? "" : gang.Name;
+        }
+
+        /// <summary>Close enough to the dump that getting out counts as dumping it.</summary>
+        private const float DumpRange = 22f;
+
+        /// <summary>Close enough to the car to be pouring it over the car.</summary>
+        private const float TorchRange = 7f;
+
+        /// <summary>How long the trigger has to be down before it counts as poured.</summary>
+        private const int PourMs = 2200;
+
+        private Vehicle _dumpCar;
+        private Blip _dumpBlip;
+        private bool _poured;
+        private int _pourStartedAt;
+        private bool _hadCan;
+
+        /// <summary>True once the car has gone up, so the second escape leads to Lamar.</summary>
+        private bool _burned;
+
         private void TickEscape()
         {
             TalkAboutIt();
 
             if (Game.Player.Wanted.WantedLevel > 0) return;
+
+            // Escape happens twice on a torch job: once with the car, and again after it goes
+            // up if the fire brought anybody back. _burned is which of the two this was.
+            if (_def.Kind == MissionKind.TorchJob && !_burned)
+            {
+                State = MissionState.Dump;
+                MarkDump();
+
+                Notify.Important("~o~Lost 'em.~s~ Now get rid of the car.");
+                return;
+            }
 
             State = MissionState.Collect;
             Notify.Important("~g~You're clear.~s~ Get back to Lamar.");
@@ -912,7 +1244,8 @@ namespace Hoodrich.Missions
                 switch (def.Kind)
                 {
                     case MissionKind.BikeRide: Social.On(SocialEvent.Brawl); break;
-                    case MissionKind.DriveBy: Social.On(SocialEvent.DriveBy); break;
+                    case MissionKind.DriveBy:
+                    case MissionKind.TorchJob: Social.On(SocialEvent.DriveBy); break;
                     case MissionKind.Tags: Social.On(SocialEvent.Tagged); break;
                     default: Social.On(SocialEvent.MissionDone); break;
                 }
@@ -980,6 +1313,15 @@ namespace Hoodrich.Missions
             catch { /* teardown */ }
 
             _jobCar = null;
+
+            // The torch job's own state. A second run of the mission that inherited _burned
+            // from the first would skip the dump entirely and send you straight to Lamar.
+            ClearDumpBlip();
+            _dumpCar = null;
+            _burned = false;
+            _poured = false;
+            _pourStartedAt = 0;
+            _hadCan = false;
 
             _def = null;
             State = MissionState.None;
