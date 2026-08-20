@@ -336,12 +336,12 @@ namespace Hoodrich.UI
 
                 Hud.Text(label, leftCol, y, 0.30f, tint, Hud.FontBody, centre: false);
 
-                Hud.TextRight(Amount(row.OnYou), leftCol + colWidth, y, 0.30f,
+                Hud.TextRight(Amount(row.Drug, row.OnYou), leftCol + colWidth, y, 0.30f,
                               row.OnYou > 0.005f ? (picked ? Palette.Text : Palette.TextDim)
                                                  : Palette.TextDisabled,
                               Hud.FontBody);
 
-                Hud.TextRight(Amount(row.AtHome), rightCol + colWidth, y, 0.30f,
+                Hud.TextRight(Amount(row.Drug, row.AtHome), rightCol + colWidth, y, 0.30f,
                               row.AtHome > 0.005f ? (picked ? Palette.Cash : Palette.TextDim)
                                                   : Palette.TextDisabled,
                               Hud.FontBody);
@@ -366,9 +366,10 @@ namespace Hoodrich.UI
                           x + width, y, 0.28f, tint, Hud.FontBody);
         }
 
-        private static string Amount(float grams)
+        private static string Amount(DrugDef drug, float quantity)
         {
-            return grams <= 0.005f ? "-" : grams.ToString("0.#") + "g";
+            if (quantity <= 0.005f) return "-";
+            return drug == null ? quantity.ToString("0.#") + "g" : drug.Amount(quantity);
         }
     }
 }

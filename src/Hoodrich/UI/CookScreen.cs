@@ -36,12 +36,23 @@ namespace Hoodrich.UI
         /// <summary>How far it can be stretched, cleanest first.</summary>
         private static readonly float[] Purities = { 1.0f, 0.75f, 0.5f, 0.33f };
 
-        private readonly List<DrugDef> _rows = new List<DrugDef>();
+        /// <summary>One line at the counter: what you work, and what comes off it.</summary>
+        private sealed class CookRow
+        {
+            public DrugDef Source;
+            public DrugDef Output;
+
+            public bool Rolling => Output != null && Source != null && Output.Id != Source.Id;
+
+            public string Label => Rolling ? Source.Name + "  ->  " + Output.Name : Source.Name;
+        }
+
+        private readonly List<CookRow> _rows = new List<CookRow>();
 
         private Stash _stash;
         private Drugs _catalogue;
         private Pricing _pricing;
-        private Func<DrugDef, float, float, string> _start;
+        private Func<DrugDef, DrugDef, float, float, string> _start;
 
         private int _selected;
         private int _purity;
@@ -50,7 +61,7 @@ namespace Hoodrich.UI
         public bool IsOpen { get; private set; }
 
         public void Open(Stash stash, Drugs catalogue, Pricing pricing,
-                         Func<DrugDef, float, float, string> start)
+                         Func<DrugDef, DrugDef, float, float, string> start)
         {
             if (stash == null || catalogue == null || pricing == null) return;
 
@@ -92,7 +103,17 @@ namespace Hoodrich.UI
 
             foreach (var drug in _catalogue.All)
             {
-                if (_stash.BulkOf(drug.Id) > 0.005f) _rows.Add(drug);
+                if (_stash.BulkOf(drug.Id) <= 0.005f) continue;
+
+                _rows.Add(new CookRow { Source = drug, Output = drug });
+
+                // And the other thing it can become, if it can become one. Weed goes out either
+                // bagged by weight or rolled and sold one at a time, and both are the same
+                // weight of the same product on the counter.
+                if (string.IsNullOrEmpty(drug.RollsInto)) continue;
+
+                var rolled = _catalogue.Get(drug.RollsInto);
+                if (rolled != null) _rows.Add(new CookRow { Source = drug, Output = rolled });
             }
 
             if (_selected >= _rows.Count) _selected = Math.Max(0, _rows.Count - 1);
@@ -150,10 +171,10 @@ namespace Hoodrich.UI
 
         private void Begin()
         {
-            var drug = _rows[_selected];
-            var batch = Math.Min(MaxBatch, _stash.BulkOf(drug.Id));
+            var row = _rows[_selected];
+            var batch = Math.Min(MaxBatch, _stash.BulkOf(row.Source.Id));
 
-            var failure = _start?.Invoke(drug, batch, Purities[_purity]);
+            var failure = _start?.Invoke(row.Source, row.Output, batch, Purities[_purity]);
             if (failure != null)
             {
                 Notify.Problem(failure);
@@ -192,7 +213,7 @@ namespace Hoodrich.UI
         {
             if (!IsOpen || _rows.Count == 0) return;
 
-            var height = 0.186f + _rows.Count * RowHeight;
+            var height = 0.214f + _rows.Count * RowHeight;
 
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
@@ -214,10 +235,10 @@ namespace Hoodrich.UI
                      x, y, 0.26f, Palette.TextDim, Hud.FontBody, centre: false);
             y += 0.030f;
 
-            foreach (var drug in _rows)
+            foreach (var row in _rows)
             {
-                var picked = _rows[_selected] == drug;
-                var have = _stash.BulkOf(drug.Id);
+                var picked = _rows[_selected] == row;
+                var have = _stash.BulkOf(row.Source.Id);
 
                 if (picked)
                 {
@@ -226,10 +247,10 @@ namespace Hoodrich.UI
                                  Color.FromArgb(45, 255, 255, 255));
                 }
 
-                Hud.Text((picked ? "> " : "  ") + drug.Name, x, y, 0.30f,
+                Hud.Text((picked ? "> " : "  ") + row.Label, x, y, 0.30f,
                          picked ? Palette.Text : Palette.TextDim, Hud.FontBody, centre: false);
 
-                Hud.TextRight(have.ToString("0.#") + "g", right, y, 0.30f,
+                Hud.TextRight(row.Source.Amount(have), right, y, 0.30f,
                               picked ? Palette.Warn : Palette.TextDim, Hud.FontBody);
 
                 y += RowHeight;
@@ -238,29 +259,60 @@ namespace Hoodrich.UI
             y += 0.012f;
 
             // The batch, spelled out: what goes in, what comes out, what it is worth.
-            var product = _rows[_selected];
+            var chosen = _rows[_selected];
+            var product = chosen.Source;
+            var made = chosen.Output ?? chosen.Source;
+
             var purity = Purities[_purity];
             var batch = Math.Min(MaxBatch, _stash.BulkOf(product.Id));
-            var yield = Cutting.Yield(batch, purity);
-            var worth = _pricing.SaleValue(product, yield, purity);
+            var yield = Cutting.YieldOf(product, made, batch, purity);
+            var worth = _pricing.SaleValue(made, yield, purity);
             var risk = Pricing.BadCutChance(purity);
             var fits = _stash.FreeSpace >= yield - batch - 0.001f;
 
             Hud.RectFrom(x, y - 0.006f, panelWidth - pad * 2f, 0.0015f,
                          Color.FromArgb(90, 255, 255, 255));
 
-            Hud.Text(PurityWord(purity), x, y + 0.004f, 0.32f, Palette.Accent,
-                     Hud.FontLabel, centre: false);
+            // Every cut on screen at once, with the one you are on lit up. They were always
+            // all available -- left and right has stepped through them since the day it was
+            // written -- but the screen only ever showed the one, so there was nothing to tell
+            // you the other three existed.
+            var cx = x;
 
-            Hud.TextRight(batch.ToString("0") + "g  ->  " + yield.ToString("0") + "g   $" +
-                          worth.ToString("N0"),
-                          right, y + 0.004f, 0.30f,
-                          fits ? Palette.Cash : Palette.Danger, Hud.FontBody);
+            for (var i = 0; i < Purities.Length; i++)
+            {
+                var label = (Purities[i] * 100f).ToString("0") + "%";
+                var on = i == _purity;
+
+                var width = Hud.MeasureText(label, 0.30f, Hud.FontBody) + 0.014f;
+
+                if (on)
+                {
+                    Hud.RectFrom(cx - 0.004f, y - 0.002f, width, 0.026f,
+                                 Color.FromArgb(210, 240, 242, 240));
+                }
+
+                Hud.Text(label, cx + 0.003f, y + 0.002f, 0.30f,
+                         on ? Palette.TextOnHover : Palette.TextDim, Hud.FontBody, centre: false);
+
+                cx += width + 0.006f;
+            }
+
+            Hud.TextRight((chosen.Rolling ? made.WorkVerb : product.WorkVerb) + "  ·  " + PurityWord(purity),
+                          right, y + 0.002f, 0.28f, Palette.Accent, Hud.FontLabel);
 
             y += 0.030f;
 
-            var note = !fits ? "Need " + Math.Max(0f, yield - batch).ToString("0") +
-                               "g more room -- leave some at home first"
+            Hud.Text(product.Amount(batch) + "  ->  " + made.Amount(yield), x, y, 0.30f,
+                     fits ? Palette.Cash : Palette.Danger, Hud.FontBody, centre: false);
+
+            Hud.TextRight("$" + worth.ToString("N0"), right, y, 0.30f,
+                          fits ? Palette.Cash : Palette.Danger, Hud.FontBody);
+
+            y += 0.028f;
+
+            var note = !fits ? "Need room for " + made.Amount(Math.Max(0f, yield - batch)) +
+                               " more -- leave some at home first"
                      : risk < 0.01f ? "Nobody is going to complain about this"
                      : risk < 0.2f ? "The odd buyer might notice"
                      : "Expect people to hand it back";

@@ -264,7 +264,7 @@ namespace Hoodrich.Gangs
                             : "";
 
                 node.SayIf(blocked.Length == 0, blocked,
-                           Weight(lot),
+                           Weight(product, lot),
                            () => Buy(def, gang, product, lot, cost),
                            "$" + cost.ToString("N0"));
 
@@ -281,8 +281,11 @@ namespace Hoodrich.Gangs
         /// Nobody buying weight asks for 28 grams, they ask for an ounce. The gram figure is
         /// still there because the stash is measured in grams and the two have to agree.
         /// </summary>
-        private static string Weight(float grams)
+        private static string Weight(DrugDef product, float grams)
         {
+            // Pills are counted, so there is no ounce of them and never was.
+            if (product != null && product.Counted) return product.Amount(grams) + ".";
+
             if (grams >= 55f) return "Two ounces.  (" + grams.ToString("0") + "g)";
             if (grams >= 27f) return "An ounce.  (" + grams.ToString("0") + "g)";
             return "An eighth.  (" + grams.ToString("0.#") + "g)";

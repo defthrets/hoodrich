@@ -27,7 +27,24 @@
       "bulkPrice": 6,
       "heatFactor": 0.55,
       "splitVerb": "Bag up",
-      "unitName": "baggies"
+      "unitName": "baggies",
+      "workVerb": "Bagging up",
+      "deals": [
+        {
+          "quantity": 1,
+          "price": 20
+        },
+        {
+          "quantity": 3.5,
+          "price": 50
+        },
+        {
+          "quantity": 28,
+          "price": 200
+        }
+      ],
+      "rollsInto": "joints",
+      "perUnit": 1.0
     },
     {
       "id": "ecstasy",
@@ -38,40 +55,93 @@
       "bulkPrice": 8,
       "heatFactor": 0.9,
       "splitVerb": "Press",
-      "unitName": "pills"
+      "unitName": "pills",
+      "workVerb": "Cutting and repressing",
+      "counted": true,
+      "deals": [
+        {
+          "quantity": 1,
+          "price": 25
+        },
+        {
+          "quantity": 2,
+          "price": 50
+        },
+        {
+          "quantity": 4,
+          "price": 100
+        }
+      ]
     },
     {
       "id": "crack",
       "name": "Crack",
       "tag": "CRK",
       "tier": 2,
-      "basePrice": 80,
+      "basePrice": 100,
       "bulkPrice": 28,
       "heatFactor": 1.35,
       "splitVerb": "Cook up",
-      "unitName": "rocks"
+      "unitName": "rocks",
+      "workVerb": "Rocking up",
+      "deals": [
+        {
+          "quantity": 0.2,
+          "price": 20
+        },
+        {
+          "quantity": 0.5,
+          "price": 50
+        },
+        {
+          "quantity": 1.0,
+          "price": 100
+        }
+      ]
     },
     {
       "id": "meth",
       "name": "Meth",
       "tag": "METH",
       "tier": 3,
-      "basePrice": 50,
+      "basePrice": 200,
       "bulkPrice": 17,
       "heatFactor": 1.4,
       "splitVerb": "Cut",
-      "unitName": "grams"
+      "unitName": "grams",
+      "workVerb": "Breaking down",
+      "deals": [
+        {
+          "quantity": 0.1,
+          "price": 20
+        },
+        {
+          "quantity": 1,
+          "price": 200
+        }
+      ]
     },
     {
       "id": "coke",
       "name": "Cocaine",
       "tag": "COKE",
       "tier": 4,
-      "basePrice": 150,
+      "basePrice": 200,
       "bulkPrice": 52,
       "heatFactor": 1.25,
       "splitVerb": "Cut",
-      "unitName": "grams"
+      "unitName": "grams",
+      "workVerb": "Cutting",
+      "deals": [
+        {
+          "quantity": 1,
+          "price": 200
+        },
+        {
+          "quantity": 3.5,
+          "price": 850
+        }
+      ]
     },
     {
       "id": "heroin",
@@ -82,7 +152,42 @@
       "bulkPrice": 26,
       "heatFactor": 1.5,
       "splitVerb": "Cut",
-      "unitName": "grams"
+      "unitName": "grams",
+      "workVerb": "Cutting",
+      "deals": [
+        {
+          "quantity": 0.1,
+          "price": 10
+        },
+        {
+          "quantity": 0.5,
+          "price": 40
+        },
+        {
+          "quantity": 1.0,
+          "price": 80
+        }
+      ]
+    },
+    {
+      "id": "joints",
+      "name": "Pre-rolls",
+      "tag": "J",
+      "tier": 1,
+      "basePrice": 25,
+      "bulkPrice": 0,
+      "heatFactor": 0.5,
+      "splitVerb": "Roll",
+      "unitName": "joints",
+      "counted": true,
+      "madeOnly": true,
+      "workVerb": "Rolling",
+      "deals": [
+        {
+          "quantity": 1,
+          "price": 25
+        }
+      ]
     }
   ]
 }

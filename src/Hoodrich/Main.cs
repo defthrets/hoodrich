@@ -28,6 +28,17 @@ namespace Hoodrich
     /// </summary>
     public sealed class Main : Script
     {
+        /// <summary>
+        /// Models for the woman in the courtyard, tried in order.
+        ///
+        /// Named here rather than inside Entourage because Entourage is about a gang and she is
+        /// not in one -- she is somebody who works this block, which is a different fact.
+        /// </summary>
+        private static readonly string[] WorkingGirls =
+        {
+            "s_f_y_hooker_01", "s_f_y_hooker_02", "s_f_y_hooker_03", "a_f_y_soucent_02"
+        };
+
         /// <summary>Cadence for work that does not need to run every frame.</summary>
         private const int SlowTickMs = 1000;
 
@@ -91,6 +102,9 @@ namespace Hoodrich
         /// interesting if somebody might come.
         /// </summary>
         private readonly CopWatch _copWatch;
+
+        /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
+        private readonly Fixture _couch;
         private readonly BlockLife _block;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
@@ -162,6 +176,11 @@ namespace Hoodrich
                 // quiet the rest of the time is closer to true anyway.
                 _block = new BlockLife(_gangs, "families");
 
+                // Dragged out into the courtyard and left there, the way they are.
+                _couch = new Fixture(new Vector3(-85.251f, -1608.008f, 31.485f), 220.880f,
+                                     "prop_couch_03", "prop_couch_04", "prop_couch_01",
+                                     "prop_old_couch_01", "prop_rub_couch01");
+
                 _copWatch = new CopWatch();
 
                 _war = new GangWar(_gangs, _crew, _state)
@@ -170,7 +189,20 @@ namespace Hoodrich
 
                 _lamarCrew = new Entourage(_gangs, "families", Fixer.Spot, 206f, "Lamar")
                     .Stand(new Vector3(-82.4f, -1613.8f, 31.485f), 120f, "WORLD_HUMAN_GUARD_STAND")
-                    .Stand(new Vector3(-89.1f, -1607.9f, 31.485f), 250f, "WORLD_HUMAN_SMOKING_POT");
+                    .Stand(new Vector3(-89.1f, -1607.9f, 31.485f), 250f, "WORLD_HUMAN_SMOKING_POT")
+
+                    // Somebody working the courtyard. Not one of the set and not armed -- she
+                    // is here because a block with nobody on it but soldiers is a barracks.
+                    .Stand(new Vector3(-84.832f, -1609.433f, 31.485f), 237.436f,
+                           "WORLD_HUMAN_PROSTITUTE_HIGH_CLASS", WorkingGirls, armed: false)
+
+                    // On the steps at the front with a rifle, watching the way in.
+                    .Stand(new Vector3(-95.614f, -1614.153f, 32.314f), 23.701f,
+                           "WORLD_HUMAN_GUARD_STAND")
+
+                    // And one on a beer by the pool.
+                    .Stand(new Vector3(-87.599f, -1607.578f, 32.312f), 102.240f,
+                           "WORLD_HUMAN_DRINKING", armed: false);
 
                 // One for Stretch, on the spot it was read off the HUD at.
                 var stretch = _leaders.Get("families");
@@ -179,7 +211,13 @@ namespace Hoodrich
                     : new Entourage(_gangs, "families",
                                     new Vector3(stretch.SpotX, stretch.SpotY, stretch.SpotZ),
                                     stretch.Heading, stretch.Name)
-                        .Stand(new Vector3(-161.084f, -1635.432f, 34.029f), 70.469f, "WORLD_HUMAN_GUARD_STAND");
+                        .Stand(new Vector3(-161.084f, -1635.432f, 34.029f), 70.469f, "WORLD_HUMAN_GUARD_STAND")
+
+                        // Two of theirs round the side, not doing anything in particular.
+                        .Stand(new Vector3(-162.494f, -1630.635f, 33.639f), 85.456f,
+                               "WORLD_HUMAN_DRINKING", armed: false)
+                        .Stand(new Vector3(-165.765f, -1630.464f, 33.655f), 288.636f,
+                               "WORLD_HUMAN_SMOKING_POT", armed: false);
 
                 if (stretch != null)
                 {
@@ -404,6 +442,7 @@ namespace Hoodrich
                     _social.Update();
                     _copWatch.Update();
                     _block.Update();
+                    _couch.Update();
                     _war.Update();
 
                     _lamarCrew.Update();
@@ -513,7 +552,7 @@ namespace Hoodrich
         private void OpenKitchen()
         {
             _cook.Open(_state.Stash, _drugs, _pricing,
-                       (drug, grams, purity) => _cutting.TryStart(drug, grams, purity));
+                       (drug, output, grams, purity) => _cutting.TryStart(drug, output, grams, purity));
         }
 
         /// <summary>True when the player is in normal control and the mod should be live.</summary>
@@ -607,6 +646,7 @@ namespace Hoodrich
             try { _bigj?.RestoreWorld(); } catch { /* teardown */ }
             try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
+            try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }

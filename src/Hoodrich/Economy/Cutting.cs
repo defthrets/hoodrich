@@ -28,6 +28,9 @@ namespace Hoodrich.Economy
         private readonly PlayerState _state;
 
         private DrugDef _product;
+
+        /// <summary>What it comes out as. The same product, unless it is being rolled.</summary>
+        private DrugDef _output;
         private float _bulkGrams;
         private float _targetPurity;
         private int _startedAt;
@@ -61,19 +64,48 @@ namespace Hoodrich.Economy
             return bulkGrams / Math.Max(Stash.MinPurity, Math.Min(Stash.MaxPurity, purity));
         }
 
+        /// <summary>
+        /// The same, when what comes off the counter is a different thing to what went on it.
+        ///
+        /// A gram makes a joint, so the count is grams over grams-per-unit -- and stretching it
+        /// still stretches it, because a joint rolled thin is still a joint somebody paid for.
+        /// </summary>
+        public static float YieldOf(DrugDef product, DrugDef output, float bulkGrams, float purity)
+        {
+            var stretched = Yield(bulkGrams, purity);
+
+            if (output == null || product == null || output.Id == product.Id) return stretched;
+
+            var per = Math.Max(0.1f, product.PerUnit);
+            return (float)Math.Floor(stretched / per);
+        }
+
         /// <summary>Returns a player-facing refusal, or null if cutting started.</summary>
         public string TryStart(DrugDef product, float bulkGrams, float targetPurity)
         {
+            return TryStart(product, product, bulkGrams, targetPurity);
+        }
+
+        /// <summary>
+        /// Works one product into another.
+        ///
+        /// Weed rolled into joints is the only case so far, and it is the reason this takes two
+        /// products rather than one: what goes on the counter and what comes off it are not
+        /// always the same thing.
+        /// </summary>
+        public string TryStart(DrugDef product, DrugDef output, float bulkGrams, float targetPurity)
+        {
+            if (output == null) output = product;
             if (IsBusy) return "Already working.";
             if (product == null) return "Nothing selected.";
             if (bulkGrams <= 0f) return "Nothing to cut.";
 
             if (_stash.BulkOf(product.Id) < bulkGrams - 0.001f)
             {
-                return "Only holding " + _stash.BulkOf(product.Id).ToString("0.#") + "g of bulk " + product.Name + ".";
+                return "Only holding " + product.Amount(_stash.BulkOf(product.Id)) + " of bulk " + product.Name + ".";
             }
 
-            var yield = Yield(bulkGrams, targetPurity);
+            var yield = YieldOf(product, output, bulkGrams, targetPurity);
             var gained = yield - bulkGrams;
             if (_stash.FreeSpace < gained - 0.001f)
             {
@@ -84,13 +116,14 @@ namespace Hoodrich.Economy
             if (blocker != null) return blocker;
 
             _product = product;
+            _output = output;
             _bulkGrams = bulkGrams;
             _targetPurity = targetPurity;
             _startedAt = Game.GameTime;
             _durationMs = Math.Min(MaxDurationMs, BaseDurationMs + (int)(bulkGrams * MsPerGram));
             _startPosition = Game.Player.Character.Position;
 
-            Notify.Ticker(product.SplitVerb + " " + bulkGrams.ToString("0") + "g " + product.Name +
+            Notify.Ticker(product.SplitVerb + " " + product.Amount(bulkGrams) + " of " + product.Name +
                           " at " + (targetPurity * 100f).ToString("0") + "%...");
             PlayWorkScenario();
             _anim.Start(Game.Player.Character, product.Id);
@@ -187,6 +220,7 @@ namespace Hoodrich.Economy
         private void Complete()
         {
             var product = _product;
+            var outputHeld = _output;
             var bulk = _bulkGrams;
             var purity = _targetPurity;
 
@@ -203,14 +237,18 @@ namespace Hoodrich.Economy
                 return;
             }
 
-            var yield = Yield(taken, purity);
-            var made = _stash.AddPackaged(product.Id, yield, purity);
+            var output = _output ?? product;
+
+            var yield = YieldOf(product, output, taken, purity);
+            var made = _stash.AddPackaged(output.Id, yield, purity);
 
             _state.Touch();
 
             ClearWorkScenario();
 
-            Notify.Ticker("~g~" + made.ToString("0") + "~s~ " + product.UnitName + " of " + product.Name + " at " +
+            var named = outputHeld ?? product;
+
+            Notify.Ticker("~g~" + named.Amount(made) + "~s~ of " + named.Name + " at " +
                           (purity * 100f).ToString("0") + "%");
             Log.Info("Cut " + taken.ToString("0.#") + "g bulk " + product.Id + " -> " +
                      made.ToString("0.#") + "g at " + purity.ToString("0.00") + " purity.");
@@ -235,7 +273,7 @@ namespace Hoodrich.Economy
             const float h = 0.018f;
 
             Draw2.Bar(x, y, w, h, Progress);
-            UI.Draw.Text("CUTTING " + _product.Name.ToUpperInvariant() + "  " +
+            UI.Draw.Text(_product.WorkVerb.ToUpperInvariant() + " " + _product.Name.ToUpperInvariant() + "  " +
                          (_targetPurity * 100f).ToString("0") + "%",
                          x, y - 0.042f, 0.34f, Palette.Text);
         }

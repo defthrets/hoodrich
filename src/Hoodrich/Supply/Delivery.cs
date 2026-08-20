@@ -125,15 +125,15 @@ namespace Hoodrich.Supply
         public Vector3 HouseDoor;
         public Economy.Stash House;
 
-        /// <summary>How long the player holds the phone before he sets off.</summary>
         /// <summary>
         /// How long he is on the phone.
         ///
-        /// Longer than it was, because a four-second call reads as a text message. The player is
-        /// never frozen for it -- the animation runs over the top of whatever they are doing and
-        /// they can walk off mid-sentence, the way anybody does on a phone.
+        /// Six seconds: long enough to be a conversation rather than a text message, short
+        /// enough that you are not stood in your own yard holding a handset. The player is never
+        /// frozen for it -- the animation runs over the top of whatever they are doing and they
+        /// can walk off mid-sentence, the way anybody does on a phone.
         /// </summary>
-        private const int CallMs = 11000;
+        private const int CallMs = 6000;
 
         /// <summary>Spawned this far out, so the car is never seen appearing.</summary>
         private const float SpawnMinDistance = 220f;
@@ -624,41 +624,29 @@ namespace Hoodrich.Supply
                 }
 
                 Unstick();
+
+                // He has had long enough.
+                //
+                // A car can be forty seconds from a kerb it will never quite reach: the last
+                // few metres of a park are the hardest thing the driving AI does, and a spot
+                // outside somebody's front gate with a fence one side and a parked car the
+                // other is exactly where it gives up and shuffles. Everything above is still
+                // tried first and this only ever fires after a minute of trying, but a delivery
+                // that never arrives is the one outcome that cannot be allowed to stand.
+                if (Game.GameTime - _stateSince > SettleForItMs && toSpot < 90f)
+                {
+                    Log.Warn("Delivery: close but not parking after " +
+                             ((Game.GameTime - _stateSince) / 1000) + "s; putting him on the mark.");
+
+                    ParkOnTheMark();
+                    Arrive();
+                }
+
                 return;
             }
 
-            State = DeliveryState.Waiting;
-
-            // Put on the mark facing east, so he is never sat across the pavement at an angle.
-            try
-            {
-                if (_car != null && _car.Exists() && _car.Position.DistanceTo(ParkSpot) < ArriveDistance + 4f)
-                {
-                    _car.Position = ParkSpot;
-                    _car.Heading = ParkHeading;
-
-                    Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, _car.Handle);
-                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _driver.Handle, _car.Handle, 1, 1000);
-                }
-            }
-            catch
-            {
-                // He will park where he stopped.
-            }
-            _stateSince = Game.GameTime;
-
-            try
-            {
-                // Pulls up and gets out, so the trade happens face to face at the car.
-                Function.Call(Hash.TASK_LEAVE_VEHICLE, _driver.Handle, _car.Handle, 0);
-                _car.IsEngineRunning = true;
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Delivery driver could not get out: " + ex.Message);
-            }
-
-            Notify.Important("~g~" + _def.Name + " has pulled up.~s~ Go and see him.");
+            ParkOnTheMark();
+            Arrive();
         }
 
         /// <summary>
@@ -758,6 +746,54 @@ namespace Hoodrich.Supply
 
         /// <summary>Stopped this long and he gets moved.</summary>
         private const int StuckMoveMs = 22000;
+
+        /// <summary>Straightens him onto the mark, facing the way the street runs.</summary>
+        private void ParkOnTheMark()
+        {
+            try
+            {
+                if (_car == null || !_car.Exists()) return;
+
+                _car.Position = ParkSpot;
+                _car.Heading = ParkHeading;
+
+                Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, _car.Handle);
+
+                if (_driver != null && _driver.Exists())
+                {
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _driver.Handle, _car.Handle, 1, 1000);
+                }
+            }
+            catch
+            {
+                // He will sit where he stopped.
+            }
+        }
+
+        /// <summary>He is here. Out of the car, and the trade is on.</summary>
+        private void Arrive()
+        {
+            State = DeliveryState.Waiting;
+            _stateSince = Game.GameTime;
+
+            try
+            {
+                if (_driver != null && _driver.Exists() && _car != null && _car.Exists())
+                {
+                    Function.Call(Hash.TASK_LEAVE_VEHICLE, _driver.Handle, _car.Handle, 0);
+                    _car.IsEngineRunning = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Delivery driver could not get out: " + ex.Message);
+            }
+
+            Notify.Important("~g~" + _def.Name + " has pulled up.~s~ Go and see him.");
+        }
+
+        /// <summary>How long he is given to park himself before he is simply put on the mark.</summary>
+        private const int SettleForItMs = 60000;
 
         /// <summary>
         /// Where he is aiming right now.

@@ -134,6 +134,26 @@ namespace Hoodrich.Economy
             return Math.Max(0.5f, drug.BasePrice * discount * supplierMultiplier);
         }
 
+        /// <summary>
+        /// Everything that moves a price, without the price.
+        ///
+        /// So a deal with a written-down headline -- an ounce for two hundred -- can still be
+        /// worth more at 2am on somebody else's block and less when it has been stepped on,
+        /// which is the entire economy, without the headline being recomputed into $560.
+        /// </summary>
+        public float Multiplier(DrugDef drug, float purity)
+        {
+            if (drug == null || drug.BasePrice <= 0f) return 1f;
+            return StreetPrice(drug, purity) / drug.BasePrice;
+        }
+
+        /// <summary>What a named deal is worth right now.</summary>
+        public int DealValue(DrugDef drug, Deal deal, float purity)
+        {
+            if (drug == null || deal == null) return 0;
+            return Math.Max(1, (int)Math.Round(deal.Price * Multiplier(drug, purity)));
+        }
+
         public int SaleValue(DrugDef drug, float grams, float purity)
         {
             if (drug == null || grams <= 0f) return 0;

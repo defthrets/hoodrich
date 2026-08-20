@@ -117,7 +117,7 @@ namespace Hoodrich.Wheel
 
                 var purity = Stash.PurityOf(drug.Id);
                 ready.Row(drug.Name,
-                          have.ToString("0.#") + "g  ·  $" + _pricing.SaleValue(drug, have, purity).ToString("N0"),
+                          drug.Amount(have) + "  ·  $" + _pricing.SaleValue(drug, have, purity).ToString("N0"),
                           Palette.Cash);
                 bagged++;
             }
@@ -133,7 +133,7 @@ namespace Hoodrich.Wheel
                 var have = Stash.BulkOf(drug.Id);
                 if (have <= 0.005f) continue;
 
-                weight.Row(drug.Name, have.ToString("0.#") + "g", Palette.Warn);
+                weight.Row(drug.Name, drug.Amount(have), Palette.Warn);
                 raw++;
             }
 
@@ -160,7 +160,7 @@ namespace Hoodrich.Wheel
                     var have = den.BulkOf(drug.Id) + den.PackagedOf(drug.Id);
                     if (have <= 0.005f) continue;
 
-                    home.Row(drug.Name, have.ToString("0.#") + "g", Palette.Cash);
+                    home.Row(drug.Name, drug.Amount(have), Palette.Cash);
                     kept++;
                 }
 
@@ -840,7 +840,16 @@ namespace Hoodrich.Wheel
         {
             // An empty Drugs list means this contact carries the whole catalogue.
             var stock = new List<DrugDef>();
-            if (def.Drugs.Count == 0) stock.AddRange(_drugs.All);
+
+            if (def.Drugs.Count == 0)
+            {
+                // Everything he could get hold of -- which is not the same as everything in the
+                // catalogue. Nobody buys rolled joints off a container at the port.
+                foreach (var d in _drugs.All)
+                {
+                    if (!d.MadeOnly) stock.Add(d);
+                }
+            }
             else
             {
                 foreach (var id in def.Drugs)

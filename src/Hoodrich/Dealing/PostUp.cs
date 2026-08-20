@@ -80,6 +80,15 @@ namespace Hoodrich.Dealing
         private static readonly float[] DealSizes = { 1f, 1f, 1f, 3.5f };
 
         /// <summary>
+        /// And what somebody asks for when it is counted.
+        ///
+        /// One, two or four. At twenty-five a pill that is the twenty-five, fifty and hundred
+        /// dollar deals everybody actually does, and nobody has to be told what an eighth of a
+        /// pill would be.
+        /// </summary>
+        private static readonly float[] PillDeals = { 1f, 1f, 2f, 2f, 4f };
+
+        /// <summary>
         /// How close a uniform has to be for a handoff to be in their view.
         ///
         /// Matched to the crawl range on purpose: a patrol easing past at walking pace is
@@ -652,7 +661,22 @@ namespace Hoodrich.Dealing
 
             if (product == null) return;
 
-            var asked = DealSizes[_rng.Next(DealSizes.Length)];
+            // A written deal if the product has any, otherwise a gram or an eighth.
+            Economy.Deal deal = null;
+
+            if (product.Deals.Count > 0)
+            {
+                // Weighted to the small end: most people buying on a corner buy the smallest
+                // thing on it, and an ounce moving as often as a gram is a wholesaler, not a
+                // corner.
+                var roll = _rng.NextDouble();
+                var index = roll < 0.62 ? 0 : roll < 0.9 ? 1 : 2;
+
+                deal = product.Deals[Math.Min(index, product.Deals.Count - 1)];
+            }
+
+            var sizes = product.Counted ? PillDeals : DealSizes;
+            var asked = deal != null ? deal.Quantity : sizes[_rng.Next(sizes.Length)];
             var grams = Math.Min(asked, Stash.PackagedOf(product.Id));
             if (grams < 0.05f)
             {
@@ -675,7 +699,11 @@ namespace Hoodrich.Dealing
             var sold = Stash.RemovePackaged(product.Id, grams);
             if (sold <= 0f) return;
 
-            var payout = _pricing.SaleValue(product, sold, purity);
+            // Short-changed on the amount means short-changed on the money: somebody who only
+            // got half an eighth does not pay for an eighth.
+            var payout = deal != null && sold >= asked - 0.001f
+                ? _pricing.DealValue(product, deal, purity)
+                : _pricing.SaleValue(product, sold, purity);
             Game.Player.Money += payout;
 
             _sales++;
@@ -723,7 +751,7 @@ namespace Hoodrich.Dealing
 
             Say(player, SellerLines);
 
-            Notify.Ticker("~g~+$" + payout.ToString("N0") + "~s~  " + sold.ToString("0.#") + "g");
+            Notify.Ticker("~g~+$" + payout.ToString("N0") + "~s~  " + product.Amount(sold));
 
             // Doing it in front of a uniform is its own problem, regardless of how quiet the
             // corner has been up to now.
@@ -1859,9 +1887,13 @@ namespace Hoodrich.Dealing
             // What is left is the number that decides whether you stay, so it goes first and
             // turns amber as it runs down.
             var left = _product == null ? 0f : Stash.PackagedOf(_product.Id);
-            var lots = (int)(left / 1.5f);
 
-            Hud.Text(left.ToString("0.#") + "g left  ·  " + lots + " more sale" + (lots == 1 ? "" : "s"),
+            // How many more of them there are in it, in whatever the product is measured in.
+            var perSale = _product != null && _product.Counted ? 2f : 1.5f;
+            var lots = (int)(left / perSale);
+
+            Hud.Text((_product == null ? "0" : _product.Amount(left)) +
+                     " left  ·  " + lots + " more sale" + (lots == 1 ? "" : "s"),
                      x, y + 0.024f, 0.30f,
                      left < 7f ? Palette.Warn : Palette.Cash, Hud.FontBody);
 

@@ -5,6 +5,13 @@ using Hoodrich.Core;
 
 namespace Hoodrich.Economy
 {
+    /// <summary>One amount somebody asks for, and the money that comes with it.</summary>
+    internal sealed class Deal
+    {
+        public float Quantity = 1f;
+        public int Price = 20;
+    }
+
     /// <summary>A product line the player can buy, hold and sell.</summary>
     internal sealed class DrugDef
     {
@@ -44,6 +51,77 @@ namespace Hoodrich.Economy
 
         /// <summary>What one sellable unit is called, for the wheel.</summary>
         public string UnitName = "grams";
+
+        /// <summary>
+        /// The amounts people ask for, and what they hand over for each.
+        ///
+        /// Empty means the old behaviour: a gram or an eighth, priced off the per-gram rate. A
+        /// product that lists deals only ever sells in those amounts -- no in-betweens, no half
+        /// sales -- and the price for each is the one written here rather than one worked out
+        /// by multiplication, because "an ounce for two hundred" is a decision somebody made
+        /// and $560 is what a calculator says.
+        /// </summary>
+        public readonly List<Deal> Deals = new List<Deal>();
+
+        /// <summary>
+        /// Made, not bought.
+        ///
+        /// A rolled joint is not something anybody sells you wholesale. It keeps this product
+        /// out of every dealer's stock without needing every dealer to know about it.
+        /// </summary>
+        public bool MadeOnly;
+
+        /// <summary>What this becomes at the kitchen instead, if it can become something.</summary>
+        public string RollsInto = "";
+
+        /// <summary>How much bulk goes into one of whatever it rolls into.</summary>
+        public float PerUnit = 1f;
+
+        /// <summary>
+        /// Counted rather than weighed.
+        ///
+        /// Pills are the only thing in the catalogue nobody measures in grams. A buyer asks for
+        /// one, two or four of them, a dealer counts them out, and every number the player is
+        /// shown should say so -- "3.5g of ecstasy" is not a thing anybody has ever said.
+        /// </summary>
+        public bool Counted;
+
+        /// <summary>
+        /// What working this at the counter is called, in the present tense, for the HUD.
+        ///
+        /// Separate from SplitVerb, which is an instruction ("Bag up"). This is what you are
+        /// doing while the bar runs, and for pills it is not cutting.
+        /// </summary>
+        public string WorkVerb = "Cutting";
+
+        /// <summary>
+        /// An amount, written the way this product is actually talked about.
+        ///
+        /// The single place any quantity of a drug becomes text, so a pill can never appear
+        /// anywhere as a gram again by somebody forgetting.
+        /// </summary>
+        public string Amount(float quantity)
+        {
+            if (Counted)
+            {
+                var pills = (int)Math.Round(quantity);
+                return pills + " " + (pills == 1 ? Singular : UnitName);
+            }
+
+            return quantity.ToString("0.#") + "g";
+        }
+
+        /// <summary>Short form, for a corner readout where there is no room for a word.</summary>
+        public string Short(float quantity)
+        {
+            return Counted ? ((int)Math.Round(quantity)).ToString() : quantity.ToString("0.#") + "g";
+        }
+
+        /// <summary>"pills" without its s, for the one of them.</summary>
+        public string Singular =>
+            UnitName.EndsWith("s", StringComparison.OrdinalIgnoreCase) && UnitName.Length > 1
+                ? UnitName.Substring(0, UnitName.Length - 1)
+                : UnitName;
 
         public override string ToString() => Id;
     }
@@ -107,6 +185,25 @@ namespace Hoodrich.Economy
                 def.HeatFactor = Math.Max(0f, node["heatFactor"].AsFloat(def.HeatFactor));
                 def.SplitVerb = node["splitVerb"].AsString(def.SplitVerb);
                 def.UnitName = node["unitName"].AsString(def.UnitName);
+                def.Counted = node["counted"].AsBool(def.Counted);
+                def.WorkVerb = node["workVerb"].AsString(def.WorkVerb);
+                def.MadeOnly = node["madeOnly"].AsBool(def.MadeOnly);
+                def.RollsInto = node["rollsInto"].AsString(def.RollsInto);
+                def.PerUnit = Math.Max(0.1f, node["perUnit"].AsFloat(def.PerUnit));
+
+                if (node["deals"].Kind == JsonKind.Array)
+                {
+                    def.Deals.Clear();
+
+                    foreach (var deal in node["deals"].Items)
+                    {
+                        def.Deals.Add(new Deal
+                        {
+                            Quantity = Math.Max(0.1f, deal["quantity"].AsFloat(1f)),
+                            Price = Math.Max(1, deal["price"].AsInt(1))
+                        });
+                    }
+                }
 
                 if (existing == null)
                 {
@@ -136,10 +233,10 @@ namespace Hoodrich.Economy
 
         private void AddDefaults()
         {
-            Register(new DrugDef { Id = "weed", Name = "Marijuana", Tag = "WEED", BasePrice = 10f, Tier = 1, HeatFactor = 0.5f, SplitVerb = "Bag up", UnitName = "baggies" });
-            Register(new DrugDef { Id = "crack", Name = "Crack", Tag = "CRK", BasePrice = 25f, Tier = 2, HeatFactor = 1.0f, SplitVerb = "Rock up", UnitName = "rocks" });
-            Register(new DrugDef { Id = "ecstasy", Name = "Ecstasy", Tag = "PILL", BasePrice = 35f, Tier = 2, HeatFactor = 0.8f, SplitVerb = "Count out", UnitName = "pills" });
-            Register(new DrugDef { Id = "meth", Name = "Meth", Tag = "METH", BasePrice = 28f, Tier = 2, HeatFactor = 1.1f, SplitVerb = "Break down", UnitName = "shards" });
+            Register(new DrugDef { Id = "weed", Name = "Marijuana", Tag = "WEED", BasePrice = 10f, Tier = 1, HeatFactor = 0.5f, SplitVerb = "Bag up", UnitName = "baggies", WorkVerb = "Bagging up" });
+            Register(new DrugDef { Id = "crack", Name = "Crack", Tag = "CRK", BasePrice = 25f, Tier = 2, HeatFactor = 1.0f, SplitVerb = "Rock up", UnitName = "rocks", WorkVerb = "Rocking up" });
+            Register(new DrugDef { Id = "ecstasy", Name = "Ecstasy", Tag = "PILL", BasePrice = 35f, Tier = 2, HeatFactor = 0.8f, SplitVerb = "Press", UnitName = "pills", Counted = true, WorkVerb = "Cutting and repressing" });
+            Register(new DrugDef { Id = "meth", Name = "Meth", Tag = "METH", BasePrice = 28f, Tier = 2, HeatFactor = 1.1f, SplitVerb = "Break down", UnitName = "shards", WorkVerb = "Breaking down" });
             Register(new DrugDef { Id = "heroin", Name = "Heroin", Tag = "H", BasePrice = 45f, Tier = 3, HeatFactor = 1.4f, SplitVerb = "Cut", UnitName = "bags" });
             Register(new DrugDef { Id = "coke", Name = "Cocaine", Tag = "COKE", BasePrice = 100f, Tier = 3, HeatFactor = 1.6f, SplitVerb = "Cut", UnitName = "grams" });
         }

@@ -68,6 +68,16 @@ namespace Hoodrich.Gangs
         private readonly List<float> _facings = new List<float>();
         private readonly List<string> _doing = new List<string>();
 
+        /// <summary>
+        /// Per station: a model of its own, or null for whoever the set is made of.
+        ///
+        /// A woman working a courtyard is not a Families member, and a man holding a beer is not
+        /// holding a rifle. Both used to be, because everybody here came out of one list and was
+        /// handed one weapon.
+        /// </summary>
+        private readonly List<string[]> _models = new List<string[]>();
+        private readonly List<bool> _armed = new List<bool>();
+
         private readonly List<Ped> _crew = new List<Ped>();
         private readonly List<Vector3> _marks = new List<Vector3>();
 
@@ -83,13 +93,30 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>Adds one of them, on his own mark, doing his own thing.</summary>
-        public Entourage Stand(Vector3 where, float facing, string scenario)
+        public Entourage Stand(Vector3 where, float facing, string scenario,
+                               string[] models = null, bool armed = true)
         {
             _stations.Add(where);
             _facings.Add(facing);
             _doing.Add(scenario);
+            _models.Add(models);
+            _armed.Add(armed);
             return this;
         }
+
+        private string[] ModelsFor(int index, GangDef gang)
+        {
+            if (index < _models.Count && _models[index] != null && _models[index].Length > 0)
+            {
+                return _models[index];
+            }
+
+            var own = new string[gang.MemberModels.Count];
+            for (var i = 0; i < own.Length; i++) own[i] = gang.MemberModels[i];
+            return own;
+        }
+
+        private bool ArmedAt(int index) => index >= _armed.Count || _armed[index];
 
         public void Update()
         {
@@ -137,7 +164,7 @@ namespace Hoodrich.Gangs
 
             for (var i = 0; i < _marks.Count; i++)
             {
-                var ped = SpawnMember(gang, _marks[i], Facing(i));
+                var ped = SpawnMember(gang, _marks[i], Facing(i), ModelsFor(i, gang), ArmedAt(i));
                 if (ped == null) continue;
 
                 _crew.Add(ped);
@@ -159,9 +186,9 @@ namespace Hoodrich.Gangs
             return Scenarios[index % Scenarios.Length];
         }
 
-        private Ped SpawnMember(GangDef gang, Vector3 mark, float facing)
+        private Ped SpawnMember(GangDef gang, Vector3 mark, float facing, string[] models, bool armed)
         {
-            foreach (var name in gang.MemberModels)
+            foreach (var name in models)
             {
                 try
                 {
@@ -180,20 +207,30 @@ namespace Hoodrich.Gangs
                     if (ped == null || !ped.Exists()) continue;
 
                     ped.IsPersistent = true;
-                    ped.BlockPermanentEvents = true;
+
+                    // They can be startled. Blocking non-temporary events -- which is what this
+                    // used to do -- makes somebody incapable of reacting to gunfire, a car on
+                    // the pavement or a fight in front of them, which is a mannequin rather than
+                    // a neighbour. They scatter like anybody would, and Settle walks them back.
+                    ped.BlockPermanentEvents = false;
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
 
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
-                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped.Handle, false);
 
-                    Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
-                                  Function.Call<uint>(Hash.GET_HASH_KEY, Weapon), 120, true, true);
+                    if (armed)
+                    {
+                        Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
 
-                    // In the hands, not on the back.
-                    Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle,
-                                  Function.Call<uint>(Hash.GET_HASH_KEY, Weapon), true);
+                        Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
+                                      Function.Call<uint>(Hash.GET_HASH_KEY, Weapon), 120, true, true);
 
-                    Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
+                        // In the hands, not on the back.
+                        Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle,
+                                      Function.Call<uint>(Hash.GET_HASH_KEY, Weapon), true);
+
+                        Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
+                    }
 
                     return ped;
                 }
@@ -235,13 +272,44 @@ namespace Hoodrich.Gangs
                 }
 
                 if (i >= _marks.Count) continue;
-                if (ped.Position.DistanceTo(_marks[i]) <= DriftRange) continue;
+
+                var mark = Ground(_marks[i]);
+                var away = ped.Position.DistanceTo(mark);
+
+                if (away <= DriftRange)
+                {
+                    // Home, but knocked out of what he was doing -- put him back to it once,
+                    // not every pass, or he restarts the scenario forever.
+                    if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, ped.Handle, 118)) continue;
+                    if (ped.IsInCombat || ped.IsRagdoll) continue;
+
+                    Idle(ped, Doing(i), Facing(i));
+                    continue;
+                }
 
                 try
                 {
-                    ped.Position = Ground(_marks[i]);
-                    ped.Task.ClearAll();
-                    Idle(ped, Doing(i), Facing(i));
+                    // Whatever spooked them has to be over first. Walking a man back into the
+                    // thing he ran from is worse than leaving him where he stopped.
+                    if (ped.IsInCombat || ped.IsRagdoll) continue;
+                    if (Function.Call<bool>(Hash.IS_PED_FLEEING, ped.Handle)) continue;
+
+                    // A long way off and nobody looking: put him back. Anything closer he walks,
+                    // because being teleported in front of you is the one thing that gives it
+                    // away as a script.
+                    if (away > 60f && !ped.IsOnScreen)
+                    {
+                        ped.Position = mark;
+                        ped.Task.ClearAll();
+                        Idle(ped, Doing(i), Facing(i));
+                        continue;
+                    }
+
+                    // Already walking back.
+                    if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, ped.Handle, 224)) continue;
+
+                    Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, ped.Handle,
+                                  mark.X, mark.Y, mark.Z, 1.2f, 20000, 1.0f, 0, Facing(i));
                 }
                 catch
                 {
