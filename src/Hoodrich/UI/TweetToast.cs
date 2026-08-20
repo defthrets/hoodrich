@@ -43,11 +43,26 @@ namespace Hoodrich.UI
         private const float AvatarSize = 0.030f;
         private const float Gap = 0.007f;
 
-        private const float NameScale = 0.29f;
-        private const float HandleScale = 0.235f;
+        /// <summary>
+        /// The name in the sign-painter script, the handle underneath it in Chalet London.
+        ///
+        /// The same pair every other heading in this mod uses -- THE KITCHEN, POST UP, SOCIALS
+        /// -- so a tweet arriving looks like part of the same thing rather than a notification
+        /// somebody bolted on. The script needs the room, so the handle goes on its own line
+        /// under it instead of trailing after it the way it does on the feed screen, where
+        /// there is width to spare.
+        /// </summary>
+        private const float NameScale = 0.42f;
+        private const float HandleScale = 0.225f;
         private const float BodyScale = 0.275f;
 
-        private const float LineHeight = 0.0165f;
+        private const float NameHeight = 0.0225f;
+        private const float HandleHeight = 0.0145f;
+
+        /// <summary>Hairline under the header, and the air either side of it.</summary>
+        private const float RuleGap = 0.0055f;
+
+        private const float LineHeight = 0.0162f;
 
         /// <summary>Three at once. A fourth waits rather than pushing one off mid-sentence.</summary>
         private const int MostAtOnce = 3;
@@ -112,14 +127,18 @@ namespace Hoodrich.UI
                     ShownAt = Game.GameTime,
                 };
 
-                var textWidth = Width - Hud.ToX(AvatarSize) - Gap - Pad * 2f;
+                // The body runs the full width of the card, under the header rather than
+                // beside the avatar. Three lines squeezed into the column left over next to a
+                // disc is a column about nine words wide.
+                var textWidth = Width - Pad * 2f;
                 card.Lines = Wrap(post.Body, textWidth, BodyScale);
 
                 while (card.Lines.Count > MostLines) card.Lines.RemoveAt(card.Lines.Count - 1);
 
-                // The header is one line whatever happens; the body is however many it took.
-                var text = 0.020f + card.Lines.Count * LineHeight;
-                card.Height = Math.Max(AvatarSize, text) + Pad * 2f;
+                var header = Math.Max(AvatarSize, NameHeight + HandleHeight);
+                var body = card.Lines.Count * LineHeight;
+
+                card.Height = Pad * 2f + header + RuleGap * 2f + body;
 
                 _live.Add(card);
             }
@@ -178,42 +197,56 @@ namespace Hoodrich.UI
             var slide = SlideIn * (1f - fade) * (1f - fade);
             var left = Right - Width + slide;
 
-            var body = (int)(232 * fade);
-            var rail = (int)(255 * fade);
+            var solid = (int)(255 * fade);
 
-            Hud.RectFrom(left, y, Width, card.Height, Color.FromArgb(body, 14, 15, 17));
+            Hud.RectFrom(left, y, Width, card.Height, Color.FromArgb((int)(236 * fade), 13, 14, 16));
 
-            // The author's colour down the left edge, which is the only place a set's colour
-            // belongs on a card this small.
-            Hud.RectFrom(left, y, 0.0022f, card.Height, Alpha(card.Tint, rail));
+            // A thin lift along the top edge, and the author's colour down the left. The colour
+            // belongs on the edge on a card this small -- anywhere else and a purple card and a
+            // green card stop reading as the same object.
+            Hud.RectFrom(left, y, Width, 0.0012f, Color.FromArgb((int)(26 * fade), 255, 255, 255));
+            Hud.RectFrom(left, y, 0.0024f, card.Height, Alpha(card.Tint, solid));
 
             var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;
             var cy = y + Pad + AvatarSize * 0.5f;
 
-            Hud.Disc(cx, cy, AvatarSize * 0.5f, Alpha(card.Tint, rail));
+            Hud.Disc(cx, cy, AvatarSize * 0.5f, Alpha(card.Tint, solid));
 
             Hud.Text(card.By.Initial, cx, cy - 0.0112f, 0.38f,
                      Color.FromArgb((int)(240 * fade), 250, 250, 248), Hud.FontChaletLondon);
 
             var textX = left + Pad + Hud.ToX(AvatarSize) + Gap;
-            var line = y + Pad - 0.002f;
+            var line = y + Pad - 0.005f;
 
+            // The name, in the sign-painter script.
             Hud.Text(card.By.Name, textX, line, NameScale,
-                     Alpha(Palette.Text, (int)(255 * fade)), Hud.FontChaletLondon, centre: false);
+                     Alpha(Palette.Text, solid), Hud.FontCursive, centre: false);
 
-            var nameWidth = 0.055f;
-            try { nameWidth = Hud.MeasureText(card.By.Name, NameScale, Hud.FontChaletLondon); }
-            catch { /* the estimate will do */ }
+            line += NameHeight;
 
-            Hud.Text(card.Handle, textX + nameWidth + 0.005f, line + 0.002f, HandleScale,
-                     Alpha(Palette.TextDim, (int)(255 * fade)), Hud.FontLabel, centre: false);
+            // The handle under it, quieter, in the plain face.
+            if (card.By.Verified)
+            {
+                Hud.Disc(textX + 0.0035f, line + 0.0068f, 0.0033f, Alpha(Palette.Accent, solid));
+                textX += 0.011f;
+            }
 
-            line += 0.019f;
+            Hud.Text(card.Handle, textX, line, HandleScale,
+                     Alpha(Palette.TextDim, solid), Hud.FontChaletLondon, centre: false);
+
+            // A hairline the full width of the card, which is what makes it read as a card with
+            // a header rather than four pieces of text at different sizes.
+            var rule = y + Pad + Math.Max(AvatarSize, NameHeight + HandleHeight) + RuleGap;
+
+            Hud.RectFrom(left + Pad, rule, Width - Pad * 2f, 0.0011f,
+                         Color.FromArgb((int)(48 * fade), 255, 255, 255));
+
+            line = rule + RuleGap;
 
             foreach (var text in card.Lines)
             {
-                Hud.Text(text, textX, line, BodyScale,
-                         Alpha(Palette.Text, (int)(240 * fade)), Hud.FontBody, centre: false);
+                Hud.Text(text, left + Pad, line, BodyScale,
+                         Alpha(Palette.Text, (int)(242 * fade)), Hud.FontBody, centre: false);
 
                 line += LineHeight;
             }
