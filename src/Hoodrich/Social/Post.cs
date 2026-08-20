@@ -55,6 +55,16 @@ namespace Hoodrich.Social
         public Author By;
         public string Body = "";
 
+        /// <summary>
+        /// The sentence on its own, without the sign-off.
+        ///
+        /// What gets remembered for the no-repeats check. The hashtags on the end are picked at
+        /// random, so the same line signed two different ways looks like two different posts to
+        /// anything comparing the finished text -- and then the feed says the same thing all
+        /// evening while believing it never repeated itself.
+        /// </summary>
+        public string Plain = "";
+
         /// <summary>Game time it landed, for the "2m" stamp.</summary>
         public int At;
 

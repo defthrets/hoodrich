@@ -237,6 +237,19 @@ namespace Hoodrich.Social
                     if (list.Count > 0) feed._templates[key] = list;
                 }
 
+                foreach (var gang in doc["hashtags"].Keys)
+                {
+                    var tags = new List<string>();
+
+                    foreach (var tag in doc["hashtags"][gang].Items)
+                    {
+                        var text = tag.AsString("");
+                        if (!string.IsNullOrEmpty(text)) tags.Add(text);
+                    }
+
+                    if (tags.Count > 0) feed._hashtags[gang] = tags;
+                }
+
                 foreach (var voice in doc["voices"].Keys)
                 {
                     var sets = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
@@ -729,7 +742,7 @@ namespace Hoodrich.Social
                 var post = BuildOnce(set, subject, amount);
                 if (post == null) return null;
 
-                if (!_recentSet.Contains(post.Body)) return post;
+                if (!_recentSet.Contains(post.Plain)) return post;
             }
 
             // The pool for this set is genuinely exhausted, so a repeat is better than silence.
@@ -820,10 +833,14 @@ namespace Hoodrich.Social
             var body = Fill(templates[_rng.Next(templates.Count)], subject, amount);
             if (string.IsNullOrEmpty(body)) return null;
 
+            var plain = body;
+            body += TagsFor(by);
+
             var post = new Post
             {
                 By = by,
                 Body = body,
+                Plain = plain,
                 At = Game.GameTime
             };
 
@@ -949,12 +966,11 @@ namespace Hoodrich.Social
 
             try
             {
-                // A post from somebody with no face has to say who it is from inside the line
-                // itself, because a ticker has nowhere else to put it.
-                var line = string.IsNullOrEmpty(PicFor(post.By))
-                    ? Colour(post.By) + "[" + post.By.Initial + "] " + post.By.Name + "~s~  " +
-                      post.By.Handle + "~n~" + post.Body
-                    : post.Body;
+                // Just the words. The name and the handle are already in the notification's
+                // own header, so putting them at the front of the message as well said the same
+                // thing twice, in a shape no phone has ever used. Who it is from is carried the
+                // way people actually carry it -- on the end, in their set's colour.
+                var line = post.Body;
 
                 Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, Draw.FormatFor(line));
 
@@ -1002,6 +1018,48 @@ namespace Hoodrich.Social
                 catch { /* it will time out on its own */ }
             }
         }
+
+        /// <summary>
+        /// What somebody signs off with.
+        ///
+        /// Anybody who runs with a set puts it on the end -- one to three of them, in the set's
+        /// colour, out of whatever that set actually claims. It is how you tell who is talking
+        /// without a face on the message, and it is what people do anyway.
+        ///
+        /// Nobody who is not in a gang gets any. A chicken shop does not sign its posts.
+        /// </summary>
+        private string TagsFor(Author by)
+        {
+            if (by == null || string.IsNullOrEmpty(by.Gang)) return "";
+
+            List<string> pool;
+            if (!_hashtags.TryGetValue(by.Gang, out pool) || pool.Count == 0) return "";
+
+            var how = pool.Count == 1 ? 1 : 1 + _rng.Next(Math.Min(3, pool.Count));
+
+            var picked = new List<string>();
+
+            for (var attempt = 0; attempt < how * 4 && picked.Count < how; attempt++)
+            {
+                var tag = pool[_rng.Next(pool.Count)];
+                if (!picked.Contains(tag)) picked.Add(tag);
+            }
+
+            if (picked.Count == 0) return "";
+
+            var colour = Colour(by);
+            var line = "";
+
+            foreach (var tag in picked) line += " " + colour + tag;
+
+            // Back to the normal colour, or everything after it on the same feed line inherits
+            // whatever the last set was wearing.
+            return line + "~s~";
+        }
+
+        /// <summary>gang id -> what they sign off with.</summary>
+        private readonly Dictionary<string, List<string>> _hashtags =
+            new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// The nearest text colour the game has to somebody's set.
@@ -1055,8 +1113,8 @@ namespace Hoodrich.Social
         {
             _timeline.Insert(0, post);
 
-            _recent.Enqueue(post.Body);
-            _recentSet.Add(post.Body);
+            _recent.Enqueue(post.Plain);
+            _recentSet.Add(post.Plain);
 
             while (_recent.Count > RecentMemory) _recentSet.Remove(_recent.Dequeue());
             while (_timeline.Count > Capacity) _timeline.RemoveAt(_timeline.Count - 1);
