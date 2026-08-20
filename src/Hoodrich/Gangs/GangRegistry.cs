@@ -216,8 +216,8 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(60, 180, 75), 2,
                 new[] { "weed", "crack" },
                 new[] { "ballas", "vagos" },
-                new[] { "DAVIS", "CHAMH", "STRAW" },
-                "Davis, Chamberlain Hills, Strawberry",
+                new[] { "CHAMH", "STRAW", "DAVIS" },
+                "Chamberlain Hills, Strawberry, Davis",
                 // The three Families models and nothing else. A generic South Central civilian
                 // used to sit on the end of this list for variety, and it is how a man in a
                 // pink shirt and a blazer ended up guarding Lamar's yard with a rifle.
@@ -229,7 +229,7 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(145, 70, 190), 27,
                 new[] { "crack", "weed" },
                 new[] { "families", "vagos" },
-                new[] { "RANCHO", "MURRI", "ZQ_UAR" },
+                new[] { "DAVIS", "CHAMH" },
                 "Rancho, Murrieta Heights, Davis Quartz",
                 new[] { "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01", "a_m_m_soucent_02" }));
 
@@ -237,7 +237,7 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(235, 195, 40), 5,
                 new[] { "coke", "meth" },
                 new[] { "families", "ballas" },
-                new[] { "EBURO", "LMESA", "TATAMO" },
+                new[] { "RANCHO" },
                 "El Burro Heights, La Mesa, Tataviam Mountains",
                 new[] { "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03", "a_m_y_mexthug_01" }));
 
@@ -245,7 +245,7 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(70, 200, 200), 3,
                 new[] { "meth", "coke" },
                 new[] { "vagos", "families" },
-                new[] { "CYPRE", "TEXTI", "ELYSIAN" },
+                new[] { "ELBURRO", "VESP" },
                 "Cypress Flats, Textile City, Elysian Island",
                 new[] { "g_m_y_salvaboss_01", "g_m_y_salvagoon_01", "g_m_y_salvagoon_02", "a_m_y_mexthug_01" }));
 
@@ -253,7 +253,7 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(200, 200, 200), 40,
                 new[] { "meth", "heroin" },
                 new[] { "families", "vagos" },
-                new[] { "SLAB", "SANDY", "GRAPES", "HARMO", "ALAMO" },
+                new[] { "SLAB", "GRAPES" },
                 "Stab City, Sandy Shores, Grapeseed",
                 new[] { "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03", "a_m_m_hillbilly_01" }));
 
@@ -261,7 +261,7 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(220, 60, 60), 1,
                 new[] { "ecstasy", "heroin" },
                 new[] { "marabunta", "armenians" },
-                new[] { "KOREAT", "MIRR", "HAWICK" },
+                new[] { "CYPRE" },
                 "Little Seoul, Mirror Park, Hawick",
                 new[] { "g_m_m_chiboss_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02", "a_m_y_ktown_01" }));
 
@@ -269,7 +269,7 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(150, 40, 60), 76,
                 new[] { "heroin" },
                 new[] { "triads" },
-                new[] { "ALTA", "BURTON", "PBOX" },
+                new[] { "LAPUER" },
                 "Alta, Burton, Pillbox Hill",
                 new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_y_armgoon_02", "a_m_m_eastsa_02" }));
         }

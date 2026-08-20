@@ -65,8 +65,8 @@
         "lost"
       ],
       "turf": [
-        "STRAW",
         "CHAMH",
+        "STRAW",
         "DAVIS"
       ],
       "turfHint": "Chamberlain Hills and Strawberry",
@@ -94,8 +94,7 @@
       ],
       "turf": [
         "DAVIS",
-        "CHAMH",
-        "RANCHO"
+        "CHAMH"
       ],
       "turfHint": "Davis, Grove Street and Rancho",
       "joinRespect": 0
@@ -121,8 +120,7 @@
         "marabunta"
       ],
       "turf": [
-        "RANCHO",
-        "CYPRE"
+        "RANCHO"
       ],
       "turfHint": "El Burro Heights, La Mesa and Murrieta",
       "joinRespect": 0
@@ -148,9 +146,7 @@
       ],
       "turf": [
         "ELBURRO",
-        "VESP",
-        "DESRT",
-        "EVINE"
+        "VESP"
       ],
       "turfHint": "Cypress Flats, Elysian Island and Textile City",
       "joinRespect": 250
@@ -175,10 +171,7 @@
       ],
       "turf": [
         "SLAB",
-        "DESRT",
-        "CHU",
-        "GRAPES",
-        "EVINE"
+        "GRAPES"
       ],
       "turfHint": "Stab City, Sandy Shores and Grapeseed",
       "joinRespect": 250
@@ -200,7 +193,7 @@
       ],
       "rivals": [],
       "turf": [
-        "KOREAT"
+        "CYPRE"
       ],
       "turfHint": "Little Seoul, Mirror Park and Hawick",
       "joinRespect": 900
