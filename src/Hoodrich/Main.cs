@@ -94,6 +94,22 @@ namespace Hoodrich
         private readonly Entourage _lamarCrew;
         private readonly Entourage _stretchCrew;
         private readonly Entourage _grimesCrew;
+        private readonly Entourage _labCrew;
+        private readonly ParkedCar _labCar;
+
+        /// <summary>
+        /// The three Families models, one at a time, by index.
+        ///
+        /// Entourage rotates its model list by station so nobody is a copy of his neighbour,
+        /// but there are only three faces and a lot of stations, so two men stood together
+        /// landing on the same one is a coin toss. Where it matters that they are different
+        /// people, they are named.
+        /// </summary>
+        private static string[] Fam(int which)
+        {
+            var all = new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01" };
+            return new[] { all[((which % all.Length) + all.Length) % all.Length] };
+        }
 
         /// <summary>
         /// People who live here, and the other sets coming to take it off them.
@@ -224,6 +240,30 @@ namespace Hoodrich
 
                 foreach (var spec in _cfg.Doors) _doors.Add(new InteriorDoor(spec));
 
+                // The lab has people on it.
+                _labCrew = new Entourage(_gangs, "families",
+                                         new Vector3(-201.384f, -1707.909f, 32.664f),
+                                         313.362f, "the lab")
+
+                    // On the shutter, with the rifle.
+                    .Stand(new Vector3(-197.729f, -1712.040f, 32.664f), 138.478f,
+                           "WORLD_HUMAN_GUARD_STAND", Fam(0))
+
+                    // Round the side on a beer.
+                    .Stand(new Vector3(-204.729f, -1710.548f, 32.664f), 243.455f,
+                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false)
+
+                    // And his mate, on a cigarette.
+                    .Stand(new Vector3(-204.190f, -1711.620f, 32.664f), 243.455f,
+                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false);
+
+                // And their car outside it. The Voodoo is the lowrider, and it is painted the
+                // exact green the set is drawn in everywhere else rather than a paint index
+                // that is roughly right.
+                _labCar = new ParkedCar(new Vector3(-196.745f, -1718.838f, 32.664f), 319.530f,
+                                        _gangs.Get("families")?.Colour ?? System.Drawing.Color.FromArgb(60, 180, 75),
+                                        "voodoo", "buccaneer2", "chino2");
+
                 _copWatch = new CopWatch();
 
                 _traffic = new TrafficWatch()
@@ -235,6 +275,7 @@ namespace Hoodrich
                                    _delivery.Car != null && car != null &&
                                    car.Handle == _delivery.Car.Handle)
                                   || (_payback != null && _payback.Owns(car))
+                                  || (_labCar != null && _labCar.Owns(car))
                 };
 
                 _payback = new Payback(_gangs);
@@ -596,6 +637,8 @@ namespace Hoodrich
                     _lamarCrew.Update();
                     if (_stretchCrew != null) _stretchCrew.Update();
                     _grimesCrew.Update();
+                    _labCrew.Update();
+                    _labCar.Update();
                     _jobs.Update();
                     UpdateLoan();
                 }
@@ -879,6 +922,8 @@ namespace Hoodrich
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _labCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _labCar?.RestoreWorld(); } catch { /* teardown */ }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }
         }
