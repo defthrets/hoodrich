@@ -152,9 +152,28 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>The job explained, with the option to take it or walk.</summary>
-        private DialogueNode Brief(MissionDef def)
+        /// <summary>
+        /// The pitch, however many beats it takes.
+        ///
+        /// He gets to finish talking before you are asked. A job you can accept from the first
+        /// sentence is a job where the rest of what he said was decoration.
+        /// </summary>
+        private DialogueNode Brief(MissionDef def, int beat = 0)
         {
-            var node = Node(def.Brief);
+            if (beat < def.BriefMore.Count)
+            {
+                var more = Node(beat == 0 ? def.Brief : def.BriefMore[beat - 1]);
+
+                var next = beat + 1;
+                more.Say("Go on.", () => Brief(def, next));
+                more.WithIcon(Icons.Tick);
+
+                more.Say("Nah. What else you got?", Root);
+                more.Leave("Forget it.");
+                return more;
+            }
+
+            var node = Node(beat == 0 ? def.Brief : def.BriefMore[beat - 1]);
 
             node.Say("I'll do it.", () => Accept(def),
                      "$" + def.PayMin.ToString("N0") + "-" + def.PayMax.ToString("N0") +

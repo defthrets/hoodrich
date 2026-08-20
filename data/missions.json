@@ -54,8 +54,8 @@
       "id": "torch_rancho",
       "kind": "TorchJob",
       "name": "Ride through Rancho and lose the car.",
-      "brief": "Rancho. Them Vagos been creepin' up on the projects like nobody live there, and Stretch keep tellin' me it's fine. It ain't fine. So we remind 'em.\n\nTake the beater out front -- don't take YOUR car, don't take nothin' with plates you like. Roll through Jamestown, make some noise, and the second one of them look up you're done. You ain't gotta drop nobody. It's a message, homie.\n\nThen here's the part you gon' forget: that car did it, not you. Law gon' be lookin' for a car. So you take it out to that lot by the water in La Puerta, get out, and you burn it. All the way. Can of gas gon' be right there in your hand, I ain't sendin' you out to go shoppin'.\n\nFire's loud. If they come back for you, lose 'em again, then walk back here. WALK.",
-      "done": "Seen the smoke from the freeway. And ain't nobody got a plate to run. That's how it's done.",
+      "brief": "You seen Rancho lately? Vagos out there in the projects like they payin' rent on it. And they ain't just standin' -- they sellin'. In Chamberlain, homie. On Davis. Corners we been on since 'fore you could drive.",
+      "done": "Seen the smoke from the freeway, homie. And ain't nobody got a plate to run, ain't nobody got a body to catch. Vagos gon' sit on they hands and wonder. That's exactly what I wanted.",
       "targetGang": "vagos",
       "zone": "RANCHO",
       "x": 356.821,
@@ -76,7 +76,17 @@
       "dumpX": -284.604,
       "dumpY": -1652.626,
       "dumpZ": 31.849,
-      "carModel": "emperor2"
+      "carModel": "emperor2",
+      "briefMore": [
+        "And I can't beat they price. I CAN'T. 'Cause they gettin' it straight off Madrazo's people -- cartel weight, cartel numbers. Us? We buyin' off a man who buyin' off a man. By the time it get to Grimes it cost more than they sellin' it for.",
+        "Set's in pieces since Grove went purple, you know that. Half our people workin' for Ballas money now. And I asked Stretch about it -- man looked me in my face and told me leave it alone. Leave it ALONE. Since when do he tell me what to leave alone?",
+        "So this ain't through him and it ain't through nobody. It's me and you.",
+        "Take the beater out front. Not your car -- I see you look at me like that, homie, NOT your car. Roll through Jamestown, put some rounds in the air, and soon as one of them look up, you gone. You ain't gotta drop nobody neither.",
+        "I mean that. We drop a Vago, that's a war, and we ain't got the people for a war right now. This a message. They gotta know somebody still watchin' the block.",
+        "Now the part you gon' forget. That car did it. Not you -- the car. Law gon' be lookin' for a description and a plate, and the last time somebody rode out in somethin' with plates they pulled up on the whole set for a week.",
+        "So you take it out to that lot by the water in La Puerta, where don't nobody go. Get out, pour the gas over it -- can gon' be right there in your hand, I ain't sendin' you to go shoppin' -- then back up and put a round in it. It'll go.",
+        "Fire's loud though. Somebody always call it in. If they come back for you, lose 'em, and then you WALK back here. Not drive. Walk."
+      ]
     },
     {
       "id": "tags_run",

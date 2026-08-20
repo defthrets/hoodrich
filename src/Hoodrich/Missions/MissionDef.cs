@@ -51,6 +51,15 @@ namespace Hoodrich.Missions
         /// <summary>What he says when he explains it.</summary>
         public string Brief = "";
 
+        /// <summary>
+        /// The rest of it, one beat at a time.
+        ///
+        /// A job with five stages cannot be explained in one paragraph -- and the why has to
+        /// come before the what, or it is a fetch quest with an accent on it. Each entry is
+        /// another thing he says, and you press on through them.
+        /// </summary>
+        public readonly List<string> BriefMore = new List<string>();
+
         /// <summary>Line when it lands.</summary>
         public string Done = "";
 
@@ -190,6 +199,12 @@ namespace Hoodrich.Missions
                 var kind = node["kind"].AsString(def.Kind.ToString());
                 try { def.Kind = (MissionKind)Enum.Parse(typeof(MissionKind), kind, true); }
                 catch { Log.Warn("Unknown mission kind '" + kind + "' on " + id + "."); }
+
+                var more = node["briefMore"];
+                if (more.Kind == JsonKind.Array)
+                {
+                    foreach (var line in more.AsStringList()) def.BriefMore.Add(line);
+                }
 
                 if (def.PayMax < def.PayMin) def.PayMax = def.PayMin;
 

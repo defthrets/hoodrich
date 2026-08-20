@@ -204,7 +204,7 @@ namespace Hoodrich.Missions
 
                     case MissionState.Torch:
                         return _poured
-                            ? "Light it up"
+                            ? "Back up and shoot the fuel"
                             : "Pour it over the car";
 
                     case MissionState.Collect:
@@ -282,6 +282,10 @@ namespace Hoodrich.Missions
             // Any job that names a car gets one. Keying this on the DriveBy kind meant the
             // Rancho and Grove jobs had car coordinates in their data and no car in the street.
             if (Math.Abs(def.CarX) > 0.01f || Math.Abs(def.CarY) > 0.01f) SpawnJobCar(def);
+
+            // A torch job ends with shooting a trail of petrol, so it cannot be started by
+            // somebody with empty hands.
+            if (def.Kind == MissionKind.TorchJob) MakeSureHesCarrying(Game.Player.Character);
 
             Notify.Important("~g~Job on.~s~ " + Objective + ".");
             Log.Info("Mission " + def.Id + " started, site " + _site + ".");
@@ -391,6 +395,37 @@ namespace Hoodrich.Missions
         /// Stock, with one change: competition suspension, so it sits where it should. Anything
         /// more would be somebody else deciding what your car looks like.
         /// </summary>
+        /// <summary>
+        /// Makes sure he is carrying something, for a job that needs it.
+        ///
+        /// Only if he has nothing -- a man who turned up with a carbine keeps his carbine. This
+        /// is so that a job which ends with "put a round in it" cannot be started by somebody
+        /// who has nothing to put a round in it with, which would be a mission you could
+        /// walk into and not be able to finish.
+        /// </summary>
+        private static void MakeSureHesCarrying(Ped player)
+        {
+            try
+            {
+                if (player == null || !player.Exists()) return;
+
+                var pistol = Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_PISTOL");
+
+                var has = Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, player.Handle, pistol, false);
+                if (has) return;
+
+                // Nothing at all, or nothing but fists. Either way he gets a pistol and some
+                // rounds for it, and it is his to keep.
+                Function.Call(Hash.GIVE_WEAPON_TO_PED, player.Handle, pistol, 120, false, false);
+
+                Log.Info("Handed over a pistol for the job.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not hand over a sidearm: " + ex.Message);
+            }
+        }
+
         private void SpawnJobCar(MissionDef def)
         {
             var where = Ground(new Vector3(def.CarX, def.CarY, def.CarZ));
@@ -966,7 +1001,11 @@ namespace Hoodrich.Missions
                     else if (Game.GameTime - _pourStartedAt >= PourMs)
                     {
                         _poured = true;
-                        Notify.Ticker("~o~That'll do.~s~ Now light it.");
+
+                        // The can stays in his hands. Switching weapons is a thing the player
+                        // does, not a thing a script does to him mid-scene -- he has a gun
+                        // because the job gave him one, and he knows how to reach for it.
+                        Notify.Important("~o~That'll do.~s~ Back up and put a round in it.");
                     }
                 }
                 else
@@ -988,7 +1027,7 @@ namespace Hoodrich.Missions
                 return;
             }
 
-            if (near) Help.ShowThisFrame("Light it up.");
+            if (near) Help.ShowThisFrame("Shoot the fuel.");
         }
 
         /// <summary>Car's gone up. Everything after this is the walk back.</summary>
