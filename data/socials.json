@@ -931,6 +931,254 @@
       "pic": "CHAR_HAO",
       "verified": false,
       "voice": "hao_tuner"
+    },
+    {
+      "handle": "weicheng_ls",
+      "name": "Wei Cheng",
+      "gender": "male",
+      "pic": "CHAR_CHENG",
+      "verified": false,
+      "voice": "weicheng_ls"
+    },
+    {
+      "handle": "ortega_vla",
+      "name": "Ortega",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "ortega_vla"
+    },
+    {
+      "handle": "gustavo_mota",
+      "name": "Gustavo Mota",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "gustavo_mota"
+    },
+    {
+      "handle": "ashley_lost",
+      "name": "Ashley Butler",
+      "gender": "female",
+      "pic": "CHAR_ASHLEY",
+      "verified": false,
+      "voice": "ashley_lost"
+    },
+    {
+      "handle": "clay_lostmc",
+      "name": "Clay Simons",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "clay_lostmc"
+    },
+    {
+      "handle": "terry_lostmc",
+      "name": "Terry Thorpe",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "terry_lostmc"
+    },
+    {
+      "handle": "oscar_guzman",
+      "name": "Oscar Guzman",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "oscar_guzman"
+    },
+    {
+      "handle": "patricia_m",
+      "name": "Patricia Madrazo",
+      "gender": "female",
+      "pic": "",
+      "verified": false,
+      "voice": "patricia_m"
+    },
+    {
+      "handle": "chef_tpi",
+      "name": "Chef",
+      "gender": "male",
+      "pic": "CHAR_CHEF",
+      "verified": false,
+      "voice": "chef_tpi"
+    },
+    {
+      "handle": "floyd_hebert",
+      "name": "Floyd Hebert",
+      "gender": "male",
+      "pic": "CHAR_FLOYD",
+      "verified": false,
+      "voice": "floyd_hebert"
+    },
+    {
+      "handle": "cris_formage",
+      "name": "Cris Formage",
+      "gender": "male",
+      "pic": "CHAR_EPSILON",
+      "verified": false,
+      "voice": "cris_formage"
+    },
+    {
+      "handle": "omega_ufo",
+      "name": "Omega",
+      "gender": "male",
+      "pic": "CHAR_OMEGA",
+      "verified": false,
+      "voice": "omega_ufo"
+    },
+    {
+      "handle": "cbp_joe",
+      "name": "Joe",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "cbp_joe"
+    },
+    {
+      "handle": "lspd_official",
+      "name": "LSPD",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "lspd_official"
+    },
+    {
+      "handle": "lssd_blaine",
+      "name": "LS County Sheriff",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "lssd_blaine"
+    },
+    {
+      "handle": "noose_ls",
+      "name": "NOOSE",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "noose_ls"
+    },
+    {
+      "handle": "fib_losantos",
+      "name": "FIB",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "fib_losantos"
+    },
+    {
+      "handle": "iaa_agency",
+      "name": "IAA",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "iaa_agency"
+    },
+    {
+      "handle": "zancudo_watch",
+      "name": "Fort Zancudo",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "zancudo_watch"
+    },
+    {
+      "handle": "merryweather_sec",
+      "name": "Merryweather Security",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "merryweather_sec"
+    },
+    {
+      "handle": "altruist_camp",
+      "name": "The Altruists",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "altruist_camp"
+    },
+    {
+      "handle": "epsilon_program",
+      "name": "Epsilon Program",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "epsilon_program"
+    },
+    {
+      "handle": "oneil_ranch",
+      "name": "O'Neil Ranch",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "oneil_ranch"
+    },
+    {
+      "handle": "kkangpae_ls",
+      "name": "Kkangpae",
+      "gang": "koreans",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "kkangpae_ls"
+    },
+    {
+      "handle": "aztecas_vla",
+      "name": "Varrios Los Aztecas",
+      "gang": "aztecas",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "aztecas_vla"
+    },
+    {
+      "handle": "marabunta_mg",
+      "name": "Marabunta Grande",
+      "gang": "marabunta",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "marabunta_mg"
+    },
+    {
+      "handle": "lostmc_chapter",
+      "name": "The Lost MC",
+      "gang": "lost",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "lostmc_chapter"
+    },
+    {
+      "handle": "armenian_mob_ls",
+      "name": "Armenian Mob",
+      "gang": "armenians",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "armenian_mob_ls"
+    },
+    {
+      "handle": "madrazo_family",
+      "name": "Madrazo Family",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": "madrazo_family"
     }
   ],
   "slots": {
@@ -2537,6 +2785,237 @@
         "Praying for {hood}. Praying for whoever is on the ground",
         "Come by the church. Nobody has to be on their own tonight"
       ]
+    },
+    "weicheng_ls": {
+      "Ambient": [
+        "Little Seoul is not a suggestion. It is an arrangement, and arrangements have terms",
+        "My son believes business is a party. My son has never buried anybody",
+        "Everything arrives through the port eventually. Everything",
+        "I did not come this far to negotiate with men who shout",
+        "A partner who cannot keep to a schedule is not a partner. He is a delay",
+        "The slaughterhouse is a legitimate concern and I will thank you to treat it as one"
+      ],
+      "OursGloats": [
+        "The matter is settled. It did not need to be loud"
+      ],
+      "CopKilled": [
+        "This city cannot govern its own house and it lectures us about order"
+      ]
+    },
+    "ortega_vla": {
+      "Ambient": [
+        "Rancho was ours before half these kids were born and it will be ours after",
+        "Everybody wants to talk about Blaine County. Come out to Blaine County then",
+        "Varrios Los Aztecas. Say it properly or do not say it",
+        "Some of us have been at this thirty years. It shows. Look at us and look at them",
+        "Turquoise on a wall in Rancho is not decoration"
+      ],
+      "VagosTaunt": [
+        "Yellow all over Rancho and not one of them will stand on Senora Road after dark"
+      ]
+    },
+    "gustavo_mota": {
+      "Ambient": [
+        "Cypress Flats. East side. That is the whole address you need",
+        "They run this set off a phone from a cell and it still works better than yours",
+        "Three sets, one colour. Do not get it confused",
+        "Aztecas keep saying thirty years like it is a threat and not a pension"
+      ],
+      "VagosTaunt": [
+        "North side, south side, east side. Where exactly did you think you were stood"
+      ]
+    },
+    "ashley_lost": {
+      "Ambient": [
+        "still nobody round here says his name out loud. i say it",
+        "stab city looks worse every year and so do i",
+        "everybody left is either high or gone and i have been both today",
+        "johnny would have hated what this club turned into. good"
+      ],
+      "RivalMourns": [
+        "another one gone and the same men will pretend to care at the same bar"
+      ]
+    },
+    "clay_lostmc": {
+      "Ambient": [
+        "Stab City. Bikes out front. Mind your business and we will mind ours",
+        "The desert does not ask questions and neither do we",
+        "We are not what we were in Alderney. We are worse",
+        "East Vinewood chapter rides Sunday. Full patches"
+      ]
+    },
+    "terry_lostmc": {
+      "Ambient": [
+        "If it has two wheels and it is parked outside Hookies it is spoken for",
+        "North Chumash run at first light. Do not be late and do not be green"
+      ]
+    },
+    "oscar_guzman": {
+      "Ambient": [
+        "La Fuente Blanca. Ranch business. Nothing to see and nothing to say",
+        "Senora Road is quiet and Mr Madrazo intends it to stay quiet",
+        "People keep turning up at that house unannounced. It keeps going badly for them"
+      ]
+    },
+    "patricia_m": {
+      "Ambient": [
+        "The house is beautiful. I have seen every inch of it. Twice. Today",
+        "Somebody sent flowers and I am not permitted to ask from where"
+      ]
+    },
+    "chef_tpi": {
+      "Ambient": [
+        "The cook is fine. The cook is always fine. It is everything around the cook",
+        "Sandy Shores, Sunday. Do not bring your cousin",
+        "I have been asked to be less chemical about this. I am a chemist"
+      ],
+      "Delivery": [
+        "Product moved, nobody exploded. Good week for Trevor Philips Industries"
+      ]
+    },
+    "floyd_hebert": {
+      "Ambient": [
+        "Debra is away and I am supposed to be looking after the apartment",
+        "There are men in my apartment. I did not invite the men",
+        "Vespucci is lovely this time of year if a person could get out of the door",
+        "I work the docks. I would very much like to only work the docks"
+      ]
+    },
+    "cris_formage": {
+      "Ambient": [
+        "KIFFLOM. The truth costs $5,000 and that is a bargain for the truth",
+        "Nine paradigms. You have completed none. This is not a judgement, it is an invoice",
+        "Rockford Hills chapter, Spanish Avenue. Robes provided at cost",
+        "Money is a construct. The donation portal is not"
+      ]
+    },
+    "omega_ufo": {
+      "Ambient": [
+        "They are coming. They have been coming since Tuesday",
+        "Sandy Shores. Come and see the ship. Bring parts",
+        "Nobody wants you on Mount Chiliad at three in the morning. Ask yourself why"
+      ]
+    },
+    "cbp_joe": {
+      "Ambient": [
+        "Another quiet night on patrol. Vigilance is its own reward",
+        "Josef and I have secured the perimeter. There was no perimeter",
+        "Civil Border Patrol. Volunteers. Unpaid. Unwelcome. Undeterred"
+      ]
+    },
+    "lspd_official": {
+      "AmbientOrg": [
+        "Mission Row is open twenty-four hours and we would rather you did not test that",
+        "Patrols increased in Davis and Chamberlain Hills this month",
+        "Nine stations, one city, and a great deal of paperwork",
+        "Vehicle recovered in Rancho. Owner notified. No further comment",
+        "Community meeting Thursday, Strawberry. Refreshments provided"
+      ]
+    },
+    "lssd_blaine": {
+      "AmbientOrg": [
+        "Sandy Shores substation. Calls up again this week",
+        "Davis station reminds you that a report takes ten minutes and a funeral takes longer",
+        "Paleto Bay is not a shortcut. Slow down through town",
+        "Grapeseed: whatever is happening at that ranch, we have noticed"
+      ]
+    },
+    "noose_ls": {
+      "AmbientOrg": [
+        "No comment at this time",
+        "The scene is contained. Stay behind the line",
+        "We are not able to discuss ongoing operations"
+      ]
+    },
+    "fib_losantos": {
+      "AmbientOrg": [
+        "The Bureau does not comment on personnel matters",
+        "Recruitment open. Integrity essential. Flexibility appreciated",
+        "Any suggestion of friction with other agencies is inaccurate and also not your business"
+      ]
+    },
+    "iaa_agency": {
+      "AmbientOrg": [
+        "The Agency has no presence in Los Santos and will not be commenting on that presence",
+        "Whatever the Bureau told you, consider the source"
+      ]
+    },
+    "zancudo_watch": {
+      "AmbientOrg": [
+        "Restricted airspace means restricted. Two aircraft turned back this week",
+        "The perimeter fence is not a photo opportunity"
+      ]
+    },
+    "merryweather_sec": {
+      "AmbientOrg": [
+        "Merryweather. Private security, logistics, risk. Elysian Island",
+        "Our people are ex-service. Our contracts are not your concern",
+        "If it moved through the naval port, we know it moved",
+        "Ask about residential packages. Rockford Hills, Vinewood Hills, Del Perro"
+      ]
+    },
+    "altruist_camp": {
+      "AmbientOrg": [
+        "Every generation after ours is a mistake and the mountain agrees",
+        "Chiliad. No electricity, no lies, no visitors",
+        "Kindly stop driving up here"
+      ]
+    },
+    "epsilon_program": {
+      "AmbientOrg": [
+        "KIFFLOM, brother-brother",
+        "The tenets are available for a suggested donation",
+        "Rockford Hills chapter meets at dusk"
+      ]
+    },
+    "oneil_ranch": {
+      "AmbientOrg": [
+        "Grapeseed. Nothing for sale. Nothing to discuss",
+        "Whoever came up our track last night, we got the plate",
+        "Family business. Emphasis on family"
+      ]
+    },
+    "kkangpae_ls": {
+      "AmbientOrg": [
+        "Ginger Street, Little Seoul. We are simply businessmen",
+        "Payment terms are payment terms",
+        "The car will be returned when the paperwork is correct"
+      ]
+    },
+    "aztecas_vla": {
+      "AmbientOrg": [
+        "Rancho. Same as it has been for thirty years",
+        "Turquoise on a wall means the wall is spoken for",
+        "The Salvadorans want the desert. Let them have the sand"
+      ]
+    },
+    "marabunta_mg": {
+      "AmbientOrg": [
+        "El Burro Heights. The canal. After dark. That is the whole thing",
+        "Vespucci Beach is ours in the small hours whatever it is in the day",
+        "MG13. Learn the letters"
+      ]
+    },
+    "lostmc_chapter": {
+      "AmbientOrg": [
+        "Stab City. The clubhouse is not a bar and you are not a member",
+        "East Vinewood chapter. Bikes out front, business inside",
+        "North Chumash run Sunday. Full patches only"
+      ]
+    },
+    "armenian_mob_ls": {
+      "AmbientOrg": [
+        "La Puerta. Roger's yard. Bring the title or bring nothing",
+        "We provide protection. You will find you needed it",
+        "Simeon speaks for us on the cars. Only on the cars"
+      ]
+    },
+    "madrazo_family": {
+      "AmbientOrg": [
+        "La Fuente Blanca. By appointment. There are no appointments",
+        "The family has interests either side of the border and no interest in discussing them",
+        "Anybody looking for Mr Madrazo has already been found"
+      ]
     }
   },
   "hashtags": {
@@ -2598,8 +3077,21 @@
     "armenians": [
       "#ARMENIAN",
       "#AM",
-      "#ALTA",
+      "#LAPUERTA",
       "#HAYASTAN"
+    ],
+    "aztecas": [
+      "#VLA",
+      "#AZTECAS",
+      "#VARRIOS",
+      "#RANCHO",
+      "#TURQUOISE",
+      "#VLA4LIFE"
+    ],
+    "koreans": [
+      "#KKANGPAE",
+      "#LITTLESEOUL",
+      "#GINGERST"
     ]
   }
 }

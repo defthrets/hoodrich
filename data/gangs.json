@@ -35,11 +35,13 @@
       ],
       "rivals": [
         "ballas",
-        "vagos"
+        "vagos",
+        "lost"
       ],
       "turf": [
+        "STRAW",
         "CHAMH",
-        "STRAW"
+        "DAVIS"
       ],
       "turfHint": "Chamberlain Hills and Strawberry",
       "joinRespect": 0,
@@ -62,11 +64,12 @@
       ],
       "rivals": [
         "families",
-        "vagos"
+        "marabunta"
       ],
       "turf": [
         "DAVIS",
-        "ZQ_UAR"
+        "CHAMH",
+        "RANCHO"
       ],
       "turfHint": "Davis, Grove Street and Rancho",
       "joinRespect": 0
@@ -88,13 +91,12 @@
       ],
       "rivals": [
         "families",
-        "ballas"
+        "ballas",
+        "marabunta"
       ],
       "turf": [
         "RANCHO",
-        "EBURO",
-        "LMESA",
-        "MURRI"
+        "CYPRE"
       ],
       "turfHint": "El Burro Heights, La Mesa and Murrieta",
       "joinRespect": 0
@@ -116,12 +118,13 @@
       ],
       "rivals": [
         "vagos",
-        "families"
+        "ballas"
       ],
       "turf": [
-        "CYPRE",
-        "ELYSIAN",
-        "TEXTI"
+        "ELBURRO",
+        "VESP",
+        "DESRT",
+        "EVINE"
       ],
       "turfHint": "Cypress Flats, Elysian Island and Textile City",
       "joinRespect": 250
@@ -142,14 +145,14 @@
         "heroin"
       ],
       "rivals": [
-        "families",
-        "vagos"
+        "families"
       ],
       "turf": [
         "SLAB",
-        "SANDY",
+        "DESRT",
+        "CHU",
         "GRAPES",
-        "HARMO"
+        "EVINE"
       ],
       "turfHint": "Stab City, Sandy Shores and Grapeseed",
       "joinRespect": 250
@@ -169,14 +172,9 @@
         "ecstasy",
         "heroin"
       ],
-      "rivals": [
-        "marabunta",
-        "armenians"
-      ],
+      "rivals": [],
       "turf": [
-        "KOREAT",
-        "MIRR",
-        "HAWICK"
+        "KOREAT"
       ],
       "turfHint": "Little Seoul, Mirror Park and Hawick",
       "joinRespect": 900
@@ -195,13 +193,9 @@
       "drugs": [
         "heroin"
       ],
-      "rivals": [
-        "triads"
-      ],
+      "rivals": [],
       "turf": [
-        "ALTA",
-        "BURTON",
-        "PBOX"
+        "LAPUER"
       ],
       "turfHint": "Alta, Burton and Pillbox Hill",
       "joinRespect": 900
