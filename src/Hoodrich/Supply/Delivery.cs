@@ -69,6 +69,14 @@ namespace Hoodrich.Supply
         private const int LeaveMs = 25000;
 
         /// <summary>
+        /// How far the point he is driving to has to be before it is worth driving to.
+        ///
+        /// Anything nearer and the drive task is complete the moment it is given, which reads
+        /// as pulling out and stopping three metres later.
+        /// </summary>
+        private const float MinDepartDistance = 45f;
+
+        /// <summary>
         /// What he is actually carrying: a package, not a parcel.
         ///
         /// The game has purpose-made drug props from the story missions -- the taped bale from
@@ -357,6 +365,41 @@ namespace Hoodrich.Supply
             }
         }
 
+        /// <summary>
+        /// Keeps the phone at his ear for the whole six seconds.
+        ///
+        /// The untimed mobile task is not a task the game protects. Aiming drops it, drawing a
+        /// weapon drops it, taking a hit drops it, and the phone control puts it away outright
+        /// -- so the call that is supposed to last six seconds routinely lasted one, and you
+        /// watched Franklin lower an invisible phone and then stand there until Juan turned up.
+        ///
+        /// So it is re-asserted, but only when it has actually stopped. Re-issuing a task that
+        /// is already running restarts it, and a phone idle restarted every frame is an arm
+        /// that never finishes lifting -- which is the same bug in the opposite direction.
+        /// </summary>
+        private static void HoldThePhone(Ped player)
+        {
+            try
+            {
+                // The three controls that end a call on purpose. Blocked rather than ignored:
+                // half-drawing a weapon and having nothing happen reads better than the phone
+                // vanishing mid-sentence.
+                Game.DisableControlThisFrame(Control.Phone);
+                Game.DisableControlThisFrame(Control.Aim);
+                Game.DisableControlThisFrame(Control.Attack);
+                Game.DisableControlThisFrame(Control.Attack2);
+                Game.DisableControlThisFrame(Control.SelectWeapon);
+
+                if (Function.Call<bool>(Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, player.Handle)) return;
+
+                Function.Call(Hash.TASK_USE_MOBILE_PHONE, player.Handle, true);
+            }
+            catch
+            {
+                // If the check is unavailable the call still ends on the clock.
+            }
+        }
+
         /// <summary>Puts it away again, whether the call landed or was called off.</summary>
         private static void EndPhoneAnimation()
         {
@@ -389,6 +432,8 @@ namespace Hoodrich.Supply
             switch (State)
             {
                 case DeliveryState.Calling:
+                    HoldThePhone(player);
+
                     if (Game.GameTime - _stateSince >= CallMs)
                     {
                         EndPhoneAnimation();
@@ -1004,9 +1049,37 @@ namespace Hoodrich.Supply
                         var away = World.GetNextPositionOnStreet(east);
                         if (away == Vector3.Zero) away = east;
 
-                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _driver.Handle, _car.Handle,
-                                      away.X, away.Y, away.Z, 18f, 0, _car.Model.Hash,
-                                      DriveStyle, 12f, true);
+                        // He is PARKED ON A STREET, so the nearest street node to a point up the
+                        // road is very often a node he is nearly on top of already -- and the
+                        // stop radius was twelve metres. Drive-to-coord with a destination
+                        // inside its own stop radius is a task that is complete the instant it
+                        // is given: he pulled out, went three metres, and stopped dead. Then
+                        // Cancel released him, so nothing ever re-tasked him, and he sat there
+                        // with the engine running as a permanent roadblock outside the house.
+                        // Every delivery left another one.
+                        var far = _car.Position.DistanceTo(away) > MinDepartDistance;
+
+                        if (far)
+                        {
+                            Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _driver.Handle,
+                                          _car.Handle, away.X, away.Y, away.Z, 18f, 0,
+                                          _car.Model.Hash, DriveStyle, 5f, true);
+                        }
+                        else
+                        {
+                            // No usable node up the road. Wandering has no destination, so it
+                            // cannot be satisfied on the spot -- he just drives.
+                            Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _driver.Handle,
+                                          _car.Handle, 18f, DriveStyle);
+                        }
+
+                        // And handed back, so that whatever he does next the game can clean it
+                        // up. A persistent car is invisible to population control, which is the
+                        // difference between a car that eventually despawns and a monument.
+                        _car.IsPersistent = false;
+                        _car.MarkAsNoLongerNeeded();
+                        _driver.IsPersistent = false;
+                        _driver.MarkAsNoLongerNeeded();
                     }
                     catch { /* the game drives him */ }
 
@@ -1218,8 +1291,27 @@ namespace Hoodrich.Supply
             {
                 if (_driver != null && _driver.Exists() && _car != null && _car.Exists())
                 {
-                    Function.Call(Hash.TASK_ENTER_VEHICLE, _driver.Handle, _car.Handle, 10000, -1, 2f, 1, 0);
-                    Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _driver.Handle, _car.Handle, 20f, DriveStyle);
+                    // A SEQUENCE, not two tasks.
+                    //
+                    // Issued back to back, the second one replaces the first -- so he was told
+                    // to drive a car he was not in yet, the drive task failed against an empty
+                    // seat, and he stood on the pavement next to a car nobody was ever going to
+                    // move. In a sequence he gets in first and drives after.
+                    var seq = new OutputArgument();
+                    Function.Call(Hash.OPEN_SEQUENCE_TASK, seq);
+                    var handle = seq.GetResult<int>();
+
+                    Function.Call(Hash.TASK_ENTER_VEHICLE, 0, _car.Handle, 10000, -1, 2f, 1, 0);
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, 0, _car.Handle, 20f, DriveStyle);
+
+                    Function.Call(Hash.CLOSE_SEQUENCE_TASK, handle);
+                    Function.Call(Hash.TASK_PERFORM_SEQUENCE, _driver.Handle, handle);
+                    Function.Call(Hash.CLEAR_SEQUENCE_TASK, seq);
+
+                    _car.IsPersistent = false;
+                    _car.MarkAsNoLongerNeeded();
+                    _driver.IsPersistent = false;
+                    _driver.MarkAsNoLongerNeeded();
                 }
             }
             catch { /* he can walk if he likes */ }
