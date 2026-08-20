@@ -81,6 +81,9 @@ namespace Hoodrich.UI
         {
             public Author By;
             public string Handle = "";
+
+            /// <summary>The game's own contact picture for the named cast, or empty.</summary>
+            public string Pic = "";
             public List<string> Lines = new List<string>();
             public Color Tint;
             public int ShownAt;
@@ -123,6 +126,7 @@ namespace Hoodrich.UI
                 {
                     By = post.By,
                     Handle = post.By.Handle,
+                    Pic = post.By.Pic ?? "",
                     Tint = post.By.Tint,
                     ShownAt = Game.GameTime,
                 };
@@ -210,17 +214,39 @@ namespace Hoodrich.UI
             var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;
             var cy = y + Pad + AvatarSize * 0.5f;
 
-            // A square, not a disc.
+            // A photograph for the forty people the game actually has a face for, and a
+            // monogram for everybody else.
             //
-            // The width is converted through ToX so it comes out square on the screen rather
-            // than square in the coordinate system -- a 0.03 by 0.03 rectangle in normalised
-            // space is a landscape oblong on any monitor wider than it is tall, which is all
-            // of them.
-            Hud.RectFrom(left + Pad, y + Pad, Hud.ToX(AvatarSize), AvatarSize,
-                         Alpha(card.Tint, solid));
+            // Moving off the native feed quietly lost the photographs -- it could pass a
+            // contact picture straight to the notification, and drawing the card ourselves
+            // meant every single author, Michael and Trevor and Lamar included, came out as a
+            // coloured letter. Which is the wrong way round: the whole reason the invented
+            // names get a monogram is so that the real ones can have their real face.
+            //
+            // Falls back to the monogram while the dictionary streams, so the card never has a
+            // hole in it waiting for a texture.
+            var drew = false;
 
-            Hud.Text(card.By.Initial, cx, cy - 0.0112f, 0.38f,
-                     Color.FromArgb((int)(240 * fade), 250, 250, 248), Hud.FontChaletLondon);
+            if (!string.IsNullOrEmpty(card.Pic) && Hud.EnsureTextureDict(card.Pic))
+            {
+                Hud.Sprite(card.Pic, card.Pic, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f,
+                           Color.FromArgb(solid, 255, 255, 255));
+
+                drew = true;
+            }
+
+            if (!drew)
+            {
+                // A square, not a disc. The width is converted through ToX so it comes out
+                // square on the screen rather than square in the coordinate system -- 0.03 by
+                // 0.03 in normalised space is a landscape oblong on any monitor wider than it
+                // is tall, which is all of them.
+                Hud.RectFrom(left + Pad, y + Pad, Hud.ToX(AvatarSize), AvatarSize,
+                             Alpha(card.Tint, solid));
+
+                Hud.Text(card.By.Initial, cx, cy - 0.0112f, 0.38f,
+                         Color.FromArgb((int)(240 * fade), 250, 250, 248), Hud.FontChaletLondon);
+            }
 
             var textX = left + Pad + Hud.ToX(AvatarSize) + Gap;
             var line = y + Pad - 0.005f;

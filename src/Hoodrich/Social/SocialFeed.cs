@@ -112,7 +112,7 @@ namespace Hoodrich.Social
         /// group chat between eight famous people, which is not what a block sounds like.
         /// </summary>
         private const float VoicedEventChance = 0.55f;
-        private const float VoicedAmbientChance = 0.30f;
+        private const float VoicedAmbientChance = 0.42f;
 
 
 
