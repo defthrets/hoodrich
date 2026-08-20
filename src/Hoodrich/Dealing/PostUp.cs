@@ -821,7 +821,7 @@ namespace Hoodrich.Dealing
             if (customer != null && customer.Exists())
             {
                 try { Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, customer.Handle, false); }
-                catch { }
+                catch { /* he walks off either way */ }
 
                 // Held back a beat: both talking at once was two voices over each other rather
                 // than an exchange. The player speaks, then the buyer answers.

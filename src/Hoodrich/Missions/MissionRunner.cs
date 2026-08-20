@@ -939,14 +939,30 @@ namespace Hoodrich.Missions
         {
             TalkAboutIt();
 
+            // Remembered the whole way there, not only once you are inside the circle.
+            //
+            // This used to record the car only while you were sat in it AND within the dump
+            // radius, so parking twenty-five metres short and walking the last bit left it
+            // holding nothing -- and the mission skipped the burn, which is the entire point of
+            // it, with a line about there being no car.
+            var riding = player.CurrentVehicle;
+            if (riding != null && riding.Exists()) _dumpCar = riding;
+
             var here = player.Position.DistanceTo(DumpSpot) <= DumpRange;
             if (!here) return;
 
             // Still sitting in it. The prompt only makes sense once you are out.
             if (player.IsInVehicle())
             {
-                _dumpCar = player.CurrentVehicle;
                 Help.ShowThisFrame("Get out and burn it.");
+                return;
+            }
+
+            // Out, but the car is parked back down the road. Point at it rather than shrugging.
+            if (_dumpCar != null && _dumpCar.Exists() &&
+                _dumpCar.Position.DistanceTo(player.Position) > TorchRange * 2f)
+            {
+                Help.ShowThisFrame("Bring the car closer, or go back to it.");
                 return;
             }
 
