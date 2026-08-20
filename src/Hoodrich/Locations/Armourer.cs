@@ -28,6 +28,19 @@ namespace Hoodrich.Locations
             Note = note;
         }
 
+        /// <summary>
+        /// What comes in the bag with the gun.
+        ///
+        /// A third of what it holds, near enough two or three clips. Buying a piece off a man in
+        /// a yard and walking away with two hundred rounds for it is a vending machine; you get
+        /// enough to be going on with and you come back for the rest, which is the entire reason
+        /// he has a table rather than a menu.
+        /// </summary>
+        public int StarterAmmo => Ammo <= 0 ? Ammo : Math.Max(1, (int)Math.Round(Ammo / 3.0));
+
+        /// <summary>What a box of rounds off the table gives you.</summary>
+        public int AmmoBox => Ammo <= 0 ? 0 : Math.Max(1, (int)Math.Round(Ammo / 2.0));
+
         public uint Hash => Function.Call<uint>(GTA.Native.Hash.GET_HASH_KEY, Weapon);
     }
 

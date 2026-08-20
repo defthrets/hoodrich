@@ -272,7 +272,12 @@ namespace Hoodrich
 
                 _bigjTalk = new ArmourerTalk(_bigj, _crew, _state);
                 _bigj.Talk = _talk;
-                _bigj.TalkBuilder = () => _bigjTalk.Root();
+                _bigj.TalkBuilder = () =>
+                {
+                    _talk.Title = _bigj.Name + " -- the table";
+                    _talk.TheirVoice = ArmourerTalk.Voice;
+                    return _bigjTalk.Root();
+                };
                 _juanTalk = new DealerTalk(_delivery, _drugs, _pricing, _state, _crew)
                 {
                     House = _stash.Stash

@@ -169,8 +169,21 @@ namespace Hoodrich.UI
         private static readonly string[] TheirLines =
         {
             "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "CHAT_STATE",
-            "GENERIC_HI", "SHOP_GREETING", "GENERIC_INSULT_HIGH"
+            "GENERIC_HI", "SHOP_GREETING", "GENERIC_THANKS"
         };
+
+        /// <summary>
+        /// The noises somebody makes while you talk to them, for a conversation that is not
+        /// friendly.
+        ///
+        /// Set by whoever opens the screen. The shared list above used to carry an insult in it,
+        /// which meant the man selling you a gun and the man fronting you work both stopped
+        /// halfway through a sentence to call you something -- and there is no context in this
+        /// class to know when that is right, so it is the caller's to say.
+        /// </summary>
+        public string[] TheirVoice;
+
+        private string[] Theirs => TheirVoice ?? TheirLines;
 
         private static readonly string[] YourLines =
         {
@@ -211,6 +224,16 @@ namespace Hoodrich.UI
             }
         }
 
+        /// <summary>
+        /// A heading over the whole exchange, for a conversation that is somewhere.
+        ///
+        /// "GRIMES -- THE TABLE" over a list of guns reads as a place you are stood in; the
+        /// same list with only a name over it reads as a man talking. Set by whoever opens it
+        /// and drawn in the house script, the same face every other screen in the mod titles
+        /// itself with.
+        /// </summary>
+        public string Title = "";
+
         public void Open(DialogueNode node, object subject = null)
         {
             if (node == null) return;
@@ -229,7 +252,7 @@ namespace Hoodrich.UI
             {
                 _openedFresh = false;
                 _theirTurn = false;
-                Speak(Speaker, TheirLines);
+                Speak(Speaker, Theirs);
             }
         }
 
@@ -242,6 +265,8 @@ namespace Hoodrich.UI
             _node = null;
             Subject = null;
             Speaker = null;
+            TheirVoice = null;
+            Title = "";
             _openedFresh = true;
             _theirTurn = true;
         }
@@ -313,7 +338,7 @@ namespace Hoodrich.UI
 
             // Turn and turn about.
             Speak(_theirTurn ? Speaker : Game.Player.Character,
-                  _theirTurn ? TheirLines : YourLines);
+                  _theirTurn ? Theirs : YourLines);
 
             _theirTurn = !_theirTurn;
 
@@ -372,12 +397,20 @@ namespace Hoodrich.UI
             // down in the subtitle band and out of step with the readouts and the transfer
             // screen -- so where a panel appears depended on which one it was.
             var total = 0.048f + bodyHeight + 0.012f + choiceHeight + 0.030f;
+            if (!string.IsNullOrEmpty(Title)) total += 0.036f;
             var top = Math.Max(0.06f, 0.5f - total * 0.5f);
 
             Hud.RectFrom(PanelX, top, PanelWidth, total, Color.FromArgb(228, 12, 13, 15));
             Hud.RectFrom(PanelX, top, PanelWidth, 0.0035f, _node.SpeakerColour);
 
             var y = top + 0.012f;
+
+            if (!string.IsNullOrEmpty(Title))
+            {
+                Hud.Text(Title.ToUpperInvariant(), PanelX + 0.014f, y - 0.004f, 0.62f,
+                         Palette.Text, Hud.FontCursive, centre: false);
+                y += 0.036f;
+            }
 
             Hud.Text(_node.Speaker.ToUpperInvariant(), PanelX + 0.014f, y, 0.36f,
                          _node.SpeakerColour, Hud.FontLabel, centre: false);
