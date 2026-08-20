@@ -1179,6 +1179,86 @@
       "gender": "none",
       "pic": "",
       "voice": "madrazo_family"
+    },
+    {
+      "handle": "abigail_dock",
+      "name": "Abigail Mathers",
+      "gender": "female",
+      "pic": "",
+      "verified": false,
+      "voice": "abigail_dock"
+    },
+    {
+      "handle": "cletus_hunts",
+      "name": "Cletus Ewing",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "cletus_hunts"
+    },
+    {
+      "handle": "dom_jumps",
+      "name": "Dom Beasley",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "dom_jumps"
+    },
+    {
+      "handle": "jimmy_boston_ep",
+      "name": "Jimmy Boston",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "jimmy_boston_ep"
+    },
+    {
+      "handle": "josef_cbp",
+      "name": "Josef",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "josef_cbp"
+    },
+    {
+      "handle": "josh_realty",
+      "name": "Josh Bernstein",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "josh_realty"
+    },
+    {
+      "handle": "mrs_philips_tv",
+      "name": "Mrs. Philips",
+      "gender": "female",
+      "pic": "",
+      "verified": false,
+      "voice": "mrs_philips_tv"
+    },
+    {
+      "handle": "mrs_thornhill_uk",
+      "name": "Mrs. Thornhill",
+      "gender": "female",
+      "pic": "",
+      "verified": false,
+      "voice": "mrs_thornhill_uk"
+    },
+    {
+      "handle": "dreyfuss_ace",
+      "name": "Peter Dreyfuss",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "dreyfuss_ace"
+    },
+    {
+      "handle": "bigfoot_raton",
+      "name": "The Hunter",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "bigfoot_raton"
     }
   ],
   "slots": {
@@ -2314,7 +2394,11 @@
     "maude_bailbonds": {
       "Ambient": [
         "Skipped bail? I will find you. I always find you. I have hobbies but this is the main one",
-        "Sent a lovely man to collect. He was not lovely about it"
+        "Sent a lovely man to collect. He was not lovely about it",
+        "Five thousand if he comes back dead. Ten if he comes back talking. Your choice",
+        "Office is the trailer between Sandy Shores and Grapeseed. Knock, do not shout",
+        "Skipped bail on a Tuesday. They always skip on a Tuesday",
+        "I would like to retire and keep a nice house. I would also like this one back alive"
       ],
       "MissionDone": [
         "Half the people in {here} have outstanding warrants. Just so we're all aware"
@@ -2334,7 +2418,11 @@
       "Ambient": [
         "Got the shot. GOT it. Nobody will buy it but I GOT it",
         "Photography is journalism. I will not be debating this",
-        "Restraining orders are just fan mail with a lawyer"
+        "Restraining orders are just fan mail with a lawyer",
+        "The public has a RIGHT to know what they had for lunch",
+        "Got the shot. Got the SHOT. Nobody understands what it takes to get the shot",
+        "I am owed money by several people and one of them is a very ungrateful young man",
+        "Wildlife photography is simply celebrity photography with worse lighting"
       ],
       "MissionDone": [
         "MISSED it. I was in {hood} and it happened in {here}. My LIFE"
@@ -2352,7 +2440,10 @@
     "nigel_and_mrs_t": {
       "Ambient": [
         "Mrs Thornhill and I are on a bit of a pilgrimage. Nothing sinister",
-        "Spotted somebody FAMOUS. Followed them a reasonable distance. Perfectly normal"
+        "Spotted somebody FAMOUS. Followed them a reasonable distance. Perfectly normal",
+        "Mrs Thornhill has the checklist and I have the enthusiasm",
+        "Absolutely thrilling. We watched a man collect his own dry cleaning",
+        "Jock has been terribly good to us. Terribly good"
       ],
       "MissionDone": [
         "One does hear the most thrilling things about {here}"
@@ -2362,7 +2453,11 @@
       "Ambient": [
         "LEGALIZE IT. that's it that's the campaign",
         "went to city hall. fell asleep. still counts as activism",
-        "the petition has four signatures and one of them is my mom and she's a legend"
+        "the petition has four signatures and one of them is my mom and she's a legend",
+        "IT'S A PLANT. it grows out the GROUND. explain to me what is illegal about the GROUND",
+        "signatures today: eleven. two of them said Kifflom. i'll take it",
+        "somebody smoked my entire petition. i understand but i am also upset",
+        "the trees been talking again and honestly they make more sense than the council"
       ],
       "MissionDone": [
         "somebody out in {here} doing something and i bet it's the government"
@@ -2372,7 +2467,10 @@
       "Ambient": [
         "JD better answer this phone",
         "Truck's out again. Somebody's car is sitting somewhere getting a ticket right now",
-        "I'm not asking for much. I'm asking for a LITTLE"
+        "I'm not asking for much. I'm asking for a LITTLE",
+        "JB's not answering again so if anybody sees the truck out by Davis, that's ours",
+        "Franklin knows what he owes this neighborhood and it ain't money",
+        "South side towing. Same yard, same hours, same me"
       ],
       "MissionDone": [
         "Whatever happened in {here}, somebody's car got left behind and that's MY business"
@@ -2382,7 +2480,10 @@
       "Ambient": [
         "Beat my time again. Nobody cheered. Doesn't matter. I know",
         "If you can't keep up don't get in my way",
-        "Ran past somebody eating {food} at 6am. Disgusting. Jealous"
+        "Ran past somebody eating {food} at 6am. Disgusting. Jealous",
+        "Ran it in under four. Nobody asked. I am telling you anyway",
+        "Every man I race makes an excuse before the start line. EVERY one",
+        "Triathlon Sunday. Do not talk to me at the triathlon"
       ],
       "MissionDone": [
         "Ran through {here} this morning. Pace was excellent. Atmosphere was not"
@@ -2392,7 +2493,10 @@
       "Ambient": [
         "Kifflom to everybody except one person and they know who they are",
         "Gave away everything I owned again. Feels amazing. Slightly cold",
-        "The truth costs money and that is how you know it is the truth"
+        "The truth costs money and that is how you know it is the truth",
+        "Liberty City nearly finished me. The Program finished the part that needed finishing",
+        "Kifflom. Out in the desert again this weekend, running until it makes sense",
+        "I used to want things. Now I want the tenets and a lift home"
       ],
       "MissionDone": [
         "The energy in {here} is very loud today and not in a healing way"
@@ -2430,7 +2534,10 @@
     "hao_tuner": {
       "Ambient": [
         "Under the bridge tonight if anybody's serious",
-        "Stock cars belong in stock car museums"
+        "Stock cars belong in stock car museums",
+        "Under the bridge from eight til five. If it's daylight I'm at Customs",
+        "Bring the orange one out and everybody suddenly remembers my name",
+        "Race starts when the light goes, not when your friend finishes his call"
       ],
       "MissionDone": [
         "Somebody drove through {here} like they meant it. Noted"
@@ -2886,21 +2993,27 @@
         "KIFFLOM. The truth costs $5,000 and that is a bargain for the truth",
         "Nine paradigms. You have completed none. This is not a judgement, it is an invoice",
         "Rockford Hills chapter, Spanish Avenue. Robes provided at cost",
-        "Money is a construct. The donation portal is not"
+        "Money is a construct. The donation portal is not",
+        "The Epsilon Building on Spanish Avenue is open to the sincere and the solvent",
+        "Kifflom, brother-brother. The tenets do not read themselves"
       ]
     },
     "omega_ufo": {
       "Ambient": [
         "They are coming. They have been coming since Tuesday",
         "Sandy Shores. Come and see the ship. Bring parts",
-        "Nobody wants you on Mount Chiliad at three in the morning. Ask yourself why"
+        "Nobody wants you on Mount Chiliad at three in the morning. Ask yourself why",
+        "Fifty parts. FIFTY. They scattered them on purpose and they know I know",
+        "Senora Desert Trailer Park. The kettle is on and the truth is out"
       ]
     },
     "cbp_joe": {
       "Ambient": [
         "Another quiet night on patrol. Vigilance is its own reward",
         "Josef and I have secured the perimeter. There was no perimeter",
-        "Civil Border Patrol. Volunteers. Unpaid. Unwelcome. Undeterred"
+        "Civil Border Patrol. Volunteers. Unpaid. Unwelcome. Undeterred",
+        "Josef says the Russians did the border better. Josef says a lot of things",
+        "Blaine County is safe tonight because two men decided it would be"
       ]
     },
     "lspd_official": {
@@ -3015,6 +3128,84 @@
         "La Fuente Blanca. By appointment. There are no appointments",
         "The family has interests either side of the border and no interest in discussing them",
         "Anybody looking for Mr Madrazo has already been found"
+      ]
+    },
+    "abigail_dock": {
+      "Ambient": [
+        "Thirty pieces of that submarine and the insurance company still says accident",
+        "I am at the Sonar Collections Dock most days. Somebody has to be",
+        "My husband did not simply sink. Frank could swim",
+        "Everybody keeps telling me to grieve. I would rather have the paperwork"
+      ]
+    },
+    "cletus_hunts": {
+      "Ambient": [
+        "Wind's in your face or you're wastin' the whole mornin'",
+        "You photograph it, I sell the meat, we split it. That's the arrangement",
+        "Neighbour of mine out here in Sandy Shores is the loudest man alive",
+        "Elk don't care about your schedule, son"
+      ]
+    },
+    "dom_jumps": {
+      "Ambient": [
+        "hedge fund by day. seven thousand feet by lunch. BOOM",
+        "found me in a tree once. found me on the news twice",
+        "the Land Act Dam is RIGHT THERE and nobody's jumped it properly",
+        "adrenaline is a currency and I am LIQUID",
+        "somebody tell my analysts I'm working from the sky"
+      ]
+    },
+    "jimmy_boston_ep": {
+      "Ambient": [
+        "KIFFLOM. Nine paradigms and a full tank of blue",
+        "Was on Chattersphere again talking about the truth. They cut the best part",
+        "My car is baby blue because my soul is baby blue",
+        "The Walk of Fame has my name on it and the Program has my heart"
+      ]
+    },
+    "josef_cbp": {
+      "Ambient": [
+        "In my country there is a border and everybody respects it",
+        "Joe says we are heroes. Joe says many things",
+        "Another shift. Another citizen. We do not apologise"
+      ]
+    },
+    "josh_realty": {
+      "Ambient": [
+        "Rockford Hills market is HOT and I am not permitted to sell in it",
+        "My licence was taken over something my partner did. Ask him. You cannot, but ask",
+        "Somebody keeps pulling my signs down. I have a very good idea who",
+        "Insurance is simply planning. That is all insurance has ever been"
+      ]
+    },
+    "mrs_philips_tv": {
+      "Ambient": [
+        "My son has a trailer and no manners. I have taken the trailer",
+        "Somebody fetch me a Deludamol van and be quick about it",
+        "I was on the stage once. Do not look at me like that"
+      ]
+    },
+    "mrs_thornhill_uk": {
+      "Ambient": [
+        "Nigel and I are simply admirers. There is no law against admiring",
+        "We met Jock Cranley! He was ever so obliging about the souvenirs",
+        "Vinewood is marvellous if you know which gates to stand at",
+        "One more item on the checklist and the collection is complete"
+      ]
+    },
+    "dreyfuss_ace": {
+      "Ambient": [
+        "They call the seventies films a cult following now. They were simply ahead",
+        "The house on Ace Jones is not open to visitors and never has been",
+        "Some men write memoirs. I have written something else and I keep losing pages of it",
+        "Leonora. Nineteen seventy-five. No, I have nothing to add"
+      ]
+    },
+    "bigfoot_raton": {
+      "Ambient": [
+        "Eight years in Raton Canyon. EIGHT. And I have seen him twice",
+        "The buggy's packed. Anybody serious, you know where I am",
+        "They laugh in Sandy Shores. They laughed at every man who was right"
       ]
     }
   },
