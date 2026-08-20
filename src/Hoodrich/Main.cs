@@ -124,6 +124,8 @@ namespace Hoodrich
         /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
         private readonly Fixture _couch;
         private readonly Fixture _stove;
+        private readonly Fixture _grimesStockA;
+        private readonly Fixture _grimesStockB;
         private readonly BlockLife _block;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
@@ -208,6 +210,20 @@ namespace Hoodrich
                 // it should actually stand and it moves.
                 _stove = new Fixture(new Vector3(-84.610f, -1611.480f, 31.470f), 40.880f,
                                      "gr_prop_gr_hobo_stove_01");
+
+                // Grimes sells ammunition, so he gets something to sell it off. One either
+                // side of where he stands and both facing the way he does, set out along the
+                // line he faces rather than dropped at arbitrary angles -- a man with stock
+                // laid out has arranged it; a man with two crates at odd angles has been
+                // burgled.
+                //
+                // Placed by eye off his own coordinate, since none was given. Send a HUD
+                // readout from where each should stand and they move.
+                _grimesStockA = new Fixture(new Vector3(-128.073f, -1462.524f, 33.823f), 225.844f,
+                                            "ex_office_swag_guns04");
+
+                _grimesStockB = new Fixture(new Vector3(-130.301f, -1460.226f, 33.823f), 225.844f,
+                                            "ex_office_swag_guns02");
 
                 // Grimes has people now. His corner is one of the three a raid comes for and
                 // he was stood on it alone, which is not how anybody holds anything.
@@ -577,6 +593,8 @@ namespace Hoodrich
                     _block.Update();
                     _couch.Update();
                     _stove.Update();
+                    _grimesStockA.Update();
+                    _grimesStockB.Update();
                     _traffic.Update();
                     _payback.Update();
                     _war.Update();
@@ -856,6 +874,8 @@ namespace Hoodrich
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
+            try { _grimesStockA?.RestoreWorld(); } catch { /* teardown */ }
+            try { _grimesStockB?.RestoreWorld(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
