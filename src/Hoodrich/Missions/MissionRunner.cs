@@ -1050,7 +1050,7 @@ namespace Hoodrich.Missions
 
             TakeTheCan();
 
-            if (Social != null) Social.On(SocialEvent.DriveBy, TargetName());
+            if (Social != null) Social.On(SocialEvent.CarBurned, TargetName());
 
             // A car going up in a field is not quiet. If anybody is still looking for you --
             // and setting fire to a vehicle is its own good reason for them to start -- that

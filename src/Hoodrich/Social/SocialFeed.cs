@@ -34,6 +34,9 @@ namespace Hoodrich.Social
         /// <summary>Woke up at Pillbox. Word gets round before you are out of the bed.</summary>
         Hospital,
 
+        /// <summary>A car going up somewhere quiet. Somebody always sees the smoke.</summary>
+        CarBurned,
+
         WarStarted,
         WarHeld,
         WarLost,
@@ -825,6 +828,11 @@ namespace Hoodrich.Social
                     count = 1 + _rng.Next(2);
                     break;
 
+                case SocialEvent.CarBurned:
+                    follow = "CarBurned";
+                    count = 1 + _rng.Next(2);
+                    break;
+
                 case SocialEvent.RivalKilled:
                     // Their side grieves, our side gloats, and every so often somebody records.
                     follow = _rng.NextDouble() < 0.30 ? "DissTrack"
@@ -938,6 +946,7 @@ namespace Hoodrich.Social
                     return 1f;
 
                 case SocialEvent.CopKilled: return 1f;
+                case SocialEvent.CarBurned: return 0.8f;
                 case SocialEvent.Hospital: return 1f;
                 case SocialEvent.WarStarted: return 1f;
                 case SocialEvent.WarHeld: return 1f;
@@ -970,6 +979,7 @@ namespace Hoodrich.Social
                 case SocialEvent.WarLost: return -(25 + _rng.Next(30));
                 // Two or three. One person saying it reads as a coincidence; the whole block
                 // saying it at once is what actually happens when somebody gets hit.
+                case SocialEvent.CarBurned: return _rng.Next(3);
                 case SocialEvent.Hospital: return 1 + _rng.Next(2);
                 case SocialEvent.WarStarted: return 0;
 
