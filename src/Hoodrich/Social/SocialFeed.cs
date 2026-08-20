@@ -721,20 +721,6 @@ namespace Hoodrich.Social
 
         // ---- building a post ---------------------------------------------------
 
-        /// <summary>Whether anybody of this kind is still writing from the shared pool.</summary>
-        private bool AnyVoiceless(bool org)
-        {
-            foreach (var author in _authors)
-            {
-                if (author.HasVoice) continue;
-
-                var isOrg = string.Equals(author.Gender, "none", StringComparison.OrdinalIgnoreCase);
-                if (isOrg == org) return true;
-            }
-
-            return false;
-        }
-
         private Post Build(string set, string subject, int amount = 0)
         {
             for (var attempt = 0; attempt < UniqueTries; attempt++)
@@ -799,16 +785,16 @@ namespace Hoodrich.Social
 
                 var wantGang = GangFor(set);
 
-                // Somebody with a voice is normally excluded here -- they had their chance
-                // above and generic words in a written character's mouth is the whole thing
-                // this avoids. The exception is the businesses: every one of them now has its
-                // own voice, so there are no voice-less organisations left, and without this
-                // every business post would come back empty.
-                var noneLeft = wantOrg && !AnyVoiceless(true);
-
+                // Anybody with a voice of their own is excluded, with no exception.
+                //
+                // There used to be one: if no voice-less organisation was left, voiced accounts
+                // were allowed to borrow the shared pool. That is how the LSPD ended up posting
+                // a shop's opening hours. A written account says its own words or says nothing,
+                // and a set with nobody to speak it simply produces no post -- the police having
+                // nothing to say about a particular corner is not a hole that needs filling.
                 foreach (var author in _authors)
                 {
-                    if (author.HasVoice && !noneLeft) continue;
+                    if (author.HasVoice) continue;
 
                     var isOrg = string.Equals(author.Gender, "none", StringComparison.OrdinalIgnoreCase);
 
@@ -834,7 +820,7 @@ namespace Hoodrich.Social
             if (string.IsNullOrEmpty(body)) return null;
 
             var plain = body;
-            body += TagsFor(by);
+            body += TagsFor(by, set);
 
             var post = new Post
             {
@@ -1028,9 +1014,17 @@ namespace Hoodrich.Social
         ///
         /// Nobody who is not in a gang gets any. A chicken shop does not sign its posts.
         /// </summary>
-        private string TagsFor(Author by)
+        private string TagsFor(Author by, string set)
         {
             if (by == null || string.IsNullOrEmpty(by.Gang)) return "";
+
+            // Gang business only.
+            //
+            // Somebody signing off a remark about a television programme with their set's
+            // colours is not how any of this works. A man tags his set when he is talking about
+            // his set -- a taunt, a body, a block, a war. The rest of the time he is a person
+            // who lives somewhere and the post is about a dog.
+            if (!IsGangBusiness(set)) return "";
 
             List<string> pool;
             if (!_hashtags.TryGetValue(by.Gang, out pool) || pool.Count == 0) return "";
@@ -1055,6 +1049,35 @@ namespace Hoodrich.Social
             // Back to the normal colour, or everything after it on the same feed line inherits
             // whatever the last set was wearing.
             return line + "~s~";
+        }
+
+        /// <summary>
+        /// The posts that are actually about the set.
+        ///
+        /// Everything else -- ambient chatter, shops, weather, the price of chicken -- goes out
+        /// unsigned however deep in a gang the person writing it is.
+        /// </summary>
+        private static bool IsGangBusiness(string set)
+        {
+            switch (set)
+            {
+                case "BallasTaunt":
+                case "VagosTaunt":
+                case "RivalMourns":
+                case "RivalGloats":
+                case "OursGloats":
+                case "OursMourns":
+                case "DissTrack":
+                case "RivalKilled":
+                case "WarStarted":
+                case "Brawl":
+                case "DriveBy":
+                case "Tagged":
+                    return true;
+
+                default:
+                    return false;
+            }
         }
 
         /// <summary>gang id -> what they sign off with.</summary>

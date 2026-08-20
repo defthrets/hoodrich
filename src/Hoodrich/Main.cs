@@ -93,6 +93,7 @@ namespace Hoodrich
         /// </summary>
         private readonly Entourage _lamarCrew;
         private readonly Entourage _stretchCrew;
+        private readonly Entourage _grimesCrew;
 
         /// <summary>
         /// People who live here, and the other sets coming to take it off them.
@@ -180,9 +181,17 @@ namespace Hoodrich
                 _block = new BlockLife(_gangs, "families");
 
                 // Dragged out into the courtyard and left there, the way they are.
-                _couch = new Fixture(new Vector3(-85.251f, -1608.008f, 31.485f), 220.880f,
+                _couch = new Fixture(new Vector3(-85.251f, -1608.008f, 31.485f), 40.880f,
                                      "prop_couch_03", "prop_couch_04", "prop_couch_01",
                                      "prop_old_couch_01", "prop_rub_couch01");
+
+                // Grimes has people now. His corner is one of the three a raid comes for and
+                // he was stood on it alone, which is not how anybody holds anything.
+                _grimesCrew = new Entourage(_gangs, "families",
+                                            new Vector3(-129.187f, -1461.375f, 33.823f),
+                                            225.844f, "Grimes")
+                    .Stand(new Vector3(-128.394f, -1458.440f, 33.823f), 225.844f,
+                           "WORLD_HUMAN_GUARD_STAND");
 
                 _copWatch = new CopWatch();
 
@@ -213,7 +222,11 @@ namespace Hoodrich
 
                     // And one on a beer by the pool.
                     .Stand(new Vector3(-87.599f, -1607.578f, 32.312f), 102.240f,
-                           "WORLD_HUMAN_DRINKING", armed: false);
+                           "WORLD_HUMAN_DRINKING", armed: false)
+
+                    // Round the back, covering the other way in.
+                    .Stand(new Vector3(-73.146f, -1617.436f, 31.469f), 243.053f,
+                           "WORLD_HUMAN_GUARD_STAND");
 
                 // One for Stretch, on the spot it was read off the HUD at.
                 var stretch = _leaders.Get("families");
@@ -464,18 +477,27 @@ namespace Hoodrich
 
                     _lamarCrew.Update();
                     if (_stretchCrew != null) _stretchCrew.Update();
+                    _grimesCrew.Update();
                     _jobs.Update();
                     UpdateLoan();
                 }
 
-                _war.Draw();
+                // Everything that writes across the top of the screen stands down while the
+                // wheel is up. The wheel is modal and puts its own readout there, so a raid
+                // banner and a mission objective underneath it is three things in one place --
+                // which is exactly what it looked like.
+                if (!_wheel.IsOpen)
+                {
+                    _war.Draw();
+                    _jobs.Draw();
+                }
+
                 _cutting.Draw();
                 _bust.Draw();
                 _postUp.Draw();
                 _stash.Draw();
                 _sleep.Draw();
                 _kitchen.Draw();
-                _jobs.Draw();
 
                 SlowTick();
 
@@ -668,6 +690,7 @@ namespace Hoodrich
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _grimesCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _chop?.RestoreWorld(); } catch { /* teardown */ }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }

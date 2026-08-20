@@ -188,7 +188,18 @@ namespace Hoodrich.Gangs
 
         private Ped SpawnMember(GangDef gang, Vector3 mark, float facing, string[] models, bool armed)
         {
-            foreach (var name in models)
+            // Started at a different place in the list for each of them, and wrapped.
+            //
+            // Walking the list from the top and taking the first that loads means the first
+            // entry wins every single time, so every man on the block was the same man. The
+            // list is short, so an offset is enough -- and it is stable per station rather than
+            // random, so somebody does not change face every time you walk back up the street.
+            var order = new List<string>();
+            var from = Math.Abs(_crew.Count + _stations.Count * 3) % Math.Max(1, models.Length);
+
+            for (var i = 0; i < models.Length; i++) order.Add(models[(from + i) % models.Length]);
+
+            foreach (var name in order)
             {
                 try
                 {

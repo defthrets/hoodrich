@@ -1967,7 +1967,7 @@
     ],
     "BallasTaunt": [
       "these Chamberlain fam is pussies. big scary green shirts til you see one alone.",
-      "Grove ours. was ours. stays ours. post whatever you want, we outside.",
+      "Grove ours now and every one of them know it. post whatever you want, we outside.",
       "green shirts real quiet this week. yall good? need a hug?",
       "they tag a wall and act like they took a block {filler}",
       "every one of them got a phone and not one got a plan. B4L",
@@ -2016,6 +2016,8 @@
       "GSF down bad and they know it."
     ],
     "OursGloats": [
+      "one block at a time. Grove wasn't lost in a day and it won't come back in one",
+      "Chamberlain ours. Davis ours. write that part down too",
       "that's one for us. keep counting.",
       "they been running they mouth all week and now it's real quiet.",
       "told em stay off our block.",
@@ -2026,6 +2028,9 @@
       "Chamberlain is and always was ours."
     ],
     "OursMourns": [
+      "my granddaddy's house is on Grove. can't even drive down it now",
+      "they on Grove and we act like that's normal. it ain't normal",
+      "we from Grove. we AIN'T on Grove. two different sentences and everybody know it",
       "lost one of ours tonight. whole block hurting.",
       "they gon answer for that. believe it.",
       "rest up. we got it from here.",
@@ -3211,17 +3216,19 @@
   },
   "hashtags": {
     "families": [
-      "#GSF",
-      "#GSFBK",
-      "#GSF4LYF",
-      "#GROVE",
-      "#GROVEST",
       "#FAMILIES",
-      "#BK",
+      "#FAM",
+      "#FAMILIES",
+      "#FAM",
+      "#GSF",
       "#GREEN",
-      "#SETTRIPPIN",
       "#CHAMBERLAIN",
-      "#DAVIS"
+      "#DAVIS",
+      "#FORUMDR",
+      "#STRAWBERRY",
+      "#SETTRIPPIN",
+      "#GSFBK",
+      "#BK"
     ],
     "ballas": [
       "#BALLAS",
@@ -3232,7 +3239,8 @@
       "#PURPLE",
       "#PURPLECITY",
       "#EASTSIDE",
-      "#GROVEST0P",
+      "#GROVE",
+      "#GROVEST",
       "#BLV"
     ],
     "vagos": [
