@@ -499,7 +499,7 @@ namespace Hoodrich.Wheel
         }
 
         /// <summary>
-        /// Read it, or say something into it.
+        /// Read the feed, or say something into it.
         ///
         /// Posting is the first thing on this feed that goes the other way -- everything else
         /// happens to you and you read about it afterwards. Two kinds, and the difference
@@ -518,7 +518,7 @@ namespace Hoodrich.Wheel
                 page.Row("Owed a visit", "somebody's coming", Palette.Danger);
             }
 
-            page.Add("Read it", "@", () => ShowSocials?.Invoke(),
+            page.Add("Feed", "@", () => ShowSocials?.Invoke(),
                 detail: "Everything the block has said lately",
                 value: "");
             page.WithIcon(Icons.Tattoo);
@@ -529,7 +529,7 @@ namespace Hoodrich.Wheel
                 enabled: SayDaily != null);
             page.WithIcon(Icons.Mask);
 
-            page.AddSub("Call somebody out", "!", BuildDissPage,
+            page.AddSub("Start beef online", "!", BuildDissPage,
                 detail: "Name a set in public and see who turns up",
                 value: "");
             page.WithIcon(Icons.Warning);
@@ -545,7 +545,7 @@ namespace Hoodrich.Wheel
         /// </summary>
         private WheelPage BuildDissPage()
         {
-            var page = new WheelPage("Call them out", "They read this too");
+            var page = new WheelPage("Start beef online", "They read this too");
 
             page.PanelTitle = "Before you send it";
             page.Row("They answer", "on here, within the minute", Palette.TextDim);
