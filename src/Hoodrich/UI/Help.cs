@@ -20,8 +20,8 @@ namespace Hoodrich.UI
             {
                 // Same trap as the dialogue panel had: a help command opened with "STRING"
                 // honours exactly ONE substring component, so anything past 96 characters is
-                // thrown away without a word -- which is what cut the third line off Chop's
-                // prompt. CELL_EMAIL_BCON is the game's own multi-component format.
+                // thrown away without a word -- which is how a long prompt used to lose its
+                // last line. CELL_EMAIL_BCON is the game's own multi-component format.
                 Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_HELP, Draw.FormatFor(message));
 
                 const int chunk = 96;
