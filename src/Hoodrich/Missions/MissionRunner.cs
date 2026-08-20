@@ -603,7 +603,9 @@ namespace Hoodrich.Missions
                         blip.Color = BlipColor.Red;
                         blip.Scale = 0.7f;
                         blip.Name = gang.Name;
+
                         _blips.Add(blip);
+                        _targetBlips[ped.Handle] = blip;
                     }
                 }
                 catch (Exception ex)
@@ -615,9 +617,62 @@ namespace Hoodrich.Missions
             Log.Info("Mission " + _def.Id + ": " + _targets.Count + " waiting at " + _site + ".");
         }
 
+        /// <summary>
+        /// Makes the two sets hate each other for the length of the job.
+        ///
+        /// Without this every combat order given to the homies is an order to fight nobody:
+        /// ambient gang groups are indifferent to each other by default, so a yard full of Vagos
+        /// is not, as far as the game is concerned, a yard full of enemies. Read back first and
+        /// put back in Clear, so a job cannot leave two sets permanently at war.
+        /// </summary>
+        private void SetFeud(bool on)
+        {
+            var mine = _crew.Current;
+            var theirs = _def == null ? null : _gangs.Get(_def.TargetGang);
+
+            if (mine == null || theirs == null) return;
+            if (mine.GroupHash == 0 || theirs.GroupHash == 0) return;
+
+            try
+            {
+                if (on)
+                {
+                    _wasThem = Function.Call<int>(Hash.GET_RELATIONSHIP_BETWEEN_GROUPS,
+                                                  theirs.GroupHash, mine.GroupHash);
+                    _wasUs = Function.Call<int>(Hash.GET_RELATIONSHIP_BETWEEN_GROUPS,
+                                                mine.GroupHash, theirs.GroupHash);
+
+                    Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, 5, theirs.GroupHash, mine.GroupHash);
+                    Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, 5, mine.GroupHash, theirs.GroupHash);
+
+                    _feuding = true;
+                    return;
+                }
+
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, _wasThem, theirs.GroupHash, mine.GroupHash);
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, _wasUs, mine.GroupHash, theirs.GroupHash);
+
+                _feuding = false;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not set the job's relationships: " + ex.Message);
+            }
+        }
+
+        private bool _feuding;
+        private int _wasThem = 4;
+        private int _wasUs = 4;
+
         private void BeginWork(Ped player)
         {
             State = MissionState.Work;
+
+            SetFeud(true);
+
+            // First one lands a couple of seconds in, so it reads as somebody reacting rather
+            // than somebody who was already typing.
+            _nextWorkPost = Game.GameTime + 2500;
 
             // Late arrival: they were never placed, so place them now rather than fail.
             if (_targets.Count == 0) SpawnTargets(player);
@@ -626,6 +681,30 @@ namespace Hoodrich.Missions
             // somebody puts a round through it, which is the difference between walking up on
             // people and walking into an ambush that was waiting for you to arrive.
             var theyStartIt = _def.Kind != MissionKind.Hit;
+
+            // Ours go for them on sight. They rode out here to do exactly this, and waiting for
+            // the first round to be fired at them before they will look at anybody makes them
+            // passengers on their own job.
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 2, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 1, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 0, true);
+
+                    Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, homie.Handle, 2);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
+
+                    Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, homie.Handle, 120f, 0);
+                }
+                catch { /* the game's own AI takes it from here */ }
+            }
 
             foreach (var ped in _targets)
             {
@@ -652,8 +731,84 @@ namespace Hoodrich.Missions
             Notify.Important("~r~They're here.~s~ " + Objective + ".");
         }
 
+        /// <summary>
+        /// Whose marker is whose.
+        ///
+        /// SHVDN cannot get from a ped back to the blip on it, and a red dot left hovering over
+        /// a body you dropped two minutes ago is the map telling you there is still somebody
+        /// there to deal with.
+        /// </summary>
+        private readonly Dictionary<int, Blip> _targetBlips = new Dictionary<int, Blip>();
+
+        /// <summary>Takes a target's marker off the map the moment he goes down.</summary>
+        private void ClearDeadBlips()
+        {
+            foreach (var ped in _targets)
+            {
+                if (ped == null) continue;
+                if (ped.Exists() && ped.IsAlive) continue;
+
+                Blip blip;
+                if (!_targetBlips.TryGetValue(ped.Handle, out blip)) continue;
+
+                _targetBlips.Remove(ped.Handle);
+
+                try
+                {
+                    if (blip != null && blip.Exists())
+                    {
+                        _blips.Remove(blip);
+                        blip.Delete();
+                    }
+                }
+                catch { /* it is coming off either way */ }
+            }
+        }
+
+        /// <summary>
+        /// The block talks about it while it is happening, not after.
+        ///
+        /// A job that is only reported once you have been paid is a results service. People
+        /// hear a car going through a corner at the time, and half of them are on their phones
+        /// before it has turned the next street -- so the feed runs during the work, keyed to
+        /// what the work actually is, and the hand-in stops being the first anybody knew.
+        /// </summary>
+        private void TalkAboutIt()
+        {
+            if (Social == null || _def == null) return;
+            if (Game.GameTime < _nextWorkPost) return;
+
+            _nextWorkPost = Game.GameTime + WorkPostGapMs + _rng.Next(WorkPostGapMs);
+
+            var gang = _gangs.Get(_def.TargetGang);
+            var named = gang == null ? "" : gang.Name;
+
+            switch (_def.Kind)
+            {
+                case MissionKind.DriveBy:
+                    Social.On(SocialEvent.DriveBy, named);
+                    break;
+
+                case MissionKind.Hit:
+                    Social.On(SocialEvent.RivalKilled, named);
+                    break;
+
+                default:
+                    Social.On(SocialEvent.Brawl, named);
+                    break;
+            }
+        }
+
+        private int _nextWorkPost;
+
+        /// <summary>Roughly this apart, doubled at random, while a job is being done.</summary>
+        private const int WorkPostGapMs = 7000;
+
         private void TickWork(Ped player)
         {
+            ClearDeadBlips();
+            TalkAboutIt();
+
             var standing = 0;
             foreach (var ped in _targets)
             {
@@ -681,6 +836,8 @@ namespace Hoodrich.Missions
         /// <summary>Waiting on the stars to drop before he will take it off you.</summary>
         private void TickEscape()
         {
+            TalkAboutIt();
+
             if (Game.Player.Wanted.WantedLevel > 0) return;
 
             State = MissionState.Collect;
@@ -783,6 +940,9 @@ namespace Hoodrich.Missions
 
         private void Clear()
         {
+            // Before the job's own record of who it was against is thrown away.
+            if (_feuding) SetFeud(false);
+
             _bike.Clear();
             _tags.Clear();
 
@@ -800,6 +960,7 @@ namespace Hoodrich.Missions
                 catch { /* teardown */ }
             }
             _targets.Clear();
+            _targetBlips.Clear();
 
             foreach (var ped in _homies)
             {

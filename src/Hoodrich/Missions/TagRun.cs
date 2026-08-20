@@ -91,19 +91,29 @@ namespace Hoodrich.Missions
         /// </summary>
         private static readonly string[] SprayDicts =
         {
-            // The game's own tagging set, if this install has it.
+            // The spray can. This is the one -- the upper-body action the player character does
+            // when a can is chosen from the interaction menu, which is an arm working a wall in
+            // front of them with a can in the hand. Everything under it was a guess, and the
+            // hammering clip in particular is a man swinging at a wall, which is not tagging.
+            "anim@mp_player_intupperspray_can",
+            "anim@mp_player_intuppersmoke_cig",
+
+            // Older name for the same action on some builds.
+            "mp_player_int_upper_spray_can",
+
+            // And the graffiti sets, if this install has them.
             "anim@mp_tagging@", "mp_tagging", "anim@mp_tagging",
 
-            // Otherwise anything where a man works at a wall in front of him.
-            "amb@world_human_hammering@male@base",
+            // Last resort: anybody working at something directly in front of them.
             "amb@world_human_janitor@male@idle_a",
-            "amb@world_human_window_shop_browse@male@base",
-            "amb@world_human_bum_wash@male@high@idle_a"
+            "amb@world_human_window_shop_browse@male@base"
         };
 
         private static readonly string[] SprayClips =
         {
-            "tag_loop", "tag_enter", "base", "idle_a", "idle", "washing_face_idle"
+            // The spray-can action's own clips first, then the tagging sets, then the rest.
+            "idle_a", "mp_player_int_spray_can", "enter",
+            "tag_loop", "tag_enter", "base", "idle"
         };
 
         /// <summary>

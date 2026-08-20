@@ -79,9 +79,12 @@ namespace Hoodrich.Locations
 
                     _chop = ped;
 
-                    // Held, so the game stops streaming him out from under us the moment the
-                    // player drives away. Everything else about him stays the game's business.
-                    _chop.IsPersistent = true;
+                    // Deliberately NOT held persistent, and deliberately not tasked.
+                    //
+                    // Petting him, playing with him, taking him for a walk -- all of that is the
+                    // game's own script, and it only runs on a dog the game still owns. Marking
+                    // him as ours takes him off it, which is why he was recognisably Chop and
+                    // had none of Chop's prompts. If he streams out we simply find him again.
 
                     if (!_moved)
                     {
@@ -109,12 +112,10 @@ namespace Hoodrich.Locations
             {
                 var spot = Ground(Yard);
 
-                _chop.Task.ClearAll();
+                // Moved, and then left alone. No task of ours: whatever he was doing he goes
+                // back to doing, in the yard instead of the hills.
                 _chop.Position = spot;
                 _chop.Heading = 200f;
-
-                Function.Call(Hash.TASK_WANDER_IN_AREA, _chop.Handle,
-                              spot.X, spot.Y, spot.Z, 6f, 3f, 10f);
             }
             catch (Exception ex)
             {
@@ -166,12 +167,13 @@ namespace Hoodrich.Locations
             if (Game.GameTime - _lastLeash < LeashRetaskMs) return;
             _lastLeash = Game.GameTime;
 
+            // Only when nobody is looking, and only by moving him -- not by tasking him. A task
+            // of ours is a task instead of his, and his are the ones worth having.
+            if (_chop.IsOnScreen) return;
+
             try
             {
-                var spot = Ground(Yard);
-
-                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _chop.Handle,
-                              spot.X, spot.Y, spot.Z, 1.6f, 20000, 0f, 0.5f);
+                _chop.Position = Ground(Yard);
             }
             catch
             {

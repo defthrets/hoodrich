@@ -198,6 +198,9 @@ namespace Hoodrich.Supply
         /// <summary>The driver, once he is in the world -- the man you actually trade with.</summary>
         public Ped Driver => _driver != null && _driver.Exists() ? _driver : null;
 
+        /// <summary>The car he came in, so nothing else mistakes it for stuck traffic.</summary>
+        public Vehicle Car => _car != null && _car.Exists() ? _car : null;
+
         /// <summary>Set by Main: the conversation screen, and what he has to say.</summary>
         public Conversation Talk;
         public Func<DialogueNode> TalkBuilder;

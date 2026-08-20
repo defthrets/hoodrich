@@ -103,6 +103,9 @@ namespace Hoodrich
         /// </summary>
         private readonly CopWatch _copWatch;
 
+        /// <summary>Keeps the street outside the house from silting up with stopped cars.</summary>
+        private readonly TrafficWatch _traffic;
+
         /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
         private readonly Fixture _couch;
         private readonly BlockLife _block;
@@ -182,6 +185,14 @@ namespace Hoodrich
                                      "prop_old_couch_01", "prop_rub_couch01");
 
                 _copWatch = new CopWatch();
+
+                _traffic = new TrafficWatch(_stash.Position)
+                {
+                    // The plug is parked there because he was told to park there.
+                    Ours = car => _delivery != null && _delivery.IsActive &&
+                                  _delivery.Car != null && car != null &&
+                                  car.Handle == _delivery.Car.Handle
+                };
 
                 _war = new GangWar(_gangs, _crew, _state)
                     .Defend("Lamar", Fixer.Spot)
@@ -443,6 +454,7 @@ namespace Hoodrich
                     _copWatch.Update();
                     _block.Update();
                     _couch.Update();
+                    _traffic.Update();
                     _war.Update();
 
                     _lamarCrew.Update();

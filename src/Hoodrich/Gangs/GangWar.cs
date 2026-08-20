@@ -47,6 +47,22 @@ namespace Hoodrich.Gangs
         private const int WarMs = 300000;
         private const int HatredMs = 480000;
 
+        /// <summary>Nothing runs past this, whatever the tier works out to.</summary>
+        private const int LongestMs = 600000;
+
+        /// <summary>
+        /// How many people a set is willing to lose over one block, by how badly they want it.
+        ///
+        /// This is the thing that was missing. A raid ran on a clock and sent another carload
+        /// every time the street emptied, so the only way it ever ended was the timer -- you
+        /// could put down thirty men and the thirty-first was already turning the corner. A set
+        /// has a number of people and a limit to what it will spend, and when that is gone they
+        /// have lost, which is a thing you can do to them.
+        /// </summary>
+        private const int SoldiersBeef = 6;
+        private const int SoldiersWar = 14;
+        private const int SoldiersHatred = 24;
+
         /// <summary>Where one becomes the other.</summary>
         private const float WarHeat = 0.35f;
         private const float HatredHeat = 0.70f;
@@ -262,9 +278,13 @@ namespace Hoodrich.Gangs
             _heat = Heat(_attacker);
 
             // One number decides the whole shape of it.
-            if (_heat >= HatredHeat)      { _cars0 = 3; _warMs = HatredMs; }
-            else if (_heat >= WarHeat)    { _cars0 = 2; _warMs = WarMs; }
-            else                          { _cars0 = 1; _warMs = BeefMs; }
+            if (_heat >= HatredHeat)      { _cars0 = 3; _warMs = HatredMs; _reserve = SoldiersHatred; }
+            else if (_heat >= WarHeat)    { _cars0 = 2; _warMs = WarMs;    _reserve = SoldiersWar; }
+            else                          { _cars0 = 1; _warMs = BeefMs;   _reserve = SoldiersBeef; }
+
+            // Varies either side of the tier, and never past ten minutes.
+            _warMs = (int)(_warMs * (0.8f + _rng.NextDouble() * 0.5f));
+            if (_warMs > LongestMs) _warMs = LongestMs;
 
             _startedAt = Game.GameTime;
             _nextWave = 0;
@@ -288,7 +308,7 @@ namespace Hoodrich.Gangs
 
             Log.Info("Gang war: " + _attacker.Id + " attacking " + _target.Who +
                      " (heat " + _heat.ToString("0.00") + ", " + _cars0 + " cars opening, " +
-                     (_warMs / 1000) + "s).");
+                     _reserve + " deep, up to " + (_warMs / 1000) + "s).");
 
             // Held until somebody actually fires. Cars pulling up is not news, and narrating
             // the drive over defeats the arrival.
@@ -309,6 +329,9 @@ namespace Hoodrich.Gangs
 
         /// <summary>How long this one runs for.</summary>
         private int _warMs = WarMs;
+
+        /// <summary>How many of them are left to send.</summary>
+        private int _reserve;
 
         /// <summary>
         /// Switches the police off for the length of the raid, and back on when it ends.
@@ -527,6 +550,16 @@ namespace Hoodrich.Gangs
                 SendWave(twoUp ? 2 : 1);
             }
 
+            // Spent. They brought a number of people and that number is on the floor, so it
+            // is over -- and it is over because of something you did rather than because a
+            // clock ran out, which is the difference between holding a block and waiting.
+            if (_reserve <= 0 && AliveIn(_rivals) == 0)
+            {
+                Notify.Important("~g~That's the last of them.~s~ They're done.");
+                End(_showedUp, null);
+                return;
+            }
+
             if (elapsed < _warMs) return;
 
             // Time. Anybody still standing decides they have made their point.
@@ -559,6 +592,9 @@ namespace Hoodrich.Gangs
         private void SendCar()
         {
             if (_attacker == null || _target == null) return;
+
+            // Nobody left to send.
+            if (_reserve <= 0) return;
 
             // A street can only hold so many people. Past this, the next carload waits for the
             // current one to be dealt with, which is also better pacing than a pile-up.
@@ -597,7 +633,9 @@ namespace Hoodrich.Gangs
                     if (ped == null) continue;
 
                     if (seat == -1) driver = ped;
+
                     _rivals.Add(ped);
+                    _reserve--;
                 }
 
                 if (driver != null)
@@ -1521,7 +1559,8 @@ namespace Hoodrich.Gangs
             var filled = w * done;
             if (filled > 0f) Hud.Rect(x - (w - filled) * 0.5f, y, filled, h, Palette.Danger);
 
-            Hud.Text(standing + " still up   ·   " + _kills + " down", x, y + 0.016f, 0.26f,
+            Hud.Text(standing + " on the block   ·   " + _downed + " down   ·   " +
+                     Math.Max(0, _reserve) + " more coming", x, y + 0.016f, 0.26f,
                      Palette.TextDim, Hud.FontBody);
         }
     }
