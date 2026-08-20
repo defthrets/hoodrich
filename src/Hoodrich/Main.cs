@@ -382,6 +382,8 @@ namespace Hoodrich
 
                 var available = IsPlayable();
 
+                WatchForPillbox();
+
                 // Before any of the full-screen UIs, every one of which returns early. A narc
                 // on the phone and a corner you are stood on both run on wall time, and a
                 // countdown that stops because you opened a menu is a countdown you can beat by
@@ -617,6 +619,58 @@ namespace Hoodrich
             // "30 metres away" from somebody they were stood next to.
             return _leaders.DistanceTo(subject) > 8f;
         }
+
+        /// <summary>
+        /// Waking up at Pillbox.
+        ///
+        /// Watched on the WAKE rather than on the death. You are out cold for the fade, nothing
+        /// on screen means anything while it is black, and a post that lands during it is a post
+        /// nobody sees. He stands back up, and that is also about when word would have got
+        /// round -- somebody always knows before you are out of the bed.
+        /// </summary>
+        private void WatchForPillbox()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return;
+
+                if (player.IsDead)
+                {
+                    _wasDown = true;
+                    _pillboxAt = 0;
+                }
+                else if (_wasDown)
+                {
+                    _wasDown = false;
+
+                    // Not the instant he is upright: the fade is still on the way out and a
+                    // notification behind a black screen is a notification thrown away.
+                    _pillboxAt = Game.GameTime + PillboxDelayMs;
+                }
+            }
+            catch
+            {
+                _wasDown = false;
+            }
+
+            // Deliberately outside the branch above. Arming the timer clears _wasDown, so a
+            // version of this that returned early on "not down" would set the clock and then
+            // never look at it again.
+            if (_pillboxAt == 0 || Game.GameTime < _pillboxAt) return;
+
+            _pillboxAt = 0;
+            _social?.On(SocialEvent.Hospital, "");
+        }
+
+        /// <summary>True while he is on the floor, so the wake can be spotted.</summary>
+        private bool _wasDown;
+
+        /// <summary>When the block gets to hear about it, or 0 for not pending.</summary>
+        private int _pillboxAt;
+
+        /// <summary>Long enough for the fade out of the hospital to have finished.</summary>
+        private const int PillboxDelayMs = 6500;
 
         /// <summary>Opens the kitchen screen with everything it needs to start a batch.</summary>
         private void OpenKitchen()

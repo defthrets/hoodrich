@@ -61,6 +61,16 @@ namespace Hoodrich.Gangs
         /// <summary>Groups we have altered, so they can be put back on unload.</summary>
         private readonly HashSet<int> _touchedGroups = new HashSet<int>();
 
+        /// <summary>
+        /// The set Franklin is from, whatever the join menu says.
+        ///
+        /// He grew up on it. Lamar is on it. There is no state of this mod in which a CGF
+        /// soldier should be squaring up to him on his own street, and until now there was --
+        /// the friendly relationship was only applied if you had gone through the join menu,
+        /// so before that his own people challenged him like any stranger on a corner.
+        /// </summary>
+        private const string HomeSet = "families";
+
         public Affiliation(GangRegistry gangs)
         {
             _gangs = gangs;
@@ -71,6 +81,34 @@ namespace Hoodrich.Gangs
             catch (Exception ex)
             {
                 Log.Error("Could not resolve the PLAYER relationship group.", ex);
+            }
+
+            RespectHome();
+        }
+
+        /// <summary>
+        /// Puts the home set on good terms with the player and keeps it there.
+        ///
+        /// Cheap and idempotent, so it is safe to call from the same timer that re-applies the
+        /// joined gang's relationship -- which it has to be, because the game resets ambient
+        /// relationship groups on its own and a one-off call at startup quietly stops holding
+        /// after the first time you leave the area and come back.
+        /// </summary>
+        private void RespectHome()
+        {
+            if (_playerGroupHash == 0 || _gangs == null) return;
+
+            try
+            {
+                var home = _gangs.Get(HomeSet);
+                if (home == null || home.GroupHash == 0) return;
+
+                SetBoth(RelCompanion, home.GroupHash, _playerGroupHash);
+                _touchedGroups.Add(home.GroupHash);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not set the home set relationship: " + ex.Message);
             }
         }
 
@@ -295,9 +333,16 @@ namespace Hoodrich.Gangs
         {
             var now = Game.GameTime;
 
-            if (Current != null && now - _lastReapply >= ReapplyIntervalMs)
+            if (now - _lastReapply >= ReapplyIntervalMs)
             {
-                ApplyRelations(Current);
+                // The home set first, and unconditionally. The game resets ambient relationship
+                // groups on its own, so a single call at startup stops holding the first time
+                // you leave the area and come back -- and then his own people start challenging
+                // him on his own street again.
+                RespectHome();
+
+                if (Current != null) ApplyRelations(Current);
+                else _lastReapply = now;
             }
 
             if (now - _lastKillScan >= KillScanIntervalMs)

@@ -2120,6 +2120,170 @@
       "you hear how quick they get quiet",
       "this is {here}. it don't change hands over one afternoon",
       "don't come outside. we got it"
+    ],
+
+    "YouDaily": [
+      "back on the block. same block, different day",
+      "long day. longer night",
+      "{here} quiet for once. i'll take it",
+      "everybody want a piece and don't nobody want to work for it",
+      "made my money today. that's the whole post",
+      "still ain't got a day off since i can remember",
+      "chop ate better than me tonight",
+      "some of y'all need to stop calling me for favours",
+      "you can leave the block, block don't leave you",
+      "traffic on the {hood} was a whole hour of my life",
+      "one day this all gonna make sense",
+      "aunt denise asked me for money again. i gave it to her again",
+      "seen an old face today. didn't say nothing",
+      "if you owe me you know you owe me"
+    ],
+
+    "Hospital": [
+      "praying for my boy franklin. speedy recovery bro",
+      "heard franklin got hit. get well soon my guy, block need you",
+      "franklin at pillbox. keep that man in your prayers",
+      "not franklin. lord not franklin. he gonna pull through though",
+      "whoever did that to franklin better hope he don't remember",
+      "get well bro. we already know who it was",
+      "franklin took one for the block. respect forever",
+      "man i just seen franklin last week. this city ain't right",
+      "everybody go check on franklin when he out",
+      "free my boy from that hospital bed, he don't belong there",
+      "franklin gonna walk out that place same as he walked in. watch",
+      "sending love to franklin and to auntie denise",
+      "they got him but they ain't got him. get well soon fam",
+      "franklin been through worse than this. hold your head bro",
+      "if you laughing at franklin right now the block seen it",
+      "chop been sat outside that hospital all night i swear"
+    ],
+
+    "YouDiss": [
+      "{rival} been loud on here and quiet on the street",
+      "y'all know where i'm at. {here}. come see me",
+      "{rival} ain't never held nothing. they just stood near it",
+      "every time i see {rival} they moving in a group of nine",
+      "tell {rival} the block's still where they left it",
+      "keep my name where i can hear it, {rival}"
+    ],
+
+    "YouDissBallas": [
+      "grove ain't yours. you just squatting on it #BK",
+      "purple everywhere and not one of y'all can hold a corner past dark #BK",
+      "forum drive got more ballas than jobs. explain that one",
+      "b4l. bodies for life, cause that's all y'all been getting #BK",
+      "front yard, rollin heights, kilo tray. nine names, one set of shoes",
+      "they took grove street and turned it into a bus stop #FAM",
+      "keep saying davis is yours. davis don't know that"
+    ],
+
+    "YouDissVagos": [
+      "rancho been the same twenty years and so has your excuse",
+      "yellow don't scare nobody in the rain",
+      "vagos out here selling for somebody else and calling it a business",
+      "east side loud, east side broke. pick one",
+      "y'all lost cypress flats to a lock and a fence",
+      "every vagos i met was somebody's little cousin"
+    ],
+
+    "YouDissLost": [
+      "come down from stab city and see how the city treats you",
+      "grown men on bicycles with engines",
+      "the lost. named right. ain't nobody found nothing since klebitz",
+      "y'all ride two hours to get shot at in twenty minutes",
+      "leather in ninety degrees. that's the whole personality",
+      "blaine county problems. keep em in blaine county"
+    ],
+
+    "YouDissMarabunta": [
+      "el burro heights is a hill and a smell, congratulations",
+      "marabunta talk a lot for people who live under a freeway",
+      "the canals ain't a hood, it's a walk",
+      "y'all still doing somebody else's collections",
+      "tattoos on the face and nothing in the account",
+      "come to {here} then. it's twenty minutes"
+    ],
+
+    "YouDissTriads": [
+      "little seoul money and little seoul manners",
+      "cheng's people talk business till business talks back",
+      "y'all import everything including the courage",
+      "suits and drivers and still can't walk down a street alone",
+      "tao cheng been on a plane since the day he got here",
+      "you don't run this city. you rent it"
+    ],
+
+    "YouDissArmenians": [
+      "la puerta money and a dealership full of stolen cars",
+      "simeon's people repossessing their own dignity",
+      "y'all only dangerous on paperwork",
+      "little bay tough guys. very little",
+      "every one of y'all got a lawyer and a lisp",
+      "shipping containers full of nothing, same as the talk"
+    ],
+
+    "DissedBack": [
+      "he typing. that's what he doing. typing",
+      "franklin got a phone and a opinion now",
+      "say it off the internet",
+      "we know where he stay. everybody know where he stay",
+      "clinton talking like he ain't from round the corner",
+      "he'll see us before he sees this reply"
+    ],
+
+    "DissedBackBallas": [
+      "clinton really posting. we'll be posting too, outside his house #CK",
+      "grove is purple. been purple. gonna stay purple #B4L",
+      "he ran from this block once already #CK",
+      "franklin got green on and a purple future",
+      "tell him forum drive got a car with his name on the plate",
+      "we don't type back. we drive by #CK",
+      "he's from chamberlain and he act like he from somewhere"
+    ],
+
+    "DissedBackVagos": [
+      "the green boy talking about rancho. come to rancho then",
+      "he'll find out what east side means",
+      "franklin, we got people on your street right now",
+      "talk is free. the drive over is free too",
+      "y ahora que, franklin",
+      "keep the phone charged. you gonna want to call somebody"
+    ],
+
+    "DissedBackLost": [
+      "kid's got a lot of mouth for somebody with no engine",
+      "we ride further to hurt people than you drive to work",
+      "he'll hear us before he sees us",
+      "grease and gasoline, clinton. remember that smell",
+      "stab city sends its regards",
+      "he don't know what we do for fun"
+    ],
+
+    "DissedBackMarabunta": [
+      "franklin talking about the canals from his little house",
+      "he'll meet us and he won't like it",
+      "we been under that freeway getting money while he typed that",
+      "el burro remembers. so do we",
+      "put the phone down and look outside",
+      "little green man, big green mouth"
+    ],
+
+    "DissedBackTriads": [
+      "the young man has confused us with people who argue",
+      "clinton will receive a visit. that is all",
+      "we do not reply twice",
+      "he has no idea how small he is",
+      "his address is a matter of public record",
+      "little seoul is not amused"
+    ],
+
+    "DissedBackArmenians": [
+      "this boy is on a list now. a real one",
+      "clinton, we have your plate number",
+      "we do paperwork and we do the other thing",
+      "he thinks a phone protects him",
+      "la puerta will see him soon",
+      "someone should explain to him who he is talking to"
     ]
   },
   "voices": {

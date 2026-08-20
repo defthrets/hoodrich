@@ -31,6 +31,9 @@ namespace Hoodrich.Social
         /// <summary>Police down. The city notices this one more than anything else you do.</summary>
         CopKilled,
 
+        /// <summary>Woke up at Pillbox. Word gets round before you are out of the bed.</summary>
+        Hospital,
+
         WarStarted,
         WarHeld,
         WarLost,
@@ -633,6 +636,12 @@ namespace Hoodrich.Social
 
             switch (kind)
             {
+                case SocialEvent.Hospital:
+                    // Nobody signs a get-well post with their colours. It is the block, not a set.
+                    follow = "Hospital";
+                    count = 1 + _rng.Next(2);
+                    break;
+
                 case SocialEvent.RivalKilled:
                     // Their side grieves, our side gloats, and every so often somebody records.
                     follow = _rng.NextDouble() < 0.30 ? "DissTrack"
@@ -746,6 +755,7 @@ namespace Hoodrich.Social
                     return 1f;
 
                 case SocialEvent.CopKilled: return 1f;
+                case SocialEvent.Hospital: return 1f;
                 case SocialEvent.WarStarted: return 1f;
                 case SocialEvent.WarHeld: return 1f;
                 case SocialEvent.WarLost: return 1f;
@@ -775,6 +785,9 @@ namespace Hoodrich.Social
                 case SocialEvent.CopKilled: return 20 + _rng.Next(45);
                 case SocialEvent.WarHeld: return 45 + _rng.Next(60);
                 case SocialEvent.WarLost: return -(25 + _rng.Next(30));
+                // Two or three. One person saying it reads as a coincidence; the whole block
+                // saying it at once is what actually happens when somebody gets hit.
+                case SocialEvent.Hospital: return 1 + _rng.Next(2);
                 case SocialEvent.WarStarted: return 0;
 
                 case SocialEvent.RivalKilled: return 3 + _rng.Next(7);
