@@ -259,7 +259,20 @@ namespace Hoodrich
                         // He is scenery, and the point of him is that the block looks like a
                         // place where this happens whether or not you are the one doing it.
                         .Stand(new Vector3(-172.341f, -1632.777f, 33.463f), 101.654f,
-                               "WORLD_HUMAN_DRUG_DEALER", StreetDealers, armed: false);
+                               "WORLD_HUMAN_DRUG_DEALER", StreetDealers, armed: false)
+
+                        // Down the south end, facing back up the walkway.
+                        .Stand(new Vector3(-159.851f, -1681.244f, 36.966f), 181.575f,
+                               "WORLD_HUMAN_GUARD_STAND")
+
+                        // And one on a beer round the front, doing nothing at all.
+                        .Stand(new Vector3(-149.837f, -1696.416f, 32.872f), 49.515f,
+                               "WORLD_HUMAN_DRINKING", armed: false)
+
+                        // Somebody on a joint a few steps off him, so the two of them read as
+                        // people stood about together rather than two separate installations.
+                        .Stand(new Vector3(-150.441f, -1694.220f, 32.872f), 153.053f,
+                               "WORLD_HUMAN_SMOKING_POT", armed: false);
 
                 if (stretch != null)
                 {
