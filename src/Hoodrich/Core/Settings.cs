@@ -215,7 +215,7 @@ namespace Hoodrich.Core
             // the ini and a line here, not another class.
             s.Doors.Add(ReadDoor(ini, "GrowRoom", "grow room", "bkr_biker_dlc_int_ware02",
                                  BlipSprite.Weed,
-                                 -157.500f, -1636.000f, 34.029f, 2f,
+                                 -154.355f, -1641.424f, 36.851f, 219.848f,
                                  1039.000f, -3098.000f, -39.000f, 180f));
 
             s.Doors.Add(ReadDoor(ini, "MethLab", "meth lab", "tr_tuner_methlab_1",
