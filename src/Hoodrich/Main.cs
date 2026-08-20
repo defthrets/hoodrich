@@ -621,7 +621,10 @@ namespace Hoodrich
         /// <summary>Opens the kitchen screen with everything it needs to start a batch.</summary>
         private void OpenKitchen()
         {
-            _cook.Open(_state.Stash, _drugs, _pricing,
+            // The house stash goes in too: you are standing in the kitchen of the place the
+            // weight is kept, and having to walk to the other screen to move a kilo eight feet
+            // is not a decision, it is an errand.
+            _cook.Open(_state.Stash, _stash == null ? null : _stash.Stash, _drugs, _pricing,
                        (drug, output, grams, purity, size) =>
                            _cutting.TryStart(drug, output, grams, purity, size));
         }

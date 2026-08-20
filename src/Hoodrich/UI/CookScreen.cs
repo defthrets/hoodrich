@@ -64,6 +64,16 @@ namespace Hoodrich.UI
         private readonly List<CookRow> _rows = new List<CookRow>();
 
         private Stash _stash;
+
+        /// <summary>
+        /// The cupboard behind you.
+        ///
+        /// The counter used to work only out of your pockets, so a house full of weight showed
+        /// up as a one-line menu and there was nowhere to go back to. Anything in here can be
+        /// worked without leaving the room; it gets fetched when the batch starts.
+        /// </summary>
+        private Stash _house;
+
         private Drugs _catalogue;
         private Pricing _pricing;
         private Func<DrugDef, DrugDef, float, float, float, string> _start;
@@ -74,12 +84,13 @@ namespace Hoodrich.UI
 
         public bool IsOpen { get; private set; }
 
-        public void Open(Stash stash, Drugs catalogue, Pricing pricing,
+        public void Open(Stash stash, Stash house, Drugs catalogue, Pricing pricing,
                          Func<DrugDef, DrugDef, float, float, float, string> start)
         {
             if (stash == null || catalogue == null || pricing == null) return;
 
             _stash = stash;
+            _house = house;
             _catalogue = catalogue;
             _pricing = pricing;
             _start = start;
@@ -94,7 +105,7 @@ namespace Hoodrich.UI
 
             if (_rows.Count == 0)
             {
-                Notify.Problem("no weight on you to work.");
+                Notify.Problem("nothing here to work.");
                 IsOpen = false;
                 return;
             }
@@ -106,6 +117,7 @@ namespace Hoodrich.UI
         {
             IsOpen = false;
             _stash = null;
+            _house = null;
             _catalogue = null;
             _pricing = null;
             _start = null;
@@ -118,7 +130,7 @@ namespace Hoodrich.UI
 
             foreach (var drug in _catalogue.All)
             {
-                if (_stash.BulkOf(drug.Id) <= 0.005f) continue;
+                if (Available(drug) <= 0.005f) continue;
 
                 _rows.Add(new CookRow { Source = drug, Output = drug });
 
@@ -132,6 +144,52 @@ namespace Hoodrich.UI
             }
 
             if (_selected >= _rows.Count) _selected = Math.Max(0, _rows.Count - 1);
+        }
+
+        /// <summary>
+        /// How much of something there is to work, pockets and house together.
+        ///
+        /// The house share is capped by what your pockets can still take, because the batch has
+        /// to physically come across the room before it can go on the counter. Offering to work
+        /// a kilo you have no room to carry is offering something that cannot happen.
+        /// </summary>
+        private float Available(DrugDef drug)
+        {
+            if (drug == null || _stash == null) return 0f;
+
+            var onYou = _stash.BulkOf(drug.Id);
+            if (_house == null) return onYou;
+
+            var fromHouse = Math.Min(_house.BulkOf(drug.Id), _stash.FreeSpace);
+            return onYou + Math.Max(0f, fromHouse);
+        }
+
+        /// <summary>How much of this batch is coming out of the cupboard rather than your pocket.</summary>
+        private float FromHouse(DrugDef drug, float batch)
+        {
+            if (drug == null || _stash == null) return 0f;
+            return Math.Max(0f, batch - _stash.BulkOf(drug.Id));
+        }
+
+        /// <summary>
+        /// Moves the shortfall across before the batch starts.
+        ///
+        /// Anything that will not fit goes straight back in the cupboard rather than being
+        /// quietly lost, which matters because RemoveBulk has already taken it by then.
+        /// </summary>
+        private float Fetch(DrugDef drug, float wanted)
+        {
+            if (wanted <= 0.005f || _house == null || drug == null) return 0f;
+
+            var taken = _house.RemoveBulk(drug.Id, wanted);
+            if (taken <= 0f) return 0f;
+
+            var accepted = _stash.AddBulk(drug.Id, taken);
+            var over = taken - accepted;
+
+            if (over > 0.005f) _house.AddBulk(drug.Id, over);
+
+            return accepted;
         }
 
         // ---- input -------------------------------------------------------------
@@ -203,7 +261,17 @@ namespace Hoodrich.UI
         private void Begin()
         {
             var row = _rows[_selected];
-            var batch = Math.Min(MaxBatch, _stash.BulkOf(row.Source.Id));
+            var batch = Math.Min(MaxBatch, Available(row.Source));
+
+            // Out of the cupboard and onto the counter, which is the step that used to have to
+            // be done by hand through a different screen in a different room.
+            var fetched = Fetch(row.Source, FromHouse(row.Source, batch));
+            if (fetched > 0.005f)
+            {
+                Notify.Ticker("~s~You took " + row.Source.Short(fetched) + " out the cupboard.");
+            }
+
+            batch = Math.Min(batch, _stash.BulkOf(row.Source.Id));
 
             var failure = _start?.Invoke(row.Source, row.Output, batch, Purities[_purity],
                                          SizeFor(row.Output ?? row.Source));
@@ -277,7 +345,8 @@ namespace Hoodrich.UI
             foreach (var row in _rows)
             {
                 var picked = _rows[_selected] == row;
-                var have = _stash.BulkOf(row.Source.Id);
+                var have = Available(row.Source);
+                var stored = _house == null ? 0f : _house.BulkOf(row.Source.Id);
 
                 if (picked)
                 {
@@ -292,7 +361,16 @@ namespace Hoodrich.UI
                 Hud.Text((picked ? "> " : "  ") + row.Label, x, y, 0.30f,
                          picked ? Palette.Text : Palette.TextDim, Hud.FontBody, centre: false);
 
-                Hud.TextRight(row.Source.Amount(have), right, y, 0.30f,
+                // Where it is, when it is not simply on you. Otherwise a number that includes
+                // the cupboard reads as a number in your pocket, and the two are not the same
+                // thing the moment you walk out of the room.
+                var where = stored > 0.005f
+                    ? row.Source.Amount(have) + (_stash.BulkOf(row.Source.Id) > 0.005f
+                        ? "  (some in the cupboard)"
+                        : "  (in the cupboard)")
+                    : row.Source.Amount(have);
+
+                Hud.TextRight(where, right, y, 0.30f,
                               picked ? Palette.Warn : Palette.TextDim, Hud.FontBody);
 
                 y += RowHeight;
@@ -306,7 +384,7 @@ namespace Hoodrich.UI
             var made = chosen.Output ?? chosen.Source;
 
             var purity = Purities[_purity];
-            var batch = Math.Min(MaxBatch, _stash.BulkOf(product.Id));
+            var batch = Math.Min(MaxBatch, Available(product));
             var yield = Cutting.YieldOf(product, made, batch, purity);
             var worth = _pricing.SaleValue(made, yield, purity);
             var risk = Pricing.BadCutChance(purity);
@@ -394,7 +472,7 @@ namespace Hoodrich.UI
                      Hud.FontBody, centre: false);
             y += 0.026f;
 
-            Hud.Text("UP / DOWN  PRODUCT      LEFT / RIGHT  HOW FAR      SPACE  BAG SIZE      " +
+            Hud.Text("UP / DOWN  PICK PRODUCT      LEFT / RIGHT  HOW FAR      SPACE  BAG SIZE      " +
                      "ENTER  START      BACKSPACE  LEAVE",
                      x, top + height - 0.020f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
