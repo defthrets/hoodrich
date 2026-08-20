@@ -416,6 +416,7 @@ namespace Hoodrich
                 // Handed over as functions rather than references, so the feed never holds on
                 // to a system that can be torn down under it.
                 _social.WhereYouAre = ZoneNameHere;
+                _social.StreetYouAre = StreetNameHere;
                 _social.YourGang = () => _crew.IsAffiliated ? _crew.Current.Name : "";
                 _social.Changed = () => { _state.Followers = _social.Followers; _state.Touch(); };
 
@@ -586,6 +587,7 @@ namespace Hoodrich
                 var available = IsPlayable();
 
                 WatchForPillbox();
+                WatchForGunfire();
 
                 // Before any of the full-screen UIs, every one of which returns early. A narc
                 // on the phone and a corner you are stood on both run on wall time, and a
@@ -875,6 +877,85 @@ namespace Hoodrich
             _pillboxAt = 0;
             _social?.On(SocialEvent.Hospital, "");
         }
+
+        /// <summary>
+        /// The road he is standing on, for a post that names where it happened.
+        ///
+        /// Deliberately the street rather than the district. "Down Forum Dr" is what somebody
+        /// types; "in Davis" is what a news report says, and the feed already has a slot for
+        /// that.
+        /// </summary>
+        private static string StreetNameHere()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return "";
+
+                var here = player.Position;
+
+                var street = new OutputArgument();
+                var crossing = new OutputArgument();
+
+                Function.Call(Hash.GET_STREET_NAME_AT_COORD, here.X, here.Y, here.Z,
+                              street, crossing);
+
+                var hash = street.GetResult<int>();
+                if (hash == 0) return "";
+
+                return Function.Call<string>(Hash.GET_STREET_NAME_FROM_HASH_KEY, hash) ?? "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// Somebody always hears it.
+        ///
+        /// Every other thing on the feed is something Franklin did to somebody. This is the one
+        /// everybody else experiences -- he can empty a magazine on a residential street and
+        /// until now the block had nothing to say about the loudest thing that happened all
+        /// week.
+        ///
+        /// Throttled hard, and deliberately not every time. A firefight is one thing the block
+        /// mentions, not thirty notifications arriving while you are still in it.
+        /// </summary>
+        private void WatchForGunfire()
+        {
+            try
+            {
+                var now = Game.GameTime;
+                if (now < _nextShotPost) return;
+
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists() || !player.IsAlive) return;
+
+                if (!Function.Call<bool>(Hash.IS_PED_SHOOTING, player.Handle)) return;
+
+                // The clock resets whether or not anybody posts, so a long firefight stays
+                // quiet after the first mention instead of rolling the dice every two minutes.
+                _nextShotPost = now + ShotPostGapMs + _rng.Next(ShotPostGapMs);
+
+                if (_rng.NextDouble() > ShotPostChance) return;
+
+                _social?.On(SocialEvent.Shots, "");
+            }
+            catch
+            {
+                // A tweet is not worth an exception.
+            }
+        }
+
+        /// <summary>Earliest the block will mention gunfire again.</summary>
+        private int _nextShotPost;
+
+        /// <summary>Roughly this apart, doubled at random.</summary>
+        private const int ShotPostGapMs = 110000;
+
+        /// <summary>Not every time. Plenty of shots nobody bothers to type about.</summary>
+        private const double ShotPostChance = 0.55;
 
         /// <summary>True while he is on the floor, so the wake can be spotted.</summary>
         private bool _wasDown;

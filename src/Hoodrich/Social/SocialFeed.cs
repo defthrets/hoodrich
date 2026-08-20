@@ -37,6 +37,9 @@ namespace Hoodrich.Social
         /// <summary>A car going up somewhere quiet. Somebody always sees the smoke.</summary>
         CarBurned,
 
+        /// <summary>Shots on a street with people living on it.</summary>
+        Shots,
+
         WarStarted,
         WarHeld,
         WarLost,
@@ -190,6 +193,9 @@ namespace Hoodrich.Social
 
         /// <summary>Filled in by Main so posts can name the block you are actually on.</summary>
         public Func<string> WhereYouAre;
+
+        /// <summary>Set by Main: the road you are standing on, for {street}.</summary>
+        public Func<string> StreetYouAre;
         public Func<string> YourGang;
 
         // ---- loading -----------------------------------------------------------
@@ -833,6 +839,13 @@ namespace Hoodrich.Social
                     count = 1 + _rng.Next(2);
                     break;
 
+                case SocialEvent.Shots:
+                    // Usually one person mentions it. Sometimes two, and the second one is
+                    // always somebody arguing about how many they counted.
+                    follow = "Shots";
+                    count = _rng.NextDouble() < 0.35 ? 1 : 0;
+                    break;
+
                 case SocialEvent.RivalKilled:
                     // Their side grieves, our side gloats, and every so often somebody records.
                     follow = _rng.NextDouble() < 0.30 ? "DissTrack"
@@ -946,6 +959,7 @@ namespace Hoodrich.Social
                     return 1f;
 
                 case SocialEvent.CopKilled: return 1f;
+                case SocialEvent.Shots: return 0.9f;
                 case SocialEvent.CarBurned: return 0.8f;
                 case SocialEvent.Hospital: return 1f;
                 case SocialEvent.WarStarted: return 1f;
@@ -979,6 +993,7 @@ namespace Hoodrich.Social
                 case SocialEvent.WarLost: return -(25 + _rng.Next(30));
                 // Two or three. One person saying it reads as a coincidence; the whole block
                 // saying it at once is what actually happens when somebody gets hit.
+                case SocialEvent.Shots: return _rng.Next(2);
                 case SocialEvent.CarBurned: return _rng.Next(3);
                 case SocialEvent.Hospital: return 1 + _rng.Next(2);
                 case SocialEvent.WarStarted: return 0;
@@ -1200,6 +1215,14 @@ namespace Hoodrich.Social
             {
                 var where = WhereYouAre == null ? "" : WhereYouAre();
                 return string.IsNullOrEmpty(where) ? "the block" : where;
+            }
+
+            if (string.Equals(key, "street", StringComparison.OrdinalIgnoreCase))
+            {
+                // The road, not the district. "Down Forum Dr" is what somebody types; "in
+                // Davis" is what a news report says, and {here} already covers that.
+                var road = StreetYouAre == null ? "" : StreetYouAre();
+                return string.IsNullOrEmpty(road) ? ValueFor("here", subject, amount) : road;
             }
 
             if (string.Equals(key, "yours", StringComparison.OrdinalIgnoreCase))
