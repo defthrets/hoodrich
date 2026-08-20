@@ -44,10 +44,32 @@ a different kind of job from going at the Ballas.
 So the drive-by happens in **RANCHO**, and the gang gets that one zone rather
 than a list. No OpenIV lookup needed after all -- the map answers it.
 
-The same map is worth a wider pass later. It also carries the **Madrazo Cartel**
-and **Merryweather Security**, neither of which the registry knows about, and it
-puts **Marabunta Grande** in two separate pockets rather than the spread the mod
-currently gives them.
+### About that map
+
+Its own author says it was made for fun, may be wrong, and that the Marabunta
+territories are incomplete. The comments bear that out, so it is a starting
+point for a turf pass and not a source. What the thread adds, worth keeping:
+
+- **Kkangpae and the Triads share Little Seoul.** Sometimes one spawns, sometimes
+  the other. Two names on one territory rather than two territories.
+- **Marabunta Grande are in far more places than the map shows** — Vespucci Beach
+  near Floyd's flat, El Burro Heights, and a street a couple of blocks behind
+  Lester's. The map's own Marabunta pockets are the part it admits to getting
+  wrong, and one commenter reckons the yellow on the right is Marabunta rather
+  than Vagos.
+- **The Lost also hold Hookies and the farm by Grapeseed**, not only Stab City.
+- **The Madrazo Cartel are Vagos.** Same assets, and the Vagos will fight
+  alongside them. That is a reason NOT to add them as a gang of their own -- a
+  faction the game treats as a reskin should not get its own turf, rivals and
+  standing in here.
+- Sandy Shores has the rednecks, and the Fooliganz turn up at the marina in the
+  afternoons. Neither is Franklin's problem.
+
+Merryweather is still worth a look on its own terms, being an actual separate
+outfit rather than a reskin.
+
+None of the thread disputes the Aztecas sitting in Rancho, which is the only bit
+needed to build the mission.
 
 Adding them properly also closes an older gap: the Triads and the Armenians
 currently have no rivals, so they can never take part in a turf war.
