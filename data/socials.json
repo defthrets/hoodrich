@@ -2028,7 +2028,13 @@
       "he ran. on video. and still typing",
       "keep talking, somebody gonna slide on you for free",
       "they scared of the yellow for a reason",
-      "no cap, half of them ain't even from over there"
+      "no cap, half of them ain't even from over there",
+      "orale. that's what happens",
+      "rancho don't fold, ese. never has",
+      "simon, we outside. come see",
+      "que onda? nothing, that's what",
+      "chale, they wasn't ready",
+      "la clica eating good tonight"
     ],
     "RivalMourns": [
       "long live my dawg. whoever did it, we coming. and we know.",
@@ -2258,7 +2264,14 @@
       "{rival} buy from us and then talk about us. pick one",
       "yellow don't run from {rival} or nobody",
       "jamestown is ours. {rival} can read a map",
-      "{rival} loud on here and polite in person, funny that"
+      "{rival} loud on here and polite in person, funny that",
+      "orale, {rival} really said that out loud",
+      "{rival} don't want it with the barrio, simon",
+      "que onda {rival}, you lost?",
+      "we been eating on the east side forever, ese. {rival} just got here",
+      "chale. {rival} can keep talking",
+      "la neta, {rival} ain't never held nothing",
+      "{rival} run they mouth, la clica run the block"
     ],
 
     "GangOnGangAztecas": [
@@ -2266,7 +2279,12 @@
       "{rival} got twenty blocks and still worried about our two",
       "everybody grew and we stayed. ask {rival} why that scare them",
       "{rival} been trying to take this corner for years",
-      "the hospital side is ours. {rival} know where the line is"
+      "the hospital side is ours. {rival} know where the line is",
+      "varrio los aztecas. say the whole thing, {rival}",
+      "two blocks, ese, and {rival} still can't take em",
+      "we sur till they bury us. {rival} just wear colors",
+      "orale, {rival} found the map",
+      "firme. let {rival} come see what small looks like"
     ],
 
     "GangOnGangMarabunta": [
@@ -2275,7 +2293,13 @@
       "the canals ain't neutral. tell {rival}",
       "{rival} talk about family. we ARE the family",
       "vespucci is ours too. {rival} can share the sand",
-      "{rival} count money. we count people"
+      "{rival} count money. we count people",
+      "vaya pues, {rival} talking again",
+      "la mara don't ask nobody permission",
+      "{rival} son bichos. all of them",
+      "puchica, {rival} really think el burro is open",
+      "va pue. tell {rival} we heard",
+      "we came from somewhere, maje. {rival} was just born here"
     ],
 
     "GangOnGangLost": [
@@ -2284,7 +2308,13 @@
       "we ride past {rival} every week and nothing happens. every week",
       "{rival} think the freeway ends where their block does",
       "stab city don't negotiate with {rival}",
-      "half of {rival} buy their crank off us and the other half will"
+      "half of {rival} buy their crank off us and the other half will",
+      "{rival} in cages. we ride. simple as that",
+      "brother, {rival} wouldn't last a night out here",
+      "{rival} got a block. we got a whole county",
+      "church was short this week. {rival} weren't worth the hour",
+      "every one of {rival} is a citizen playing dress-up",
+      "we don't wear colors, {rival}. we wear a patch"
     ],
 
     "GangOnGangTriads": [
@@ -2293,7 +2323,13 @@
       "{rival} will find the arrangement is no longer available",
       "there is nothing to discuss with {rival}",
       "cypress flats is not open to {rival}",
-      "{rival} should ask who they are actually buying from"
+      "{rival} should ask who they are actually buying from",
+      "the dai lo does not discuss {rival} in public. neither will we",
+      "{rival} mistake volume for standing",
+      "we have relationships in this city. {rival} have arguments",
+      "there is no arrangement with {rival} and there will not be",
+      "{rival} should be careful what they inherit",
+      "aiya. every year the same conversation with {rival}"
     ],
 
     "GangOnGangArmenians": [
@@ -2301,7 +2337,12 @@
       "we own the paper on half of what {rival} drive",
       "{rival} are a temporary problem",
       "la puerta is not a negotiation, {rival}",
-      "somebody should explain to {rival} how a business works"
+      "somebody should explain to {rival} how a business works",
+      "ara, {rival} again with this",
+      "my friend, {rival} do not understand a contract",
+      "we have been doing this since before {rival} had shoes, ape",
+      "{rival} want respect. respect is a receipt",
+      "barev {rival}. now go away"
     ],
 
     "GangOnGangFamilies": [
@@ -2420,7 +2461,12 @@
       "franklin, we got people on your street right now",
       "talk is free. the drive over is free too",
       "y ahora que, franklin",
-      "keep the phone charged. you gonna want to call somebody"
+      "keep the phone charged. you gonna want to call somebody",
+      "orale franklin, keep talking",
+      "we know where you stay, ese",
+      "chale. he gonna find out",
+      "que onda clinton, say it to a face",
+      "la neta this boy got a death wish"
     ],
 
     "DissedBackLost": [
@@ -2429,7 +2475,11 @@
       "he'll hear us before he sees us",
       "grease and gasoline, clinton. remember that smell",
       "stab city sends its regards",
-      "he don't know what we do for fun"
+      "he don't know what we do for fun",
+      "brother's got a big mouth and no engine",
+      "we'll be through his block before he reads the reply",
+      "he don't know what a patch means yet",
+      "citizen talk. that's all that is"
     ],
 
     "DissedBackMarabunta": [
@@ -2438,7 +2488,11 @@
       "we been under that freeway getting money while he typed that",
       "el burro remembers. so do we",
       "put the phone down and look outside",
-      "little green man, big green mouth"
+      "little green man, big green mouth",
+      "vaya pues franklin. we coming",
+      "puchica, this boy don't know",
+      "la mara remembers, maje",
+      "va pue. put the phone down and look outside"
     ],
 
     "DissedBackTriads": [
@@ -2447,7 +2501,11 @@
       "we do not reply twice",
       "he has no idea how small he is",
       "his address is a matter of public record",
-      "little seoul is not amused"
+      "little seoul is not amused",
+      "the young man has made a note of himself",
+      "aiya. this is beneath a reply",
+      "clinton will be visited. that is all",
+      "we do not shout, mr clinton. we arrive"
     ],
 
     "DissedBackArmenians": [
@@ -2456,7 +2514,11 @@
       "we do paperwork and we do the other thing",
       "he thinks a phone protects him",
       "la puerta will see him soon",
-      "someone should explain to him who he is talking to"
+      "someone should explain to him who he is talking to",
+      "ara, who is this boy",
+      "my friend, you have made a mistake",
+      "we have your plate, ape. we have everything",
+      "this one thinks a phone is a wall"
     ]
   },
   "voices": {
