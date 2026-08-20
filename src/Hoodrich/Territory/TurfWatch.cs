@@ -195,9 +195,11 @@ namespace Hoodrich.Territory
             if (mine == null) return TurfStatus.Foreign;
             if (owner.Id == mine.Id) return TurfStatus.Home;
 
-            return mine.IsRivalOf(owner.Id) || owner.IsRivalOf(mine.Id)
-                ? TurfStatus.Hostile
-                : TurfStatus.Foreign;
+            // Hostile means THEY have a problem with you, not that the file once said their
+            // gang and yours do not get on. Somebody's block is only dangerous ground if you
+            // have given them a reason, or if they came with one -- which the Ballas and the
+            // Vagos did.
+            return _affiliation.Beefing(owner.Id) ? TurfStatus.Hostile : TurfStatus.Foreign;
         }
 
         private void AnnounceZone()

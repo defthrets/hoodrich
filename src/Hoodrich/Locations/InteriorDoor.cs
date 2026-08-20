@@ -252,6 +252,11 @@ namespace Hoodrich.Locations
                 _blip.Color = BlipColor.Green;
                 _blip.Scale = 0.8f;
                 _blip.IsShortRange = true;
+
+                // Big map only. SET_BLIP_DISPLAY 2 keeps it out of the minimap while leaving
+                // it on the pause map -- a door you have to know about is not the same as a
+                // door the corner of your screen keeps pointing at.
+                Function.Call(Hash.SET_BLIP_DISPLAY, _blip.Handle, 2);
                 _blip.Name = Capital(_spec.Name);
             }
             catch

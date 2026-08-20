@@ -195,11 +195,107 @@ namespace Hoodrich.Gangs
             if (string.IsNullOrEmpty(gangId)) return null;
             if (!_standings.TryGetValue(gangId, out var s))
             {
-                s = new GangStanding { GangId = gangId };
+                s = new GangStanding { GangId = gangId, Rep = SeedFor(gangId) };
                 _standings[gangId] = s;
             }
             return s;
         }
+
+        /// <summary>
+        /// Where a gang starts before you have done anything to them.
+        ///
+        /// Nearly everybody starts at nothing -- they have no opinion, because you have given
+        /// them no reason to have one. The Ballas and the Vagos do not: Franklin is from
+        /// Chamberlain and those two have been at it with his set since long before he picked
+        /// up a phone, so they start below the line and are at war from the first frame.
+        ///
+        /// Done by seeding a number rather than by a special case in the hostility check, so
+        /// there is exactly one rule about who wants you dead. It also means those two can be
+        /// worked back up, in principle, which is a more interesting world than a list that can
+        /// never change.
+        /// </summary>
+        private static float SeedFor(string gangId)
+        {
+            switch ((gangId ?? "").ToLowerInvariant())
+            {
+                case "ballas":
+                case "vagos":
+                    return BeefAt - 20f;
+
+                default:
+                    return 0f;
+            }
+        }
+
+        /// <summary>
+        /// Standing at or below which a gang is at war with you.
+        ///
+        /// The whole hostility model. Above it they have no particular opinion; below it they
+        /// come for you, they turn up in the raid list, and they are who a drive-by comes from.
+        /// </summary>
+        public const float BeefAt = -30f;
+
+        /// <summary>Whether this lot want you dead.</summary>
+        public bool Beefing(string gangId)
+        {
+            var s = StandingFor(gangId);
+            return s != null && s.Rep <= BeefAt;
+        }
+
+        /// <summary>
+        /// Everybody currently at war with you, worst first.
+        ///
+        /// Worst first because the one who hates you most is the one who should be raiding your
+        /// blocks and pulling up on your corners, and every caller wants the same answer to
+        /// "who is the problem right now".
+        /// </summary>
+        public List<GangDef> BeefingWith()
+        {
+            var list = new List<GangDef>();
+            if (_gangs == null) return list;
+
+            foreach (var gang in _gangs.All)
+            {
+                if (gang == null) continue;
+                if (Current != null &&
+                    string.Equals(gang.Id, Current.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (Beefing(gang.Id)) list.Add(gang);
+            }
+
+            list.Sort((a, b) => StandingFor(a.Id).Rep.CompareTo(StandingFor(b.Id).Rep));
+            return list;
+        }
+
+        /// <summary>
+        /// You said something about them in public, and they read it.
+        ///
+        /// The only way to MAKE an enemy out of somebody who was not one. Enough of it and they
+        /// cross the line on their own, without anybody declaring anything.
+        /// </summary>
+        public void Taunted(string gangId, float by = TauntCost)
+        {
+            var s = StandingFor(gangId);
+            if (s == null) return;
+
+            var before = s.Rep;
+            s.Rep = Math.Max(-100f, s.Rep - by);
+
+            Log.Info("Taunted " + gangId + ": " + before.ToString("0") + " -> " +
+                     s.Rep.ToString("0") + (before > BeefAt && s.Rep <= BeefAt ? "  (that's beef)" : ""));
+
+            if (before > BeefAt && s.Rep <= BeefAt)
+            {
+                var gang = _gangs == null ? null : _gangs.Get(gangId);
+                Notify.Failure("that's beef with " + (gang == null ? gangId : gang.Name) + " now.");
+            }
+        }
+
+        /// <summary>What one post about somebody costs you with them.</summary>
+        public const float TauntCost = 12f;
 
         public GangStanding CurrentStanding => Current == null ? null : StandingFor(Current.Id);
 
@@ -451,7 +547,7 @@ namespace Hoodrich.Gangs
             var g = GangOf(ped);
             if (g == null) return false;
             if (Current == null) return false;
-            return g.Id != Current.Id && (Current.IsRivalOf(g.Id) || g.IsRivalOf(Current.Id));
+            return g.Id != Current.Id && Beefing(g.Id);
         }
 
         private void ScanAllies()
@@ -512,7 +608,9 @@ namespace Hoodrich.Gangs
                         continue;
                     }
 
-                    if (!Current.IsRivalOf(gang.Id) && !gang.IsRivalOf(Current.Id)) continue;
+                    // Only counts if you are actually at war with them. Shooting a man from
+                    // a set nobody has a problem with is not a body for the block, it is a body.
+                    if (!Beefing(gang.Id)) continue;
 
                     var standing = StandingFor(Current.Id);
                     standing.Kills++;

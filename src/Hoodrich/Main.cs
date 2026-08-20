@@ -515,6 +515,11 @@ namespace Hoodrich
                     _social.Dissed(gang.Id, gang.Name, 2 + _rng.Next(3));
                     _payback.Owed(gang.Id);
 
+                    // And it costs you with them. Enough of it and they cross into beef on
+                    // their own, without anybody declaring anything -- which is the only way
+                    // to make an enemy of somebody who was not one.
+                    _crew.Taunted(gang.Id);
+
                     Notify.Important("~r~That's out there now.~s~ They read it too.");
                 };
 

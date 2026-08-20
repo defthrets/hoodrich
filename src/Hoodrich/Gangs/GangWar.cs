@@ -497,7 +497,14 @@ namespace Hoodrich.Gangs
             foreach (var gang in _gangs.All)
             {
                 if (gang.Id == mine.Id) continue;
-                if (!mine.IsRivalOf(gang.Id) && !gang.IsRivalOf(mine.Id)) continue;
+
+                // Standing, not the data's rivals list. That list was a verdict handed down
+                // before you had done anything -- everybody on it wanted you dead from the
+                // first frame and nothing you did changed it. Now it is whoever you have
+                // actually got beef with, which starts as the Ballas and the Vagos because
+                // their standing is seeded below the line, and grows as you give people
+                // reasons.
+                if (!_crew.Beefing(gang.Id)) continue;
                 if (gang.MemberModels.Count == 0) continue;
 
                 yield return gang;

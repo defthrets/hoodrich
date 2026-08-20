@@ -1,11 +1,13 @@
-# Next: rework `driveby_grove` into the Aztecas job
+# Next: rework `driveby_grove` into the Vagos job
 
 Agreed with Michael, not yet built. Written down so nothing is lost between sessions.
 
 ## The mission, end to end
 
 Lamar's drive-by job stops being about Grove and the Ballas and becomes a run at
-**Varrios Los Aztecas on their own turf**. Five stages:
+**the Vagos on their own turf** — Rancho Projects and Jamestown Street, per
+gta-xtreme. (It was going to be the Aztecas; Michael changed it to the Vagos.
+The Aztecas are in the registry regardless and keep Rancho alongside them.) Five stages:
 
 1. **Ride out.** The car that spawns for it is an **old rusty beater** — not the
    current pick. It is a car you are going to burn, and it should look like one

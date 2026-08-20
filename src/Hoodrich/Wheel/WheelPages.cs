@@ -400,6 +400,24 @@ namespace Hoodrich.Wheel
             return string.Join(", ", names.ToArray());
         }
 
+        /// <summary>
+        /// Who is actually at war with you, worst first.
+        ///
+        /// Not the gang's written rivals, which never change and are the same for everybody
+        /// who ever runs with them. This is the line that tells you whether calling somebody
+        /// out on the feed did anything, so it has to be the live number.
+        /// </summary>
+        private string BeefNames()
+        {
+            var beefing = _crew.BeefingWith();
+            if (beefing.Count == 0) return "nobody";
+
+            var names = new List<string>();
+            foreach (var gang in beefing) names.Add(gang.Name);
+
+            return string.Join(", ", names.ToArray());
+        }
+
         private string RivalNames(GangDef gang)
         {
             if (gang.Rivals.Count == 0) return "nobody";
@@ -1153,7 +1171,7 @@ namespace Hoodrich.Wheel
                 page.Row("Your rep", mine == null ? "0" : mine.Rep.ToString("0"),
                          mine != null && mine.Rep < 0 ? Palette.Danger : Palette.Cash);
                 page.Row("Bodies for them", mine == null ? "0" : mine.Kills.ToString("N0"));
-                page.Row("Beefing with", RivalNames(_crew.Current), Palette.Danger);
+                page.Row("Beefing with", BeefNames(), Palette.Danger);
             }
 
             page.Row("You are on", _turf.ZoneName, TurfTint());
@@ -1338,7 +1356,7 @@ namespace Hoodrich.Wheel
             if (_crew.IsAffiliated)
             {
                 var mine = _crew.Current;
-                if (mine.IsRivalOf(gang.Id) || gang.IsRivalOf(mine.Id)) return "AT WAR";
+                if (_crew.Beefing(gang.Id)) return "AT WAR";
             }
 
             if (standing.Rep <= -50f) return "HOSTILE";
@@ -1352,14 +1370,16 @@ namespace Hoodrich.Wheel
             var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
             var standing = _crew.StandingFor(gang.Id);
             var atWar = _crew.IsAffiliated && !mine &&
-                        (_crew.Current.IsRivalOf(gang.Id) || gang.IsRivalOf(_crew.Current.Id));
+                        _crew.Beefing(gang.Id);
 
             var page = new WheelPage(gang.Name, mine ? "You run with them" : RelationLabel(gang));
 
             page.PanelTitle = gang.Name;
             page.Row("They run", gang.TurfHint);
             page.Row("They move", DrugNames(gang));
-            page.Row("Beefing with", RivalNames(gang));
+            page.Row("Their old rivals", RivalNames(gang));
+            page.Row("With you", _crew.Beefing(gang.Id) ? "at war" : "no problem",
+                     _crew.Beefing(gang.Id) ? Palette.Danger : (Color?)Palette.TextDim);
             page.Row("With you", mine ? "you run with them" : RelationLabel(gang),
                      mine ? gang.Colour : atWar ? Palette.Danger : (Color?)null);
 

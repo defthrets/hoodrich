@@ -863,18 +863,20 @@ namespace Hoodrich.Dealing
             return Crew.IsAffiliated ? FirstRivalOf(Crew.Current) : null;
         }
 
-        /// <summary>The first gang your lot are at war with that still exists in the registry.</summary>
+        /// <summary>
+        /// Whoever you have the worst beef with right now.
+        ///
+        /// Off standing rather than the gang's written rivals: the drive-by should come from
+        /// somebody with a reason, and the list in the file is the same every game whatever you
+        /// have or have not done. BeefingWith is sorted worst first, so this is the one who
+        /// hates you most.
+        /// </summary>
         private GangDef FirstRivalOf(GangDef gang)
         {
-            if (gang == null || Crew == null) return null;
+            if (Crew == null) return null;
 
-            foreach (var id in gang.Rivals)
-            {
-                var rival = Crew.GangById(id);
-                if (rival != null) return rival;
-            }
-
-            return null;
+            var beefing = Crew.BeefingWith();
+            return beefing.Count == 0 ? null : beefing[0];
         }
 
         private void SpawnDriveBy(Ped player, GangDef gang)
