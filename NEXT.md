@@ -35,22 +35,19 @@ relationship group **created at runtime** via `ADD_RELATIONSHIP_GROUP` rather
 than a vanilla group name that does not exist. `Payback` already does exactly
 this for its attackers and is the pattern to copy.
 
-Their turf is settled: **wherever the game itself spawns Azteca peds**. Not an
-invented block and not a San Andreas memory — the drive-by happens where you
-would actually run into them.
+Their turf is settled, off the map Michael supplied: a **small pocket in
+Rancho**, wedged between Ballas turf to the west and the Vagos strip to the
+south and east. Not a territory -- a couple of streets. Which is the point of
+them: they are the smallest thing on that map with a name, and going at them is
+a different kind of job from going at the Ballas.
 
-That has to be looked up rather than guessed. The ped model is
-`g_m_y_azteca_01`, and which zones it appears in lives in `popgroups.ymt` and
-`popcycle.dat` inside the game's own RPFs — which means OpenIV to read, since
-nothing outside it can open an RPF. Michael handles the OpenIV side.
+So the drive-by happens in **RANCHO**, and the gang gets that one zone rather
+than a list. No OpenIV lookup needed after all -- the map answers it.
 
-Worth being straight about the likely answer before anyone goes looking: the
-Aztecas may well have **no ambient spawn at all** in single player. The model
-ships with the game, but plenty of gang models do without ever being placed in
-a population group — they exist for missions and for the online creator. If
-that turns out to be the case, the honest fallback is the Latino blocks next to
-Vagos turf, Cypress Flats or El Burro Heights, and it should be called what it
-is: a choice, not a lookup.
+The same map is worth a wider pass later. It also carries the **Madrazo Cartel**
+and **Merryweather Security**, neither of which the registry knows about, and it
+puts **Marabunta Grande** in two separate pockets rather than the spread the mod
+currently gives them.
 
 Adding them properly also closes an older gap: the Triads and the Armenians
 currently have no rivals, so they can never take part in a turf war.
