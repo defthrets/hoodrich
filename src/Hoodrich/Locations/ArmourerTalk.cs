@@ -13,7 +13,7 @@ namespace Hoodrich.Locations
     /// Buying off Grimes.
     ///
     /// A conversation rather than a shop screen, for the same reason Stretch is: you are not
-    /// browsing a catalogue, you are asking a man what he has. He answers by table -- handguns,
+    /// browsing a catalogue, you are asking a man what he has. He answers by kind -- handguns,
     /// automatics, shotguns, blades, throwables -- because that is how it would be laid out,
     /// and because five short lists read better than one list of twenty.
     /// </summary>
@@ -50,23 +50,23 @@ namespace Hoodrich.Locations
 
         public DialogueNode Root()
         {
-            var node = Node("Whatchu need? And don't touch nothin' you ain't buyin'.");
+            var node = Node("Whatchu need? And don't be handling nothin' you ain't buyin'.");
 
-            // Each category wears the art of the first thing on that table, so the rows are
-            // told apart by shape before they are read.
-            node.Say("Handguns.", () => Table("Handguns", Armourer.Handguns), Count(Armourer.Handguns));
+            // Each category wears the art of the first thing in it, so the rows are told
+            // apart by shape before they are read.
+            node.Say("Handguns.", () => Rack("Handguns", Armourer.Handguns), Count(Armourer.Handguns));
             node.WithWeapon(Armourer.Handguns[0].Weapon);
 
-            node.Say("Something automatic.", () => Table("Automatics", Armourer.Automatics), Count(Armourer.Automatics));
+            node.Say("Something automatic.", () => Rack("Automatics", Armourer.Automatics), Count(Armourer.Automatics));
             node.WithWeapon(Armourer.Automatics[0].Weapon);
 
-            node.Say("Shotguns.", () => Table("Shotguns", Armourer.Shotguns), Count(Armourer.Shotguns));
+            node.Say("Shotguns.", () => Rack("Shotguns", Armourer.Shotguns), Count(Armourer.Shotguns));
             node.WithWeapon(Armourer.Shotguns[0].Weapon);
 
-            node.Say("Something quiet.", () => Table("Blades and bats", Armourer.Melee), Count(Armourer.Melee));
+            node.Say("Something quiet.", () => Rack("Blades and bats", Armourer.Melee), Count(Armourer.Melee));
             node.WithWeapon(Armourer.Melee[0].Weapon);
 
-            node.Say("Something I can throw.", () => Table("Throwables", Armourer.Throwables), Count(Armourer.Throwables));
+            node.Say("Something I can throw.", () => Rack("Throwables", Armourer.Throwables), Count(Armourer.Throwables));
             node.WithWeapon(Armourer.Throwables[0].Weapon);
 
             node.Leave("Just looking.");
@@ -75,10 +75,10 @@ namespace Hoodrich.Locations
 
         private static string Count(Piece[] pieces)
         {
-            return pieces.Length + " on the table";
+            return pieces.Length + (pieces.Length == 1 ? " of em" : " of em");
         }
 
-        private DialogueNode Table(string title, Piece[] pieces)
+        private DialogueNode Rack(string title, Piece[] pieces)
         {
             var node = Node(title + ". Cash only, and I never saw you.");
 

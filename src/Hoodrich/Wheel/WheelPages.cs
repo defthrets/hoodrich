@@ -1175,30 +1175,26 @@ namespace Hoodrich.Wheel
                     value: mine.Name);
                 page.Items[page.Items.Count - 1].Tint = mine.Colour;
                 page.WithIcon(Icons.Mask);
-
-                // Work comes from Lamar in person, so the wheel points at him rather than
-                // pretending to hand out jobs itself.
-                page.Add("Work", "!", null,
-                    detail: "Lamar's got the work. He's on your map.",
-                    value: "",
-                    enabled: false, disabledReason: "Go and see Lamar");
-                page.WithIcon(Icons.Warning);
             }
 
-            else
+            // Two wedges used to live here that could not be pressed: one saying work comes
+            // from Lamar, one saying go and find a leader. Both true, both already in the panel
+            // above, and both taking a slot on a wheel where a slot is the scarcest thing
+            // there is. A wedge you cannot press teaches you the menu is not worth flicking
+            // through, so the panel says it and the wheel keeps its slots for things that do
+            // something.
+            if (!_crew.IsAffiliated)
             {
-                // Joining is a conversation, not a wedge. Even standing in front of the man the
-                // wheel does not offer it -- you press D-pad right and ask him yourself.
                 var leader = _leaders.InReach;
 
-                page.Add("Not with anybody", "-", null,
-                    detail: leader != null
-                        ? "Press D-pad right to talk to " + leader.Name
-                        : "Gang leaders are marked on your map. Go and talk to one.",
-                    value: leader != null ? leader.Name.ToUpperInvariant() : "SOLO",
-                    enabled: false,
-                    disabledReason: leader != null ? "Talk to him" : "Go and find one");
-                page.WithIcon(Icons.Locked);
+                page.Row("Get put on", leader != null
+                        ? "talk to " + leader.Name
+                        : "leaders are on your map",
+                    Palette.TextDim);
+            }
+            else
+            {
+                page.Row("Work", "Lamar's got it", Palette.TextDim);
             }
 
             // Standing is a gang question, so the readout lives here rather than on the root.
@@ -1411,25 +1407,10 @@ namespace Hoodrich.Wheel
                 page.WithIcon(Icons.Locked);
             }
 
-            // Borrowing. Only the gang you run with will front you anything.
-            var loan = _crew.Loan;
-            var theirLoan = loan != null && loan.IsActive &&
-                            string.Equals(loan.GangId, gang.Id, StringComparison.OrdinalIgnoreCase);
-
-            page.AddSub("Borrow money", "$", () => BuildLoanPage(gang),
-                detail: theirLoan
-                    ? "You owe $" + loan.TotalOwed.ToString("N0") + ", due in " + loan.DaysLeft + " days"
-                    : mine
-                        ? "They will front you against your name"
-                        : "They will not front you anything",
-                value: theirLoan ? "$" + loan.TotalOwed.ToString("N0") + " owed" : "",
-                enabled: mine || theirLoan,
-                disabledReason: loan != null && loan.IsActive
-                    ? "You already owe " + (_gangs.Get(loan.GangId)?.Name ?? loan.GangId)
-                    : "Not the gang you run with");
-            page.WithIcon(Icons.Cash);
-
-            page.Add("How you stand", "*", () => ShowGangDetail(gang),
+            // "How you stand" is what the Gangs page above calls its own status entry, and two
+            // wedges one level apart with the same words on them is how a menu stops being
+            // readable. This one is about THEM.
+            page.Add("What they think", "*", () => ShowGangDetail(gang),
                 detail: "What you have done for them, and what they hold",
                 value: "");
             page.WithIcon(Icons.Tattoo);
@@ -1437,83 +1418,6 @@ namespace Hoodrich.Wheel
             return page;
         }
 
-        /// <summary>
-        /// Borrowing from the gang you run with, and the vig that follows. The offer scales with rank,
-        /// because a Pee-Wee has nothing to lend against.
-        /// </summary>
-        private WheelPage BuildLoanPage(GangDef gang)
-        {
-            var loan = _crew.Loan;
-            var active = loan != null && loan.IsActive &&
-                         string.Equals(loan.GangId, gang.Id, StringComparison.OrdinalIgnoreCase);
-
-            var page = new WheelPage("Borrow money", gang.Name);
-
-            if (active)
-            {
-                page.PanelTitle = "What you owe";
-                page.Row("Owed", "$" + loan.TotalOwed.ToString("N0"), Palette.Danger);
-                page.Row("Due", loan.DaysLeft <= 0 ? "now" : "in " + loan.DaysLeft + " days",
-                         loan.DaysLeft <= 1 ? Palette.Danger : (Color?)null);
-                page.Row("You have", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
-
-                if (loan.MissedPeriods > 0)
-                {
-                    page.Row("Missed payments", loan.MissedPeriods.ToString(), Palette.Danger);
-                }
-
-                page.Add("Pay the vig", "$", PayVig,
-                    detail: "Buys you another " + _cfg.LoanPeriodDays + " days. You still owe the rest.",
-                    value: "$" + loan.Vig.ToString("N0"),
-                    enabled: Game.Player.Money >= loan.Vig,
-                    disabledReason: "You are $" + (loan.Vig - Game.Player.Money).ToString("N0") + " short");
-                page.WithIcon(Icons.Money);
-
-                page.Add("Clear it", "*", PayOff,
-                    detail: "Pay the lot and be done with them",
-                    value: "$" + loan.TotalOwed.ToString("N0"),
-                    enabled: Game.Player.Money >= loan.TotalOwed,
-                    disabledReason: "You are $" + (loan.TotalOwed - Game.Player.Money).ToString("N0") + " short");
-                page.WithIcon(Icons.Tick);
-
-                return page;
-            }
-
-            var cap = MaxLoanFor();
-
-            page.PanelTitle = "What they will do";
-            page.Row("They will lend", "up to $" + cap.ToString("N0"), Palette.Cash);
-            page.Row("You pay back", _cfg.LoanVigPercent.ToString("0") + "% on top, every " +
-                                     _cfg.LoanPeriodDays + " days");
-            page.Row("Miss it", "they write you off", Palette.Warn);
-
-            if (cap < 100)
-            {
-                page.Add("Nothing", "-", null,
-                    detail: "You ain't worth lending to yet",
-                    enabled: false, disabledReason: "Make a name first");
-                page.WithIcon(Icons.Locked);
-                return page;
-            }
-
-            foreach (var fraction in new[] { 0.25f, 0.5f, 1f })
-            {
-                var amount = (int)Math.Round(cap * fraction / 100f) * 100;
-                if (amount < 100) continue;
-
-                var vig = Math.Max(1, (int)Math.Round(amount * _cfg.LoanVigPercent / 100f));
-
-                page.Add("$" + (amount / 1000f).ToString("0.#") + "k", "$",
-                    () => Borrow(gang, amount),
-                    detail: "Costs you $" + vig.ToString("N0") + " every " + _cfg.LoanPeriodDays + " days",
-                    value: "$" + amount.ToString("N0"));
-                page.WithIcon(Icons.Cash);
-            }
-
-            return page;
-        }
-
-        /// <summary>Lending limit, scaled by rank and by how they feel about you.</summary>
         private int MaxLoanFor()
         {
             if (!_crew.IsAffiliated) return 0;

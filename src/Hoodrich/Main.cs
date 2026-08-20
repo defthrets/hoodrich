@@ -360,7 +360,11 @@ namespace Hoodrich
                 _bigj.Talk = _talk;
                 _bigj.TalkBuilder = () =>
                 {
-                    _talk.Title = _bigj.Name + " -- the table";
+                    // Not "the table". There is no table -- he stands in a courtyard next to
+                    // a couple of crates -- and a screen naming furniture that is not there is
+                    // the sort of small wrongness that makes the whole thing read as written
+                    // rather than seen.
+                    _talk.Title = _bigj.Name + " -- what he's got";
                     _talk.TheirVoice = ArmourerTalk.Voice;
                     return _bigjTalk.Root();
                 };

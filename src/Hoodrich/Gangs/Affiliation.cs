@@ -94,6 +94,70 @@ namespace Hoodrich.Gangs
         /// relationship groups on its own and a one-off call at startup quietly stops holding
         /// after the first time you leave the area and come back.
         /// </summary>
+        /// <summary>
+        /// Talks his own set down when one of them has started on him anyway.
+        ///
+        /// Companion decides whether somebody picks a fight. It has nothing to say once they
+        /// have -- and they will, because a shot fired near a ped, or being walked into, raises
+        /// an event that can put a man into combat regardless of how he feels about you. Once
+        /// he is in it he stays in it, and the relationship that should have prevented it never
+        /// gets consulted again.
+        ///
+        /// So anybody in the home set who is currently fighting the player is taken out of it.
+        /// Their tasks are cleared and the relationship is re-asserted, which between them ends
+        /// the fight and stops the next one starting for the same reason.
+        ///
+        /// Deliberately narrow: only the home set, only peds actually targeting the player, and
+        /// only within earshot. It is not a general "nobody may fight Franklin" switch, and a
+        /// rival who wants him still gets him.
+        /// </summary>
+        private void CalmHome()
+        {
+            if (_playerGroupHash == 0 || _gangs == null) return;
+
+            var now = Game.GameTime;
+            if (now - _lastCalm < CalmIntervalMs) return;
+            _lastCalm = now;
+
+            try
+            {
+                var home = _gangs.Get(HomeSet);
+                if (home == null || home.GroupHash == 0) return;
+
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists() || !player.IsAlive) return;
+
+                foreach (var ped in World.GetNearbyPeds(player, CalmRadius))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (ped.Handle == player.Handle) continue;
+
+                    var group = Function.Call<int>(Hash.GET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle);
+                    if (group != home.GroupHash) continue;
+
+                    var target = Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0);
+                    if (target != player.Handle) continue;
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, home.GroupHash);
+
+                    Log.Debug("Talked one of ours out of fighting Franklin.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not calm the home set: " + ex.Message);
+            }
+        }
+
+        /// <summary>Often enough to end a fight before it lands, cheap enough to run always.</summary>
+        private const int CalmIntervalMs = 900;
+
+        /// <summary>Only people close enough to be fighting him.</summary>
+        private const float CalmRadius = 40f;
+
+        private int _lastCalm;
+
         private void RespectHome()
         {
             if (_playerGroupHash == 0 || _gangs == null) return;
@@ -332,6 +396,11 @@ namespace Hoodrich.Gangs
         public void Update()
         {
             var now = Game.GameTime;
+
+            // Every tick, not every fifteen seconds. A relationship group stops somebody
+            // deciding to fight you; it does nothing once they already have, and fifteen
+            // seconds of being shot at by your own set is the whole complaint.
+            CalmHome();
 
             if (now - _lastReapply >= ReapplyIntervalMs)
             {
