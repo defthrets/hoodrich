@@ -762,6 +762,9 @@ namespace Hoodrich.Gangs
                     .Set("timeMs", s.TimeAffiliatedMs));
             }
             obj.Set("standings", arr);
+
+            // Marks the save as one where beef is a number, so it is only ever seeded once.
+            obj.Set("beefSeeded", true);
             if (Loan != null && Loan.IsActive) obj.Set("loan", Loan.ToJson());
             return obj;
         }
@@ -788,6 +791,23 @@ namespace Hoodrich.Gangs
             }
 
             Loan = GangLoan.FromJson(node["loan"]);
+
+            // Saves made before beef was a number have the Ballas and the Vagos sitting at
+            // zero, which now reads as "no problem with you" -- so loading an old save quietly
+            // made peace with the two sets Franklin has never been at peace with.
+            //
+            // The flag is written from now on. Its absence means the save predates the change,
+            // and the two of them are put back where they belong exactly once.
+            if (!node["beefSeeded"].AsBool(false))
+            {
+                foreach (var id in new[] { "ballas", "vagos" })
+                {
+                    var s = StandingFor(id);
+                    if (s != null && s.Rep > SeedFor(id)) s.Rep = SeedFor(id);
+                }
+
+                Log.Info("Old save: put the Ballas and the Vagos back on the wrong side of us.");
+            }
 
             var current = node["current"].AsString("");
             if (!string.IsNullOrEmpty(current)) RestoreAffiliation(current);

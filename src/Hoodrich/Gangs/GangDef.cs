@@ -81,6 +81,13 @@ namespace Hoodrich.Gangs
         /// </summary>
         public bool Joinable;
 
+        /// <summary>
+        /// Whether this gang feuds with that one.
+        ///
+        /// Gang-versus-gang only. It used to decide who wanted the PLAYER dead as well, which
+        /// is standing's job now -- see Affiliation.Beefing. This is the city's own politics,
+        /// and it is what the bickering on the feed is drawn from.
+        /// </summary>
         public bool IsRivalOf(string gangId)
         {
             if (string.IsNullOrEmpty(gangId)) return false;

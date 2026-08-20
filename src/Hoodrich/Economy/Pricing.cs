@@ -129,18 +129,6 @@ namespace Hoodrich.Economy
         }
 
         /// <summary>
-        /// What one unit sells for -- a gram, a pill, a joint.
-        ///
-        /// Straight off the bottom of the deal ladder, unmodified. The purity argument is kept
-        /// because plenty of callers have it to hand, and ignored because weak product does not
-        /// sell cheaper, it gets refused.
-        /// </summary>
-        public float StreetPrice(DrugDef drug, float purity)
-        {
-            return drug == null ? 0f : drug.UnitPrice;
-        }
-
-        /// <summary>
         /// Per-gram wholesale price for BULK. Based on the undiscounted base price so buying
         /// stock is not made cheap simply by it being 2am.
         /// </summary>

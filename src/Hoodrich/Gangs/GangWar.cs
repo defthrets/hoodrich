@@ -333,6 +333,11 @@ namespace Hoodrich.Gangs
             if (Social != null)
             {
                 Social.HoldUntilShots = true;
+
+                // So the other side of every post about this fight comes out of the mouths of
+                // the people who are actually in it.
+                Social.RivalGang = _attacker.Id;
+
                 Social.On(SocialEvent.WarStarted, _attacker.Name);
             }
 

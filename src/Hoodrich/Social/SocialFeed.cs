@@ -40,6 +40,9 @@ namespace Hoodrich.Social
         /// <summary>Shots on a street with people living on it.</summary>
         Shots,
 
+        /// <summary>Somebody came through loud and kept going. Not the same as a drive-by.</summary>
+        RideThrough,
+
         WarStarted,
         WarHeld,
         WarLost,
@@ -429,6 +432,20 @@ namespace Hoodrich.Social
         /// between people who have to keep living near each other -- so whoever lost it keeps
         /// talking, whoever won it keeps answering, and it dies down on its own.
         /// </summary>
+        /// <summary>
+        /// Set by whoever is running the fight: the id of the gang on the other side.
+        ///
+        /// Needed because the rival-side sets are written once and used by everybody, so the
+        /// words say "we" and "they" without naming anybody -- which is right, and means the
+        /// author pool is the only thing that decides whose mouth they come out of.
+        /// </summary>
+        public string RivalGang
+        {
+            set { _rivalGang = value ?? ""; }
+        }
+
+        private string _rivalGang = "";
+
         public void Argue(string rival, bool held, int forMs = 150000)
         {
             _argueUntil = Game.GameTime + forMs;
@@ -839,6 +856,11 @@ namespace Hoodrich.Social
                     count = 1 + _rng.Next(2);
                     break;
 
+                case SocialEvent.RideThrough:
+                    follow = "RideThrough";
+                    count = 1 + _rng.Next(2);
+                    break;
+
                 case SocialEvent.Shots:
                     // Usually one person mentions it. Sometimes two, and the second one is
                     // always somebody arguing about how many they counted.
@@ -959,6 +981,7 @@ namespace Hoodrich.Social
                     return 1f;
 
                 case SocialEvent.CopKilled: return 1f;
+                case SocialEvent.RideThrough: return 1f;
                 case SocialEvent.Shots: return 0.9f;
                 case SocialEvent.CarBurned: return 0.8f;
                 case SocialEvent.Hospital: return 1f;
@@ -993,6 +1016,7 @@ namespace Hoodrich.Social
                 case SocialEvent.WarLost: return -(25 + _rng.Next(30));
                 // Two or three. One person saying it reads as a coincidence; the whole block
                 // saying it at once is what actually happens when somebody gets hit.
+                case SocialEvent.RideThrough: return 1 + _rng.Next(3);
                 case SocialEvent.Shots: return _rng.Next(2);
                 case SocialEvent.CarBurned: return _rng.Next(3);
                 case SocialEvent.Hospital: return 1 + _rng.Next(2);
@@ -1148,11 +1172,19 @@ namespace Hoodrich.Social
 
             switch (set)
             {
-                case "BallasTaunt": return "ballas";
-                case "VagosTaunt": return "vagos";
+                // Whoever is actually on the other side of it.
+                //
+                // These used to return "ballas" flat, so a war with the Vagos produced Ballas
+                // mourning their dead and Balla accounts gloating about a block in Rancho. The
+                // set name cannot say who; the war has to.
                 case "RivalMourns":
                 case "RivalGloats":
-                case "WarLiveRival": return "ballas";
+                case "WarLiveRival":
+                    return string.IsNullOrEmpty(_rivalGang) ? "ballas" : _rivalGang;
+
+                case "BallasTaunt": return "ballas";
+                case "VagosTaunt": return "vagos";
+
                 case "OursGloats":
                 case "OursMourns":
                 case "WarLiveOurs":

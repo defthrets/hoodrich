@@ -73,11 +73,27 @@ namespace Hoodrich.Locations
         /// <summary>True on the frame the player crosses into the house.</summary>
         private bool _inside;
 
+        /// <summary>Four times a second. Neither job is one you can catch happening.</summary>
+        private const int SweepIntervalMs = 250;
+
+        private int _lastSweep;
+
         public void Update()
         {
             EnsureBlip();
-            Hush();
-            ClearHousehold();
+
+            // Hush and the household sweep are both gated on being at the door, and both do a
+            // full ped sweep -- so standing in your own kitchen ran two world scans every
+            // frame. Four times a second is plenty for silencing a conversation and removing
+            // an aunt; neither is something you can catch happening.
+            var now = Game.GameTime;
+            if (now - _lastSweep >= SweepIntervalMs)
+            {
+                _lastSweep = now;
+
+                Hush();
+                ClearHousehold();
+            }
 
             var here = AtDoor;
             if (here == _inside) return;

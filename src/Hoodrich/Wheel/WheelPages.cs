@@ -1438,34 +1438,6 @@ namespace Hoodrich.Wheel
             return page;
         }
 
-        private int MaxLoanFor()
-        {
-            if (!_crew.IsAffiliated) return 0;
-
-            var rankScale = (_state.Rank + 1) / (float)PlayerState.RankNames.Length;
-            var standing = _crew.CurrentStanding;
-            var repScale = standing == null ? 1f : 1f + Math.Max(-0.5f, Math.Min(0.5f, standing.Rep / 400f));
-
-            return (int)(_cfg.MaxLoanAmount * rankScale * repScale);
-        }
-
-        private void Borrow(GangDef gang, int amount)
-        {
-            if (_crew.Loan != null && _crew.Loan.IsActive)
-            {
-                Notify.Problem("you already owe somebody.");
-                return;
-            }
-
-            _crew.Loan = GangLoan.Open(gang.Id, amount, _cfg.LoanVigPercent, _cfg.LoanPeriodDays);
-            Game.Player.Money += amount;
-            _state.Touch();
-
-            Notify.Important("~g~+$" + amount.ToString("N0") + "~s~ from " + gang.Name +
-                             ". Vig due in " + _cfg.LoanPeriodDays + " days.");
-            Log.Info("Borrowed $" + amount + " from " + gang.Id + ".");
-        }
-
         private void PayVig()
         {
             var loan = _crew.Loan;

@@ -855,8 +855,14 @@ namespace Hoodrich.Missions
 
             switch (_def.Kind)
             {
-                case MissionKind.DriveBy:
                 case MissionKind.TorchJob:
+                    // Its own set. A torch job is a ride-through -- loud, quick, nobody hit --
+                    // and the block describes it differently from a drive-by that came to
+                    // leave somebody on the pavement.
+                    Social.On(SocialEvent.RideThrough, named);
+                    break;
+
+                case MissionKind.DriveBy:
                     Social.On(SocialEvent.DriveBy, named);
                     break;
 
