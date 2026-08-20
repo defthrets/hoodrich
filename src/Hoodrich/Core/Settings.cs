@@ -77,6 +77,29 @@ namespace Hoodrich.Core
         /// </summary>
         public bool TweetsOnTheRight = true;
 
+        /// <summary>
+        /// The grow room: a door near Stretch that warps you into a Bikers DLC warehouse.
+        ///
+        /// Both ends live here rather than in the code, because both need correcting from
+        /// inside the game. An MLO cannot be moved -- it is baked into the map at one fixed
+        /// coordinate -- so GrowInside is WHERE THAT WAREHOUSE ACTUALLY IS, and it is a guess
+        /// until somebody stands in it and reads the HUD. GrowDoor is where the way in should
+        /// be, which is a matter of taste and a metre either way.
+        /// </summary>
+        public string GrowIpl = "bkr_biker_dlc_int_ware02";
+
+        public float GrowDoorX = -157.500f;
+        public float GrowDoorY = -1636.000f;
+        public float GrowDoorZ = 34.029f;
+        public float GrowDoorHeading = 2f;
+
+        public float GrowInsideX = 1039.000f;
+        public float GrowInsideY = -3098.000f;
+        public float GrowInsideZ = -39.000f;
+        public float GrowInsideHeading = 180f;
+
+        public bool GrowBlip = true;
+
         /// <summary>Seconds the game's own weapon wheel is held open after picking Weapons.</summary>
         public int VanillaWheelSeconds = 5;
 
@@ -197,6 +220,19 @@ namespace Hoodrich.Core
             s.DeadZone = Clamp(ini.GetFloat("Wheel", "DeadZone", s.DeadZone), 0f, 0.9f);
             s.MouseSensitivity = Clamp(ini.GetFloat("Wheel", "MouseSensitivity", s.MouseSensitivity), 0.1f, 5f);
             s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
+
+            s.GrowIpl = ini.GetString("GrowRoom", "Ipl", s.GrowIpl);
+            s.GrowBlip = ini.GetBool("GrowRoom", "Blip", s.GrowBlip);
+
+            s.GrowDoorX = ini.GetFloat("GrowRoom", "DoorX", s.GrowDoorX);
+            s.GrowDoorY = ini.GetFloat("GrowRoom", "DoorY", s.GrowDoorY);
+            s.GrowDoorZ = ini.GetFloat("GrowRoom", "DoorZ", s.GrowDoorZ);
+            s.GrowDoorHeading = ini.GetFloat("GrowRoom", "DoorHeading", s.GrowDoorHeading);
+
+            s.GrowInsideX = ini.GetFloat("GrowRoom", "InsideX", s.GrowInsideX);
+            s.GrowInsideY = ini.GetFloat("GrowRoom", "InsideY", s.GrowInsideY);
+            s.GrowInsideZ = ini.GetFloat("GrowRoom", "InsideZ", s.GrowInsideZ);
+            s.GrowInsideHeading = ini.GetFloat("GrowRoom", "InsideHeading", s.GrowInsideHeading);
             s.PlaySounds = ini.GetBool("Wheel", "PlaySounds", s.PlaySounds);
             s.VanillaWheelSeconds = (int)Clamp(ini.GetInt("Wheel", "VanillaWheelSeconds", s.VanillaWheelSeconds), 1f, 30f);
 

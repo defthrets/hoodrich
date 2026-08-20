@@ -126,6 +126,7 @@ namespace Hoodrich
         private readonly Fixture _stove;
         private readonly Fixture _grimesStockA;
         private readonly Fixture _grimesStockB;
+        private readonly GrowRoom _grow;
         private readonly BlockLife _block;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
@@ -232,6 +233,8 @@ namespace Hoodrich
                                             225.844f, "Grimes")
                     .Stand(new Vector3(-128.394f, -1458.440f, 33.823f), 225.844f,
                            "WORLD_HUMAN_GUARD_STAND");
+
+                _grow = new GrowRoom(_cfg);
 
                 _copWatch = new CopWatch();
 
@@ -595,6 +598,7 @@ namespace Hoodrich
                     _stove.Update();
                     _grimesStockA.Update();
                     _grimesStockB.Update();
+                    _grow.Update();
                     _traffic.Update();
                     _payback.Update();
                     _war.Update();
@@ -876,6 +880,7 @@ namespace Hoodrich
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesStockA?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesStockB?.RestoreWorld(); } catch { /* teardown */ }
+            try { _grow?.RestoreWorld(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
