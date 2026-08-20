@@ -210,7 +210,14 @@ namespace Hoodrich.UI
             var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;
             var cy = y + Pad + AvatarSize * 0.5f;
 
-            Hud.Disc(cx, cy, AvatarSize * 0.5f, Alpha(card.Tint, solid));
+            // A square, not a disc.
+            //
+            // The width is converted through ToX so it comes out square on the screen rather
+            // than square in the coordinate system -- a 0.03 by 0.03 rectangle in normalised
+            // space is a landscape oblong on any monitor wider than it is tall, which is all
+            // of them.
+            Hud.RectFrom(left + Pad, y + Pad, Hud.ToX(AvatarSize), AvatarSize,
+                         Alpha(card.Tint, solid));
 
             Hud.Text(card.By.Initial, cx, cy - 0.0112f, 0.38f,
                      Color.FromArgb((int)(240 * fade), 250, 250, 248), Hud.FontChaletLondon);
