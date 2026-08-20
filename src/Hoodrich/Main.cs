@@ -117,6 +117,8 @@ namespace Hoodrich
 
         /// <summary>Keeps the street outside the house from silting up with stopped cars.</summary>
         private readonly TrafficWatch _traffic;
+        private readonly Payback _payback;
+        private readonly Random _rng = new Random();
 
         /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
         private readonly Fixture _couch;
@@ -209,10 +211,15 @@ namespace Hoodrich
                 _traffic = new TrafficWatch()
                 {
                     // The plug is parked there because he was told to park there.
-                    Ours = car => _delivery != null && _delivery.IsActive &&
-                                  _delivery.Car != null && car != null &&
-                                  car.Handle == _delivery.Car.Handle
+                    // The plug is parked there because he was told to park there, and a
+                    // carload that came for something you posted is stopped for a reason too.
+                    Ours = car => (_delivery != null && _delivery.IsActive &&
+                                   _delivery.Car != null && car != null &&
+                                   car.Handle == _delivery.Car.Handle)
+                                  || (_payback != null && _payback.Owns(car))
                 };
+
+                _payback = new Payback(_gangs);
 
                 _war = new GangWar(_gangs, _crew, _state)
                     .Defend("Lamar", Fixer.Spot)
@@ -293,6 +300,11 @@ namespace Hoodrich
                 _jobs.Social = _social;
                 _war.Social = _social;
                 _war.Busy = () => _jobs != null && _jobs.IsRunning;
+
+                // Not in the middle of a job. It keeps waiting rather than being cancelled --
+                // the debt does not expire because you happened to be working when it came due.
+                _payback.Busy = () => (_jobs != null && _jobs.IsRunning)
+                                      || (_war != null && _war.IsRunning);
                 _copWatch.Social = _social;
                 _postUp.Social = _social;
                 _crew.Social = _social;
@@ -348,6 +360,35 @@ namespace Hoodrich
                 pages.ShowSocials = () => _socialScreen.Open();
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
+
+                pages.SayDaily = () =>
+                {
+                    var said = _social.PostAsYou("YouDaily", "");
+                    Notify.Ticker(said == null ? "~s~Nothing to say right now."
+                                               : "~g~Posted.~s~");
+                };
+
+                // Naming a set does three things at once, and they have to happen together:
+                // the post goes up, they answer it on the feed, and somebody starts driving.
+                pages.Diss = id =>
+                {
+                    var gang = _gangs.Get(id);
+                    if (gang == null) return;
+
+                    var said = _social.PostAsYou("YouDiss" + Pretty(id), gang.Name);
+                    if (said == null)
+                    {
+                        Notify.Ticker("~s~You've said all that already.");
+                        return;
+                    }
+
+                    _social.Dissed(gang.Id, gang.Name, 2 + _rng.Next(3));
+                    _payback.Owed(gang.Id);
+
+                    Notify.Important("~r~That's out there now.~s~ They read it too.");
+                };
+
+                pages.PaybackDue = () => _payback != null && _payback.IsOwed;
 
 
 
@@ -506,6 +547,7 @@ namespace Hoodrich
                     _block.Update();
                     _couch.Update();
                     _traffic.Update();
+                    _payback.Update();
                     _war.Update();
 
                     _lamarCrew.Update();
@@ -672,6 +714,13 @@ namespace Hoodrich
         /// <summary>Long enough for the fade out of the hospital to have finished.</summary>
         private const int PillboxDelayMs = 6500;
 
+        /// <summary>A gang id as the per-gang diss sets spell it: "ballas" -> "Ballas".</summary>
+        private static string Pretty(string gangId)
+        {
+            if (string.IsNullOrEmpty(gangId)) return "";
+            return char.ToUpperInvariant(gangId[0]) + gangId.Substring(1).ToLowerInvariant();
+        }
+
         /// <summary>Opens the kitchen screen with everything it needs to start a batch.</summary>
         private void OpenKitchen()
         {
@@ -776,6 +825,7 @@ namespace Hoodrich
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
+            try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesCrew?.RestoreWorld(); } catch { /* teardown */ }

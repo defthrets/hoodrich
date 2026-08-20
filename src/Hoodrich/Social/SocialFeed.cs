@@ -453,6 +453,98 @@ namespace Hoodrich.Social
         private const int WarGapMinMs = 6500;
         private const int WarGapMaxMs = 15000;
 
+        /// <summary>
+        /// The player's own account, built once from what the feed already knows about him.
+        ///
+        /// Deliberately NOT in the authors list: he must never be picked at random to comment
+        /// on his own arrest, and a Franklin post has to be a Franklin post because he chose to
+        /// write it.
+        /// </summary>
+        private Author _me;
+
+        private Author Me
+        {
+            get
+            {
+                if (_me != null) return _me;
+
+                _me = new Author
+                {
+                    Handle = Handle,
+                    Name = DisplayName,
+                    Gang = "families",
+                    Gender = "male",
+                    Pic = "CHAR_FRANKLIN",
+                    Tint = System.Drawing.Color.FromArgb(255, 60, 180, 75),
+                };
+
+                return _me;
+            }
+        }
+
+        /// <summary>
+        /// Posts something in Franklin's own name.
+        ///
+        /// The set decides the words; the author is always him. Returns what was said so the
+        /// caller can put it in a ticker, or null when the set has nothing left that has not
+        /// been said recently.
+        /// </summary>
+        public string PostAsYou(string set, string subject)
+        {
+            var post = Build(set, subject ?? "");
+
+            // A per-gang set that does not exist falls back to the general one, so a gang added
+            // later without its own diss lines still gets a usable post rather than silence.
+            if (post == null && set != null && set.StartsWith("YouDiss"))
+            {
+                post = Build("YouDiss", subject ?? "");
+            }
+
+            if (post == null) return null;
+
+            post.By = Me;
+            post.AboutYou = true;
+
+            Add(post);
+            Notify(post);
+
+            return post.Plain;
+        }
+
+        /// <summary>
+        /// You named a set in public and they read it.
+        ///
+        /// Their answers come in over the next minute or so rather than all at once, because
+        /// three replies arriving in the same second is a script and three arriving as people
+        /// pick up their phones is an argument.
+        /// </summary>
+        public void Dissed(string gangId, string gangName, int replies)
+        {
+            _dissGang = gangId ?? "";
+            _dissName = gangName ?? "";
+            _dissLeft = Math.Max(1, replies);
+            _dissNext = Game.GameTime + DissFirstMs;
+        }
+
+        /// <summary>The set answering back, empty when nobody is.</summary>
+        private string _dissGang = "";
+        private string _dissName = "";
+        private int _dissLeft;
+        private int _dissNext;
+
+        private const int DissFirstMs = 7000;
+        private const int DissGapMinMs = 8000;
+        private const int DissGapMaxMs = 19000;
+
+        /// <summary>
+        /// Forces the author pool to one set, whatever <see cref="GangFor"/> would have said.
+        ///
+        /// Needed because a reply from the gang you just insulted has to come from THAT gang.
+        /// The set name alone cannot say which -- DissedBack is written six times over, once per
+        /// set, and the pool has to match the words.
+        /// </summary>
+        private string _forceGang = "";
+
         private int _warUntil;
         private int _warNext;
         private string _warRival = "";
@@ -470,6 +562,31 @@ namespace Hoodrich.Social
 
         public void Update()
         {
+            // Somebody answering what you said about them. Ahead of the war chatter because a
+            // reply that arrives four minutes after the post it is replying to is not a reply.
+            if (_dissLeft > 0 && Game.GameTime >= _dissNext && _burstLeft <= 0)
+            {
+                _dissLeft--;
+                _dissNext = Game.GameTime + DissGapMinMs + _rng.Next(DissGapMaxMs - DissGapMinMs);
+
+                _forceGang = _dissGang;
+
+                var back = Build("DissedBack" + Pretty(_dissGang), _dissName)
+                           ?? Build("DissedBack", _dissName);
+
+                _forceGang = "";
+
+                if (back != null)
+                {
+                    back.AboutYou = true;
+                    Add(back);
+                    Notify(back);
+                }
+
+                _nextAmbient = Game.GameTime + AmbientGapMinMs;
+                return;
+            }
+
             // It is happening right now, so this goes first.
             //
             // Two neighbours calling it for every one gang post: most people watching a raid
@@ -931,8 +1048,13 @@ namespace Hoodrich.Social
         /// own going down, which is the sort of thing that reads as a bug even when nobody can
         /// say why.
         /// </summary>
-        private static string GangFor(string set)
+        private string GangFor(string set)
         {
+            // A reply to a diss has to come from the set that was dissed, and the set name
+            // alone cannot say which -- DissedBack is written six times over, once each, and
+            // the author pool has to match the words.
+            if (!string.IsNullOrEmpty(_forceGang)) return _forceGang;
+
             switch (set)
             {
                 case "BallasTaunt": return "ballas";
@@ -1169,6 +1291,20 @@ namespace Hoodrich.Social
                 default:
                     return false;
             }
+        }
+
+        /// <summary>
+        /// A gang id as the per-gang set names spell it: "ballas" -> "Ballas".
+        ///
+        /// The sets are written one per gang rather than with a {rival} slot in a single
+        /// generic line, because the entire point of a diss is that it lands. "Rancho been ours
+        /// since before half of you was born" is a Vagos line; handing it to the Lost MC makes
+        /// it a line about nothing.
+        /// </summary>
+        private static string Pretty(string gangId)
+        {
+            if (string.IsNullOrEmpty(gangId)) return "";
+            return char.ToUpperInvariant(gangId[0]) + gangId.Substring(1).ToLowerInvariant();
         }
 
         /// <summary>gang id -> what they sign off with.</summary>

@@ -59,6 +59,15 @@ namespace Hoodrich.Wheel
 
         /// <summary>Set by Main: opens the feed, and reads the follower count for the wedge.</summary>
         public Action ShowSocials;
+
+        /// <summary>Posts an ordinary line about the day.</summary>
+        public Action SayDaily;
+
+        /// <summary>Names a set in public, and starts the clock on their answer.</summary>
+        public Action<string> Diss;
+
+        /// <summary>Whether somebody is already on their way about something you said.</summary>
+        public Func<bool> PaybackDue;
         public Func<int> Followers;
 
         /// <summary>Set by Main: clears the feed and the follower count.</summary>
@@ -481,10 +490,96 @@ namespace Hoodrich.Wheel
             // Its own wedge rather than a line inside something else. What the block is saying
             // about you is not a sub-heading of your inventory, and burying it two levels down
             // would mean nobody ever reads it -- which defeats the entire point of writing it.
-            page.Add("Socials", "@", () => ShowSocials?.Invoke(),
-                detail: "What the block is saying",
+            page.AddSub("Socials", "@", BuildSocialsPage,
+                detail: "What the block is saying, and what you say back",
                 value: Followers == null ? "" : Followers().ToString("N0") + " followers");
             page.WithIcon(Icons.Tattoo);
+
+            return page;
+        }
+
+        /// <summary>
+        /// Read it, or say something into it.
+        ///
+        /// Posting is the first thing on this feed that goes the other way -- everything else
+        /// happens to you and you read about it afterwards. Two kinds, and the difference
+        /// between them is the entire point: a line about your day costs nothing, and naming a
+        /// set in public costs you a visit.
+        /// </summary>
+        private WheelPage BuildSocialsPage()
+        {
+            var page = new WheelPage("Socials", "What the block is saying");
+
+            page.PanelTitle = "Your account";
+            page.Row("Followers", Followers == null ? "0" : Followers().ToString("N0"), Palette.Cash);
+
+            if (PaybackDue != null && PaybackDue())
+            {
+                page.Row("Owed a visit", "somebody's coming", Palette.Danger);
+            }
+
+            page.Add("Read it", "@", () => ShowSocials?.Invoke(),
+                detail: "Everything the block has said lately",
+                value: "");
+            page.WithIcon(Icons.Tattoo);
+
+            page.Add("Say something", "~", () => SayDaily?.Invoke(),
+                detail: "About the day. Costs you nothing",
+                value: "",
+                enabled: SayDaily != null);
+            page.WithIcon(Icons.Mask);
+
+            page.AddSub("Call somebody out", "!", BuildDissPage,
+                detail: "Name a set in public and see who turns up",
+                value: "");
+            page.WithIcon(Icons.Warning);
+
+            return page;
+        }
+
+        /// <summary>
+        /// Which set you are naming.
+        ///
+        /// Your own is not on the list, and neither is anybody you happen to be running with:
+        /// there is no version of this where Franklin posts a diss aimed at the Families.
+        /// </summary>
+        private WheelPage BuildDissPage()
+        {
+            var page = new WheelPage("Call them out", "They read this too");
+
+            page.PanelTitle = "Before you send it";
+            page.Row("They answer", "on here, within the minute", Palette.TextDim);
+            page.Row("Then", "somebody comes to find you", Palette.Danger);
+
+            var any = false;
+
+            foreach (var gang in _gangs.All)
+            {
+                if (gang == null) continue;
+                if (string.Equals(gang.Id, "families", StringComparison.OrdinalIgnoreCase)) continue;
+                if (_crew != null && _crew.Current != null &&
+                    string.Equals(gang.Id, _crew.Current.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var them = gang;
+                any = true;
+
+                page.Add(gang.Name, gang.Tag, () => Diss?.Invoke(them.Id),
+                    detail: string.IsNullOrEmpty(gang.TurfHint)
+                        ? "Say it where they can see it"
+                        : gang.TurfHint,
+                    value: "",
+                    enabled: Diss != null);
+                page.WithIcon(Icons.Warning);
+            }
+
+            if (!any)
+            {
+                page.Add("Nobody", "-", null, detail: "Nobody worth the trouble",
+                         enabled: false, disabledReason: "Nobody worth the trouble");
+            }
 
             return page;
         }
