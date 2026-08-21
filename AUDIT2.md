@@ -185,6 +185,14 @@ Listed so the coverage is legible and this does not read as a complaint list.
   37 posts that do name him are all in sets where naming him is the point: a set
   answering your diss, somebody gloating over having killed you, or the block
   wishing him well from hospital.
+- **Colour tags.** A GTA colour code stays in effect until `~s~` resets it, so
+  one left open bleeds into whatever is drawn next. Checked per statement rather
+  than per literal -- `"~y~-$" + amount + "~s~ ..."` is three literals and only
+  the last resets -- across every Notify, subtitle, help prompt and Hud.Text
+  call in the mod. Zero unclosed.
+- **Blips.** Every sprite is a named enum value bar one documented numeric id
+  (51, the generic drugs blip), and every colour is a named enum value. All nine
+  gang `blipColour` values are inside the valid 0..83 range.
 - **Who talks about your product.** Replicating `OursOnly` and `Ours` against
   the author list gives 31 eligible accounts for those two sets -- 24 Families,
   7 civilians, zero rival-gang accounts. A Balla telling you your work is good
@@ -219,6 +227,12 @@ subsystem to be read and understood.
   changes his generated avatar, which is derived from the handle, so it was left
   alone.
 - **The deployed ini's 21 dead keys**, above.
+- **Two pairs of gangs share a blip colour.** Aztecas and Marabunta are both 3;
+  Triads and Kkangpae are both 1. Their RGB colours are genuinely close in each
+  case, so it is defensible, but with 84 values available two sets are
+  indistinguishable on the map. Left alone rather than guessed at, because the
+  numeric palette is not documented anywhere in the repo and picking blind could
+  easily make it worse.
 - **Runtime behaviour generally.** Nothing in this audit can see whether a marker
   renders where you are standing, whether an NPC clips a doorway, or whether an
   animation reads right. That still needs playing.
