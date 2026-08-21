@@ -27,12 +27,12 @@ namespace Hoodrich.Locations
         private readonly Vector3 _where;
         private readonly float _heading;
         private readonly string[] _models;
-        private readonly System.Drawing.Color _paint;
+        private readonly int _paint;
 
         private Vehicle _car;
         private int _lastUpdate;
 
-        public ParkedCar(Vector3 where, float heading, System.Drawing.Color paint,
+        public ParkedCar(Vector3 where, float heading, int paint,
                          params string[] models)
         {
             _where = where;
@@ -105,12 +105,17 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// The colour, given as RGB rather than one of the game's paint indices.
+        /// Paint and wheels.
         ///
-        /// An index would mean looking up which number is the right green and hoping, and the
-        /// set's colour is already written down in gangs.json -- so the car is painted the exact
-        /// green the gang is drawn in everywhere else, which is the whole point of it being
-        /// their car.
+        /// The colour is one of the game's own paint indices rather than an RGB triple. RGB
+        /// gives a flat colour with no flake in it, which is how the first attempt came out as
+        /// hard poster green -- the paint table has the finish baked in, and a lowrider is
+        /// painted, not printed.
+        ///
+        /// The wheels are Benny's, which is a two-step thing: the wheel TYPE has to be set to
+        /// the Benny's family before the rim index means anything, and the mod kit has to be
+        /// open before either. Set them in the wrong order and you get stock wheels and no
+        /// error to tell you why.
         /// </summary>
         private void Paint()
         {
@@ -118,24 +123,28 @@ namespace Hoodrich.Locations
             {
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, _car.Handle, 0);
 
-                Function.Call(Hash.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR, _car.Handle,
-                              (int)_paint.R, (int)_paint.G, (int)_paint.B);
+                Function.Call(Hash.SET_VEHICLE_COLOURS, _car.Handle, _paint, _paint);
 
-                Function.Call(Hash.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR, _car.Handle,
-                              (int)_paint.R, (int)_paint.G, (int)_paint.B);
+                // Benny's Original, and a rim out of that set. Lowered on its springs, because
+                // a lowrider sitting at factory height is a saloon with nice wheels.
+                Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, _car.Handle, BennysWheels);
+                Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 23, BennysRim, false);
+                Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 15, 3, false);
 
-                // Chrome wheels and dark glass. A gang car that is only a green shell is a
-                // rental with the wrong paint on it.
-                Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, _car.Handle, 7);
-                Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 23, 0, false);
                 Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
-                Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, 2.5f);
+                Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, 1.5f);
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not paint the parked car: " + ex.Message);
             }
         }
+
+        /// <summary>Wheel type 7 is the Benny's Original family.</summary>
+        private const int BennysWheels = 7;
+
+        /// <summary>A wire-spoke rim out of that set.</summary>
+        private const int BennysRim = 3;
 
         public void RestoreWorld()
         {

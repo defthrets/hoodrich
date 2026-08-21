@@ -97,18 +97,26 @@ namespace Hoodrich
         private readonly Entourage _labCrew;
         private readonly ParkedCar _labCar;
 
+        /// <summary>The game's own metallic dark green, which is what a lowrider is painted.</summary>
+        private const int MetallicDarkGreen = 49;
+
         private readonly Entourage _party;
         private readonly Fixture _partyBarrel;
-        private readonly Fixture _partyFire;
         private readonly Fixture _partyCouch;
         private readonly Fixture _stretchBox;
 
         /// <summary>
         /// Women from round here.
         ///
-        /// Not the set's models, because the set has none -- all three Families peds are men.
+        /// There is no female Families ped in the game. All three Families models are men, and
+        /// the only female gang ped Rockstar ever made is a Balla -- so a Families woman cannot
+        /// be spawned, only approximated.
+        ///
         /// These are the game's own South Central women, which is who is actually on these
-        /// blocks.
+        /// blocks. They are spawned through the families Entourage, so they take the set's
+        /// relationship group like everybody else standing here: they fight alongside you, the
+        /// rivals treat them as ours, and they are in the set in every way the engine can
+        /// express. The model is the one part that cannot follow.
         /// </summary>
         private static readonly string[] Women =
         {
@@ -273,13 +281,21 @@ namespace Hoodrich
 
                     // And his mate, on a cigarette.
                     .Stand(new Vector3(-204.190f, -1711.620f, 32.664f), 243.455f,
-                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false);
+                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false)
+
+                    // Out front of the shop, not carrying. Entourage leaves permanent events
+                    // unblocked, so he ducks at gunfire and reacts to being shoved like anybody
+                    // else -- a man stood outside a shop who does not flinch is furniture.
+                    .Stand(new Vector3(-186.874f, -1700.152f, 32.920f), 308.772f,
+                           "WORLD_HUMAN_GUARD_STAND", Fam(0), armed: false);
 
                 // And their car outside it. The Voodoo is the lowrider, and it is painted the
                 // exact green the set is drawn in everywhere else rather than a paint index
                 // that is roughly right.
+                // Paint 49 is metallic dark green -- the set's colour with flake in it rather
+                // than the flat poster green an RGB triple gives you.
                 _labCar = new ParkedCar(new Vector3(-196.745f, -1718.838f, 32.664f), 319.530f,
-                                        _gangs.Get("families")?.Colour ?? System.Drawing.Color.FromArgb(60, 180, 75),
+                                        MetallicDarkGreen,
                                         "voodoo", "buccaneer2", "chino2");
 
                 // The lot behind the lab, of an evening.
@@ -308,14 +324,13 @@ namespace Hoodrich
                            "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false)
 
                     .Stand(new Vector3(-201.679f, -1727.661f, 32.664f), 118.000f,
-                           "WORLD_HUMAN_PARTYING", Women, armed: false);
+                           "WORLD_HUMAN_DRINKING", Women, armed: false);
 
-                // The fire itself, and something to sit on.
+                // The barrel IS the fire -- it burns on its own. A camp fire was stacked on
+                // top of it as well, which is two fires a metre apart and reads as a bug even
+                // before you notice the logs floating.
                 _partyBarrel = new Fixture(new Vector3(-199.604f, -1728.764f, 32.664f), 0f,
                                            "gr_prop_gr_hobo_stove_01", "prop_barrel_02a");
-
-                _partyFire = new Fixture(new Vector3(-199.604f, -1728.764f, 33.284f), 0f,
-                                         "prop_beach_fire");
 
                 _partyCouch = new Fixture(new Vector3(-202.400f, -1727.000f, 32.664f), 118.000f,
                                           "prop_couch_03", "prop_old_couch_01", "prop_rub_couch01");
@@ -733,7 +748,6 @@ namespace Hoodrich
                     _labCar.Update();
                     _party.Update();
                     _partyBarrel.Update();
-                    _partyFire.Update();
                     _partyCouch.Update();
                     _stretchBox.Update();
                     _jobs.Update();
@@ -1077,7 +1091,6 @@ namespace Hoodrich
             try { _labCar?.RestoreWorld(); } catch { /* teardown */ }
             try { _party?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
-            try { _partyFire?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchBox?.RestoreWorld(); } catch { /* teardown */ }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
