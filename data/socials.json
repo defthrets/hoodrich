@@ -4118,5 +4118,49 @@
       "#LITTLESEOUL",
       "#GINGERST"
     ]
+  },
+  "selfWords": {
+    "families": [
+      "Families",
+      "the green",
+      "green",
+      "the set"
+    ],
+    "ballas": [
+      "Ballas",
+      "the purple",
+      "purple"
+    ],
+    "vagos": [
+      "Vagos",
+      "the yellow",
+      "yellow"
+    ],
+    "aztecas": [
+      "Aztecas",
+      "the turquoise",
+      "turquoise"
+    ],
+    "marabunta": [
+      "Marabunta",
+      "MG",
+      "the letters"
+    ],
+    "lost": [
+      "Lost",
+      "the Lost",
+      "the patch"
+    ],
+    "triads": [
+      "Triads",
+      "Wei Cheng"
+    ],
+    "armenians": [
+      "Armenians",
+      "the Armenian Mob"
+    ],
+    "koreans": [
+      "Kkangpae"
+    ]
   }
 }

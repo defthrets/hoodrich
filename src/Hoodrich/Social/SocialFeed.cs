@@ -297,6 +297,19 @@ namespace Hoodrich.Social
                     if (list.Count > 0) feed._slots[key] = list;
                 }
 
+                // What each set calls itself, so {rival} can never hand a gang its own name.
+                foreach (var gang in doc["selfWords"].Keys)
+                {
+                    var words = new List<string>();
+                    foreach (var word in doc["selfWords"][gang].Items)
+                    {
+                        var text = word.AsString("");
+                        if (!string.IsNullOrEmpty(text)) words.Add(text);
+                    }
+
+                    if (words.Count > 0) feed._selfWords[gang] = words;
+                }
+
                 Log.Info("Socials loaded: " + feed._authors.Count + " people (" +
                          feed._voices.Count + " with their own voice), " +
                          feed._templates.Count + " post sets, " + feed._slots.Count + " word lists.");
@@ -1131,7 +1144,7 @@ namespace Hoodrich.Social
                 by = open[_rng.Next(open.Count)];
             }
 
-            var body = Fill(templates[_rng.Next(templates.Count)], subject, amount);
+            var body = Fill(templates[_rng.Next(templates.Count)], subject, amount, by);
             if (string.IsNullOrEmpty(body)) return null;
 
             var plain = body;
@@ -1204,7 +1217,7 @@ namespace Hoodrich.Social
         /// is the amount. Everything else is looked up in the word lists, so a template can say
         /// {hood} or {filler} and get something different every time it is used.
         /// </summary>
-        private string Fill(string template, string subject, int amount)
+        private string Fill(string template, string subject, int amount, Author by)
         {
             var text = template;
             var guard = 0;
@@ -1218,7 +1231,7 @@ namespace Hoodrich.Social
                 if (close < 0) break;
 
                 var key = text.Substring(open + 1, close - open - 1);
-                var value = ValueFor(key, subject, amount);
+                var value = ValueFor(key, subject, amount, by);
 
                 text = text.Substring(0, open) + value + text.Substring(close + 1);
             }
@@ -1226,8 +1239,31 @@ namespace Hoodrich.Social
             return text;
         }
 
-        private string ValueFor(string key, string subject, int amount)
+        private string ValueFor(string key, string subject, int amount, Author by = null)
         {
+            // Nobody disses their own set.
+            //
+            // This list is names and colours -- Ballas, the purple, Vagos, the yellow -- and it
+            // was drawn from blind, so a Balla account could and did post "we let Ballas eat and
+            // they got greedy" under its own hashtags. Rolled again until it lands on somebody
+            // else, and if the list is all self-references it says "them boys", which is true
+            // of anybody.
+            if (string.Equals(key, "rival", StringComparison.OrdinalIgnoreCase) &&
+                by != null && !string.IsNullOrEmpty(by.Gang))
+            {
+                List<string> rivals;
+                if (_slots.TryGetValue("rival", out rivals) && rivals.Count > 0)
+                {
+                    for (var tries = 0; tries < 8; tries++)
+                    {
+                        var pick = rivals[_rng.Next(rivals.Count)];
+                        if (!IsSelf(by.Gang, pick)) return pick;
+                    }
+
+                    return "them boys";
+                }
+            }
+
             if (string.Equals(key, "subject", StringComparison.OrdinalIgnoreCase))
             {
                 return string.IsNullOrEmpty(subject) ? "them" : subject;
@@ -1280,6 +1316,29 @@ namespace Hoodrich.Social
         /// every one of these would be unbearable within ten minutes, and the point is that the
         /// block is talking whether or not you are listening.
         /// </summary>
+        /// <summary>
+        /// What each set calls itself, so it can never be handed its own name as the enemy.
+        /// Loaded from socials.json; a gang with no entry simply has nothing excluded.
+        /// </summary>
+        private readonly Dictionary<string, List<string>> _selfWords =
+            new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Whether a candidate rival is really the speaker's own lot.</summary>
+        private bool IsSelf(string gangId, string candidate)
+        {
+            if (string.IsNullOrEmpty(gangId) || string.IsNullOrEmpty(candidate)) return false;
+
+            List<string> mine;
+            if (!_selfWords.TryGetValue(gangId, out mine)) return false;
+
+            foreach (var word in mine)
+            {
+                if (candidate.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Set by Main. When present, tweets are drawn down the right-hand side instead of
         /// being posted into the game's own notification stack on the left.
