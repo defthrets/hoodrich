@@ -118,23 +118,22 @@ namespace Hoodrich.Missions
         /// <summary>
         /// Lamar's own wall-tagging animation, which is the one this mission is about.
         ///
-        /// Michael supplied the clip names -- lamar_tagging_wall_loop_lamar and its exit -- but
-        /// not the dictionary they live in, and the clips are from a story mission so it is one
-        /// of the mission sets rather than a freemode one. These are the candidates; the first
-        /// that exists on this install and actually plays wins, and the poster-tag set below is
-        /// the proven fallback if none of them do.
+        /// It lives in switch@franklin@lamar_tagging_wall -- a character switch scene, which is
+        /// why it was not in any of the mission sets. The full dictionary is:
         ///
-        /// If the right dictionary turns up, it goes at the front of this list and everything
-        /// under it can go.
+        ///   lamar_tagging_wall_loop_lamar     the man painting
+        ///   lamar_tagging_wall_exit_lamar     him stepping back off it
+        ///   lamar_tagging_wall_loop_franklin  the man WATCHING him paint
+        ///   lamar_tagging_wall_exit_franklin
+        ///   ..._cam                           the camera
+        ///
+        /// The _lamar pair is the right one even though the player is Franklin: in that scene
+        /// Lamar is the one tagging and Franklin is stood watching, so the clip named after the
+        /// observer would have Franklin watching a wall paint itself.
         /// </summary>
         private static readonly string[] LamarDicts =
         {
-            "missfam3_int",
-            "missfam3leadinoutfam3_mcs_1",
-            "misslamar1leadinoutlamar",
-            "misslamar1_int",
-            "missfam5_int",
-            "anim@missfam3",
+            "switch@franklin@lamar_tagging_wall",
         };
 
         private const string LamarLoop = "lamar_tagging_wall_loop_lamar";
