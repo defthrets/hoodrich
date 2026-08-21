@@ -72,6 +72,28 @@ namespace Hoodrich.Supply
         /// <summary>Close enough to the door to put it down.</summary>
         private const float DropRange = 2.2f;
 
+        /// <summary>
+        /// Where it ends up: the store room inside the house, against the boxes.
+        ///
+        /// He used to stop at the front door and put it down on the step, which is a man
+        /// delivering to a doorstep rather than a man dropping a re-up off. This is in the
+        /// back, in among the cartons and the paint tins, where a package that nobody is
+        /// supposed to notice would actually go.
+        /// </summary>
+        private static readonly Vector3 DropInside = new Vector3(-15.769f, -1430.328f, 31.102f);
+
+        /// <summary>
+        /// How long he gets for the second leg, from the door to the store room.
+        ///
+        /// Much shorter than the walk up the path, and it is a deadline rather than a target.
+        /// The path to the door is open ground and he will always make it; the leg through the
+        /// house depends on a door being open and the inside being navigable, and neither is
+        /// something this code controls. So he is given a fair go at walking it in, and if the
+        /// house will not let him through he puts it down where it was going anyway -- the
+        /// delivery is what matters, and it must not be able to stall on a shut door.
+        /// </summary>
+        private const int WalkInMs = 12000;
+
         /// <summary>Once the box is down, this long before he is let go entirely.</summary>
         private const int LeaveMs = 25000;
 
@@ -104,14 +126,22 @@ namespace Hoodrich.Supply
         /// </summary>
         private static readonly string[] BoxProps =
         {
-            // The small taped package, back at the front by choice.
+            // A box, because he is playing a box carry.
             //
-            // It was swapped out for a metre of stacked kilos on the grounds that a man who
-            // drove a kilo across the city should not carry in something the size of a
-            // paperback -- and then it looked better the original way round, which is the only
-            // argument that actually counts. The bales stay under it as fallbacks.
-            "prop_drug_package_02",
+            // The animation below is anim@heists@box_carry@, which is both arms out in front
+            // cradling something with real width to it. Under that pose went the small taped
+            // package -- twenty-five centimetres of flat envelope held as though it were a
+            // crate, hands apart around nothing. The pose was right and the prop was not.
+            //
+            // hei_prop_heist_box is the prop that animation was authored against, so it sits
+            // in the hands the way the hands are already shaped. The two under it are the same
+            // idea from the base game, in case an install is missing the heist pack.
+            "hei_prop_heist_box", "prop_cs_cardbox_01", "prop_boxpile_07d",
 
+            // The packages keep their place underneath. Nothing here is guaranteed to be in a
+            // given install, and the loop below takes the first name that actually resolves --
+            // so a missing box costs a fallback rather than an empty pair of hands.
+            "prop_drug_package_02",
             "prop_drug_package", "prop_mp_drug_pack_red",
             "bkr_prop_coke_block_01a", "ba_prop_battle_coke_block_01a",
             "bkr_prop_meth_bigbag_01a", "bkr_prop_weed_bigbag_01a",
@@ -199,6 +229,9 @@ namespace Hoodrich.Supply
 
         private Prop _box;
         private Vector3 _dropSpot;
+
+        /// <summary>Set once he is through the front door and heading for the store room.</summary>
+        private bool _wentIn;
         private int _carryingSince;
         private int _nextNudge;
 
@@ -1196,6 +1229,7 @@ namespace Hoodrich.Supply
             _owedGrams = grams;
 
             _dropSpot = HouseDoor;
+            _wentIn = false;
             _carryingSince = Game.GameTime;
             State = DeliveryState.Carrying;
 
@@ -1355,6 +1389,39 @@ namespace Hoodrich.Supply
 
                 return;
             }
+
+            // The door is halfway, not the end.
+            //
+            // Reaching the front door used to be the delivery -- he stopped on the step, put
+            // the box on the mat and turned round. Now the door is the first of two legs, and
+            // arriving at it sends him on through the house to the store room. Everything
+            // below this only runs once he is at the far spot or has run out of time getting
+            // there, so the drop, the payment and the line he says are all unchanged.
+            if (!_wentIn)
+            {
+                _wentIn = true;
+                _dropSpot = DropInside;
+                _carryingSince = Game.GameTime - (CarryTimeoutMs - WalkInMs);
+                _nextNudge = 0;
+
+                try
+                {
+                    Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _driver.Handle,
+                                  _dropSpot.X, _dropSpot.Y, _dropSpot.Z,
+                                  1.0f, WalkInMs, 1.0f, 0, 0f);
+                }
+                catch { /* the timeout below will put it down regardless */ }
+
+                return;
+            }
+
+            // Put down where it was ALWAYS going, even if he never got there.
+            //
+            // If the house would not let him in he is standing at the door holding it, and the
+            // package still belongs in the store room -- so the box goes to the spot rather
+            // than to wherever he happens to be stood. It is the one thing here that has to
+            // work whatever the door does.
+            _dropSpot = DropInside;
 
             PutDown();
             Land();
@@ -1525,7 +1592,7 @@ namespace Hoodrich.Supply
                 var max = hi.GetResult<Vector3>();
                 var size = max - min;
 
-                if (size.Length() < 0.01f) return CarriedAt;
+                if (size.Length() < 0.01f) return At(SmallestReach);
 
                 var centre = (min + max) * 0.5f;
 
@@ -1537,16 +1604,28 @@ namespace Hoodrich.Supply
                     centre = new Vector3(-centre.Y, centre.X, centre.Z);
                 }
 
+                // How far out in front the middle of it sits, from how big it is.
+                //
+                // This was one tuned number, and it could only ever be right for one prop. The
+                // file had already recorded both ends of the problem in prose: a quarter-metre
+                // package sat right at 0.155, and a metre-wide bale sat right at 0.26. Those
+                // are two points on a line, and the line through them is this -- so it returns
+                // the old value for the old package, the old value for the bale, and something
+                // sensible in between for a box, which is what he is carrying now.
+                var longest = Math.Max(size.X, size.Y);
+                var reach = Math.Min(WidestReach, ReachBase + ReachPerMetre * longest);
+
                 Log.Info("Carry prop " + model.Hash + ": " +
                          size.X.ToString("0.00") + " x " + size.Y.ToString("0.00") + " x " +
-                         size.Z.ToString("0.00") + ", yaw " + yaw.ToString("0") + ".");
+                         size.Z.ToString("0.00") + ", yaw " + yaw.ToString("0") +
+                         ", reach " + reach.ToString("0.000") + ".");
 
-                return CarriedAt - centre;
+                return At(reach) - centre;
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not measure the box: " + ex.Message);
-                return CarriedAt;
+                return At(SmallestReach);
             }
         }
 
@@ -1563,7 +1642,26 @@ namespace Hoodrich.Supply
         /// point of measuring -- the number means something now, and a different prop with a
         /// different pivot lands in the same spot instead of sinking into his hip.
         /// </summary>
-        private static readonly Vector3 CarriedAt = new Vector3(0.05f, 0.10f, -0.155f);
+        private static Vector3 At(float reach)
+        {
+            return new Vector3(0.05f, 0.10f, -reach);
+        }
+
+        /// <summary>
+        /// The line through the two reaches this file had already found by hand.
+        ///
+        /// 0.155 was where the small package looked right and 0.26 was where the metre bale
+        /// looked right; both were written down here as prose and one of them was live at any
+        /// time. Fitting a line to them costs nothing, reproduces both exactly, and means the
+        /// next prop swap is a name in the list above rather than another round of tuning.
+        ///
+        /// Capped at the bale's reach, because past a metre he is not carrying it in his hands
+        /// any more and pushing it further just makes it float.
+        /// </summary>
+        private const float ReachBase = 0.120f;
+        private const float ReachPerMetre = 0.140f;
+        private const float WidestReach = 0.260f;
+        private const float SmallestReach = 0.155f;
 
         private void PlayCarry()
         {

@@ -62,7 +62,27 @@ namespace Hoodrich.Locations
         private const int FadeMs = 700;
 
         /// <summary>How long the interior gets to stream before we judge whether it is there.</summary>
-        private const int StreamMs = 2500;
+        /// <summary>
+        /// How long a room is given to arrive, and how often it is asked.
+        ///
+        /// A ceiling rather than a duration. The old flat wait was a guess -- too long on a
+        /// machine that had the interior cached, and not long enough on the run that dropped
+        /// somebody through the floor of the grow room.
+        /// </summary>
+        private const int StreamCeilingMs = 8000;
+        private const int StreamStepMs = 100;
+
+        /// <summary>
+        /// How far above the recorded height the floor is looked for, and how far off that
+        /// height the answer is still believed.
+        ///
+        /// The probe starts above him because it looks downward. The band is what stops it
+        /// following a hit on the wrong surface: these rooms sit forty metres under the map,
+        /// so a few metres either side of the recorded height is the floor of the room and
+        /// anything further away is something else entirely.
+        /// </summary>
+        private const float FloorProbeUp = 3f;
+        private const float FloorProbeBand = 4f;
 
         private readonly DoorSpec _spec;
 
@@ -127,6 +147,20 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.REQUEST_IPL, _spec.Ipl);
 
                 var to = Inside;
+
+                // Asked for BEFORE the warp, so the streamer has the whole fade to work in
+                // rather than being told about the room only once somebody is standing in it.
+                Function.Call(Hash.REQUEST_COLLISION_AT_COORD, to.X, to.Y, to.Z);
+                Function.Call(Hash.NEW_LOAD_SCENE_START_SPHERE, to.X, to.Y, to.Z, 40f, 0);
+
+                // Frozen across the warp, and this is the fix.
+                //
+                // A warp puts him at a coordinate whether or not anything is loaded there, and
+                // an unfrozen ped in empty space starts falling on the very next frame -- so by
+                // the time the room streams in he is already below it, which is the falling
+                // through the sky. Frozen, he waits where he was put.
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, true);
+
                 player.Position = to;
                 player.Heading = _spec.InsideHeading;
 
@@ -140,13 +174,78 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_INTERIOR_ACTIVE, interior, true);
                 }
 
-                Wait(StreamMs);
+                // Waited ON rather than waited OUT.
+                //
+                // This was a flat two and a half seconds, which is a guess at how long a room
+                // takes to arrive -- too long on a machine that had it cached and, on the run
+                // that produced this bug, not long enough. Now it asks: is there collision
+                // round him yet, and is the interior itself ready. It gives up at a ceiling
+                // rather than hanging, because a fade that never lifts is worse than a room
+                // that never arrives.
+                var waited = 0;
+                var iplOn = false;
+                var inRoom = 0;
 
-                // Ask again after it has had a chance to stream. Asking only once, immediately,
-                // reports nothing for an interior that is perfectly real and simply not loaded.
-                if (interior == 0)
+                while (waited < StreamCeilingMs)
                 {
-                    interior = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, to.X, to.Y, to.Z);
+                    Wait(StreamStepMs);
+                    waited += StreamStepMs;
+
+                    if (interior == 0)
+                    {
+                        interior = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, to.X, to.Y, to.Z);
+
+                        if (interior != 0)
+                        {
+                            Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, interior);
+                            Function.Call(Hash.SET_INTERIOR_ACTIVE, interior, true);
+                        }
+                    }
+
+                    // Re-asked rather than asked once. REQUEST_IPL is a request and not a
+                    // load -- it returns immediately whether or not anything happened, and the
+                    // old code fired it once and warped on the very next line. If the IPL is
+                    // still not active after all this waiting it gets asked again, because a
+                    // dropped request looks exactly like a slow one from in here.
+                    iplOn = Function.Call<bool>(Hash.IS_IPL_ACTIVE, _spec.Ipl);
+
+                    if (!iplOn && waited % 1000 == 0)
+                    {
+                        Function.Call(Hash.REQUEST_IPL, _spec.Ipl);
+                    }
+
+                    var solid = Function.Call<bool>(Hash.HAS_COLLISION_LOADED_AROUND_ENTITY,
+                                                    player.Handle);
+
+                    var ready = interior == 0 ||
+                                Function.Call<bool>(Hash.IS_INTERIOR_READY, interior);
+
+                    var scene = Function.Call<bool>(Hash.IS_NEW_LOAD_SCENE_LOADED);
+
+                    // Where he IS, not what is at the coordinate. The two disagree when the
+                    // room exists but he has not landed inside its volume, which is the
+                    // difference between a room that failed to load and a coordinate that
+                    // points at the wrong side of one of its walls.
+                    inRoom = Function.Call<int>(Hash.GET_INTERIOR_FROM_ENTITY, player.Handle);
+
+                    if (solid && ready && scene && inRoom != 0) break;
+                }
+
+                Function.Call(Hash.NEW_LOAD_SCENE_STOP);
+
+                // Written every time, not only on failure. This is the one thing in the mod
+                // that cannot be worked out from the outside: "I fell through the floor" is the
+                // same sentence whether the IPL never loaded, the interior is not at that
+                // coordinate, or the coordinate is inside a wall. These four numbers tell those
+                // three apart, and without them the next attempt is another guess.
+                Log.Info("Entering " + _spec.Name + ": ipl " + _spec.Ipl + " active=" + iplOn +
+                         ", interior=" + interior + ", he is in interior=" + inRoom +
+                         ", waited " + waited + "ms");
+
+                if (waited >= StreamCeilingMs)
+                {
+                    Log.Warn("The " + _spec.Name + " did not settle within " + StreamCeilingMs +
+                             "ms (ipl active=" + iplOn + ", in interior=" + inRoom + ").");
                 }
 
                 if (interior == 0)
@@ -155,6 +254,8 @@ namespace Hoodrich.Locations
                              "; the coordinate in Hoodrich.ini is wrong.");
 
                     player.Position = Door;
+                    Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
+
                     Wait(400);
                     Fade(true);
 
@@ -162,7 +263,52 @@ namespace Hoodrich.Locations
                     return;
                 }
 
+                // The floor the GAME reports, not the one somebody typed into the ini.
+                //
+                // A hand-entered Z is a reading taken once by standing in the room, and it is
+                // the single number here that cannot be checked from outside the game. Now the
+                // geometry has streamed, the game will say where the floor really is -- so ask
+                // it, and stand him on that. Believed only within a sane band of the recorded
+                // height: a probe that comes back with the street thirty metres up has found
+                // the wrong surface entirely, and following it would put him on the pavement.
+                float floorZ;
+                var floorFound = World.GetGroundHeight(new Vector3(to.X, to.Y, to.Z + FloorProbeUp),
+                                                       out floorZ, GetGroundHeightMode.Normal);
+
+                if (floorFound && Math.Abs(floorZ - to.Z) <= FloorProbeBand)
+                {
+                    player.Position = new Vector3(to.X, to.Y, floorZ + 0.05f);
+                }
+                else
+                {
+                    Log.Warn("No floor under " + to + " in the " + _spec.Name +
+                             " (probe found=" + floorFound + ", z=" + floorZ.ToString("0.00") +
+                             "); standing him on the ini height instead.");
+                }
+
+                // Nothing under him and not in a room: that is open air, and letting go of him
+                // here IS the falling through the sky. Better to come back out of the door he
+                // went in by and be told why than to be dropped into the void under the map.
+                if (!floorFound && inRoom == 0)
+                {
+                    Log.Warn("The " + _spec.Name + " is not there: no floor and no interior at " +
+                             to + ". Check [" + _spec.Section + "] Inside in the ini.");
+
+                    player.Position = Door;
+                    Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
+
+                    Wait(400);
+                    Fade(true);
+
+                    Notify.Problem("that room ain" + "'" + "t loading. check [" + _spec.Section +
+                                   "] Inside in the ini.");
+                    return;
+                }
+
                 _inside = true;
+
+                // Let go last, with the floor under him and the screen still black.
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
                 Wait(200);
                 Fade(true);
@@ -172,6 +318,12 @@ namespace Hoodrich.Locations
             catch (Exception ex)
             {
                 Log.Error("Could not enter the " + _spec.Name, ex);
+
+                // Unfrozen FIRST. Anything thrown after the freeze would otherwise leave
+                // him unable to move for the rest of the save, with the fade lifting onto a
+                // man who cannot walk -- worse than the failure that caused it.
+                try { Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false); }
+                catch { /* nothing else to try */ }
 
                 try { player.Position = Door; } catch { /* nothing else to try */ }
                 Fade(true);
