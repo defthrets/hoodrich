@@ -95,10 +95,19 @@ namespace Hoodrich
         private readonly Entourage _stretchCrew;
         private readonly Entourage _grimesCrew;
         private readonly Entourage _labCrew;
-        private readonly ParkedCar _labCar;
+        /// <summary>
+        /// Cars we park somewhere and leave, same idea as the scenery list.
+        ///
+        /// A second one should not need a second field, a second Update call, a second teardown
+        /// line and a second clause in the traffic watchdog.
+        /// </summary>
+        private readonly List<ParkedCar> _cars = new List<ParkedCar>();
 
         /// <summary>The game's own metallic dark green, which is what a lowrider is painted.</summary>
         private const int MetallicDarkGreen = 49;
+
+        /// <summary>Brighter, for a van that belongs to a shop rather than to somebody.</summary>
+        private const int ShopGreen = 53;
 
         private readonly Entourage _party;
         private readonly Fixture _partyBarrel;
@@ -328,9 +337,14 @@ namespace Hoodrich
                 // that is roughly right.
                 // Paint 49 is metallic dark green -- the set's colour with flake in it rather
                 // than the flat poster green an RGB triple gives you.
-                _labCar = new ParkedCar(new Vector3(-196.745f, -1718.838f, 32.664f), 319.530f,
+                _cars.Add(new ParkedCar(new Vector3(-196.745f, -1718.838f, 32.664f), 319.530f,
                                         MetallicDarkGreen,
-                                        "voodoo", "buccaneer2", "chino2");
+                                        "voodoo", "buccaneer2", "chino2"));
+
+                // The shop's van, up on the road above the lot.
+                _cars.Add(new ParkedCar(new Vector3(-214.160f, -1739.805f, 31.709f), 52.137f,
+                                        ShopGreen,
+                                        "youga2", "youga", "surfer", "burrito3"));
 
                 // The lot behind the lab, of an evening.
                 //
@@ -421,7 +435,7 @@ namespace Hoodrich
                                    _delivery.Car != null && car != null &&
                                    car.Handle == _delivery.Car.Handle)
                                   || (_payback != null && _payback.Owns(car))
-                                  || (_labCar != null && _labCar.Owns(car))
+                                  || OurParkedCar(car)
                                   || (_decks != null && _decks.Owns(car))
                 };
 
@@ -813,7 +827,7 @@ namespace Hoodrich
                     if (_stretchCrew != null) _stretchCrew.Update();
                     _grimesCrew.Update();
                     _labCrew.Update();
-                    _labCar.Update();
+                    foreach (var car in _cars) car.Update();
                     _party.Update();
                     _partyBarrel.Update();
                     _partyCouch.Update();
@@ -1035,6 +1049,17 @@ namespace Hoodrich
         /// <summary>Long enough for the fade out of the hospital to have finished.</summary>
         private const int PillboxDelayMs = 6500;
 
+        /// <summary>Whether a vehicle is one we parked on purpose, for the traffic watchdog.</summary>
+        private bool OurParkedCar(Vehicle car)
+        {
+            foreach (var parked in _cars)
+            {
+                if (parked.Owns(car)) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>A gang id as the per-gang diss sets spell it: "ballas" -> "Ballas".</summary>
         private static string Pretty(string gangId)
         {
@@ -1158,7 +1183,10 @@ namespace Hoodrich
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _labCrew?.RestoreWorld(); } catch { /* teardown */ }
-            try { _labCar?.RestoreWorld(); } catch { /* teardown */ }
+            foreach (var car in _cars)
+            {
+                try { car.RestoreWorld(); } catch { /* teardown */ }
+            }
             try { _party?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
