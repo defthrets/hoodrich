@@ -727,7 +727,6 @@ namespace Hoodrich
                     _partyFire.Update();
                     _partyCouch.Update();
                     _jobs.Update();
-                    UpdateLoan();
                 }
 
                 // Everything that writes across the top of the screen stands down while the
@@ -790,30 +789,6 @@ namespace Hoodrich
                 _lastSave = now;
                 SaveGame.Save(_state, _crew, _market, _stash);
             }
-        }
-
-        /// <summary>
-        /// Ticks the gang loan. Defaulting is the crew deciding you are a problem: the debt is
-        /// written off, your standing with them is destroyed, and you are out.
-        /// </summary>
-        private void UpdateLoan()
-        {
-            var loan = _crew.Loan;
-            if (loan == null || !loan.IsActive) return;
-
-            if (!loan.Update(_cfg.LoanPeriodDays, _cfg.LoanDefaultAfterMissed, _cfg.LoanVigGrowthPercent)) return;
-
-            var gang = _crew.GangById(loan.GangId);
-            var standing = _crew.StandingFor(loan.GangId);
-            standing.Rep = -100f;
-
-            if (gang != null && _crew.IsAffiliated && _crew.Current.Id == gang.Id) _crew.Leave();
-
-            _crew.Loan = null;
-            _state.AddRespect(-40f);
-            _state.Touch();
-
-            Notify.Failure((gang == null ? "They" : gang.Name) + " wrote your debt off. You're done with them.");
         }
 
         /// <summary>

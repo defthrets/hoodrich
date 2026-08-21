@@ -1438,32 +1438,6 @@ namespace Hoodrich.Wheel
             return page;
         }
 
-        private void PayVig()
-        {
-            var loan = _crew.Loan;
-            if (loan == null || !loan.PayVig(_cfg.LoanPeriodDays)) Notify.Problem("not enough cash.");
-            else _state.Touch();
-        }
-
-        private void PayOff()
-        {
-            var loan = _crew.Loan;
-            if (loan == null) return;
-
-            if (!loan.PayOff())
-            {
-                Notify.Problem("not enough cash.");
-                return;
-            }
-
-            // Clearing a debt is remembered.
-            var standing = _crew.StandingFor(loan.GangId);
-            standing.Rep = Math.Min(1000f, standing.Rep + 25f);
-
-            _crew.Loan = null;
-            _state.Touch();
-        }
-
         private DealerDef FindPlugFor(GangDef gang)
         {
             foreach (var s in _dealers.All)

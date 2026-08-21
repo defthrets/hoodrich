@@ -142,21 +142,6 @@ namespace Hoodrich.Core
 
         // ---- gang loans --------------------------------------------------------
 
-        /// <summary>Largest loan, before rank scaling.</summary>
-        public int MaxLoanAmount = 25000;
-
-        /// <summary>Interest charged per period, as a percent of the principal.</summary>
-        public float LoanVigPercent = 15f;
-
-        /// <summary>In-game days between vig payments.</summary>
-        public int LoanPeriodDays = 7;
-
-        /// <summary>Missed periods before the crew stops asking nicely.</summary>
-        public int LoanDefaultAfterMissed = 3;
-
-        /// <summary>How much the vig grows each time it is missed.</summary>
-        public float LoanVigGrowthPercent = 25f;
-
         // ---- hideouts ----------------------------------------------------------
 
         /// <summary>Grams each hideout's stash holds.</summary>
@@ -253,14 +238,6 @@ namespace Hoodrich.Core
                 Math.Max(0f, ini.GetFloat("Supply", "DealerRestockMinutes", s.DealerRestockMinutes));
             s.DealerDryChancePercent =
                 Clamp(ini.GetFloat("Supply", "DealerDryChancePercent", s.DealerDryChancePercent), 0f, 100f);
-
-            s.MaxLoanAmount = Math.Max(0, ini.GetInt("Loans", "MaxLoanAmount", s.MaxLoanAmount));
-            s.LoanVigPercent = Clamp(ini.GetFloat("Loans", "LoanVigPercent", s.LoanVigPercent), 0f, 100f);
-            s.LoanPeriodDays = Math.Max(1, ini.GetInt("Loans", "LoanPeriodDays", s.LoanPeriodDays));
-            s.LoanDefaultAfterMissed =
-                Math.Max(1, ini.GetInt("Loans", "LoanDefaultAfterMissed", s.LoanDefaultAfterMissed));
-            s.LoanVigGrowthPercent =
-                Clamp(ini.GetFloat("Loans", "LoanVigGrowthPercent", s.LoanVigGrowthPercent), 0f, 200f);
 
             s.HideoutStashCapacity =
                 Math.Max(1f, ini.GetFloat("Hideouts", "HideoutStashCapacity", s.HideoutStashCapacity));

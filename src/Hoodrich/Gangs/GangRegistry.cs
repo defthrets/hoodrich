@@ -252,7 +252,7 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(235, 195, 40), 5,
                 new[] { "coke", "meth" },
                 new[] { "families", "ballas", "marabunta", "aztecas" },
-                new[] { "RANCHO" },
+                new[] { "RANCHO", "LMESA" },
                 "El Burro Heights, La Mesa, Tataviam Mountains",
                 new[] { "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03", "a_m_y_mexthug_01" }));
 

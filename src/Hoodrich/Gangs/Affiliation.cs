@@ -180,7 +180,6 @@ namespace Hoodrich.Gangs
         public GangDef Current { get; private set; }
 
         /// <summary>The one loan the player can have running, or null.</summary>
-        public GangLoan Loan;
 
         public bool IsAffiliated => Current != null;
 
@@ -372,8 +371,6 @@ namespace Hoodrich.Gangs
 
             Current = null;
             WorkingACorner = false;
-
-            if (Loan != null) Loan.Clear();
 
             Notify.Important("~o~You're nobody to any of them again.~s~ Standings wiped.");
             Log.Info("Gang standings and affiliation reset by the player.");
@@ -765,7 +762,6 @@ namespace Hoodrich.Gangs
 
             // Marks the save as one where beef is a number, so it is only ever seeded once.
             obj.Set("beefSeeded", true);
-            if (Loan != null && Loan.IsActive) obj.Set("loan", Loan.ToJson());
             return obj;
         }
 
@@ -789,8 +785,6 @@ namespace Hoodrich.Gangs
                     TimeAffiliatedMs = Math.Max(0L, item["timeMs"].AsLong(0))
                 };
             }
-
-            Loan = GangLoan.FromJson(node["loan"]);
 
             // Saves made before beef was a number have the Ballas and the Vagos sitting at
             // zero, which now reads as "no problem with you" -- so loading an old save quietly
