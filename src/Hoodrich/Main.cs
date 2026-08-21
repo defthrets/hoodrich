@@ -105,6 +105,9 @@ namespace Hoodrich
         private readonly Fixture _partyCouch;
         private readonly Fixture _stretchBox;
 
+        /// <summary>The plants behind the lab. One thing that happens to be several props.</summary>
+        private readonly List<Fixture> _weed = new List<Fixture>();
+
         /// <summary>
         /// Women from round here.
         ///
@@ -342,6 +345,21 @@ namespace Hoodrich
                                           "m24_2_prop_m42_weedboxpile_01a",
                                           "bkr_prop_weed_bigbag_01a",
                                           "prop_boxpile_07d");
+
+                // Plants growing in the yard behind the lab, in a row down the wall where
+                // Michael marked them. An array rather than three fields: they are one thing
+                // that happens to be three props, and a fourth should not need a new field, an
+                // Update line and a teardown line to exist.
+                foreach (var plant in new[]
+                {
+                    new Vector3(-209.880f, -1712.280f, 32.664f),
+                    new Vector3(-211.089f, -1713.247f, 32.669f),
+                    new Vector3(-212.390f, -1714.471f, 32.664f),
+                })
+                {
+                    _weed.Add(new Fixture(plant, 238.0f, "sf_prop_sf_weed_med_01a",
+                                          "bkr_prop_weed_med_01a", "prop_weed_02"));
+                }
 
                 _copWatch = new CopWatch();
 
@@ -750,6 +768,7 @@ namespace Hoodrich
                     _partyBarrel.Update();
                     _partyCouch.Update();
                     _stretchBox.Update();
+                    foreach (var plant in _weed) plant.Update();
                     _jobs.Update();
                 }
 
@@ -1093,6 +1112,11 @@ namespace Hoodrich
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchBox?.RestoreWorld(); } catch { /* teardown */ }
+
+            foreach (var plant in _weed)
+            {
+                try { plant.RestoreWorld(); } catch { /* teardown */ }
+            }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }
         }
