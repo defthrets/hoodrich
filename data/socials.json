@@ -717,14 +717,6 @@
       "voice": "tanisha_j"
     },
     {
-      "handle": "chop_the_dog",
-      "name": "Chop",
-      "gender": "male",
-      "pic": "CHAR_CHOP",
-      "verified": false,
-      "voice": "chop_the_dog"
-    },
-    {
       "handle": "lc_technical",
       "name": "Lester Crest",
       "gender": "male",
@@ -3172,33 +3164,6 @@
       ],
       "MissionFailed": [
         "And what exactly was the plan there"
-      ]
-    },
-    "chop_the_dog": {
-      "Ambient": [
-        "BARK",
-        "someone left the gate open. i did not go through it. this time",
-        "there is a cat on the wall. this is my formal complaint",
-        "walked. fed. content. no notes",
-        "the mailman and i have an understanding and he is losing",
-        "the couch is mine now. it has always been mine. today i simply made it official",
-        "someone vacuumed. i made my feelings known and my feelings were not considered",
-        "a bag came through the fence and i handled it. no thanks required",
-        "rode in the truck with my head out the window. best eleven minutes of the week",
-        "there was a smell by the gate this morning and i have decided not to share what it was",
-        "new dog on the block. he is loud. i am louder. the matter is settled",
-        "i was given a bath. i did not agree to a bath. i shook in the hallway and now we are even",
-        "the little wheels on the sidewalk. skateboards. my enemy. every single time",
-        "the food bowl was moved two feet left. i want it on record that i noticed",
-        "a whole piece of chicken hit the kitchen floor and nobody saw. it is mine now",
-        "sat by the door three hours. nobody came. i will be doing it again tomorrow"
-      ],
-      "MissionDone": [
-        "he came home smelling like other people. we will discuss",
-        "good boy energy all round today"
-      ],
-      "Brawl": [
-        "wish i was there. would have helped. would have bit somebody"
       ]
     },
     "lc_technical": {
