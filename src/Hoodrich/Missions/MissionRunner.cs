@@ -157,6 +157,12 @@ namespace Hoodrich.Missions
             _walls = TagRun.Load();
         }
 
+        /// <summary>Set by Main, so the bike ride can borrow Lamar for the ride out.</summary>
+        public Fixer Boss
+        {
+            set { _bike.Boss = value; }
+        }
+
         /// <summary>Set by Main and handed straight to the bike job for its courtyard exchange.</summary>
         public Conversation Talk
         {

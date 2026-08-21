@@ -30,7 +30,7 @@ namespace Hoodrich.Missions
         /// <summary>Thirsty. The shop is down the road.</summary>
         Drink,
 
-        /// <summary>Drink got. Ride back to Lamar.</summary>
+        /// <summary>Drink got. Ride back to the spot.</summary>
         Home
     }
 
@@ -117,6 +117,19 @@ namespace Hoodrich.Missions
         private Vehicle _playerBike;
         private Blip _marker;
 
+        /// <summary>
+        /// The man who gave you the job, riding it with you.
+        ///
+        /// Borrowed rather than spawned, so this is the SAME Lamar you were just talking to
+        /// rather than a second one who looks like him. Held separately as well as in _homies
+        /// because he must not be released at the end the way the others are -- he is not ours
+        /// to let go of.
+        /// </summary>
+        private Ped _lamar;
+
+        /// <summary>Set by MissionRunner. Who to borrow him from, and give him back to.</summary>
+        public Fixer Boss;
+
         private int _lastUpdate;
         private int _nextChatter;
         private int _nextRetask;
@@ -164,7 +177,7 @@ namespace Hoodrich.Missions
                     case BikePhase.Words: return "Go say something to them";
                     case BikePhase.Fight: return "Hands only -- pull a gun and it's over";
                     case BikePhase.Drink: return "Go get a drink from the 24/7";
-                    case BikePhase.Home: return "Ride back to Lamar";
+                    case BikePhase.Home: return "Ride back to the spot";
                     default: return "";
                 }
             }
@@ -246,6 +259,7 @@ namespace Hoodrich.Missions
             // They turn up when you get on, not when you take the job. Three men standing about
             // in a courtyard while you decide whether to bother is not the same picture.
             SpawnHomiesOnBikes(player);
+            BringLamar(player);
 
             Phase = BikePhase.Riding;
             _nextChatter = Game.GameTime + ChatterGapMs;
@@ -385,7 +399,10 @@ namespace Hoodrich.Missions
 
             Phase = BikePhase.Home;
 
-            Mark(Fixer.Spot, "Lamar", BlipColor.Yellow);
+            // The place, not the man. He is riding next to you, so a waypoint with his name
+            // on it pointing at an empty corner is the game telling you to go and find somebody
+            // who is already there.
+            Mark(Fixer.Spot, "The spot", BlipColor.Yellow);
             Notify.Important("~g~Drink got.~s~ " + Objective + ".");
         }
 
@@ -431,7 +448,10 @@ namespace Hoodrich.Missions
                 {
                     ped.SetIntoVehicle(bike, VehicleSeat.Driver);
 
-                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
+                    MakeSides();
+                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle,
+                                  _usGroup != 0 ? _usGroup : gang.GroupHash);
+
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
                     Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
                     Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true);
@@ -451,6 +471,80 @@ namespace Hoodrich.Missions
                 {
                     Log.Debug("Could not put a homie on a bike: " + ex.Message);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Puts the man who gave you the job on a bike.
+        ///
+        /// He is borrowed off the Fixer rather than spawned, so it is the same man you were
+        /// stood in front of a moment ago. Spawning a second Lamar while the first one watches
+        /// from the kerb is the kind of thing that cannot be unseen.
+        ///
+        /// He goes into _homies with the rest, which is deliberate: every piece of behaviour
+        /// this mission has for a homie -- keeping up, remounting, being called up at the
+        /// courts, fighting -- then applies to him for free. What does NOT apply is the
+        /// teardown, which is handled where it happens.
+        /// </summary>
+        private void BringLamar(Ped player)
+        {
+            if (Boss == null || _lamar != null) return;
+
+            var gang = _crew.Current;
+            if (gang == null) return;
+
+            var ped = Boss.Lend();
+            if (ped == null || !ped.Exists()) return;
+
+            var bike = SpawnBike(Ground(ped.Position).Around(2.2f), player.Heading);
+            if (bike == null)
+            {
+                // No bike, so no ride. Give him straight back rather than leaving him stood
+                // in the road with his tasks cleared.
+                Boss.TakeBack();
+                return;
+            }
+
+            _lamar = ped;
+            _homies.Add(ped);
+            _bikes.Add(bike);
+
+            try
+            {
+                ped.SetIntoVehicle(bike, VehicleSeat.Driver);
+
+                MakeSides();
+                Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle,
+                              _usGroup != 0 ? _usGroup : gang.GroupHash);
+
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
+
+                // He keeps whatever he had. The others are stripped because a random gang
+                // member with a rifle on a bicycle reads as a spawn; the man who runs the set
+                // being armed reads as the man who runs the set.
+                Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
+
+                // Killable now, where he is normally not. A bodyguard who cannot be shot is
+                // not a bodyguard, and the mission already fails properly if he goes down.
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped.Handle, true);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+
+                Escort(ped, bike, player);
+
+                var blip = ped.AddBlip();
+                if (blip != null && blip.Exists())
+                {
+                    blip.Color = BlipColor.Green;
+                    blip.Scale = 0.8f;
+                    blip.Name = "Lamar";
+                    _blips.Add(blip);
+                }
+
+                Log.Info("Lamar is riding this one.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put Lamar on a bike: " + ex.Message);
             }
         }
 
@@ -621,10 +715,108 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>
+        /// Two relationship groups that exist only while this job does.
+        ///
+        /// The rivals used to be put straight into the real Ballas group, which is correct in
+        /// every way except the one that matters: it makes this a Ballas-versus-Families
+        /// problem rather than OUR problem. Every ambient Families ped within earshot piled in,
+        /// every passing Balla piled in on the other side, and a straightener between four men
+        /// on a basketball court turned into whoever happened to be walking past.
+        ///
+        /// So both sides get a private group each. They hate each other and nobody else, and
+        /// nobody else has any opinion about them, because a group nobody has set a
+        /// relationship with is neutral by default. The rest of Chamberlain watches.
+        /// </summary>
+        private int _usGroup;
+        private int _themGroup;
+
+        private const string UsGroupName = "HOODRICH_COURTS_US";
+        private const string ThemGroupName = "HOODRICH_COURTS_THEM";
+
+        /// <summary>The SET_RELATIONSHIP_BETWEEN_GROUPS scale, as used elsewhere in the mod.</summary>
+        private const int RelRespect = 1;
+        private const int RelHate = 5;
+
+        /// <summary>
+        /// Makes the two groups, once per run.
+        ///
+        /// ADD_RELATIONSHIP_GROUP writes the new hash through a pointer argument rather than
+        /// returning it, and handing DOES_RELATIONSHIP_GROUP_EXIST a name instead of a hash
+        /// marshals a pointer that never matches -- both already learned the hard way when the
+        /// vanilla gang groups all looked missing.
+        /// </summary>
+        private void MakeSides()
+        {
+            if (_usGroup != 0 && _themGroup != 0) return;
+
+            try
+            {
+                _usGroup = Function.Call<int>(Hash.GET_HASH_KEY, UsGroupName);
+                _themGroup = Function.Call<int>(Hash.GET_HASH_KEY, ThemGroupName);
+
+                if (!Function.Call<bool>(Hash.DOES_RELATIONSHIP_GROUP_EXIST, _usGroup))
+                {
+                    var made = new OutputArgument();
+                    Function.Call(Hash.ADD_RELATIONSHIP_GROUP, UsGroupName, made);
+                }
+
+                if (!Function.Call<bool>(Hash.DOES_RELATIONSHIP_GROUP_EXIST, _themGroup))
+                {
+                    var made = new OutputArgument();
+                    Function.Call(Hash.ADD_RELATIONSHIP_GROUP, ThemGroupName, made);
+                }
+
+                var you = Function.Call<int>(Hash.GET_HASH_KEY, "PLAYER");
+
+                // Both ways round, because the native sets one direction at a time and a
+                // one-sided hatred is a man being punched who will not punch back.
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelHate, _themGroup, _usGroup);
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelHate, _usGroup, _themGroup);
+
+                // They want you. Your own people do not, which has to be said out loud -- they
+                // are no longer in the Families group that the game already knows you are in
+                // with, so without this they have no view on you at all.
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelHate, _themGroup, you);
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelRespect, _usGroup, you);
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelRespect, you, _usGroup);
+            }
+            catch (Exception ex)
+            {
+                // Without the groups everybody falls back to their real gang, which is the old
+                // behaviour -- a bigger fight than intended, rather than no fight.
+                Log.Debug("Could not make the court sides: " + ex.Message);
+                _usGroup = 0;
+                _themGroup = 0;
+            }
+        }
+
+        private void DropSides()
+        {
+            if (_usGroup == 0 && _themGroup == 0) return;
+
+            try
+            {
+                var you = Function.Call<int>(Hash.GET_HASH_KEY, "PLAYER");
+
+                Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelHate, _themGroup, _usGroup);
+                Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelHate, _usGroup, _themGroup);
+                Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelHate, _themGroup, you);
+                Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelRespect, _usGroup, you);
+                Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelRespect, you, _usGroup);
+            }
+            catch { /* teardown */ }
+
+            _usGroup = 0;
+            _themGroup = 0;
+        }
+
         private void SpawnRivals()
         {
             var gang = _gangs.Get(_def.TargetGang);
             if (gang == null) return;
+
+            MakeSides();
 
             var count = Math.Max(1, _def.Targets);
 
@@ -638,7 +830,12 @@ namespace Hoodrich.Missions
                 try
                 {
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
-                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
+
+                    // Their own side, not the Ballas. They look like Ballas and they are here
+                    // as Ballas -- they simply do not carry the whole gang's quarrels with
+                    // them onto this court.
+                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle,
+                                  _themGroup != 0 ? _themGroup : gang.GroupHash);
 
                     // Hands, and nothing they can change their mind about halfway through.
                     Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true);
@@ -697,7 +894,16 @@ namespace Hoodrich.Missions
             {
                 if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
 
-                try { Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true); }
+                try
+                {
+                    Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true);
+
+                    // Hated targets rather than a named man. Everybody our side hates is on
+                    // that court and nobody else in the city is, so this picks a rival each
+                    // and spreads them out -- where naming one would have all three of them
+                    // taking turns on the same person while the other two stood watching.
+                    Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, ped.Handle, 40f, 0);
+                }
                 catch { /* they will use their hands anyway */ }
             }
 
@@ -1001,12 +1207,27 @@ namespace Hoodrich.Missions
                 try
                 {
                     if (ped == null || !ped.Exists()) continue;
+
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
+
+                    // Everybody else is handed back to the population and forgotten. Lamar is
+                    // not ours to hand back -- releasing him would let the game clear him away
+                    // and the corner he is supposed to be standing on would be empty until the
+                    // area reloaded.
+                    if (ped == _lamar) continue;
+
                     ped.MarkAsNoLongerNeeded();
                 }
                 catch { /* teardown */ }
             }
             _homies.Clear();
+
+            // And the man himself, back on his corner.
+            if (_lamar != null)
+            {
+                _lamar = null;
+                if (Boss != null) Boss.TakeBack();
+            }
 
             // The bikes are left where they are rather than deleted. Four bikes vanishing off a
             // street the moment you get paid is the mod tidying up in front of you.
@@ -1015,6 +1236,9 @@ namespace Hoodrich.Missions
 
             Release(_playerBike);
             _playerBike = null;
+
+            // The court sides go with the court.
+            DropSides();
 
             _def = null;
             Phase = BikePhase.None;

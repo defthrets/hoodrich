@@ -43,6 +43,16 @@ namespace Hoodrich.Missions
         private Blip _blip;
         private int _lastUpdate;
         private bool _held;
+
+        /// <summary>
+        /// Whether a mission has him.
+        ///
+        /// Separate from _held, which is the two seconds he spends facing you during a
+        /// conversation. This is the whole job: he is off his corner, out of this class's
+        /// hands, and nothing in here may spawn him, despawn him or re-task him until he
+        /// comes back.
+        /// </summary>
+        private bool _lent;
         private bool _talkHeld;
 
         public Fixer(Affiliation crew)
@@ -93,6 +103,21 @@ namespace Hoodrich.Missions
             if (_crew == null || !_crew.IsAffiliated)
             {
                 Despawn();
+                return;
+            }
+
+            // On a job, so hands off entirely.
+            //
+            // This is not politeness, it is the difference between him coming on the ride and
+            // him evaporating halfway down Innocence. Despawn fires at 190 metres from his
+            // corner and the courts are further than that, so without this the mission would
+            // watch its own passenger get deleted out from under it.
+            //
+            // The corner blip goes with him, because a marker reading "Lamar" on a corner he
+            // is demonstrably not standing on is worse than no marker.
+            if (_lent)
+            {
+                DropBlip();
                 return;
             }
 
@@ -184,6 +209,77 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>
+        /// Hands him to a mission. Null if he is not around to be handed over.
+        /// </summary>
+        public Ped Lend()
+        {
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive) return null;
+
+            _lent = true;
+
+            // The conversation is over -- whoever is borrowing him is about to task him, and a
+            // hold left on would have him turning to face you for the length of a bike ride.
+            _held = false;
+
+            try { _ped.Task.ClearAll(); }
+            catch { /* the mission is about to task him anyway */ }
+
+            return _ped;
+        }
+
+        /// <summary>
+        /// Takes him back off a mission.
+        ///
+        /// Near his corner he simply goes back to standing on it. Anywhere else he is let go
+        /// entirely, because walking him home across Davis is a man the player would have to
+        /// watch, and a fresh one is standing on the corner the next time they come round.
+        /// Dead is the same case -- the body is released and the corner refills.
+        /// </summary>
+        public void TakeBack()
+        {
+            if (!_lent) return;
+
+            _lent = false;
+
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive)
+            {
+                Despawn();
+                return;
+            }
+
+            try
+            {
+                if (_ped.Position.DistanceTo(Spot) > HomeRange)
+                {
+                    Despawn();
+                    return;
+                }
+
+                _ped.Task.ClearAll();
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _ped.Handle,
+                              "WORLD_HUMAN_STAND_MOBILE", 0, true);
+                _ped.Heading = Heading;
+            }
+            catch
+            {
+                Despawn();
+            }
+        }
+
+        /// <summary>Near enough to his corner to just stand back on it.</summary>
+        private const float HomeRange = 30f;
+
+        private void DropBlip()
+        {
+            if (_blip == null) return;
+
+            try { if (_blip.Exists()) _blip.Delete(); }
+            catch { /* it goes when the area does */ }
+
+            _blip = null;
+        }
+
         private void Despawn()
         {
             if (_ped != null && _ped.Exists())
@@ -198,6 +294,7 @@ namespace Hoodrich.Missions
 
             _ped = null;
             _held = false;
+            _lent = false;
         }
 
         /// <summary>Offers the conversation and opens it, same button as the leaders.</summary>

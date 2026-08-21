@@ -284,6 +284,9 @@ namespace Hoodrich
                 _jobs = new MissionRunner(_state, _crew, _gangs, _zoneMap);
 
                 _fixer = new Fixer(_crew);
+
+                // The bike ride borrows him off his corner and rides him out with the rest.
+                _jobs.Boss = _fixer;
                 _bigj = new Armourer(_gangs);
 
                 _social = SocialFeed.Load();
