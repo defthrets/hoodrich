@@ -78,6 +78,11 @@ namespace Hoodrich.Gangs
         private readonly List<string[]> _models = new List<string[]>();
         private readonly List<bool> _armed = new List<bool>();
 
+        /// <summary>
+        /// Per station: whether the height given is furniture rather than floor.
+        /// </summary>
+        private readonly List<bool> _onProp = new List<bool>();
+
         private readonly List<Ped> _crew = new List<Ped>();
         private readonly List<Vector3> _marks = new List<Vector3>();
 
@@ -94,14 +99,37 @@ namespace Hoodrich.Gangs
 
         /// <summary>Adds one of them, on his own mark, doing his own thing.</summary>
         public Entourage Stand(Vector3 where, float facing, string scenario,
-                               string[] models = null, bool armed = true)
+                               string[] models = null, bool armed = true, bool onProp = false)
         {
             _stations.Add(where);
             _facings.Add(facing);
             _doing.Add(scenario);
             _models.Add(models);
             _armed.Add(armed);
+            _onProp.Add(onProp);
             return this;
+        }
+
+        /// <summary>
+        /// Where station <paramref name="index"/> actually is.
+        ///
+        /// Most marks are a spot on the concrete read off a HUD, so they are snapped to whatever
+        /// the ground turns out to be -- an authored Z a few centimetres out otherwise leaves a
+        /// man hovering or shin-deep in it.
+        ///
+        /// A man on the couch is the exception, and it is why he was in the air. His height IS
+        /// the seat, and the probe does not reliably see furniture: it answers with the floor on
+        /// one pass and the cushion on the next, so the authored seat height was thrown away and
+        /// replaced by whichever the probe happened to find -- on spawn, and then again on every
+        /// Settle. Marks flagged onProp keep exactly the height they were given.
+        /// </summary>
+        private Vector3 MarkAt(int index)
+        {
+            if (index >= _marks.Count) return _spot;
+
+            return index < _onProp.Count && _onProp[index]
+                       ? _marks[index]
+                       : Ground(_marks[index]);
         }
 
         private string[] ModelsFor(int index, GangDef gang)
@@ -164,7 +192,7 @@ namespace Hoodrich.Gangs
 
             for (var i = 0; i < _marks.Count; i++)
             {
-                var ped = SpawnMember(gang, _marks[i], Facing(i), ModelsFor(i, gang), ArmedAt(i));
+                var ped = SpawnMember(gang, MarkAt(i), Facing(i), ModelsFor(i, gang), ArmedAt(i));
                 if (ped == null) continue;
 
                 _crew.Add(ped);
@@ -206,10 +234,8 @@ namespace Hoodrich.Gangs
                     var model = new Model(name);
                     if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
 
-                    var spot = Ground(mark);
-
                     var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeCiv, model.Hash,
-                                                    spot.X, spot.Y, spot.Z, facing, false, false);
+                                                    mark.X, mark.Y, mark.Z, facing, false, false);
 
                     model.MarkAsNoLongerNeeded();
                     if (handle == 0) continue;
@@ -284,7 +310,7 @@ namespace Hoodrich.Gangs
 
                 if (i >= _marks.Count) continue;
 
-                var mark = Ground(_marks[i]);
+                var mark = MarkAt(i);
                 var away = ped.Position.DistanceTo(mark);
 
                 if (away <= DriftRange)

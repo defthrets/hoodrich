@@ -327,11 +327,14 @@ namespace Hoodrich
                     .Stand(new Vector3(-204.190f, -1711.620f, 32.664f), 243.455f,
                            "WORLD_HUMAN_SMOKING", Fam(2), armed: false)
 
-                    // Sat on the couch, facing the fire. Raised to seat height: a scenario is
-                    // placed at the point you give it, so at floor level he sits on the floor
-                    // in front of the sofa rather than on it.
-                    .Stand(new Vector3(-202.684f, -1725.064f, 33.114f), 295.109f,
-                           "WORLD_HUMAN_SEAT_LEDGE", Fam(1), armed: false)
+                    // Sat on the couch, facing the fire.
+                    //
+                    // Position and height both measured standing on the cushion rather than
+                    // guessed off the floor, and flagged onProp so the ground probe leaves the
+                    // height alone -- it was overwriting the seat with whatever it found under
+                    // the couch, which is what had him sitting in mid-air.
+                    .Stand(new Vector3(-203.178f, -1725.288f, 33.064f), 295.109f,
+                           "WORLD_HUMAN_SEAT_LEDGE", Fam(1), armed: false, onProp: true)
 
                     // Stood in the group, talking. HANG_OUT_STREET is the loose-limbed
                     // gesturing idle the game uses for people in a conversation -- MOBILE is
