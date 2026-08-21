@@ -202,11 +202,24 @@ namespace Hoodrich.Locations
                     if (ped == null || !ped.Exists() || ped.Handle == player.Handle) continue;
                     if (!IsHousehold(ped)) continue;
 
-                    // Taken off the game's books first. Deleting a ped the game still considers
-                    // its own leaves a handle behind that other scripts can trip over.
-                    ped.IsPersistent = false;
-                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, false, true);
-                    ped.MarkAsNoLongerNeeded();
+                    // Hidden on the same frame she is spotted, before anything else is tried.
+                    //
+                    // The delete does not always take on the first pass -- she can be mid-
+                    // scenario, or the interior can be streaming -- and the sweep runs four
+                    // times a second, so a delete that keeps failing is a woman flickering in
+                    // and out of the living room rather than a woman who is not there. Invisible
+                    // and intangible is instant and cannot fail, so the worst case is a ped you
+                    // cannot see instead of one that strobes.
+                    ped.IsVisible = false;
+                    Function.Call(Hash.SET_ENTITY_COLLISION, ped.Handle, false, false);
+
+                    // Claimed, THEN deleted. This was the wrong way round: she was released to
+                    // the game with MarkAsNoLongerNeeded and taken off mission-entity duty first,
+                    // which hands her back to the population system -- and you cannot delete a
+                    // ped you have just given away. The game re-populated her every sweep, and
+                    // the mod deleted her again, which is exactly what the flicker was.
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
+                    ped.IsPersistent = true;
                     ped.Delete();
 
                     if (!_saidCouchIsFree)
