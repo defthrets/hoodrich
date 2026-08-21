@@ -35,7 +35,7 @@
       "id": "bikeride_courts",
       "kind": "BikeRide",
       "name": "Come take a ride with me.",
-      "brief": "Aight, so check it -- them Ballas been up on the Chamberlain courts all week actin' like they got a lease. Nah. Nah nah nah. We ain't shootin' nobody over no basketball, that's embarrassin'. Get a bike, roll out with the homies, we gon' handle it like we was fifteen. Hands, nigga. You pull somethin' out there and I ain't never met you.",
+      "brief": "Them Ballas been up on the Chamberlain courts all week actin' like they got a lease on it. Ain't a soul been able to hoop down there since Tuesday.",
       "done": "HA! Look at you! That's how we used to do it, boy. My hand still hurt.",
       "targetGang": "ballas",
       "zone": "CHAMH",
@@ -48,7 +48,11 @@
       "payMin": 400,
       "payMax": 800,
       "rep": 30,
-      "minRank": 0
+      "minRank": 0,
+      "briefMore": [
+        "And we ain't shootin' nobody over no basketball court. You put somethin' out there and the law's on this whole block by dinner, over a COURT. That's how people lose everything on account of nothing.",
+        "So get a bike, roll out with the homies, and we handle it like we was fifteen. Hands. That's it. You pull somethin' out there and I ain't never met you."
+      ]
     },
     {
       "id": "torch_rancho",
@@ -86,7 +90,7 @@
       "id": "tags_run",
       "kind": "Tags",
       "name": "Go put our set up.",
-      "brief": "You seen this fool UNIT? Big red letters, all over everything from Forum to the wash. Ballas way, he from over there, and he think this whole side is his sketchpad. Meanwhile our set ain't nowhere. That's on us, homie, that's on us. So get a bike, get a can, and go over the top of him. Four walls, all local, all ours. And go by yourself -- two dudes on bikes with cans is a whole story, one dude is somebody ridin' home. Take your time and do it proper. Somebody come out, that's between you and them. Then bring my bike back.",
+      "brief": "You seen this fool UNIT? Big red letters, Forum all the way down to the wash. He from Ballas way and he treat this whole side like it's his sketchpad.",
       "done": "Drove past the one by the wash this mornin'. Straight over the top of him. He gon' see that and he gon' feel somethin', trust me.",
       "targetGang": "ballas",
       "zone": "DAVIS",
@@ -99,13 +103,17 @@
       "payMin": 1100,
       "payMax": 1700,
       "rep": 50,
-      "minRank": 1
+      "minRank": 1,
+      "briefMore": [
+        "Meanwhile our set ain't nowhere. That's how a block stops bein' yours, homie -- not a shootin', just a kid growin' up here who never once seen our name on a wall.",
+        "So get a bike, get a can, go over the top of him. Four walls, all local. And go by yourself -- two dudes on bikes with cans is a whole story, one dude is a kid."
+      ]
     },
     {
       "id": "hit_rancho",
       "kind": "Hit",
       "name": "Rancho. Vagos.",
-      "brief": "Vagos got a lil spot out Rancho where they break the weight down before it comes our way. Five of 'em out there postin' up like it's a barbecue. Take three homies, everybody with a machine pistol -- this ain't huntin' -- and go take the spot off 'em. Somebody always calls the law, so lose 'em before you come back round here.",
+      "brief": "Vagos got a lil spot out Rancho where they break the weight down before it comes our way. Five of 'em out there postin' up like it's a barbecue.",
       "done": "I heard about that before you even got back. Whole block heard. Take that.",
       "targetGang": "vagos",
       "zone": "RANCHO",
@@ -123,13 +131,17 @@
       "carX": -112.176,
       "carY": -1602.935,
       "carZ": 31.13,
-      "carHeading": 317.331
+      "carHeading": 317.331,
+      "briefMore": [
+        "Take that off 'em and they price goes up, and soon as they price goes up ours starts makin' sense again. That's the whole thing. That's the only thing.",
+        "Three homies, everybody with a machine pistol -- don't be takin' no shotgun, this ain't huntin'. Somebody always calls the law, so lose 'em before you come back."
+      ]
     },
     {
       "id": "hit_grove",
       "kind": "Hit",
       "name": "Ballas on Grove.",
-      "brief": "Ballas standin' on Grove like they payin' rent down there. On GROVE, nigga. My granddaddy's street. It's two of 'em, take three homies and everybody carry. Same as Rancho -- you gon' pick up the law on the way out, so don't bring it back to me.",
+      "brief": "Ballas standin' on Grove. On GROVE. My granddaddy's street, homie.",
       "done": "THAT'S what I'm talkin' about! Word travels, homie. Word travels.",
       "targetGang": "ballas",
       "zone": "DAVIS",
@@ -147,13 +159,17 @@
       "carX": -112.176,
       "carY": -1602.935,
       "carZ": 31.13,
-      "carHeading": 317.331
+      "carHeading": 317.331,
+      "briefMore": [
+        "And I know it's theirs on paper, everybody know that. But there's a difference between it bein' theirs and them STANDIN' on it -- let 'em post up and the old heads stop callin' it ours at all. Then it really is gone.",
+        "It's two of 'em. Take three homies and everybody carry. You gon' pick up the law on the way out, so don't you bring it back round here."
+      ]
     },
     {
       "id": "driveby_lamesa",
       "kind": "DriveBy",
       "name": "The Vagos need reminding.",
-      "brief": "La Mesa. Vagos been runnin' packs through there all month and every dollar of it is comin' off our corners -- same weight, same people, half the price. Drive through, make some noise, be gone 'fore the law finish they donut. It's a message, not a visit.",
+      "brief": "La Mesa. Vagos been runnin' packs through there all month -- same weight, half the price, and every dollar of it comin' off our corners.",
       "done": "That'll hold 'em a minute. They gon' be lookin' over they shoulder all week.",
       "targetGang": "vagos",
       "zone": "LMESA",
@@ -171,7 +187,11 @@
       "carX": -112.176,
       "carY": -1602.935,
       "carZ": 31.13,
-      "carHeading": 317.331
+      "carHeading": 317.331,
+      "briefMore": [
+        "We took the Rancho spot and they just moved it. Can't keep takin' spots off people who got more spots than us, so we make the ROUTE cost 'em instead.",
+        "Drive through, make some noise, be gone 'fore the law finish they donut. You ain't gotta be out there all day. It's a message, not a visit."
+      ]
     }
   ]
 }
