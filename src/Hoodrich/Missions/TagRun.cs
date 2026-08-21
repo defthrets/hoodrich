@@ -356,6 +356,10 @@ namespace Hoodrich.Missions
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
+            // Asked for while he is still riding, so it is resident by the time he is stood at
+            // a wall. Streaming takes a moment and the request is free once it has landed.
+            Preload();
+
             // ---- get on the bike -----------------------------------------------
             if (!_rolling)
             {
@@ -743,6 +747,70 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
+        /// Gets the painting animations into memory before they are needed.
+        ///
+        /// This is the whole reason the mission used to hammer at the wall. REQUEST_ANIM_DICT
+        /// is asynchronous -- it starts a stream and returns immediately -- and every candidate
+        /// asked for its dictionary and then tested HAS_ANIM_DICT_LOADED on the next line,
+        /// which is false on the frame you ask. So Lamar's set was skipped, the poster set was
+        /// skipped, every fallback was skipped, and the last resort in the list is a man
+        /// hammering. It was not the wrong clip name; nothing was ever given time to load.
+        ///
+        /// Asked for every tick from the moment the job starts. A dictionary already in memory
+        /// costs nothing to re-request, so this is free after the first second.
+        /// </summary>
+        private static void Preload()
+        {
+            try
+            {
+                foreach (var dict in LamarDicts) Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+
+                Function.Call(Hash.REQUEST_ANIM_DICT, SprayDict);
+            }
+            catch
+            {
+                // Nothing to do about a refused request but try again next tick.
+            }
+        }
+
+        /// <summary>
+        /// Waits for a dictionary, rather than glancing at it.
+        ///
+        /// Bounded, because a dictionary that is not in this install never arrives and the
+        /// player would stand at the wall forever. With Preload doing its job this returns on
+        /// the first check and the wait never happens.
+        /// </summary>
+        private static bool Loaded(string dict)
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) return false;
+
+                Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+
+                var waited = 0;
+                while (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict))
+                {
+                    if (waited >= LoadWaitMs) return false;
+
+                    Script.Wait(LoadStepMs);
+                    waited += LoadStepMs;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>How long a cold dictionary is given before it is written off.</summary>
+        private const int LoadWaitMs = 1200;
+
+        private const int LoadStepMs = 50;
+
+        /// <summary>
         /// Lamar's wall-tagging clip, from whichever mission dictionary holds it.
         ///
         /// Loop then exit, as a sequence -- two TASK_PLAY_ANIMs issued back to back replace
@@ -755,10 +823,7 @@ namespace Hoodrich.Missions
             {
                 try
                 {
-                    if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) continue;
-
-                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
-                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
+                    if (!Loaded(dict)) continue;
 
                     var seq = new OutputArgument();
                     Function.Call(Hash.OPEN_SEQUENCE_TASK, seq);
@@ -803,10 +868,7 @@ namespace Hoodrich.Missions
         {
             try
             {
-                if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, SprayDict)) return false;
-
-                Function.Call(Hash.REQUEST_ANIM_DICT, SprayDict);
-                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, SprayDict)) return false;
+                if (!Loaded(SprayDict)) return false;
 
                 var seq = new OutputArgument();
                 Function.Call(Hash.OPEN_SEQUENCE_TASK, seq);
@@ -849,10 +911,7 @@ namespace Hoodrich.Missions
 
                 try
                 {
-                    if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) continue;
-
-                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
-                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
+                    if (!Loaded(dict)) continue;
 
                     foreach (var clip in SprayClips)
                     {
@@ -871,6 +930,12 @@ namespace Hoodrich.Missions
 
             // Nothing in this install fits, so he at least does something with his hands at a
             // wall rather than standing to attention while paint appears.
+            //
+            // Logged as a warning, not silently. This branch reading as normal is what let a
+            // man hammer a wall through an entire mission without anything saying why.
+            Log.Warn("No painting animation would load -- falling back to the hammer. " +
+                     "Lamar's set is " + string.Join(", ", LamarDicts) + ".");
+
             try
             {
                 Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, player.Handle,
