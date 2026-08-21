@@ -1066,6 +1066,11 @@ namespace Hoodrich
 
                 if (player.IsDead)
                 {
+                    // Read on the frame he goes down, not when he wakes up. The game clears
+                    // the source and the cause once the ped is respawned, so waiting until
+                    // Pillbox means asking a question that no longer has an answer.
+                    if (!_wasDown) RememberWhoGotYou(player);
+
                     _wasDown = true;
                     _pillboxAt = 0;
                 }
@@ -1090,7 +1095,121 @@ namespace Hoodrich
 
             _pillboxAt = 0;
             _social?.On(SocialEvent.Hospital, "");
+
+            // And whoever did it, still talking about it. Your people worrying and theirs
+            // laughing, which is how waking up in Pillbox would actually arrive.
+            if (_social != null && !string.IsNullOrEmpty(_killedByGang))
+            {
+                _social.RivalGang = _killedByGang;
+                _social.WastedHow = _killedHow;
+                _social.On(SocialEvent.WastedBy, _killedByName);
+
+                _killedByGang = "";
+            }
         }
+
+        private string _killedByGang = "";
+        private string _killedByName = "";
+        private string _killedHow = "shot";
+
+        /// <summary>
+        /// Works out who put you down and what with.
+        ///
+        /// GET_PED_SOURCE_OF_DEATH gives the entity, which is the only way to know whose set to
+        /// hand the gloating to -- and GET_PED_CAUSE_OF_DEATH gives the weapon, which decides
+        /// how they tell it. Being shot and being beaten with something are not the same story.
+        ///
+        /// A killer who is nobody's -- traffic, a fall, the police -- leaves the gang empty and
+        /// nothing is posted, because a set that had nothing to do with it has nothing to say.
+        /// </summary>
+        private void RememberWhoGotYou(Ped player)
+        {
+            _killedByGang = "";
+            _killedByName = "";
+            _killedHow = "shot";
+
+            try
+            {
+                var killer = Function.Call<int>(Hash.GET_PED_SOURCE_OF_DEATH, player.Handle);
+                if (killer == 0 || killer == player.Handle) return;
+
+                var ped = Entity.FromHandle(killer) as Ped;
+                if (ped == null || !ped.Exists()) return;
+
+                var gang = _crew == null ? null : _crew.GangOf(ped);
+                if (gang == null) return;
+
+                // Your own set killing you is not a set to gloat about it.
+                if (_crew.IsAffiliated &&
+                    string.Equals(gang.Id, _crew.Current.Id, StringComparison.OrdinalIgnoreCase)) return;
+
+                _killedByGang = gang.Id;
+                _killedByName = gang.Name;
+                _killedHow = HowTheyGotYou(player);
+
+                Log.Info("Wasted by " + gang.Id + " (" + _killedHow + ").");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not work out who got you: " + ex.Message);
+                _killedByGang = "";
+            }
+        }
+
+        /// <summary>
+        /// The weapon, bucketed into the four ways this ends that are worth telling apart.
+        ///
+        /// Hashes rather than names: the cause of death is a weapon hash and there is no native
+        /// that turns one back into a string, so the handful that matter are compared directly
+        /// and everything else is a gun.
+        /// </summary>
+        private static string HowTheyGotYou(Ped player)
+        {
+            try
+            {
+                var cause = Function.Call<uint>(Hash.GET_PED_CAUSE_OF_DEATH, player.Handle);
+
+                foreach (var name in MeleeCauses)
+                {
+                    if (cause == (uint)Function.Call<int>(Hash.GET_HASH_KEY, name)) return "melee";
+                }
+
+                foreach (var name in BlastCauses)
+                {
+                    if (cause == (uint)Function.Call<int>(Hash.GET_HASH_KEY, name)) return "blast";
+                }
+
+                foreach (var name in CarCauses)
+                {
+                    if (cause == (uint)Function.Call<int>(Hash.GET_HASH_KEY, name)) return "car";
+                }
+            }
+            catch
+            {
+                // A gun is the common case and a safe default.
+            }
+
+            return "shot";
+        }
+
+        private static readonly string[] MeleeCauses =
+        {
+            "WEAPON_UNARMED", "WEAPON_KNIFE", "WEAPON_BAT", "WEAPON_CROWBAR", "WEAPON_MACHETE",
+            "WEAPON_SWITCHBLADE", "WEAPON_KNUCKLE", "WEAPON_GOLFCLUB", "WEAPON_HAMMER",
+            "WEAPON_HATCHET", "WEAPON_NIGHTSTICK", "WEAPON_WRENCH", "WEAPON_BOTTLE",
+            "WEAPON_DAGGER", "WEAPON_POOLCUE", "WEAPON_BATTLEAXE", "WEAPON_STONE_HATCHET"
+        };
+
+        private static readonly string[] BlastCauses =
+        {
+            "WEAPON_GRENADE", "WEAPON_STICKYBOMB", "WEAPON_MOLOTOV", "WEAPON_PIPEBOMB",
+            "WEAPON_RPG", "WEAPON_GRENADELAUNCHER", "WEAPON_EXPLOSION", "WEAPON_FIRE"
+        };
+
+        private static readonly string[] CarCauses =
+        {
+            "WEAPON_RUN_OVER_BY_CAR", "WEAPON_RAMMED_BY_CAR", "WEAPON_VEHICLE_ROCKET"
+        };
 
         /// <summary>
         /// The road he is standing on, for a post that names where it happened.

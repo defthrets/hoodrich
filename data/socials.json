@@ -2904,6 +2904,58 @@
       "He is worth less than the time this took",
       "Somebody will visit. Not us",
       "He can keep the corner. We keep the city"
+    ],
+    "WastedShot": [
+      "dropped that green boy on {here} and he still ain't said nothing back",
+      "add one. clinton laid out on {street} like laundry #Scoreboard",
+      "he was reaching. he wasn't reaching fast enough",
+      "smoking on clinton tonight. ask anybody who was out there",
+      "one to the body and he folded on his own block",
+      "he had the strap and everything. that's the funny part",
+      "we caught him lacking and he found out what that means",
+      "they gon' say he slipped. he ain't slip. he got hit",
+      "pillbox got a new patient and we sent him #GetBack",
+      "he been posting all week. he ain't posting {timeofday}",
+      "shot him on his own street and drove off at the limit",
+      "every one of them seen it and not one of them moved"
+    ],
+    "WastedMelee": [
+      "beat that boy down with hands on {here}. no strap needed",
+      "didn't even pull nothing out. didn't have to",
+      "clinton got stretched out on the pavement and it wasn't even close",
+      "he swung once. once. then he was on the floor lookin' at the sky",
+      "we put hands on him like it was the school yard",
+      "that's what you get walkin' through here on foot, homie",
+      "no shots, no laws, no story. just him on the ground",
+      "took his whole chain and left him breathing. that's mercy",
+      "man got folded on {street} in front of everybody",
+      "he can't even say we shot him. we ain't shoot nothin'",
+      "dropped him with something that was leaning by a wall",
+      "he woke up in pillbox with a headache and no excuse"
+    ],
+    "WastedCar": [
+      "ran that boy over on {here} and kept driving",
+      "didn't even get out the car for him",
+      "clinton got hit by a whip and the whip drove off. that's it. that's the post",
+      "he seen it coming and still stood there",
+      "hit him at the light on {street}. never touched the brake",
+      "we ain't waste a bullet on that man",
+      "dude got tagged by a bumper. put THAT on a shirt",
+      "he in pillbox 'cause somebody was in a hurry",
+      "no shots fired. no shots needed. just a Sunday drive",
+      "peeled off him like a speed bump #NoBulletsWasted"
+    ],
+    "WastedBlast": [
+      "lit the whole corner up on {here} and he was standing in it",
+      "he heard it before he seen it. everybody did",
+      "clinton got sent up with the smoke",
+      "that wasn't a shooting, that was a demolition",
+      "whole street heard that one. so did he, for about a second",
+      "we brought something loud and he found out how loud",
+      "he in pillbox and his car is in pieces on {street}",
+      "no aiming needed for that one",
+      "told y'all we got hardware. y'all thought it was talk",
+      "that's what the noise was. that was him"
     ]
   },
   "voices": {

@@ -34,6 +34,16 @@ namespace Hoodrich.Social
         /// <summary>Woke up at Pillbox. Word gets round before you are out of the bed.</summary>
         Hospital,
 
+        /// <summary>
+        /// A rival put you down, and they are still talking about it when you get out.
+        ///
+        /// Separate from Hospital because the two are different rooms: Hospital is the block
+        /// wishing you well, this is the set that did it laughing about how. Both go out when
+        /// you wake up, which is exactly how it would arrive -- you come round to your people
+        /// worrying and theirs celebrating.
+        /// </summary>
+        WastedBy,
+
         /// <summary>A car going up somewhere quiet. Somebody always sees the smoke.</summary>
         CarBurned,
 
@@ -452,6 +462,25 @@ namespace Hoodrich.Social
         /// words say "we" and "they" without naming anybody -- which is right, and means the
         /// author pool is the only thing that decides whose mouth they come out of.
         /// </summary>
+        /// <summary>
+        /// How they got you, set by Main from the cause of death.
+        ///
+        /// Read once when the post is built rather than stored on the post, because it only
+        /// has to survive from the moment you go down to the moment you wake up.
+        /// </summary>
+        public string WastedHow = "shot";
+
+        private string WastedSet()
+        {
+            switch ((WastedHow ?? "").ToLowerInvariant())
+            {
+                case "melee": return "WastedMelee";
+                case "car": return "WastedCar";
+                case "blast": return "WastedBlast";
+                default: return "WastedShot";
+            }
+        }
+
         public string RivalGang
         {
             set { _rivalGang = value ?? ""; }
@@ -864,6 +893,14 @@ namespace Hoodrich.Social
                     count = 1 + _rng.Next(2);
                     break;
 
+                case SocialEvent.WastedBy:
+                    // The set that did it, and the words say HOW. Being shot and being beaten
+                    // with something are not the same story and a set that just dropped you
+                    // would not tell them the same way.
+                    follow = WastedSet();
+                    count = 1 + _rng.Next(3);
+                    break;
+
                 case SocialEvent.CarBurned:
                     follow = "CarBurned";
                     count = 1 + _rng.Next(2);
@@ -998,6 +1035,7 @@ namespace Hoodrich.Social
                 case SocialEvent.Shots: return 0.9f;
                 case SocialEvent.CarBurned: return 0.8f;
                 case SocialEvent.Hospital: return 1f;
+                case SocialEvent.WastedBy: return 1f;
                 case SocialEvent.WarStarted: return 1f;
                 case SocialEvent.WarHeld: return 1f;
                 case SocialEvent.WarLost: return 1f;
@@ -1033,6 +1071,7 @@ namespace Hoodrich.Social
                 case SocialEvent.Shots: return _rng.Next(2);
                 case SocialEvent.CarBurned: return _rng.Next(3);
                 case SocialEvent.Hospital: return 1 + _rng.Next(2);
+                case SocialEvent.WastedBy: return 12 + _rng.Next(30);
                 case SocialEvent.WarStarted: return 0;
 
                 case SocialEvent.RivalKilled: return 3 + _rng.Next(7);
@@ -1193,6 +1232,13 @@ namespace Hoodrich.Social
                 case "RivalMourns":
                 case "RivalGloats":
                 case "WarLiveRival":
+                    return string.IsNullOrEmpty(_rivalGang) ? "ballas" : _rivalGang;
+
+                // Whoever actually did it. Set by Main from the source of death.
+                case "WastedShot":
+                case "WastedMelee":
+                case "WastedCar":
+                case "WastedBlast":
                     return string.IsNullOrEmpty(_rivalGang) ? "ballas" : _rivalGang;
 
                 case "BallasTaunt": return "ballas";
