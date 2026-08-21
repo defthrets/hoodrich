@@ -71,8 +71,14 @@ namespace Hoodrich.Missions
         private static readonly Vector3 LamarBike = new Vector3(-105.510f, -1603.331f, 31.153f);
         private const float LamarBikeHeading = 345.805f;
 
-        /// <summary>The alley the homies come out of, round the back from Lamar.</summary>
-        private static readonly Vector3 HomieSpot = new Vector3(-115.933f, -1609.875f, 31.249f);
+        /// <summary>
+        /// Where the other two are waiting, up the alley from Lamar's bike.
+        ///
+        /// Four metres from his, so the three of them read as one crew setting off rather than
+        /// as people who happened to be in the same postcode.
+        /// </summary>
+        private static readonly Vector3 HomieSpot = new Vector3(-109.105f, -1598.494f, 31.091f);
+        private const float HomieHeading = 320.830f;
 
         // ---- ranges and timings ------------------------------------------------
 
@@ -283,6 +289,7 @@ namespace Hoodrich.Missions
         {
             Chatter();
             KeepUp(player);
+            SicThemOn(player);
 
             if (player.Position.DistanceTo(Courts) <= PreSpawnRange && _rivals.Count == 0)
             {
@@ -429,6 +436,117 @@ namespace Hoodrich.Missions
 
         // ---- the people --------------------------------------------------------
 
+        /// <summary>
+        /// Puts a man in your crew, properly.
+        ///
+        /// Riding alongside is a TASK -- it says where to be and nothing about whose side he is
+        /// on, so a homie escorting your bike would sit on it while somebody knocked you off
+        /// yours. The group is what makes him yours: group members defend the leader, break off
+        /// to take on whoever the leader is fighting, and come back afterwards without being
+        /// told to.
+        ///
+        /// NeverLeavesGroup on top of it, because the default is that a man who gets far enough
+        /// behind, or frightened enough, stops being in your group and never rejoins.
+        /// </summary>
+        private static void Enlist(Ped ped, Ped player)
+        {
+            if (ped == null || !ped.Exists() || player == null || !player.Exists()) return;
+
+            try
+            {
+                var group = Function.Call<int>(Hash.GET_PED_GROUP_INDEX, player.Handle);
+
+                Function.Call(Hash.SET_PED_AS_GROUP_MEMBER, ped.Handle, group);
+                Function.Call(Hash.SET_PED_NEVER_LEAVES_GROUP, ped.Handle, true);
+
+                // Loose, and spread out. A tight formation on bicycles is four men riding into
+                // each other's back wheel.
+                Function.Call(Hash.SET_GROUP_FORMATION, group, 1);
+                Function.Call(Hash.SET_GROUP_FORMATION_SPACING, group, 3.0f, 2.0f, 6.0f);
+                Function.Call(Hash.SET_GROUP_SEPARATION_RANGE, group, 250f);
+
+                // 5 is BF_AlwaysFight and 46 is BF_CanFightArmedPedsWhenNotArmed -- which is
+                // the one that matters on a job with no guns on it, because without it an
+                // unarmed man will not start on somebody who is holding something.
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
+
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 58, true);
+                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
+
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+            }
+            catch
+            {
+                // He rides along without being in the group, which is where he was before.
+            }
+        }
+
+        /// <summary>
+        /// Whoever you are swinging at, they swing at.
+        ///
+        /// Group membership makes them defend YOU, which is only half of a bodyguard -- it does
+        /// not make them start on somebody you have decided to start on. This reads the man
+        /// under your reticle and hands him to anybody who is not already busy.
+        ///
+        /// Only on somebody the crew is allowed to hit: the check is the game's own
+        /// relationship test, so on the courts they pile onto a Balla and on the way there they
+        /// ignore the pedestrian you happen to be pointing at.
+        /// </summary>
+        private void SicThemOn(Ped player)
+        {
+            if (Game.GameTime < _nextSic) return;
+            _nextSic = Game.GameTime + SicIntervalMs;
+
+            Ped foe = null;
+
+            try
+            {
+                var found = new OutputArgument();
+
+                if (Function.Call<bool>(Hash.GET_PLAYER_TARGET_ENTITY, Game.Player, found))
+                {
+                    foe = Entity.FromHandle(found.GetResult<int>()) as Ped;
+                }
+
+                if (foe == null && Function.Call<bool>(Hash.IS_PED_IN_MELEE_COMBAT, player.Handle))
+                {
+                    foe = Function.Call<Ped>(Hash.GET_MELEE_TARGET_FOR_PED, player.Handle);
+                }
+            }
+            catch { /* nobody, then */ }
+
+            if (foe == null || !foe.Exists() || !foe.IsAlive || foe == player) return;
+
+            foreach (var mate in _homies)
+            {
+                if (mate == null || !mate.Exists() || !mate.IsAlive) continue;
+
+                try
+                {
+                    if (Function.Call<bool>(Hash.IS_PED_IN_COMBAT, mate.Handle, foe.Handle)) continue;
+
+                    // Hostile to HIM, not to you -- a man who is only YOUR enemy is your own
+                    // problem. There is no are-these-two-hostile native in this build, so the
+                    // relationship is read directly: 4 is dislike and 5 is hate, and anything
+                    // milder is somebody they have no reason to hit.
+                    var feeling = Function.Call<int>(Hash.GET_RELATIONSHIP_BETWEEN_PEDS,
+                                                     mate.Handle, foe.Handle);
+
+                    if (feeling == RelDislike || feeling == RelHate)
+                    {
+                        Function.Call(Hash.TASK_COMBAT_PED, mate.Handle, foe.Handle, 0, 16);
+                    }
+                }
+                catch { /* he stays on whatever he was doing */ }
+            }
+        }
+
+        private int _nextSic;
+
+        /// <summary>Twice a second. Often enough to feel immediate, rare enough to be free.</summary>
+        private const int SicIntervalMs = 500;
+
         private void SpawnHomiesOnBikes(Ped player)
         {
             var gang = _crew.Current;
@@ -442,7 +560,7 @@ namespace Hoodrich.Missions
                 // appearing beside you is a spawn; three men coming up the alley is an arrival.
                 var spot = Ground(HomieSpot).Around(2.5f + i * 1.6f);
 
-                var bike = SpawnBike(spot, player.Heading);
+                var bike = SpawnBike(spot, HomieHeading);
                 if (bike == null) continue;
 
                 var ped = SpawnGangMember(gang, spot);
@@ -469,6 +587,7 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
                     Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true);
 
+                    Enlist(ped, player);
                     Escort(ped, bike, player);
 
                     var blip = ped.AddBlip();
@@ -544,6 +663,7 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped.Handle, true);
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
 
+                Enlist(ped, player);
                 Escort(ped, bike, player);
 
                 var blip = ped.AddBlip();
@@ -751,6 +871,7 @@ namespace Hoodrich.Missions
 
         /// <summary>The SET_RELATIONSHIP_BETWEEN_GROUPS scale, as used elsewhere in the mod.</summary>
         private const int RelRespect = 1;
+        private const int RelDislike = 4;
         private const int RelHate = 5;
 
         /// <summary>
