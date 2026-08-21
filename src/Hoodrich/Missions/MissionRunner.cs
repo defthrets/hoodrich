@@ -771,7 +771,17 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, homie.Handle, 2);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
 
-                    Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, homie.Handle, 120f, 0);
+                    // Named targets rather than "everybody hated within a hundred and twenty
+                    // metres". The area order sweeps in whoever the game currently considers an
+                    // enemy, and the moment you are wanted that includes the police -- so the
+                    // homies would open up on a patrol car while you were trying to lose it.
+                    // They came out here for these people.
+                    var foe = NearestLiveTarget(homie);
+
+                    if (foe != null)
+                    {
+                        Function.Call(Hash.TASK_COMBAT_PED, homie.Handle, foe.Handle, 0, 16);
+                    }
                 }
                 catch { /* the game's own AI takes it from here */ }
             }
@@ -881,6 +891,68 @@ namespace Hoodrich.Missions
         /// <summary>Roughly this apart, doubled at random, while a job is being done.</summary>
         private const int WorkPostGapMs = 7000;
 
+        /// <summary>The closest of the people we actually came for, or null when they are down.</summary>
+        private Ped NearestLiveTarget(Ped from)
+        {
+            Ped best = null;
+            var bestDist = float.MaxValue;
+
+            foreach (var ped in _targets)
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                var d = from.Position.DistanceTo(ped.Position);
+                if (d >= bestDist) continue;
+
+                best = ped;
+                bestDist = d;
+            }
+
+            return best;
+        }
+
+        /// <summary>
+        /// The shooting is over. Everybody stops.
+        ///
+        /// Without this they carry on fighting into the escape -- and by then the only hostiles
+        /// left are police, so the crew you brought along turn a two-star drive home into a
+        /// running battle you cannot leave. Blocking permanent events is the part that matters:
+        /// clearing tasks alone lasts until the next siren.
+        /// </summary>
+        private void StandDown()
+        {
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, false);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, homie.Handle);
+
+                    // Back to the car if you are in one, otherwise back to you. Standing where
+                    // the fight was while you drive off is its own kind of wrong.
+                    var player = Game.Player.Character;
+                    var ride = player == null ? null : player.CurrentVehicle;
+
+                    if (ride != null && ride.Exists())
+                    {
+                        Function.Call(Hash.TASK_ENTER_VEHICLE, homie.Handle, ride.Handle,
+                                      12000, -2, 2f, 1, 0);
+                    }
+                    else if (player != null)
+                    {
+                        Function.Call(Hash.TASK_FOLLOW_TO_OFFSET_OF_ENTITY, homie.Handle,
+                                      player.Handle, 1.5f, 0f, 0f, 2f, -1, 4f, true);
+                    }
+                }
+                catch { /* he will find his own way home */ }
+            }
+        }
+
         private void TickWork(Ped player)
         {
             ClearDeadBlips();
@@ -903,6 +975,8 @@ namespace Hoodrich.Missions
 
                 Notify.Important("~r~They seen you.~s~ Now get gone.");
 
+                StandDown();
+
                 State = MissionState.Escape;
                 Wanted(_def.HeatStars);
                 return;
@@ -915,12 +989,16 @@ namespace Hoodrich.Missions
                 // The trip home is part of the job. Without this the drive back is a formality
                 // you spend looking at a blip, and the only thing that ever went wrong happened
                 // before you got in the car.
+                StandDown();
+
                 State = MissionState.Escape;
 
                 Wanted(_def.HeatStars);
                 Notify.Important("~r~Somebody called it in.~s~ Lose 'em, then get back to Lamar.");
                 return;
             }
+
+            StandDown();
 
             State = MissionState.Collect;
             Notify.Important("~g~That's them done.~s~ Get back to Lamar.");
@@ -1204,8 +1282,15 @@ namespace Hoodrich.Missions
         /// <summary>Close enough to the car to be pouring it over the car.</summary>
         private const float TorchRange = 7f;
 
-        /// <summary>How long the trigger has to be down before it counts as poured.</summary>
-        private const int PourMs = 2200;
+        /// <summary>
+        /// How long the trigger has to be down before it counts as poured.
+        ///
+        /// Eight seconds. Two was long enough to prove you had pressed the button and far too
+        /// short to be emptying a can over a car -- the whole beat is standing there doing
+        /// something deliberate while the tank empties, and at two seconds it was over before
+        /// you had walked round the boot.
+        /// </summary>
+        private const int PourMs = 8000;
 
         private Vehicle _dumpCar;
         private Blip _dumpBlip;
