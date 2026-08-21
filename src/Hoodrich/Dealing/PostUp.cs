@@ -1990,11 +1990,14 @@ namespace Hoodrich.Dealing
 
             const float x = 0.5f;
 
-            // Lifted, because the reputation bar below is now tall enough to carry its own
-            // label and the block of text under it would otherwise run off the bottom.
-            const float y = 0.84f;
+            // Lifted again, because both bars now carry their own label and the block of text
+            // under them would otherwise run off the bottom of the screen.
+            const float y = 0.82f;
             const float w = 0.20f;
-            const float h = 0.016f;
+
+            // The same height as the reputation bar under it. They are a pair and a pair of
+            // different heights reads as one of them mattering more.
+            const float h = 0.030f;
 
             // Clear air between the two bars, so they read as a pair rather than as one thick
             // bar with a line through it.
@@ -2013,6 +2016,10 @@ namespace Hoodrich.Dealing
 
             var filled = w * heat;
             Hud.Rect(x - (w - filled) * 0.5f, y, filled, h, colour);
+
+            // Its name, in it, exactly as the reputation bar carries its own.
+            Hud.Text("HEAT", x, y - RepLabelHalf, RepLabelScale,
+                     Color.FromArgb(240, 252, 252, 250), Hud.FontChaletLondon);
 
             // And underneath it, what the block reckons of your product.
             //
@@ -2054,16 +2061,16 @@ namespace Hoodrich.Dealing
 
             var tint = State == PostState.Posted ? Palette.Text : Palette.Danger;
 
-            Hud.Text(state, x, y - 0.072f, 0.62f, tint, Hud.FontCursive);
+            Hud.Text(state, x, y - 0.088f, 0.62f, tint, Hud.FontCursive);
 
             // Where you stand, directly under the bar it belongs to, and without a prefix --
             // the bar says REPUTATION, so repeating it here said the word twice in two inches.
             Hud.Text(_state == null ? "" : _state.ProductRepWord.ToUpperInvariant(),
-                     x, y + 0.046f, 0.26f, repColour, Hud.FontLabel);
+                     x, y + 0.056f, 0.26f, repColour, Hud.FontChaletLondon);
 
             if (!string.IsNullOrEmpty(detail))
             {
-                Hud.Text(detail, x, y - 0.036f, 0.30f, Palette.TextDim, Hud.FontLabel);
+                Hud.Text(detail, x, y - 0.052f, 0.30f, Palette.TextDim, Hud.FontLabel);
             }
 
             // What is left is the number that decides whether you stay, so it goes first and
@@ -2076,11 +2083,11 @@ namespace Hoodrich.Dealing
 
             Hud.Text((_product == null ? "0" : _product.Amount(left)) +
                      " left  ·  " + lots + " more sale" + (lots == 1 ? "" : "s"),
-                     x, y + 0.072f, 0.30f,
+                     x, y + 0.082f, 0.30f,
                      left < 7f ? Palette.Warn : Palette.Cash, Hud.FontBody);
 
             Hud.Text(Footfall + " passing  ·  " + _sales + " sold  ·  $" + _earned.ToString("N0"),
-                     x, y + 0.096f, 0.28f, Palette.TextDim, Hud.FontBody);
+                     x, y + 0.106f, 0.28f, Palette.TextDim, Hud.FontBody);
         }
     }
 }

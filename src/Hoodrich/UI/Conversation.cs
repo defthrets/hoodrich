@@ -139,6 +139,11 @@ namespace Hoodrich.UI
         /// <summary>Ignore input for a moment after opening, or the key that opened it selects.</summary>
         private const int OpenGraceMs = 220;
 
+        /// <summary>And keep holding them for a moment after closing, for the same reason.</summary>
+        private const int CloseGraceMs = 320;
+
+        private int _closedAt;
+
         private DialogueNode _node;
         private int _selected;
         private int _openedAt;
@@ -263,6 +268,7 @@ namespace Hoodrich.UI
             Speak(Speaker, PartingLines);
 
             _node = null;
+            _closedAt = Game.GameTime;
             Subject = null;
             Speaker = null;
             TheirVoice = null;
@@ -285,7 +291,17 @@ namespace Hoodrich.UI
 
         public void Update()
         {
-            if (_node == null) return;
+            if (_node == null)
+            {
+                // Still holding the controls for a moment after it shuts.
+                //
+                // LockControls disables per FRAME, and this method returned before reaching it
+                // the instant the node went away -- so the very press that closed the screen
+                // arrived in the game world on the next frame and Franklin threw a punch at
+                // whoever he had just finished talking to.
+                if (Game.GameTime - _closedAt < CloseGraceMs) LockControls();
+                return;
+            }
 
             LockControls();
 
