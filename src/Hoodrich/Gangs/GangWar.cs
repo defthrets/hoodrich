@@ -1626,21 +1626,27 @@ namespace Hoodrich.Gangs
             const float w = 0.22f;
             const float h = 0.014f;
 
-            Hud.Text(_target.Who.ToUpperInvariant() + " UNDER ATTACK", x, y - 0.052f, 0.60f,
+            // Three things stacked upward from the top of the bar, each one placed off the
+            // thing below it rather than off a number picked by eye.
+            //
+            // Both previous attempts at this were eyeballed and both collided. Hud.Text places
+            // text by its TOP edge, so an offset that looks right for one font size is wrong
+            // for another -- the gang name first landed across the bar, and once it was lifted
+            // clear it landed across the title instead, because the sign-painter face at 0.60
+            // is half as tall again as the number I had assumed for it.
+            const float labelHeight = 0.018f;   // the gang name, at 0.28
+            const float titleHeight = 0.032f;   // the cursive title, at 0.60
+            const float gap = 0.006f;
+
+            var barTop = y - h * 0.5f;
+            var labelTop = barTop - gap - labelHeight;
+            var titleTop = labelTop - gap - titleHeight;
+
+            Hud.Text(_target.Who.ToUpperInvariant() + " UNDER ATTACK", x, titleTop, 0.60f,
                      Palette.Danger, Hud.FontCursive);
 
-            // Sat above the bar rather than through it.
-            //
-            // Hud.Text places text by its TOP edge, and the bar is centred on y -- so a label
-            // at y - 0.018 with a line height around 0.018 finished exactly where the bar
-            // started, and "THE LOST MC" was printed across the top of it. The gap below is
-            // measured from the top of the bar (y - h/2) rather than from y, so the two cannot
-            // drift back into each other if the bar ever changes height.
-            const float labelHeight = 0.018f;
-            const float labelGap = 0.006f;
-
             Hud.Text(_attacker == null ? "" : _attacker.Name.ToUpperInvariant(),
-                     x, y - h * 0.5f - labelGap - labelHeight, 0.28f,
+                     x, labelTop, 0.28f,
                      Palette.TextDim, Hud.FontLabel);
 
             var standing = 0;
