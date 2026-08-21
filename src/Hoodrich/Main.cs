@@ -413,7 +413,11 @@ namespace Hoodrich
                 // Weight sitting by Stretch's door, which is the whole reason anybody goes to
                 // that door. Fallbacks behind it: the Bikers bag and then a plain crate, so an
                 // install without the newer DLC gets something rather than nothing.
-                _stretchBox = new Fixture(new Vector3(-162.562f, -1637.442f, 34.029f), 2.453f,
+                // Turned off square with the wall. At 2.4 degrees the stack sat parallel to it
+                // and the corner of the top box went through the render; twenty-odd degrees is
+                // enough to clear it and reads as boxes somebody put down rather than boxes
+                // somebody aligned.
+                _stretchBox = new Fixture(new Vector3(-162.562f, -1637.442f, 34.029f), 24.500f,
                                           "m24_2_prop_m42_weedboxpile_01a",
                                           "bkr_prop_weed_bigbag_01a",
                                           "prop_boxpile_07d");
