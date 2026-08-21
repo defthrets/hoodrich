@@ -1062,6 +1062,12 @@ namespace Hoodrich.Missions
             _poured = false;
             _pourStartedAt = 0;
 
+            // Where the heat stood before the fire. Anything above this line is the arson, and
+            // the arson is the job -- Lamar told you to burn it, so being wanted for burning it
+            // is the mission arresting you for doing the mission.
+            _starsBeforeFire = Game.Player.Wanted.WantedLevel;
+            _fireQuietUntil = 0;
+
             ClearDumpBlip();
             Notify.Important("~o~Pour it over the car.~s~ Then light it.");
         }
@@ -1077,6 +1083,7 @@ namespace Hoodrich.Missions
         private void TickTorch(Ped player)
         {
             TalkAboutIt();
+            KeepTheFireQuiet();
 
             // The car is gone -- blown up on the way, despawned, driven off by somebody else.
             // Whatever happened to it, it is not evidence any more, so the job is done.
@@ -1130,6 +1137,33 @@ namespace Hoodrich.Missions
             if (near) Help.ShowThisFrame("Shoot the fuel.");
         }
 
+        /// <summary>
+        /// The fire does not get you wanted. Everything before it still does.
+        ///
+        /// Not a blanket suppression -- the stars you picked up shooting up Jamestown are the
+        /// point of the escape and they stay. This clamps back to whatever the level was when
+        /// you got out of the car, so the arson and the round you put through the fuel add
+        /// nothing, and anything you had already earned is untouched.
+        ///
+        /// It runs for a few seconds past the fire as well, because a witness reporting a car
+        /// going up does not do it the same frame.
+        /// </summary>
+        private void KeepTheFireQuiet()
+        {
+            try
+            {
+                var now = Game.Player.Wanted.WantedLevel;
+                if (now <= _starsBeforeFire) return;
+
+                Game.Player.Wanted.SetWantedLevel(_starsBeforeFire, false);
+                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+            }
+            catch
+            {
+                // Not worth an exception over a star.
+            }
+        }
+
         /// <summary>Car's gone up. Everything after this is the walk back.</summary>
         private void Burned()
         {
@@ -1151,6 +1185,10 @@ namespace Hoodrich.Missions
             TakeTheCan();
 
             if (Social != null) Social.On(SocialEvent.CarBurned, TargetName());
+
+            // A witness reporting a car going up does not do it the same frame, so the clamp
+            // carries on for a few seconds after the flames rather than stopping with them.
+            _fireQuietUntil = Game.GameTime + FireGraceMs;
 
             // A car going up in a field is not quiet. If anybody is still looking for you --
             // and setting fire to a vehicle is its own good reason for them to start -- that
@@ -1298,12 +1336,25 @@ namespace Hoodrich.Missions
         private int _pourStartedAt;
         private bool _hadCan;
 
+        /// <summary>Heat before the fire, so only the fire's share is taken back off.</summary>
+        private int _starsBeforeFire;
+
+        /// <summary>How long past the flames the clamp keeps running.</summary>
+        private int _fireQuietUntil;
+
+        private const int FireGraceMs = 9000;
+
         /// <summary>True once the car has gone up, so the second escape leads to Lamar.</summary>
         private bool _burned;
 
         private void TickEscape()
         {
             TalkAboutIt();
+
+            // Still inside the grace window from the fire. Without this the stars the arson
+            // was not supposed to give you arrive a moment after the burn, during the escape,
+            // and look exactly like the thing that was just fixed.
+            if (Game.GameTime < _fireQuietUntil) KeepTheFireQuiet();
 
             if (Game.Player.Wanted.WantedLevel > 0) return;
 
@@ -1468,6 +1519,8 @@ namespace Hoodrich.Missions
             _poured = false;
             _pourStartedAt = 0;
             _hadCan = false;
+            _starsBeforeFire = 0;
+            _fireQuietUntil = 0;
 
             _def = null;
             State = MissionState.None;

@@ -95,6 +95,18 @@ namespace Hoodrich
         private readonly Entourage _stretchCrew;
         private readonly Entourage _grimesCrew;
         private readonly Entourage _labCrew;
+        private readonly Entourage _denCrew;
+
+        /// <summary>
+        /// Men who live outside.
+        ///
+        /// Not the set and never armed. They are here because a crack den with nobody outside
+        /// it is a shutter, and the point of the place is that people come to it.
+        /// </summary>
+        private static readonly string[] Tramps =
+        {
+            "a_m_m_tramp_01", "a_m_o_tramp_01", "a_m_y_methhead_01", "a_m_m_hillbilly_01",
+        };
         /// <summary>
         /// Cars we park somewhere and leave, same idea as the scenery list.
         ///
@@ -423,6 +435,32 @@ namespace Hoodrich
                                          "m24_2_prop_m42_weedboxpile_01a",
                                          "bkr_prop_weed_bigbag_01a",
                                          "prop_boxpile_07d"));
+
+                // Somebody outside the crack den, which is what a crack den has outside it.
+                //
+                // His own crew because there is nothing else within a leash of here -- Grimes
+                // is sixty metres off and Lamar is two hundred. He takes the set's relationship
+                // group like anything an Entourage spawns, which for a man sat on a kerb means
+                // only that our lot leave him alone.
+                _denCrew = new Entourage(_gangs, "families",
+                                         new Vector3(-105.053f, -1408.631f, 29.673f),
+                                         226.934f, "the den")
+                    .Stand(new Vector3(-95.682f, -1411.403f, 29.490f), 352.017f,
+                           "WORLD_HUMAN_BUM_STANDING", Tramps, armed: false)
+
+                    // On the shutter itself, with the rifle. This is the door, so this is the
+                    // one that gets held rather than watched.
+                    .Stand(new Vector3(-102.389f, -1408.656f, 29.598f), 186.552f,
+                           "WORLD_HUMAN_GUARD_STAND", Fam(0))
+
+                    // And one round the corner by the bins, on a beer.
+                    .Stand(new Vector3(-99.879f, -1409.827f, 29.535f), 118.828f,
+                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false);
+
+                // And a car of ours round the side.
+                _cars.Add(new ParkedCar(new Vector3(-110.187f, -1414.896f, 29.975f), 39.782f,
+                                        MetallicDarkGreen,
+                                        "buccaneer2", "voodoo", "chino2", "primo2"));
 
                 _copWatch = new CopWatch();
 
@@ -827,6 +865,7 @@ namespace Hoodrich
                     if (_stretchCrew != null) _stretchCrew.Update();
                     _grimesCrew.Update();
                     _labCrew.Update();
+                    _denCrew.Update();
                     foreach (var car in _cars) car.Update();
                     _party.Update();
                     _partyBarrel.Update();
@@ -1183,6 +1222,7 @@ namespace Hoodrich
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _labCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _denCrew?.RestoreWorld(); } catch { /* teardown */ }
             foreach (var car in _cars)
             {
                 try { car.RestoreWorld(); } catch { /* teardown */ }
