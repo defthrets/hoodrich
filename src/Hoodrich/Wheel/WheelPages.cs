@@ -1204,8 +1204,11 @@ namespace Hoodrich.Wheel
                     detail: "Follow the blip and walk up on him",
                     value: _dealers.MeetDistance.ToString("0") + "m",
                     enabled: false, disabledReason: "Get to the meet");
+                page.WithIcon(Icons.FromFile("mask.png"));
+
                 page.Add("Call off", "x", () => _dealers.CancelMeet("You called it off."),
                     detail: "Cancel the meet");
+                page.WithIcon(Icons.FromFile("warning.png"));
                 return page;
             }
 
@@ -1228,6 +1231,8 @@ namespace Hoodrich.Wheel
                 list.Add("Nothing", "-", null,
                     detail: "Nobody in your phone",
                     enabled: false, disabledReason: "Nobody to text");
+                list.WithIcon(Icons.FromFile("locked.png"));
+
                 return list;
             }
 
@@ -1321,6 +1326,7 @@ namespace Hoodrich.Wheel
                             ? "He will not say yet -- " + toGo.ToString("0.#") + "g more to move"
                             : "\"Where are you getting this?\"",
                     value: known ? "KNOWN" : toGo > 0f ? toGo.ToString("0.#") + "g to go" : "ASK HIM");
+                page.WithIcon(Icons.FromFile("reply.png"));
             }
 
             page.Add("Leave", "x", () => _dealers.SayBye(),

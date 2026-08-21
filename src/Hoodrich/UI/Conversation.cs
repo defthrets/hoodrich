@@ -40,6 +40,15 @@ namespace Hoodrich.UI
         /// <summary>Set when this row's art is a blip tag rather than a texture.</summary>
         public string IconBlip = "";
 
+        /// <summary>
+        /// A PNG of ours, which wins over anything the game ships.
+        ///
+        /// The wheel has drawn these since the icons were made; this panel could not, so the
+        /// same Icon produced our own art on a wedge and the old shop sprite on a dialogue
+        /// row. One thing, two pictures, depending where you happened to be looking at it.
+        /// </summary>
+        public string IconFile = "";
+
         /// <summary>Texture names to try, for icons that are not named after their dictionary.</summary>
         public string[] Candidates;
 
@@ -92,6 +101,15 @@ namespace Hoodrich.UI
             if (Choices.Count == 0 || !icon.IsSet) return this;
 
             var choice = Choices[Choices.Count - 1];
+
+            // Ours first, exactly as the wheel takes it. Nothing to stream and nothing to
+            // resolve: a PNG is square, is authored for this size, and is the thing the row is
+            // supposed to be showing rather than a shop sprite that means something near it.
+            if (icon.HasFile)
+            {
+                choice.IconFile = icon.File;
+                return this;
+            }
 
             // A blip icon has no texture to stream or resolve -- it is drawn as text.
             if (icon.IsBlip)
@@ -467,8 +485,16 @@ namespace Hoodrich.UI
 
                 var textX = PanelX + 0.014f;
 
+                // Ours, if there is one. Square and authored for this size, so it needs none
+                // of the aspect correction the shipped sprites below do.
+                if (!string.IsNullOrEmpty(choice.IconFile) &&
+                    Hud.File(choice.IconFile, textX + Hud.ToX(0.022f) * 0.5f, y + 0.012f,
+                             0.022f, 0f, colour))
+                {
+                    textX += Hud.ToX(0.022f) + 0.006f;
+                }
                 // A blip is text, not a sprite -- blip art has no route through DRAW_SPRITE.
-                if (!string.IsNullOrEmpty(choice.IconBlip))
+                else if (!string.IsNullOrEmpty(choice.IconBlip))
                 {
                     Hud.Text(choice.IconBlip, textX, y + 0.001f, 0.34f, colour,
                              Hud.FontChaletLondon, centre: false);
