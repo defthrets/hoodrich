@@ -68,6 +68,7 @@ namespace Hoodrich
         private readonly GangLeaders _leaders;
         private readonly LeaderTalk _leaderTalk;
         private readonly Conversation _talk;
+        private BlockTalk _blockTalk;
         private readonly InfoPanel _info;
         private readonly StashScreen _stashScreen;
         private readonly StashHouse _stash;
@@ -617,6 +618,29 @@ namespace Hoodrich
 
                 _talk = new Conversation();
 
+                // The context key pointed at people rather than at places: a nod for one of
+                // yours in passing, a conversation with one who is posted up, and something to
+                // say over anybody on the pavement.
+                _blockTalk = new BlockTalk(_crew, _talk)
+                {
+                    // Not mid-raid either. Your own defenders are stood right there and a
+                    // prompt offering to nod at one of them while they are being shot at is
+                    // the wrong thing on screen.
+                    Busy = () => (_jobs != null && _jobs.IsRunning) ||
+                                 (_war != null && _war.IsRunning),
+
+                    // Everybody on this block is ALSO somebody. Lamar has two men stood with
+                    // him and Stretch has two more, so without this, walking up to Lamar offers
+                    // a nod at his hanger-on instead of the work he is holding.
+                    Suppressed = () =>
+                        (_fixer != null && _fixer.InReach) ||
+                        (_bigj != null && _bigj.InReach) ||
+                        (_kitchen != null && _kitchen.InReach) ||
+                        (_sleep != null && _sleep.InReach) ||
+                        (_delivery != null && _delivery.IsActive) ||
+                        (_postUp != null && _postUp.IsPosted)
+                };
+
                 // The bike job runs its own exchange on the court, so it needs the same screen.
                 _jobs.Talk = _talk;
 
@@ -881,6 +905,7 @@ namespace Hoodrich
                     _leaders.UpdatePrompt();
                     _fixer.Update();
                     _fixer.UpdatePrompt();
+                    _blockTalk.Update();
                     _bigj.Update();
                     _bigj.UpdatePrompt();
 
@@ -927,6 +952,10 @@ namespace Hoodrich
                 _stash.Draw();
                 _sleep.Draw();
                 _kitchen.Draw();
+
+                // Last, deliberately. Everything above owns a specific spot and has first
+                // claim on the key; this is whoever happens to be stood there otherwise.
+                _blockTalk.Draw();
 
                 SlowTick();
 
