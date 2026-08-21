@@ -105,8 +105,14 @@ namespace Hoodrich
         private readonly Fixture _partyCouch;
         private readonly Fixture _stretchBox;
 
-        /// <summary>The plants behind the lab. One thing that happens to be several props.</summary>
-        private readonly List<Fixture> _weed = new List<Fixture>();
+        /// <summary>
+        /// Props we put somewhere and leave.
+        ///
+        /// Everything in here is the same job -- stream a model at a coordinate, hand it back
+        /// on unload -- so a new one is a line in a list rather than a field, an Update call
+        /// and a teardown call. The named fixtures above predate this and should drift into it.
+        /// </summary>
+        private readonly List<Fixture> _scenery = new List<Fixture>();
 
         /// <summary>
         /// Women from round here.
@@ -357,9 +363,15 @@ namespace Hoodrich
                     new Vector3(-212.390f, -1714.471f, 32.664f),
                 })
                 {
-                    _weed.Add(new Fixture(plant, 238.0f, "sf_prop_sf_weed_med_01a",
-                                          "bkr_prop_weed_med_01a", "prop_weed_02"));
+                    _scenery.Add(new Fixture(plant, 238.0f, "sf_prop_sf_weed_med_01a",
+                                             "bkr_prop_weed_med_01a", "prop_weed_02"));
                 }
+
+                // And another box of weight against the back wall, by the shutter.
+                _scenery.Add(new Fixture(new Vector3(-205.039f, -1708.503f, 32.664f), 217.911f,
+                                         "m24_2_prop_m42_weedboxpile_01a",
+                                         "bkr_prop_weed_bigbag_01a",
+                                         "prop_boxpile_07d"));
 
                 _copWatch = new CopWatch();
 
@@ -768,7 +780,7 @@ namespace Hoodrich
                     _partyBarrel.Update();
                     _partyCouch.Update();
                     _stretchBox.Update();
-                    foreach (var plant in _weed) plant.Update();
+                    foreach (var prop in _scenery) prop.Update();
                     _jobs.Update();
                 }
 
@@ -1113,9 +1125,9 @@ namespace Hoodrich
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchBox?.RestoreWorld(); } catch { /* teardown */ }
 
-            foreach (var plant in _weed)
+            foreach (var prop in _scenery)
             {
-                try { plant.RestoreWorld(); } catch { /* teardown */ }
+                try { prop.RestoreWorld(); } catch { /* teardown */ }
             }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }
