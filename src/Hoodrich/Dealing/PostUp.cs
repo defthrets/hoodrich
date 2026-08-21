@@ -305,33 +305,55 @@ namespace Hoodrich.Dealing
         /// <summary>
         /// The bag, while he is working.
         ///
-        /// Component 5 is the slot the game keeps a ped's bag in -- the same one the heists put
-        /// a duffle in. So this is not a prop stuck to his back, it is the bag the model already
-        /// has, which means it moves with him and survives everything the game does to a player
-        /// ped.
+        /// An attached prop, not a clothing component. Component slot 5 IS the bag slot -- on a
+        /// multiplayer freemode ped. On a story ped, which Franklin is, slot 5 is HANDS, so
+        /// setting drawable 1 on it put a pair of black gloves on him and never put a bag
+        /// anywhere. Story peds have no bag component at all, so a prop on his back is the only
+        /// way he gets one.
         ///
-        /// What was there before is remembered rather than assumed to be nothing, because
-        /// somebody in a heist outfit is already wearing something in that slot and taking it
-        /// off him would be this mod undressing him.
+        /// Tried in order, first one this install has wins, and an install with none of them
+        /// simply deals without a bag rather than not dealing.
         /// </summary>
+        private static readonly string[] DuffleProps =
+        {
+            "prop_cs_heist_bag_01", "p_ld_heist_bag_01", "prop_cs_heist_bag_02",
+            "prop_michael_backpack", "prop_cs_duffel_01"
+        };
+
+        /// <summary>SKEL_Spine3 -- between the shoulder blades, where a bag hangs.</summary>
+        private const int SpineBone = 24818;
+
         private void CarryTheBag(Ped player)
         {
-            if (_bagOn) return;
+            if (_bag != null && _bag.Exists()) return;
 
             try
             {
                 if (player == null || !player.Exists()) return;
 
-                _bagWas = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, player.Handle, BagSlot);
-                _bagTexWas = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, player.Handle, BagSlot);
+                foreach (var name in DuffleProps)
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(900)) continue;
 
-                // Already carrying something. Leave it -- he can work with his own bag.
-                if (_bagWas > 0) return;
+                    _bag = World.CreateProp(model, player.Position, false, false);
+                    model.MarkAsNoLongerNeeded();
 
-                Function.Call(Hash.SET_PED_COMPONENT_VARIATION, player.Handle,
-                              BagSlot, Duffle, 0, 0);
+                    if (_bag == null || !_bag.Exists()) continue;
 
-                _bagOn = true;
+                    // Slung across his back. These numbers were set by eye and are the one part
+                    // of this that may want a nudge -- the bag models do not share an origin, so
+                    // whichever of the five an install has decides how it hangs.
+                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _bag.Handle, player.Handle,
+                                  Function.Call<int>(Hash.GET_PED_BONE_INDEX, player.Handle, SpineBone),
+                                  BagX, BagY, BagZ, BagPitch, BagRoll, BagYaw,
+                                  true, true, false, false, 2, true);
+
+                    Log.Info("Dealing with a " + name + " on his back.");
+                    return;
+                }
+
+                Log.Debug("No duffle prop in this install; dealing without one.");
             }
             catch (Exception ex)
             {
@@ -339,35 +361,35 @@ namespace Hoodrich.Dealing
             }
         }
 
-        /// <summary>Puts him back exactly as he was.</summary>
+        private const float BagX = 0.12f;
+        private const float BagY = -0.19f;
+        private const float BagZ = 0.00f;
+        private const float BagPitch = 0f;
+        private const float BagRoll = 180f;
+        private const float BagYaw = 65f;
+
+        /// <summary>Takes it off him, and off the map.</summary>
         private void DropTheBag()
         {
-            if (!_bagOn) return;
-            _bagOn = false;
+            if (_bag == null) return;
 
             try
             {
-                var player = Game.Player.Character;
-                if (player == null || !player.Exists()) return;
-
-                Function.Call(Hash.SET_PED_COMPONENT_VARIATION, player.Handle,
-                              BagSlot, _bagWas, _bagTexWas, 0);
+                if (_bag.Exists())
+                {
+                    Function.Call(Hash.DETACH_ENTITY, _bag.Handle, true, true);
+                    _bag.Delete();
+                }
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not take the bag off: " + ex.Message);
             }
+
+            _bag = null;
         }
 
-        /// <summary>PED_COMPONENT_HAND -- the slot a ped's bag lives in.</summary>
-        private const int BagSlot = 5;
-
-        /// <summary>The duffle. Drawable 1 on this slot is a bag on every player model.</summary>
-        private const int Duffle = 1;
-
-        private bool _bagOn;
-        private int _bagWas;
-        private int _bagTexWas;
+        private Prop _bag;
 
         public void Stop(string reason)
         {
