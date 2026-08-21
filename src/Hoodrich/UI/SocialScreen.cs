@@ -87,17 +87,15 @@ namespace Hoodrich.UI
         /// opens this screen twice to ask.
         /// </summary>
         private static readonly string[] TabNames =
-            { "ALL", "ABOUT YOU", "POST", "DISS", "CALL OUT" };
+            { "ALL", "ABOUT YOU", "POST", "DISS" };
 
         private const int TabPost = 2;
         private const int TabDiss = 3;
-        private const int TabCall = 4;
 
         /// <summary>Whether the body is the timeline rather than a list of things to do.</summary>
         private bool IsFeedTab { get { return _tab < 2; } }
 
-        /// <summary>How long a hold has to last. A war costs twice what naming a set does.</summary>
-        private const int CallHoldMs = 1100;
+        /// <summary>How long a hold has to last before a diss goes out.</summary>
         private const int DissHoldMs = 550;
 
         /// <summary>After a tab change, no hold may begin. Mirrors the open grace.</summary>
@@ -154,7 +152,6 @@ namespace Hoodrich.UI
 
         public GangRegistry Gangs;
         public Affiliation Crew;
-        public GangWar War;
 
         /// <summary>Where the cursor is inside the current action tab's list.</summary>
         private int _pick;
@@ -176,10 +173,9 @@ namespace Hoodrich.UI
         private string _why;
 
         private readonly List<GangDef> _dissList = new List<GangDef>();
-        private readonly List<GangDef> _callList = new List<GangDef>();
 
         /// <summary>Strip metrics, measured once when the screen opens rather than every frame.</summary>
-        private readonly float[] _stripW = new float[5];
+        private readonly float[] _stripW = new float[4];
         private float _stripScale = 0.26f;
         private float _stripGap = TabGap;
         private float _stripSplit = SplitGap;
@@ -272,7 +268,6 @@ namespace Hoodrich.UI
         private void BuildLists()
         {
             _dissList.Clear();
-            _callList.Clear();
 
             if (Gangs == null) return;
 
@@ -290,8 +285,6 @@ namespace Hoodrich.UI
                 {
                     _dissList.Add(gang);
                 }
-
-                _callList.Add(gang);
             }
         }
 
@@ -454,7 +447,6 @@ namespace Hoodrich.UI
         {
             if (_tab == TabPost) return Says.Length;
             if (_tab == TabDiss) return _dissList.Count;
-            if (_tab == TabCall) return _callList.Count;
 
             return 0;
         }
@@ -538,7 +530,7 @@ namespace Hoodrich.UI
                 return;
             }
 
-            if (now - _holdFrom >= (_tab == TabCall ? CallHoldMs : DissHoldMs))
+            if (now - _holdFrom >= DissHoldMs)
             {
                 _holdSpent = true;
                 _holdFrom = 0;
@@ -576,28 +568,16 @@ namespace Hoodrich.UI
                 return;
             }
 
-            if (_tab == TabDiss)
-            {
-                if (_pick >= _dissList.Count) return;
+            if (_tab != TabDiss) return;
+            if (_pick >= _dissList.Count) return;
 
-                var gang = _dissList[_pick];
-                var went = Diss != null && Diss(gang.Id);
+            var gang = _dissList[_pick];
+            var sent = Diss != null && Diss(gang.Id);
 
-                Note(went ? "That's out there now. They read it too." : "Not right now.",
-                     went ? Palette.Danger : Palette.Warn);
+            Note(sent ? "That's out there now. They read it too." : "Not right now.",
+                 sent ? Palette.Danger : Palette.Warn);
 
-                Hud.PlaySound(went ? "SELECT" : "ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-                return;
-            }
-
-            if (_pick >= _callList.Count || War == null) return;
-
-            // CallOut returns null when it took, and the REASON when it did not -- shown
-            // verbatim, so the screen and the system can never disagree about why.
-            var no = War.CallOut(_callList[_pick]);
-
-            Note(no ?? "Told them where you are.", no == null ? Palette.Danger : Palette.Warn);
-            Hud.PlaySound(no == null ? "SELECT" : "ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+            Hud.PlaySound(sent ? "SELECT" : "ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
         private void Note(string text, Color ink)
@@ -607,15 +587,7 @@ namespace Hoodrich.UI
             _noteAt = Game.GameTime;
         }
 
-        /// <summary>
-        /// Whether the row under the cursor can be fired, and what to say if not.
-        ///
-        /// Mirrors GangWar.CallOut's own gates with the SAME strings, so the pre-check and the
-        /// real refusal can never disagree. Being in a set matters most: without it an
-        /// unaffiliated player sees a live, holdable list of nine gangs, every one of which
-        /// refuses after a full hold -- and CallOut charges the standing BEFORE some of those
-        /// refusals, so they are not even free.
-        /// </summary>
+        /// <summary>Whether the row under the cursor can be fired, and what to say if not.</summary>
         private bool CanFire(out string why)
         {
             why = null;
@@ -626,37 +598,10 @@ namespace Hoodrich.UI
                 return true;
             }
 
-            if (_tab == TabDiss)
-            {
-                if (Diss == null) { why = "Not right now."; return false; }
-                if (_dissList.Count == 0) { why = "Nobody worth the trouble."; return false; }
-                return true;
-            }
+            if (_tab != TabDiss) return false;
 
-            if (_tab != TabCall) return false;
-
-            if (War == null) { why = "Not right now."; return false; }
-            if (_callList.Count == 0) { why = "Nobody to call out."; return false; }
-            if (War.IsRunning) { why = "Something's already going on."; return false; }
-            if (War.Busy != null && War.Busy()) { why = "Not while you're working."; return false; }
-            if (Crew == null || !Crew.IsAffiliated) { why = "You need a set behind you first."; return false; }
-
-            try
-            {
-                var player = Game.Player.Character;
-                if (player == null || !player.Exists() || !player.IsAlive)
-                {
-                    why = "Not right now.";
-                    return false;
-                }
-
-                if (player.IsInVehicle()) { why = "Get out the car first."; return false; }
-            }
-            catch
-            {
-                why = "Not right now.";
-                return false;
-            }
+            if (Diss == null) { why = "Not right now."; return false; }
+            if (_dissList.Count == 0) { why = "Nobody worth the trouble."; return false; }
 
             return true;
         }
@@ -666,8 +611,7 @@ namespace Hoodrich.UI
         {
             if (_holdFrom == 0) return 0f;
 
-            var span = _tab == TabCall ? CallHoldMs : DissHoldMs;
-            var t = (Game.GameTime - _holdFrom) / (float)span;
+            var t = (Game.GameTime - _holdFrom) / (float)DissHoldMs;
 
             return t < 0f ? 0f : t > 1f ? 1f : t;
         }
@@ -894,7 +838,7 @@ namespace Hoodrich.UI
             {
                 var here = i == _tab;
 
-                // _tally has TWO entries and the strip now has FIVE.
+                // _tally has TWO entries and the strip has FOUR.
                 var empty = i < 2 && _tally[i] == 0;
 
                 if (here)
@@ -905,9 +849,8 @@ namespace Hoodrich.UI
                                  i < 2 ? Palette.Accent : Palette.Danger);
                 }
 
-                // Two of the five in warning colour, not three. POST costs nothing and should
-                // not be dressed as though it did, and three amber labels stops the strip
-                // reading as one strip.
+                // One of the four in warning colour. POST costs nothing and should not be
+                // dressed as though it did, so DISS is the only label that arrives amber.
                 //
                 // An empty feed tab says so before you press it. NOT Palette.TextDisabled: that
                 // is full alpha and composites BRIGHTER than TextDim, which would make the
@@ -937,11 +880,6 @@ namespace Hoodrich.UI
                 Hud.TextRight(n + (n == 1 ? " POST" : " POSTS"), right, y + 0.0015f, 0.24f,
                               Palette.TextDim, Hud.FontLabel);
             }
-            else if (_tab == TabCall && War != null && War.IsRunning)
-            {
-                Hud.TextRight("WAR ON", right, y + 0.0015f, 0.24f, Palette.Danger, Hud.FontLabel);
-            }
-
             y += 0.032f;
             Hud.RectFrom(x, y, PanelWidth - Pad * 2f, 0.0022f, edge);
             return y + 0.012f;
@@ -981,7 +919,7 @@ namespace Hoodrich.UI
                 }
                 else
                 {
-                    var gang = _tab == TabDiss ? _dissList[i] : _callList[i];
+                    var gang = _dissList[i];
 
                     label = gang.Name;
                     tick = gang.Colour;
@@ -1084,8 +1022,12 @@ namespace Hoodrich.UI
                 Hud.RectFrom(x, top - 0.004f, (PanelWidth - Pad * 2f) * t, 0.0022f, Palette.Danger);
             }
 
-            string headTxt;
-            Color headInk;
+            // Assigned here rather than by every branch. The chain below used to end in an
+            // unconditional else -- the call-out card -- so the compiler could see that one of
+            // them always ran. With that card gone the chain can fall through, and a header
+            // that draws nothing is better than one that cannot compile.
+            var headTxt = "";
+            var headInk = Palette.TextDim;
             var icon = "";
 
             string l1 = "", l2 = "", l3 = "";
@@ -1117,20 +1059,6 @@ namespace Hoodrich.UI
                 i2 = Palette.Danger;
                 l3 = string.IsNullOrEmpty(g.TurfHint) ? "Say it where they can see it" : g.TurfHint;
                 i3 = Palette.Alpha(Palette.TextDim, 150);
-            }
-            else
-            {
-                var g = _callList[_pick];
-
-                headTxt = "CALLING OUT " + g.Name.ToUpperInvariant();
-                headInk = Palette.Danger;
-                icon = "skull.png";
-
-                l1 = "Where -- right where you're standing.";
-                i1 = Palette.Danger;
-                l2 = "Who turns up -- carload after carload.";
-                i2 = Palette.Danger;
-                l3 = "Walk off -- and it's over.";
             }
 
             // A result or a refusal replaces the LINES and keeps the HEAD, so the set you are
@@ -1253,8 +1181,7 @@ namespace Hoodrich.UI
             else if (Rows() == 0) keys = "LEFT/RIGHT  TABS      BACKSPACE  OUT";
             else if (!_live) keys = "UP/DOWN  PICK      BACKSPACE  OUT";
             else if (_tab == TabPost) keys = "UP/DOWN  PICK      ENTER  POST      BACKSPACE  OUT";
-            else if (_tab == TabDiss) keys = "UP/DOWN  PICK      HOLD ENTER  SEND      BACKSPACE  OUT";
-            else keys = "UP/DOWN  PICK      HOLD ENTER  CALL      BACKSPACE  OUT";
+            else keys = "UP/DOWN  PICK      HOLD ENTER  SEND      BACKSPACE  OUT";
 
             Hud.Text(keys, x, y, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
 

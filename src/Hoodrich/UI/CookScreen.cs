@@ -37,50 +37,16 @@ namespace Hoodrich.UI
         private static readonly float[] Purities = { 1.0f, 0.75f, 0.5f, 0.33f };
 
         /// <summary>
-        /// What the batch gets packaged into.
+        /// The bag size used to be chosen here, and is not any more.
         ///
-        /// Not an amount so much as a decision about who you are selling to. Singles move fast
-        /// on a corner and take all afternoon; ounces move once and are gone. The product
-        /// decides what these actually mean -- a counted product packages into ones whatever
-        /// you pick, because a half a pill is not a thing.
-        /// </summary>
-        private static readonly float[] Sizes = { 1f, 3.5f, 7f, 28f };
-
-        private static readonly string[] SizeNames = { "Singles", "Eighths", "Quarters", "Ounces" };
-
-        /// <summary>
-        /// The same decision for things that are counted rather than weighed.
+        /// Four options -- singles, eighths, quarters, ounces -- and the only thing any of them
+        /// changed was how long you stood at the counter. The stash is measured in weight, so
+        /// an ounce and twenty-eight singles were the same entry in it, worth the same money
+        /// and sold the same way. The screen offered a decision that nothing downstream could
+        /// read, which is a worse thing to put in front of somebody than no decision at all.
         ///
-        /// You do bag pills in tens. It is the same trade weight makes -- singles move slowly
-        /// for more, bulk moves at once for less -- and it is a real choice, which is why this
-        /// exists instead of the screen greying the whole row out and writing "one at a time"
-        /// next to it.
+        /// What is left is the choice that does something: how far you step on it.
         /// </summary>
-        private static readonly float[] CountedSizes = { 1f, 5f, 10f, 25f };
-
-        private static readonly string[] CountedNames = { "Singles", "Fives", "Tens", "Twenty-fives" };
-
-        /// <summary>Sizes for a product, in its own units.</summary>
-        private static float[] SizesOf(DrugDef made)
-        {
-            if (made == null) return Sizes;
-
-            // Made-only things come out finished. A joint is a joint -- there is no second way
-            // to package one, so there is nothing to choose and nothing shown.
-            if (made.MadeOnly) return new[] { 1f };
-
-            return made.Counted ? CountedSizes : Sizes;
-        }
-
-        private static string[] NamesOf(DrugDef made)
-        {
-            if (made == null) return SizeNames;
-            if (made.MadeOnly) return new[] { "" };
-
-            return made.Counted ? CountedNames : SizeNames;
-        }
-
-        private int _size;
 
         /// <summary>One line at the counter: what you work, and what comes off it.</summary>
         private sealed class CookRow
@@ -108,16 +74,25 @@ namespace Hoodrich.UI
 
         private Drugs _catalogue;
         private Pricing _pricing;
-        private Func<DrugDef, DrugDef, float, float, float, string> _start;
+        private Func<DrugDef, DrugDef, float, float, string> _start;
 
         private int _selected;
         private int _purity;
         private int _openedAt;
 
+        /// <summary>
+        /// How tall a row's art is, as a fraction of screen height.
+        ///
+        /// Matched to the body text it sits beside rather than to the row box: art as tall as
+        /// the row crowds the words either side of it, and these PNGs are authored square so
+        /// the height is the whole size.
+        /// </summary>
+        private const float ArtSize = 0.019f;
+
         public bool IsOpen { get; private set; }
 
         public void Open(Stash stash, Stash house, Drugs catalogue, Pricing pricing,
-                         Func<DrugDef, DrugDef, float, float, float, string> start)
+                         Func<DrugDef, DrugDef, float, float, string> start)
         {
             if (stash == null || catalogue == null || pricing == null) return;
 
@@ -129,7 +104,6 @@ namespace Hoodrich.UI
 
             _selected = 0;
             _purity = 0;
-            _size = 0;
             _openedAt = Game.GameTime;
             IsOpen = true;
 
@@ -251,7 +225,6 @@ namespace Hoodrich.UI
             else if (Pressed(Control.PhoneDown)) Move(1);
             else if (Pressed(Control.PhoneLeft)) Step(-1);
             else if (Pressed(Control.PhoneRight)) Step(1);
-            else if (Pressed(Control.Jump) || Pressed(Control.Cover)) Bag(1);
             else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) Begin();
         }
 
@@ -266,42 +239,16 @@ namespace Hoodrich.UI
             if (_selected < 0) _selected = _rows.Count - 1;
             if (_selected >= _rows.Count) _selected = 0;
 
-            // Products do not all have the same number of ways to be packaged. Moving from
-            // weed on ounces to joints, which have one, would leave the highlight pointing at
-            // an option that is not drawn -- nothing lit up and the screen looking broken.
-            var sizes = SizesOf(Made()).Length;
-            if (_size >= sizes) _size = sizes - 1;
-
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
-        /// <summary>Steps through what it gets bagged into.</summary>
-        private void Bag(int step)
-        {
-            // Within this product's own list. Four steps through a list of one is four presses
-            // that do nothing and look broken.
-            var count = Math.Max(1, SizesOf(Made()).Length);
-
-            _size = (_size + step) % count;
-            if (_size < 0) _size += count;
-
-            Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-        }
-
-        /// <summary>The size actually used, which a counted product has no say in.</summary>
-        /// <summary>What is coming off the counter, which is what the sizes are for.</summary>
+        /// <summary>What is coming off the counter.</summary>
         private DrugDef Made()
         {
             if (_rows.Count == 0) return null;
 
             var row = _rows[Math.Max(0, Math.Min(_selected, _rows.Count - 1))];
             return row.Output ?? row.Source;
-        }
-
-        private float SizeFor(DrugDef made)
-        {
-            var sizes = SizesOf(made);
-            return sizes[Math.Max(0, Math.Min(_size, sizes.Length - 1))];
         }
 
         private void Step(int step)
@@ -325,8 +272,7 @@ namespace Hoodrich.UI
 
             batch = Math.Min(batch, _stash.BulkOf(row.Source.Id));
 
-            var failure = _start?.Invoke(row.Source, row.Output, batch, Purities[_purity],
-                                         SizeFor(row.Output ?? row.Source));
+            var failure = _start?.Invoke(row.Source, row.Output, batch, Purities[_purity]);
             if (failure != null)
             {
                 Notify.Problem(failure);
@@ -394,6 +340,7 @@ namespace Hoodrich.UI
             Hud.Text("WHAT YOU'RE WORKING", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
             y += 0.026f;
 
+
             foreach (var row in _rows)
             {
                 var picked = _rows[_selected] == row;
@@ -410,7 +357,26 @@ namespace Hoodrich.UI
                     Hud.RectFrom(x - pad * 0.35f, y - 0.005f, 0.0022f, RowHeight, Palette.Accent);
                 }
 
-                Hud.Text((picked ? "> " : "  ") + row.Label, x, y, 0.30f,
+                // The product's own art, in the gutter, the way every other screen in the mod
+                // marks a row. Drawn from the SOURCE rather than the output: this column is
+                // what you are putting on the counter, and the arrow in the label already says
+                // what comes off it.
+                //
+                // Hud.File places by its CENTRE and Hud.Text by its TOP edge, so the art is
+                // pushed down half a row to sit level with the words rather than above them.
+                var art = Icons.ForDrug(row.Source.Id);
+                var ax = x + Hud.ToX(ArtSize) * 0.5f;
+
+                var drew = art.HasFile &&
+                           Hud.File(art.File, ax, y + RowHeight * 0.32f, ArtSize, 0f,
+                                    picked ? Palette.Text : Palette.TextDim);
+
+                // Indented past the art when there is art, and left where it was when there is
+                // not -- a row that silently loses its icon should lose the space with it
+                // rather than sit in a column of its own.
+                var tx = drew ? x + Hud.ToX(ArtSize) + 0.008f : x;
+
+                Hud.Text((picked ? "> " : "  ") + row.Label, tx, y, 0.30f,
                          picked ? Palette.Text : Palette.TextDim, Hud.FontBody, centre: false);
 
                 // Where it is, when it is not simply on you. Otherwise a number that includes
@@ -470,47 +436,26 @@ namespace Hoodrich.UI
                 cx += width + 0.006f;
             }
 
-            Hud.TextRight((chosen.Rolling ? made.WorkVerb : product.WorkVerb) + "  ·  " + PurityWord(purity),
-                          right, y + 0.002f, 0.28f, Palette.Accent, Hud.FontLabel);
+            // What comes off the counter gets its art too, out on the right where the verb
+            // and the purity word already sit -- so the line that says how far you are
+            // stepping on it is next to a picture of the thing being stepped on.
+            var outArt = Icons.ForDrug(made.Id);
+            var words = (chosen.Rolling ? made.WorkVerb : product.WorkVerb) + "  ·  " + PurityWord(purity);
 
-            y += 0.032f;
+            Hud.TextRight(words, right, y + 0.002f, 0.28f, Palette.Accent, Hud.FontLabel);
 
-            // And what it gets bagged into, in this product's own units -- grams for weight,
-            // counts for pills. A product with only one way to be packaged shows nothing at
-            // all rather than three struck-through options, because an option greyed out is
-            // still an option on screen and there is no decision here to explain.
-            var names = NamesOf(made);
-            var bx = x;
-
-            for (var i = 0; i < names.Length; i++)
+            if (outArt.HasFile)
             {
-                if (string.IsNullOrEmpty(names[i])) continue;
-
-                var on = i == _size;
-                var label = names[i];
-                var width = Hud.MeasureText(label, 0.28f, Hud.FontBody) + 0.014f;
-
-                if (on)
+                try
                 {
-                    Hud.RectFrom(bx - 0.004f, y - 0.002f, width, 0.024f,
-                                 Color.FromArgb(210, 240, 242, 240));
+                    var w = Hud.MeasureText(words, 0.28f, Hud.FontLabel);
+                    Hud.File(outArt.File, right - w - Hud.ToX(ArtSize) * 0.75f,
+                             y + 0.011f, ArtSize, 0f, Palette.Accent);
                 }
-
-                Hud.Text(label, bx + 0.003f, y + 0.001f, 0.28f,
-                         on ? Palette.TextOnHover : Palette.TextDim,
-                         Hud.FontBody, centre: false);
-
-                bx += width + 0.006f;
+                catch { /* the words carry it on their own */ }
             }
 
-            // What comes off the counter, in whatever this thing is counted in. The old
-            // version said "counted, one at a time" for anything countable, which was the
-            // screen explaining why its own options did not apply -- there is nothing to
-            // explain now, so it just says how many bags.
-            Hud.TextRight(Bags(made, yield) + " to sell",
-                          right, y + 0.001f, 0.28f, Palette.TextDim, Hud.FontLabel);
-
-            y += 0.030f;
+            y += 0.032f;
 
             Hud.Text(product.Amount(batch) + "  ->  " + made.Amount(yield), x, y, 0.30f,
                      fits ? Palette.Cash : Palette.Danger, Hud.FontBody, centre: false);
@@ -530,26 +475,9 @@ namespace Hoodrich.UI
                      Hud.FontBody, centre: false);
             y += 0.026f;
 
-            Hud.Text("UP / DOWN  PICK PRODUCT      LEFT / RIGHT  HOW FAR      SPACE  BAG SIZE      " +
+            Hud.Text("UP / DOWN  PICK PRODUCT      LEFT / RIGHT  HOW FAR      " +
                      "ENTER  START      BACKSPACE  LEAVE",
                      x, top + height - 0.020f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
-        }
-
-        /// <summary>How many packages a yield comes out as, at the chosen size.</summary>
-        private string Bags(DrugDef made, float yield)
-        {
-            var size = SizeFor(made);
-            if (size <= 0f) return "0";
-
-            var count = (int)Math.Floor(yield / size);
-
-            var names = NamesOf(made);
-            var name = names[Math.Max(0, Math.Min(_size, names.Length - 1))].ToLowerInvariant();
-
-            // Nothing to say about how it is bagged, so say what it is instead.
-            if (string.IsNullOrEmpty(name)) return made.Amount(yield);
-
-            return count + " " + (count == 1 ? name.TrimEnd('s') : name);
         }
 
         private static string PurityWord(float purity)

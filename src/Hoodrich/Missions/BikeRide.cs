@@ -236,6 +236,12 @@ namespace Hoodrich.Missions
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;
 
+            // Re-asserted, the same as the raid does. It was taken once when the job started
+            // and the game hands the police back on its own -- a cutscene, an area reload, a
+            // mission ending. The straightener on the courts is not a police matter and should
+            // not become one halfway through.
+            HoldTheLaw(true);
+
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive)
             {

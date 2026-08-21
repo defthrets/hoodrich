@@ -903,6 +903,14 @@ namespace Hoodrich.Gangs
             return null;
         }
 
+        /// <summary>
+        /// How pure a fronted bag is.
+        ///
+        /// Three quarters. Stash clamps to 0.2..1.0 so this is well inside, and PurityWord
+        /// calls 0.75 "barely stepped on" -- which is what a bag off your own set should be.
+        /// </summary>
+        private const float FrontedPurity = 0.75f;
+
         /// <summary>Hands over a starter bag of whatever the crew moves.</summary>
         private void FrontProduct(GangDef gang, Drugs catalogue)
         {
@@ -911,8 +919,16 @@ namespace Hoodrich.Gangs
             var product = catalogue.Get(gang.Drugs[0]);
             if (product == null) return;
 
+            // Fronted at three quarters, not untouched.
+            //
+            // It used to arrive at 1.0, which is better than anything the player can produce
+            // in his own kitchen -- so the bag a set hands a newcomer to get him started was
+            // the best product in the game, and cutting your own was a step down. A front is
+            // somebody else's work off somebody else's re-up, already stepped on once before
+            // it got to you. Now it sells for what stepped-on weight sells for, and the
+            // kitchen is worth walking into.
             var grams = Math.Max(1f, _cfg.LeaderFrontGrams);
-            var given = _state.Stash.AddPackaged(product.Id, grams, 1f);
+            var given = _state.Stash.AddPackaged(product.Id, grams, FrontedPurity);
             if (given <= 0f)
             {
                 Notify.Problem("you can't carry what he's trying to hand you.");

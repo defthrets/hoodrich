@@ -33,15 +33,6 @@ namespace Hoodrich.Economy
         /// </summary>
         private const int MaxDurationMs = 60_000;
 
-        /// <summary>
-        /// Every bag has to be filled, tied and put somewhere.
-        ///
-        /// Halved along with the cap being doubled. Together those keep the biggest realistic
-        /// batch inside the ceiling -- so singles stay slower than ounces all the way up rather
-        /// than both flattening against the cap and coming out identical.
-        /// </summary>
-        private const int MsPerPackage = 120;
-
         private readonly Stash _stash;
         private readonly PlayerState _state;
 
@@ -117,22 +108,8 @@ namespace Hoodrich.Economy
         /// products rather than one: what goes on the counter and what comes off it are not
         /// always the same thing.
         /// </summary>
-        public string TryStart(DrugDef product, DrugDef output, float bulkGrams, float targetPurity)
-        {
-            return TryStart(product, output, bulkGrams, targetPurity, 1f);
-        }
-
-        /// <summary>
-        /// The same, told what it is being bagged into.
-        ///
-        /// The size is not a different product -- an ounce and twenty-eight singles are the same
-        /// weight of the same thing -- it is how long you are stood at that counter. Twenty-eight
-        /// little bags is an afternoon; one ounce bag is a minute, and the corner will take all
-        /// day to move it. That is the trade, and it is the only honest thing a bag size can do
-        /// in a stash measured by weight.
-        /// </summary>
         public string TryStart(DrugDef product, DrugDef output, float bulkGrams,
-                               float targetPurity, float packageSize)
+                               float targetPurity)
         {
             if (output == null) output = product;
             if (IsBusy) return "Already working.";
@@ -160,11 +137,16 @@ namespace Hoodrich.Economy
             _bulkGrams = bulkGrams;
             _targetPurity = targetPurity;
             _startedAt = Game.GameTime;
-            // How long depends on how many bags come out of it, not just how much went in.
-            var yieldNow = YieldOf(product, output, bulkGrams, targetPurity);
-            var bags = packageSize <= 0f ? yieldNow : yieldNow / packageSize;
 
-            var work = BaseDurationMs + (int)(bulkGrams * MsPerGram) + (int)(bags * MsPerPackage);
+            // How long it takes is how much went in, and nothing else now.
+            //
+            // There used to be a per-bag term on top of this, because the screen let you pick
+            // what it was bagged into and that had to be worth picking. With the choice gone
+            // the term had nothing driving it -- left at a package size of one it would have
+            // put every batch on the old singles timing, which was the slowest of the four and
+            // the one nobody would have chosen. A 250g batch ran sixty seconds that way and
+            // runs twenty-six now, which is where the ounces setting already sat.
+            var work = BaseDurationMs + (int)(bulkGrams * MsPerGram);
 
             _durationMs = Math.Min(MaxDurationMs, Math.Max(BaseDurationMs, work));
 

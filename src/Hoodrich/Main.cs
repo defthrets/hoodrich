@@ -780,7 +780,6 @@ namespace Hoodrich
                 // wedge is a door and nothing else.
                 _socialScreen.Gangs = _gangs;
                 _socialScreen.Crew = _crew;
-                _socialScreen.War = _war;
                 _socialScreen.PaybackDue = () => _payback != null && _payback.IsOwed;
 
                 _socialScreen.Say = set => _social.PostAsYou(set, "") != null;
@@ -1397,8 +1396,8 @@ namespace Hoodrich
             // weight is kept, and having to walk to the other screen to move a kilo eight feet
             // is not a decision, it is an errand.
             _cook.Open(_state.Stash, _stash == null ? null : _stash.Stash, _drugs, _pricing,
-                       (drug, output, grams, purity, size) =>
-                           _cutting.TryStart(drug, output, grams, purity, size));
+                       (drug, output, grams, purity) =>
+                           _cutting.TryStart(drug, output, grams, purity));
         }
 
         /// <summary>True when the player is in normal control and the mod should be live.</summary>

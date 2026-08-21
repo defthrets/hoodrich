@@ -227,7 +227,6 @@ namespace Hoodrich.Gangs
         private const float WorstRep = -60f;
 
         /// <summary>Stars handed over once it is finished, and not a moment before.</summary>
-        private const int StarsAfter = 2;
 
         private const int PedTypeCiv = 4;
         private const int UpdateIntervalMs = 700;
@@ -387,38 +386,6 @@ namespace Hoodrich.Gangs
         /// of yours musters -- you are the one on somebody else's block, which is the whole
         /// difference between this and a raid.
         /// </summary>
-        /// <summary>
-        /// Calls a set out and brings them to you. Returns a refusal, or null once it is on.
-        ///
-        /// The same war the three-kills trigger starts, reached deliberately instead of by
-        /// accident: you post their name and they come to where you are standing. Which is
-        /// what the diss already threatens and never actually did.
-        /// </summary>
-        public string CallOut(GangDef gang)
-        {
-            if (gang == null) return "Nobody to call out.";
-            if (IsRunning) return "Something's already going on.";
-            if (Busy != null && Busy()) return "Not while you're working.";
-            if (!_crew.IsAffiliated) return "You need a set behind you first.";
-
-            var mine = _crew.Current;
-            if (mine != null && string.Equals(mine.Id, gang.Id, StringComparison.OrdinalIgnoreCase))
-            {
-                return "That's your own set.";
-            }
-
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
-            if (player.IsInVehicle()) return "Get out the car first.";
-
-            // Costs the same as putting three of them down does, and for the same reason: this
-            // is not a taunt, it is an invitation, and they do not forget being invited.
-            _crew.Taunted(gang.Id, ProvokeStandingCost);
-
-            Provoke(gang);
-            return IsRunning ? null : "They didn't bite.";
-        }
-
         private void Provoke(GangDef gang)
         {
             var player = Game.Player.Character;
@@ -2045,18 +2012,13 @@ namespace Hoodrich.Gangs
                 return;
             }
 
-            // Two stars, now it is over. Nobody in that street called it in while it was
-            // happening -- they called it in once the shooting stopped, which is both how it
-            // actually goes and the reason the fight itself is allowed to be a fight.
-            if (showed)
-            {
-                try
-                {
-                    Game.Player.Wanted.SetWantedLevel(StarsAfter, false);
-                    Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
-                }
-                catch { /* the law will find him eventually */ }
-            }
+            // Nobody calls it in. Not during, and not after either.
+            //
+            // Two stars used to land the moment a raid ended, on the reasoning that the street
+            // reports it once the shooting stops. It reads as the police turning up FOR the
+            // raid, because that is the only wanted level anybody sees anywhere near one -- so
+            // "no stars during a gang war" and a guaranteed two stars at the end of every gang
+            // war are the same complaint. A raid on your own block is between the two sets.
 
             if (held)
             {

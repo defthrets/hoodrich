@@ -26,28 +26,59 @@ namespace Hoodrich.Core
         /// <summary>Whether anybody is currently holding the police off.</summary>
         public static bool Held => Holders.Count > 0;
 
+        /// <summary>
+        /// Takes the police off, and puts them off again every time it is asked.
+        ///
+        /// Asking twice used to be free in the worst sense: the first line was
+        /// `if (Holders.Contains(who)) return;`, so a caller already on the list got nothing
+        /// at all. GangWar calls this every single tick of a raid and says in its own comment
+        /// that it is re-asserting, because the game resets the max wanted level on a mission
+        /// finishing, a cutscene, an area reload -- and it was not re-asserting anything. The
+        /// natives were pushed once at the start of the war and whatever happened to them
+        /// after that stood. Which is exactly what "we keep getting stars during the raid"
+        /// looks like from the street.
+        ///
+        /// So re-asking now re-applies. The one thing that must NOT happen twice is reading
+        /// the level to go back to -- read it again while it is held and it reads zero, and
+        /// the police never come back at all.
+        /// </summary>
         public static void Hold(object who)
         {
-            if (who == null || Holders.Contains(who)) return;
+            if (who == null) return;
 
             var first = Holders.Count == 0;
+
+            // A set, so adding somebody already on it changes nothing and costs nothing.
             Holders.Add(who);
 
-            if (!first) return;
+            if (first)
+            {
+                try
+                {
+                    _wasMax = Function.Call<int>(Hash.GET_MAX_WANTED_LEVEL);
+                    if (_wasMax <= 0) _wasMax = 5;
+
+                    Log.Info("Law: off, held by " + who.GetType().Name + ".");
+                }
+                catch (System.Exception ex)
+                {
+                    Log.Debug("Could not read the wanted ceiling: " + ex.Message);
+                    _wasMax = 5;
+                }
+            }
 
             try
             {
-                _wasMax = Function.Call<int>(Hash.GET_MAX_WANTED_LEVEL);
-                if (_wasMax <= 0) _wasMax = 5;
-
+                // Cleared as well as capped. A star already showing when the raid starts, or
+                // one the game hands out in the frame before the ceiling takes, would otherwise
+                // sit there for the whole fight with the ceiling quietly stopping it going any
+                // higher -- suppressed, and still on screen.
                 Game.Player.Wanted.SetWantedLevel(0, false);
                 Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
 
                 Function.Call(Hash.SET_MAX_WANTED_LEVEL, 0);
                 Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, Game.Player.Handle, true);
                 Function.Call(Hash.SET_CREATE_RANDOM_COPS, false);
-
-                Log.Info("Law: off, held by " + who.GetType().Name + ".");
             }
             catch (System.Exception ex)
             {

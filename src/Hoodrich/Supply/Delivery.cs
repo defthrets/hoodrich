@@ -342,7 +342,7 @@ namespace Hoodrich.Supply
         /// behind traffic indefinitely before, which reads as a broken errand rather than a
         /// careful driver.
         /// </summary>
-        private const int DriveStyle = 786606;
+        private const int DriveStyle = 786476;
 
         /// <summary>
         /// How close before he stops following roads and drives straight at the point.
