@@ -22,11 +22,22 @@ namespace Hoodrich.UI
         /// </summary>
         public readonly string Blip;
 
+        /// <summary>
+        /// Art of our own to fall back to, in data\icons.
+        ///
+        /// For the icons where every one of the game's own candidates is a BORROWED sprite --
+        /// crack, heroin and the pills all end their lists on a shop icon, and two of them end
+        /// on the SAME shop icon, so on an install without the mp_specitem_ names two different
+        /// drugs draw the same picture and neither is what it claims to be.
+        /// </summary>
+        public readonly string File;
+
         public Icon(string dict, params string[] textures)
         {
             Dict = dict;
             Textures = textures;
             Blip = "";
+            File = "";
         }
 
         private Icon(string blip)
@@ -34,7 +45,24 @@ namespace Hoodrich.UI
             Dict = "";
             Textures = null;
             Blip = blip;
+            File = "";
         }
+
+        private Icon(string dict, string[] textures, string blip, string file)
+        {
+            Dict = dict;
+            Textures = textures;
+            Blip = blip;
+            File = file;
+        }
+
+        /// <summary>The same icon, with a PNG of ours behind it.</summary>
+        public Icon WithFile(string png)
+        {
+            return new Icon(Dict, Textures, Blip, png);
+        }
+
+        public bool HasFile => !string.IsNullOrEmpty(File);
 
         /// <summary>An icon that is a blip rather than a texture.</summary>
         public static Icon FromBlip(string tag)
@@ -44,7 +72,7 @@ namespace Hoodrich.UI
 
         public bool IsBlip => !string.IsNullOrEmpty(Blip);
 
-        public bool IsSet => IsBlip ||
+        public bool IsSet => IsBlip || HasFile ||
                              (!string.IsNullOrEmpty(Dict) && Textures != null && Textures.Length > 0);
 
         /// <summary>The first name the game actually has, or the first as a last resort.</summary>
@@ -108,10 +136,10 @@ namespace Hoodrich.UI
         /// anything that resolves wins, and if none do the item keeps its text glyph.
         /// </summary>
         public static readonly Icon Crack = new Icon(Menu,
-            "mp_specitem_crack", "shop_ammo_icon_a", "shop_franklin_icon_a");
+            "mp_specitem_crack", "shop_ammo_icon_a", "shop_franklin_icon_a").WithFile("crack.png");
         public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth");
         public static readonly Icon Heroin = new Icon(Menu,
-            "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a");
+            "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a").WithFile("heroin.png");
         /// <summary>
         /// Oxycodone.
         ///
@@ -124,7 +152,7 @@ namespace Hoodrich.UI
         /// out empty whatever the first two do.
         /// </summary>
         public static readonly Icon Ecstasy = new Icon(Menu,
-            "mp_specitem_pills", "mp_specitem_ecstasy", "shop_health_icon_a");
+            "mp_specitem_pills", "mp_specitem_ecstasy", "shop_health_icon_a").WithFile("pills.png");
 
         // Actions.
         public static readonly Icon Money = new Icon(Menu, "shop_money_icon_a");

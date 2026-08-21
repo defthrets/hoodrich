@@ -173,6 +173,70 @@ def tick():
     save(img, 'tick.png')
 
 
+# ------------------------------------------------------------------- product
+#
+# Three drugs have no sprite of their own and their fallbacks COLLIDE: Heroin and Ecstasy both
+# land on shop_health_icon_a and Crack lands on the ammo icon, so on an install without the
+# mp_specitem_* names two different drugs draw the same picture. These are the difference.
+
+def crack():
+    """
+    A rock. Angular on purpose -- everything else in the drug set is round or soft, so the
+    silhouette is made entirely of corners. One facet punched out so it is not a blob.
+    """
+    img, d = canvas()
+    d.polygon([(60, 296), (146, 128), (322, 92), (452, 214), (420, 396), (214, 452)], fill=W)
+    d.polygon([(206, 200), (322, 176), (350, 268), (240, 300)], fill=CLEAR)
+    save(img, 'crack.png')
+
+
+def pills():
+    """
+    Two capsules at opposing angles.
+
+    A capsule is a rounded rectangle whose corner radius is half its height, which reads at any
+    size. The dividing band is punched out at 70px -- about 2.2 rendered, the thinnest feature
+    in this file proven to survive the downsample. Two of them, angled, so the pair cannot be
+    mistaken for the single bar in repost.png.
+    """
+    img, d = canvas()
+
+    for box, ang in (((70, 96, 400, 226), -22), ((112, 286, 442, 416), 18)):
+        cap = Image.new('RGBA', (S, S), CLEAR)
+        c = ImageDraw.Draw(cap)
+        c.rounded_rectangle(list(box), radius=65, fill=W)
+        mid = (box[0] + box[2]) // 2
+        c.rectangle([mid - 22, box[1], mid + 22, box[3]], fill=CLEAR)
+        img.alpha_composite(cap.rotate(ang, resample=Image.BICUBIC,
+                                       center=(mid, (box[1] + box[3]) // 2)))
+    save(img, 'pills.png')
+
+
+def heroin():
+    """
+    A syringe on the diagonal -- and the diagonal IS the read, because nothing else in the set
+    is a long thin thing at an angle.
+
+    Every stroke is mass, and all of it is fat. The needle is a TAPER off the barrel rather
+    than a line: a thin line is about a pixel rendered and would vanish, leaving a bar floating
+    in space. The first version had graduation marks punched into the barrel and a slimmer
+    body, and at the size this draws it came out as a faint diagonal scratch -- so the detail
+    is gone and every part is thicker.
+    """
+    img, d = canvas()
+    syr = Image.new('RGBA', (S, S), CLEAR)
+    c = ImageDraw.Draw(syr)
+
+    c.rounded_rectangle([116, 170, 386, 342], radius=30, fill=W)   # barrel
+    c.rounded_rectangle([92, 122, 156, 390], radius=24, fill=W)    # finger flange
+    c.rectangle([34, 218, 104, 294], fill=W)                        # plunger rod
+    c.rounded_rectangle([2, 170, 58, 342], radius=22, fill=W)      # thumb rest
+    c.polygon([(386, 196), (386, 316), (504, 256)], fill=W)        # needle, as a taper
+
+    img.alpha_composite(syr.rotate(-32, resample=Image.BICUBIC, center=(256, 256)))
+    save(img, 'heroin.png')
+
+
 print('writing to %s' % OUT)
 skull()
 police()
@@ -181,3 +245,6 @@ reply()
 repost()
 like()
 tick()
+crack()
+pills()
+heroin()

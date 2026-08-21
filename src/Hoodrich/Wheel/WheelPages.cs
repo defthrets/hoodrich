@@ -116,6 +116,47 @@ namespace Hoodrich.Wheel
 
             var sections = new List<InfoSection>();
 
+            // ---- on you ------------------------------------------------------
+            // Capacity is the only number here that can stop you working, and it was two rows
+            // at the bottom stating one fact twice -- what you carry, and what is left.
+            var onYou = new InfoSection { Title = "On you" };
+
+            var kinds = 0;
+            var readyGrams = 0f;
+
+            foreach (var d in _drugs.All)
+            {
+                var h = Stash.PackagedOf(d.Id);
+                if (h <= 0.005f) continue;
+
+                kinds++;
+                readyGrams += h;
+            }
+
+            onYou.Hero("Worth bagged up", Money(PackagedValue()), Palette.Cash,
+                       kinds == 0
+                           ? "nothing ready to move"
+                           : kinds + (kinds == 1 ? " kind  ·  " : " kinds  ·  ") +
+                             readyGrams.ToString("0.#") + "g ready");
+
+            var cap = Math.Max(1f, Stash.Capacity);
+
+            onYou.Meter("Carrying",
+                        Stash.Total.ToString("0.#") + "g of " + cap.ToString("0") + "g",
+                        Stash.Total / cap,
+                        Stash.FreeSpace < 15f ? Palette.Danger
+                            : Stash.FreeSpace < 40f ? Palette.Warn
+                            : Palette.Cash,
+                        Stash.FreeSpace.ToString("0") + "g of room left");
+
+            onYou.Row("Cash", Money(Game.Player.Money), Palette.Cash);
+            sections.Add(onYou);
+
+            // ---- ready to sell -----------------------------------------------
+            // Somebody opening this screen is deciding WHAT TO SELL, and the money decides it.
+            // So the money is the bright number on the right, and how much you have and how
+            // badly it is cut go on the grey line under the name -- which is finally where the
+            // purity gets said out loud, and therefore why your coke earns less than your meth.
             var ready = new InfoSection { Title = "Ready to sell" };
             var bagged = 0;
 
@@ -125,36 +166,48 @@ namespace Hoodrich.Wheel
                 if (have <= 0.005f) continue;
 
                 var purity = Stash.PurityOf(drug.Id);
-                ready.Row(drug.Name,
-                          drug.Amount(have) + "  ·  $" + _pricing.SaleValue(drug, have, purity).ToString("N0"),
-                          Palette.Cash);
+                var note = drug.Amount(have) + "  ·  " + PurityWord(purity);
+                var art = Icons.ForDrug(drug.Id);
+
+                ready.Row(drug.Name, "$" + _pricing.SaleValue(drug, have, purity).ToString("N0"),
+                          Palette.Cash,
+                          r => { r.Note = note; r.Art = art; r.ArtTint = ProductArt; });
+
                 bagged++;
             }
 
             if (bagged == 0) ready.Row("Nothing bagged up", "", Palette.TextDim);
             sections.Add(ready);
 
+            // ---- still to bag up ---------------------------------------------
             var weight = new InfoSection { Title = "Still to bag up" };
-            var raw = 0;
+            var raw = 0f;
 
             foreach (var drug in _drugs.All)
             {
                 var have = Stash.BulkOf(drug.Id);
                 if (have <= 0.005f) continue;
 
-                weight.Row(drug.Name, drug.Amount(have), Palette.Warn);
-                raw++;
+                raw += have;
+
+                var note = "worth nothing until you " + SplitPhrase(drug.SplitVerb);
+                var art = Icons.ForDrug(drug.Id);
+
+                weight.Row(drug.Name, drug.Amount(have), Palette.Warn,
+                           r => { r.Note = note; r.Art = art; r.ArtTint = ProductArt; });
             }
 
-            if (raw == 0) weight.Row("No weight on you", "", Palette.TextDim);
-            sections.Add(weight);
+            if (raw <= 0.005f)
+            {
+                weight.Row("No weight on you", "", Palette.TextDim);
+            }
+            else
+            {
+                weight.Total = raw.ToString("0.#") + "g";
+                weight.TotalColour = Palette.Warn;
+            }
 
-            var pockets = new InfoSection { Title = "Pockets" };
-            pockets.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
-            pockets.Row("Carrying", Stash.Total.ToString("0.#") + "g");
-            pockets.Row("Room left", Stash.FreeSpace.ToString("0") + "g",
-                        Stash.FreeSpace < 20f ? Palette.Warn : (Color?)null);
-            sections.Add(pockets);
+            sections.Add(weight);
 
             // At home the inventory is two containers rather than one, so what is in the house
             // is listed right beside what is on you.
@@ -183,6 +236,29 @@ namespace Hoodrich.Wheel
                        sections);
         }
 
+        /// <summary>
+        /// The tint for art that says WHAT a thing is rather than how it is going.
+        ///
+        /// A coke sprite tinted the money colour is a green brick. Product art is identity, so
+        /// it always draws neutral whether it resolved to a game sprite or fell through to one
+        /// of ours.
+        /// </summary>
+        private static readonly Color ProductArt = Color.FromArgb(235, 255, 255, 255);
+
+        /// <summary>
+        /// "Bag up" becomes "bag it up", "Cut" becomes "cut it".
+        ///
+        /// A two-word verb takes its object in the MIDDLE, which is the whole difference
+        /// between the mod's voice and "bag up it".
+        /// </summary>
+        private static string SplitPhrase(string verb)
+        {
+            var v = (verb ?? "cut").ToLowerInvariant();
+            var space = v.IndexOf(' ');
+
+            return space < 0 ? v + " it" : v.Substring(0, space) + " it " + v.Substring(space + 1);
+        }
+
         /// <summary>One line for the wheel: what is on you right now.</summary>
         private string CarriedSummary()
         {
@@ -194,52 +270,165 @@ namespace Hoodrich.Wheel
         private void ShowStatus()
         {
             var sections = new List<InfoSection>();
+            var maxed = _state.Rank >= PlayerState.RankNames.Length - 1;
 
+            // ---- you ---------------------------------------------------------
             var you = new InfoSection { Title = "You" };
-            you.Row("Rank", _state.RankName);
-            you.Row("Next", RankProgressLabel());
-            you.Row("Respect", _state.Respect.ToString("N0"));
-            you.Row("Heat", HeatWord(), HeatTint());
+
+            you.Hero("Rank", _state.RankName, Palette.Text,
+                     maxed
+                         ? "top of the ladder"
+                         : "OG at " +
+                           PlayerState.RankThresholds[PlayerState.RankThresholds.Length - 1]
+                               .ToString("N0") + " respect");
+
+            if (!maxed)
+            {
+                var need = PlayerState.RankThresholds[_state.Rank + 1] - _state.Respect;
+
+                you.Meter("Next up", PlayerState.RankNames[_state.Rank + 1], _state.RankProgress,
+                          Palette.Cash,
+                          Math.Max(0f, need).ToString("N0") + " respect to go");
+            }
+
+            // Five rows saying "you are third of five" become one row that shows it.
+            you.Row("The ladder", (_state.Rank + 1) + " of " + PlayerState.RankNames.Length,
+                    Palette.Cash,
+                    r =>
+                    {
+                        r.Pips = PlayerState.RankNames.Length;
+                        r.PipsOn = _state.Rank;
+                        r.PipAt = _state.Rank;
+                    });
+
+            // The word for heat only moves at twenty and fifty, so a man at nineteen and a man
+            // at one read identically and somebody watching it climb sees nothing until it
+            // jumps. The pips show the climb.
+            you.Row("Heat", HeatShort(), HeatTint(),
+                    r =>
+                    {
+                        r.ArtFile = "police.png";
+                        r.Pips = 5;
+                        r.PipsOn = Math.Max(0, Math.Min(5,
+                            (int)Math.Ceiling(_state.Notoriety / 20f)));
+                    });
+
             you.Row("Running with", _crew.IsAffiliated ? _crew.Current.Name : "nobody",
-                    _crew.IsAffiliated ? _crew.Current.Colour : (Color?)Palette.TextDim);
+                    _crew.IsAffiliated ? Palette.Text : (Color?)Palette.TextDim,
+                    r =>
+                    {
+                        if (!_crew.IsAffiliated) return;
+
+                        r.Tab = _crew.Current.Colour;
+                        r.ArtFile = "tick.png";
+                    });
+
             sections.Add(you);
 
+            // ---- trade -------------------------------------------------------
             var trade = new InfoSection { Title = "Trade" };
-            trade.Row("Deals closed", _state.TotalDealsMade.ToString("N0"));
-            trade.Row("Moved", _state.GramsSold.ToString("0.#") + "g");
-            trade.Row("Total earned", "$" + _state.TotalEarned.ToString("N0"), Palette.Cash);
+
+            // Deals and grams are the supporting detail for the money, which is what a note is.
+            trade.Hero("Total earned", Money(_state.TotalEarned), Palette.Cash,
+                       _state.TotalDealsMade.ToString("N0") + " deals  ·  " +
+                       _state.GramsSold.ToString("0.#") + "g moved");
+
             sections.Add(trade);
 
+            // ---- how the gangs see you ---------------------------------------
             var crews = new InfoSection { Title = "How the gangs see you" };
+            var quiet = 0;
+
             foreach (var g in _gangs.All)
             {
                 var standing = _crew.StandingFor(g.Id);
                 var mine = _crew.IsAffiliated && _crew.Current.Id == g.Id;
 
-                var value = standing.Rep.ToString("0");
-                if (standing.Kills > 0) value += "  ·  " + standing.Kills + " kills";
-                if (standing.MoneyEarned > 0) value += "  ·  $" + standing.MoneyEarned.ToString("N0");
+                // A gang you have never met is not a fact about you, it is the absence of one.
+                // Six of these were filling most of the screen with the number nought.
+                if (!mine && Math.Abs(standing.Rep) < 0.5f && standing.Kills == 0 &&
+                    standing.MoneyEarned == 0)
+                {
+                    quiet++;
+                    continue;
+                }
 
-                crews.Row(mine ? g.Name + " (you run with them)" : g.Name, value,
-                          mine ? g.Colour
-                               : standing.Rep < 0f ? Palette.Danger
-                               : standing.Rep > 0f ? Palette.Cash : (Color?)Palette.TextDim);
+                var atWar = !mine && standing.Rep <= Affiliation.BeefAt;
+
+                // The bands come off BeefAt, which is the only real threshold in the system --
+                // below it they raid your blocks and the drive-bys come from them.
+                var word = mine ? "one of theirs"
+                    : atWar ? "at war with you"
+                    : standing.Rep < 0f ? "bad blood"
+                    : standing.Rep >= 100f ? "tight with you"
+                    : "cool with you";
+
+                var tint = mine ? Palette.Cash
+                    : atWar ? Palette.Danger
+                    : standing.Rep < 0f ? Palette.Warn
+                    : Palette.Cash;
+
+                var note = "rep " + standing.Rep.ToString("0");
+
+                if (standing.Kills > 0)
+                {
+                    note += "  ·  " + standing.Kills +
+                            (standing.Kills == 1 ? " body" : " bodies") + " for them";
+                }
+
+                if (standing.MoneyEarned > 0)
+                {
+                    note += "  ·  $" + standing.MoneyEarned.ToString("N0") + " earned them";
+                }
+
+                var them = g;
+                var isMine = mine;
+                var war = atWar;
+                var kills = standing.Kills;
+
+                crews.Row(g.Name, word, tint,
+                          r =>
+                          {
+                              r.Note = note;
+
+                              // Their colour as a strip, never as the text. These run from
+                              // yellow to deep maroon and half of them are unreadable as ink.
+                              r.Tab = them.Colour;
+
+                              if (isMine) r.ArtFile = "tick.png";
+                              else if (war || kills > 0) r.ArtFile = "skull.png";
+                          });
             }
+
+            if (quiet > 0)
+            {
+                crews.Row(quiet + (quiet == 1 ? " other set" : " other sets"),
+                          "never dealt with you", Palette.TextDisabled);
+            }
+
             sections.Add(crews);
 
-            var ranks = new InfoSection { Title = "The ladder" };
-            for (var i = 0; i < PlayerState.RankNames.Length; i++)
-            {
-                var reached = _state.Rank >= i;
-                ranks.Row(PlayerState.RankNames[i],
-                          _state.Rank == i ? "you are here"
-                          : reached ? "passed"
-                          : PlayerState.RankThresholds[i].ToString("N0") + " respect",
-                          _state.Rank == i ? Palette.Cash : (Color?)Palette.TextDim);
-            }
-            sections.Add(ranks);
+            Info?.Open("Status", _state.Respect.ToString("N0") + " respect", sections);
+        }
 
-            Info?.Open("Status", _state.RankName, sections);
+        /// <summary>Heat in two words, for a row whose pips already show the amount.</summary>
+        private string HeatShort()
+        {
+            if (_state.Notoriety > 50f) return "on you";
+            if (_state.Notoriety > 20f) return "noticed";
+            return "clear";
+        }
+
+        /// <summary>
+        /// Money, shortened only where it would otherwise be trimmed.
+        ///
+        /// A hero draws at double a body row and a nine-figure sum does not fit a panel this
+        /// narrow. Below eight figures the exact number is worth more than the tidiness.
+        /// </summary>
+        private static string Money(long amount)
+        {
+            if (amount >= 10000000L) return "$" + (amount / 1000000f).ToString("0.#") + "M";
+            return "$" + amount.ToString("N0");
         }
 
         /// <summary>Prices, heat and what the block is doing to both.</summary>
@@ -1554,15 +1743,5 @@ namespace Hoodrich.Wheel
             }
         }
 
-        // ---- shared readouts ----------------------------------------------------
-
-        /// <summary>Progress toward the next rank, phrased for a panel row.</summary>
-        private string RankProgressLabel()
-        {
-            return _state.Rank >= PlayerState.RankNames.Length - 1
-                ? "max rank"
-                : (_state.RankProgress * 100f).ToString("F0") + "% to " +
-                  PlayerState.RankNames[_state.Rank + 1];
-        }
     }
 }
