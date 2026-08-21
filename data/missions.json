@@ -54,7 +54,7 @@
       "id": "torch_rancho",
       "kind": "TorchJob",
       "name": "Ride through Rancho and lose the car.",
-      "brief": "You seen Rancho lately? Vagos out there in the projects like they payin' rent on it. And they ain't just standin' -- they sellin'. In Chamberlain, homie. On Davis. Corners we been on since 'fore you could drive.",
+      "brief": "Rancho's full of yellow and they ain't just standin' out there -- they sellin'. In Chamberlain. On Davis. Corners we been on since 'fore you could drive, and I can't touch they price 'cause they gettin' it straight off Madrazo's people.",
       "done": "Seen the smoke from the freeway, homie. And ain't nobody got a plate to run, ain't nobody got a body to catch. Vagos gon' sit on they hands and wonder. That's exactly what I wanted.",
       "targetGang": "vagos",
       "zone": "RANCHO",
@@ -78,14 +78,8 @@
       "dumpZ": 31.849,
       "carModel": "emperor2",
       "briefMore": [
-        "And I can't beat they price. I CAN'T. 'Cause they gettin' it straight off Madrazo's people -- cartel weight, cartel numbers. Us? We buyin' off a man who buyin' off a man. By the time it get to Grimes it cost more than they sellin' it for.",
-        "Set's in pieces since Grove went purple, you know that. Half our people workin' for Ballas money now. And I asked Stretch about it -- man looked me in my face and told me leave it alone. Leave it ALONE. Since when do he tell me what to leave alone?",
-        "So this ain't through him and it ain't through nobody. It's me and you.",
-        "Take the beater out front. Not your car -- I see you look at me like that, homie, NOT your car. Roll through Jamestown, put some rounds in the air, and soon as one of them look up, you gone. You ain't gotta drop nobody neither.",
-        "I mean that. We drop a Vago, that's a war, and we ain't got the people for a war right now. This a message. They gotta know somebody still watchin' the block.",
-        "Now the part you gon' forget. That car did it. Not you -- the car. Law gon' be lookin' for a description and a plate, and the last time somebody rode out in somethin' with plates they pulled up on the whole set for a week.",
-        "So you take it out to that lot by the water in La Puerta, where don't nobody go. Get out, pour the gas over it -- can gon' be right there in your hand, I ain't sendin' you to go shoppin' -- then back up and put a round in it. It'll go.",
-        "Fire's loud though. Somebody always call it in. If they come back for you, lose 'em, and then you WALK back here. Not drive. Walk."
+        "I asked Stretch about it. Man looked me in my face and said leave it alone. So this ain't through him, it's me and you -- and we ain't droppin' nobody neither. Set's in pieces since Grove went purple, we can't win no war. It's a message.",
+        "Take the beater out front, roll through Jamestown, and soon as one of 'em looks up you gone. Then the car goes -- out to that lot by the water in La Puerta, gas over it, put a round in it. Law looks for a plate, homie, not a face. Then walk back."
       ]
     },
     {
@@ -111,7 +105,7 @@
       "id": "hit_rancho",
       "kind": "Hit",
       "name": "Rancho. Vagos.",
-      "brief": "So Vagos got a lil spot out Rancho, right, and they think can't nobody see 'em. I can see 'em! I been seein' 'em! Five of 'em out there postin' up like it's a barbecue. Take three of the homies, everybody with a machine pistol -- don't be takin' no shotgun, this ain't huntin' -- and go remind them. Somebody gon' call the law, they always do, so lose 'em before you come back round here.",
+      "brief": "Vagos got a lil spot out Rancho where they break the weight down before it comes our way. Five of 'em out there postin' up like it's a barbecue. Take three homies, everybody with a machine pistol -- this ain't huntin' -- and go take the spot off 'em. Somebody always calls the law, so lose 'em before you come back round here.",
       "done": "I heard about that before you even got back. Whole block heard. Take that.",
       "targetGang": "vagos",
       "zone": "RANCHO",
@@ -159,7 +153,7 @@
       "id": "driveby_lamesa",
       "kind": "DriveBy",
       "name": "The Vagos need reminding.",
-      "brief": "La Mesa. Them Vagos gettin' real comfortable over there, real comfortable, smilin' and everything. Drive through, make some noise, and be gone 'fore the law even finish they donut. You ain't gotta be out there all day, homie, it's a message, not a visit.",
+      "brief": "La Mesa. Vagos been runnin' packs through there all month and every dollar of it is comin' off our corners -- same weight, same people, half the price. Drive through, make some noise, be gone 'fore the law finish they donut. It's a message, not a visit.",
       "done": "That'll hold 'em a minute. They gon' be lookin' over they shoulder all week.",
       "targetGang": "vagos",
       "zone": "LMESA",
