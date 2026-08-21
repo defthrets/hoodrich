@@ -197,7 +197,13 @@ namespace Hoodrich.Missions
                 return no;
             }
 
-            var yes = Node("Good. Take the homies, they know where they going.");
+            // Not on a job he sends you out on alone. The tag run is one man on a bike with a
+            // can -- deliberately, because two dudes with cans is a whole story and one is a
+            // kid -- and being told to take homies who are never coming is the mission
+            // contradicting its own brief in the same breath.
+            var yes = Node(def.Homies > 0
+                ? "Good. Take the homies, they know where they going."
+                : "Good. And you go by yourself, remember. Just you.");
             yes.Say("Say less.", () => null, _runner.Objective);
             return yes;
         }
