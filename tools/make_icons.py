@@ -739,15 +739,24 @@ def pin():
 
 
 def deal():
-    """Two hands meeting. A deal done, which is the whole point of standing out there."""
+    """
+    Two arms clasped, coming in from opposite corners.
+
+    It was two hands meeting end to end across the middle, which is a horizontal bar with
+    dots on it -- 0.094 from the xanax bar, the same distance that had the Triad coin and the
+    verified tick reading as one another. Angled in from the corners it makes a diagonal
+    cross nothing else in the set has, and the clasp in the middle is the only part that has
+    to survive the downsample.
+    """
     img, d = canvas()
 
-    d.polygon([(30, 200), (215, 200), (250, 262), (215, 324), (30, 324)], fill=W)
-    d.polygon([(482, 200), (297, 200), (262, 262), (297, 324), (482, 324)], fill=W)
-    d.rectangle([236, 168, 276, 356], fill=CLEAR)
+    # Forearms, lower-left and lower-right, meeting high in the middle.
+    d.polygon([(20, 440), (128, 470), (330, 176), (250, 120)], fill=W)
+    d.polygon([(492, 440), (384, 470), (182, 176), (262, 120)], fill=W)
 
-    for y in (168, 356):
-        d.ellipse([206, y - 34, 306, y + 34], fill=W)
+    # The clasp: one block across the join, with a gap so two arms still read as two.
+    d.rounded_rectangle([176, 168, 336, 300], radius=40, fill=W)
+    d.polygon([(214, 196), (298, 196), (256, 262)], fill=CLEAR)
 
     save(img, 'deal.png')
 
@@ -923,3 +932,258 @@ dog()
 bed()
 music()
 key()
+
+
+# ======================================================================= more product
+#
+# A spread to pick from rather than one drawing per drug. Every one of these is a DIFFERENT
+# silhouette from every other -- a cup, a sheet, a dome, a bar, a slab, a bear, a pen, a
+# pouch, a bottle, a patch, a fat cylinder, a taped block, a shard cluster, a beaker, a pod.
+# That is the whole design rule at twenty pixels: shape first, detail never.
+
+
+def lean():
+    """A double cup. Two rims stacked is the whole tell, and nothing else here has a straw."""
+    img, d = canvas()
+
+    d.polygon([(120, 150), (392, 150), (350, 470), (162, 470)], fill=W)   # the cup
+    d.rectangle([98, 96, 414, 152], fill=W)                              # outer rim
+    d.rectangle([120, 168, 392, 186], fill=CLEAR)                        # the second cup's rim
+    d.polygon([(300, 30), (348, 30), (300, 150), (256, 150)], fill=W)    # straw
+
+    save(img, 'lean.png')
+
+
+def acid():
+    """A sheet of blotter. A punched grid, which nothing else in the set is."""
+    img, d = canvas()
+
+    d.rounded_rectangle([64, 64, 448, 448], radius=18, fill=W)
+
+    for gx in (64, 192, 320):
+        for gy in (64, 192, 320):
+            d.rectangle([gx + 108, gy + 20, gx + 124, gy + 172], fill=CLEAR)
+            d.rectangle([gx + 20, gy + 108, gx + 172, gy + 124], fill=CLEAR)
+
+    save(img, 'acid.png')
+
+
+def shrooms():
+    """A cap and a stalk. The only dome on a stem anywhere in the mod."""
+    img, d = canvas()
+
+    d.pieslice([56, 96, 456, 440], 180, 360, fill=W)
+    d.rectangle([56, 262, 456, 292], fill=W)
+    d.polygon([(206, 286), (306, 286), (286, 470), (226, 470)], fill=W)
+
+    for cx, cy, r in ((160, 190, 34), (256, 150, 28), (344, 196, 30)):
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CLEAR)
+
+    save(img, 'shrooms.png')
+
+
+def xanax():
+    """A bar, scored. Long and low, which no other product here is."""
+    img, d = canvas()
+
+    # Notched through the OUTLINE, not scored across the face.
+    #
+    # Scored, it was a plain rounded bar with three hairlines in it, and at twenty pixels the
+    # hairlines vanish -- it measured 0.036 from the blunt, which is two icons that are the
+    # same picture. Cutting the notches in from the top and bottom edges makes the silhouette
+    # itself segmented, and a silhouette survives the downsample.
+    d.rounded_rectangle([40, 196, 472, 316], radius=26, fill=W)
+
+    for x in (168, 256, 344):
+        d.rectangle([x - 13, 186, x + 13, 246], fill=CLEAR)
+        d.rectangle([x - 13, 266, x + 13, 326], fill=CLEAR)
+
+    save(img, 'xanax.png')
+
+
+def hash_():
+    """A pressed slab, seen at an angle, with a corner broken off it."""
+    img, d = canvas()
+
+    d.polygon([(70, 200), (300, 118), (452, 190), (452, 366), (222, 452), (70, 380)], fill=W)
+    d.polygon([(70, 200), (300, 118), (452, 190), (222, 274)], fill=CLEAR)
+    d.polygon([(452, 190), (452, 258), (360, 236)], fill=CLEAR)
+    d.line([(222, 274), (222, 452)], fill=CLEAR, width=14)
+
+    save(img, 'hash.png')
+
+
+def dabs():
+    """A dab tool with the concentrate on the end of it."""
+    img, d = canvas()
+
+    d.polygon([(60, 430), (110, 470), (392, 188), (342, 148)], fill=W)
+    d.arc([300, 60, 456, 216], 20, 300, fill=W, width=42)
+    d.ellipse([120, 116, 246, 242], fill=W)
+    d.ellipse([160, 156, 206, 202], fill=CLEAR)
+
+    save(img, 'dabs.png')
+
+
+def edibles():
+    """A gummy bear. There is no mistaking it for anything else on any screen."""
+    img, d = canvas()
+
+    d.ellipse([176, 40, 336, 200], fill=W)                 # head
+    d.ellipse([120, 60, 208, 148], fill=W)                 # ears
+    d.ellipse([304, 60, 392, 148], fill=W)
+    d.rounded_rectangle([146, 176, 366, 400], radius=76, fill=W)
+    d.ellipse([56, 208, 176, 328], fill=W)                 # arms
+    d.ellipse([336, 208, 456, 328], fill=W)
+    d.ellipse([120, 350, 244, 474], fill=W)                # legs
+    d.ellipse([268, 350, 392, 474], fill=W)
+
+    d.ellipse([206, 96, 238, 128], fill=CLEAR)             # eyes
+    d.ellipse([274, 96, 306, 128], fill=CLEAR)
+
+    save(img, 'edibles.png')
+
+
+def vape():
+    """A cart. A slim pen with a window, which is not a shape anything else here has."""
+    img, d = canvas()
+
+    d.rounded_rectangle([206, 30, 306, 120], radius=26, fill=W)      # mouthpiece
+    d.rounded_rectangle([186, 128, 326, 470], radius=34, fill=W)     # body
+    d.rectangle([222, 186, 290, 340], fill=CLEAR)                    # the window
+    d.rectangle([222, 186, 290, 270], fill=W)                        # half full
+    d.ellipse([236, 408, 276, 448], fill=CLEAR)
+
+    save(img, 'vape.png')
+
+
+def speed():
+    """A zip baggie with a fold in it. Soft-cornered, unlike every block in the set."""
+    img, d = canvas()
+
+    d.rounded_rectangle([96, 130, 416, 470], radius=40, fill=W)
+    d.rectangle([116, 60, 396, 140], fill=W)
+    d.rectangle([136, 88, 376, 106], fill=CLEAR)          # the zip
+    d.polygon([(150, 300), (256, 246), (362, 300), (362, 440), (150, 440)], fill=CLEAR)
+
+    save(img, 'speed.png')
+
+
+def ketamine():
+    """A vial. Bottle, neck, cap -- and nothing else here has a neck."""
+    img, d = canvas()
+
+    d.rounded_rectangle([196, 40, 316, 110], radius=16, fill=W)    # cap
+    d.rectangle([226, 110, 286, 168], fill=W)                      # neck
+    d.rounded_rectangle([136, 168, 376, 470], radius=40, fill=W)   # body
+    d.rectangle([176, 300, 336, 430], fill=CLEAR)                  # the level
+    d.rectangle([176, 360, 336, 430], fill=W)
+
+    save(img, 'ketamine.png')
+
+
+def fentanyl():
+    """A patch, with the backing peeled off one corner."""
+    img, d = canvas()
+
+    d.rounded_rectangle([70, 96, 442, 416], radius=30, fill=W)
+    d.rounded_rectangle([124, 150, 388, 362], radius=18, fill=CLEAR)
+    d.rounded_rectangle([164, 190, 348, 322], radius=12, fill=W)
+    d.polygon([(388, 362), (442, 416), (330, 416), (330, 362)], fill=CLEAR)
+
+    save(img, 'fentanyl.png')
+
+
+def blunt():
+    """
+    A blunt, and deliberately fatter and blunter than the joint.
+
+    weed.png is a thin tapered joint at an angle. This is a straight fat cylinder with a band
+    round the middle and a lit end, so the two never read as the same thing on the same screen.
+    """
+    img, d = canvas()
+
+    # Stood on its end, with smoke coming off it.
+    #
+    # Lying flat it was a rounded bar, which is what the xanax bar is -- 0.036 apart, the two
+    # closest things in the whole set. Upright it shares an axis with nothing else here, and
+    # the smoke gives it a top half no bar has.
+    d.rounded_rectangle([196, 168, 316, 480], radius=34, fill=W)
+    d.rectangle([206, 300, 306, 340], fill=CLEAR)          # the band
+    d.ellipse([186, 128, 326, 250], fill=W)                # the cherry
+    d.ellipse([222, 160, 290, 218], fill=CLEAR)
+
+    d.ellipse([300, 40, 372, 112], fill=W)                 # smoke
+    d.ellipse([356, 0, 410, 54], fill=W)
+
+    save(img, 'blunt.png')
+
+
+def brick():
+    """A taped kilo. The tape is the whole silhouette -- a plain block would be the box."""
+    img, d = canvas()
+
+    d.rounded_rectangle([56, 116, 456, 396], radius=16, fill=W)
+    d.rectangle([230, 116, 282, 396], fill=CLEAR)          # tape, the short way
+    d.rectangle([56, 232, 456, 280], fill=CLEAR)           # and the long way
+    d.rectangle([236, 238, 276, 274], fill=W)              # where they cross
+
+    save(img, 'brick.png')
+
+
+def crystal():
+    """A cluster of shards. All points, where the cut stone is all facets."""
+    img, d = canvas()
+
+    d.polygon([(206, 30), (296, 190), (256, 460), (166, 200)], fill=W)
+    d.polygon([(56, 210), (166, 286), (150, 470), (60, 366)], fill=W)
+    d.polygon([(456, 190), (352, 290), (382, 470), (466, 350)], fill=W)
+
+    save(img, 'crystal.png')
+
+
+def bong():
+    """A beaker, a tube and a bowl. Tall and bottom-heavy, which nothing else is."""
+    img, d = canvas()
+
+    d.polygon([(120, 470), (392, 470), (322, 250), (190, 250)], fill=W)   # beaker
+    d.rectangle([206, 60, 306, 260], fill=W)                             # tube
+    d.rounded_rectangle([176, 30, 336, 78], radius=16, fill=W)            # mouthpiece
+    d.polygon([(316, 300), (452, 236), (466, 276), (330, 340)], fill=W)   # stem
+    d.ellipse([416, 200, 492, 276], fill=W)                              # bowl
+    d.ellipse([438, 222, 470, 254], fill=CLEAR)
+
+    save(img, 'bong.png')
+
+
+def poppy():
+    """A seed pod on a stem. The only thing in the set that grew."""
+    img, d = canvas()
+
+    d.ellipse([146, 130, 366, 380], fill=W)
+    d.polygon([(206, 130), (256, 40), (306, 130)], fill=W)
+    for x in (176, 226, 286, 336):
+        d.polygon([(x, 132), (x + 20, 66), (x + 40, 132)], fill=W)
+    d.rectangle([236, 360, 276, 480], fill=W)
+    d.ellipse([196, 216, 250, 270], fill=CLEAR)
+    d.ellipse([272, 216, 326, 270], fill=CLEAR)
+
+    save(img, 'poppy.png')
+
+
+lean()
+acid()
+shrooms()
+xanax()
+hash_()
+dabs()
+edibles()
+vape()
+speed()
+ketamine()
+fentanyl()
+blunt()
+brick()
+crystal()
+bong()
+poppy()
