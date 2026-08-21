@@ -129,7 +129,7 @@ namespace Hoodrich.Missions
                 // A car, same as the drive-by -- it is still a job you do from one, and the
                 // burning is the part he does not put on the menu.
                 case MissionKind.TorchJob: return Icons.Garage;
-                case MissionKind.Tags: return Icons.Weed;
+                case MissionKind.Tags: return Icons.FromFile("spray.png");
                 case MissionKind.Hit: return Icons.Guns;
                 default: return Icons.Mask;
             }

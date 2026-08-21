@@ -57,7 +57,8 @@
       "blipColour": 2,
       "drugs": [
         "weed",
-        "ecstasy"
+        "ecstasy",
+        "xanax"
       ],
       "rivals": [
         "ballas",
@@ -200,7 +201,8 @@
       "blipColour": 1,
       "drugs": [
         "ecstasy",
-        "heroin"
+        "heroin",
+        "xanax"
       ],
       "rivals": [
         "lost",

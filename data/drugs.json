@@ -85,6 +85,36 @@
       ]
     },
     {
+      "id": "xanax",
+      "name": "Alprazolam",
+      "tag": "XAN",
+      "tier": 2,
+      "basePrice": 40,
+      "bulkPrice": 11,
+      "heatFactor": 0.85,
+      "splitVerb": "Press",
+      "unitName": "bars",
+      "workVerb": "Pressing bars",
+      "counted": true,
+      "deals": [
+        {
+          "quantity": 1,
+          "label": "a bar",
+          "price": 40
+        },
+        {
+          "quantity": 2,
+          "label": "two bars",
+          "price": 75
+        },
+        {
+          "quantity": 5,
+          "label": "five bars",
+          "price": 170
+        }
+      ]
+    },
+    {
       "id": "crack",
       "name": "Crack",
       "tag": "CRK",
