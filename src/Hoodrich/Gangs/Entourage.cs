@@ -196,7 +196,7 @@ namespace Hoodrich.Gangs
                 if (ped == null) continue;
 
                 _crew.Add(ped);
-                Idle(ped, Doing(i), Facing(i));
+                Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i));
             }
 
             if (_crew.Count > 0) Log.Info(_crew.Count + " of " + gang.Name + " stood with " + _who + ".");
@@ -280,10 +280,30 @@ namespace Hoodrich.Gangs
             return null;
         }
 
-        private static void Idle(Ped ped, string scenario, float facing)
+        /// <summary>
+        /// Puts somebody into their idle.
+        ///
+        /// Two different natives, because a chair is not a pavement. IN_PLACE starts a scenario
+        /// where the ped happens to be standing and has no way to say "this one is a seat" --
+        /// so a sitting scenario handed to it either does nothing or plays the sit standing up,
+        /// and the man on the couch stayed on his feet next to it. AT_POSITION takes the spot,
+        /// the heading, and a flag that means exactly that.
+        ///
+        /// Worse, a scenario that never takes leaves task 118 inactive, and Settle re-issues on
+        /// exactly that condition -- so the failure was not a man standing still, it was a man
+        /// being re-tasked to sit down forever.
+        /// </summary>
+        private static void Idle(Ped ped, string scenario, float facing, Vector3 at, bool seated)
         {
             try
             {
+                if (seated)
+                {
+                    Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, ped.Handle, scenario,
+                                  at.X, at.Y, at.Z, facing, 0, true, true);
+                    return;
+                }
+
                 Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle, scenario, 0, true);
                 ped.Heading = facing;
             }
@@ -291,6 +311,12 @@ namespace Hoodrich.Gangs
             {
                 // He will stand there regardless.
             }
+        }
+
+        /// <summary>Whether station i is somebody sat on something.</summary>
+        private bool Seated(int index)
+        {
+            return index < _onProp.Count && _onProp[index];
         }
 
         /// <summary>Puts anybody who has wandered back on their mark.</summary>
@@ -320,7 +346,7 @@ namespace Hoodrich.Gangs
                     if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, ped.Handle, 118)) continue;
                     if (ped.IsInCombat || ped.IsRagdoll) continue;
 
-                    Idle(ped, Doing(i), Facing(i));
+                    Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i));
                     continue;
                 }
 
@@ -338,7 +364,7 @@ namespace Hoodrich.Gangs
                     {
                         ped.Position = mark;
                         ped.Task.ClearAll();
-                        Idle(ped, Doing(i), Facing(i));
+                        Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i));
                         continue;
                     }
 
