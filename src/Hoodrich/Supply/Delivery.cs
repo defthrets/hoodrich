@@ -1835,7 +1835,7 @@ namespace Hoodrich.Supply
         /// Read off the HUD standing on the spot. A straight run in from there: short enough
         /// that there is little to go wrong on, far enough that he arrives rather than appears.
         /// </summary>
-        private static readonly Vector3 StartPoint = new Vector3(-106.196f, -1517.141f, 33.783f);
+        private static readonly Vector3 StartPoint = new Vector3(48.125f, -1489.673f, 29.265f);
 
         /// <summary>
         /// Which way he is pointing when he appears.
@@ -1844,7 +1844,7 @@ namespace Hoodrich.Supply
         /// whatever the road does, so the first thing he did was a three point turn on a main
         /// road in front of anybody standing there.
         /// </summary>
-        private const float StartHeading = 305.994f;
+        private const float StartHeading = 47.694f;
 
         /// <summary>
         /// A road far enough out that the spawn is never witnessed, preferring somewhere behind
