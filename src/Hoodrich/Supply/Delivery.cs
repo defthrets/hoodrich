@@ -1554,6 +1554,9 @@ namespace Hoodrich.Supply
             Cancel(null);
         }
 
+        /// <summary>radar_nhp_wp2 -- the plug on his way, rather than a lorry.</summary>
+        private const int PlugSprite = 596;
+
         private void CreateBlip()
         {
             try
@@ -1563,7 +1566,10 @@ namespace Hoodrich.Supply
                 _blip = _car.AddBlip();
                 if (_blip == null || !_blip.Exists()) return;
 
-                _blip.Sprite = BlipSprite.Truck;
+                // radar_nhp_wp2, 596. The lorry sprite said "a truck is coming", which is true
+                // and not the point -- what is coming is the plug, and this is the one that
+                // reads as a man to meet rather than as traffic.
+                Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, PlugSprite);
                 _blip.Color = BlipColor.Blue;
                 _blip.Name = _def.Name;
                 _blip.IsShortRange = false;

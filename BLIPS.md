@@ -17,13 +17,17 @@ what it is and `496` does not.
 | 84 | `radar_lester` | Lamar, the fixer -- `Fixer.cs` |
 | 110 | `radar_gun_shop` | Grimes -- `Armourer.cs` |
 | 464 | `radar_spray_can` | tag spots -- `TagRun.cs` |
+| 952 | `radar_trashbag` | bad end of the reputation bar -- `PostUp.cs` |
+| 621 | `radar_pickup_dtb_health` | good end of the reputation bar |
+| 42 | `radar_police_chase` | inside the heat bar |
+| 835 | `radar_community_series` | inside the reputation bar |
 | 855 | `radar_ped_gang_leader` | gang leaders, Stretch included -- `GangLeaders.cs` |
 | -- | `BlipSprite.Weed` | drug markers |
 | -- | `BlipSprite.Cocaine` | drug markers |
 | -- | `BlipSprite.Package` | the plug's drop |
 | -- | `BlipSprite.Safehouse` | the stash house |
 | -- | `BlipSprite.Friend` | homies |
-| -- | `BlipSprite.Truck` | the plug's car |
+| 596 | `radar_nhp_wp2` | Tao Cheng on his way -- `Delivery.cs` |
 | -- | `BlipSprite.Standard` | anything unclassified |
 
 ## Drugs and production

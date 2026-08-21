@@ -1898,6 +1898,34 @@ namespace Hoodrich.Dealing
         private const string HeatBlip = "~BLIP_POLICE_CHASE~";
         private const string RepBlip = "~BLIP_COMMUNITY_SERIES~";
 
+        /// <summary>radar_trashbag, 952 -- what the block says you sell at the bad end.</summary>
+        private const string RepEndLow = "~BLIP_TRASHBAG~";
+
+        /// <summary>radar_pickup_dtb_health, 621 -- clean product at the good end.</summary>
+        private const string RepEndHigh = "~BLIP_PICKUP_DTB_HEALTH~";
+
+        /// <summary>How far outside the bar the end blips sit.</summary>
+        private const float BarEndGap = 0.013f;
+
+        /// <summary>
+        /// The two ends of a bar, just outside it.
+        ///
+        /// Outside rather than in: the fill sweeps across the inside of the bar, and a blip
+        /// sat in the fill's path is a blip that changes colour behind it as the value moves.
+        /// </summary>
+        private void BarEnds(string low, string high, float x, float cy, float width)
+        {
+            if (_cfg == null || !_cfg.BlipsInBars) return;
+
+            var edge = width * 0.5f + BarEndGap;
+
+            Hud.Text(low, x - edge, cy - RepLabelHalf, RepLabelScale,
+                     Palette.Danger, Hud.FontChaletLondon);
+
+            Hud.Text(high, x + edge, cy - RepLabelHalf, RepLabelScale,
+                     Palette.Cash, Hud.FontChaletLondon);
+        }
+
         /// <summary>
         /// What goes in the middle of a status bar: the blip, or the bar's name.
         ///
@@ -2095,6 +2123,14 @@ namespace Hoodrich.Dealing
 
             // The same treatment as the heat bar above it. radar_community_series is 835.
             BarLabel(RepBlip, "REPUTATION", x, repY);
+
+            // And what each end of it means, in blips.
+            //
+            // radar_trashbag on the left and radar_pickup_dtb_health on the right, so the bar
+            // reads as a scale between two things rather than as a number with a word on it --
+            // rubbish at one end, clean product at the other, and the fill tells you which way
+            // the block has you.
+            BarEnds(RepEndLow, RepEndHigh, x, repY, w);
 
             // Two lines rather than one. "POSTED UP" is the state you are in and the product
             // is what you happen to be moving while in it, so they are not the same sentence --
