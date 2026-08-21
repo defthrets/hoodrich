@@ -32,6 +32,14 @@ namespace Hoodrich.UI
         public float IconAspect = 1f;
 
         /// <summary>
+        /// Set once a texture has been looked for and not found.
+        ///
+        /// Without it the resolve is attempted every frame for the whole life of the entry,
+        /// because "not resolved yet" and "will never resolve" look identical from the outside.
+        /// </summary>
+        public bool IconGaveUp;
+
+        /// <summary>
         /// Whether the icon is resident right now. Evaluated per frame rather than at page-build
         /// time, because the dict often arrives a frame or two after the wheel opens.
         /// </summary>
@@ -128,7 +136,7 @@ namespace Hoodrich.UI
                 // Retried while it keeps failing rather than cached: a dictionary can report
                 // itself resident a frame before its textures answer to being measured, and
                 // locking in that first answer left the icon missing for good.
-                if (string.IsNullOrEmpty(item.IconTexture))
+                if (string.IsNullOrEmpty(item.IconTexture) && !item.IconGaveUp)
                 {
                     // Resolved once and kept. The aspect comes from the texture that actually
                     // won, not from a guess -- without it every sprite was drawn square, which
@@ -140,8 +148,18 @@ namespace Hoodrich.UI
                     // Logged once per icon. What the game reports for these dictionaries is the
                     // only thing that decides the shape, and it is not something you can read off
                     // a screenshot -- so when a wedge looks wrong this is the line that says why.
-                    Log.Info("Icon " + item.Label + ": " + icon.Dict + "/" + item.IconTexture +
+                    //
+                    // "Once" was the intention and not what happened. The guard above is on the
+                    // texture being empty, and a texture that never resolves stays empty -- so
+                    // an icon the install does not have was re-resolved and re-logged on every
+                    // frame the wheel was open. One session came to 6,768 lines of it for a
+                    // single entry, all of them saying the same thing about the same missing
+                    // texture. It gives up now, and says so once.
+                    Log.Info("Icon " + item.Label + ": " + icon.Dict + "/" +
+                             (string.IsNullOrEmpty(item.IconTexture) ? "(nothing matched)" : item.IconTexture) +
                              " aspect " + aspect.ToString("0.00"));
+
+                    if (string.IsNullOrEmpty(item.IconTexture)) item.IconGaveUp = true;
                 }
 
                 return !string.IsNullOrEmpty(item.IconTexture);

@@ -160,7 +160,23 @@ namespace Hoodrich.Dealing
         };
 
         /// <summary>How often a knocked-back buyer decides to do something about it.</summary>
-        private const float RefusedFightChance = 0.20f;
+        /// <summary>
+        /// How often a man who has been sold rubbish does something about it.
+        ///
+        /// One in five was somebody shrugging. Being handed a weak bag by a dealer you walked
+        /// up to is an insult in front of whoever is on the corner, and the usual answer to it
+        /// is not walking away -- so most of them square up now.
+        /// </summary>
+        private const float RefusedFightChance = 0.75f;
+
+        /// <summary>
+        /// And how often a woman does. Lower, deliberately.
+        ///
+        /// Not a rule about who fights; a rule about what this corner should look like. A queue
+        /// of women swinging at Franklin over a light bag is not the scene, and the ones who do
+        /// not swing still turn him down, tell people, and cost him the sale and the name.
+        /// </summary>
+        private const float RefusedFightChanceFemale = 0.15f;
 
         /// <summary>A buyer who cannot reach you gives up after this and wanders off.</summary>
         private const int ApproachTimeoutMs = 60000;
@@ -1825,10 +1841,12 @@ namespace Hoodrich.Dealing
 
             Say(buyer, RefusedLines);
 
-            if (_rng.NextDouble() >= RefusedFightChance)
+            var chance = IsMale(buyer) ? RefusedFightChance : RefusedFightChanceFemale;
+
+            if (_rng.NextDouble() >= chance)
             {
                 try { Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, buyer.Handle, false); }
-                catch { /* he will wander off on his own */ }
+                catch { /* they will wander off on their own */ }
 
                 return;
             }
@@ -1853,6 +1871,26 @@ namespace Hoodrich.Dealing
 
         /// <summary>A scuffle outside your pitch is its own kind of attention.</summary>
         private const float RefusedFightHeat = 6f;
+
+        /// <summary>
+        /// Whether this one is a man.
+        ///
+        /// IS_PED_MALE covers every model without a list to maintain, and a ped the game will
+        /// not answer for is treated as a man -- the fight is the common case now, so an
+        /// unknown falling that way keeps the corner behaving consistently.
+        /// </summary>
+        private static bool IsMale(Ped ped)
+        {
+            try
+            {
+                return ped != null && ped.Exists() &&
+                       Function.Call<bool>(Hash.IS_PED_MALE, ped.Handle);
+            }
+            catch
+            {
+                return true;
+            }
+        }
 
         private void ReleaseCustomer()
         {
@@ -1951,13 +1989,21 @@ namespace Hoodrich.Dealing
             if (!IsPosted) return;
 
             const float x = 0.5f;
-            const float y = 0.86f;
+
+            // Lifted, because the reputation bar below is now tall enough to carry its own
+            // label and the block of text under it would otherwise run off the bottom.
+            const float y = 0.84f;
             const float w = 0.20f;
             const float h = 0.016f;
 
             // Clear air between the two bars, so they read as a pair rather than as one thick
             // bar with a line through it.
             const float RepBarGap = 0.004f;
+
+            const float RepLabelScale = 0.30f;
+
+            /// Half the drawn height of the label at that scale, which is what centres it.
+            const float RepLabelHalf = 0.0112f;
 
             var heat = Math.Min(1f, _cornerHeat / Math.Max(1f, _cfg.PostUpHeatBeforePolice));
             var colour = heat > 0.75f ? Palette.Danger : heat > 0.4f ? Palette.Warn : Palette.Cash;
@@ -1976,21 +2022,26 @@ namespace Hoodrich.Dealing
             // quieter of the two at a glance.
             var rep = _state == null ? 1f : _state.ProductRep;
 
-            // Neutral is neutral: plain, not amber. Amber for a middle value would read as a
-            // warning about something you have not done yet.
-            var repColour = rep >= 0.72f ? Palette.Cash
-                : rep >= 0.42f ? Palette.TextDim
-                : rep >= 0.30f ? Palette.Warn
-                : Palette.Danger;
+            // Green above the middle, red below it. The middle is where you start, so the two
+            // colours are the two things that can happen to you rather than a scale from good
+            // to bad.
+            var repColour = rep >= PlayerState.Neutral ? Palette.Cash : Palette.Danger;
 
-            const float repH = 0.008f;
+            // Tall enough to hold its own name. The label is drawn inside the bar, so the bar
+            // has to be taller than the text or the letters sit on its edges.
+            const float repH = 0.030f;
             var repY = y + h * 0.5f + RepBarGap + repH * 0.5f;
 
             Hud.Rect(x, repY, w + 0.004f, repH + 0.004f, Color.FromArgb(190, 8, 8, 10));
-            Hud.Rect(x, repY, w, repH, Color.FromArgb(160, 30, 32, 34));
+            Hud.Rect(x, repY, w, repH, Color.FromArgb(170, 26, 28, 30));
 
             var repFilled = w * Math.Max(0f, Math.Min(1f, rep));
             Hud.Rect(x - (w - repFilled) * 0.5f, repY, repFilled, repH, repColour);
+
+            // Its name, in the bar. Hud.Text places by the TOP of the line, so the half-line
+            // offset is what centres it rather than hanging it off the bar's middle.
+            Hud.Text("REPUTATION", x, repY - RepLabelHalf, RepLabelScale,
+                     Color.FromArgb(240, 252, 252, 250), Hud.FontChaletLondon);
 
             // Two lines rather than one. "POSTED UP" is the state you are in and the product
             // is what you happen to be moving while in it, so they are not the same sentence --
@@ -2004,6 +2055,11 @@ namespace Hoodrich.Dealing
             var tint = State == PostState.Posted ? Palette.Text : Palette.Danger;
 
             Hud.Text(state, x, y - 0.072f, 0.62f, tint, Hud.FontCursive);
+
+            // Where you stand, directly under the bar it belongs to, and without a prefix --
+            // the bar says REPUTATION, so repeating it here said the word twice in two inches.
+            Hud.Text(_state == null ? "" : _state.ProductRepWord.ToUpperInvariant(),
+                     x, y + 0.046f, 0.26f, repColour, Hud.FontLabel);
 
             if (!string.IsNullOrEmpty(detail))
             {
@@ -2020,16 +2076,11 @@ namespace Hoodrich.Dealing
 
             Hud.Text((_product == null ? "0" : _product.Amount(left)) +
                      " left  ·  " + lots + " more sale" + (lots == 1 ? "" : "s"),
-                     x, y + 0.036f, 0.30f,
+                     x, y + 0.072f, 0.30f,
                      left < 7f ? Palette.Warn : Palette.Cash, Hud.FontBody);
 
             Hud.Text(Footfall + " passing  ·  " + _sales + " sold  ·  $" + _earned.ToString("N0"),
-                     x, y + 0.060f, 0.28f, Palette.TextDim, Hud.FontBody);
-
-            // What the rep bar means, in words, because a bar on its own only tells you it has
-            // moved and not what moved it.
-            Hud.Text(_state == null ? "" : "REP  ·  " + _state.ProductRepWord.ToUpperInvariant(),
-                     x, y + 0.082f, 0.26f, repColour, Hud.FontLabel);
+                     x, y + 0.096f, 0.28f, Palette.TextDim, Hud.FontBody);
         }
     }
 }
