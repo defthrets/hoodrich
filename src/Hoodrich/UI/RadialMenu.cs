@@ -435,8 +435,17 @@ namespace Hoodrich.UI
                     w = IconWidth;
                 }
 
-                Draw.Sprite(item.IconDict, item.IconTexture, px, py - 0.030f,
-                            Draw.ToX(w), h, 0f, colour);
+                // Ours if there is one. A PNG is square and authored for this size, so it
+                // needs none of the aspect correction the shipped sprites do.
+                if (!string.IsNullOrEmpty(item.IconFile))
+                {
+                    Draw.File(item.IconFile, px, py - 0.030f, h, 0f, colour);
+                }
+                else
+                {
+                    Draw.Sprite(item.IconDict, item.IconTexture, px, py - 0.030f,
+                                Draw.ToX(w), h, 0f, colour);
+                }
             }
             else if (!string.IsNullOrEmpty(item.Symbol))
             {

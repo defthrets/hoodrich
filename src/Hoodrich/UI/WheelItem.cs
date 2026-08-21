@@ -23,6 +23,14 @@ namespace Hoodrich.UI
         public string IconTexture = "";
 
         /// <summary>
+        /// A PNG of ours, which wins over anything the game ships.
+        ///
+        /// Set once and never re-resolved. A file is either there or it is not, and unlike a
+        /// streamed dictionary the answer cannot change between one frame and the next.
+        /// </summary>
+        public string IconFile = "";
+
+        /// <summary>
         /// Width over height of the source art, so it is drawn in its own proportions.
         ///
         /// Weapon art is a long letterbox and the menu and inventory sprites are square. Fitting
@@ -147,6 +155,14 @@ namespace Hoodrich.UI
             // when the page is built, and an unloaded dictionary answers "no" to every name.
             item.IconReady = () =>
             {
+                // Ours needs no dictionary and no streaming, so it is answered before the
+                // texture machinery is asked anything at all.
+                if (icon.HasFile)
+                {
+                    item.IconFile = icon.File;
+                    return true;
+                }
+
                 if (!Draw.EnsureTextureDict(icon.Dict)) return false;
 
                 // Retried while it keeps failing rather than cached: a dictionary can report

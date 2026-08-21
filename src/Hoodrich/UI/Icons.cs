@@ -126,8 +126,8 @@ namespace Hoodrich.UI
 
         // Product. The multiplayer inventory dictionary carries one sprite per drug, which is
         // as close to purpose-made art as this mod is ever going to get.
-        public static readonly Icon Weed = new Icon(Inventory, "mp_specitem_weed");
-        public static readonly Icon Coke = new Icon(Inventory, "mp_specitem_coke");
+        public static readonly Icon Weed = new Icon(Inventory, "mp_specitem_weed").WithFile("weed.png");
+        public static readonly Icon Coke = new Icon(Inventory, "mp_specitem_coke").WithFile("coke.png");
         /// <summary>
         /// Crack, ecstasy and heroin have no sprite of their own anywhere in the game, so each
         /// borrows one that reads at a glance: the rocket for a rock, the pill for a pill, and
@@ -137,7 +137,7 @@ namespace Hoodrich.UI
         /// </summary>
         public static readonly Icon Crack = new Icon(Menu,
             "mp_specitem_crack", "shop_ammo_icon_a", "shop_franklin_icon_a").WithFile("crack.png");
-        public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth");
+        public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth").WithFile("meth.png");
         public static readonly Icon Heroin = new Icon(Menu,
             "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a").WithFile("heroin.png");
         /// <summary>
@@ -155,14 +155,14 @@ namespace Hoodrich.UI
             "mp_specitem_pills", "mp_specitem_ecstasy", "shop_health_icon_a").WithFile("pills.png");
 
         // Actions.
-        public static readonly Icon Money = new Icon(Menu, "shop_money_icon_a");
-        public static readonly Icon Cash = new Icon(Inventory, "mp_specitem_cash");
-        public static readonly Icon Guns = new Icon(Menu, "shop_gunclub_icon_a");
-        public static readonly Icon Garage = new Icon(Menu, "shop_garage_icon_a");
-        public static readonly Icon Mask = new Icon(Menu, "shop_mask_icon_a");
-        public static readonly Icon Health = new Icon(Menu, "shop_health_icon_a");
-        public static readonly Icon Ammo = new Icon(Menu, "shop_ammo_icon_a");
-        public static readonly Icon Tattoo = new Icon(Menu, "shop_tattoos_icon_a");
+        public static readonly Icon Money = new Icon(Menu, "shop_money_icon_a").WithFile("money.png");
+        public static readonly Icon Cash = new Icon(Inventory, "mp_specitem_cash").WithFile("cash.png");
+        public static readonly Icon Guns = new Icon(Menu, "shop_gunclub_icon_a").WithFile("guns.png");
+        public static readonly Icon Garage = new Icon(Menu, "shop_garage_icon_a").WithFile("garage.png");
+        public static readonly Icon Mask = new Icon(Menu, "shop_mask_icon_a").WithFile("mask.png");
+        public static readonly Icon Health = new Icon(Menu, "shop_health_icon_a").WithFile("health.png");
+        public static readonly Icon Ammo = new Icon(Menu, "shop_ammo_icon_a").WithFile("ammo.png");
+        public static readonly Icon Tattoo = new Icon(Menu, "shop_tattoos_icon_a").WithFile("tattoo.png");
 
         /// <summary>
         /// What you are carrying.
@@ -172,12 +172,48 @@ namespace Hoodrich.UI
         /// proves renders, so the wedge cannot end up blank again.
         /// </summary>
         public static readonly Icon Stash = new Icon(Menu,
-            "shop_ammo_icon_a", "shop_clothing_icon_a", "shop_garage_icon_a", "shop_gunclub_icon_a");
-        public static readonly Icon Warning = new Icon(Menu, "mp_alerttriangle");
-        public static readonly Icon Tick = new Icon(Menu, "shop_tick_icon");
-        public static readonly Icon Locked = new Icon(Menu, "shop_lock");
+            "shop_ammo_icon_a", "shop_clothing_icon_a", "shop_garage_icon_a", "shop_gunclub_icon_a").WithFile("stash.png");
+        public static readonly Icon Warning = new Icon(Menu, "mp_alerttriangle").WithFile("warning.png");
+        public static readonly Icon Tick = new Icon(Menu, "shop_tick_icon").WithFile("tick.png");
+        public static readonly Icon Locked = new Icon(Menu, "shop_lock").WithFile("locked.png");
 
         /// <summary>The sprite for a drug id, or an unset icon if it has none.</summary>
+        /// <summary>
+        /// A set's own mark.
+        ///
+        /// Geometry rather than heraldry, and deliberately so: nine crests all drawn as crests
+        /// are nine grey smudges at the size these render, whereas nine clearly DIFFERENT
+        /// silhouettes can be told apart before you have learned which is which. Tinted by the
+        /// gang's own colour at the call site.
+        ///
+        /// A gang the file has never heard of gets nothing rather than somebody else's mark --
+        /// wearing another set's colours by accident is worse than wearing none.
+        /// </summary>
+        public static Icon ForGang(string gangId)
+        {
+            if (string.IsNullOrEmpty(gangId)) return default(Icon);
+
+            switch (gangId.ToLowerInvariant())
+            {
+                case "families": return FromFile("gang_families.png");
+                case "ballas": return FromFile("gang_ballas.png");
+                case "vagos": return FromFile("gang_vagos.png");
+                case "aztecas": return FromFile("gang_aztecas.png");
+                case "marabunta": return FromFile("gang_marabunta.png");
+                case "lost": return FromFile("gang_lost.png");
+                case "triads": return FromFile("gang_triads.png");
+                case "armenians": return FromFile("gang_armenians.png");
+                case "koreans": return FromFile("gang_koreans.png");
+                default: return default(Icon);
+            }
+        }
+
+        /// <summary>Art of ours with no game texture behind it at all.</summary>
+        public static Icon FromFile(string png)
+        {
+            return new Icon("", new string[0]).WithFile(png);
+        }
+
         public static Icon ForDrug(string drugId)
         {
             switch ((drugId ?? "").ToLowerInvariant())
