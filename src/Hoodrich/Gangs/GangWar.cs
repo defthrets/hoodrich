@@ -124,6 +124,55 @@ namespace Hoodrich.Gangs
 
         private const int PerCar = 4;
 
+        /// <summary>How many bearings are tried before a wave gives up for this tick.</summary>
+        private const int ApproachTries = 8;
+
+        /// <summary>
+        /// Whether a point is on the ground rather than on top of something.
+        ///
+        /// The approach point is built by pushing a hundred and fifty metres out from the
+        /// TARGET, keeping the target's own height. Grimes musters six metres above Forum
+        /// Drive, so a bearing that lands over the houses arrives holding a Z from a different
+        /// storey -- and the street lookup answers with the nearest node to THAT, which is how
+        /// a carload of Ballas came to be stood on somebody's garage roof.
+        ///
+        /// The probe starts above the point and looks down. If what it finds is roughly where
+        /// the point already claimed to be, the point is standing on it. If the ground is a
+        /// storey or more below, the point is standing on something ELSE -- a roof, a canopy,
+        /// a walkway -- and the bearing is thrown away rather than corrected, because dropping
+        /// a car to the road under a roof puts it inside whatever is between them.
+        /// </summary>
+        private static bool OnTheGround(Vector3 where)
+        {
+            try
+            {
+                float groundZ;
+
+                if (!World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 2f),
+                                           out groundZ, GetGroundHeightMode.Normal))
+                {
+                    // No answer at all, usually because the area has not streamed in. Better to
+                    // use it than to stall the wave -- the far end of a 150m approach is rarely
+                    // loaded, and a car that spawns badly out there drives out of it.
+                    return true;
+                }
+
+                return groundZ > 0f && Math.Abs(groundZ - where.Z) <= StoreyDrop;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// How far the ground may sit below a point before the point is on top of something.
+        ///
+        /// Three metres. A kerb, a driveway ramp and a shallow verge are all inside it; a
+        /// storey is not, and a storey is what a roof is.
+        /// </summary>
+        private const float StoreyDrop = 3f;
+
         /// <summary>Ours, spawned to match. Four a car, same as theirs.</summary>
         private const int DefendersPerCar = 4;
 
@@ -865,13 +914,27 @@ namespace Hoodrich.Gangs
 
             try
             {
-                var angle = _rng.NextDouble() * Math.PI * 2.0;
+                var start = Vector3.Zero;
 
-                var far = _target.Where + new Vector3(
-                    (float)Math.Cos(angle) * ApproachDistance,
-                    (float)Math.Sin(angle) * ApproachDistance, 0f);
+                // Several goes round the compass, because ONE angle can land on a rooftop and
+                // there is no reason to send that carload from there when the next bearing is
+                // a real road.
+                for (var attempt = 0; attempt < ApproachTries && start == Vector3.Zero; attempt++)
+                {
+                    var angle = _rng.NextDouble() * Math.PI * 2.0;
 
-                var start = World.GetNextPositionOnStreet(far);
+                    var far = _target.Where + new Vector3(
+                        (float)Math.Cos(angle) * ApproachDistance,
+                        (float)Math.Sin(angle) * ApproachDistance, 0f);
+
+                    var road = World.GetNextPositionOnStreet(far);
+                    if (road == Vector3.Zero) continue;
+
+                    if (!OnTheGround(road)) continue;
+
+                    start = road;
+                }
+
                 if (start == Vector3.Zero) return false;
 
                 var car = World.CreateVehicle(model.Value, start);
