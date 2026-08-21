@@ -40,11 +40,15 @@ namespace Hoodrich.Economy
         private static readonly Dictionary<string, Clip[]> ByDrug =
             new Dictionary<string, Clip[]>(StringComparer.OrdinalIgnoreCase)
             {
+                // Standing at a surface, both hands on the product. The seated sorting clip
+                // that used to lead this list is exactly that -- seated -- and the counter in
+                // Denise's kitchen is a worktop you stand at, so it read as a man crouched at
+                // nothing.
                 ["weed"] = new[]
                 {
-                    new Clip("anim@amb@business@weed@weed_sorting_seated@", "sorting_base_inspector"),
-                    new Clip("anim@amb@business@weed@weed_inspecting_lo_med_hi@", "weed_inspecting_hi_base_inspector"),
-                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer")
+                    new Clip("anim@amb@business@weed@weed_sorting_hi@", "sorting_base_inspector"),
+                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
+                    new Clip("anim@amb@business@weed@weed_inspecting_lo_med_hi@", "weed_inspecting_hi_base_inspector")
                 },
                 ["coke"] = new[]
                 {
@@ -87,8 +91,69 @@ namespace Hoodrich.Economy
         };
 
         private string _playingDict;
+        private string _playingClip;
 
-        public bool IsPlaying => _playingDict != null;
+        /// <summary>
+        /// Whether the player is VISIBLY working, not merely whether a task was handed out.
+        ///
+        /// This used to be "did we set the field", which is a different question. Anything that
+        /// clears the ped's tasks -- a stumble, a scenario, another script -- left the field set
+        /// and the player stood to attention over a counter for the rest of the batch, with
+        /// nothing to notice it had stopped.
+        /// </summary>
+        public bool IsPlaying
+        {
+            get
+            {
+                if (_playingDict == null) return false;
+
+                try
+                {
+                    var player = Game.Player.Character;
+                    if (player == null || !player.Exists()) return false;
+
+                    return Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, player.Handle,
+                                               _playingDict, _playingClip, 3);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Asks for every clip a drug might use, ahead of needing them.
+        ///
+        /// REQUEST_ANIM_DICT is asynchronous, so the first attempt at a cold dictionary always
+        /// loses -- and a batch that starts before its animation has streamed in is a batch
+        /// that spends its first seconds with the player stood still doing nothing.
+        /// </summary>
+        public static void Preload(string drugId)
+        {
+            try
+            {
+                // No drug named means the player is stood at the counter with the menu not yet
+                // open, so there is nothing to narrow it to -- warm all of them.
+                if (string.IsNullOrEmpty(drugId))
+                {
+                    foreach (var set in ByDrug.Values)
+                    {
+                        foreach (var clip in set) Function.Call(Hash.REQUEST_ANIM_DICT, clip.Dict);
+                    }
+                }
+                else if (ByDrug.TryGetValue(drugId, out var clips))
+                {
+                    foreach (var clip in clips) Function.Call(Hash.REQUEST_ANIM_DICT, clip.Dict);
+                }
+
+                foreach (var clip in Fallback) Function.Call(Hash.REQUEST_ANIM_DICT, clip.Dict);
+            }
+            catch
+            {
+                // Try again next tick.
+            }
+        }
 
         /// <summary>Starts the right animation for a drug. True if any clip took.</summary>
         public bool Start(Ped player, string drugId)
@@ -137,6 +202,7 @@ namespace Hoodrich.Economy
                 }
 
                 _playingDict = clip.Dict;
+                _playingClip = clip.Name;
                 return true;
             }
             catch (Exception ex)
@@ -154,10 +220,17 @@ namespace Hoodrich.Economy
             {
                 if (player != null && player.Exists())
                 {
-                    Function.Call(Hash.STOP_ANIM_TASK, player.Handle, _playingDict, "", 3f);
+                    Function.Call(Hash.STOP_ANIM_TASK, player.Handle, _playingDict,
+                                  _playingClip ?? "", 3f);
                 }
 
-                Function.Call(Hash.REMOVE_ANIM_DICT, _playingDict);
+                // NOT removed from memory.
+                //
+                // This used to call REMOVE_ANIM_DICT here, which throws away the dictionary the
+                // very next batch is about to ask for -- so every batch restarted the streaming
+                // race from cold, and Start is called again on any tick the animation is not
+                // running. Two seconds of a man standing still at the start of every single
+                // batch, for the sake of freeing an animation that was immediately needed again.
             }
             catch
             {
@@ -165,6 +238,7 @@ namespace Hoodrich.Economy
             }
 
             _playingDict = null;
+            _playingClip = null;
         }
     }
 }

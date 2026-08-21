@@ -58,6 +58,12 @@ namespace Hoodrich.Economy
         /// <summary>Real hands on the product. Retried until the clip streams in.</summary>
         private readonly PrepAnimation _anim = new PrepAnimation();
 
+        /// <summary>Whether the scenario fallback has been used for this batch.</summary>
+        private bool _scenarioTried;
+
+        /// <summary>How long the real clips get before the fallback is allowed in.</summary>
+        private const int ScenarioAfterMs = 2500;
+
         public Cutting(Stash stash, PlayerState state)
         {
             _stash = stash;
@@ -150,6 +156,7 @@ namespace Hoodrich.Economy
 
             _product = product;
             _output = output;
+            _scenarioTried = false;
             _bulkGrams = bulkGrams;
             _targetPurity = targetPurity;
             _startedAt = Game.GameTime;
@@ -160,23 +167,66 @@ namespace Hoodrich.Economy
             var work = BaseDurationMs + (int)(bulkGrams * MsPerGram) + (int)(bags * MsPerPackage);
 
             _durationMs = Math.Min(MaxDurationMs, Math.Max(BaseDurationMs, work));
+
+            StandAtTheCounter();
             _startPosition = Game.Player.Character.Position;
 
             Notify.Ticker(product.SplitVerb + " " + product.Amount(bulkGrams) + " of " + product.Name +
                           " at " + (targetPurity * 100f).ToString("0") + "%...");
-            PlayWorkScenario();
+
+            // The animation gets the first go, not the scenario. The scenario is only reached
+            // from Update, and only after the clips have had a fair chance to stream in.
             _anim.Start(Game.Player.Character, product.Id);
             return null;
         }
 
         /// <summary>
-        /// Crouches the player over the work so it reads as an activity rather than a menu
-        /// wait. Scenarios are tried in order; if none take, the batch still runs -- the
-        /// animation is flavour, never a dependency.
+        /// Where the work happens, and which way he faces while he does it.
+        ///
+        /// Read off the HUD standing at the worktop. The batch used to begin wherever the
+        /// player happened to be stood when they closed the menu -- half a metre back, facing
+        /// the fridge -- and the animation then played into thin air beside the counter rather
+        /// than over it.
+        ///
+        /// Only applied at the counter. Cutting is a kitchen job, but a snap is a teleport, and
+        /// a teleport that fires anywhere is worse than an animation that is slightly off.
+        /// </summary>
+        private static readonly Vector3 CounterSpot = new Vector3(-11.253f, -1428.113f, 31.101f);
+
+        private const float CounterHeading = 356.486f;
+
+        /// <summary>Close enough to the worktop that being put on the mark is a nudge.</summary>
+        private const float CounterSnapRange = 3f;
+
+        private static void StandAtTheCounter()
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            try
+            {
+                if (player.Position.DistanceTo(CounterSpot) > CounterSnapRange) return;
+
+                player.Position = CounterSpot;
+                player.Heading = CounterHeading;
+            }
+            catch
+            {
+                // He works where he stands.
+            }
+        }
+
+        /// <summary>
+        /// The last resort, if no clip in the catalogue will load on this install.
+        ///
+        /// This used to run FIRST, on every batch, before the animation was even asked for --
+        /// so the scenario went out, the animation replaced it a frame or two later, and for
+        /// that gap the player crouched. CROUCH_INSPECT is also the wrong shape for a worktop:
+        /// it is somebody examining something on the floor.
         /// </summary>
         private static readonly string[] WorkScenarios =
         {
-            "WORLD_HUMAN_CROUCH_INSPECT", "WORLD_HUMAN_DRUG_DEALER", "WORLD_HUMAN_STAND_IMPATIENT"
+            "WORLD_HUMAN_DRUG_DEALER", "WORLD_HUMAN_STAND_IMPATIENT"
         };
 
         private void PlayWorkScenario()
@@ -251,7 +301,23 @@ namespace Hoodrich.Economy
 
             // The clip's dictionary streams in asynchronously, so the first attempt usually
             // loses the race. Keep asking until the player is visibly working.
-            if (!_anim.IsPlaying) _anim.Start(player, _product.Id);
+            // Not once the fallback is in. Start issues a TASK_PLAY_ANIM, which would cancel
+            // the scenario on the very next tick and then fail again -- a man twitching between
+            // two animations for the rest of the batch.
+            if (!_anim.IsPlaying && !_scenarioTried)
+            {
+                _anim.Start(player, _product.Id);
+
+                // Given a fair go and still nothing, so he at least does something with his
+                // hands rather than standing to attention over a counter for the whole batch.
+                if (!_anim.IsPlaying && !_scenarioTried &&
+                    Game.GameTime - _startedAt > ScenarioAfterMs)
+                {
+                    _scenarioTried = true;
+                    PlayWorkScenario();
+                    Log.Debug("No prep animation would load; fell back to a scenario.");
+                }
+            }
 
             if (Game.GameTime - _startedAt >= _durationMs) Complete();
         }

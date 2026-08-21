@@ -53,6 +53,11 @@ namespace Hoodrich.Locations
             if (player == null || !player.Exists() || !player.IsAlive) return;
             if (player.IsInVehicle()) return;
 
+            // Asked for while he is stood at the worktop reading the prompt, so the clips are
+            // resident by the time he picks something -- rather than the batch starting cold
+            // and spending its first seconds with nobody moving.
+            Economy.PrepAnimation.Preload("");
+
             Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to work the product.");
 
             if (!Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return;
