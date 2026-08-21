@@ -98,16 +98,18 @@ namespace Hoodrich.Supply
         /// </summary>
         private static readonly string[] BoxProps =
         {
-            // ~0.98m of stacked, shrink-wrapped kilos. Two packs ship the same mesh.
+            // The small taped package, back at the front by choice.
+            //
+            // It was swapped out for a metre of stacked kilos on the grounds that a man who
+            // drove a kilo across the city should not carry in something the size of a
+            // paperback -- and then it looked better the original way round, which is the only
+            // argument that actually counts. The bales stay under it as fallbacks.
+            "prop_drug_package_02",
+
+            "prop_drug_package", "prop_mp_drug_pack_red",
             "bkr_prop_coke_block_01a", "ba_prop_battle_coke_block_01a",
-
-            // Fatter and shorter, if the slab turns out to overhang his arms.
-            "bkr_prop_meth_bigbag_01a", "ba_prop_battle_meth_bigbag_01a",
-            "bkr_prop_weed_bigbag_01a", "ba_prop_battle_weed_bigbag_01a",
-
-            // Base game, so the list can never fall all the way through. Still nine times the
-            // volume of the envelope that used to win.
-            "prop_drug_package", "prop_mp_drug_pack_red", "prop_paper_box_01"
+            "bkr_prop_meth_bigbag_01a", "bkr_prop_weed_bigbag_01a",
+            "prop_paper_box_01"
         };
 
         /// <summary>
@@ -1540,11 +1542,17 @@ namespace Hoodrich.Supply
         /// <summary>
         /// Where the MIDDLE of whatever he is carrying sits, relative to the hand bone.
         ///
-        /// Out in front rather than against him: the old 0.10 was measured against a prop six
-        /// centimetres thick, and anything with real depth at that distance is inside his
-        /// chest.
+        /// Back to the small package's own distance. It was pushed out to 0.26 for a bale a
+        /// metre wide, and at that reach a six-centimetre package floats in front of him with
+        /// daylight between it and his hands.
+        ///
+        /// This is the ORIGINAL pose expressed as a centre rather than as an origin: the old
+        /// hardcoded offset put the package's origin at -0.18, and that mesh sits entirely
+        /// above its origin with its middle 0.025 up, so -0.155 is the same place. Which is the
+        /// point of measuring -- the number means something now, and a different prop with a
+        /// different pivot lands in the same spot instead of sinking into his hip.
         /// </summary>
-        private static readonly Vector3 CarriedAt = new Vector3(0.06f, 0.26f, -0.16f);
+        private static readonly Vector3 CarriedAt = new Vector3(0.05f, 0.10f, -0.155f);
 
         private void PlayCarry()
         {
