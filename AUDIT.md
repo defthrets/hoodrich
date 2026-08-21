@@ -243,7 +243,7 @@ code takes a position as an argument already.
 somebody who asks for you by name and pays over for it — would give dealing a
 memory, and the standing model is already there to hang it on.
 
-**5. The plug can be robbed.** Cheng turns up with weight in a car and drives
+**5. The plug can be robbed.** Tao Cheng turns up with weight in a car and drives
 away with your money. Nothing can go wrong with that, ever. It is the most
 obvious missing risk in the economy.
 
