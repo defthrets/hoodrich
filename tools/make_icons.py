@@ -146,6 +146,33 @@ def like():
     save(img, 'like.png')
 
 
+def tick():
+    """
+    The verified badge, drawn as a shape rather than a dot.
+
+    An OCTAGON, not a scalloped burst and not a circle: twelve lobes go to mush at this size,
+    and a plain disc is indistinguishable from the accent dot it replaces, but eight flats
+    still read as "not a dot". Rotated 22.5 degrees so a flat sits on top and it does not look
+    like it is balancing on a point.
+
+    The check is a HOLE, same trick as the skull. A check stroke laid on top would be a
+    two-pixel scratch. The elbow gets its own disc because PIL mitres thick lines with a notch,
+    and at this size the notch splits the check into two dashes.
+    """
+    import math
+    img, d = canvas()
+
+    pts = [(256 + 220 * math.cos(math.radians(22.5 + i * 45)),
+            256 + 220 * math.sin(math.radians(22.5 + i * 45))) for i in range(8)]
+    d.polygon(pts, fill=W)
+
+    d.line([(150, 266), (226, 342)], fill=CLEAR, width=76)
+    d.line([(226, 342), (368, 196)], fill=CLEAR, width=76)
+    d.ellipse([226 - 38, 342 - 38, 226 + 38, 342 + 38], fill=CLEAR)
+
+    save(img, 'tick.png')
+
+
 print('writing to %s' % OUT)
 skull()
 police()
@@ -153,3 +180,4 @@ heart()
 reply()
 repost()
 like()
+tick()

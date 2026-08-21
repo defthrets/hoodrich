@@ -382,7 +382,11 @@ namespace Hoodrich.Social
                     case "vagos":    return Color.FromArgb(255, 196, 158, 38);
                     case "lost":     return Color.FromArgb(255, 132, 42, 38);
                     case "koreans":  return Color.FromArgb(255, 52, 96, 152);
-                    case "armenian": return Color.FromArgb(255, 92, 84, 76);
+                    // "armenians", with the s. data/socials.json spells it that way and this did not,
+            // so the one Armenian author fell through to a hash hue and wore a random colour.
+            // The Azteca had no case at all.
+            case "armenians": return Color.FromArgb(255, 92, 84, 76);
+            case "aztecas": return Color.FromArgb(255, 176, 96, 40);
                     case "marabunta":return Color.FromArgb(255, 38, 132, 128);
                 }
             }
