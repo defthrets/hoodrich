@@ -101,6 +101,7 @@ namespace Hoodrich
         private readonly Fixture _partyBarrel;
         private readonly Fixture _partyFire;
         private readonly Fixture _partyCouch;
+        private readonly Fixture _stretchBox;
 
         /// <summary>
         /// Women from round here.
@@ -318,6 +319,14 @@ namespace Hoodrich
 
                 _partyCouch = new Fixture(new Vector3(-202.400f, -1727.000f, 32.664f), 118.000f,
                                           "prop_couch_03", "prop_old_couch_01", "prop_rub_couch01");
+
+                // Weight sitting by Stretch's door, which is the whole reason anybody goes to
+                // that door. Fallbacks behind it: the Bikers bag and then a plain crate, so an
+                // install without the newer DLC gets something rather than nothing.
+                _stretchBox = new Fixture(new Vector3(-162.562f, -1637.442f, 34.029f), 2.453f,
+                                          "m24_2_prop_m42_weedboxpile_01a",
+                                          "bkr_prop_weed_bigbag_01a",
+                                          "prop_boxpile_07d");
 
                 _copWatch = new CopWatch();
 
@@ -726,6 +735,7 @@ namespace Hoodrich
                     _partyBarrel.Update();
                     _partyFire.Update();
                     _partyCouch.Update();
+                    _stretchBox.Update();
                     _jobs.Update();
                 }
 
@@ -1069,6 +1079,7 @@ namespace Hoodrich
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyFire?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
+            try { _stretchBox?.RestoreWorld(); } catch { /* teardown */ }
             try { _jobs?.RestoreWorld(); } catch { /* teardown */ }
             try { _stash?.RestoreWorld(); } catch { /* teardown */ }
         }
