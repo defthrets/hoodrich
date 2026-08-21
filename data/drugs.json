@@ -56,8 +56,8 @@
     },
     {
       "id": "ecstasy",
-      "name": "Ecstasy",
-      "tag": "E",
+      "name": "Oxycodone",
+      "tag": "OXY",
       "tier": 1,
       "basePrice": 25,
       "bulkPrice": 7,

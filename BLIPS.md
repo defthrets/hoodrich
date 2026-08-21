@@ -22,6 +22,7 @@ what it is and `496` does not.
 | 774 | `radar_sub_periscope` | inside the heat bar -- `PostUp.cs` |
 | 835 | `radar_community_series` | inside the reputation bar |
 | 855 | `radar_ped_gang_leader` | gang leaders, Stretch included -- `GangLeaders.cs` |
+| 58 | `radar_crim_wanted` | Oxycodone, everywhere it is drawn -- `Icons.cs` |
 | -- | `BlipSprite.Weed` | drug markers |
 | 51 | `radar_crim_drugs` | the crack den door -- `Settings.cs` |
 | -- | `BlipSprite.Package` | the plug's drop |

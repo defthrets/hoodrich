@@ -404,7 +404,12 @@ namespace Hoodrich.UI
             // to deep maroon, so a fixed dark-on-hover rule would lose half of them.
             var colour = !item.Enabled ? Palette.TextDisabled : Palette.TextOn(fill);
 
-            if (item.HasIcon)
+            // A blip icon is TEXT, not a sprite -- blip art has no route through DRAW_SPRITE.
+            if (!string.IsNullOrEmpty(item.IconBlip))
+            {
+                Draw.Text(item.IconBlip, px, py - 0.042f, 0.62f, colour, Draw.FontChaletLondon);
+            }
+            else if (item.HasIcon)
             {
                 // The game's weapon art is a white silhouette, so it is tinted the same colour
                 // the label uses -- dark when it sits on a highlighted wedge, white otherwise.

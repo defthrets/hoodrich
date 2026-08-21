@@ -31,6 +31,9 @@ namespace Hoodrich.UI
         /// </summary>
         public float IconAspect = 1f;
 
+        /// <summary>Set when this item's art is a blip tag rather than a texture.</summary>
+        public string IconBlip = "";
+
         /// <summary>
         /// Set once a texture has been looked for and not found.
         ///
@@ -125,6 +128,15 @@ namespace Hoodrich.UI
             if (Items.Count == 0 || !icon.IsSet) return this;
 
             var item = Items[Items.Count - 1];
+
+            // A blip icon skips the whole texture path -- there is nothing to stream, nothing
+            // to resolve, and it is drawn as text rather than as a sprite.
+            if (icon.IsBlip)
+            {
+                item.IconBlip = icon.Blip;
+                return this;
+            }
+
             item.IconDict = icon.Dict;
 
             // Resolved per frame rather than here: the dictionary is usually still streaming

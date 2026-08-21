@@ -37,6 +37,9 @@ namespace Hoodrich.UI
         public float IconAspect = 1f;
         public bool IconTried;
 
+        /// <summary>Set when this row's art is a blip tag rather than a texture.</summary>
+        public string IconBlip = "";
+
         /// <summary>Texture names to try, for icons that are not named after their dictionary.</summary>
         public string[] Candidates;
 
@@ -89,6 +92,14 @@ namespace Hoodrich.UI
             if (Choices.Count == 0 || !icon.IsSet) return this;
 
             var choice = Choices[Choices.Count - 1];
+
+            // A blip icon has no texture to stream or resolve -- it is drawn as text.
+            if (icon.IsBlip)
+            {
+                choice.IconBlip = icon.Blip;
+                return this;
+            }
+
             choice.IconDict = icon.Dict;
             choice.Candidates = icon.Textures;
             return this;
@@ -456,7 +467,15 @@ namespace Hoodrich.UI
 
                 var textX = PanelX + 0.014f;
 
-                if (ResolveIcon(choice))
+                // A blip is text, not a sprite -- blip art has no route through DRAW_SPRITE.
+                if (!string.IsNullOrEmpty(choice.IconBlip))
+                {
+                    Hud.Text(choice.IconBlip, textX, y + 0.001f, 0.34f, colour,
+                             Hud.FontChaletLondon, centre: false);
+
+                    textX += 0.020f;
+                }
+                else if (ResolveIcon(choice))
                 {
                     // Height-boxed the same way the wheel does it, so a long silhouette stays
                     // long and a square one stays square.

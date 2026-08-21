@@ -13,13 +13,39 @@ namespace Hoodrich.UI
         public readonly string Dict;
         public readonly string[] Textures;
 
+        /// <summary>
+        /// A ~BLIP_~ tag to draw instead of a texture, where the art wanted is a blip's.
+        ///
+        /// Blip sprites address the map and cannot be given to DRAW_SPRITE, but the art can be
+        /// put in a string. So an icon that wants to BE a blip is drawn as text rather than as
+        /// a sprite, and this is how a call site says which it is.
+        /// </summary>
+        public readonly string Blip;
+
         public Icon(string dict, params string[] textures)
         {
             Dict = dict;
             Textures = textures;
+            Blip = "";
         }
 
-        public bool IsSet => !string.IsNullOrEmpty(Dict) && Textures != null && Textures.Length > 0;
+        private Icon(string blip)
+        {
+            Dict = "";
+            Textures = null;
+            Blip = blip;
+        }
+
+        /// <summary>An icon that is a blip rather than a texture.</summary>
+        public static Icon FromBlip(string tag)
+        {
+            return new Icon(tag);
+        }
+
+        public bool IsBlip => !string.IsNullOrEmpty(Blip);
+
+        public bool IsSet => IsBlip ||
+                             (!string.IsNullOrEmpty(Dict) && Textures != null && Textures.Length > 0);
 
         /// <summary>The first name the game actually has, or the first as a last resort.</summary>
         public string Resolve()
@@ -86,8 +112,13 @@ namespace Hoodrich.UI
         public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth");
         public static readonly Icon Heroin = new Icon(Menu,
             "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a");
-        public static readonly Icon Ecstasy = new Icon(Menu,
-            "mp_specitem_pills", "mp_specitem_ecstasy", "shop_health_icon_a");
+        /// <summary>
+        /// radar_crim_wanted, 58.
+        ///
+        /// A blip rather than a texture, because none of the pill textures guessed at before
+        /// were ever confirmed to exist and this one is a shape the game definitely has.
+        /// </summary>
+        public static readonly Icon Ecstasy = Icon.FromBlip("~BLIP_CRIM_WANTED~");
 
         // Actions.
         public static readonly Icon Money = new Icon(Menu, "shop_money_icon_a");
