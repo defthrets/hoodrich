@@ -95,7 +95,24 @@ Michael's own deployed ini carries **21** dead keys rather than eleven, because
 `TurfBlipAlpha`, `[Wheel] Texture` and `TextureDict`. Left alone pending a
 decision, since it is a live config file.
 
-### 5. Dead enum
+### 5. A dealer could be emptied by failing to buy from him
+
+`Buy()` takes the weight off the dealer before asking the stash whether it has
+room, which is the right order -- he cannot sell what he is not holding. But
+when the stash then took less than was handed over, or none of it because it was
+full, the difference had nowhere to go and stopped existing.
+
+Nobody was robbed. The charge is already pro-rata on what actually fitted, so
+the money side was correct in both cases. The weight simply left the world -- a
+man with a full stash could stand in front of a dealer and empty him by failing
+to buy, over and over, while the dealer restocked at a third of a load every few
+minutes.
+
+`DealerManager` gains `GiveStock`, capped at a full load, and the buy path hands
+back whatever would not fit. One caller of `TakeStock`, so that is the whole of
+it.
+
+### 6. Dead enum
 
 `Stance` -- four values, declared in `GangDef.cs`, referenced by nothing in the
 entire mod. Removed.
@@ -128,6 +145,21 @@ Listed so the coverage is legible and this does not read as a complaint list.
   ascending monotonically.
 - **Payback flavours.** `Flavour.Guns` has no explicit `case` in `Warning()` but
   is covered by the `default:` arm.
+- **State machines.** `DeliveryState` (six states), `MissionState` (seven) and
+  `BikePhase` (seven) each have every value entered somewhere and handled
+  somewhere. Every delivery state also has a timeout that can fire: Texting on
+  `CallMs + SettingOffMs`, Driving on five minutes, Waiting on three, Carrying
+  on forty-five seconds, Leaving on `LeaveMs` with two cancel paths. `TagRun`
+  uses a completed-set rather than an enum, so it has no unreachable state by
+  construction.
+- **The tweet library.** Zero duplicate lines, either within a set or across the
+  whole file. All 28 placeholders resolve -- 24 from a slot list, five in
+  `ValueFor` -- and no slot list is unused. This matters because `ValueFor`
+  falls back to returning the literal `{key}`, so an unresolved placeholder
+  would print on screen exactly as written.
+- **The street sale.** Product is removed before payment, the payout is
+  calculated on what was actually removed, and a short measure is paid as a
+  short measure rather than a full one.
 
 ---
 
