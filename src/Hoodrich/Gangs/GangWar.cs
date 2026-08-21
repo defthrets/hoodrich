@@ -85,8 +85,15 @@ namespace Hoodrich.Gangs
         /// <summary>How long an empty block waits before the next lot arrive.</summary>
         private const int EmptyBlockMs = 6000;
 
-        private const int WaveGapMinMs = 22000;
-        private const int WaveGapMaxMs = 42000;
+        /// <summary>
+        /// The gap between carloads.
+        ///
+        /// Was 22 to 42 seconds, which on a block you are holding is a long time stood in an
+        /// empty street waiting to be attacked. A raid should be continuous pressure -- they
+        /// came to take the block, not to visit it twice.
+        /// </summary>
+        private const int WaveGapMinMs = 8000;
+        private const int WaveGapMaxMs = 16000;
 
         /// <summary>
         /// Two turn up together at the start; after that it is usually one.
@@ -764,18 +771,33 @@ namespace Hoodrich.Gangs
 
         private void SendWave(int cars)
         {
+            var sent = 0;
+            for (var i = 0; i < cars; i++)
+            {
+                if (SendCar()) sent++;
+            }
+
             // Bad blood means less breathing room between carloads as well as more of them.
             var gap = WaveGapMinMs + _rng.Next(WaveGapMaxMs - WaveGapMinMs);
             gap = (int)(gap * (1f - _heat * 0.45f));
 
-            _nextWave = Game.GameTime + gap;
+            // Nothing went, so nothing is owed a gap.
+            //
+            // Set after the sending rather than before it, and short when the street was too
+            // full to take anybody. Otherwise holding the block well is what buys you the quiet
+            // -- every wave that arrives to find fourteen rivals already out there vanishes and
+            // takes its slot with it.
+            if (sent == 0) gap = BlockedRetryMs;
 
-            for (var i = 0; i < cars; i++) SendCar();
+            _nextWave = Game.GameTime + gap;
 
             // Ours turn out again every time theirs do, so the fight stays even for the whole
             // five minutes rather than being decided by the first thirty seconds.
-            SpawnDefenders(DefendersPerCar * cars);
+            if (sent > 0) SpawnDefenders(DefendersPerCar * sent);
         }
+
+        /// <summary>How soon to look again when the street was too full to send anybody.</summary>
+        private const int BlockedRetryMs = 3000;
 
         /// <summary>
         /// One carload, driven in from a few streets out.
@@ -785,19 +807,29 @@ namespace Hoodrich.Gangs
         /// simply exists beside you reads as a spawn, and one that comes round the corner reads
         /// as people who decided to come.
         /// </summary>
-        private void SendCar()
+        /// <summary>
+        /// Sends one carload, and says whether it actually went.
+        ///
+        /// The answer matters. This can decline for three reasons -- nobody left, the street
+        /// already full, no car model -- and the caller used to set the next wave's clock
+        /// regardless. So a block holding fourteen rivals silently ate its own reinforcements:
+        /// the wave fired, spawned nothing, and the next one was not due for another forty
+        /// seconds. That is the minutes-long lull between carloads, and it got longer the
+        /// better you were doing, because doing well is what keeps the street full.
+        /// </summary>
+        private bool SendCar()
         {
-            if (_attacker == null || _target == null) return;
+            if (_attacker == null || _target == null) return false;
 
             // Nobody left to send.
-            if (_reserve <= 0) return;
+            if (_reserve <= 0) return false;
 
             // A street can only hold so many people. Past this, the next carload waits for the
             // current one to be dealt with, which is also better pacing than a pile-up.
-            if (AliveIn(_rivals) >= MaxLive) return;
+            if (AliveIn(_rivals) >= MaxLive) return false;
 
             var model = PickCar(_attacker);
-            if (model == null) return;
+            if (model == null) return false;
 
             try
             {
@@ -808,12 +840,12 @@ namespace Hoodrich.Gangs
                     (float)Math.Sin(angle) * ApproachDistance, 0f);
 
                 var start = World.GetNextPositionOnStreet(far);
-                if (start == Vector3.Zero) return;
+                if (start == Vector3.Zero) return false;
 
                 var car = World.CreateVehicle(model.Value, start);
                 model.Value.MarkAsNoLongerNeeded();
 
-                if (car == null || !car.Exists()) return;
+                if (car == null || !car.Exists()) return false;
 
                 car.IsPersistent = true;
                 car.IsEngineRunning = true;
@@ -853,11 +885,14 @@ namespace Hoodrich.Gangs
                 }
 
                 Log.Info("Gang war: a carload of " + _attacker.Id + " on the way in.");
+                return true;
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not send a carload: " + ex.Message);
             }
+
+            return false;
         }
 
         /// <summary>
@@ -1501,17 +1536,36 @@ namespace Hoodrich.Gangs
         /// way keeps everybody sat inside until the long stuck timer runs out. Within this,
         /// stopped means here.
         /// </summary>
-        private const float CloseEnoughRange = 28f;
+        /// <summary>
+        /// Stopped this near the block counts as arrived.
+        ///
+        /// This was 28 metres, which IS a street away -- and paired with a 1.4 second timer it
+        /// was the reason they kept getting out early. A car slowing for a junction or a parked
+        /// van anywhere inside twenty-eight metres was declared to have arrived before it had
+        /// finished braking, so the ordinary 12-metre check almost never got to decide anything.
+        ///
+        /// Fourteen is close enough to be on the block rather than approaching it.
+        /// </summary>
+        private const float CloseEnoughRange = 14f;
 
         /// <summary>How long a stopped car this close has to sit before they just get out.</summary>
-        private const int CloseEnoughStopMs = 1400;
+        /// <summary>
+        /// And stopped for this long, so it is a car that has parked rather than one that is
+        /// braking. A second and a bit caught every hesitation on the way in as an arrival.
+        /// </summary>
+        private const int CloseEnoughStopMs = 3500;
 
         /// <summary>
         /// How many times a carload stuck out wide is sent at the block again before they give
         /// up and walk. Three tries is about forty seconds of trying, which is longer than any
         /// jam that is going to clear on its own.
         /// </summary>
-        private const int MaxDriveRetries = 3;
+        /// <summary>
+        /// How many times a driver who has stalled out wide gets told again before they are
+        /// let out to walk. Raised with the ranges above: giving up is now the rarer outcome
+        /// rather than the usual one.
+        /// </summary>
+        private const int MaxDriveRetries = 5;
 
         /// <summary>A car stopped this long is a car they finish the journey without.</summary>
         private const int StuckOutMs = 9000;
