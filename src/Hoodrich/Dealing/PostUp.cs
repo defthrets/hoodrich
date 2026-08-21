@@ -770,6 +770,12 @@ namespace Hoodrich.Dealing
             if (_rng.NextDouble() < Pricing.BadCutChance(purity))
             {
                 _state.AddNotoriety(1f);
+
+                // And they tell people. This is the half of the purity system that was
+                // documented and never built -- without it a refusal cost one sale and nothing
+                // else, so stretching product had no downside worth the name.
+                _state.RefusedAt(purity);
+
                 Notify.Problem("they clocked the cut.");
 
                 Refused(player, customer);
@@ -788,6 +794,11 @@ namespace Hoodrich.Dealing
 
             _sales++;
             _earned += payout;
+
+            // A sale that landed still moves the block's opinion toward what you sold them.
+            // Good product earns the name back; weak product costs it a little at a time even
+            // when nobody hands it back.
+            _state.SoldAt(purity);
 
             if (Social != null)
             {
@@ -1944,6 +1955,10 @@ namespace Hoodrich.Dealing
             const float w = 0.20f;
             const float h = 0.016f;
 
+            // Clear air between the two bars, so they read as a pair rather than as one thick
+            // bar with a line through it.
+            const float RepBarGap = 0.004f;
+
             var heat = Math.Min(1f, _cornerHeat / Math.Max(1f, _cfg.PostUpHeatBeforePolice));
             var colour = heat > 0.75f ? Palette.Danger : heat > 0.4f ? Palette.Warn : Palette.Cash;
 
@@ -1952,6 +1967,30 @@ namespace Hoodrich.Dealing
 
             var filled = w * heat;
             Hud.Rect(x - (w - filled) * 0.5f, y, filled, h, colour);
+
+            // And underneath it, what the block reckons of your product.
+            //
+            // Paired with the heat bar rather than put somewhere else on screen, because the
+            // two are the same kind of thing: one is how long you can stand here, the other is
+            // whether anybody is going to walk up while you do. Thinner, so it reads as the
+            // quieter of the two at a glance.
+            var rep = _state == null ? 1f : _state.ProductRep;
+
+            // Neutral is neutral: plain, not amber. Amber for a middle value would read as a
+            // warning about something you have not done yet.
+            var repColour = rep >= 0.72f ? Palette.Cash
+                : rep >= 0.42f ? Palette.TextDim
+                : rep >= 0.30f ? Palette.Warn
+                : Palette.Danger;
+
+            const float repH = 0.008f;
+            var repY = y + h * 0.5f + RepBarGap + repH * 0.5f;
+
+            Hud.Rect(x, repY, w + 0.004f, repH + 0.004f, Color.FromArgb(190, 8, 8, 10));
+            Hud.Rect(x, repY, w, repH, Color.FromArgb(160, 30, 32, 34));
+
+            var repFilled = w * Math.Max(0f, Math.Min(1f, rep));
+            Hud.Rect(x - (w - repFilled) * 0.5f, repY, repFilled, repH, repColour);
 
             // Two lines rather than one. "POSTED UP" is the state you are in and the product
             // is what you happen to be moving while in it, so they are not the same sentence --
@@ -1981,11 +2020,16 @@ namespace Hoodrich.Dealing
 
             Hud.Text((_product == null ? "0" : _product.Amount(left)) +
                      " left  ·  " + lots + " more sale" + (lots == 1 ? "" : "s"),
-                     x, y + 0.024f, 0.30f,
+                     x, y + 0.036f, 0.30f,
                      left < 7f ? Palette.Warn : Palette.Cash, Hud.FontBody);
 
             Hud.Text(Footfall + " passing  ·  " + _sales + " sold  ·  $" + _earned.ToString("N0"),
-                     x, y + 0.048f, 0.28f, Palette.TextDim, Hud.FontBody);
+                     x, y + 0.060f, 0.28f, Palette.TextDim, Hud.FontBody);
+
+            // What the rep bar means, in words, because a bar on its own only tells you it has
+            // moved and not what moved it.
+            Hud.Text(_state == null ? "" : "REP  ·  " + _state.ProductRepWord.ToUpperInvariant(),
+                     x, y + 0.082f, 0.26f, repColour, Hud.FontLabel);
         }
     }
 }

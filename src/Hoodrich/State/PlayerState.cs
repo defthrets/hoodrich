@@ -31,6 +31,88 @@ namespace Hoodrich.State
         public float GramsSold;
 
         /// <summary>
+        /// What the block reckons your product is like. 0..1, and it starts in the middle.
+        ///
+        /// Neutral, not perfect. Nobody has bought anything off you yet, so there is no reason
+        /// for the corner to think you are good OR bad -- you have not got a name. That makes
+        /// the bar mean something in both directions from the first sale: selling clean earns
+        /// a name you did not have, and selling rubbish costs you one before you ever had it.
+        ///
+        /// This is the missing half of the purity system. Pricing has always said that nobody
+        /// knocks money off for a weak gram -- "they take it, clock it, and stop coming" -- and
+        /// the taking and clocking were built while the stop-coming never was. So cutting had
+        /// an unbounded reward against a capped, non-destructive penalty, and the arithmetic
+        /// said cut everything to the floor, forever, for every product.
+        ///
+        /// It drifts toward whatever you have actually been selling and it drives DEMAND, not
+        /// price. Push garbage and the corner goes quiet, which costs you the one thing cutting
+        /// was supposed to be buying: units moved per hour standing out there.
+        /// </summary>
+        public float ProductRep = Neutral;
+
+        /// <summary>No name either way. Where everybody starts.</summary>
+        public const float Neutral = 0.5f;
+
+        /// <summary>How fast one sale moves the block's opinion.</summary>
+        private const float RepDriftPerSale = 0.06f;
+
+        /// <summary>And how fast a refusal does, which is faster. Bad news travels.</summary>
+        private const float RepDriftPerRefusal = 0.11f;
+
+        /// <summary>
+        /// Records a sale that landed, at the purity it went out at.
+        /// </summary>
+        public void SoldAt(float purity)
+        {
+            Drift(purity, RepDriftPerSale);
+        }
+
+        /// <summary>
+        /// Records somebody handing it back.
+        ///
+        /// Worse than a quiet sale at the same purity, because a refusal is a person who now
+        /// tells other people. Half the purity, drifted harder.
+        /// </summary>
+        public void RefusedAt(float purity)
+        {
+            Drift(purity * 0.5f, RepDriftPerRefusal);
+        }
+
+        private void Drift(float towards, float rate)
+        {
+            if (towards < 0f) towards = 0f;
+            if (towards > 1f) towards = 1f;
+
+            ProductRep += (towards - ProductRep) * rate;
+
+            if (ProductRep < 0.1f) ProductRep = 0.1f;
+            if (ProductRep > 1f) ProductRep = 1f;
+        }
+
+        /// <summary>
+        /// How the block would put it.
+        ///
+        /// Banded around the neutral middle rather than down from a perfect top, so the words
+        /// either side of where you start are the two things that can happen to you next.
+        /// </summary>
+        public string ProductRepWord
+        {
+            get
+            {
+                if (ProductRep >= 0.88f) return "they trust your work";
+                if (ProductRep >= 0.72f) return "known for good product";
+                if (ProductRep >= 0.58f) return "word is it's decent";
+                if (ProductRep >= 0.42f) return "you ain't got a name yet";
+                if (ProductRep >= 0.30f) return "word is you step on it";
+                if (ProductRep >= 0.18f) return "they say you sell garbage";
+                return "nobody wants your product";
+            }
+        }
+
+        /// <summary>True while the block has not made its mind up either way.</summary>
+        public bool ProductRepIsNeutral => ProductRep >= 0.42f && ProductRep < 0.58f;
+
+        /// <summary>
         /// Set once the player has asked their gang's corner dealer where he sources from.
         /// Until then the docks do not exist for them and their crew's dealer is the only
         /// way to buy -- which is the whole shape of the early game.
@@ -207,6 +289,7 @@ namespace Hoodrich.State
                 .Set("totalDeals", TotalDealsMade)
                 .Set("totalEarned", TotalEarned)
                 .Set("gramsSold", Math.Round(GramsSold, 2))
+                .Set("productRep", Math.Round(ProductRep, 3))
                 .Set("docksUnlocked", DocksUnlocked)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("followers", Followers)
@@ -228,6 +311,11 @@ namespace Hoodrich.State
                 TotalDealsMade = Math.Max(0, doc["totalDeals"].AsInt(0));
                 TotalEarned = Math.Max(0L, doc["totalEarned"].AsLong(0));
                 GramsSold = Math.Max(0f, doc["gramsSold"].AsFloat(0f));
+
+                // Saves from before the block had an opinion start neutral rather than at
+                // zero, which would read as a bad name they were never given the chance to
+                // earn -- or at one, which would be a good one they never earned either.
+                ProductRep = Math.Min(1f, Math.Max(0.1f, doc["productRep"].AsFloat(Neutral)));
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
                 Followers = Math.Max(0, doc["followers"].AsInt(0));

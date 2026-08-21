@@ -22,10 +22,25 @@ namespace Hoodrich.Economy
         /// <summary>Fixed setup time, plus per-gram time on top.</summary>
         private const int BaseDurationMs = 3000;
         private const float MsPerGram = 90f;
-        private const int MaxDurationMs = 30_000;
 
-        /// <summary>Every bag has to be filled, tied and put somewhere.</summary>
-        private const int MsPerPackage = 260;
+        /// <summary>
+        /// The longest any batch can take.
+        ///
+        /// Thirty seconds was low enough to cancel the whole point of choosing a bag size. A
+        /// 50g batch at half purity in singles wants 33 seconds and got 30; the same batch in
+        /// ounces wants 8 and got 8 -- so past a very small size the fiddly option was free,
+        /// and the trade the screen offers you was not a trade at all.
+        /// </summary>
+        private const int MaxDurationMs = 60_000;
+
+        /// <summary>
+        /// Every bag has to be filled, tied and put somewhere.
+        ///
+        /// Halved along with the cap being doubled. Together those keep the biggest realistic
+        /// batch inside the ceiling -- so singles stay slower than ounces all the way up rather
+        /// than both flattening against the cap and coming out identical.
+        /// </summary>
+        private const int MsPerPackage = 120;
 
         private readonly Stash _stash;
         private readonly PlayerState _state;

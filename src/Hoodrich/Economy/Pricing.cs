@@ -109,6 +109,20 @@ namespace Hoodrich.Economy
         public float LookoutMultiplier => Crew == null ? 1f : Crew.LookoutMultiplier;
 
         /// <summary>
+        /// What selling rubbish costs you: customers.
+        ///
+        /// A corner with a bad name is a quiet corner. Never zero, because somebody desperate
+        /// will always come -- but at the bottom it is a third of the traffic, which is the
+        /// whole counterweight to cutting. Three times the units at a third of the footfall is
+        /// a decision. Three times the units at the same footfall, which is what it used to be,
+        /// is not a decision, it is a free lunch.
+        /// </summary>
+        public float ReputationMultiplier =>
+            _state == null ? 1f : RepFloor + (1f - RepFloor) * _state.ProductRep;
+
+        private const float RepFloor = 0.34f;
+
+        /// <summary>
         /// How busy it is out here.
         ///
         /// Everything that used to bend the price bends this instead: the hour, your rank, the
@@ -123,6 +137,7 @@ namespace Hoodrich.Economy
                     * NotorietyMultiplier
                     * TurfMultiplier
                     * LookoutMultiplier
+                    * ReputationMultiplier
                     * (Market == null || drug == null ? 1f : Market.Multiplier(drug.Id));
 
             return d < MinDemand ? MinDemand : d > MaxDemand ? MaxDemand : d;
@@ -203,13 +218,18 @@ namespace Hoodrich.Economy
         /// stretching product is a straight gamble against how much of it you can move before
         /// the block decides you sell rubbish.
         ///
-        /// Clean product is never refused. At the 20% floor it is turned down two times in
-        /// three, which is what garbage deserves.
+        /// Clean product is never refused. At the 20% floor it is turned down three times in
+        /// four, which is what garbage deserves.
+        ///
+        /// The dead zone above 90% is gone. It used to return zero for anything at or above
+        /// 0.9, and yield at 0.9 is 1.11x -- so cutting to exactly ninety was an eleven per
+        /// cent bigger stash with literally no chance of ever being noticed. Only whole
+        /// product is never refused now.
         /// </summary>
         public static float BadCutChance(float purity)
         {
-            if (purity >= 0.9f) return 0f;
-            return Math.Min(0.68f, (0.9f - purity) * 0.98f);
+            if (purity >= 1f) return 0f;
+            return Math.Min(0.76f, (1f - purity) * 0.85f);
         }
 
         /// <summary>
@@ -221,6 +241,14 @@ namespace Hoodrich.Economy
         public string PriceContext()
         {
             var parts = IsNight ? "night, busy" : "daytime";
+
+            // Only once the block has actually made its mind up. While you have no name it is
+            // not news, and printing "you ain't got a name yet" under every readout for the
+            // first hour is noise.
+            if (_state != null && !_state.ProductRepIsNeutral)
+            {
+                parts += "  " + _state.ProductRepWord;
+            }
 
             if (Turf != null && Math.Abs(TurfMultiplier - 1f) > 0.01f)
             {
