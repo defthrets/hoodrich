@@ -1385,13 +1385,19 @@ namespace Hoodrich.Wheel
             page.Row("Where you stand", mine ? "you run with them" : RelationLabel(gang),
                      mine ? gang.Colour : atWar ? Palette.Danger : (Color?)null);
 
-            // Join / leave.
+            // Joining only. There is no walking away.
+            //
+            // The wedge that used to be here called Leave and put you in a state the rest of
+            // the mod has no answer for: no block to hold, nobody to stand with, no rep to
+            // earn, and no route back except the man you just walked out on. One set, and it
+            // is the one you are in.
             if (mine)
             {
-                page.Add("Walk away", "x", () => _crew.Leave(),
-                    detail: "Walk away from the set. They won't forget it.",
-                    value: "");
-                page.WithIcon(Icons.Warning);
+                page.Add("You run with them", "-", null,
+                    detail: "This is your set.",
+                    value: "",
+                    enabled: false, disabledReason: "You're already in");
+                page.WithIcon(Icons.Tick);
             }
             else
             {

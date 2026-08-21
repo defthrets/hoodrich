@@ -319,6 +319,11 @@ namespace Hoodrich.Gangs
             if (gang == null) return "No such gang.";
             if (Current != null && Current.Id == gang.Id) return "You already run with " + gang.Name + ".";
 
+            // Checked here rather than only on the screen that offers it. LeaderTalk already
+            // hides the option for everybody but the Families, but a rule that only exists in
+            // the menu is a rule anything else calling this can walk straight through.
+            if (!gang.Joinable) return gang.Name + " don't take people on.";
+
             var standing = StandingFor(gang.Id);
             if (standing.Rep <= -50f) return gang.Name + " want you dead, not on the payroll.";
             if (playerRespect < gang.JoinRespect)
@@ -388,6 +393,17 @@ namespace Hoodrich.Gangs
             if (Social != null && had != null) Social.On(SocialEvent.LeftGang, had.Name);
         }
 
+        /// <summary>
+        /// Walking out.
+        ///
+        /// Nothing offers this any more. There is one set in this mod -- the Families, and the
+        /// data has said so all along -- so leaving would put you somewhere the game has no
+        /// answer for: no corners to defend, nobody to fight beside, no rep to earn and no way
+        /// back in except the leader who just watched you go.
+        ///
+        /// Kept rather than deleted because a save written while it was still reachable can
+        /// load with no affiliation, and RestoreAffiliation needs a matching way to clear one.
+        /// </summary>
         public void Leave()
         {
             if (Current == null) return;
