@@ -4,15 +4,6 @@ using System.Drawing;
 
 namespace Hoodrich.Gangs
 {
-    /// <summary>How a gang feels about the player, or about another gang.</summary>
-    internal enum Stance
-    {
-        Hostile,
-        Wary,
-        Neutral,
-        Friendly
-    }
-
     /// <summary>
     /// A gang definition.
     ///
