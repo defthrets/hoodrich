@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Control = GTA.Control;
 using GTA;
 using GTA.Math;
@@ -109,13 +110,68 @@ namespace Hoodrich.Supply
         /// <summary>
         /// What he says, and when.
         ///
-        /// Three moments worth a voice: taking the order, putting the box down, and pulling
-        /// off. A man who does the whole delivery in silence is a delivery system; a man who
-        /// grunts on the way past you is somebody doing you a favour at some personal risk.
+        /// FOUR moments now, not three, and each of them has words as well as a noise. These
+        /// arrays are the noise -- GENERIC_* ambient clips, which is the only voice the game has
+        /// for a man it has never heard of. They carry the tone. The words below carry what he
+        /// actually said, and they go out as subtitles, because a grunt is not a character.
+        ///
+        /// He was doing the whole delivery in dumb show before: three ambient barks and not one
+        /// readable line, which makes him a vending machine that drives.
         /// </summary>
         private static readonly string[] TakingLines = { "GENERIC_YES", "GENERIC_HOWS_IT_GOING" };
         private static readonly string[] DroppedLines = { "GENERIC_THANKS", "GENERIC_YES" };
         private static readonly string[] LeavingLines = { "GENERIC_BYE", "GENERIC_THANKS" };
+
+        /// <summary>
+        /// Stepping out of the car, outside the house.
+        ///
+        /// He is a port man in Strawberry and would rather not be, and that is most of the
+        /// character: he came across the whole city with weight in the boot, he is doing you a
+        /// favour he has priced, and he is counting the minutes. None of these are friendly and
+        /// none of them are threats.
+        /// </summary>
+        private static readonly string[] ArrivalWords =
+        {
+            "Car stays running. That isn't rudeness, that's scheduling.",
+            "Nice street. Lot of windows on it.",
+            "I drove this one myself. Draw your own conclusion.",
+            "Off a container at five, on a lawn by two. That's the day.",
+            "Forty minutes of freeway with that in the trunk.",
+            "You could have come to the port. There's a gate there.",
+        };
+
+        /// <summary>Carrying it up the path, which is the exposed part and he knows it.</summary>
+        private static readonly string[] CarryWords =
+        {
+            "Heavy. Don't offer.",
+            "At work I'd have a forklift for this. Out here I have arms.",
+            "It weighs what it weighs. I'm not making two trips.",
+            "If a neighbor asks, this is a television.",
+            "Ten steps of driveway. Nobody's paid for these ten.",
+            "Door. Any time.",
+        };
+
+        /// <summary>Setting it down. The moment it stops being his problem.</summary>
+        private static readonly string[] DropWords =
+        {
+            "Keep the box. I don't want it back and I don't want it in your trash.",
+            "Weight's correct. It always is.",
+            "Delivered. That's the whole ceremony.",
+            "Get it inside before you get curious.",
+            "Sealed at the port, opened by you. Nothing in between.",
+            "Don't drag it. Lift it. It's not a suitcase.",
+        };
+
+        /// <summary>Back behind the wheel, already gone in every sense but the literal.</summary>
+        private static readonly string[] PartingWords =
+        {
+            "I've got a container due in at six. This was the detour.",
+            "The people I answer to like a slow news week. See that they get one.",
+            "I'm going back to the water. It smells worse and asks less.",
+            "If this goes wrong, it went wrong after I left.",
+            "Same number. Same hours. Don't get creative with either.",
+            "That's me. Go inside.",
+        };
 
         private static readonly Random Rng = new Random();
 
@@ -346,6 +402,7 @@ namespace Hoodrich.Supply
             _stateSince = Game.GameTime;
             _parking = false;
             _messageSent = false;
+            _greeted = false;
 
             PlayPhoneAnimation(player);
 
@@ -1132,7 +1189,7 @@ namespace Hoodrich.Supply
                 Log.Debug("Could not start the drop-off: " + ex.Message);
             }
 
-            Say(TakingLines);
+            Speak(CarryWords, TakingLines);
             Notify.Ticker("~g~He's bringing it in.~s~");
         }
 
@@ -1159,6 +1216,50 @@ namespace Hoodrich.Supply
                 catch { /* a shut window is not worth an exception */ }
             }
         }
+
+        /// <summary>
+        /// A noise and a sentence, together.
+        ///
+        /// Two channels because the game has no recorded audio for anything written here. The
+        /// ambient clip is the sound of a man's voice; the subtitle is what he said. Played at
+        /// the same instant they read as one thing.
+        /// </summary>
+        private void Speak(string[] words, string[] voice)
+        {
+            Say(voice);
+
+            if (words == null || words.Length == 0) return;
+
+            Dialogue.Say(_def == null ? "" : _def.Name, Fresh(words));
+        }
+
+        /// <summary>
+        /// A line from the set, never the same one twice running.
+        ///
+        /// Six lines picked blind repeat about one delivery in six, and a repeat inside a set
+        /// this small is what makes the whole set feel like two lines. Remembering the last one
+        /// per set costs nothing and takes those odds to zero.
+        /// </summary>
+        private string Fresh(string[] pool)
+        {
+            if (pool.Length == 1) return pool[0];
+
+            string last;
+            _lastLine.TryGetValue(pool, out last);
+
+            string pick;
+            var tries = 0;
+
+            do { pick = pool[Rng.Next(pool.Length)]; }
+            while (pick == last && ++tries < 8);
+
+            _lastLine[pool] = pick;
+            return pick;
+        }
+
+        /// <summary>The last line taken from each set. Keyed on the array itself.</summary>
+        private readonly Dictionary<string[], string> _lastLine =
+            new Dictionary<string[], string>();
 
         /// <summary>One ambient line, over whatever he was already saying.</summary>
         private void Say(string[] lines)
@@ -1216,7 +1317,7 @@ namespace Hoodrich.Supply
 
             PutDown();
             Land();
-            Say(DroppedLines);
+            Speak(DropWords, DroppedLines);
 
             State = DeliveryState.Leaving;
             _stateSince = Game.GameTime;
@@ -1244,7 +1345,7 @@ namespace Hoodrich.Supply
                 {
                     // Said from the driver's seat, with the door shut, the way anybody says
                     // goodbye when they are already leaving.
-                    Say(LeavingLines);
+                    Speak(PartingWords, LeavingLines);
 
                     try
                     {
@@ -1492,8 +1593,23 @@ namespace Hoodrich.Supply
                 return;
             }
 
+            // The first thing he says, and he says it on his feet.
+            //
+            // Not in Arrive(), which is where it would go if the beat were "has pulled up" --
+            // at that moment he is still belted into the driver's seat with the leave-vehicle
+            // task barely handed out, and a man talking through a windscreen is the wrong
+            // picture. This waits until he is actually standing on the street.
+            if (!_greeted && _car != null && _car.Exists() && !_driver.IsInVehicle(_car))
+            {
+                _greeted = true;
+                Speak(ArrivalWords, TakingLines);
+            }
+
             if (Distance > AbandonDistance) Cancel("You left him standing there.");
         }
+
+        /// <summary>Whether he has said his piece on getting out, this run.</summary>
+        private bool _greeted;
 
         // ---- cleanup -----------------------------------------------------------
 
