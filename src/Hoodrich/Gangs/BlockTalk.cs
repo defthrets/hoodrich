@@ -18,14 +18,14 @@ namespace Hoodrich.Gangs
     /// up to one of your own and you nod at him; walk up to one of your own on the pavement and
     /// you say the only thing there is to say.
     ///
-    /// Two rules decide which of the four things happens, and both of them come from what is
-    /// actually in front of you rather than from a menu:
+    /// Nothing here opens a screen. A screen is for choosing and you are not choosing
+    /// anything -- you are saying hello to somebody you see every day. Press it and one of you
+    /// talks, press it again and the other one answers, and whose turn it is is remembered per
+    /// person so walking back up to the same man carries on rather than restarting.
     ///
-    ///   * A body outranks a living man. If somebody is down within reach, that is what you are
-    ///     looking at, and standing over a friend to greet the man behind him is grotesque.
-    ///   * A homie who is POSTED UP -- smoking, drinking, leaning on a wall -- has time to
-    ///     talk, so you get a conversation. A homie walking somewhere gets a nod, because he is
-    ///     going somewhere and so are you.
+    /// One rule decides what you are looking at, and it comes from the world rather than a
+    /// menu: a body outranks a living man. If somebody is down within reach, that is what you
+    /// are looking at -- standing over a friend to greet the man behind him is grotesque.
     ///
     /// Nothing here spawns, owns or persists anything. It reads the world, shows a prompt, and
     /// says a line.
@@ -44,18 +44,16 @@ namespace Hoodrich.Gangs
         private const int ScanIntervalMs = 200;
 
         /// <summary>
-        /// The same man does not get greeted twice in a row without a gap.
+        /// Long enough to stop the key repeating, short enough to hold a conversation.
         ///
-        /// Without this, holding the key turns a nod into a stutter -- and the prompt is on
-        /// screen the whole time you are stood next to him, so it is very easy to do.
+        /// This was four seconds, when a press was a one-off greeting. It is a back-and-forth
+        /// now, so the gap only has to be longer than a keypress -- otherwise leaning on the
+        /// button plays both halves at once.
         /// </summary>
-        private const int GreetCooldownMs = 4000;
+        private const int GreetCooldownMs = 700;
 
         /// <summary>And a body is remarked on once, not every time you walk past it.</summary>
         private const int BodyCooldownMs = 20000;
-
-        /// <summary>Task 118 is the scenario task -- posted up rather than passing through.</summary>
-        private const int ScenarioTask = 118;
 
         private readonly Affiliation _crew;
         private readonly Conversation _talk;
@@ -192,32 +190,6 @@ namespace Hoodrich.Gangs
             Act(player);
         }
 
-        /// <summary>
-        /// Whether he is stopped and doing something, rather than on his way somewhere.
-        ///
-        /// The scenario task covers all of it -- smoking, drinking, leaning, standing guard --
-        /// so there is no list of scenario names to keep in step with the ones the block
-        /// actually uses. A man doing any of them has stopped, and a man who has stopped can
-        /// hold a conversation.
-        /// </summary>
-        private static bool PostedUp(Ped ped)
-        {
-            try
-            {
-                if (ped == null || !ped.Exists()) return false;
-                if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, ped.Handle, ScenarioTask)) return true;
-
-                // Sitting counts too, and sitting is not a scenario.
-                return ped.Velocity.Length() < 0.2f &&
-                       Function.Call<bool>(Hash.IS_PED_SITTING_IN_ANY_VEHICLE, ped.Handle) == false &&
-                       Function.Call<bool>(Hash.IS_PED_USING_ANY_SCENARIO, ped.Handle);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         private void Act(Ped player)
         {
             var ped = _target;
@@ -232,9 +204,7 @@ namespace Hoodrich.Gangs
                 return;
             }
 
-            if (PostedUp(ped)) StartTalking(ped);
-            else Nod(player, ped);
-
+            Swap(player, ped);
             _target = null;
         }
 
@@ -257,90 +227,63 @@ namespace Hoodrich.Gangs
         private static readonly Random Rng = new Random();
 
         /// <summary>
-        /// A nod. Both of them speak, because one man greeting nobody is worse than silence.
+        /// One line, and then it is the other one's go.
+        ///
+        /// There was a whole dialogue screen here for a homie who was stood still, which is the
+        /// wrong shape for this: a screen is for choosing, and you are not choosing anything --
+        /// you are saying hello to somebody you see every day. So there is no screen. Press it
+        /// and one of you talks; press it again and the other one answers.
+        ///
+        /// Whose turn it is is remembered per person, so walking up to the same man twice
+        /// carries on where you left off rather than restarting the same exchange.
         /// </summary>
-        private void Nod(Ped player, Ped ped)
+        private void Swap(Ped player, Ped ped)
         {
-            Say(player, GreetSpeech);
-            Dialogue.Say("Franklin", Pick(Greetings));
+            var yours = !_theirs.Contains(ped.Handle);
 
-            // Him a moment later, so it reads as an answer rather than a chorus.
-            Say(ped, GreetSpeech);
+            if (yours)
+            {
+                Say(player, GreetSpeech);
+                Dialogue.Say("Franklin", Pick(Greetings));
+                _theirs.Add(ped.Handle);
+            }
+            else
+            {
+                Say(ped, GreetSpeech);
+                Dialogue.Say("", Pick(Answers));
+                _theirs.Remove(ped.Handle);
+            }
 
             try
             {
-                // He looks at you while he says it. A greeting delivered to the middle
-                // distance is a man ignoring you.
-                Function.Call(Hash.TASK_LOOK_AT_ENTITY, ped.Handle, player.Handle, 3000, 0, 2);
+                // Whoever is listening looks at whoever is talking. A line delivered to the
+                // middle distance is a man ignoring you.
+                Function.Call(Hash.TASK_LOOK_AT_ENTITY, ped.Handle, player.Handle, 4000, 0, 2);
             }
             catch
             {
                 // He will keep looking wherever he was looking.
             }
+
+            if (_theirs.Count > 200) _theirs.Clear();
         }
 
-        /// <summary>
-        /// He is posted up, so there is time. Opens the proper screen.
-        /// </summary>
-        private void StartTalking(Ped ped)
+        /// <summary>Handles whose next line is theirs rather than yours.</summary>
+        private readonly HashSet<int> _theirs = new HashSet<int>();
+
+        /// <summary>What he says back.</summary>
+        private static readonly string[] Answers =
         {
-            if (_talk == null) return;
-
-            var mine = _crew == null ? null : _crew.Current;
-            var name = mine == null ? "Homie" : mine.Name;
-
-            var node = new DialogueNode(name, Pick(Openers))
-            {
-                SpeakerColour = mine == null ? Palette.Text : mine.Colour
-            };
-
-            node.Say("What's the word out here?", () => Reply(name, mine, Word));
-            node.Say("Everything straight?", () => Reply(name, mine, Straight));
-            node.Leave("Stay up.");
-
-            _talk.Speaker = ped;
-            _talk.TheirVoice = GreetSpeech;
-            _talk.Title = "";
-            _talk.Open(node, ped);
-        }
-
-        private DialogueNode Reply(string name, GangDef mine, string[] lines)
-        {
-            var node = new DialogueNode(name, Pick(lines))
-            {
-                SpeakerColour = mine == null ? Palette.Text : mine.Colour
-            };
-
-            node.Leave("Alright then.");
-            return node;
-        }
-
-        private static readonly string[] Openers =
-        {
-            "Aye. You out here early.",
-            "What's happening, boy.",
-            "Man, I been out here all day. All day.",
-            "You seen anybody come through here?",
+            "Same old. Holdin' it down.",
+            "Aye. Ain't nothin'.",
+            "We good over here.",
+            "Been out here all day, boy.",
+            "You know how it go.",
+            "Straight. You?",
             "Everything quiet. For now.",
-            "Boy, where you been at?",
-        };
-
-        private static readonly string[] Word =
-        {
-            "Same as always. Corner's moving, block's quiet, everybody eating a little.",
-            "Ain't nothing. Couple cars come through slow last night and kept going.",
-            "They been posting on the timeline all week and ain't nobody slid. That's the word.",
-            "Quiet. And quiet round here means somebody's planning something.",
-            "Somebody said they seen a car parked up on the corner twice. Might be nothing.",
-        };
-
-        private static readonly string[] Straight =
-        {
-            "Yeah, we good. Just holding it down.",
-            "All good. Keep your head on a swivel out here though.",
-            "I'm solid. Been out here since this morning, ain't seen nothing.",
-            "We straight. You the one been running around all day.",
-            "Long as the block's quiet, I'm quiet.",
+            "Man, don't even ask.",
+            "All day, every day.",
+            "Cool. Stay up out here.",
         };
 
         // ---- the dead ----------------------------------------------------------
