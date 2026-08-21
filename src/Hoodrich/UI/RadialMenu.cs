@@ -15,8 +15,17 @@ namespace Hoodrich.UI
     /// </summary>
     internal sealed class RadialMenu
     {
-        private const float SegmentGapDegrees = 1.6f;
+        /// <summary>
+        /// The space between two segments.
+        ///
+        /// Wide enough to be seen at the inner radius, which is where a gap is narrowest --
+        /// 1.6 degrees is two pixels there, and two pixels is not a division, it is a seam.
+        /// </summary>
+        private const float SegmentGapDegrees = 3f;
         private const int OpenAnimationMs = 140;
+
+        /// <summary>How far past the ring the segment under the cursor reaches.</summary>
+        private const float HoverReach = 1.03f;
 
         private readonly Settings _cfg;
         private readonly List<WheelPage> _stack = new List<WheelPage>();
@@ -231,22 +240,27 @@ namespace Hoodrich.UI
             var step = 360f / n;
             var gap = n > 1 ? SegmentGapDegrees : 0f;
 
-            // The ring is laid down ONCE, then only what differs goes on top.
+            // Every segment is its own wedge.
             //
-            // It used to be one filled wedge per segment. Every fill is a stack of DRAW_RECTs
-            // and DRAW_RECT has a per-frame cap -- past it the game silently stops drawing, and
-            // it stops on whatever was asked for last. That is what the broken wheel was: the
-            // final segments came out as missing chunks and detached blobs because the game had
-            // run out of rectangles, not because the geometry was wrong.
+            // It was drawing ONE ring in the segment colour and then overdrawing only the
+            // hovered and disabled ones, to save rectangles. That is where the jank came from,
+            // and all of it:
             //
-            // Five segments in one colour do not need five fills. One ring, then the segment
-            // under the cursor, then anything disabled. Two or three fills instead of seven.
-            if (_wedgeMode)
-            {
-                Draw.Ring(cx, cy, rInner, rOuter,
-                          Palette.Alpha(Palette.Segment, (int)(Palette.Segment.A * t)));
-            }
-
+            //   * A gap between two enabled segments cannot exist, because the ring underneath
+            //     is the same colour -- so the wheel read as one solid doughnut with a bite out
+            //     of it rather than as a row of choices.
+            //   * Divisions therefore had to be faked with spokes, drawn AFTER the fills, so
+            //     they landed on top of the highlight and vanished into it.
+            //   * A disabled segment was translucent black composited over translucent black.
+            //     Measured: four to six values out of 255 different from an enabled one. There
+            //     was no way to tell an option you cannot pick from one you can.
+            //   * The edges had to be drawn back on as hairline arcs, and those arcs were
+            //     dotted -- see the note that used to be on Draw.Arc.
+            //
+            // And it did not even save anything. Counted at 1080p: the ring, five spokes and
+            // three arcs come to 948 rectangles a frame, where five plain wedges and the hub
+            // come to 593. The optimisation was thirty to forty per cent MORE expensive than
+            // the thing it replaced, on top of causing every visual defect above.
             for (var i = 0; i < n; i++)
             {
                 var item = items[i];
@@ -265,26 +279,12 @@ namespace Hoodrich.UI
 
                 if (_wedgeMode)
                 {
-                    // Already covered by the ring underneath. Anything else is a fill nobody
-                    // can see costing rectangles everything else needs.
-                    if (hovered)
-                    {
-                        // A hovered segment reaches slightly further out, the way the vanilla
-                        // wheel does. Slightly -- the point is to lift the segment, not to
-                        // detach it into a fan stuck on the side of the wheel.
-                        var outer = rOuter * 1.022f;
+                    // A hovered segment reaches slightly further out, the way the vanilla wheel
+                    // does. Slightly -- the point is to lift it, not to detach it into a fan
+                    // stuck on the side of the wheel.
+                    var outer = hovered ? rOuter * HoverReach : rOuter;
 
-                        Draw.Wedge(cx, cy, rInner, outer, from, to, fill);
-
-                        // Its own arc along the top, so the grown edge is a deliberate line
-                        // rather than wherever the last row of the fill happened to stop.
-                        Draw.Arc(cx, cy, outer, from, to, 0.0022f,
-                                 Palette.Alpha(fill, (int)(255 * t)));
-                    }
-                    else if (!item.Enabled)
-                    {
-                        Draw.Wedge(cx, cy, rInner, rOuter, from, to, fill);
-                    }
+                    Draw.Wedge(cx, cy, rInner, outer, from, to, fill);
                 }
                 else
                 {
@@ -292,27 +292,6 @@ namespace Hoodrich.UI
                 }
 
                 DrawSegmentLabel(cx, cy, (rInner + rOuter) * 0.5f, mid, item, fill, t);
-            }
-
-            if (_wedgeMode && n > 1)
-            {
-                // The ring is one piece now, so the divisions have to be drawn back in. A spoke
-                // costs a couple of dozen small squares against a fill's several hundred.
-                var seam = Palette.Alpha(Palette.Ring, (int)(120 * t));
-
-                for (var i = 0; i < n; i++)
-                {
-                    Draw.Spoke(cx, cy, rInner, rOuter, i * step - step * 0.5f, 0.0022f, seam);
-                }
-
-                // Hairline along the outer edge, as the vanilla wheel has. After the segments,
-                // so a hovered one reaching past it still reads as breaking the line.
-                Draw.Arc(cx, cy, rOuter, 0f, 360f, 0.0022f,
-                         Palette.Alpha(Palette.Ring, (int)(Palette.Ring.A * t)));
-
-                // And along the inner edge, which the hub was previously left to imply.
-                Draw.Arc(cx, cy, rInner, 0f, 360f, 0.0018f,
-                         Palette.Alpha(Palette.Ring, (int)(Palette.Ring.A * 0.7f * t)));
             }
 
             DrawHub(cx, cy, rInner, page, t);
@@ -370,7 +349,14 @@ namespace Hoodrich.UI
                     Draw.Text(row.Label, left + padding * 0.5f, y, 0.28f, Palette.TextDim,
                               Draw.FontBody, centre: false);
 
-                    Draw.TextRight(row.Value, left + width - padding * 0.5f, y, 0.28f,
+                    // Whatever is left after the label has had its share, less a gutter so the
+                    // two never touch. Nothing used to check this, and a gang with four rivals
+                    // printed its list straight through its own label.
+                    var taken = Draw.MeasureText(row.Label, 0.28f, Draw.FontBody);
+                    var room = width - padding - taken - RowGutter;
+
+                    Draw.TextRight(Draw.Fit(row.Value, room, 0.28f, Draw.FontBody),
+                                   left + width - padding * 0.5f, y, 0.28f,
                                    row.Tint ?? Palette.Text, Draw.FontBody);
                 }
 
@@ -378,6 +364,9 @@ namespace Hoodrich.UI
                 index++;
             }
         }
+
+        /// <summary>Clear space kept between a panel row's label and its value.</summary>
+        private const float RowGutter = 0.012f;
 
         /// <summary>Node-mode segment: an axis-aligned card centred on the segment's mid angle.</summary>
         private static void DrawCard(float cx, float cy, float rMid, float midAngleDeg,

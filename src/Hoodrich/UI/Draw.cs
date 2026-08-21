@@ -204,87 +204,6 @@ namespace Hoodrich.UI
         /// rays are half-planes that clip it -- so there is no sampling and no approximation
         /// beyond the row height itself.
         /// </summary>
-        /// <summary>
-        /// A whole annulus, with no angular clipping at all.
-        ///
-        /// This exists because the wheel was drawing one Wedge per segment and running the game
-        /// out of rectangles. DRAW_RECT has a per-frame cap; past it the game simply stops
-        /// drawing, and it stops on whatever was asked for LAST -- so the final two segments
-        /// came out as broken shapes and missing chunks. Not a rendering artefact: the game
-        /// refusing to draw any more.
-        ///
-        /// Five segments in the same colour do not need five fills. The ring is laid down once
-        /// here, in one pass with no half-plane maths and at most two runs per row, and only the
-        /// segments that differ -- the one under the cursor, and anything disabled -- are drawn
-        /// on top of it. That is two or three fills instead of seven, and the budget stops being
-        /// something the wheel can run into.
-        /// </summary>
-        public static void Ring(float cx, float cy, float rInner, float rOuter, Color c)
-        {
-            if (rOuter <= rInner || c.A <= 0) return;
-
-            var rOut2 = rOuter * rOuter;
-            var rIn2 = rInner * rInner;
-
-            var pxTop = (int)Math.Floor((cy - rOuter) * ScreenHeight);
-            var pxBottom = (int)Math.Ceiling((cy + rOuter) * ScreenHeight);
-
-            var pxCentre = (int)Math.Round(cy * ScreenHeight);
-            pxTop -= ((pxTop - pxCentre) % RowPixels + RowPixels) % RowPixels;
-
-            var rowHeight = RowHeight;
-
-            for (var py = pxTop; py < pxBottom; py += RowPixels)
-            {
-                var rowY = (py + RowPixels * 0.5f) / ScreenHeight;
-                var dy = cy - rowY;
-
-                var dy2 = dy * dy;
-                if (dy2 > rOut2) continue;
-
-                var hi = (float)Math.Sqrt(rOut2 - dy2);
-                var lo = dy2 < rIn2 ? (float)Math.Sqrt(rIn2 - dy2) : 0f;
-
-                if (lo <= 0f)
-                {
-                    EmitRow(cx, rowY, rowHeight, -hi, hi, c);
-                }
-                else
-                {
-                    EmitRow(cx, rowY, rowHeight, -hi, -lo, c);
-                    EmitRow(cx, rowY, rowHeight, lo, hi, c);
-                }
-            }
-        }
-
-        /// <summary>
-        /// A radial line from the inner edge to the outer one.
-        ///
-        /// Used to cut the ring back into segments once it is drawn in one piece. Walked along
-        /// the spoke rather than rasterised, so it costs a couple of dozen small squares rather
-        /// than a fill.
-        /// </summary>
-        public static void Spoke(float cx, float cy, float rInner, float rOuter,
-                                 float angleDeg, float thickness, Color c)
-        {
-            if (rOuter <= rInner || c.A <= 0) return;
-
-            var rad = angleDeg * (float)(Math.PI / 180.0);
-            var dx = (float)Math.Sin(rad);
-            var dy = (float)Math.Cos(rad);
-
-            // One step per two pixels along the spoke, so the line is solid without being
-            // drawn more times than the screen can show.
-            var steps = Math.Max(2, (int)((rOuter - rInner) * ScreenHeight / 3f));
-
-            for (var i = 0; i <= steps; i++)
-            {
-                var r = rInner + (rOuter - rInner) * (i / (float)steps);
-
-                Rect(cx + ToX(dx * r), cy - dy * r, ToX(thickness), thickness, c);
-            }
-        }
-
         public static void Wedge(float cx, float cy, float rInner, float rOuter,
                                  float angFromDeg, float angToDeg, Color c)
         {
@@ -316,29 +235,20 @@ namespace Hoodrich.UI
             var rOut2 = rOuter * rOuter;
             var rIn2 = rInner * rInner;
 
-            // Every row of the disc, every time, walked in whole device pixels.
+            // Only the rows the sector can actually reach, walked in whole device pixels.
             //
-            // Two things are going on here. The first is that the loop covers the full height
-            // of the disc rather than the band the wedge occupies: a previous version worked
-            // out that band to skip the three quarters a quarter-circle wedge throws away, and
-            // got it wrong, because the extreme of a sector is not always at a boundary ray --
-            // it is at the top of the arc whenever the sector crosses an axis. It cut chunks
-            // out of wedges. The loop is cheap; being right is not optional.
+            // Two things matter here. The first is the band: a 72 degree sector that scanned
+            // the full height of the disc would throw away two rows in three. An earlier
+            // version tried this saving and got it wrong, taking the extremes from the two
+            // boundary rays alone -- which only holds for a sector that does not cross an
+            // axis. One straddling straight-up reaches rOuter at the top whatever its rays
+            // say, and chunks came out of wedges. Both cases are handled below.
             //
             // The second is that the iteration is over integer pixel rows, not over a float
             // stepped by a fraction. Row n covers exactly the pixels [n, n + RowPixels), so
             // consecutive rows tile: no gap for the background to show through, and no overlap
             // for a semi-transparent fill to blend twice at. Stepping a float by 0.0018 did
             // neither, and the stripes it left are the whole reason this is written this way.
-            // The band the sector can actually reach, worked out exactly.
-            //
-            // An earlier version of this tried the same saving and got it wrong: it took the
-            // extremes from the two boundary rays alone, which is only true for a sector that
-            // does not cross an axis. One that straddles straight-up reaches rOuter at the top
-            // whatever its rays say, and chunks came out of wedges. Both cases are handled here,
-            // and the difference is worth having -- a 72 degree sector scanning the full height
-            // of the disc throws away two rows in three, and those rows are rectangles the rest
-            // of the wheel needs.
             var topDy = Crosses(angFromDeg, angToDeg, 0f)
                 ? rOuter
                 : Math.Max(ReachTop(a0, rInner, rOuter), ReachTop(a1, rInner, rOuter));
@@ -485,40 +395,6 @@ namespace Hoodrich.UI
         /// rectangles for a line you can barely see. Stepping along the arc costs one small
         /// square per step and looks the same.
         /// </summary>
-        public static void Arc(float cx, float cy, float radius,
-                               float angFromDeg, float angToDeg, float thickness, Color c)
-        {
-            if (radius <= 0f || thickness <= 0f || c.A <= 0) return;
-
-            var span = angToDeg - angFromDeg;
-            if (span <= 0f) return;
-
-            // One step per unit of arc length roughly equal to the line thickness, so the
-            // squares overlap into a continuous ring, with a ceiling so a big circle cannot
-            // run away with the frame.
-            var circumference = (float)(2.0 * Math.PI * radius) * (span / 360f);
-            // Capped lower than it wants to be. This is a hairline: past about a hundred and
-            // thirty steps nobody can tell, and every step is a rectangle the wedges are not
-            // getting -- and the wedges are the thing people actually look at.
-            // Capped lower than it was. A full circle at 130 steps is 130 rectangles for a line
-            // one pixel wide, twice over for the inner and outer edges, and past about ninety
-            // nobody can tell the difference -- while the rectangles are ones the fills need.
-            var steps = (int)Math.Min(72f, Math.Max(24f, circumference / Math.Max(0.0015f, thickness)));
-
-            const double deg2rad = Math.PI / 180.0;
-            var size = thickness * 1.7f;
-
-            for (var i = 0; i <= steps; i++)
-            {
-                var ang = (angFromDeg + span * i / steps) * deg2rad;
-
-                var dx = (float)Math.Sin(ang) * radius;
-                var dy = (float)Math.Cos(ang) * radius;
-
-                Rect(cx + ToX(dx), cy - dy, ToX(size), size, c);
-            }
-        }
-
         /// <summary>
         /// Filled disc.
         ///
@@ -643,6 +519,47 @@ namespace Hoodrich.UI
             Function.Call(Hash.BEGIN_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, FormatFor(text));
             AddLongString(text);
             return Function.Call<float>(Hash.END_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, true);
+        }
+
+        /// <summary>
+        /// Trims text until it fits a given width, with an ellipsis if anything was lost.
+        ///
+        /// The panel lays a label out from the left edge and a value from the right, and
+        /// nothing was checking that the two did not meet. A gang with four rivals produced a
+        /// value wide enough to run straight through its own label -- "Their old riva" with
+        /// the list printed over the top of it, which is what the Families page was doing.
+        ///
+        /// Binary search rather than a character at a time: measuring is a native call, and a
+        /// long string trimmed one letter per pass is fifty of them for one row.
+        /// </summary>
+        public static string Fit(string text, float maxWidth, float scale, int font)
+        {
+            if (string.IsNullOrEmpty(text) || maxWidth <= 0f) return text;
+            if (MeasureText(text, scale, font) <= maxWidth) return text;
+
+            const string Ellipsis = "...";
+
+            var lo = 0;
+            var hi = text.Length;
+
+            while (lo < hi)
+            {
+                var mid = (lo + hi + 1) / 2;
+
+                if (MeasureText(text.Substring(0, mid) + Ellipsis, scale, font) <= maxWidth)
+                {
+                    lo = mid;
+                }
+                else
+                {
+                    hi = mid - 1;
+                }
+            }
+
+            // Not even one character and an ellipsis fits, so there is nothing honest to show.
+            if (lo <= 0) return "";
+
+            return text.Substring(0, lo).TrimEnd(' ', ',') + Ellipsis;
         }
 
         /// <summary>

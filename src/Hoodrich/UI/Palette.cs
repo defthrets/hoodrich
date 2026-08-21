@@ -16,18 +16,16 @@ namespace Hoodrich.UI
         public static readonly Color Backdrop = Color.FromArgb(140, 0, 0, 0);
 
         /// <summary>Unselected wedge.</summary>
-        public static readonly Color Segment = Color.FromArgb(165, 10, 12, 14);
+        public static readonly Color Segment = Color.FromArgb(200, 10, 12, 14);
 
         /// <summary>Wedge under the cursor: near-white, like the vanilla selection.</summary>
-        public static readonly Color SegmentHover = Color.FromArgb(235, 240, 242, 240);
+        public static readonly Color SegmentHover = Color.FromArgb(240, 240, 242, 240);
 
         /// <summary>Present but not pickable.</summary>
-        public static readonly Color SegmentDisabled = Color.FromArgb(120, 8, 9, 10);
+        public static readonly Color SegmentDisabled = Color.FromArgb(200, 44, 46, 50);
 
-        /// <summary>Thin bright ring around the wheel, as the vanilla wheel has.</summary>
-        public static readonly Color Ring = Color.FromArgb(90, 255, 255, 255);
 
-        public static readonly Color Hub = Color.FromArgb(200, 8, 9, 11);
+        public static readonly Color Hub = Color.FromArgb(225, 8, 9, 11);
         /// <summary>Solid header strip on a panel, the way GTA's own menus title a column.</summary>
         public static readonly Color PanelHeader = Color.FromArgb(235, 22, 24, 26);
 
@@ -40,7 +38,7 @@ namespace Hoodrich.UI
         /// <summary>Text drawn on top of a highlighted (near-white) wedge.</summary>
         public static readonly Color TextOnHover = Color.FromArgb(255, 16, 18, 20);
 
-        public static readonly Color TextDisabled = Color.FromArgb(130, 110, 112, 114);
+        public static readonly Color TextDisabled = Color.FromArgb(255, 150, 152, 156);
 
         /// <summary>White, matching the vanilla wheel. Used for page titles and rules.</summary>
         public static readonly Color Accent = Color.FromArgb(255, 245, 245, 245);

@@ -1378,9 +1378,11 @@ namespace Hoodrich.Wheel
             page.Row("They run", gang.TurfHint);
             page.Row("They move", DrugNames(gang));
             page.Row("Their old rivals", RivalNames(gang));
-            page.Row("With you", _crew.Beefing(gang.Id) ? "at war" : "no problem",
+            // Two different questions, and they used to carry the same label -- the panel read
+            // "With you: no problem" directly above "With you: you run with them".
+            page.Row("Beef", _crew.Beefing(gang.Id) ? "at war" : "no problem",
                      _crew.Beefing(gang.Id) ? Palette.Danger : (Color?)Palette.TextDim);
-            page.Row("With you", mine ? "you run with them" : RelationLabel(gang),
+            page.Row("Where you stand", mine ? "you run with them" : RelationLabel(gang),
                      mine ? gang.Colour : atWar ? Palette.Danger : (Color?)null);
 
             // Join / leave.
