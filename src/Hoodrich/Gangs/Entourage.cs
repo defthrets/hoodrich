@@ -407,6 +407,69 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>Puts anybody who has wandered back on their mark.</summary>
+        /// <summary>
+        /// Pins a stationed man to his own spot for the length of a fight.
+        ///
+        /// Once each, not per tick. The defensive area is ped state and it survives the combat
+        /// task laid over it, so re-asserting it every pass would have no visible effect and
+        /// cost a handful of native calls a frame for nothing.
+        ///
+        /// The radius is generous next to the gang war's, because these are people stood about
+        /// in a yard rather than holding a line, and a man who cannot step behind the couch he
+        /// is already next to reads as broken rather than as disciplined.
+        /// </summary>
+        private void Hold(Ped ped, Vector3 station)
+        {
+            if (_held.Contains(ped.Handle)) return;
+            _held.Add(ped.Handle);
+
+            try
+            {
+                Function.Call(Hash.REMOVE_PED_DEFENSIVE_AREA, ped.Handle, false);
+                Function.Call(Hash.REMOVE_PED_DEFENSIVE_AREA, ped.Handle, true);
+
+                Function.Call(Hash.SET_PED_SPHERE_DEFENSIVE_AREA, ped.Handle,
+                              station.X, station.Y, station.Z, HoldRadius, false, false);
+
+                // 1 is CM_Defensive, which is the mode that hugs cover. 0 is CR_Near, which
+                // stops him drifting off looking for a longer firing angle.
+                Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, ped.Handle, 1);
+                Function.Call(Hash.SET_PED_COMBAT_RANGE, ped.Handle, 0);
+
+                foreach (var on in HoldOn)
+                {
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, on, true);
+                }
+
+                foreach (var off in HoldOff)
+                {
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, off, false);
+                }
+            }
+            catch
+            {
+                // He fights the way he always did.
+            }
+        }
+
+        /// <summary>Handles already dug in, so it is said once each.</summary>
+        private readonly HashSet<int> _held = new HashSet<int>();
+
+        /// <summary>Far enough to reach the wall behind him, not far enough to follow anybody.</summary>
+        private const float HoldRadius = 18f;
+
+        /// <summary>Cover, stand and fight, and get to the post before looking for a wall.</summary>
+        private static readonly int[] HoldOn = { 0, 5, 12, 29, 44, 58 };
+
+        /// <summary>
+        /// And the ones that would undo all of it.
+        ///
+        /// 13 and 43 are both "charge" in disguise. 37, 45, 51 and 62 DELETE the defensive area
+        /// the moment he reaches it, and 51 switches him to advance while doing it -- so he
+        /// would arrive at his post and immediately leave. 71 lets him charge past the edge.
+        /// </summary>
+        private static readonly int[] HoldOff = { 13, 37, 43, 45, 47, 51, 62, 71 };
+
         private void Settle()
         {
             for (var i = _crew.Count - 1; i >= 0; i--)
@@ -445,7 +508,18 @@ namespace Hoodrich.Gangs
                         }
                     }
                     else if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, ped.Handle, 118)) continue;
-                    if (ped.IsInCombat || ped.IsRagdoll) continue;
+
+                    // In it, and standing where he belongs: give him this ground and leave him.
+                    //
+                    // Settle already refuses to re-task a man who is fighting, which is right.
+                    // But it also meant nobody ever told him NOT to follow the fight down the
+                    // road -- so he went, and Settle walked him back afterwards as though
+                    // nothing had happened. A sphere on his own station is what was missing.
+                    if (ped.IsInCombat || ped.IsRagdoll)
+                    {
+                        Hold(ped, MarkAt(i));
+                        continue;
+                    }
 
                     Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
                     continue;
@@ -455,7 +529,16 @@ namespace Hoodrich.Gangs
                 {
                     // Whatever spooked them has to be over first. Walking a man back into the
                     // thing he ran from is worse than leaving him where he stopped.
-                    if (ped.IsInCombat || ped.IsRagdoll) continue;
+                    //
+                    // He still gets his station as a defensive area though, even from out
+                    // here. It does not drag him back -- the fight decides that -- but it is
+                    // the edge he will not go past, so he stops drifting further with every
+                    // man he chases.
+                    if (ped.IsInCombat || ped.IsRagdoll)
+                    {
+                        Hold(ped, MarkAt(i));
+                        continue;
+                    }
                     if (Function.Call<bool>(Hash.IS_PED_FLEEING, ped.Handle)) continue;
 
                     // A long way off and nobody looking: put him back. Anything closer he walks,

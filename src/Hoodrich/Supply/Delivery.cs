@@ -303,6 +303,19 @@ namespace Hoodrich.Supply
         /// </summary>
         private const int DriveStyle = 786606;
 
+        /// <summary>
+        /// How close before he stops following roads and drives straight at the point.
+        ///
+        /// This is the last argument of TASK_VEHICLE_DRIVE_TO_COORD and it is a FLOAT. It was
+        /// being passed `true`, which marshals as 1.0 -- one metre -- so he stayed glued to the
+        /// road node network until he was practically on top of the mark. The mark is at the
+        /// kerb rather than on a node, which is most of why the last few metres of every
+        /// delivery were a shuffle.
+        ///
+        /// Twenty metres. Rockstar ship this parameter 238 times, most often at 100.
+        /// </summary>
+        private const float StraightLineAt = 20f;
+
         /// <summary>Close enough to do business over the roof of the car.</summary>
         private const float TalkRange = 4.5f;
 
@@ -786,7 +799,7 @@ namespace Hoodrich.Supply
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _driver.Handle, _car.Handle,
                               where.X, where.Y, where.Z,
-                              16f, 0, _car.Model.Hash, DriveStyle, 3f, true);
+                              16f, 0, _car.Model.Hash, DriveStyle, 3f, StraightLineAt);
             }
             catch (Exception ex)
             {
@@ -1385,7 +1398,7 @@ namespace Hoodrich.Supply
                         {
                             Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _driver.Handle,
                                           _car.Handle, away.X, away.Y, away.Z, 18f, 0,
-                                          _car.Model.Hash, DriveStyle, 5f, true);
+                                          _car.Model.Hash, DriveStyle, 5f, StraightLineAt);
                         }
                         else
                         {

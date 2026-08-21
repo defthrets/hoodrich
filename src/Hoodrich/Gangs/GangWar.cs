@@ -1399,6 +1399,17 @@ namespace Hoodrich.Gangs
                     order.NextWalk = 0;
                     order.Wandering = false;
 
+                    // Dug in before he is told to fight, never after.
+                    //
+                    // The area is ped state and the combat order is a task, and the task does
+                    // not clear the state -- so this holds for the whole fight without being
+                    // re-issued over the top of it every tick.
+                    if (!theirs && !order.DugIn)
+                    {
+                        order.DugIn = true;
+                        Dig(ped, HomeFor(), player);
+                    }
+
                     // Anybody in reach, not one particular person. The game finds whoever is
                     // nearest and in sight, and finds the next one by itself the moment that
                     // one goes down -- which is the whole behaviour being asked for here.
@@ -1423,6 +1434,12 @@ namespace Hoodrich.Gangs
                 }
 
                 order.Swings = 0;
+
+                // Nobody left in front of him, so the ground he was given is released. The
+                // next wave digs him in again wherever he has ended up, which is what lets a
+                // defender who has been pushed back down the street hold the new line rather
+                // than the old one.
+                order.DugIn = false;
 
                 var wasFighting = order.Target != 0;
                 order.Target = 0;
@@ -1515,6 +1532,9 @@ namespace Hoodrich.Gangs
             /// <summary>Thinks in a row where they were told to fight and still are not.</summary>
             public int Swings;
 
+            /// <summary>Whether he has been given his ground. Once per fight, not per tick.</summary>
+            public bool DugIn;
+
             /// <summary>When the car they are riding in stopped moving, or zero.</summary>
             public int CarStuckSince;
         }
@@ -1546,11 +1566,121 @@ namespace Hoodrich.Gangs
         /// <summary>
         /// How far one of ours may get from the spot before he is walked back.
         ///
+        /// A backstop now rather than the mechanism. Holding ground is the defensive area's
+        /// job -- see Dig -- and this only catches a man the engine has somehow let wander.
+        ///
         /// The area-combat order reaches much further than this, so without a leash a defender
         /// chases somebody two streets away and leaves the thing he is defending empty. Which
         /// is how a raid gets won by going round the side of it.
         /// </summary>
         private const float DefendLeash = 32f;
+
+        /// <summary>
+        /// How far a defender may move from what he is holding. Roughly a front garden.
+        ///
+        /// Small on purpose. Inside a sphere this size he can cross a road to a wall or drop
+        /// behind a car, and he cannot follow anybody round a corner -- which is the whole
+        /// complaint. Wider and the engine starts treating the far edge as somewhere worth
+        /// advancing to.
+        /// </summary>
+        private const float HoldRadius = 14f;
+
+        /// <summary>
+        /// The width of the box that follows the man being protected.
+        ///
+        /// SET_PED_DEFENSIVE_AREA_ATTACHED_TO_PED takes an angled box in his local space and
+        /// it MOVES WITH HIM, which is the actual bodyguard primitive -- R* build theirs from
+        /// corners (5,0,5) and (-5,0,-5) with only the width varying. Ten metres puts them
+        /// around you rather than on top of you.
+        /// </summary>
+        private const float GuardBox = 10f;
+
+        /// <summary>
+        /// Digs a defender in, and points him at whoever needs defending.
+        ///
+        /// The order below is not preference, it is the order R* use 512 times against 161 --
+        /// area first, combat task LAST -- and steps two to four must not be re-issued over
+        /// the top of the task afterwards.
+        ///
+        /// If you are on the block being hit, the area is attached to YOU and travels with
+        /// you, so they form up around whoever is actually being shot at. If you are not, they
+        /// hold a sphere on the spot itself. Either way nobody leaves it.
+        /// </summary>
+        private void Dig(Ped ped, Vector3 home, Ped player)
+        {
+            try
+            {
+                // Stale areas first. A ped has a primary and a secondary and both have to go,
+                // which is why R* clear it twice with different trailing flags.
+                Function.Call(Hash.REMOVE_PED_DEFENSIVE_AREA, ped.Handle, false);
+                Function.Call(Hash.REMOVE_PED_DEFENSIVE_AREA, ped.Handle, true);
+
+                var guarding = player != null && player.Exists() && player.IsAlive &&
+                               player.Position.DistanceTo(home) <= DefendRange;
+
+                if (guarding)
+                {
+                    Function.Call(Hash.SET_PED_DEFENSIVE_AREA_ATTACHED_TO_PED, ped.Handle,
+                                  player.Handle, 5f, 0f, 5f, -5f, 0f, -5f, GuardBox, false, false);
+                }
+                else
+                {
+                    Function.Call(Hash.SET_PED_SPHERE_DEFENSIVE_AREA, ped.Handle,
+                                  home.X, home.Y, home.Z, HoldRadius, false, false);
+                }
+
+                // Defensive, near. CM_Defensive is the mode that hugs cover -- corroborated by
+                // the flags either side of it being named EnableTacticalPointsWhenDefensive and
+                // SwitchToDefensiveIfInCover. This was CM_WillAdvance, which is a literal
+                // instruction to charge, and no amount of leashing was ever going to beat it.
+                Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, ped.Handle, CmDefensive);
+                Function.Call(Hash.SET_PED_COMBAT_RANGE, ped.Handle, CrNear);
+
+                foreach (var on in HoldOn) Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, on, true);
+                foreach (var off in HoldOff) Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, off, false);
+            }
+            catch (Exception ex)
+            {
+                // Without an area he behaves the way he did before, which the leash still
+                // catches. Worse, not broken.
+                Log.Debug("Could not dig a defender in: " + ex.Message);
+            }
+        }
+
+        /// <summary>What the block is holding: the muster if it has one, else the spot.</summary>
+        private Vector3 HomeFor()
+        {
+            if (_target == null) return Vector3.Zero;
+
+            return Musters.ContainsKey(_target.Who) ? Musters[_target.Who] : _target.Where;
+        }
+
+        private const int CmDefensive = 1;
+        private const int CrNear = 0;
+
+        /// <summary>
+        /// Flags that make a man hold a spot and use what is on it.
+        ///
+        /// 0 CanUseCover -- without it he never takes cover at all, whatever his movement says.
+        /// 5 AlwaysFight, 58 DisableFleeFromCombat -- he does not leave because he is losing.
+        /// 12 BlindFireWhenInCover, 44 SwitchToDefensiveIfInCover -- once he is behind
+        /// something he stays behind it and keeps shooting.
+        /// 29 MoveToLocationBeforeCoverSearch -- get to the post FIRST, then find cover there,
+        /// rather than taking the nearest wall on the way and holding that instead.
+        /// </summary>
+        private static readonly int[] HoldOn = { 0, 5, 12, 29, 44, 46, 58 };
+
+        /// <summary>
+        /// And the ones that would undo it.
+        ///
+        /// 13 Aggressive and 43 SwitchToAdvanceIfCantFindCover are both "charge" in disguise --
+        /// 43 especially, because a defender with no wall near him would simply run at people.
+        /// 37, 45, 51, 62 all DELETE the defensive area on arrival, and 51 switches him to
+        /// advance while it does it, so a man would reach his post and immediately leave it.
+        /// 71 lets him charge past the edge of the area, which is the thing being prevented.
+        /// 47 sends him roaming tactical points instead of holding cover.
+        /// </summary>
+        private static readonly int[] HoldOff = { 13, 37, 43, 45, 47, 51, 62, 71 };
 
         /// <summary>
         /// How close the car has to be before anybody gets out.
