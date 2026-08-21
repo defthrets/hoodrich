@@ -204,6 +204,21 @@ namespace Hoodrich.Gangs
             // name blank makes ResolveGroups build "Hoodrich_AZTECAS" and register it, which is
             // the honest way round -- a made-up group we own rather than borrowing somebody
             // else's and making every Vago in the city an Azteca.
+            // The Kkangpae. Ginger Street in Little Seoul, in front of the apartment block by
+            // the petrol station -- which is where the game itself puts them, and which is NOT
+            // where the Triads are. The Triads are the Raven Slaughterhouse in Cypress Flats.
+            // Two outfits, two places; the mod had the Triads standing in the Kkangpae's spot.
+            //
+            // They already had an author on the feed and a hashtag set of their own. They were
+            // simply never a gang.
+            Register(Make("koreans", "Kkangpae", "KKP", "AMBIENT_GANG_KOREAN",
+                Color.FromArgb(150, 40, 55), 1,
+                new[] { "meth", "coke" },
+                new[] { "triads", "armenians" },
+                new[] { "KOREAT" },
+                "Ginger Street, Little Seoul",
+                new[] { "g_m_y_korean_01", "g_m_y_korean_02", "g_m_y_korlieut_01", "g_m_m_korboss_01" }));
+
             Register(Make("aztecas", "Varrios Los Aztecas", "VLA", "",
                 Color.FromArgb(0, 190, 185), 3,
                 new[] { "weed", "coke" },
@@ -260,7 +275,7 @@ namespace Hoodrich.Gangs
             Register(Make("triads", "Wei Cheng Triads", "TRI", "AMBIENT_GANG_WEICHENG",
                 Color.FromArgb(220, 60, 60), 1,
                 new[] { "ecstasy", "heroin" },
-                new[] { "lost", "armenians" },
+                new[] { "lost", "armenians", "koreans" },
                 new[] { "CYPRE" },
                 "Little Seoul, Mirror Park, Hawick",
                 new[] { "g_m_m_chiboss_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02", "a_m_y_ktown_01" }));
@@ -268,7 +283,7 @@ namespace Hoodrich.Gangs
             Register(Make("armenians", "Armenian Mob", "ARM", "AMBIENT_GANG_ARMENIAN",
                 Color.FromArgb(150, 40, 60), 76,
                 new[] { "heroin" },
-                new[] { "triads", "lost" },
+                new[] { "triads", "lost", "koreans" },
                 new[] { "LAPUER" },
                 "Alta, Burton, Pillbox Hill",
                 new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_y_armgoon_02", "a_m_m_eastsa_02" }));

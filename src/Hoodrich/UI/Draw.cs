@@ -488,7 +488,7 @@ namespace Hoodrich.UI
             // Capped lower than it was. A full circle at 130 steps is 130 rectangles for a line
             // one pixel wide, twice over for the inner and outer edges, and past about ninety
             // nobody can tell the difference -- while the rectangles are ones the fills need.
-            var steps = (int)Math.Min(96f, Math.Max(24f, circumference / Math.Max(0.0015f, thickness)));
+            var steps = (int)Math.Min(72f, Math.Max(24f, circumference / Math.Max(0.0015f, thickness)));
 
             const double deg2rad = Math.PI / 180.0;
             var size = thickness * 1.7f;

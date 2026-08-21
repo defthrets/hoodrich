@@ -200,7 +200,8 @@
       ],
       "rivals": [
         "lost",
-        "armenians"
+        "armenians",
+        "koreans"
       ],
       "turf": [
         "CYPRE"
@@ -224,13 +225,39 @@
       ],
       "rivals": [
         "triads",
-        "lost"
+        "lost",
+        "koreans"
       ],
       "turf": [
         "LAPUER"
       ],
       "turfHint": "Alta, Burton and Pillbox Hill",
       "joinRespect": 900
+    },
+    {
+      "id": "koreans",
+      "name": "Kkangpae",
+      "tag": "KKP",
+      "colour": [
+        150,
+        40,
+        55
+      ],
+      "blipColour": 1,
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "rivals": [
+        "triads",
+        "armenians"
+      ],
+      "turf": [
+        "KOREAT"
+      ],
+      "turfHint": "Ginger Street, Little Seoul",
+      "joinRespect": 0,
+      "joinable": false
     }
   ]
 }

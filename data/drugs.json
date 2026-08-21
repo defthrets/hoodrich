@@ -166,7 +166,7 @@
       "name": "Heroin",
       "tag": "H",
       "tier": 5,
-      "basePrice": 80,
+      "basePrice": 100,
       "bulkPrice": 21,
       "heatFactor": 1.5,
       "splitVerb": "Cut",
