@@ -98,7 +98,58 @@ def heart():
     save(img, 'heart.png')
 
 
+# ----------------------------------------------------------------------- feed
+#
+# The three under every post. All authored as ONE solid mass wherever possible -- an outline
+# drawn at 512 becomes a 1px grey thread at 17 and disappears, so these are filled shapes with
+# holes punched, the same trick as the skull.
+
+def reply():
+    """A speech bubble. Solid, with a tail on the lower left."""
+    img, d = canvas()
+
+    d.rounded_rectangle([56, 78, 456, 350], radius=76, fill=W)
+    d.polygon([(128, 330), (128, 468), (250, 344)], fill=W)
+
+    save(img, 'reply.png')
+
+
+def repost():
+    """
+    Two arrows going opposite ways.
+
+    Not the circular recycle glyph -- at this size the curve closes into a ring and reads as a
+    letter O. Two straight bars with fat heads keeps the meaning.
+    """
+    img, d = canvas()
+
+    # top bar, pointing right. The bars are deliberately fat: at 64px thick they came out two
+    # pixels wide on screen and vanished into the background.
+    d.rectangle([96, 120, 356, 228], fill=W)
+    d.polygon([(330, 56), (330, 292), (486, 174)], fill=W)
+
+    # bottom bar, pointing left
+    d.rectangle([156, 284, 416, 392], fill=W)
+    d.polygon([(182, 220), (182, 456), (26, 338)], fill=W)
+
+    save(img, 'repost.png')
+
+
+def like():
+    """The heart again, so a post's likes and the reputation bar agree with each other."""
+    img, d = canvas()
+
+    d.ellipse([64, 78, 280, 294], fill=W)
+    d.ellipse([232, 78, 448, 294], fill=W)
+    d.polygon([(78, 232), (434, 232), (256, 470)], fill=W)
+
+    save(img, 'like.png')
+
+
 print('writing to %s' % OUT)
 skull()
 police()
 heart()
+reply()
+repost()
+like()
