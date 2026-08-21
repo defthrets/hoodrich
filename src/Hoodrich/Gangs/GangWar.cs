@@ -129,7 +129,7 @@ namespace Hoodrich.Gangs
         /// far away they park. At 32m that was reliably round the corner and out of sight,
         /// which is why a raid looked like people jogging in from somewhere else.
         /// </summary>
-        private const float DropRange = 14f;
+        private const float DropRange = 8f;
 
         /// <summary>Close enough to count as having turned up.</summary>
         private const float DefendRange = 70f;
@@ -564,6 +564,15 @@ namespace Hoodrich.Gangs
                 _showedUp = true;
                 Notify.Ticker("~g~You showed up.~s~ Hold the block.");
             }
+
+            // Re-asserted every tick, not just at the start.
+            //
+            // LawHold is a shared switch and the game itself resets the max wanted level on
+            // occasion -- a mission finishing, a cutscene, a reload of the area. Setting it
+            // once at the start means any of those hands the police back mid-fight, which is
+            // exactly what "we get stars during the raid" looks like. Holding it is idempotent
+            // and costs nothing, so it is held continuously and released once, at the end.
+            HoldTheLaw(true);
 
             CountKills();
             CullTheDead();
@@ -1096,6 +1105,34 @@ namespace Hoodrich.Gangs
 
                 var foe = NearestFoe(ped, theirs, player);
 
+                // Ours stay on the block they are defending.
+                //
+                // The area-combat order reaches a hundred and twenty metres, so a defender
+                // would chase somebody two streets away and leave the thing he is there to
+                // hold standing empty -- which is how a raid gets won by walking round the
+                // side of it. Past the leash he goes back, whatever he thinks he is doing,
+                // and picks up the fight again when he gets there.
+                if (!theirs)
+                {
+                    var home = _target != null && Musters.ContainsKey(_target.Who)
+                        ? Musters[_target.Who]
+                        : _target.Where;
+
+                    if (ped.Position.DistanceTo(home) > DefendLeash)
+                    {
+                        if (now < order.NextWalk) return;
+                        order.NextWalk = now + WalkIntervalMs;
+
+                        order.Target = 0;
+                        order.Wandering = false;
+
+                        Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                        Function.Call(Hash.TASK_GO_TO_COORD_ANY_MEANS, ped.Handle,
+                                      home.X, home.Y, home.Z, 2f, 0, false, 786603, 0f);
+                        return;
+                    }
+                }
+
                 if (foe != null)
                 {
                     order.NextWalk = 0;
@@ -1146,7 +1183,7 @@ namespace Hoodrich.Gangs
                     order.Wandering = true;
 
                     Function.Call(Hash.TASK_WANDER_IN_AREA, ped.Handle,
-                                  muster.X, muster.Y, muster.Z, 45f, 3f, 10f);
+                                  muster.X, muster.Y, muster.Z, 16f, 3f, 10f);
                     return;
                 }
 
@@ -1243,13 +1280,22 @@ namespace Hoodrich.Gangs
         private const float EngageRange = 90f;
 
         /// <summary>
+        /// How far one of ours may get from the spot before he is walked back.
+        ///
+        /// The area-combat order reaches much further than this, so without a leash a defender
+        /// chases somebody two streets away and leaves the thing he is defending empty. Which
+        /// is how a raid gets won by going round the side of it.
+        /// </summary>
+        private const float DefendLeash = 32f;
+
+        /// <summary>
         /// How close the car has to be before anybody gets out.
         ///
         /// It was 55m -- a block -- so the ride-in ended early and the last stretch was always
         /// on foot. They stay in the car until they are outside the place, and the stuck check
         /// below is what stops that becoming a carload sat in traffic for the whole raid.
         /// </summary>
-        private const float DismountRange = 20f;
+        private const float DismountRange = 12f;
 
         /// <summary>
         /// Near enough that a car which has stopped moving has effectively arrived.
@@ -1258,7 +1304,7 @@ namespace Hoodrich.Gangs
         /// way keeps everybody sat inside until the long stuck timer runs out. Within this,
         /// stopped means here.
         /// </summary>
-        private const float CloseEnoughRange = 45f;
+        private const float CloseEnoughRange = 28f;
 
         /// <summary>How long a stopped car this close has to sit before they just get out.</summary>
         private const int CloseEnoughStopMs = 1400;
