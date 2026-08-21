@@ -699,7 +699,7 @@ namespace Hoodrich.Wheel
             if (_dealers.InReach != null) return "Your contact is right here";
             if (_dealers.HasMeet) return _dealers.MeetDealer.Name + " -- " +
                                           _dealers.MeetDistance.ToString("0") + "m away";
-            return "Call a contact for bulk weight";
+            return "Text a contact for bulk weight";
         }
 
         // ---- drugs -------------------------------------------------------------
@@ -877,7 +877,7 @@ namespace Hoodrich.Wheel
 
                 var run = new WheelPage("Supply", Delivery.Status);
                 run.PanelTitle = Delivery.Def.Name;
-                run.Row("Where", Delivery.State == DeliveryState.Calling
+                run.Row("Where", Delivery.State == DeliveryState.Texting
                                  ? "on the phone"
                                  : Delivery.Distance.ToString("0") + "m away");
                 run.Row("Carries", Carries(Delivery.Def));
@@ -942,7 +942,7 @@ namespace Hoodrich.Wheel
             {
                 list.Add("Nothing", "-", null,
                     detail: "Nobody in your phone",
-                    enabled: false, disabledReason: "Nobody to call");
+                    enabled: false, disabledReason: "Nobody to text");
                 return list;
             }
 
@@ -950,7 +950,7 @@ namespace Hoodrich.Wheel
             {
                 var toGo = DealerManager.GramsUntilSource(_state, _cfg.DocksUnlockGrams);
 
-                list.Add("Call the plug", "=", null,
+                list.Add("Text the plug", "=", null,
                     detail: "Dock worker. Ask Stretch about him once you've moved enough",
                     value: toGo.ToString("0") + "g more to sell",
                     enabled: false, disabledReason: "You don't know nobody at the port");
@@ -960,7 +960,7 @@ namespace Hoodrich.Wheel
 
             var blocked = _dealers.RefusalReason(docks, _state, _crew);
 
-            list.Add("Call the plug", "=", () => Call(docks),
+            list.Add("Text the plug", "=", () => Call(docks),
                 detail: blocked == null
                     ? "Dock worker. " + docks.Name + " pulls up out front with whatever you want"
                     : blocked,
@@ -1412,7 +1412,7 @@ namespace Hoodrich.Wheel
                     ? "everything"
                     : string.Join(", ", plug.Drugs.ToArray()).ToUpperInvariant();
 
-                page.Add("Call the plug", "+", () => Call(plug),
+                page.Add("Text the plug", "+", () => Call(plug),
                     detail: plug.BuyLine,
                     value: carries + "  ·  " + Multiplier(1f / Math.Max(0.01f, mult)),
                     enabled: refusal == null,
@@ -1421,7 +1421,7 @@ namespace Hoodrich.Wheel
             }
             else
             {
-                page.Add("Call the plug", "+", null,
+                page.Add("Text the plug", "+", null,
                     detail: "They have nobody you can call",
                     enabled: false, disabledReason: "No contact");
                 page.WithIcon(Icons.Locked);

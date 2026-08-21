@@ -14,7 +14,7 @@ namespace Hoodrich.Supply
         None,
 
         /// <summary>Player has the phone to their ear.</summary>
-        Calling,
+        Texting,
 
         /// <summary>He is driving over.</summary>
         Driving,
@@ -134,14 +134,14 @@ namespace Hoodrich.Supply
         public Economy.Stash House;
 
         /// <summary>
-        /// How long he is on the phone.
+        /// How long the message takes.
         ///
-        /// Six seconds: long enough to be a conversation rather than a text message, short
-        /// enough that you are not stood in your own yard holding a handset. The player is never
-        /// frozen for it -- the animation runs over the top of whatever they are doing and they
-        /// can walk off mid-sentence, the way anybody does on a phone.
+        /// Four seconds: long enough to be somebody typing out what they want and waiting on a
+        /// reply, short enough that you are not stood in your own yard staring at a handset.
+        /// The player is never frozen for it -- the animation is upper body only, so he can
+        /// walk off mid-message the way anybody does texting.
         /// </summary>
-        private const int CallMs = 6000;
+        private const int CallMs = 4000;
 
         /// <summary>Spawned this far out, so the car is never seen appearing.</summary>
         private const float SpawnMinDistance = 220f;
@@ -302,7 +302,7 @@ namespace Hoodrich.Supply
             {
                 switch (State)
                 {
-                    case DeliveryState.Calling: return "On the phone to " + _def.Name;
+                    case DeliveryState.Texting: return "Texting " + _def.Name;
                     case DeliveryState.Driving: return _def.Name + " is driving over -- " +
                                                        Distance.ToString("0") + "m";
                     case DeliveryState.Waiting: return _def.Name + " is waiting on you -- " +
@@ -321,7 +321,7 @@ namespace Hoodrich.Supply
             // and it stops the plug being a vending machine you carry around with you.
             if (AtHome != null && !AtHome())
             {
-                return "Call him from the house. He ain't meeting you on a corner.";
+                return "Text him from the house. He ain't meeting you on a corner.";
             }
 
             if (def == null) return "No such contact.";
@@ -329,47 +329,106 @@ namespace Hoodrich.Supply
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
-            if (player.IsInVehicle()) return "Get out of the car to make a call.";
+            if (player.IsInVehicle()) return "Get out of the car to text him.";
 
             _def = def;
-            State = DeliveryState.Calling;
+            State = DeliveryState.Texting;
             _stateSince = Game.GameTime;
             _parking = false;
 
             PlayPhoneAnimation(player);
 
-            Notify.Ticker("~y~Calling " + def.Name + "...~s~");
-            Log.Info("Called " + def.Id + " out for a delivery.");
+            Notify.Ticker("~y~Texting " + def.Name + "...~s~");
+            Log.Info("Texted " + def.Id + " for a delivery.");
             return null;
         }
 
         /// <summary>
-        /// Puts the phone to the player's ear for the length of the call.
+        /// Phone out, head down, thumbs going.
         ///
-        /// The timed mobile task is the game's own: it draws the phone, the hand, and the whole
-        /// idle, and it ends by itself -- so there is no prop to attach and nothing left stuck
-        /// in the player's hand if the script is interrupted mid-call.
+        /// Not the mobile-phone TASK. That native only knows how to hold a handset to an ear --
+        /// there is no texting form of it -- so a text message has to be built: the game's own
+        /// texting clip, and a handset put in his hand to go with it, because the clip on its
+        /// own is a man staring intently at nothing.
+        ///
+        /// Given once and never re-issued. The last version watched for the animation and
+        /// handed the task out again whenever it looked absent, which is how Franklin came to
+        /// raise the phone three times in six seconds. The timer ends this one instead.
         /// </summary>
         private void PlayPhoneAnimation(Ped player)
         {
             try
             {
-                // The UNTIMED form. The timed one is a full task and nails the player to the
-                // spot for its whole duration, which is why a longer call was unbearable --
-                // this one runs alongside walking, driving and everything else, exactly like
-                // holding a phone to your ear does.
-                // The TIMED form, given once and left alone.
-                //
-                // The untimed one was chosen originally because the timed one holds the player
-                // still, and that was thought unbearable for a long call. It is six seconds, he
-                // is stood outside his own house, and the alternative turned out to be an
-                // animation that replayed three times -- which is far worse than standing still
-                // while you make a phone call, because standing still is what people do.
-                Function.Call(Hash.TASK_USE_MOBILE_PHONE_TIMED, player.Handle, CallMs);
+                Function.Call(Hash.REQUEST_ANIM_DICT, TextDict);
+
+                // Streaming is asynchronous. A dictionary that is not in yet is not an error,
+                // and a handset on its own still reads as somebody looking at their phone, so
+                // the prop goes in either way.
+                PhoneInHand(player);
+
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, TextDict)) return;
+
+                // Upper body, secondary, looping. He keeps his legs, so he can walk off
+                // mid-message the way anybody does -- and unlike the ear-to-phone task it does
+                // not nail him to the spot for the whole of it.
+                Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, TextDict, TextClip,
+                              4f, -4f, -1, TextFlags, 0f, false, false, false);
             }
             catch (Exception ex)
             {
-                Log.Debug("Phone animation failed: " + ex.Message);
+                Log.Debug("Texting animation failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>The texting idle, and the handset that makes it read as one.</summary>
+        private const string TextDict = "cellphone@";
+        private const string TextClip = "cellphone_text_read_base";
+
+        /// <summary>Looping, upper body only, secondary -- so he keeps control of his legs.</summary>
+        private const int TextFlags = 49;
+
+        private static readonly string[] PhoneProps = { "prop_npc_phone_02", "prop_npc_phone" };
+
+        /// <summary>The right hand. The same bone the game puts its own handset in.</summary>
+        private const int RightHandBone = 28422;
+
+        private Prop _phone;
+
+        /// <summary>
+        /// Puts a handset in his hand for the length of the message.
+        ///
+        /// Attached rather than positioned: an attached prop follows the bone through the
+        /// animation and comes off in one call, where anything else has to be moved every frame
+        /// and leaves a phone hanging in the yard the moment something goes wrong.
+        /// </summary>
+        private void PhoneInHand(Ped player)
+        {
+            if (_phone != null && _phone.Exists()) return;
+
+            foreach (var name in PhoneProps)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(500)) continue;
+
+                    _phone = World.CreateProp(model, player.Position, false, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_phone == null || !_phone.Exists()) continue;
+
+                    var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, player.Handle,
+                                                  RightHandBone);
+
+                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _phone.Handle, player.Handle,
+                                  bone, 0f, 0f, 0f, 0f, 0f, 0f,
+                                  true, true, false, true, 1, true);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not put a phone in his hand: " + ex.Message);
+                }
             }
         }
 
@@ -396,20 +455,45 @@ namespace Hoodrich.Supply
             Game.DisableControlThisFrame(Control.SelectWeapon);
         }
 
-        /// <summary>Puts it away again, whether the call landed or was called off.</summary>
-        private static void EndPhoneAnimation()
+        /// <summary>
+        /// Puts it away again, whether the message landed or was thought better of.
+        ///
+        /// Both halves, and the handset unconditionally. A looping secondary animation runs
+        /// until something stops it, and an attached prop outlives the animation entirely -- so
+        /// an interrupted message that cleared only one of the two would leave Franklin walking
+        /// round Davis holding a phone for the rest of the session.
+        /// </summary>
+        private void EndPhoneAnimation()
         {
             try
             {
                 var player = Game.Player.Character;
-                if (player == null || !player.Exists()) return;
 
-                Function.Call(Hash.TASK_USE_MOBILE_PHONE, player.Handle, false);
+                if (player != null && player.Exists())
+                {
+                    Function.Call(Hash.STOP_ANIM_TASK, player.Handle, TextDict, TextClip, 4f);
+                    Function.Call(Hash.TASK_USE_MOBILE_PHONE, player.Handle, false);
+                }
             }
             catch
             {
-                // It puts itself away eventually.
+                // It blends out on its own.
             }
+
+            try
+            {
+                if (_phone != null && _phone.Exists())
+                {
+                    Function.Call(Hash.DETACH_ENTITY, _phone.Handle, true, true);
+                    _phone.Delete();
+                }
+            }
+            catch
+            {
+                // It will stream out.
+            }
+
+            _phone = null;
         }
 
         // ---- per-tick ----------------------------------------------------------
@@ -427,7 +511,7 @@ namespace Hoodrich.Supply
 
             switch (State)
             {
-                case DeliveryState.Calling:
+                case DeliveryState.Texting:
                     HoldThePhone(player);
 
                     if (Game.GameTime - _stateSince >= CallMs)

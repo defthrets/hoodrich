@@ -248,7 +248,7 @@ namespace Hoodrich.Supply
             // One model, not four. He is somebody you ring up and meet by name, and turning
             // up with a different face every delivery is what made him read as a spawn rather
             // than a contact.
-            docks.Models.AddRange(new[] { "a_m_m_hasjew_01" });
+            docks.Models.AddRange(new[] { "u_m_y_ushi" });
             // Drugs deliberately empty: the docks carry the whole catalogue.
             docks.Zones.AddRange(new[] { "ELYSIAN", "ZP_ORT", "TERMINA", "BANNING" });
             _defs.Add(docks);
