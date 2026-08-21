@@ -1750,6 +1750,17 @@ namespace Hoodrich.Social
         /// <summary>The game's own empty contact picture. No face, same layout.</summary>
         private const string BlankFace = "CHAR_BLANK_ENTRY";
 
+        /// <summary>
+        /// Raised for every post that lands, with the poster's gang id or an empty string.
+        ///
+        /// An event rather than a reference back to Affiliation. The feed already knows who
+        /// wrote each post and has no business knowing what anybody wants to do about it, and
+        /// the standing tally is exactly the kind of thing that wants to hang off the feed
+        /// without the feed having to carry it. Affiliation already hands out RivalDropped the
+        /// same way round.
+        /// </summary>
+        public Action<string> Posted;
+
         private void Add(Post post)
         {
             _timeline.Insert(0, post);
@@ -1759,6 +1770,11 @@ namespace Hoodrich.Social
 
             while (_recent.Count > RecentMemory) _recentSet.Remove(_recent.Dequeue());
             while (_timeline.Count > Capacity) _timeline.RemoveAt(_timeline.Count - 1);
+
+            // After the post is actually on the timeline, and wrapped, because a listener
+            // throwing is not a reason for the post not to have happened.
+            try { Posted?.Invoke(post.By == null ? "" : post.By.Gang); }
+            catch (Exception ex) { Log.Debug("Post hook threw: " + ex.Message); }
         }
 
         /// <summary>How long ago, the way a timeline writes it.</summary>

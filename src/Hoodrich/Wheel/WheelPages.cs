@@ -485,19 +485,37 @@ namespace Hoodrich.Wheel
             var block = new InfoSection { Title = "This block" };
 
             block.Row("Where", _turf.ZoneName, TurfTint());
+
+            // The owner's own emblem, in the owner's own colour. It is the one row on this
+            // panel where the art means IDENTITY rather than state, so it keeps its tint
+            // instead of taking the row's.
             block.Row("Whose", _turf.Owner == null ? "nobody's" : _turf.Owner.Name,
-                      _turf.Owner?.Colour ?? (Color?)Palette.TextDim);
-            block.Row("To you", TurfWord(), TurfTint());
+                      _turf.Owner?.Colour ?? (Color?)Palette.TextDim,
+                      r =>
+                      {
+                          if (_turf.Owner == null) return;
+
+                          r.ArtFile = Icons.ForGang(_turf.Owner.Id).File;
+                          r.ArtTint = _turf.Owner.Colour;
+                          r.Tab = _turf.Owner.Colour;
+                      });
+
+            block.Row("To you", TurfWord(), TurfTint(), r => r.ArtFile = "mask.png");
             block.Row("Pays", Multiplier(_turf.TurfPriceMultiplier),
-                      _turf.TurfPriceMultiplier > 1.05f ? Palette.Cash : (Color?)Palette.Text);
+                      _turf.TurfPriceMultiplier > 1.05f ? Palette.Cash : (Color?)Palette.Text,
+                      r => r.ArtFile = "cash.png");
             block.Row("Draws heat", Multiplier(_turf.TurfHeatMultiplier),
-                      _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : (Color?)Palette.Cash);
+                      _turf.TurfHeatMultiplier > 1.2f ? Palette.Danger : (Color?)Palette.Cash,
+                      r => r.ArtFile = "police.png");
             block.Row("Gang around", _crew.NearbyAllies > 0 ? _crew.NearbyAllies + " of yours" : "none",
-                      _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim);
+                      _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim,
+                      r => r.ArtFile = "guns.png");
             block.Row("Foot traffic", FootfallWord(),
-                      _postUp.Footfall == 0 ? Palette.Warn : (Color?)Palette.Cash);
+                      _postUp.Footfall == 0 ? Palette.Warn : (Color?)Palette.Cash,
+                      r => r.ArtFile = "heart.png");
             block.Row("Been clocked", _turf.IsExposed ? "yes" : "not yet",
-                      _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim);
+                      _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim,
+                      r => r.ArtFile = "warning.png");
 
             return block;
         }
@@ -511,11 +529,170 @@ namespace Hoodrich.Wheel
             risk.Row("Serving", _turf.Status == TurfStatus.Hostile ? "they'll jump you"
                               : _turf.Status == TurfStatus.Home ? "safe enough"
                               : "nobody minds much",
-                     TurfTint());
-            risk.Row("Your heat", HeatWord(), HeatTint());
+                     TurfTint(), r => r.ArtFile = "warning.png");
+            risk.Row("Your heat", HeatWord(), HeatTint(), r => r.ArtFile = "police.png");
             sections.Add(risk);
 
+            sections.Add(EverySet());
+            sections.Add(AllTold());
+
             Info?.Open(_turf.ZoneName, TurfWord(), sections);
+        }
+
+        /// <summary>
+        /// Every set in the city and what is between you and them.
+        ///
+        /// One row each rather than a page each, because the thing worth knowing is almost
+        /// always comparative -- who has hit you most, who you owe, who has gone quiet. Nine
+        /// separate screens cannot answer any of those and one list answers all three.
+        ///
+        /// Ordered by how much history there is, not alphabetically and not by the order they
+        /// happen to sit in gangs.json. A set you have never met is a row of zeroes and it
+        /// belongs underneath the ones you have been trading bodies with. Your own set goes
+        /// first regardless, because it is the one you are reading this as.
+        /// </summary>
+        private InfoSection EverySet()
+        {
+            var sets = new InfoSection { Title = "Every set in the city" };
+
+            var mine = _crew.Current;
+            var all = new List<GangDef>(_gangs.All);
+
+            all.Sort((a, b) =>
+            {
+                if (mine != null && a.Id == mine.Id) return -1;
+                if (mine != null && b.Id == mine.Id) return 1;
+
+                var byHistory = History(b).CompareTo(History(a));
+                return byHistory != 0
+                    ? byHistory
+                    : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            });
+
+            foreach (var gang in all)
+            {
+                var st = _crew.StandingFor(gang.Id);
+                var isMine = mine != null && gang.Id == mine.Id;
+
+                sets.Row(gang.Name, StandingWord(gang, st, isMine), StandingTint(gang, st, isMine),
+                         r =>
+                         {
+                             r.ArtFile = Icons.ForGang(gang.Id).File;
+
+                             // The set's own colour on both, and never as the row's colour --
+                             // the row's colour says how it is going with them, which is a
+                             // different fact and one that changes.
+                             r.ArtTint = gang.Colour;
+                             r.Tab = gang.Colour;
+
+                             r.Note = Tally(st);
+                         });
+            }
+
+            return sets;
+        }
+
+        /// <summary>How much has actually happened with a set, for ordering the list.</summary>
+        private int History(GangDef gang)
+        {
+            var st = _crew.StandingFor(gang.Id);
+            return st.TheirDead + st.Attacks + st.Tweets;
+        }
+
+        /// <summary>
+        /// The three numbers, on one line, in the order they happen to you.
+        ///
+        /// Written out with the units attached rather than as a row of bare figures under
+        /// three icons. The icons are in the gutter already and there is one gutter per row,
+        /// so a second set of them would have to be drawn inline as glyphs -- and "4 bodies,
+        /// 2 raids, 11 posts" is shorter to read than any arrangement of symbols that says
+        /// the same thing.
+        /// </summary>
+        private static string Tally(GangStanding st)
+        {
+            if (st.TheirDead == 0 && st.Attacks == 0 && st.Tweets == 0)
+            {
+                return "nothing between you";
+            }
+
+            var parts = new List<string>();
+
+            if (st.TheirDead > 0) parts.Add(Count(st.TheirDead, "body", "bodies"));
+            if (st.Attacks > 0) parts.Add(Count(st.Attacks, "raid", "raids"));
+            if (st.Tweets > 0) parts.Add(Count(st.Tweets, "post", "posts"));
+
+            return string.Join(", ", parts.ToArray());
+        }
+
+        private static string Count(int n, string one, string many)
+        {
+            return n + " " + (n == 1 ? one : many);
+        }
+
+        /// <summary>
+        /// The city's totals, which is the part you cannot get by reading the list above.
+        ///
+        /// Summed over every set rather than tracked separately, so it cannot drift out of
+        /// step with the rows it is a total of.
+        /// </summary>
+        private InfoSection AllTold()
+        {
+            var dead = 0;
+            var raids = 0;
+            var posts = 0;
+
+            foreach (var gang in _gangs.All)
+            {
+                var st = _crew.StandingFor(gang.Id);
+
+                dead += st.TheirDead;
+                raids += st.Attacks;
+                posts += st.Tweets;
+            }
+
+            var told = new InfoSection { Title = "All told" };
+
+            told.Row("Bodies dropped", dead.ToString(),
+                     dead > 0 ? Palette.Danger : (Color?)Palette.TextDim,
+                     r => r.ArtFile = "skull.png");
+
+            told.Row("Times they came for you", raids.ToString(),
+                     raids > 0 ? Palette.Warn : (Color?)Palette.TextDim,
+                     r => r.ArtFile = "warning.png");
+
+            told.Row("Posts about the sets", posts.ToString(),
+                     posts > 0 ? Palette.Text : (Color?)Palette.TextDim,
+                     r => r.ArtFile = "megaphone.png");
+
+            told.Row("Sets you are at war with", _crew.BeefingWith().Count.ToString(),
+                     _crew.BeefingWith().Count > 0 ? Palette.Danger : (Color?)Palette.Cash,
+                     r => r.ArtFile = "guns.png");
+
+            return told;
+        }
+
+        /// <summary>Where you stand with a set, in the words somebody would actually use.</summary>
+        private string StandingWord(GangDef gang, GangStanding st, bool isMine)
+        {
+            if (isMine) return "your set";
+            if (_crew.Beefing(gang.Id)) return "at war";
+
+            if (st.Rep <= -10f) return "bad blood";
+            if (st.Rep >= 30f) return "solid";
+            if (st.Rep >= 10f) return "friendly";
+
+            return "no problem yet";
+        }
+
+        private Color StandingTint(GangDef gang, GangStanding st, bool isMine)
+        {
+            if (isMine) return Palette.Cash;
+            if (_crew.Beefing(gang.Id)) return Palette.Danger;
+
+            if (st.Rep <= -10f) return Palette.Warn;
+            if (st.Rep >= 10f) return Palette.Cash;
+
+            return Palette.TextDim;
         }
 
         /// <summary>Heat in words, since a percentage tells the player nothing on its own.</summary>
@@ -1662,10 +1839,12 @@ namespace Hoodrich.Wheel
             page.Row("Been clocked", _turf.IsExposed ? "yes -- they have seen you" : "not yet",
                      _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim);
 
+            // It is no longer only about this block, so it no longer says it is. The panel
+            // behind this opens on the block and then runs through every set in the city.
             page.Add("The numbers", "=", ShowBlockNumbers,
-                detail: "What this block pays and what it costs you",
+                detail: "This block, and every set you have history with",
                 value: "");
-            page.WithIcon(Icons.Health);
+            page.WithIcon(Icons.FromFile("mask.png"));
 
             return page;
         }

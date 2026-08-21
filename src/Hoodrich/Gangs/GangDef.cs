@@ -121,5 +121,25 @@ namespace Hoodrich.Gangs
         /// <summary>In-game milliseconds spent affiliated. Informational only.</summary>
         public long TimeAffiliatedMs;
 
+        /// <summary>
+        /// Bodies of THIS set that you have dropped.
+        ///
+        /// Not the same number as Kills above, and deliberately kept apart from it. Kills is
+        /// how many rivals you dropped while running with a set -- it belongs to the set you
+        /// were wearing at the time. This belongs to the set that got hit. Every gang in the
+        /// city has one, including the one you run with, because you can shoot your own.
+        ///
+        /// Counted whether or not there was beef. Rep only moves when it is a body for the
+        /// block, but the tally is a tally -- a man you dropped for no reason is still a man
+        /// they lost, and the whole point of showing this is that it reads like a history.
+        /// </summary>
+        public int TheirDead;
+
+        /// <summary>Times this set has come to one of your spots looking for you.</summary>
+        public int Attacks;
+
+        /// <summary>Posts this set has put on the feed.</summary>
+        public int Tweets;
+
     }
 }

@@ -505,6 +505,12 @@ namespace Hoodrich.Gangs
             _warMs = (int)(_warMs * (0.8f + _rng.NextDouble() * 0.5f));
             if (_warMs > LongestMs) _warMs = LongestMs;
 
+            // Counted where the war is decided on, not where the first car arrives. A raid
+            // that gets called off before anybody turns up is still a set that came for you,
+            // and it is the deciding that the dossier is a record of.
+            try { _crew.StandingFor(_attacker.Id).Attacks++; }
+            catch (Exception ex) { Log.Debug("Could not count the raid: " + ex.Message); }
+
             _startedAt = Game.GameTime;
             _nextWave = 0;
             _kills = 0;

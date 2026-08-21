@@ -631,6 +631,13 @@ namespace Hoodrich.Gangs
                         continue;
                     }
 
+                    // Tallied before any of the gates below, because this is a count of what
+                    // happened rather than a reward for it. Rep is conditional -- on beef, on
+                    // whether you were working, on whose set it was -- and every one of those
+                    // conditions is a reason a body might earn nothing. It is still a body,
+                    // and the dossier is a history rather than a scoreboard.
+                    StandingFor(gang.Id).TheirDead++;
+
                     // Reported BEFORE the beef gate, because starting a war is exactly how a
                     // set you had no problem with becomes a set you have a problem with. Three
                     // of these in five seconds on their own block is a declaration.
@@ -789,7 +796,10 @@ namespace Hoodrich.Gangs
                     .Set("kills", s.Kills)
                     .Set("moneyEarned", s.MoneyEarned)
                     .Set("deals", s.Deals)
-                    .Set("timeMs", s.TimeAffiliatedMs));
+                    .Set("timeMs", s.TimeAffiliatedMs)
+                    .Set("theirDead", s.TheirDead)
+                    .Set("attacks", s.Attacks)
+                    .Set("tweets", s.Tweets));
             }
             obj.Set("standings", arr);
 
@@ -815,7 +825,13 @@ namespace Hoodrich.Gangs
                     Kills = Math.Max(0, item["kills"].AsInt(0)),
                     MoneyEarned = Math.Max(0L, item["moneyEarned"].AsLong(0)),
                     Deals = Math.Max(0, item["deals"].AsInt(0)),
-                    TimeAffiliatedMs = Math.Max(0L, item["timeMs"].AsLong(0))
+                    TimeAffiliatedMs = Math.Max(0L, item["timeMs"].AsLong(0)),
+
+                    // Absent from every save written before these existed, which reads as zero
+                    // -- the right answer for a tally nobody was keeping yet.
+                    TheirDead = Math.Max(0, item["theirDead"].AsInt(0)),
+                    Attacks = Math.Max(0, item["attacks"].AsInt(0)),
+                    Tweets = Math.Max(0, item["tweets"].AsInt(0))
                 };
             }
 

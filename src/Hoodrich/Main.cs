@@ -680,6 +680,17 @@ namespace Hoodrich
                 _postUp.Social = _social;
                 _crew.Social = _social;
 
+                // Who said what, tallied per set. The feed knows the author of every post and
+                // nothing about standings; the standings want a count and nothing about how a
+                // post gets written. One line joins them and neither has to know the other.
+                _social.Posted = gangId =>
+                {
+                    if (string.IsNullOrEmpty(gangId)) return;
+                    if (_crew.GangById(gangId) == null) return;
+
+                    _crew.StandingFor(gangId).Tweets++;
+                };
+
                 _talk = new Conversation();
 
                 // The context key pointed at people rather than at places: a nod for one of
