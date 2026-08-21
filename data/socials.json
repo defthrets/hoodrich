@@ -2948,6 +2948,58 @@
       "no aiming needed for that one",
       "told y'all we got hardware. y'all thought it was talk",
       "that's what the noise was. that was him"
+    ],
+    "ProductGood": [
+      "the block is EATING",
+      "I'm not saying nothing. But I'd stand behind it",
+      "that new pack is different",
+      "No shouting outside my window for eleven days straight. I been counting",
+      "my phone been going since {timeofday} and not one of them calls is for me",
+      "Line went all the way past {localspot} and not one person acting up in it",
+      "Went in {eatery} and had to wait behind a whole crowd that wasn't ordering nothing",
+      "went to see a man about a thing {timeofday}, been in a good mood since",
+      "told my cousin where to go. told him one time. he ain't asked me since",
+      "My auntie stopped complaining about that corner. You don't understand how big that is",
+      "Everybody round here in a good mood and it ain't even payday",
+      "somebody finally got tired of playing with us",
+      "whoever's holding that block down now can stay",
+      "The kid selling waters by the light made more this week than I did. Good for him",
+      "I was talking down on it at {localspot} last week and I take it all back",
+      "my little brother came home smiling {timeofday} and wouldn't tell me why",
+      "{source} {hearsay} people driving in from {hood} now, going PAST their own block to get here",
+      "nobody's come back mad about it. Not one person, not once",
+      "corner busy on {here} but it's a respectful busy. everybody waiting their turn like grown folks",
+      "Barbers wouldn't shut up about it {timeofday}",
+      "I used to take the long way around {here}. not no more",
+      "ain't had to leave the block all week",
+      "that's our block doing numbers. remember that next time somebody talks down on us",
+      "They're out there before {shop} even opens"
+    ],
+    "ProductBad": [
+      "Baby powder and prayers",
+      "it's chalk and they know it's chalk",
+      "somebody got real comfortable real quick",
+      "whatever's in that pack now, half of it came out somebody's kitchen cabinet",
+      "Same money, half the thing. Call that what it is",
+      "whatever they doing to it now, they doing too much of it",
+      "You don't know what you're getting out there no more. Different every single time",
+      "folks weighing it out in the car before they even pull off now {filler}",
+      "Watched a man drop his in the bushes before he even got to the light",
+      "Woman standing in the middle of the road having a whole conversation with a pole. That's what's out here now",
+      "Line's still out on {here}. Now it's an argument, not a line",
+      "Same faces every day but every one of them got a face on them, {filler}",
+      "dude walked up, took one look, and kept it moving. That never used to happen round here",
+      "Them Rockford cars ain't parking outside {localspot} no more. That tells you plenty",
+      "Barbers saying it's cut with something. Nobody in the shop argued",
+      "{source} {hearsay} somebody got sick off it. Might be talk, might not be",
+      "sent my cousin over there and now he won't pick up for me",
+      "Auntie asked me what's going on out there. I changed the subject",
+      "Old boy on the wall took his chair inside {timeofday}. First time in years",
+      "I vouched for it. Ain't nobody at {localspot} letting me forget that",
+      "walked all that way for THAT",
+      "I don't touch none of that and after what I watched {timeofday} I never will",
+      "Slow out there now and we did that to ourselves",
+      "keep your money in your pocket til whatever that is gets sorted out"
     ]
   },
   "voices": {
@@ -3054,6 +3106,16 @@
       ],
       "Brawl": [
         "HANDS. No guns. Old school. That's the LD influence right there"
+      ],
+      "ProductGood": [
+        "Aye. Whatever's out on the block right now, that's got a Lamar Davis co-sign on it, and them don't come cheap",
+        "Y'all acting like y'all found it. I was on that first, dawg. Ask anybody. Actually don't ask nobody, just take my word",
+        "I sent four people over there this week. FOUR. Not one of them said thank you Lamar"
+      ],
+      "ProductBad": [
+        "Aye, whatever that is out there right now? That ain't got nothing to do with me. I want that on the record, dawg",
+        "I told somebody. I said DON'T get greedy. Nobody listen to Lamar til it's too late",
+        "Don't be telling people I sent you out there. I ain't sent nobody nowhere and I don't know them people"
       ]
     },
     "stretch_gsf": {
@@ -3138,6 +3200,16 @@
       ],
       "Busted": [
         "And THERE it is. Every time. Every single time"
+      ],
+      "ProductGood": [
+        "Cars in and out my street all day. Nobody parks, nobody stays. And y'all wonder why I keep a notebook",
+        "The girls at the salon been on about that corner all week. I told them I don't want to know. Then I sat there and heard every word",
+        "Whatever is happening out there, business is BOOMING and not one dollar of it comes back to this community"
+      ],
+      "ProductBad": [
+        "Now they're out there arguing at all hours. Whatever changed out there changed for the worse and everybody knows it",
+        "Lady under the dryer was going on about whatever's going round now. I said I don't want to hear it. Then I heard all of it",
+        "I have said for years this ends bad for the ones doing it and the ones living around it. I'll be right here when y'all catch up"
       ]
     },
     "tanisha_j": {
@@ -4061,6 +4133,16 @@
       "OrgEvent": [
         "Chair is closed tonight. Come back tomorrow, I will be here",
         "Everybody in the shop got home. That is the only thing I care about"
+      ],
+      "ProductGood": [
+        "Four heads in my chair {timeofday}, all four brought up the same corner. I just cut hair",
+        "Talk in the shop's been good all week. Take that how you want",
+        "Man sat down grinning and wouldn't say why. He's the third one today"
+      ],
+      "ProductBad": [
+        "Everybody that sat down today had something to say about that corner and none of it was nice",
+        "Nobody's bragging in here no more. Line-up, pay, gone",
+        "I hear everything in this shop. This week I'd rather I didn't"
       ]
     },
     "mechanic_hector": {
