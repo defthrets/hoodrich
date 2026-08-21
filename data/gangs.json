@@ -38,9 +38,9 @@
         "families"
       ],
       "turf": [
-        "RANCHO"
+        "BANNING"
       ],
-      "turfHint": "a couple of streets in Rancho",
+      "turfHint": "a few streets round Banning",
       "joinRespect": 0,
       "joinable": false
     },
@@ -96,9 +96,9 @@
       ],
       "turf": [
         "DAVIS",
-        "CHAMH"
+        "VESP"
       ],
-      "turfHint": "Davis, Grove Street and Rancho",
+      "turfHint": "Davis, Grove Street and Vespucci",
       "joinRespect": 0
     },
     {
@@ -124,9 +124,11 @@
       ],
       "turf": [
         "RANCHO",
-        "LMESA"
+        "LMESA",
+        "MURRI",
+        "EBURO"
       ],
-      "turfHint": "El Burro Heights, La Mesa and Murrieta",
+      "turfHint": "Rancho, La Mesa, Murrieta and El Burro Heights",
       "joinRespect": 0
     },
     {
@@ -150,8 +152,9 @@
         "lost"
       ],
       "turf": [
-        "EBURO",
-        "VESP"
+        "CYPRE",
+        "ELYSIAN",
+        "TEXTI"
       ],
       "turfHint": "Cypress Flats, Elysian Island and Textile City",
       "joinRespect": 250
@@ -178,7 +181,8 @@
       ],
       "turf": [
         "SLAB",
-        "GRAPES"
+        "GRAPES",
+        "SANDY"
       ],
       "turfHint": "Stab City, Sandy Shores and Grapeseed",
       "joinRespect": 250
@@ -204,9 +208,10 @@
         "koreans"
       ],
       "turf": [
-        "CYPRE"
+        "MIRR",
+        "HAWICK"
       ],
-      "turfHint": "Little Seoul, Mirror Park and Hawick",
+      "turfHint": "Mirror Park, Hawick and the back rooms in Little Seoul",
       "joinRespect": 900
     },
     {
@@ -229,7 +234,9 @@
         "koreans"
       ],
       "turf": [
-        "LOSPUER"
+        "ALTA",
+        "BURTON",
+        "PBOX"
       ],
       "turfHint": "Alta, Burton and Pillbox Hill",
       "joinRespect": 900
