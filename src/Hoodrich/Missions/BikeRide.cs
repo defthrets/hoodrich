@@ -60,6 +60,17 @@ namespace Hoodrich.Missions
         /// <summary>The 24/7 down the road.</summary>
         private static readonly Vector3 Shop = new Vector3(29.028f, -1352.893f, 29.341f);
 
+        /// <summary>
+        /// Where Lamar's bike is, and which way it is pointing.
+        ///
+        /// A named spot rather than two metres from wherever he happens to be stood. He is
+        /// borrowed off his corner and put straight onto it, the same way the homies are put
+        /// straight onto theirs -- and it lands round the side, out of the courtyard, so three
+        /// men and three bikes are not materialising in the space you are stood in.
+        /// </summary>
+        private static readonly Vector3 LamarBike = new Vector3(-105.510f, -1603.331f, 31.153f);
+        private const float LamarBikeHeading = 345.805f;
+
         /// <summary>The alley the homies come out of, round the back from Lamar.</summary>
         private static readonly Vector3 HomieSpot = new Vector3(-115.933f, -1609.875f, 31.249f);
 
@@ -498,7 +509,7 @@ namespace Hoodrich.Missions
             var ped = Boss.Lend();
             if (ped == null || !ped.Exists()) return;
 
-            var bike = SpawnBike(Ground(ped.Position).Around(2.2f), player.Heading);
+            var bike = SpawnBike(LamarBike, LamarBikeHeading);
             if (bike == null)
             {
                 // No bike, so no ride. Give him straight back rather than leaving him stood
