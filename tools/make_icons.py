@@ -1,0 +1,104 @@
+# -*- coding: utf-8 -*-
+#
+# The three symbols GTA V does not have.
+#
+# There is no skull sprite anywhere in the game's HUD dictionaries -- "skull" returns nothing
+# across every dump -- and no police badge either. CustomSprite loads a PNG off disk, so we
+# draw our own rather than keep guessing at texture names that do not exist.
+#
+# Designed for ~20 device pixels tall. That is the whole constraint: at 20px a detailed skull
+# is grey mush, so every shape here is big, blunt and high-contrast. Drawn at 8x and
+# downsampled, which is what gives the edges their smoothness.
+
+import os
+from PIL import Image, ImageDraw
+
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "icons")
+S = 512          # working size
+F = 8            # downsample factor -> 64px files
+W = (255, 255, 255, 255)
+CLEAR = (0, 0, 0, 0)
+
+
+def canvas():
+    img = Image.new('RGBA', (S, S), CLEAR)
+    return img, ImageDraw.Draw(img)
+
+
+def save(img, name):
+    if not os.path.isdir(OUT):
+        os.makedirs(OUT)
+    small = img.resize((S // F, S // F), Image.LANCZOS)
+    p = os.path.join(OUT, name)
+    small.save(p)
+    print('  %-12s %dx%d  %d bytes' % (name, small.width, small.height, os.path.getsize(p)))
+
+
+# ---------------------------------------------------------------------- skull
+#
+# Cranium and jaw as one silhouette, then the features punched back out to transparent so the
+# tint colour shows through the holes rather than being painted on top of them. Two enormous
+# eye sockets are what makes a 20px blob read as a skull; everything else is secondary.
+def skull():
+    img, d = canvas()
+
+    # cranium
+    d.ellipse([70, 40, 442, 390], fill=W)
+    # cheeks squared off, so it is not simply a circle
+    d.rounded_rectangle([100, 250, 412, 400], radius=60, fill=W)
+    # jaw
+    d.rounded_rectangle([150, 360, 362, 470], radius=44, fill=W)
+
+    # eye sockets -- oversized on purpose
+    d.ellipse([112, 150, 232, 286], fill=CLEAR)
+    d.ellipse([280, 150, 400, 286], fill=CLEAR)
+
+    # nose
+    d.polygon([(256, 268), (300, 350), (212, 350)], fill=CLEAR)
+
+    # the gap under the jaw, and two tooth divisions
+    d.rectangle([150, 388, 362, 402], fill=CLEAR)
+    for x in (222, 290):
+        d.rectangle([x - 8, 396, x + 8, 470], fill=CLEAR)
+
+    save(img, 'skull.png')
+
+
+# --------------------------------------------------------------------- police
+#
+# A shield with a star knocked out of it. A badge outline alone is unreadable small -- it is
+# just a blob -- so the star has to be big enough to survive the downsample. The first attempt
+# had thin points and at 20px they closed up into a grey disc; these are deliberately fat.
+def police():
+    img, d = canvas()
+
+    # shield
+    d.polygon([(256, 20), (466, 92), (466, 272), (256, 492), (46, 272), (46, 92)], fill=W)
+
+    # five-pointed star, punched out
+    import math
+    pts = []
+    for i in range(10):
+        ang = math.radians(-90 + i * 36)
+        r = 170 if i % 2 == 0 else 88
+        pts.append((256 + r * math.cos(ang), 250 + r * math.sin(ang)))
+    d.polygon(pts, fill=CLEAR)
+
+    save(img, 'police.png')
+
+
+# ---------------------------------------------------------------------- heart
+def heart():
+    img, d = canvas()
+
+    d.ellipse([64, 78, 280, 294], fill=W)
+    d.ellipse([232, 78, 448, 294], fill=W)
+    d.polygon([(78, 232), (434, 232), (256, 470)], fill=W)
+
+    save(img, 'heart.png')
+
+
+print('writing to %s' % OUT)
+skull()
+police()
+heart()

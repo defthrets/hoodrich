@@ -23,6 +23,45 @@ evidence for everything below.
 
 ---
 
+## Our own art, which is the way out
+
+`Draw.File` draws a PNG off disk, so the symbols the game does not have can simply
+be drawn. Files live in `data\icons` and ship like any other data file.
+
+```csharp
+Hud.File("skull.png", x, y, 0.016f, 0f, Palette.Danger);
+```
+
+White art on a transparent background, tinted by the colour argument exactly like a
+stock sprite. Square. Built at 512px in `scratchpad/icons.py` and downsampled to 64,
+which is what gives the edges their smoothness.
+
+| file | what it is | why it is not a stock sprite |
+|---|---|---|
+| `skull.png` | skull, oversized eye sockets | there is no skull in GTA V. "skull" returns nothing in any dump |
+| `police.png` | shield with a star punched out | no police badge either. `shop_police_icon_a` is in no dump |
+| `heart.png` | plain heart | `shop_health_icon_a` exists but is a cross, not a heart |
+
+Two things that cost a mistake each and are worth knowing:
+
+**`ScaledDraw()`, never `Draw()`.** `CustomSprite.Draw` hands its internals a hardcoded
+1280 by 720 -- checked in the assembly, `Screen.Width` and `Screen.Height` are literal
+constants, not a resolution. It is a fixed 16:9 grid, so on any other aspect it puts
+art in the wrong place and stretches it. `ScaledDraw` passes `Screen.ScaledWidth` by
+720, which is aspect-corrected, and in that space equal width and height is square on
+screen.
+
+**Cache the sprite.** Constructing one loads the texture, so constructing one per
+frame leaks a handle per frame. `Draw.File` keeps them in a dictionary, and caches a
+miss as a null so a file that is not there costs one look at the disk rather than one
+per frame forever.
+
+Design for the size it is drawn at. These go out at roughly 17 device pixels; at that
+size a detailed skull is grey mush, so every shape is blunt and high-contrast. The
+first police badge had thin star points and closed up into a disc.
+
+---
+
 ## Confirmed on this install
 
 These 13 pairs are in the log resolving, repeatedly, up to the newest session.
@@ -203,15 +242,15 @@ candidate and needs a confirmed name after it in the list.
 | crack | nothing exists. No rock or pipe sprite anywhere. `mp_specitem_coke` is the only coke art; the mod settles for `shop_ammo_icon_a` |
 | pills / ecstasy | nothing exists. No `pills`, no `ecstasy`, in any dict. Closest stand-ins are `mpinventory/mp_specitem_package` or `_randomobject`; the mod settles for `shop_health_icon_a` |
 | cuffs | `mpinventory/mp_specitem_cuffkeys` -- documented in all three dumps. **`mp_specitem_cuffs` does not exist in either dict.** The art is cuff keys, possibly with cuffs |
-| police | no confirmed sprite. `mpleaderboard/leaderboard_cops_icon` is the only documented candidate, art unseen. `shop_police_icon_a` is a guess and is in no dump |
-| skull | no sprite exists. "skull" returns nothing across every dump and every dict. `mpleaderboard/leaderboard_deaths_icon` might be one -- name confirmed, art unseen. Otherwise fall back to `mp_alerttriangle` or a text glyph |
+| police | **`police.png`, our own.** No confirmed stock sprite; `shop_police_icon_a` is a guess and is in no dump |
+| skull | **`skull.png`, our own.** No stock sprite exists -- "skull" returns nothing across every dump and every dict |
 | package | `mpinventory/mp_specitem_package` -- documented |
 | person | `mpinventory/mp_specitem_ped` -- documented |
 | car / bike / boat / heli | `mpinventory/mp_specitem_car`, `_bike`, `_boat`, `_heli` -- documented |
 
 Skull, a pill, a real handcuff icon and a police badge are the four a gang mod
 most wants and none of them can be had as a stock sprite. Anything claiming
-otherwise is a guessed name.
+otherwise is a guessed name. Draw them instead -- see the top of this file.
 
 ### The bar icons are untested
 

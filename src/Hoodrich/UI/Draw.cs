@@ -154,6 +154,103 @@ namespace Hoodrich.UI
                           (int)c.R, (int)c.G, (int)c.B, (int)c.A);
         }
 
+        // ---- our own art ------------------------------------------------------
+
+        /// <summary>
+        /// A square icon loaded from a PNG on disk, centred on x,y and sized by screen height.
+        ///
+        /// This exists because the game does not have every symbol. A skull is the plain case:
+        /// "skull" returns nothing across every texture dictionary in every dump, and the four
+        /// names tried in the reputation bar all fell through -- the log has it landing on
+        /// shop_franklin_icon_a, which is Franklin's face. There is no police badge either.
+        /// Guessing at more names is guessing at art that was never shipped.
+        ///
+        /// CustomSprite hands the file to ScriptHookV's texture loader, so the art can simply be
+        /// drawn and put in data\icons. White art on transparent, tinted by the colour argument,
+        /// exactly like a stock sprite.
+        ///
+        /// ScaledDraw, NOT Draw, and that is the difference between this working and not.
+        /// CustomSprite.Draw hands InternalDraw a hardcoded 1280 by 720 -- it is not a pixel
+        /// space at all, it is a fixed 16:9 grid, so on any other aspect it puts art in the
+        /// wrong place and stretches it. ScaledDraw passes Screen.ScaledWidth by 720 instead,
+        /// which is aspect-corrected, and in that space equal width and height IS square on
+        /// screen. Checked against the assembly rather than assumed.
+        /// </summary>
+        public static bool File(string file, float x, float y, float heightFraction,
+                                float rotationDeg, Color c)
+        {
+            var sprite = Load(file);
+            if (sprite == null) return false;
+
+            try
+            {
+                var side = heightFraction * ScaledHeight;
+                if (side < 1f) return false;
+
+                sprite.Size = new SizeF(side, side);
+                sprite.Position = new PointF(x * GTA.UI.Screen.ScaledWidth, y * ScaledHeight);
+                sprite.Color = c;
+                sprite.Rotation = rotationDeg;
+                sprite.ScaledDraw();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Icon '" + file + "' would not draw: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The sprite for a file, made once.
+        ///
+        /// Cached because constructing one loads the texture, and a texture loaded every frame
+        /// is a handle leaked every frame. A miss is cached too -- as a null -- so a file that
+        /// is not there costs one look at the disk rather than one per frame forever.
+        /// </summary>
+        private static GTA.UI.CustomSprite Load(string file)
+        {
+            GTA.UI.CustomSprite found;
+            if (Icons.TryGetValue(file, out found)) return found;
+
+            Icons[file] = null;
+
+            try
+            {
+                var path = System.IO.Path.Combine(System.IO.Path.Combine(Core.Paths.Data, "icons"), file);
+
+                if (!System.IO.File.Exists(path))
+                {
+                    Log.Info("No icon file at " + path + "; falling back.");
+                    return null;
+                }
+
+                found = new GTA.UI.CustomSprite(path, new SizeF(32f, 32f), new PointF(0f, 0f),
+                                                Color.White, 0f, true);
+
+                Icons[file] = found;
+                Log.Info("Icon file loaded: " + file + ".");
+                return found;
+            }
+            catch (Exception ex)
+            {
+                Log.Info("Icon file '" + file + "' would not load: " + ex.Message);
+                return null;
+            }
+        }
+
+        private static readonly Dictionary<string, GTA.UI.CustomSprite> Icons =
+            new Dictionary<string, GTA.UI.CustomSprite>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// The height of the space ScaledDraw draws into. Fixed, and not the screen's.
+        ///
+        /// GTA.UI.Screen.Height is this same 720 -- a constant in the assembly, not a
+        /// resolution. Named here so the maths above reads as deliberate rather than as
+        /// somebody having typed a magic number.
+        /// </summary>
+        private const float ScaledHeight = 720f;
+
         /// <summary>
         /// Height of one scanline row, as a fraction of screen height. Smaller is smoother and
         /// costs more rectangles. At 0.0035 the curve visibly stair-stepped; 0.0014 is roughly

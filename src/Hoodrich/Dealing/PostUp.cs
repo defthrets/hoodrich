@@ -293,7 +293,11 @@ namespace Hoodrich.Dealing
             _driveBys = 0;
             State = PostState.Posted;
 
-            CarryTheBag(player);
+            // No bag. It was asked for, fitted, and it reads as luggage clipped to a man
+            // rather than as a man carrying something -- a prop on a spine bone cannot know
+            // what his arms are doing, so it swings through him on half the walk cycles. What
+            // he is holding is in the readout under the bars, which does not clip through
+            // anything.
 
 
             Notify.Ticker("~g~Posted up.~s~ Moving " + product.Name.ToLowerInvariant() +
@@ -314,52 +318,8 @@ namespace Hoodrich.Dealing
         /// Tried in order, first one this install has wins, and an install with none of them
         /// simply deals without a bag rather than not dealing.
         /// </summary>
-        private static readonly string[] DuffleProps =
-        {
-            "prop_michael_backpack", "prop_cs_heist_bag_01", "p_ld_heist_bag_01",
-            "prop_cs_heist_bag_02"
-        };
-
         /// <summary>SKEL_Spine3 -- between the shoulder blades, where a bag hangs.</summary>
         private const int SpineBone = 24818;
-
-        private void CarryTheBag(Ped player)
-        {
-            if (_bag != null && _bag.Exists()) return;
-
-            try
-            {
-                if (player == null || !player.Exists()) return;
-
-                foreach (var name in DuffleProps)
-                {
-                    var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(900)) continue;
-
-                    _bag = World.CreateProp(model, player.Position, false, false);
-                    model.MarkAsNoLongerNeeded();
-
-                    if (_bag == null || !_bag.Exists()) continue;
-
-                    // Slung across his back. These numbers were set by eye and are the one part
-                    // of this that may want a nudge -- the bag models do not share an origin, so
-                    // whichever of the five an install has decides how it hangs.
-                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _bag.Handle, player.Handle,
-                                  Function.Call<int>(Hash.GET_PED_BONE_INDEX, player.Handle, SpineBone),
-                                  BagX, BagY, BagZ, BagPitch, BagRoll, BagYaw,
-                                  true, true, false, false, 2, true);
-
-                    Log.Info("Dealing with a " + name + " on his back.");
-                    return;
-                }
-
-                Log.Debug("No duffle prop in this install; dealing without one.");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not put the bag on: " + ex.Message);
-            }
-        }
 
         /// <summary>
         /// Where the bag hangs, and which way up.
@@ -1902,9 +1862,14 @@ namespace Hoodrich.Dealing
             }
         }
 
-        /// <summary>The label scale in a status bar, and half its drawn height.</summary>
-        private const float RepLabelScale = 0.30f;
-        private const float RepLabelHalf = 0.0112f;
+        /// <summary>
+        /// The label scale in a status bar, and half its drawn height.
+        ///
+        /// Down with the bars. The word is drawn INSIDE its bar, so the two cannot be tuned
+        /// separately: a thinner bar with the same lettering puts the letters on its edges.
+        /// </summary>
+        private const float RepLabelScale = 0.26f;
+        private const float RepLabelHalf = 0.0097f;
 
         private const string HeatBlip = "HEAT";
         private const string RepBlip = "REPUTATION";
@@ -1915,41 +1880,47 @@ namespace Hoodrich.Dealing
         /// <summary>How far inside the bar's own edge an end icon sits.</summary>
         private const float BarEndGap = 0.016f;
 
-        /// <summary>How tall the art in a status bar is drawn.</summary>
-        private const float BarIconH = 0.019f;
+        /// <summary>
+        /// How tall the art in a status bar is drawn.
+        ///
+        /// Three thousandths under the bar height, which puts a hair of the bar's own colour
+        /// above and below it. Any taller and the icon is the bar.
+        /// </summary>
+        private const float BarIconH = 0.016f;
 
         /// <summary>
-        /// Art for the bars, best candidate first.
+        /// Art for the bars: our own file first, then whatever the game has.
         ///
-        /// TEXTURES, not blips. A blip cannot be drawn as a sprite -- ids address the map --
-        /// and the ~BLIP_~ tag that puts blip art in a string draws nothing in a plain text
-        /// draw, which is two things already tried. Sprites from these dictionaries are the
-        /// thing this mod has proved renders, over and over, on every wheel icon.
+        /// The guessing is over. A blip cannot be drawn as a sprite -- ids address the map --
+        /// the ~BLIP_~ tag draws nothing in a plain text draw, and the four skull names tried
+        /// here all missed: the log has the skull landing on shop_franklin_icon_a, which is
+        /// Franklin's face, and the police badge landing on a warning triangle. A search of
+        /// every published dictionary dump says why. There is no skull in this game. There is
+        /// no police badge either.
         ///
-        /// Lists rather than names, because which of these an install actually has varies and
-        /// a missing texture draws nothing at all rather than failing. Whichever wins is
-        /// logged, so a name that is not there can be dropped instead of guessed at again.
+        /// So they are drawn and shipped in data\icons, and Draw.File puts them on screen.
+        /// What is left below is the fallback for an install where those files have gone
+        /// missing -- a warning triangle is at least the right shape of message -- and under
+        /// that, the words.
         /// </summary>
+        /// <summary>Our own art, in data\icons. Tried before anything the game ships.</summary>
+        private const string SkullFile = "skull.png";
+        private const string PoliceFile = "police.png";
+        private const string HeartFile = "heart.png";
+
         private static readonly string[][] PoliceArt =
         {
-            new[] { "commonmenu", "shop_police_icon_a" },
-            new[] { "commonmenu", "mp_specitem_cuffs" },
-            new[] { "mpinventory", "mp_specitem_cuffs" },
             new[] { "commonmenu", "mp_alerttriangle" },
         };
 
         private static readonly string[][] SkullArt =
         {
-            new[] { "mpinventory", "mp_specitem_skull" },
-            new[] { "commonmenu", "mp_specitem_skull" },
-            new[] { "commonmenu", "shop_franklin_icon_a" },
             new[] { "commonmenu", "mp_alerttriangle" },
         };
 
         private static readonly string[][] HeartArt =
         {
             new[] { "commonmenu", "shop_health_icon_a" },
-            new[] { "mpinventory", "mp_specitem_health" },
             new[] { "commonmenu", "shop_tick_icon" },
         };
 
@@ -1964,9 +1935,12 @@ namespace Hoodrich.Dealing
         /// rather than re-asked -- which is exactly what one wheel icon did for 6,768 lines of
         /// a single session's log.
         /// </summary>
-        private static bool BarIcon(string[][] candidates, ref string[] found, ref bool done,
-                                    string what, float x, float y, Color tint)
+        private static bool BarIcon(string file, string[][] candidates, ref string[] found,
+                                    ref bool done, string what, float x, float y, Color tint)
         {
+            // Ours first. It is the one that is actually the thing it is supposed to be.
+            if (file != null && Hud.File(file, x, y, BarIconH, 0f, tint)) return true;
+
             if (!done)
             {
                 done = true;
@@ -2001,14 +1975,14 @@ namespace Hoodrich.Dealing
         {
             var edge = width * 0.5f - BarEndGap;
 
-            if (!BarIcon(SkullArt, ref _skullArt, ref _skullDone, "skull",
+            if (!BarIcon(SkullFile, SkullArt, ref _skullArt, ref _skullDone, "skull",
                          x - edge, cy, Palette.Danger))
             {
                 Hud.Text(low, x - edge, cy - RepEndHalf, RepEndScale,
                          Palette.Danger, Hud.FontLabel);
             }
 
-            if (!BarIcon(HeartArt, ref _heartArt, ref _heartDone, "heart",
+            if (!BarIcon(HeartFile, HeartArt, ref _heartArt, ref _heartDone, "heart",
                          x + edge, cy, Palette.Cash))
             {
                 Hud.Text(high, x + edge, cy - RepEndHalf, RepEndScale,
@@ -2032,7 +2006,8 @@ namespace Hoodrich.Dealing
         private void BarLabel(string blip, string word, float x, float cy)
         {
             if (word == "HEAT" &&
-                BarIcon(PoliceArt, ref _policeArt, ref _policeDone, "police", x, cy, Color.White))
+                BarIcon(PoliceFile, PoliceArt, ref _policeArt, ref _policeDone, "police",
+                        x, cy, Color.White))
             {
                 return;
             }
@@ -2169,7 +2144,11 @@ namespace Hoodrich.Dealing
 
             // The same height as the reputation bar under it. They are a pair and a pair of
             // different heights reads as one of them mattering more.
-            const float h = 0.030f;
+            //
+            // Thinner than they were. At 0.030 each they were a block of furniture across the
+            // middle of the screen; the pair only has to be readable, and everything inside
+            // them -- the icons, the label -- came down with them rather than being squeezed.
+            const float h = 0.022f;
 
             // Clear air between the two bars, so they read as a pair rather than as one thick
             // bar with a line through it.
@@ -2212,8 +2191,9 @@ namespace Hoodrich.Dealing
             var repColour = rep >= PlayerState.Neutral ? Palette.Cash : Palette.Danger;
 
             // Tall enough to hold its own name. The label is drawn inside the bar, so the bar
-            // has to be taller than the text or the letters sit on its edges.
-            const float repH = 0.030f;
+            // has to be taller than the text or the letters sit on its edges -- which is the
+            // floor on how thin this one can go, not a preference.
+            const float repH = 0.022f;
             var repY = y + h * 0.5f + RepBarGap + repH * 0.5f;
 
             Hud.Rect(x, repY, w + 0.004f, repH + 0.004f, Color.FromArgb(190, 8, 8, 10));
