@@ -143,6 +143,16 @@ namespace Hoodrich.Supply
         /// </summary>
         private const int CallMs = 4000;
 
+        /// <summary>
+        /// How long after the message before a car exists.
+        ///
+        /// He was created the instant the text was sent, which is a man who was already round
+        /// the corner waiting for you to ask. Fifteen seconds is him reading it, getting up and
+        /// getting in -- and it is long enough that you have usually looked away from the spot
+        /// he appears on, which is the other half of why a spawn reads as a spawn.
+        /// </summary>
+        private const int SettingOffMs = 15000;
+
         /// <summary>Spawned this far out, so the car is never seen appearing.</summary>
         private const float SpawnMinDistance = 220f;
         private const float SpawnMaxDistance = 340f;
@@ -335,6 +345,7 @@ namespace Hoodrich.Supply
             State = DeliveryState.Texting;
             _stateSince = Game.GameTime;
             _parking = false;
+            _messageSent = false;
 
             PlayPhoneAnimation(player);
 
@@ -512,13 +523,23 @@ namespace Hoodrich.Supply
             switch (State)
             {
                 case DeliveryState.Texting:
-                    HoldThePhone(player);
-
-                    if (Game.GameTime - _stateSince >= CallMs)
+                    // The phone goes away when the message is sent. He does not turn up for
+                    // another fifteen seconds, and the two are separate on purpose: standing
+                    // there holding a handset for the whole wait is not what waiting looks like.
+                    if (Game.GameTime - _stateSince < CallMs)
                     {
-                        EndPhoneAnimation();
-                        Dispatch(player);
+                        HoldThePhone(player);
+                        return;
                     }
+
+                    if (!_messageSent)
+                    {
+                        _messageSent = true;
+                        EndPhoneAnimation();
+                        Notify.Ticker("~y~" + _def.Name + " says give him a minute.~s~");
+                    }
+
+                    if (Game.GameTime - _stateSince >= CallMs + SettingOffMs) Dispatch(player);
                     return;
 
                 case DeliveryState.Driving:
@@ -990,6 +1011,9 @@ namespace Hoodrich.Supply
 
         /// <summary>Whether the park manoeuvre has been handed out for this run.</summary>
         private bool _parking;
+
+        /// <summary>Whether the phone has been put away for this run.</summary>
+        private bool _messageSent;
 
         /// <summary>
         /// Parks him on the mark, facing the way the street runs.
@@ -1589,11 +1613,10 @@ namespace Hoodrich.Supply
         /// half of Chamberlain -- which is where all the getting stuck came from, and every
         /// recovery for it ends in a car moving on its own.
         ///
-        /// This one is on the main road east of the house, read off the HUD standing on the
-        /// corner. Ninety metres and a straight run in: short enough that there is little to go
-        /// wrong on, far enough that he arrives rather than appears.
+        /// Read off the HUD standing on the spot. A straight run in from there: short enough
+        /// that there is little to go wrong on, far enough that he arrives rather than appears.
         /// </summary>
-        private static readonly Vector3 StartPoint = new Vector3(60.700f, -1491.154f, 29.261f);
+        private static readonly Vector3 StartPoint = new Vector3(-106.196f, -1517.141f, 33.783f);
 
         /// <summary>
         /// Which way he is pointing when he appears.
@@ -1602,7 +1625,7 @@ namespace Hoodrich.Supply
         /// whatever the road does, so the first thing he did was a three point turn on a main
         /// road in front of anybody standing there.
         /// </summary>
-        private const float StartHeading = 122.750f;
+        private const float StartHeading = 305.994f;
 
         /// <summary>
         /// A road far enough out that the spawn is never witnessed, preferring somewhere behind
