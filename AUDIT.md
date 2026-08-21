@@ -4,9 +4,11 @@
 cross-references, the social chain, money, entity lifecycle, per-frame cost, the
 mission state machines, save round-trip, dead code.
 
-**Ten things were fixed during the audit and are already pushed. Eleven are
-written up below as recommendations, because they are your call rather than
-mine.**
+**Ten defects were fixed during the audit. Nine of the eleven recommendations
+have since been actioned too — what remains is marked OPEN below.**
+
+**One of my own findings was wrong, and it is the most useful thing in here:
+see B.**
 
 ---
 
@@ -105,7 +107,7 @@ segments stopped.
 
 Ordered by how much they matter.
 
-### A. Five of seven gang leaders now stand on somebody else's turf
+### A. Five of seven gang leaders stood on somebody else's turf — DONE (3 need spots)
 
 The turf pass moved the gangs; nobody moved the men. As it stands:
 
@@ -121,19 +123,32 @@ Only Stretch and Bull are where they should be. This is the single largest
 inconsistency in the mod. It needs coordinates rather than a guess from me —
 same as everything else you have placed.
 
-### B. `driveby_lamesa` has no site coordinate
+### B. `driveby_lamesa` — I WAS WRONG
 
-It is `0, 0, 0`, so targets fall back to the zone centre. And it targets the
-Vagos in La Mesa, which after the turf pass is not Vagos turf at all — they are
-Rancho only. Either move the mission or move the gang.
+I claimed La Mesa was not Vagos turf. **It is.** Michael has watched them spawn
+there and there are yellow cars parked in the lot.
 
-### C. The Aztecas have no leader
+I trimmed `LMESA` from the Vagos during the turf pass on the strength of a page
+that listed "Rancho Projects, Jamestown Street" — and read that as the limit of
+where they are, when it was naming where they are *concentrated*. An observed
+spawn beats a summary page every time, and I should have checked rather than
+deleted.
+
+`LMESA` is restored and the job stays exactly where it is. Worth carrying
+forward: the same pass also trimmed `RANCHO` from the Ballas and `DESRT`/`EVINE`
+from the Lost and the Marabunta on the same evidence. Those have not been
+questioned yet, and might deserve the same scepticism.
+
+Still open: the mission has no site coordinate, so targets fall back to the zone
+centre. It wants one.
+
+### C. The Aztecas have no leader — OPEN
 
 Every other gang has one, so they cannot be talked to or joined. They were added
 for a mission that then moved to the Vagos, so they currently exist only as
 somebody to shoot at and post about.
 
-### D. The coke ladder is upside down
+### D. The coke ladder was upside down — DONE
 
 An 8-ball is $850 for 3.5g — $243/g, against $200/g for a single. Every other
 drug gets cheaper per unit as the bag gets bigger; coke gets dearer. It is your
@@ -141,13 +156,13 @@ number, so it stays, but be aware `SaleValue` values weight largest-deal-first,
 so a stash of coke is worth *more* than the same weight in singles. Backwards
 from every other product.
 
-### E. Heroin's `basePrice` disagrees with its own ladder
+### E. Heroin's `basePrice` disagreed with its own ladder — DONE
 
 `basePrice` 80, but the smallest deal is a point at $10 — $100/g. Only a
 fallback for a drug with no ladder, so nothing reads it today. Worth making them
 agree before something does.
 
-### F. Mission pay does not climb
+### F. Mission pay did not climb — DONE
 
 | | rank | pay |
 |---|---|---|
@@ -162,27 +177,29 @@ The second job pays the most in the chain, and five of six are rank 0 — so ran
 gates almost nothing. Either torch_rancho comes down to about $900–1,400, or it
 moves later.
 
-### G. The Kkangpae exist in the feed but not the world
+### G. The Kkangpae existed in the feed but not the world — DONE
 
 There is an author tagged `koreans` and a hashtag set for them, but no such
 gang. gta-xtreme puts them on Ginger Street in Little Seoul, which is also where
 Uncle Wei is standing. Adding them fixes that and gives the Triads a neighbour.
 
-### H. Borrowing is unreachable but still loads and saves
+### H. Borrowing was unreachable but still loaded and saved — DONE, removed
 
 `GangLoan` is still constructed, serialised and restored — the wheel entry is
 just gone. Either delete it properly or give it a way back in.
 
-### I. `MissionKind.RideOut` is declared and unused
+### I. `MissionKind.RideOut` is declared and unused — NOT A DEFECT
 
-No mission uses it. Harmless, but it is a kind the code branches on.
+No mission uses it — but it is not dead code. It is a supported kind (hands,
+both sides, no guns) with working branches, and it is the default a `MissionDef`
+takes. It is a job waiting to be written, not a leftover. Left alone.
 
-### J. The arcs cost more than they look
+### J. The arcs cost more than they look — DONE
 
 288 of the wheel's 1,206 rectangles are hairlines. Dropping the arc step cap
 from 96 to 72 buys about 70 back with no visible difference.
 
-### K. The turf map still has open questions
+### K. The turf map still has open questions — OPEN
 
 `TURF.md` records them: the Madrazo Cartel are Vagos and should stay out; the
 Marabunta are in more places than the data says; and Merryweather is the only
@@ -225,4 +242,7 @@ Answering back would close the loop, and `Argue` is nearly the whole mechanism.
 
 ---
 
-*Audited at commit `5d570fe`. Everything under "fixed" is pushed.*
+*Audited at commit `5d570fe`; recommendations actioned through `062b402`.*
+
+**Still open:** C (Aztecas have no leader), K (turf map questions), spots for
+Chavo, Uncle Wei and Sarkis, and a site coordinate for `driveby_lamesa`.
