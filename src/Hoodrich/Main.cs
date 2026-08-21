@@ -176,6 +176,28 @@ namespace Hoodrich
         /// landing on the same one is a coin toss. Where it matters that they are different
         /// people, they are named.
         /// </summary>
+        /// <summary>
+        /// Somebody dancing, and somebody working the decks.
+        ///
+        /// Dict then clip, tried in pairs. None of these are guaranteed -- the club sets are
+        /// DLC and which of them an install has varies -- so each list ends with something
+        /// older, and a station whose clips are all missing falls back to the scenario it was
+        /// given instead of standing there in a T-pose.
+        /// </summary>
+        private static readonly string[] Dancing =
+        {
+            "anim@amb@nightclub@mini@dance@dance_solo@female@var_a@", "high_center",
+            "anim@amb@nightclub@dancers@crowddance_facedj_11_amy@", "hi_dance_facedj_11_v2_amy",
+            "mini@strip_club@idle_dance@idle_a", "idle_a_song_a"
+        };
+
+        private static readonly string[] Deejaying =
+        {
+            "anim@amb@nightclub@djs@dixon@", "dixn_dance_cntr_up_dix",
+            "anim@amb@nightclub@djs@black_madonna@", "bmad_dance_cntr_up_bm",
+            "anim@amb@nightclub@mini@dance@dance_solo@female@var_a@", "high_center"
+        };
+
         private static string[] Fam(int which)
         {
             var all = new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01" };
@@ -342,8 +364,11 @@ namespace Hoodrich
                     // gesturing idle the game uses for people in a conversation -- MOBILE is
                     // the other candidate and puts a phone in her hand, which is somebody
                     // ignoring the party rather than at it.
-                    .Stand(new Vector3(-204.493f, -1730.563f, 32.664f), 157.750f,
-                           "WORLD_HUMAN_HANG_OUT_STREET", Women, armed: false)
+                    // Turning a pistol over in his hands. Armed, but with a pistol rather than
+                    // the block's usual rifle -- a man at a party with a choppa out is not at
+                    // the party.
+                    .Stand(new Vector3(-203.980f, -1730.601f, 32.664f), 58.749f,
+                           "WORLD_HUMAN_GUARD_STAND", Fam(1), weapon: "WEAPON_PISTOL")
 
                     // On the wall at the back of the lot, smoking, looking out at the freeway.
                     .Stand(new Vector3(-205.225f, -1732.264f, 32.664f), 315.516f,
@@ -393,14 +418,22 @@ namespace Hoodrich
                     .Stand(new Vector3(-197.277f, -1728.437f, 32.664f), 262.000f,
                            "WORLD_HUMAN_SMOKING", Fam(1), armed: false)
 
-                    .Stand(new Vector3(-198.574f, -1730.876f, 32.664f), 334.000f,
-                           "WORLD_HUMAN_PARTYING", Women, armed: false)
+                    // Dancing, not "partying". WORLD_HUMAN_PARTYING is somebody holding a
+                    // drink and nodding; this is somebody actually moving to what is coming
+                    // out of the decks, which is the difference between a yard with people in
+                    // it and a yard with a party in it.
+                    .Stand(new Vector3(-198.072f, -1730.828f, 32.664f), 130.367f,
+                           "WORLD_HUMAN_PARTYING", Women, armed: false, anim: Dancing)
 
                     .Stand(new Vector3(-201.294f, -1730.396f, 32.664f), 46.000f,
                            "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false)
 
                     .Stand(new Vector3(-201.679f, -1727.661f, 32.664f), 118.000f,
-                           "WORLD_HUMAN_DRINKING", Women, armed: false);
+                           "WORLD_HUMAN_DRINKING", Women, armed: false)
+
+                    // On the decks. Facing the yard, which is the direction the music goes.
+                    .Stand(new Vector3(-194.279f, -1723.069f, 32.664f), 148.079f,
+                           "WORLD_HUMAN_MUSICIAN", Women, armed: false, anim: Deejaying);
 
                 // The barrel IS the fire -- it burns on its own. A camp fire was stacked on
                 // top of it as well, which is two fires a metre apart and reads as a bug even
@@ -439,7 +472,8 @@ namespace Hoodrich
                 }
 
                 // Decks in the yard, and something coming out of them.
-                _decks = new Boombox(new Vector3(-194.813f, -1723.732f, 32.664f), 137.977f,
+                // Turned round to face the yard rather than the fence.
+                _decks = new Boombox(new Vector3(-194.813f, -1723.732f, 32.664f), 317.977f,
                                      "sf_prop_sf_dj_desk_01a",
                                      "ch_prop_ch_turntable_01a",
                                      "prop_dj_deck_01");

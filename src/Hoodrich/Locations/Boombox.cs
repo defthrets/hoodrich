@@ -26,7 +26,7 @@ namespace Hoodrich.Locations
     internal sealed class Boombox
     {
         /// <summary>Near enough to be worth having it playing.</summary>
-        private const float StreamRange = 90f;
+        private const float StreamRange = 140f;
 
         private const int UpdateIntervalMs = 1500;
 
@@ -40,10 +40,19 @@ namespace Hoodrich.Locations
         /// <summary>
         /// The speaker.
         ///
-        /// Small, so that if the invisibility ever fails there is a moped in the yard rather
-        /// than a bus.
+        /// A CAR, and that is a fix rather than a preference. This was a moped and a bicycle,
+        /// picked because they are small enough not to matter if the invisibility ever failed
+        /// -- and neither of them has a radio. Bikes and bicycles in this game cannot play a
+        /// station at all, so the decks were silent for a reason that had nothing to do with
+        /// any of the radio calls being made on them.
+        ///
+        /// The Panto is the smallest thing in the game with a working stereo; the rest are
+        /// there for an install without it.
         /// </summary>
-        private static readonly string[] SpeakerModels = { "faggio", "bmx" };
+        private static readonly string[] SpeakerModels =
+        {
+            "panto", "blista", "issi2", "rhapsody", "prairie"
+        };
 
         private readonly Vector3 _where;
         private readonly float _heading;
@@ -104,7 +113,7 @@ namespace Hoodrich.Locations
 
                     // Under the prop rather than in it, so nothing pokes out if the invisibility
                     // does not take on some build.
-                    _speaker = World.CreateVehicle(model, _where - new Vector3(0f, 0f, 2.5f), _heading);
+                    _speaker = World.CreateVehicle(model, _where - new Vector3(0f, 0f, 1.4f), _heading);
                     model.MarkAsNoLongerNeeded();
 
                     if (_speaker == null || !_speaker.Exists()) continue;
@@ -139,6 +148,10 @@ namespace Hoodrich.Locations
         {
             try
             {
+                // The engine as well as the radio. An unoccupied car with a dead engine is
+                // treated as parked and stays silent however many times a station is set on it.
+                Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _speaker.Handle, true, true, false);
+
                 Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _speaker.Handle, true);
                 Function.Call(Hash.SET_VEH_RADIO_STATION, _speaker.Handle, Station);
                 Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _speaker.Handle, true);

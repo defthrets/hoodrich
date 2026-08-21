@@ -79,9 +79,31 @@ namespace Hoodrich.Gangs
         private readonly List<bool> _armed = new List<bool>();
 
         /// <summary>
+        /// Per station: what he is carrying, or null for the set's usual.
+        ///
+        /// Everybody armed used to get the same rifle. A man stood at a party turning a pistol
+        /// over in his hands is a different picture to a man on a shutter with a choppa, and
+        /// the difference is the weapon.
+        /// </summary>
+        private readonly List<string> _weapons = new List<string>();
+
+        /// <summary>
         /// Per station: whether the height given is furniture rather than floor.
         /// </summary>
         private readonly List<bool> _onProp = new List<bool>();
+
+        /// <summary>
+        /// Per station: a looping animation instead of a scenario, as dict then clip.
+        ///
+        /// Scenarios cover standing, smoking, drinking and guarding, and they cover nothing
+        /// that looks like a party. There is no dancing scenario and no DJ scenario, so the two
+        /// people who make a yard read as a party have to be animated rather than scripted.
+        ///
+        /// Candidates in pairs, first that plays wins, and a station whose clips are all
+        /// missing falls back to its scenario -- so an install without the club DLC gets
+        /// somebody stood there rather than somebody T-posing.
+        /// </summary>
+        private readonly List<string[]> _anims = new List<string[]>();
 
         private readonly List<Ped> _crew = new List<Ped>();
         private readonly List<Vector3> _marks = new List<Vector3>();
@@ -99,7 +121,8 @@ namespace Hoodrich.Gangs
 
         /// <summary>Adds one of them, on his own mark, doing his own thing.</summary>
         public Entourage Stand(Vector3 where, float facing, string scenario,
-                               string[] models = null, bool armed = true, bool onProp = false)
+                               string[] models = null, bool armed = true, bool onProp = false,
+                               string[] anim = null, string weapon = null)
         {
             _stations.Add(where);
             _facings.Add(facing);
@@ -107,8 +130,57 @@ namespace Hoodrich.Gangs
             _models.Add(models);
             _armed.Add(armed);
             _onProp.Add(onProp);
+            _anims.Add(anim);
+            _weapons.Add(weapon);
             return this;
         }
+
+        /// <summary>The clip pairs for station i, or null for a plain scenario.</summary>
+        private string[] AnimAt(int index)
+        {
+            return index < _anims.Count ? _anims[index] : null;
+        }
+
+        /// <summary>
+        /// Tries the station's clips, and says whether one took.
+        ///
+        /// Verified rather than assumed. A clip name that is not in this install fails silently
+        /// -- the task is accepted and nothing moves -- so the only honest test is whether the
+        /// ped is visibly playing it afterwards.
+        /// </summary>
+        private static bool PlayAnim(Ped ped, string[] pairs)
+        {
+            if (pairs == null || pairs.Length < 2) return false;
+
+            for (var i = 0; i + 1 < pairs.Length; i += 2)
+            {
+                var dict = pairs[i];
+                var clip = pairs[i + 1];
+
+                try
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
+
+                    Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, dict, clip,
+                                  4f, -4f, -1, LoopingAnim, 0f, false, false, false);
+
+                    if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, ped.Handle, dict, clip, 3))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Try the next pair.
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Looping, full body -- a dancer who stops dancing is worse than no dancer.</summary>
+        private const int LoopingAnim = 1;
 
         /// <summary>
         /// Where station <paramref name="index"/> actually is.
@@ -145,6 +217,8 @@ namespace Hoodrich.Gangs
         }
 
         private bool ArmedAt(int index) => index >= _armed.Count || _armed[index];
+
+        private string WeaponAt(int index) => index < _weapons.Count ? _weapons[index] : null;
 
         public void Update()
         {
@@ -192,11 +266,12 @@ namespace Hoodrich.Gangs
 
             for (var i = 0; i < _marks.Count; i++)
             {
-                var ped = SpawnMember(gang, MarkAt(i), Facing(i), ModelsFor(i, gang), ArmedAt(i));
+                var ped = SpawnMember(gang, MarkAt(i), Facing(i), ModelsFor(i, gang), ArmedAt(i),
+                                      WeaponAt(i));
                 if (ped == null) continue;
 
                 _crew.Add(ped);
-                Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i));
+                Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
             }
 
             if (_crew.Count > 0) Log.Info(_crew.Count + " of " + gang.Name + " stood with " + _who + ".");
@@ -214,7 +289,8 @@ namespace Hoodrich.Gangs
             return Scenarios[index % Scenarios.Length];
         }
 
-        private Ped SpawnMember(GangDef gang, Vector3 mark, float facing, string[] models, bool armed)
+        private Ped SpawnMember(GangDef gang, Vector3 mark, float facing, string[] models, bool armed,
+                                string carrying)
         {
             // Started at a different place in the list for each of them, and wrapped.
             //
@@ -259,12 +335,14 @@ namespace Hoodrich.Gangs
                     {
                         Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
 
+                        var gun = string.IsNullOrEmpty(carrying) ? Weapon : carrying;
+
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
-                                      Function.Call<uint>(Hash.GET_HASH_KEY, Weapon), 120, true, true);
+                                      Function.Call<uint>(Hash.GET_HASH_KEY, gun), 120, true, true);
 
                         // In the hands, not on the back.
                         Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle,
-                                      Function.Call<uint>(Hash.GET_HASH_KEY, Weapon), true);
+                                      Function.Call<uint>(Hash.GET_HASH_KEY, gun), true);
 
                         Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
                     }
@@ -293,10 +371,19 @@ namespace Hoodrich.Gangs
         /// exactly that condition -- so the failure was not a man standing still, it was a man
         /// being re-tasked to sit down forever.
         /// </summary>
-        private static void Idle(Ped ped, string scenario, float facing, Vector3 at, bool seated)
+        private static void Idle(Ped ped, string scenario, float facing, Vector3 at, bool seated,
+                                 string[] anim = null)
         {
             try
             {
+                // An animated station tries its clips first and only falls back to the scenario
+                // if none of them are in this install.
+                if (anim != null)
+                {
+                    ped.Heading = facing;
+                    if (PlayAnim(ped, anim)) return;
+                }
+
                 if (seated)
                 {
                     Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, ped.Handle, scenario,
@@ -343,10 +430,24 @@ namespace Hoodrich.Gangs
                 {
                     // Home, but knocked out of what he was doing -- put him back to it once,
                     // not every pass, or he restarts the scenario forever.
-                    if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, ped.Handle, 118)) continue;
+                    //
+                    // An animated station is asked a different question. Task 118 is the
+                    // SCENARIO task and an animation never sets it, so testing for it would
+                    // re-issue the dance several times a second and it would never get past
+                    // the first frame.
+                    var clips = AnimAt(i);
+                    if (clips != null)
+                    {
+                        if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, ped.Handle,
+                                                clips[0], clips[1], 3))
+                        {
+                            continue;
+                        }
+                    }
+                    else if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, ped.Handle, 118)) continue;
                     if (ped.IsInCombat || ped.IsRagdoll) continue;
 
-                    Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i));
+                    Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
                     continue;
                 }
 
@@ -364,7 +465,7 @@ namespace Hoodrich.Gangs
                     {
                         ped.Position = mark;
                         ped.Task.ClearAll();
-                        Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i));
+                        Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
                         continue;
                     }
 
