@@ -1891,66 +1891,25 @@ namespace Hoodrich.Dealing
             }
         }
 
-        /// <summary>How tall the art in a status bar is drawn.</summary>
-        private const float BarIconH = 0.021f;
+        /// <summary>The label scale in a status bar, and half its drawn height.</summary>
+        private const float RepLabelScale = 0.30f;
+        private const float RepLabelHalf = 0.0112f;
+
+        private const string HeatBlip = "~BLIP_POLICE_CHASE~";
+        private const string RepBlip = "~BLIP_COMMUNITY_SERIES~";
 
         /// <summary>
-        /// What goes in each bar instead of its name, best candidate first.
+        /// What goes in the middle of a status bar: the blip, or the bar's name.
         ///
-        /// Blip sprite ids -- 42 for the chase, 835 for the community series -- address the MAP.
-        /// DRAW_SPRITE wants a texture dictionary and a texture name, and there is no route from
-        /// one to the other, so the numbers cannot be handed over. These are the nearest things
-        /// in the dictionaries this mod already proves render.
+        /// Hud.Text places by the TOP of the line, so the half-line offset is what centres it
+        /// rather than hanging it off the bar's middle.
         /// </summary>
-        private static readonly string[][] HeatArt =
+        private void BarLabel(string blip, string word, float x, float cy)
         {
-            new[] { "commonmenu", "mp_alerttriangle" },
-            new[] { "commonmenu", "shop_police_icon_a" },
-        };
+            var text = _cfg != null && _cfg.BlipsInBars ? blip : word;
 
-        private static readonly string[][] RepArt =
-        {
-            new[] { "commonmenu", "shop_franklin_icon_a" },
-            new[] { "commonmenu", "mp_specitem_cash" },
-            new[] { "commonmenu", "shop_tick_icon" },
-        };
-
-        private static string[] _heatArt, _repArt;
-        private static bool _heatChecked, _repChecked;
-
-        /// <summary>
-        /// Draws a bar's art, and says whether it managed to.
-        ///
-        /// Resolved once and remembered, both ways round. HasTexture is a native call and this
-        /// runs every frame the corner is up, and a name that never resolves must be written off
-        /// rather than re-asked forever -- which is exactly what the wheel icon did for 6,768
-        /// lines of one session's log.
-        /// </summary>
-        private static bool BarIcon(string[][] candidates, ref string[] found, ref bool checkedAlready,
-                                    string what, float x, float y)
-        {
-            if (!checkedAlready)
-            {
-                checkedAlready = true;
-
-                foreach (var pair in candidates)
-                {
-                    if (!Hud.HasTexture(pair[0], pair[1])) continue;
-
-                    found = pair;
-                    Log.Info(what + " bar icon: " + pair[0] + "/" + pair[1] + ".");
-                    break;
-                }
-
-                if (found == null) Log.Info("No " + what + " bar icon in this install; using the word.");
-            }
-
-            if (found == null) return false;
-
-            Hud.Sprite(found[0], found[1], x, y, Hud.ToX(BarIconH), BarIconH, 0f,
-                       Color.FromArgb(240, 252, 252, 250));
-
-            return true;
+            Hud.Text(text, x, cy - RepLabelHalf, RepLabelScale,
+                     Color.FromArgb(240, 252, 252, 250), Hud.FontChaletLondon);
         }
 
         /// <summary>A scuffle outside your pitch is its own kind of attention.</summary>
@@ -2087,10 +2046,7 @@ namespace Hoodrich.Dealing
             // bar with a line through it.
             const float RepBarGap = 0.004f;
 
-            const float RepLabelScale = 0.30f;
 
-            /// Half the drawn height of the label at that scale, which is what centres it.
-            const float RepLabelHalf = 0.0112f;
 
             var heat = Math.Min(1f, _cornerHeat / Math.Max(1f, _cfg.PostUpHeatBeforePolice));
             var colour = heat > 0.75f ? Palette.Danger : heat > 0.4f ? Palette.Warn : Palette.Cash;
@@ -2101,18 +2057,17 @@ namespace Hoodrich.Dealing
             var filled = w * heat;
             Hud.Rect(x - (w - filled) * 0.5f, y, filled, h, colour);
 
-            // A siren in it rather than the word, where the install has one.
+            // The blip itself, drawn inline in the string.
             //
-            // Blip sprite ids -- 42, radar_police_chase -- belong to SET_BLIP_SPRITE and the
-            // map. They are not addressable by DRAW_SPRITE, which wants a texture dictionary
-            // and a texture name, so the number cannot simply be handed over. These are the
-            // nearest police-shaped textures in the dictionaries this mod already proves
-            // render, tried in order; the word is what you get if none of them are there.
-            if (!BarIcon(HeatArt, ref _heatArt, ref _heatChecked, "Heat", x, y))
-            {
-                Hud.Text("HEAT", x, y - RepLabelHalf, RepLabelScale,
-                         Color.FromArgb(240, 252, 252, 250), Hud.FontChaletLondon);
-            }
+            // A sprite id cannot be handed to DRAW_SPRITE -- ids address the map -- but the
+            // blip ART can be put in TEXT with a ~BLIP_~ tag, which is the one route to it.
+            // radar_police_chase is 42, so the tag is BLIP_POLICE_CHASE.
+            //
+            // Behind a switch, because the tag is documented for "help messages and other
+            // supported contexts" and that is not a promise about this one -- an unsupported
+            // tag renders as literal text. BlipsInBars=false in Hoodrich.ini puts the names
+            // back.
+            BarLabel(HeatBlip, "HEAT", x, y);
 
             // And underneath it, what the block reckons of your product.
             //
@@ -2138,14 +2093,8 @@ namespace Hoodrich.Dealing
             var repFilled = w * Math.Max(0f, Math.Min(1f, rep));
             Hud.Rect(x - (w - repFilled) * 0.5f, repY, repFilled, repH, repColour);
 
-            // The same treatment as the heat bar above it: art if the install has any, and the
-            // word if it does not. Hud.Text places by the TOP of the line, so the half-line
-            // offset is what centres it rather than hanging it off the bar's middle.
-            if (!BarIcon(RepArt, ref _repArt, ref _repChecked, "Reputation", x, repY))
-            {
-                Hud.Text("REPUTATION", x, repY - RepLabelHalf, RepLabelScale,
-                         Color.FromArgb(240, 252, 252, 250), Hud.FontChaletLondon);
-            }
+            // The same treatment as the heat bar above it. radar_community_series is 835.
+            BarLabel(RepBlip, "REPUTATION", x, repY);
 
             // Two lines rather than one. "POSTED UP" is the state you are in and the product
             // is what you happen to be moving while in it, so they are not the same sentence --

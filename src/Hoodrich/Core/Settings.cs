@@ -80,6 +80,15 @@ namespace Hoodrich.Core
         public bool TweetsOnTheRight = true;
 
         /// <summary>
+        /// Draw the blip art inside the posted-up status bars instead of their names.
+        ///
+        /// The ~BLIP_~ tag is documented for help messages and "other supported contexts",
+        /// which is not a promise about a plain DRAW_TEXT -- and an unsupported tag renders as
+        /// literal text. Turn this off and the bars say HEAT and REPUTATION instead.
+        /// </summary>
+        public bool BlipsInBars = true;
+
+        /// <summary>
         /// Doors into the game's own interiors, read straight out of the ini.
         ///
         /// Every value is here rather than in the code because every value needs correcting
@@ -195,6 +204,7 @@ namespace Hoodrich.Core
             s.DeadZone = Clamp(ini.GetFloat("Wheel", "DeadZone", s.DeadZone), 0f, 0.9f);
             s.MouseSensitivity = Clamp(ini.GetFloat("Wheel", "MouseSensitivity", s.MouseSensitivity), 0.1f, 5f);
             s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
+            s.BlipsInBars = ini.GetBool("Wheel", "BlipsInBars", s.BlipsInBars);
 
             // One block per door, all read the same way. Adding a third room is a section in
             // the ini and a line here, not another class.
