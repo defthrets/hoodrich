@@ -1211,6 +1211,11 @@ namespace Hoodrich.Supply
                 // sides. It is an upper-body clip, so layered on top of the walk it plays.
                 GiveBox();
 
+                // Shut the moment it is in his hand, and INSIDE the try on purpose -- if the
+                // prop never made it into his hand the boot stays up, because a boot that
+                // closes on nothing is a man who has taken delivery of thin air.
+                ShutTheBoot();
+
                 Stagger(true);
             }
             catch (Exception ex)
@@ -1705,14 +1710,109 @@ namespace Hoodrich.Supply
             if (!_greeted && _car != null && _car.Exists() && !_driver.IsInVehicle(_car))
             {
                 _greeted = true;
+
                 Speak(ArrivalWords, TakingLines);
+
+                OpenTheBoot();
+                WalkToMeet();
             }
+
+            // And kept there. A man standing in a spot gets nudged out of it by traffic, by you
+            // walking into him, and by the game's own idle shuffling, and the prompt follows HIM
+            // rather than the car -- so if he drifts, the place you have to stand to talk drifts
+            // with him.
+            if (_greeted) HoldTheSpot();
 
             if (Distance > AbandonDistance) Cancel("You left him standing there.");
         }
 
         /// <summary>Whether he has said his piece on getting out, this run.</summary>
         private bool _greeted;
+
+        /// <summary>
+        /// Where he stands to do business, once he is out of the car.
+        ///
+        /// On the kerb rather than at the driver's door. Read off the HUD standing on the spot:
+        /// far enough round the car that you are not talking to him through it, and facing the
+        /// way you come from.
+        /// </summary>
+        private static readonly Vector3 MeetSpot = new Vector3(-19.963f, -1455.739f, 30.535f);
+        private const float MeetHeading = 322.349f;
+
+        /// <summary>How far he may drift before he is walked back.</summary>
+        private const float MeetDrift = 1.8f;
+
+        /// <summary>Task 224 is the nav-mesh walk. He is already going; leave him alone.</summary>
+        private const int WalkTask = 224;
+
+        /// <summary>
+        /// The boot, up.
+        ///
+        /// Door 5 is the boot. He is here to hand over weight and it comes out of the back of
+        /// the car, so the car should look like a car somebody is unloading rather than one
+        /// that has simply stopped.
+        /// </summary>
+        private void OpenTheBoot()
+        {
+            if (_car == null || !_car.Exists()) return;
+
+            try { Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, BootDoor, false, false); }
+            catch { /* it stays shut, and nothing else changes */ }
+        }
+
+        private void ShutTheBoot()
+        {
+            if (_car == null || !_car.Exists()) return;
+
+            try { Function.Call(Hash.SET_VEHICLE_DOOR_SHUT, _car.Handle, BootDoor, false); }
+            catch { /* it goes when the car does */ }
+        }
+
+        private const int BootDoor = 5;
+
+        /// <summary>
+        /// Round to the kerb, and facing the right way when he gets there.
+        ///
+        /// The nav mesh rather than a straight line: between him and that spot is his own car,
+        /// and a straight-line walk puts him into the wing and leaves him grinding against it.
+        /// The last argument is the heading he settles on, which is how every other walk in this
+        /// mod ends up pointing the right way.
+        /// </summary>
+        private void WalkToMeet()
+        {
+            if (_driver == null || !_driver.Exists() || !_driver.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _driver.Handle,
+                              MeetSpot.X, MeetSpot.Y, MeetSpot.Z,
+                              1.2f, 20000, 0.5f, 0, MeetHeading);
+            }
+            catch
+            {
+                // He waits by the door, which is where he used to wait anyway.
+            }
+        }
+
+        /// <summary>Walks him back if he has been shoved off it, and not more than once a second.</summary>
+        private void HoldTheSpot()
+        {
+            if (_driver == null || !_driver.Exists() || !_driver.IsAlive) return;
+            if (Game.GameTime < _nextHold) return;
+
+            _nextHold = Game.GameTime + 1000;
+
+            try
+            {
+                if (_driver.Position.DistanceTo(MeetSpot) <= MeetDrift) return;
+                if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, _driver.Handle, WalkTask)) return;
+
+                WalkToMeet();
+            }
+            catch { /* he stays where he stopped */ }
+        }
+
+        private int _nextHold;
 
         // ---- cleanup -----------------------------------------------------------
 
