@@ -738,6 +738,19 @@ namespace Hoodrich
                 // asked is a laid-out stock list rather than five pages of dialogue choices.
                 _gunScreen = new GunScreen(_state);
                 _bigjTalk.Rack = () => _gunScreen.Open();
+
+                // Wired at last. GunScreen has declared this since the rack became a screen,
+                // documents it as "set by Main", and invokes it on every sale -- and Main has
+                // never assigned it, so Grimes took your money in total silence and the
+                // compiler said so on every build. Buying off him is the one moment on that
+                // screen where there is a man on the other side of it.
+                _gunScreen.OnBought = (piece, rounds) =>
+                {
+                    var lines = rounds ? ArmourerTalk.OverTheAmmo : ArmourerTalk.OverTheCounter;
+                    if (lines.Length == 0) return;
+
+                    Dialogue.Say(_bigj.Name, lines[_rng.Next(lines.Length)]);
+                };
                 _bigj.Talk = _talk;
                 _bigj.TalkBuilder = () =>
                 {

@@ -49,6 +49,33 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>
+        /// What he says over the counter when money changes hands.
+        ///
+        /// Two lists, because handing somebody a weapon and handing them a box of rounds are
+        /// not the same transaction and he does not talk about them the same way. Kept here
+        /// rather than in the screen: the screen is a stock list and Grimes is a person, and
+        /// what he sounds like belongs with the rest of what he sounds like.
+        /// </summary>
+        public static readonly string[] OverTheCounter =
+        {
+            "Look after it. It don't look after you.",
+            "That's a good piece. Don't make me read about it.",
+            "Serial's gone, so it's yours the second you walk out.",
+            "Pleasure. Don't bring it back.",
+            "Clean piece, clean money. That's how I like it.",
+            "Keep it on you or keep it home. Don't keep it in the car.",
+        };
+
+        public static readonly string[] OverTheAmmo =
+        {
+            "Count 'em. I always do.",
+            "That'll hold you a minute.",
+            "Man goes through a box like that, he got a problem somewhere.",
+            "More where that came from, long as you got it.",
+            "Load it here if you want. Don't load it out front.",
+        };
+
+        /// <summary>
         /// Opens the rack. Set by Main.
         ///
         /// The five racks used to be five dialogue pages you went into and came back out of, so
