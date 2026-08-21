@@ -899,11 +899,14 @@ namespace Hoodrich.Missions
 
         private static void PlaySprayClip(Ped player)
         {
-            // Lamar's own, if this install has the dictionary it lives in.
-            if (PlayLamarsOne(player)) return;
-
-            // Otherwise the poster-tag sequence, which is confirmed to exist.
+            // The poster-tag set first. Both work now that the dictionaries are given time to
+            // load, so this is a choice between two working animations rather than a fallback
+            // chain -- and spray_can_male is a man painting a wall, where Lamar's is a man
+            // painting a wall in a cutscene, staged for a camera that is not there.
             if (PlayTheProperOne(player)) return;
+
+            // Lamar's own behind it, for an install without the freemode dictionary.
+            if (PlayLamarsOne(player)) return;
 
             foreach (var dict in SprayDicts)
             {
