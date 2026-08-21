@@ -940,7 +940,8 @@
       "gender": "male",
       "pic": "",
       "verified": false,
-      "voice": "ortega_vla"
+      "voice": "ortega_vla",
+      "gang": "vagos"
     },
     {
       "handle": "gustavo_mota",
@@ -948,7 +949,8 @@
       "gender": "male",
       "pic": "",
       "verified": false,
-      "voice": "gustavo_mota"
+      "voice": "gustavo_mota",
+      "gang": "marabunta"
     },
     {
       "handle": "ashley_lost",
@@ -983,7 +985,8 @@
       "gender": "male",
       "pic": "",
       "verified": false,
-      "voice": "oscar_guzman"
+      "voice": "oscar_guzman",
+      "gang": "marabunta"
     },
     {
       "handle": "patricia_m",
