@@ -746,13 +746,21 @@ namespace Hoodrich.Missions
             if (Game.GameTime < _nextDriveBy) return;
             _nextDriveBy = Game.GameTime + DriveByRetaskMs;
 
+            var player = Game.Player.Character;
+            var ride = player == null || !player.Exists() ? null : player.CurrentVehicle;
+
             foreach (var homie in _homies)
             {
                 if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
-                if (!homie.IsInVehicle()) continue;
 
                 try
                 {
+                    if (!homie.IsInVehicle())
+                    {
+                        SitBackDown(homie, ride);
+                        continue;
+                    }
+
                     // Only when he has actually stopped. Re-issuing over a running task
                     // restarts the aim every time and he never gets a round off -- the same
                     // mistake that had the bike homies permanently starting to follow.
@@ -764,6 +772,35 @@ namespace Hoodrich.Missions
                 catch { /* he will sit this one out */ }
             }
         }
+
+        /// <summary>
+        /// Puts a man who has got out back in.
+        ///
+        /// Combat attribute 3 stops a man leaving a car to FIGHT, and it is set, and it works.
+        /// It has nothing to say about the other reason he gets out, which is that he is in
+        /// your GROUP -- and group members follow the leader, so the moment anything makes the
+        /// game think it should reposition him, out he goes. That is not a combat decision and
+        /// no combat flag touches it.
+        ///
+        /// So it is answered where it happens rather than prevented somewhere it cannot be.
+        /// If he is out and there is a car, he gets back in it.
+        ///
+        /// Only while YOU are in one. If you have parked and got out yourself, a homie being
+        /// dragged back into an empty car by an invisible hand is a worse bug than the one
+        /// being fixed -- and this only runs during the work phase anyway, so the moment the
+        /// job turns into burning the car they are free to get out with you.
+        /// </summary>
+        private static void SitBackDown(Ped homie, Vehicle ride)
+        {
+            if (ride == null || !ride.Exists()) return;
+            if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, homie.Handle, EnterVehicleTask)) return;
+
+            Function.Call(Hash.TASK_ENTER_VEHICLE, homie.Handle, ride.Handle,
+                          12000, -2, 2f, 1, 0);
+        }
+
+        /// <summary>CTaskEnterVehicle, so he is not told to get in while he is getting in.</summary>
+        private const int EnterVehicleTask = 160;
 
         private int _nextDriveBy;
         private const int DriveByRetaskMs = 700;
