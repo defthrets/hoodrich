@@ -437,7 +437,8 @@ namespace Hoodrich.Wheel
             if (carried.Count == 0) holding.Row("Nothing on you", "", Palette.TextDim);
             foreach (var line in carried) holding.Row(line[0], line[1], Palette.Cash);
 
-            holding.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
+            holding.Row("Free space", Stash.FreeSpace.ToString("0") + "g", null,
+                        r => r.ArtFile = "box.png");
             holding.Row("Worth", "$" + PackagedValue().ToString("N0"), Palette.Cash);
             sections.Add(holding);
 
@@ -449,7 +450,8 @@ namespace Hoodrich.Wheel
 
             if (_stash != null)
             {
-                atHouse.Row("Free space", _stash.Stash.FreeSpace.ToString("0") + "g");
+                atHouse.Row("Free space", _stash.Stash.FreeSpace.ToString("0") + "g", null,
+                            r => r.ArtFile = "box.png");
             }
 
             sections.Add(atHouse);
@@ -509,10 +511,10 @@ namespace Hoodrich.Wheel
                       r => r.ArtFile = "police.png");
             block.Row("Gang around", _crew.NearbyAllies > 0 ? _crew.NearbyAllies + " of yours" : "none",
                       _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim,
-                      r => r.ArtFile = "guns.png");
+                      r => r.ArtFile = "people.png");
             block.Row("Foot traffic", FootfallWord(),
                       _postUp.Footfall == 0 ? Palette.Warn : (Color?)Palette.Cash,
-                      r => r.ArtFile = "heart.png");
+                      r => r.ArtFile = "footfall.png");
             block.Row("Been clocked", _turf.IsExposed ? "yes" : "not yet",
                       _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim,
                       r => r.ArtFile = "warning.png");
@@ -806,7 +808,8 @@ namespace Hoodrich.Wheel
             you.Row("Rep with them", standing.Rep.ToString("N0"),
                     standing.Rep < 0 ? Palette.Danger : Palette.Cash);
             you.Row("Bodies for them", standing.Kills.ToString("N0"));
-            you.Row("Deals done", standing.Deals.ToString("N0"));
+            you.Row("Deals done", standing.Deals.ToString("N0"), null,
+                    r => r.ArtFile = "deal.png");
             you.Row("Money made them", "$" + standing.MoneyEarned.ToString("N0"), Palette.Cash);
             sections.Add(you);
 

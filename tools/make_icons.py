@@ -136,12 +136,22 @@ def repost():
 
 
 def like():
-    """The heart again, so a post's likes and the reputation bar agree with each other."""
+    """
+    A hollow heart, so a like is not the same picture as the rep bar.
+
+    It was byte-identical to heart.png -- the same drawing saved twice under two names, for
+    two different meanings, in two different screens. A like is a thing you have not done
+    yet, and an outline is what that looks like everywhere else on earth.
+    """
     img, d = canvas()
 
     d.ellipse([64, 78, 280, 294], fill=W)
     d.ellipse([232, 78, 448, 294], fill=W)
     d.polygon([(78, 232), (434, 232), (256, 470)], fill=W)
+
+    d.ellipse([116, 130, 268, 282], fill=CLEAR)
+    d.ellipse([244, 130, 396, 282], fill=CLEAR)
+    d.polygon([(132, 250), (380, 250), (256, 402)], fill=CLEAR)
 
     save(img, 'like.png')
 
@@ -181,12 +191,34 @@ def tick():
 
 def crack():
     """
-    A rock. Angular on purpose -- everything else in the drug set is round or soft, so the
-    silhouette is made entirely of corners. One facet punched out so it is not a blob.
+    A cut stone, which is what the rock actually looks like.
+
+    It was an irregular six-sided lump with a facet knocked out of it, and at the size these
+    draw an irregular lump is a blob -- it measured closer to the Ballas diamond than to
+    anything in the drug set. A gem shape is the right idea anyway: a crown of facets over a
+    point, symmetrical, so the silhouette is unmistakable even when it is twenty pixels tall.
+
+    The facet lines are punched back out to transparent rather than painted on, so the tint
+    colour shows through them and the stone reads as cut rather than as a solid diamond.
     """
     img, d = canvas()
-    d.polygon([(60, 296), (146, 128), (322, 92), (452, 214), (420, 396), (214, 452)], fill=W)
-    d.polygon([(206, 200), (322, 176), (350, 268), (240, 300)], fill=CLEAR)
+
+    top, waist, tip = 120, 210, 470
+    l, r = 56, 456
+    il, ir = 148, 364
+
+    # Crown above the girdle, pavilion below it, as one silhouette.
+    d.polygon([(il, top), (ir, top), (r, waist), (256, tip), (l, waist)], fill=W)
+
+    # The girdle, and the three crown facets, cut back out.
+    d.line([(l + 14, waist), (r - 14, waist)], fill=CLEAR, width=16)
+    d.line([(il, top), (il + 40, waist)], fill=CLEAR, width=14)
+    d.line([(ir, top), (ir - 40, waist)], fill=CLEAR, width=14)
+
+    # Two long pavilion facets running to the point.
+    d.line([(l + 30, waist + 12), (256, tip - 10)], fill=CLEAR, width=14)
+    d.line([(r - 30, waist + 12), (256, tip - 10)], fill=CLEAR, width=14)
+
     save(img, 'crack.png')
 
 
@@ -555,7 +587,7 @@ def gang_vagos():
     save(img, 'gang_vagos.png')
 
 
-def gang_aztecas():
+def gang_aztecas_OLD():
     """A step pyramid. Three tiers, the fewest that still reads as steps."""
     img, d = canvas()
     d.rectangle([40, 372, 472, 462], fill=W)
@@ -587,7 +619,7 @@ def gang_lost():
     save(img, 'gang_lost.png')
 
 
-def gang_triads():
+def gang_triads_OLD():
     """A coin with a square hole. The most specific silhouette of the nine."""
     img, d = canvas()
     d.ellipse([46, 46, 466, 466], fill=W)
@@ -611,6 +643,260 @@ def gang_koreans():
     save(img, 'gang_koreans.png')
 
 
+def gang_aztecas():
+    """
+    A stepped pyramid, drawn as steps rather than as a triangle.
+
+    It was a solid triangle, which measured within a hair of the warning sign -- two icons
+    that mean completely different things and read identically at twenty pixels. Cutting the
+    silhouette into four tiers gives it a staircase edge nothing else in the mod has, and it
+    is a truer pyramid besides.
+    """
+    img, d = canvas()
+
+    tiers = [(196, 316, 96, 172), (150, 362, 172, 248), (104, 408, 248, 324), (58, 454, 324, 400)]
+    for x0, x1, y0, y1 in tiers:
+        d.rectangle([x0, y0, x1, y1], fill=W)
+
+    # A notch out of each tread, so the steps stay separate when it is downsampled.
+    for _, _, y0, _ in tiers[1:]:
+        d.rectangle([236, y0 - 6, 276, y0 + 6], fill=CLEAR)
+
+    save(img, 'gang_aztecas.png')
+
+
+def gang_triads():
+    """
+    A hooked bar, not a coin.
+
+    The coin was a filled disc with a square hole, and a filled disc is exactly what an icon
+    that failed to load looks like -- it measured closest of anything in the set to the
+    verified tick. This is two heavy strokes meeting at a right angle with a hook on the end:
+    all corners, no curve, and the only right angle in the nine.
+    """
+    img, d = canvas()
+
+    d.rectangle([70, 96, 442, 176], fill=W)          # the head
+    d.rectangle([216, 96, 296, 400], fill=W)         # the stem
+    d.polygon([(216, 400), (296, 400), (296, 456), (96, 456), (96, 376), (216, 376)], fill=W)
+
+    save(img, 'gang_triads.png')
+
+
+def footfall():
+    """
+    Two footprints, for how busy a pavement is.
+
+    Foot traffic was borrowing heart.png, which is the likes mark on the feed and the bar
+    icon on the readout -- so the same heart meant "people like this" in one place and "people
+    walk past here" in another. Two prints, offset the way a stride is, and nothing else in
+    the set is a pair of soft shapes at an angle.
+    """
+    img, d = canvas()
+
+    for ox, oy in ((36, 40), (232, 150)):
+        d.ellipse([ox, oy, ox + 176, oy + 210], fill=W)          # the sole
+        d.ellipse([ox + 22, oy + 216, ox + 74, oy + 268], fill=W)  # toes
+        d.ellipse([ox + 88, oy + 222, ox + 134, oy + 264], fill=W)
+
+    save(img, 'footfall.png')
+
+
+def rank():
+    """Three chevrons, stacked. A rank flash, which is what the ladder is."""
+    img, d = canvas()
+
+    for top in (70, 210, 350):
+        d.polygon([(256, top), (452, top + 96), (452, top + 148), (256, top + 52),
+                   (60, top + 148), (60, top + 96)], fill=W)
+
+    save(img, 'rank.png')
+
+
+def people():
+    """Three heads and shoulders. Followers, and whoever is stood around with you."""
+    img, d = canvas()
+
+    d.ellipse([176, 60, 336, 220], fill=W)
+    d.pieslice([120, 236, 392, 500], 180, 360, fill=W)
+
+    for cx in (72, 440):
+        d.ellipse([cx - 66, 140, cx + 66, 272], fill=W)
+        d.pieslice([cx - 108, 286, cx + 108, 490], 180, 360, fill=W)
+
+    save(img, 'people.png')
+
+
+def pin():
+    """A map pin. Where you are, where he is, where the block is."""
+    img, d = canvas()
+
+    d.ellipse([116, 40, 396, 320], fill=W)
+    d.polygon([(160, 268), (352, 268), (256, 476)], fill=W)
+    d.ellipse([206, 130, 306, 230], fill=CLEAR)
+
+    save(img, 'pin.png')
+
+
+def deal():
+    """Two hands meeting. A deal done, which is the whole point of standing out there."""
+    img, d = canvas()
+
+    d.polygon([(30, 200), (215, 200), (250, 262), (215, 324), (30, 324)], fill=W)
+    d.polygon([(482, 200), (297, 200), (262, 262), (297, 324), (482, 324)], fill=W)
+    d.rectangle([236, 168, 276, 356], fill=CLEAR)
+
+    for y in (168, 356):
+        d.ellipse([206, y - 34, 306, y + 34], fill=W)
+
+    save(img, 'deal.png')
+
+
+def crate():
+    """A shipping container. The port, and anything that arrives by the pallet."""
+    img, d = canvas()
+
+    d.rectangle([44, 130, 468, 400], fill=W)
+    for x in range(96, 460, 62):
+        d.rectangle([x, 150, x + 20, 380], fill=CLEAR)
+    d.rectangle([44, 130, 468, 154], fill=W)
+
+    save(img, 'crate.png')
+
+
+def box():
+    """An open carton. Room left, and room you have run out of."""
+    img, d = canvas()
+
+    d.polygon([(60, 200), (256, 120), (452, 200), (452, 430), (256, 480), (60, 430)], fill=W)
+    d.polygon([(96, 214), (256, 152), (416, 214), (256, 276)], fill=CLEAR)
+    d.rectangle([236, 250, 276, 400], fill=CLEAR)
+
+    save(img, 'box.png')
+
+
+def phone():
+    """A handset. Texting the plug is a thing you do often enough to want a picture of it."""
+    img, d = canvas()
+
+    d.rounded_rectangle([146, 40, 366, 472], radius=42, fill=W)
+    d.rounded_rectangle([180, 108, 332, 380], radius=12, fill=CLEAR)
+    d.ellipse([236, 404, 276, 444], fill=CLEAR)
+
+    save(img, 'phone.png')
+
+
+def spray():
+    """A rattle can, for the tag runs."""
+    img, d = canvas()
+
+    d.rounded_rectangle([166, 150, 346, 476], radius=30, fill=W)
+    d.rectangle([206, 96, 306, 154], fill=W)
+    d.rounded_rectangle([186, 44, 326, 100], radius=18, fill=W)
+    d.rectangle([196, 220, 316, 250], fill=CLEAR)
+
+    for cx, cy in ((398, 96), (438, 168), (372, 196)):
+        d.ellipse([cx - 26, cy - 26, cx + 26, cy + 26], fill=W)
+
+    save(img, 'spray.png')
+
+
+def fire():
+    """A flame. One job ends with a car going up and nothing else in the set is a flame."""
+    img, d = canvas()
+
+    d.polygon([(256, 30), (392, 216), (356, 200), (410, 340), (256, 486),
+               (102, 340), (156, 200), (120, 216)], fill=W)
+    d.polygon([(256, 250), (322, 372), (256, 452), (190, 372)], fill=CLEAR)
+
+    save(img, 'fire.png')
+
+
+def car():
+    """A car from the side. The job car, the whip, the one you are about to burn."""
+    img, d = canvas()
+
+    d.polygon([(40, 330), (96, 244), (176, 176), (338, 176), (424, 244), (472, 330)], fill=W)
+    d.rectangle([40, 300, 472, 366], fill=W)
+    d.polygon([(180, 216), (330, 216), (392, 288), (140, 288)], fill=CLEAR)
+    d.rectangle([246, 210, 268, 292], fill=CLEAR)
+
+    for cx in (150, 362):
+        d.ellipse([cx - 62, 336, cx + 62, 460], fill=W)
+        d.ellipse([cx - 24, 374, cx + 24, 422], fill=CLEAR)
+
+    save(img, 'car.png')
+
+
+def scales():
+    """A balance. Weight, and how far you have stepped on it."""
+    img, d = canvas()
+
+    d.rectangle([236, 90, 276, 420], fill=W)
+    d.rectangle([80, 132, 432, 172], fill=W)
+    d.rectangle([146, 420, 366, 468], fill=W)
+    d.ellipse([226, 56, 286, 116], fill=W)
+
+    for cx in (110, 402):
+        d.polygon([(cx - 86, 214), (cx + 86, 214), (cx + 44, 300), (cx - 44, 300)], fill=W)
+        d.rectangle([cx - 8, 168, cx + 8, 216], fill=W)
+
+    save(img, 'scales.png')
+
+
+def dog():
+    """Chop. A head with the ears up, which is the whole silhouette anybody needs."""
+    img, d = canvas()
+
+    d.polygon([(96, 60), (196, 210), (76, 240)], fill=W)
+    d.polygon([(416, 60), (316, 210), (436, 240)], fill=W)
+    d.rounded_rectangle([112, 160, 400, 380], radius=76, fill=W)
+    d.rounded_rectangle([186, 330, 326, 452], radius=48, fill=W)
+
+    d.ellipse([170, 236, 214, 280], fill=CLEAR)
+    d.ellipse([298, 236, 342, 280], fill=CLEAR)
+    d.ellipse([226, 372, 286, 420], fill=CLEAR)
+
+    save(img, 'dog.png')
+
+
+def bed():
+    """A bed. The one at the stash house, which is how a day ends."""
+    img, d = canvas()
+
+    d.rectangle([44, 300, 468, 356], fill=W)
+    d.rectangle([44, 300, 96, 452], fill=W)
+    d.rectangle([416, 356, 468, 452], fill=W)
+    d.rounded_rectangle([106, 236, 236, 300], radius=26, fill=W)
+    d.polygon([(246, 300), (416, 300), (416, 236), (300, 236)], fill=W)
+
+    save(img, 'bed.png')
+
+
+def music():
+    """A note, for the boombox on the corner."""
+    img, d = canvas()
+
+    d.rectangle([230, 60, 274, 400], fill=W)
+    d.polygon([(230, 60), (430, 108), (430, 200), (230, 152)], fill=W)
+    d.ellipse([110, 344, 274, 476], fill=W)
+
+    save(img, 'music.png')
+
+
+def key():
+    """A key. Getting put on, and the door it opens."""
+    img, d = canvas()
+
+    d.ellipse([46, 166, 246, 366], fill=W)
+    d.ellipse([106, 226, 186, 306], fill=CLEAR)
+    d.rectangle([216, 236, 470, 296], fill=W)
+    d.rectangle([388, 296, 428, 372], fill=W)
+    d.rectangle([444, 296, 470, 352], fill=W)
+
+    save(img, 'key.png')
+
+
 gang_families()
 gang_ballas()
 gang_vagos()
@@ -620,3 +906,20 @@ gang_lost()
 gang_triads()
 gang_armenians()
 gang_koreans()
+
+footfall()
+rank()
+people()
+pin()
+deal()
+crate()
+box()
+phone()
+spray()
+fire()
+car()
+scales()
+dog()
+bed()
+music()
+key()
