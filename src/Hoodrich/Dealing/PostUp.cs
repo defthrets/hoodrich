@@ -316,8 +316,8 @@ namespace Hoodrich.Dealing
         /// </summary>
         private static readonly string[] DuffleProps =
         {
-            "prop_cs_heist_bag_01", "p_ld_heist_bag_01", "prop_cs_heist_bag_02",
-            "prop_michael_backpack", "prop_cs_duffel_01"
+            "prop_michael_backpack", "prop_cs_heist_bag_01", "p_ld_heist_bag_01",
+            "prop_cs_heist_bag_02"
         };
 
         /// <summary>SKEL_Spine3 -- between the shoulder blades, where a bag hangs.</summary>
@@ -361,12 +361,23 @@ namespace Hoodrich.Dealing
             }
         }
 
-        private const float BagX = 0.12f;
-        private const float BagY = -0.19f;
-        private const float BagZ = 0.00f;
-        private const float BagPitch = 0f;
-        private const float BagRoll = 180f;
-        private const float BagYaw = 65f;
+        /// <summary>
+        /// Where the bag hangs, and which way up.
+        ///
+        /// From the ini, because these are six numbers that can only be judged by looking at
+        /// them and the first set was a guess that put the bag through him. Nudging one and
+        /// reloading a save beats nudging one and rebuilding.
+        ///
+        /// Backpack rather than a heist duffle by default: prop_michael_backpack is a prop the
+        /// game itself hangs off a ped, so its origin is already set up to be worn -- a heist
+        /// bag's is not, which is most of why the first attempt sat inside his ribs.
+        /// </summary>
+        private float BagX => _cfg == null ? 0f : _cfg.BagX;
+        private float BagY => _cfg == null ? -0.16f : _cfg.BagY;
+        private float BagZ => _cfg == null ? 0f : _cfg.BagZ;
+        private float BagPitch => _cfg == null ? 0f : _cfg.BagPitch;
+        private float BagRoll => _cfg == null ? 0f : _cfg.BagRoll;
+        private float BagYaw => _cfg == null ? 0f : _cfg.BagYaw;
 
         /// <summary>Takes it off him, and off the map.</summary>
         private void DropTheBag()
@@ -1896,14 +1907,14 @@ namespace Hoodrich.Dealing
         private const float RepLabelHalf = 0.0112f;
 
         /// <summary>radar_sub_periscope, 774 -- somebody watching, which is what heat is.</summary>
-        private const string HeatBlip = "~BLIP_SUB_PERISCOPE~";
-        private const string RepBlip = "~BLIP_COMMUNITY_SERIES~";
+        private const string HeatBlip = "HEAT";
+        private const string RepBlip = "REPUTATION";
 
         /// <summary>radar_trashbag, 952 -- what the block says you sell at the bad end.</summary>
-        private const string RepEndLow = "~BLIP_TRASHBAG~";
+        private const string RepEndLow = "TRASH";
 
         /// <summary>radar_pickup_dtb_health, 621 -- clean product at the good end.</summary>
-        private const string RepEndHigh = "~BLIP_PICKUP_DTB_HEALTH~";
+        private const string RepEndHigh = "CLEAN";
 
         /// <summary>How far outside the bar the end blips sit.</summary>
         private const float BarEndGap = 0.013f;
@@ -1916,8 +1927,6 @@ namespace Hoodrich.Dealing
         /// </summary>
         private void BarEnds(string low, string high, float x, float cy, float width)
         {
-            if (_cfg == null || !_cfg.BlipsInBars) return;
-
             var edge = width * 0.5f + BarEndGap;
 
             Hud.Text(low, x - edge, cy - RepLabelHalf, RepLabelScale,
@@ -1935,9 +1944,7 @@ namespace Hoodrich.Dealing
         /// </summary>
         private void BarLabel(string blip, string word, float x, float cy)
         {
-            var text = _cfg != null && _cfg.BlipsInBars ? blip : word;
-
-            Hud.Text(text, x, cy - RepLabelHalf, RepLabelScale,
+            Hud.Text(word, x, cy - RepLabelHalf, RepLabelScale,
                      Color.FromArgb(240, 252, 252, 250), Hud.FontChaletLondon);
         }
 

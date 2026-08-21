@@ -89,6 +89,19 @@ namespace Hoodrich.Core
         public bool BlipsInBars = false;
 
         /// <summary>
+        /// Where the bag sits on Franklin's back while he is dealing, and which way up.
+        ///
+        /// In the ini because they can only be judged by looking at them. X is across his
+        /// back, Y is front to back (negative is behind him), Z is up.
+        /// </summary>
+        public float BagX = 0f;
+        public float BagY = -0.16f;
+        public float BagZ = 0f;
+        public float BagPitch = 0f;
+        public float BagRoll = 0f;
+        public float BagYaw = 0f;
+
+        /// <summary>
         /// Doors into the game's own interiors, read straight out of the ini.
         ///
         /// Every value is here rather than in the code because every value needs correcting
@@ -205,6 +218,13 @@ namespace Hoodrich.Core
             s.MouseSensitivity = Clamp(ini.GetFloat("Wheel", "MouseSensitivity", s.MouseSensitivity), 0.1f, 5f);
             s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
             s.BlipsInBars = ini.GetBool("Wheel", "BlipsInBars", s.BlipsInBars);
+
+            s.BagX = ini.GetFloat("Dealing", "BagX", s.BagX);
+            s.BagY = ini.GetFloat("Dealing", "BagY", s.BagY);
+            s.BagZ = ini.GetFloat("Dealing", "BagZ", s.BagZ);
+            s.BagPitch = ini.GetFloat("Dealing", "BagPitch", s.BagPitch);
+            s.BagRoll = ini.GetFloat("Dealing", "BagRoll", s.BagRoll);
+            s.BagYaw = ini.GetFloat("Dealing", "BagYaw", s.BagYaw);
 
             // One block per door, all read the same way. Adding a third room is a section in
             // the ini and a line here, not another class.
