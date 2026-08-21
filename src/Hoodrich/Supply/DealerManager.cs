@@ -455,7 +455,7 @@ namespace Hoodrich.Supply
 
             MarkMeet(def);
 
-            Dialogue.Say(def.Name, "Yeah, alright. I'll come to you. Don't keep me standing there.");
+            Bark(AgreeLines);
             Notify.Important("~y~" + def.Name + "~s~ is on their way. Marked on your map.");
             Log.Info("Meet arranged with " + def.Id + " at " + _meetSpot + ".");
             return null;
@@ -847,15 +847,20 @@ namespace Hoodrich.Supply
 
             if (state.DocksUnlocked)
             {
-                Dialogue.Say(def.Name, "I already told you. The port. Go see him.");
+                Bark(NoLines);
+                Notify.Ticker("~y~He already told you. The port.~s~");
                 return;
             }
 
             if (state.GramsSold < requiredGrams)
             {
-                Dialogue.Say(def.Name, string.IsNullOrEmpty(def.SourceTooSoon)
-                    ? "You ain't moved enough for me to be telling you that."
-                    : def.SourceTooSoon);
+                Bark(NoLines);
+
+                // The ticker rather than a subtitle. This one is a REFUSAL with a reason, and a
+                // grunt on its own leaves you standing there not knowing why nothing happened.
+                Notify.Ticker("~o~" + (string.IsNullOrEmpty(def.SourceTooSoon)
+                    ? "You ain't moved enough for him to be telling you that."
+                    : def.SourceTooSoon) + "~s~");
                 return;
             }
 
@@ -863,7 +868,7 @@ namespace Hoodrich.Supply
             state.AddRespect(15f);
             state.Touch();
 
-            Dialogue.Say(def.Name, def.SourceReply);
+            Bark(AgreeLines);
             Notify.Important("~g~The docks are open to you.~s~ Find the dock worker at the port.");
             Log.Info("Docks unlocked after " + state.GramsSold.ToString("0.#") + "g sold.");
         }
@@ -881,7 +886,42 @@ namespace Hoodrich.Supply
             if (InReach == null) return;
 
             _greeted = true;
-            Dialogue.Say(_liveDef.Name, _liveDef.Greeting);
+            Bark(HelloLines);
+        }
+
+        /// <summary>
+        /// One ambient line out of him, over whatever he was already saying.
+        ///
+        /// This is all he does now. GENERIC_* is not a voice so much as the sound of a man
+        /// making one, but it is the sound of THIS man rather than a line of text at the bottom
+        /// of the screen, and it is enough to say that somebody spoke.
+        /// </summary>
+        private void Bark(string[] lines)
+        {
+            if (_livePed == null || !_livePed.Exists() || !_livePed.IsAlive) return;
+            if (lines == null || lines.Length == 0) return;
+
+            try
+            {
+                Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, _livePed.Handle);
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _livePed.Handle,
+                              lines[_rng.Next(lines.Length)], "SPEECH_PARAMS_FORCE");
+            }
+            catch
+            {
+                // A missing line costs nothing.
+            }
+        }
+
+        private static readonly string[] HelloLines = { "GENERIC_HOWS_IT_GOING", "GENERIC_HI" };
+        private static readonly string[] AgreeLines = { "GENERIC_YES", "GENERIC_THANKS" };
+        private static readonly string[] NoLines = { "GENERIC_NO", "GENERIC_CURSE_MED" };
+        private static readonly string[] ByeLines = { "GENERIC_BYE", "GENERIC_THANKS" };
+
+        /// <summary>What he says as you walk off. Called from the wheel's Leave wedge.</summary>
+        public void SayBye()
+        {
+            Bark(ByeLines);
         }
 
         public void RestoreWorld()

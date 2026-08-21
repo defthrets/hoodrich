@@ -1252,19 +1252,20 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>
-        /// A noise and a sentence, together.
+        /// A noise. Not a sentence.
         ///
-        /// Two channels because the game has no recorded audio for anything written here. The
-        /// ambient clip is the sound of a man's voice; the subtitle is what he said. Played at
-        /// the same instant they read as one thing.
+        /// The written lines went out as subtitles for a while and they are gone: a caption
+        /// across the bottom of the screen every time a man walks up a path is the mod talking
+        /// over the game, and there is nothing in any of them you cannot see him doing.
+        ///
+        /// He still makes a sound at every one of those moments, which is the half that was
+        /// worth having -- you hear somebody arrive, take the weight and leave without being
+        /// read to. The words stay in the file because they are what the barks are chosen
+        /// against, and because putting them back is one line.
         /// </summary>
         private void Speak(string[] words, string[] voice)
         {
             Say(voice);
-
-            if (words == null || words.Length == 0) return;
-
-            Dialogue.Say(_def == null ? "" : _def.Name, Fresh(words));
         }
 
         /// <summary>

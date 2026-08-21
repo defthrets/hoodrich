@@ -1292,7 +1292,7 @@ namespace Hoodrich.Wheel
                     value: known ? "KNOWN" : toGo > 0f ? toGo.ToString("0.#") + "g to go" : "ASK HIM");
             }
 
-            page.Add("Leave", "x", () => Dialogue.Say(def.Name, def.Farewell),
+            page.Add("Leave", "x", () => _dealers.SayBye(),
                 detail: "Walk away");
 
             return BuildDealerStock(page, def, mult);
