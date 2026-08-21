@@ -301,6 +301,22 @@ namespace Hoodrich
                     .Stand(new Vector3(-202.684f, -1725.064f, 33.114f), 295.109f,
                            "WORLD_HUMAN_SEAT_LEDGE", Fam(1), armed: false)
 
+                    // Stood in the group, talking. HANG_OUT_STREET is the loose-limbed
+                    // gesturing idle the game uses for people in a conversation -- MOBILE is
+                    // the other candidate and puts a phone in her hand, which is somebody
+                    // ignoring the party rather than at it.
+                    .Stand(new Vector3(-204.493f, -1730.563f, 32.664f), 157.750f,
+                           "WORLD_HUMAN_HANG_OUT_STREET", Women, armed: false)
+
+                    // On the wall at the back of the lot, smoking, looking out at the freeway.
+                    .Stand(new Vector3(-205.225f, -1732.264f, 32.664f), 315.516f,
+                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false)
+
+                    // Working the party. Not one of the set and not armed, same as the one in
+                    // Lamar's courtyard -- a block with nobody on it but soldiers is a barracks.
+                    .Stand(new Vector3(-202.367f, -1728.077f, 32.664f), 229.080f,
+                           "WORLD_HUMAN_PROSTITUTE_HIGH_CLASS", WorkingGirls, armed: false)
+
                     // Out front of the shop, not carrying. Entourage leaves permanent events
                     // unblocked, so he ducks at gunfire and reacts to being shoved like anybody
                     // else -- a man stood outside a shop who does not flinch is furniture.
@@ -381,6 +397,12 @@ namespace Hoodrich
                                      "sf_prop_sf_dj_desk_01a",
                                      "ch_prop_ch_turntable_01a",
                                      "prop_dj_deck_01");
+
+                // A table on the lot, because a party with a fire and no table is a vigil.
+                _scenery.Add(new Fixture(new Vector3(-203.915f, -1726.602f, 32.664f), 114.060f,
+                                         "prop_protest_table_01",
+                                         "prop_table_04",
+                                         "prop_table_03"));
 
                 // And another box of weight against the back wall, by the shutter.
                 _scenery.Add(new Fixture(new Vector3(-205.039f, -1708.503f, 32.664f), 217.911f,
