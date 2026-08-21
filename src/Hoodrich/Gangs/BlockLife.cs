@@ -220,11 +220,13 @@ namespace Hoodrich.Gangs
         {
             if (female)
             {
+                // The set's own first. These are our blocks -- the women stood on them are
+                // from round here in the same way the men are, and four ambient models with two
+                // middle-aged variants among them made every yard read as a bus stop.
+                yield return "g_f_y_families_01";
+
                 yield return "a_f_y_soucent_01";
-                yield return "a_f_y_soucent_02";
                 yield return "a_f_y_soucent_03";
-                yield return "a_f_m_soucent_01";
-                yield return "a_f_m_soucent_02";
                 yield break;
             }
 

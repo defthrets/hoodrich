@@ -313,6 +313,15 @@ namespace Hoodrich.Gangs
                     var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeCiv, model.Hash,
                                                     mark.X, mark.Y, mark.Z, facing, false, false);
 
+                    // A different outfit on every one of them.
+                    //
+                    // The rotation above stops neighbours sharing a MODEL, which was enough
+                    // while every list had three or four in it. The game ships exactly one
+                    // Families female, so three stations asking for her got the same woman
+                    // three times over, stood in one yard. The native only ever picks a
+                    // combination the model actually ships, so there is nothing to get wrong.
+                    Function.Call(Hash.SET_PED_RANDOM_COMPONENT_VARIATION, handle, 0);
+
                     model.MarkAsNoLongerNeeded();
                     if (handle == 0) continue;
 

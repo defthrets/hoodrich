@@ -30,10 +30,15 @@ namespace Hoodrich
     public sealed class Main : Script
     {
         /// <summary>
-        /// Models for the woman in the courtyard, tried in order.
+        /// Models for the woman working the lot, tried in order.
         ///
         /// Named here rather than inside Entourage because Entourage is about a gang and she is
         /// not in one -- she is somebody who works this block, which is a different fact.
+        ///
+        /// This list was written and then never wired to anything, so the only woman in that
+        /// yard who looked like she was working was a random ambient that happened to spawn in
+        /// that outfit. She has her own station now: she is there because somebody put her
+        /// there, and she stays when the rest of the women become the set's.
         /// </summary>
         private static readonly string[] WorkingGirls =
         {
@@ -165,7 +170,20 @@ namespace Hoodrich
         /// </summary>
         private static readonly string[] Women =
         {
-            "a_f_y_soucent_01", "a_f_y_soucent_02", "a_f_y_soucent_03", "a_f_m_soucent_01",
+            // The set's own, not whoever was walking past.
+            //
+            // This was four ambient South Central models -- and one of them, a_f_m_soucent_01,
+            // is the MIDDLE-AGED variant, which is why there was a woman in her fifties working
+            // the decks at a yard party.
+            //
+            // The game ships exactly one Families female, so all three stations are the same
+            // model. That would be triplets if they were not given separate outfits, which is
+            // what the component roll in SpawnMember is for -- she has several and they are
+            // different enough to read as different people.
+            "g_f_y_families_01",
+
+            // If an install somehow has not got her.
+            "a_f_y_soucent_01", "a_f_y_soucent_03",
         };
 
         /// <summary>
@@ -354,14 +372,17 @@ namespace Hoodrich
                     .Stand(new Vector3(-204.190f, -1711.620f, 32.664f), 243.455f,
                            "WORLD_HUMAN_SMOKING", Fam(2), armed: false)
 
-                    // Sat on the couch, facing the fire.
+                    // Off the couch, stood on the concrete with a drink, facing the fire.
                     //
-                    // Position and height both measured standing on the cushion rather than
-                    // guessed off the floor, and flagged onProp so the ground probe leaves the
-                    // height alone -- it was overwriting the seat with whatever it found under
-                    // the couch, which is what had him sitting in mid-air.
-                    .Stand(new Vector3(-203.178f, -1725.288f, 33.064f), 295.109f,
-                           "WORLD_HUMAN_SEAT_LEDGE", Fam(1), armed: false, onProp: true)
+                    // He used to be sat on the cushion, which needed the onProp flag to stop
+                    // the ground probe overwriting the seat height with the floor under it.
+                    // On his feet none of that applies: he wants the floor, so the probe is
+                    // exactly right and the flag comes off with the height.
+                    //
+                    // Forward 1.4m along his own heading, which walks him out from the couch
+                    // into the group rather than leaving him pressed against the arm of it.
+                    .Stand(new Vector3(-201.910f, -1724.694f, 32.664f), 295.109f,
+                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false)
 
                     // Stood in the group, talking. HANG_OUT_STREET is the loose-limbed
                     // gesturing idle the game uses for people in a conversation -- MOBILE is
