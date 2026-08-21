@@ -101,7 +101,7 @@ namespace Hoodrich
         /// <summary>
         /// Men who live outside.
         ///
-        /// Not the set and never armed. They are here because a crack den with nobody outside
+        /// Not the set and never armed. They are here because a pill press with nobody outside
         /// it is a shutter, and the point of the place is that people come to it.
         /// </summary>
         private static readonly string[] Tramps =
@@ -456,7 +456,7 @@ namespace Hoodrich
                                          "bkr_prop_weed_bigbag_01a",
                                          "prop_boxpile_07d"));
 
-                // Somebody outside the crack den, which is what a crack den has outside it.
+                // Somebody outside the pill press, which is what a place like that has outside it.
                 //
                 // His own crew because there is nothing else within a leash of here -- Grimes
                 // is sixty metres off and Lamar is two hundred. He takes the set's relationship

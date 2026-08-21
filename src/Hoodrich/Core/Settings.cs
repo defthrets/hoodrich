@@ -213,10 +213,14 @@ namespace Hoodrich.Core
                                  -201.384f, -1707.909f, 32.664f, 313.362f,
                                  1039.000f, -3098.000f, -39.000f, 180f));
 
-            // radar_crim_drugs, 51. The generic one, and the right one: the room is the meth
-            // lab interior dressed as a crack den, so a cocaine leaf named the wrong product
-            // and there is no crack sprite to name the right one.
-            s.Doors.Add(ReadDoor(ini, "CrackDen", "crack den", "tr_tuner_methlab_1",
+            // radar_crim_drugs, 51. The generic one, and the right one: it is the meth lab
+            // interior working as a pill press, so a cocaine leaf named the wrong product and
+            // there is no pill-press sprite to name the right one.
+            //
+            // The ini section keeps its old name so an existing Hoodrich.ini with a [CrackDen]
+            // block in it still overrides the right door. What it is CALLED on screen comes
+            // from the default below, which the ini can override on its own.
+            s.Doors.Add(ReadDoor(ini, "CrackDen", "pill press garage", "tr_tuner_methlab_1",
                                  (BlipSprite)51,
                                  -105.053f, -1408.631f, 29.673f, 226.934f,
                                  1000.000f, -3200.000f, -38.000f, 180f));
