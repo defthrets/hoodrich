@@ -114,6 +114,9 @@ namespace Hoodrich
         /// </summary>
         private readonly List<Fixture> _scenery = new List<Fixture>();
 
+        /// <summary>The decks on the lot, and the music coming out of them.</summary>
+        private readonly Boombox _decks;
+
         /// <summary>
         /// Women from round here.
         ///
@@ -292,6 +295,12 @@ namespace Hoodrich
                     .Stand(new Vector3(-204.190f, -1711.620f, 32.664f), 243.455f,
                            "WORLD_HUMAN_SMOKING", Fam(2), armed: false)
 
+                    // Sat on the couch, facing the fire. Raised to seat height: a scenario is
+                    // placed at the point you give it, so at floor level he sits on the floor
+                    // in front of the sofa rather than on it.
+                    .Stand(new Vector3(-202.684f, -1725.064f, 33.114f), 295.109f,
+                           "WORLD_HUMAN_SEAT_LEDGE", Fam(1), armed: false)
+
                     // Out front of the shop, not carrying. Entourage leaves permanent events
                     // unblocked, so he ducks at gunfire and reacts to being shoved like anybody
                     // else -- a man stood outside a shop who does not flinch is furniture.
@@ -367,6 +376,12 @@ namespace Hoodrich
                                              "bkr_prop_weed_med_01a", "prop_weed_02"));
                 }
 
+                // Decks in the yard, and something coming out of them.
+                _decks = new Boombox(new Vector3(-194.813f, -1723.732f, 32.664f), 137.977f,
+                                     "sf_prop_sf_dj_desk_01a",
+                                     "ch_prop_ch_turntable_01a",
+                                     "prop_dj_deck_01");
+
                 // And another box of weight against the back wall, by the shutter.
                 _scenery.Add(new Fixture(new Vector3(-205.039f, -1708.503f, 32.664f), 217.911f,
                                          "m24_2_prop_m42_weedboxpile_01a",
@@ -385,6 +400,7 @@ namespace Hoodrich
                                    car.Handle == _delivery.Car.Handle)
                                   || (_payback != null && _payback.Owns(car))
                                   || (_labCar != null && _labCar.Owns(car))
+                                  || (_decks != null && _decks.Owns(car))
                 };
 
                 _payback = new Payback(_gangs);
@@ -781,6 +797,7 @@ namespace Hoodrich
                     _partyCouch.Update();
                     _stretchBox.Update();
                     foreach (var prop in _scenery) prop.Update();
+                    _decks.Update();
                     _jobs.Update();
                 }
 
@@ -1124,6 +1141,8 @@ namespace Hoodrich
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchBox?.RestoreWorld(); } catch { /* teardown */ }
+
+            try { _decks?.RestoreWorld(); } catch { /* teardown */ }
 
             foreach (var prop in _scenery)
             {
