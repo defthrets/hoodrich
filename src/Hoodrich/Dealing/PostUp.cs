@@ -1906,44 +1906,137 @@ namespace Hoodrich.Dealing
         private const float RepLabelScale = 0.30f;
         private const float RepLabelHalf = 0.0112f;
 
-        /// <summary>radar_sub_periscope, 774 -- somebody watching, which is what heat is.</summary>
         private const string HeatBlip = "HEAT";
         private const string RepBlip = "REPUTATION";
 
-        /// <summary>radar_trashbag, 952 -- what the block says you sell at the bad end.</summary>
         private const string RepEndLow = "TRASH";
-
-        /// <summary>radar_pickup_dtb_health, 621 -- clean product at the good end.</summary>
         private const string RepEndHigh = "CLEAN";
 
-        /// <summary>How far outside the bar the end blips sit.</summary>
-        private const float BarEndGap = 0.013f;
+        /// <summary>How far inside the bar's own edge an end icon sits.</summary>
+        private const float BarEndGap = 0.016f;
+
+        /// <summary>How tall the art in a status bar is drawn.</summary>
+        private const float BarIconH = 0.019f;
 
         /// <summary>
-        /// The two ends of a bar, just outside it.
+        /// Art for the bars, best candidate first.
         ///
-        /// Outside rather than in: the fill sweeps across the inside of the bar, and a blip
-        /// sat in the fill's path is a blip that changes colour behind it as the value moves.
+        /// TEXTURES, not blips. A blip cannot be drawn as a sprite -- ids address the map --
+        /// and the ~BLIP_~ tag that puts blip art in a string draws nothing in a plain text
+        /// draw, which is two things already tried. Sprites from these dictionaries are the
+        /// thing this mod has proved renders, over and over, on every wheel icon.
+        ///
+        /// Lists rather than names, because which of these an install actually has varies and
+        /// a missing texture draws nothing at all rather than failing. Whichever wins is
+        /// logged, so a name that is not there can be dropped instead of guessed at again.
         /// </summary>
-        private void BarEnds(string low, string high, float x, float cy, float width)
+        private static readonly string[][] PoliceArt =
         {
-            var edge = width * 0.5f + BarEndGap;
+            new[] { "commonmenu", "shop_police_icon_a" },
+            new[] { "commonmenu", "mp_specitem_cuffs" },
+            new[] { "mpinventory", "mp_specitem_cuffs" },
+            new[] { "commonmenu", "mp_alerttriangle" },
+        };
 
-            Hud.Text(low, x - edge, cy - RepLabelHalf, RepLabelScale,
-                     Palette.Danger, Hud.FontChaletLondon);
+        private static readonly string[][] SkullArt =
+        {
+            new[] { "mpinventory", "mp_specitem_skull" },
+            new[] { "commonmenu", "mp_specitem_skull" },
+            new[] { "commonmenu", "shop_franklin_icon_a" },
+            new[] { "commonmenu", "mp_alerttriangle" },
+        };
 
-            Hud.Text(high, x + edge, cy - RepLabelHalf, RepLabelScale,
-                     Palette.Cash, Hud.FontChaletLondon);
+        private static readonly string[][] HeartArt =
+        {
+            new[] { "commonmenu", "shop_health_icon_a" },
+            new[] { "mpinventory", "mp_specitem_health" },
+            new[] { "commonmenu", "shop_tick_icon" },
+        };
+
+        private static string[] _policeArt, _skullArt, _heartArt;
+        private static bool _policeDone, _skullDone, _heartDone;
+
+        /// <summary>
+        /// Draws one of the bar icons, and says whether it managed to.
+        ///
+        /// Resolved once and remembered both ways round. HasTexture is a native call, this runs
+        /// every frame the corner is up, and a name that never resolves has to be written off
+        /// rather than re-asked -- which is exactly what one wheel icon did for 6,768 lines of
+        /// a single session's log.
+        /// </summary>
+        private static bool BarIcon(string[][] candidates, ref string[] found, ref bool done,
+                                    string what, float x, float y, Color tint)
+        {
+            if (!done)
+            {
+                done = true;
+
+                foreach (var pair in candidates)
+                {
+                    if (!Hud.HasTexture(pair[0], pair[1])) continue;
+
+                    found = pair;
+                    Log.Info("Bar icon " + what + ": " + pair[0] + "/" + pair[1] + ".");
+                    break;
+                }
+
+                if (found == null) Log.Info("No " + what + " bar icon in this install; using the word.");
+            }
+
+            if (found == null) return false;
+
+            Hud.Sprite(found[0], found[1], x, y, Hud.ToX(BarIconH), BarIconH, 0f, tint);
+            return true;
         }
 
         /// <summary>
-        /// What goes in the middle of a status bar: the blip, or the bar's name.
+        /// The two ends of the reputation bar, INSIDE it.
         ///
-        /// Hud.Text places by the TOP of the line, so the half-line offset is what centres it
-        /// rather than hanging it off the bar's middle.
+        /// A skull at the bad end and a heart at the good one, so the bar reads as a scale
+        /// between two things rather than a number with a word on it. Inside rather than
+        /// outside because that is where they belong on a bar this tall -- the fill passes
+        /// behind them, which is the point: the skull end fills first when it is going badly.
+        /// </summary>
+        private void BarEnds(string low, string high, float x, float cy, float width)
+        {
+            var edge = width * 0.5f - BarEndGap;
+
+            if (!BarIcon(SkullArt, ref _skullArt, ref _skullDone, "skull",
+                         x - edge, cy, Palette.Danger))
+            {
+                Hud.Text(low, x - edge, cy - RepEndHalf, RepEndScale,
+                         Palette.Danger, Hud.FontLabel);
+            }
+
+            if (!BarIcon(HeartArt, ref _heartArt, ref _heartDone, "heart",
+                         x + edge, cy, Palette.Cash))
+            {
+                Hud.Text(high, x + edge, cy - RepEndHalf, RepEndScale,
+                         Palette.Cash, Hud.FontLabel);
+            }
+        }
+
+        private const float RepEndScale = 0.22f;
+        private const float RepEndHalf = 0.0082f;
+
+        /// <summary>
+        /// What goes in the middle of a status bar.
+        ///
+        /// The heat bar gets a police icon; the reputation bar keeps its name, because the two
+        /// ends already say what it measures and a third symbol in the middle of three is a
+        /// row of pictograms rather than a bar.
+        ///
+        /// Hud.Text places by the TOP of the line, so the half-line offset is what centres the
+        /// word rather than hanging it off the bar's middle.
         /// </summary>
         private void BarLabel(string blip, string word, float x, float cy)
         {
+            if (word == "HEAT" &&
+                BarIcon(PoliceArt, ref _policeArt, ref _policeDone, "police", x, cy, Color.White))
+            {
+                return;
+            }
+
             Hud.Text(word, x, cy - RepLabelHalf, RepLabelScale,
                      Color.FromArgb(240, 252, 252, 250), Hud.FontChaletLondon);
         }
