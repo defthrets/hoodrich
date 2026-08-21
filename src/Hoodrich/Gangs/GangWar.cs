@@ -247,6 +247,106 @@ namespace Hoodrich.Gangs
             return this;
         }
 
+        /// <summary>Whose block you are stood on. Set by Main.</summary>
+        public Territory.TurfWatch Turf;
+
+        /// <summary>
+        /// True when this is one you started, on their block, rather than one they brought
+        /// to yours.
+        /// </summary>
+        private bool _away;
+
+        /// <summary>Three of theirs.</summary>
+        private const int ProvokeKills = 3;
+
+        /// <summary>Inside five seconds.</summary>
+        private const int ProvokeWindowMs = 5000;
+
+        /// <summary>
+        /// What starting one costs you with them, permanently.
+        ///
+        /// Enough to clear the beef line from neutral on its own -- BeefAt is -30 and a taunt
+        /// is 12, so three bodies has to be worth more than two insults.
+        /// </summary>
+        private const float ProvokeStandingCost = 45f;
+
+        /// <summary>Walk this far off the block you started it on and you have pulled out.</summary>
+        private const float AbandonRange = 140f;
+
+        private readonly Dictionary<string, List<int>> _recentKills =
+            new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// One of theirs went down. Counts it, and starts a war if that was the third.
+        ///
+        /// Wired to Affiliation's kill scan, which already works out which set a body belonged
+        /// to and refuses to count the same one twice.
+        /// </summary>
+        public void RivalDropped(GangDef gang)
+        {
+            if (gang == null || IsRunning) return;
+            if (Busy != null && Busy()) return;
+
+            // A war needs two sets. Without one of your own there is nobody for them to be at
+            // war WITH, and SetWarRelationships would have nothing to pair them against -- so
+            // they would turn up and stand there.
+            if (!_crew.IsAffiliated) return;
+
+            // Your own set is not a rival, whatever you have just done to them.
+            var mine = _crew.Current;
+            if (mine != null && string.Equals(mine.Id, gang.Id, StringComparison.OrdinalIgnoreCase)) return;
+
+            var now = Game.GameTime;
+
+            if (!_recentKills.TryGetValue(gang.Id, out var times))
+            {
+                times = new List<int>();
+                _recentKills[gang.Id] = times;
+            }
+
+            times.Add(now);
+            times.RemoveAll(t => now - t > ProvokeWindowMs);
+
+            if (times.Count < ProvokeKills) return;
+
+            // On their block, or it is just three bodies somewhere.
+            var here = Turf == null ? null : Turf.Owner;
+            if (here == null || !string.Equals(here.Id, gang.Id, StringComparison.OrdinalIgnoreCase)) return;
+
+            times.Clear();
+
+            // And it is beef from here on, not just for the length of the fight. Three bodies
+            // on somebody's own block is not something they forget when the shooting stops --
+            // without this you could start a war with a set and be back on neutral terms with
+            // them the moment it ended, which makes the whole thing consequence-free.
+            _crew.Taunted(gang.Id, ProvokeStandingCost);
+
+            Provoke(gang);
+        }
+
+        /// <summary>
+        /// Starts one you brought to them.
+        ///
+        /// The target is where you are standing rather than one of your own spots, and nobody
+        /// of yours musters -- you are the one on somebody else's block, which is the whole
+        /// difference between this and a raid.
+        /// </summary>
+        private void Provoke(GangDef gang)
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            _away = true;
+
+            _target = new WarTarget
+            {
+                Who = Turf != null && Turf.Owner != null ? Turf.Owner.Name + "'s block" : gang.Name + "'s block",
+                Where = player.Position
+            };
+
+            Begin(gang);
+        }
+
         // ---- per-tick ----------------------------------------------------------
 
         public void Update()
@@ -288,10 +388,23 @@ namespace Hoodrich.Gangs
 
         private void Begin()
         {
-            _attacker = PickAttacker();
-            if (_attacker == null) return;
+            _away = false;
+
+            var picked = PickAttacker();
+            if (picked == null) return;
 
             _target = _targets[_rng.Next(_targets.Count)];
+
+            Begin(picked);
+        }
+
+        /// <summary>
+        /// The shared middle of both kinds. The caller has already decided who and where.
+        /// </summary>
+        private void Begin(GangDef attacker)
+        {
+            _attacker = attacker;
+            if (_attacker == null || _target == null) return;
 
             _heat = Heat(_attacker);
 
@@ -308,7 +421,9 @@ namespace Hoodrich.Gangs
             _nextWave = 0;
             _kills = 0;
             _downed = 0;
-            _showedUp = false;
+
+            // You are already there. It is your fight and you are stood in the middle of it.
+            _showedUp = _away;
             IsRunning = true;
 
             Mark();
@@ -318,13 +433,24 @@ namespace Hoodrich.Gangs
             // tasked, so setting this afterwards leaves the opening wave standing about.
             SetWarRelationships(true);
 
-            SpawnDefenders(DefendersPerCar * _cars0);
+            // Nobody of ours musters on somebody else's block. On an away war you brought
+            // whoever you brought.
+            if (!_away) SpawnDefenders(DefendersPerCar * _cars0);
 
-            Notify.Important("~r~" + _attacker.Name + " rolling up on " + _target.Who + ".~s~ " +
-                             (_heat > 0.6f ? "Deep this time. Get over there."
-                                           : "Get over there."));
+            if (_away)
+            {
+                Notify.Important("~r~You started something with " + _attacker.Name + ".~s~ " +
+                                 "They're coming. Hold this block or get out.");
+            }
+            else
+            {
+                Notify.Important("~r~" + _attacker.Name + " rolling up on " + _target.Who + ".~s~ " +
+                                 (_heat > 0.6f ? "Deep this time. Get over there."
+                                               : "Get over there."));
+            }
 
-            Log.Info("Gang war: " + _attacker.Id + " attacking " + _target.Who +
+            Log.Info("Gang war (" + (_away ? "away" : "home") + "): " + _attacker.Id +
+                     " vs " + _target.Who +
                      " (heat " + _heat.ToString("0.00") + ", " + _cars0 + " cars opening, " +
                      _reserve + " deep, up to " + (_warMs / 1000) + "s).");
 
@@ -558,6 +684,15 @@ namespace Hoodrich.Gangs
         {
             var elapsed = now - _startedAt;
             var here = player.Position.DistanceTo(_target.Where) <= DefendRange;
+
+            // Walked off the block you started it on. A war you brought to somebody ends when
+            // you leave, because there is nobody of yours there to carry it on -- and a fight
+            // that follows you home is a different thing entirely.
+            if (_away && player.Position.DistanceTo(_target.Where) > AbandonRange)
+            {
+                End(false, "You pulled out.");
+                return;
+            }
 
             if (here && !_showedUp)
             {
@@ -1536,7 +1671,7 @@ namespace Hoodrich.Gangs
                 _marker.Color = BlipColor.Red;
                 _marker.Alpha = 110;
                 _marker.ShowRoute = true;
-                _marker.Name = _target.Who + " under attack";
+                _marker.Name = _away ? "Gang war -- " + _target.Who : _target.Who + " under attack";
             }
             catch (Exception ex)
             {

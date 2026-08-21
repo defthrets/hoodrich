@@ -39,6 +39,16 @@ namespace Hoodrich.Gangs
         /// <summary>Set by Main. Null-checked everywhere, so the feed is never load-bearing.</summary>
         public SocialFeed Social;
 
+        /// <summary>
+        /// Raised for every ped of somebody else's set that you drop, beef or no beef.
+        ///
+        /// Set by Main so the war system can watch for a provocation. Deliberately fired for
+        /// gangs you are on good terms with too: walking into a quiet set's block and dropping
+        /// three of them is the whole point of the mechanic, and gating it on existing beef
+        /// would mean you could only start a war with somebody you were already fighting.
+        /// </summary>
+        public Action<GangDef> RivalDropped;
+
 
         private const float AllyScanRadius = 45f;
         private const int KillScanIntervalMs = 1200;
@@ -605,8 +615,15 @@ namespace Hoodrich.Gangs
                         continue;
                     }
 
-                    // Only counts if you are actually at war with them. Shooting a man from
-                    // a set nobody has a problem with is not a body for the block, it is a body.
+                    // Reported BEFORE the beef gate, because starting a war is exactly how a
+                    // set you had no problem with becomes a set you have a problem with. Three
+                    // of these in five seconds on their own block is a declaration.
+                    try { RivalDropped?.Invoke(gang); }
+                    catch (Exception ex) { Log.Debug("Kill hook threw: " + ex.Message); }
+
+                    // Only counts for REP if you are actually at war with them. Shooting a man
+                    // from a set nobody has a problem with is not a body for the block, it is
+                    // a body.
                     if (!Beefing(gang.Id)) continue;
 
                     var standing = StandingFor(Current.Id);

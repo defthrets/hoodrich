@@ -597,6 +597,16 @@ namespace Hoodrich
                 _war.Social = _social;
                 _war.Busy = () => _jobs != null && _jobs.IsRunning;
 
+                // Whose block you are stood on, so a war you start yourself knows it is being
+                // started on theirs.
+                _war.Turf = _turf;
+
+                // Three of theirs in five seconds on their own turf and they come for you.
+                // Affiliation already works out which set a body belonged to and refuses to
+                // count the same one twice, so the war system listens to that rather than
+                // running a second scan of its own.
+                _crew.RivalDropped = gang => _war.RivalDropped(gang);
+
                 // Not in the middle of a job. It keeps waiting rather than being cancelled --
                 // the debt does not expire because you happened to be working when it came due.
                 _payback.Busy = () => (_jobs != null && _jobs.IsRunning)
