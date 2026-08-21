@@ -565,7 +565,7 @@ namespace Hoodrich.Supply
 
             try
             {
-                _car = World.CreateVehicle(carModel.Value, start);
+                _car = World.CreateVehicle(carModel.Value, start, StartHeading);
                 if (_car == null || !_car.Exists())
                 {
                     Cancel("He could not get a car out.");
@@ -1521,17 +1521,25 @@ namespace Hoodrich.Supply
         /// <summary>
         /// Where he sets off from.
         ///
-        /// A named spot round the corner rather than a random road hundreds of metres out. The
-        /// long version was chosen so the spawn could never be witnessed, and it bought that
-        /// with a drive across half of Chamberlain -- which is where all the getting stuck came
-        /// from, and every recovery for it ends in a car moving on its own.
+        /// A named spot rather than a random road hundreds of metres out. The long version was
+        /// chosen so the spawn could never be witnessed, and it bought that with a drive across
+        /// half of Chamberlain -- which is where all the getting stuck came from, and every
+        /// recovery for it ends in a car moving on its own.
         ///
-        /// This is one junction away. Short enough that there is nothing to go wrong on, far
-        /// enough that he still arrives rather than appears.
+        /// This one is on the main road east of the house, read off the HUD standing on the
+        /// corner. Ninety metres and a straight run in: short enough that there is little to go
+        /// wrong on, far enough that he arrives rather than appears.
         /// </summary>
-        private static readonly Vector3 StartPoint = new Vector3(-103.745f, -1515.022f, 33.710f);
+        private static readonly Vector3 StartPoint = new Vector3(60.700f, -1491.154f, 29.261f);
 
-        private const float StartHeading = 317.670f;
+        /// <summary>
+        /// Which way he is pointing when he appears.
+        ///
+        /// Set rather than left to the game. A car created without a heading faces due north
+        /// whatever the road does, so the first thing he did was a three point turn on a main
+        /// road in front of anybody standing there.
+        /// </summary>
+        private const float StartHeading = 122.750f;
 
         /// <summary>
         /// A road far enough out that the spawn is never witnessed, preferring somewhere behind
