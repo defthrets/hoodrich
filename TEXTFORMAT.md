@@ -70,8 +70,14 @@ upper-cased:
 See [BLIPS.md](BLIPS.md) for the sprite list itself.
 
 The docs say "help messages and other supported contexts", which is not a
-promise about every context. An unsupported one renders the tag as literal text
-rather than failing quietly, so it is obvious on screen the first time you look.
+promise about every context -- and **a plain DRAW_TEXT is not one of them**.
+
+Tested in this mod: `~BLIP_CRIM_WANTED~` in a dialogue row drew NOTHING. Not the
+tag as literal text, which is what the docs imply and what would at least be
+visible -- nothing at all, which is indistinguishable from a broken icon.
+
+So blip art is for help messages and the map. For a HUD icon, use a texture and
+end the candidate list on one the log has shown resolving.
 
 ## Placeholders
 

@@ -86,7 +86,7 @@ namespace Hoodrich.Core
         /// which is not a promise about a plain DRAW_TEXT -- and an unsupported tag renders as
         /// literal text. Turn this off and the bars say HEAT and REPUTATION instead.
         /// </summary>
-        public bool BlipsInBars = true;
+        public bool BlipsInBars = false;
 
         /// <summary>
         /// Doors into the game's own interiors, read straight out of the ini.

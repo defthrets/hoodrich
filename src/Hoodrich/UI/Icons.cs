@@ -113,12 +113,18 @@ namespace Hoodrich.UI
         public static readonly Icon Heroin = new Icon(Menu,
             "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a");
         /// <summary>
-        /// radar_crim_wanted, 58.
+        /// Oxycodone.
         ///
-        /// A blip rather than a texture, because none of the pill textures guessed at before
-        /// were ever confirmed to exist and this one is a shape the game definitely has.
+        /// It was radar_crim_wanted as a ~BLIP_~ tag, on the strength of the tag working in
+        /// text. It does not work HERE -- the dialogue row drew nothing at all, which is worse
+        /// than a wrong picture because there is no way to tell it from a broken icon.
+        ///
+        /// Back to textures, and the list ends on one this install is known to have: the log
+        /// shows shop_health_icon_a resolving for The Numbers, so the row can no longer come
+        /// out empty whatever the first two do.
         /// </summary>
-        public static readonly Icon Ecstasy = Icon.FromBlip("~BLIP_CRIM_WANTED~");
+        public static readonly Icon Ecstasy = new Icon(Menu,
+            "mp_specitem_pills", "mp_specitem_ecstasy", "shop_health_icon_a");
 
         // Actions.
         public static readonly Icon Money = new Icon(Menu, "shop_money_icon_a");
