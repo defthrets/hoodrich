@@ -105,7 +105,18 @@ namespace Hoodrich
         /// </summary>
         private static readonly string[] Tramps =
         {
-            "a_m_m_tramp_01", "a_m_o_tramp_01", "a_m_y_methhead_01", "a_m_m_hillbilly_01",
+            "a_m_m_tramp_01", "a_m_o_tramp_01", "a_m_m_hillbilly_01",
+        };
+
+        /// <summary>
+        /// Customers.
+        ///
+        /// The meth head model twitches on its own, which does most of the work -- the scenario
+        /// only has to stop him standing to attention.
+        /// </summary>
+        private static readonly string[] Crackheads =
+        {
+            "a_m_y_methhead_01", "a_m_m_skater_01", "a_m_y_dhill_01",
         };
         /// <summary>
         /// Cars we park somewhere and leave, same idea as the scenery list.
@@ -459,7 +470,14 @@ namespace Hoodrich
 
                     // Another by the bins on a cigarette, facing the street.
                     .Stand(new Vector3(-100.969f, -1412.268f, 29.588f), 2.755f,
-                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false);
+                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false)
+
+                    // A customer, out on the pavement. STAND_IMPATIENT rather than a bum idle:
+                    // it is the shifting, fidgeting, cannot-keep-still one, and on the meth
+                    // head model -- which twitches on its own -- it reads as somebody waiting
+                    // on a door rather than somebody sleeping by it.
+                    .Stand(new Vector3(-96.049f, -1408.985f, 29.503f), 243.667f,
+                           "WORLD_HUMAN_STAND_IMPATIENT", Crackheads, armed: false);
 
                 // And a car of ours round the side.
                 _cars.Add(new ParkedCar(new Vector3(-110.187f, -1414.896f, 29.975f), 39.782f,
