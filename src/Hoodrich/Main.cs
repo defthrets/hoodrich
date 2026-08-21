@@ -455,7 +455,11 @@ namespace Hoodrich
 
                     // And one round the corner by the bins, on a beer.
                     .Stand(new Vector3(-99.879f, -1409.827f, 29.535f), 118.828f,
-                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false);
+                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false)
+
+                    // Another by the bins on a cigarette, facing the street.
+                    .Stand(new Vector3(-100.969f, -1412.268f, 29.588f), 2.755f,
+                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false);
 
                 // And a car of ours round the side.
                 _cars.Add(new ParkedCar(new Vector3(-110.187f, -1414.896f, 29.975f), 39.782f,
