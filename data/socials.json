@@ -914,7 +914,8 @@
       "gender": "male",
       "pic": "CHAR_CHENG",
       "verified": false,
-      "voice": "tao_cheng_ls"
+      "voice": "tao_cheng_ls",
+      "gang": "triads"
     },
     {
       "handle": "hao_tuner",
@@ -930,7 +931,8 @@
       "gender": "male",
       "pic": "CHAR_CHENG",
       "verified": false,
-      "voice": "weicheng_ls"
+      "voice": "weicheng_ls",
+      "gang": "triads"
     },
     {
       "handle": "ortega_vla",
@@ -1251,6 +1253,69 @@
       "pic": "",
       "verified": false,
       "voice": "bigfoot_raton"
+    },
+    {
+      "handle": "redpole_ls",
+      "name": "Kai",
+      "gang": "triads",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "seoul_bo",
+      "name": "Bo",
+      "gang": "triads",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "cypress_lin",
+      "name": "Lin",
+      "gang": "triads",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "quiet_money_ls",
+      "name": "Jun",
+      "gang": "triads",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "portside_may",
+      "name": "May",
+      "gang": "triads",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "cheng_yuen",
+      "name": "Yuen",
+      "gang": "triads",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "chengholdings_ls",
+      "name": "Cheng Holdings",
+      "gang": "triads",
+      "verified": true,
+      "gender": "none",
+      "pic": "",
+      "voice": "chengholdings_ls"
     }
   ],
   "slots": {
@@ -1332,7 +1397,10 @@
       "Vagos",
       "them boys",
       "the purple",
-      "the yellow"
+      "the yellow",
+      "Triads",
+      "Wei Cheng",
+      "them Little Seoul boys"
     ],
     "weathertalk": [
       "It's too hot",
@@ -4735,6 +4803,25 @@
         "Best light is the hour before dawn and nobody else is willing to be up for it",
         "Camera got wet at the crossing. Eight years, and it is the camera that gets wet",
         "I am not lonely out there. That is the part people cannot understand"
+      ]
+    },
+    "chengholdings_ls": {
+      "AmbientOrg": [
+        "Cheng Holdings operates lawful concerns in Little Seoul and East Los Santos",
+        "Our haulage division is hiring. Discretion is listed under required skills",
+        "The slaughterhouse on Popular Street is a working slaughterhouse",
+        "Import schedules are a matter for the port authority and for us",
+        "We do not comment on the affairs of other businesses in this city",
+        "Any representation made in our name without our seal is not made in our name",
+        "Our premises close at six. What happens after six is not premises business",
+        "A contract with this office is honoured. That is the entire reputation",
+        "Enquiries regarding the Vespucci property should stop. It is not for sale",
+        "We remind partners that terms were agreed in person and will be kept in person"
+      ],
+      "OrgEvent": [
+        "Cheng Holdings notes the disturbance in {here} and has no interest in it",
+        "Trading in {here} is suspended this evening. It will resume",
+        "Our people are accounted for. We thank those who asked and note those who did not"
       ]
     }
   },

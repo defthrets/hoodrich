@@ -1718,6 +1718,11 @@ namespace Hoodrich.Social
                 case "lost":     return "~r~";
                 case "koreans":  return "~b~";
                 case "marabunta":return "~b~";
+
+                // Wei Cheng's red. Added with the Triad accounts -- they had no case here at
+                // all, so every line they posted came out in the plain text colour and read
+                // as though nobody in particular had said it.
+                case "triads":   return "~r~";
             }
 
             return "~s~";
