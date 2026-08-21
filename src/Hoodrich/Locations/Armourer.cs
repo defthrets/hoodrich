@@ -293,7 +293,13 @@ namespace Hoodrich.Locations
                 _blip.Color = BlipColor.Green;
                 _blip.Scale = 0.8f;
                 _blip.IsShortRange = true;
-                _blip.Name = "Grimes -- guns";
+                // Named the way the leaders are: who he is, then who he runs with. He was the
+                // odd one out reading "Grimes -- guns" on a map where everybody else on the set
+                // says The Families, which made him look like a shop rather than one of ours
+                // who happens to sell.
+                var gang = _gangs == null ? null : _gangs.Get("families");
+
+                _blip.Name = Name + " -- " + (gang == null ? "The Families" : gang.Name);
             }
             catch (Exception ex)
             {
