@@ -112,7 +112,27 @@ minutes.
 back whatever would not fit. One caller of `TakeStock`, so that is the whole of
 it.
 
-### 6. Dead enum
+### 6. The same icon drew two different pictures
+
+`DialogueNode.WithIcon` handled blips and streamed texture dictionaries and
+ignored `icon.File` entirely. The wheel has taken the file first since the
+custom art was made; the dialogue panel could not, so it fell through to
+`icon.Dict` and drew the shop sprite underneath.
+
+Eighteen named icons carry a PNG and seventeen dialogue choices pass one of
+them. Weed was our joint on a wedge and an `mpinventory` sprite on a dialogue
+row, three feet apart in the same session. `DialogueChoice` gains `IconFile` and
+the panel draws it first.
+
+Two smaller versions of the same thing: `StashScreen` drew no art at all -- two
+rows per drug, fourteen near-identical lines -- and `TweetToast` drew the
+verified mark as a bare disc while the timeline drew `tick.png`, so the same
+account wore a badge in the feed and a dot in the popup. Both now match.
+
+Four wheel entries had no icon: Waiting, Call off, Nothing, Ask source. Forty of
+forty now.
+
+### 7. Dead enum
 
 `Stance` -- four values, declared in `GangDef.cs`, referenced by nothing in the
 entire mod. Removed.
@@ -160,6 +180,15 @@ Listed so the coverage is legible and this does not read as a complaint list.
 - **The street sale.** Product is removed before payment, the payout is
   calculated on what was actually removed, and a short measure is paid as a
   short measure rather than a full one.
+- **Hinting rather than naming.** Not one of the 48 `ProductGood`/`ProductBad`
+  posts names Franklin, Clinton or Frank -- which was the rule set for them. The
+  37 posts that do name him are all in sets where naming him is the point: a set
+  answering your diss, somebody gloating over having killed you, or the block
+  wishing him well from hospital.
+- **Who talks about your product.** Replicating `OursOnly` and `Ours` against
+  the author list gives 31 eligible accounts for those two sets -- 24 Families,
+  7 civilians, zero rival-gang accounts. A Balla telling you your work is good
+  is not a compliment and cannot happen.
 
 ---
 
