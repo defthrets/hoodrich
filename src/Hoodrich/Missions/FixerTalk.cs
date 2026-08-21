@@ -59,7 +59,7 @@ namespace Hoodrich.Missions
 
             if (BlockUnderAttack != null && BlockUnderAttack())
             {
-                var busy = Node("Not now, nigga. They on the block right now. " +
+                var busy = Node("Not now, Frank. They ON the block right now. " +
                                 "Go handle that and come back when it's quiet.");
 
                 busy.Leave("On it.");

@@ -35,8 +35,8 @@
       "id": "bikeride_courts",
       "kind": "BikeRide",
       "name": "Come take a ride with me.",
-      "brief": "Them Ballas been up on the Chamberlain courts all week actin' like they got a lease on it. Ain't a soul been able to hoop down there since Tuesday.",
-      "done": "HA! Look at you! That's how we used to do it, boy. My hand still hurt.",
+      "brief": "Aight, Frank, check this out. Ballas been posted on the Chamberlain courts all week like somebody signed 'em a lease. Nobody hooped down there since Tuesday. TUESDAY.",
+      "done": "HA! Look at you! That's how we used to do it, boy. My hand still hurt and I wasn't even swingin'.",
       "targetGang": "ballas",
       "zone": "CHAMH",
       "x": 0,
@@ -50,16 +50,16 @@
       "rep": 30,
       "minRank": 0,
       "briefMore": [
-        "And we ain't shootin' nobody over no basketball court. You put somethin' out there and the law's on this whole block by dinner, over a COURT. That's how people lose everything on account of nothing.",
-        "So get a bike, roll out with the homies, and we handle it like we was fifteen. Hands. That's it. You pull somethin' out there and I ain't never met you."
+        "Now I could get somebody shot over it. I could. But then the law's all over this block by dinner, over a basketball court, and everybody out here loses everything on account of nothing. Nah. We better than that. I'M better than that.",
+        "So we do it how we did it at fifteen. Get a bike, roll out with the homies, hands only. That's it. That's the whole plan and it's a beautiful plan. You pull somethin' out there, homie, and I ain't never met you in my life."
       ]
     },
     {
       "id": "torch_rancho",
       "kind": "TorchJob",
       "name": "Ride through Rancho and lose the car.",
-      "brief": "Rancho's full of yellow and they ain't just standin' out there -- they sellin'. In Chamberlain. On Davis. Corners we been on since 'fore you could drive, and I can't touch they price 'cause they gettin' it straight off Madrazo's people.",
-      "done": "Seen the smoke from the freeway, homie. And ain't nobody got a plate to run, ain't nobody got a body to catch. Vagos gon' sit on they hands and wonder. That's exactly what I wanted.",
+      "brief": "Rancho is yellow top to bottom and they ain't just standing out there, Frank, they SELLING. In Chamberlain. On Davis. Corners we been on since before you could drive.",
+      "done": "Seen the smoke from the freeway! No plate to run, no body to catch, and them Vagos sittin' there wonderin' who. That's exactly what I said would happen. I said it. Me.",
       "targetGang": "vagos",
       "zone": "RANCHO",
       "x": 279.753,
@@ -82,16 +82,16 @@
       "dumpZ": 31.849,
       "carModel": "emperor2",
       "briefMore": [
-        "I asked Stretch about it. Man looked me in my face and said leave it alone. So this ain't through him, it's me and you -- and we ain't droppin' nobody neither. Set's in pieces since Grove went purple, we can't win no war. It's a message.",
-        "Take the beater out front, roll through Jamestown, and soon as one of 'em looks up you gone. Then the car goes -- out to that lot by the water in La Puerta, gas over it, put a round in it. Law looks for a plate, homie, not a face. Then walk back."
+        "And I can't touch they price 'cause they gettin' it straight off Madrazo's people. I went to Stretch about it. Man looked me dead in my face and said leave it alone. So we ain't goin' through Stretch. This me and you. And we ain't droppin' nobody neither -- set's in pieces since Grove went purple, we can't win no war. It's a message.",
+        "Take the beater out front, roll through Jamestown, and soon as one of 'em looks up you gone. Then the car goes. Out to that lot by the water in La Puerta, gas all over it, put a round in it. Law looks for a plate, homie. Law don't look for a face. Then you walk back to me like a gentleman."
       ]
     },
     {
       "id": "tags_run",
       "kind": "Tags",
       "name": "Go put our set up.",
-      "brief": "You seen this fool UNIT? Big red letters, Forum all the way down to the wash. He from Ballas way and he treat this whole side like it's his sketchpad.",
-      "done": "Drove past the one by the wash this mornin'. Straight over the top of him. He gon' see that and he gon' feel somethin', trust me.",
+      "brief": "You seen this fool UNIT? Big red letters, Forum Drive all the way down to the wash. Dude's from Ballas way and he treatin' this whole side like it's his little sketchpad.",
+      "done": "Drove past the one by the wash this mornin'. Straight over the top of him! He gon' see that and he gon' FEEL somethin'. Trust me.",
       "targetGang": "ballas",
       "zone": "DAVIS",
       "x": 0,
@@ -105,16 +105,16 @@
       "rep": 50,
       "minRank": 1,
       "briefMore": [
-        "Meanwhile our set ain't nowhere. That's how a block stops bein' yours, homie -- not a shootin', just a kid growin' up here who never once seen our name on a wall.",
-        "So get a bike, get a can, go over the top of him. Four walls, all local. And go by yourself -- two dudes on bikes with cans is a whole story, one dude is a kid."
+        "And where we at? Nowhere. Our set ain't on one wall out here. That's how a block stops bein' yours, Frank -- ain't nobody get shot, it's just some kid grows up here and never once sees our name on nothin'.",
+        "So get a bike, get a can, go straight over the top of him. Four walls, all local. And go by yourself -- two dudes on bikes with cans is a whole story, one dude is a kid. That's psychology right there. LD psychology."
       ]
     },
     {
       "id": "hit_rancho",
       "kind": "Hit",
       "name": "Rancho. Vagos.",
-      "brief": "Vagos got a lil spot out Rancho where they break the weight down before it comes our way. Five of 'em out there postin' up like it's a barbecue.",
-      "done": "I heard about that before you even got back. Whole block heard. Take that.",
+      "brief": "Aight, no more messages. Vagos got a lil spot out Rancho where they break the weight down before it ever gets near us. Five of 'em out there posted up like it's somebody's barbecue.",
+      "done": "I heard about that before you even got back. Whole block heard. TAKE that.",
       "targetGang": "vagos",
       "zone": "RANCHO",
       "x": 356.821,
@@ -133,16 +133,16 @@
       "carZ": 31.13,
       "carHeading": 317.331,
       "briefMore": [
-        "Take that off 'em and they price goes up, and soon as they price goes up ours starts makin' sense again. That's the whole thing. That's the only thing.",
-        "Three homies, everybody with a machine pistol -- don't be takin' no shotgun, this ain't huntin'. Somebody always calls the law, so lose 'em before you come back."
+        "You take that off 'em, they gotta go get more, and gettin' more costs 'em. Costs 'em enough and all a sudden our price look reasonable again. That's it. That's the whole thing, don't overthink it, I already thought it.",
+        "Three homies, everybody with a machine pistol. Don't be bringin' no shotgun out there, this ain't huntin' season. And somebody ALWAYS calls the law, so lose 'em before you come back round here."
       ]
     },
     {
       "id": "hit_grove",
       "kind": "Hit",
       "name": "Ballas on Grove.",
-      "brief": "Ballas standin' on Grove. On GROVE. My granddaddy's street, homie.",
-      "done": "THAT'S what I'm talkin' about! Word travels, homie. Word travels.",
+      "brief": "Ballas standin' on Grove. On GROVE, Frank. My granddaddy's street. I ain't even bein' dramatic right now, I'm bein' the opposite of dramatic.",
+      "done": "THAT'S what I'm talkin' about! Word travels, homie. Word travels FAST out here and it's travellin' with my name on it.",
       "targetGang": "ballas",
       "zone": "DAVIS",
       "x": 115.921,
@@ -161,16 +161,16 @@
       "carZ": 31.13,
       "carHeading": 317.331,
       "briefMore": [
-        "And I know it's theirs on paper, everybody know that. But there's a difference between it bein' theirs and them STANDIN' on it -- let 'em post up and the old heads stop callin' it ours at all. Then it really is gone.",
-        "It's two of 'em. Take three homies and everybody carry. You gon' pick up the law on the way out, so don't you bring it back round here."
+        "And yeah, I know it's theirs on paper. Everybody know that. But there's theirs on paper and there's them STANDIN' on it, and if we let 'em post up out there the old heads gon' stop callin' it ours at all. Then it's really gone. Then it's just a street.",
+        "It's two of 'em. Take three homies and everybody carry, I don't wanna hear nothin' about hands today. And you gon' pick up the law comin' out, so don't you dare bring it back round here."
       ]
     },
     {
       "id": "driveby_lamesa",
       "kind": "DriveBy",
       "name": "The Vagos need reminding.",
-      "brief": "La Mesa. Vagos been runnin' packs through there all month -- same weight, half the price, and every dollar of it comin' off our corners.",
-      "done": "That'll hold 'em a minute. They gon' be lookin' over they shoulder all week.",
+      "brief": "La Mesa. Vagos been runnin' packs through there all month -- same weight, half the price, and every dollar of it comin' straight off our corners.",
+      "done": "That'll hold 'em a minute. They gon' be lookin' over they shoulder all week and I'ma be over here countin'.",
       "targetGang": "vagos",
       "zone": "LMESA",
       "x": 0,
@@ -189,8 +189,8 @@
       "carZ": 31.13,
       "carHeading": 317.331,
       "briefMore": [
-        "We took the Rancho spot and they just moved it. Can't keep takin' spots off people who got more spots than us, so we make the ROUTE cost 'em instead.",
-        "Drive through, make some noise, be gone 'fore the law finish they donut. You ain't gotta be out there all day. It's a message, not a visit."
+        "We took the Rancho spot and they just moved it. See, that's the thing about people with more spots than you. So we stop takin' spots. We make the ROUTE cost 'em instead. You see how I did that? That's chess, homie.",
+        "Drive through, make some noise, be gone before the law finish they donut. You ain't gotta be out there all day provin' somethin'. It's a message, not a visit."
       ]
     }
   ]
