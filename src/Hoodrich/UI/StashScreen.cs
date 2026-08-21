@@ -45,6 +45,14 @@ namespace Hoodrich.UI
 
         private const float ColumnGapH = 0.03f;
         private const float RowHeight = 0.028f;
+
+        /// <summary>
+        /// How tall a row's art is, as a fraction of screen height.
+        ///
+        /// Matched to the body text beside it rather than to the row box. These PNGs are
+        /// authored square, so the height is the whole size.
+        /// </summary>
+        private const float ArtSize = 0.019f;
         private const float PadH = 0.024f;
 
         /// <summary>Moved per press. Holding the run button moves the lot instead.</summary>
@@ -334,7 +342,24 @@ namespace Hoodrich.UI
                 var label = picked ? "> " + row.Label : "  " + row.Label;
                 var tint = picked ? Palette.Text : Palette.TextDim;
 
-                Hud.Text(label, leftCol, y, 0.30f, tint, Hud.FontBody, centre: false);
+                // The product's own art, the way the kitchen and the wheel show it. This was
+                // the last screen in the mod drawing no pictures at all -- two rows per drug,
+                // fourteen lines of near-identical text, and the only thing telling a bagged
+                // row from a bulk one was reading it.
+                //
+                // Hud.File places by its CENTRE and Hud.Text by its TOP edge, so the art drops
+                // half a row to sit level with the words.
+                var art = Icons.ForDrug(row.Drug.Id);
+                var tx = leftCol;
+
+                if (art.HasFile &&
+                    Hud.File(art.File, leftCol + Hud.ToX(ArtSize) * 0.5f, y + RowHeight * 0.34f,
+                             ArtSize, 0f, tint))
+                {
+                    tx = leftCol + Hud.ToX(ArtSize) + 0.007f;
+                }
+
+                Hud.Text(label, tx, y, 0.30f, tint, Hud.FontBody, centre: false);
 
                 Hud.TextRight(Amount(row.Drug, row.OnYou), leftCol + colWidth, y, 0.30f,
                               row.OnYou > 0.005f ? (picked ? Palette.Text : Palette.TextDim)
