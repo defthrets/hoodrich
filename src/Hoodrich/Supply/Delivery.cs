@@ -334,6 +334,7 @@ namespace Hoodrich.Supply
             _def = def;
             State = DeliveryState.Calling;
             _stateSince = Game.GameTime;
+            _parking = false;
 
             PlayPhoneAnimation(player);
 
@@ -520,7 +521,13 @@ namespace Hoodrich.Supply
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _driver.Handle, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _driver.Handle, false);
 
-                DriveTo(player.Position);
+                // At the kerb outside the house, not at the player.
+                //
+                // This was the whole problem. The first leg was aimed at whoever called, and
+                // the long-range task stops eighteen metres short of what it is given -- so he
+                // pulled up eighteen metres from you, which from the front path is the middle
+                // of the road. Every later leg already used Kerb(); only the first did not.
+                DriveTo(Kerb());
 
                 CreateBlip();
 
@@ -659,9 +666,24 @@ namespace Hoodrich.Supply
 
             if (toSpot > ArriveDistance)
             {
-                // Re-aimed on a plain clock, so the two legs chain whether or not anybody moves.
-                if (Game.GameTime - _lastRetask > RetaskIntervalMs)
+                // The last thirty metres are a park, not a drive.
+                //
+                // Driving to a coordinate aims the car AT a point and stops when it is within
+                // the task's radius, facing wherever it happened to be facing -- which on a
+                // street is a car halted in a lane near the kerb rather than a car parked at
+                // it. The park task is the game's own, takes the heading, and pulls in.
+                //
+                // Issued once. Re-issuing it every few seconds restarts the manoeuvre from the
+                // beginning, which is a car that shuffles at the kerb forever and never settles.
+                if (toSpot <= ParkTaskRange)
                 {
+                    if (!_parking) PullIn();
+                }
+                else if (Game.GameTime - _lastRetask > RetaskIntervalMs)
+                {
+                    // Still a drive. Re-aimed on a plain clock so the legs chain whether or not
+                    // anybody moves.
+                    _parking = false;
                     _lastRetask = Game.GameTime;
                     DriveTo(Kerb());
                 }
@@ -688,9 +710,22 @@ namespace Hoodrich.Supply
                 return;
             }
 
+            // Near the mark is not the same as parked on it. Announcing "he has pulled up"
+            // while the car is still rolling up the road is how you get sent out to a moving
+            // vehicle, so the last check is that he has actually stopped.
+            if (_car.Speed > ParkedSpeed && Game.GameTime - _stateSince < SettleForItMs)
+            {
+                if (!_parking) PullIn();
+                Unstick();
+                return;
+            }
+
             ParkOnTheMark();
             Arrive();
         }
+
+        /// <summary>Slower than this and he has stopped, rather than is slowing down.</summary>
+        private const float ParkedSpeed = 1.2f;
 
         /// <summary>
         /// Notices when he has stopped moving, and does something about it.
@@ -770,6 +805,7 @@ namespace Hoodrich.Supply
 
                 _stillSince = 0;
                 _lastRetask = 0;
+                _parking = false;
 
                 DriveTo(ParkSpot);
 
@@ -806,7 +842,10 @@ namespace Hoodrich.Supply
                 var watched = Function.Call<bool>(Hash.IS_ENTITY_ON_SCREEN, _car.Handle) &&
                               _car.Position.DistanceTo(Game.Player.Character.Position) < 60f;
 
-                var near = _car.Position.DistanceTo(ParkSpot) < 6f;
+                // The same distance arrival is judged on. These used to disagree -- arrival at
+                // nine metres, tidy-up only within six -- so a car that stopped in between was
+                // announced as parked and then deliberately left where it was.
+                var near = _car.Position.DistanceTo(ParkSpot) < ArriveDistance;
 
                 if (watched && near)
                 {
@@ -861,6 +900,42 @@ namespace Hoodrich.Supply
 
         /// <summary>How long he is given to park himself before he is simply put on the mark.</summary>
         private const int SettleForItMs = 60000;
+
+        /// <summary>Inside this, he stops driving at the mark and starts parking on it.</summary>
+        private const float ParkTaskRange = 32f;
+
+        /// <summary>Whether the park manoeuvre has been handed out for this run.</summary>
+        private bool _parking;
+
+        /// <summary>
+        /// Parks him on the mark, facing the way the street runs.
+        ///
+        /// Style 2 is parallel -- a kerbside stop, which is what a man dropping a box off
+        /// outside a house does. The radius is what he is allowed to shuffle within to achieve
+        /// it, and the engine stays on because he is not stopping long.
+        /// </summary>
+        private void PullIn()
+        {
+            if (_driver == null || !_driver.Exists() || _car == null || !_car.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.TASK_VEHICLE_PARK, _driver.Handle, _car.Handle,
+                              ParkSpot.X, ParkSpot.Y, ParkSpot.Z, ParkHeading,
+                              ParallelPark, ParkWithin, true);
+
+                _parking = true;
+            }
+            catch (Exception ex)
+            {
+                // No park task, so he keeps driving at it -- worse, but not broken.
+                Log.Debug("Could not hand out the park: " + ex.Message);
+                _parking = false;
+            }
+        }
+
+        private const int ParallelPark = 2;
+        private const float ParkWithin = 22f;
 
         /// <summary>
         /// Where he is aiming right now.
