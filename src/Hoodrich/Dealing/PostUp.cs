@@ -1895,7 +1895,8 @@ namespace Hoodrich.Dealing
         private const float RepLabelScale = 0.30f;
         private const float RepLabelHalf = 0.0112f;
 
-        private const string HeatBlip = "~BLIP_POLICE_CHASE~";
+        /// <summary>radar_sub_periscope, 774 -- somebody watching, which is what heat is.</summary>
+        private const string HeatBlip = "~BLIP_SUB_PERISCOPE~";
         private const string RepBlip = "~BLIP_COMMUNITY_SERIES~";
 
         /// <summary>radar_trashbag, 952 -- what the block says you sell at the bad end.</summary>

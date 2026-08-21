@@ -58,16 +58,22 @@ namespace Hoodrich.Gangs
         {
             var node = Node(def, gang, def.Greeting);
 
+            // Icons on every row, the way the wheel and Grimes's rack have them. A list of
+            // plain sentences is a menu; the same list with the shape of each answer next to it
+            // is a thing you can read at a glance without reading it.
             node.Say("Who runs round here?", () => WhoRuns(def, gang),
                      "Ask about the block");
+            node.WithIcon(Icons.Mask);
 
             node.Say("What's the work?", () => TheWork(def, gang),
                      "Ask what they move");
+            node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
 
             // Every gang sells to you whether or not they will have you. That is the point of
             // keeping the other six around.
             node.Say("I'm buying.", () => BuyList(def, gang),
                      "Buy weight off him");
+            node.WithIcon(Icons.Money);
 
             if (gang.Joinable)
             {
@@ -78,12 +84,14 @@ namespace Hoodrich.Gangs
                            "Put me on.", () => AskToJoin(def, gang),
                            short_ ? "He might not rate you yet"
                                   : "Sign on with " + gang.Name);
+                node.WithIcon(short_ ? Icons.Locked : Icons.Tick);
             }
             else
             {
                 // They will trade with you all day and never take you on.
                 node.Say("Put me on.", () => NotTakingAnyone(def, gang),
                          "He ain't taking nobody on");
+                node.WithIcon(Icons.Locked);
             }
 
             node.Leave("Forget it.");
@@ -256,6 +264,7 @@ namespace Hoodrich.Gangs
                 var lot = grams;
                 var cost = _pricing.PurchaseCost(product, lot);
 
+
                 var canPay = Game.Player.Money >= cost;
                 var fits = _state.Stash.FreeSpace >= lot - 0.001f;
 
@@ -326,19 +335,24 @@ namespace Hoodrich.Gangs
         {
             var node = Node(def, gang, def.Already);
 
+            // Icons down the whole list, the way the wheel and Grimes's rack have them.
             node.Say("Where should I be working?", () => WhereToWork(def, gang),
                      "Ask which blocks are safe");
+            node.WithIcon(Icons.Mask);
 
             node.Say("How am I doing?", () => Standing(def, gang),
                      "Ask how they rate you");
+            node.WithIcon(Icons.Tick);
 
             node.Say("I need a re-up.", () => BuyList(def, gang),
                      "Buy weight off him");
+            node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
 
             // The one progression gate in the supply chain, and it belongs to him now that the
             // corner dealers are gone.
             node.Say("Where's it all coming from?", () => AskSource(def, gang),
                      _state.DocksUnlocked ? "You already know" : "Ask about his supply");
+            node.WithIcon(_state.DocksUnlocked ? Icons.Tick : Icons.Locked);
 
             // Stretch, and only Stretch. He is the one who put you on in the first place, so
             // he is the one you can go back to with nothing in your pockets.
@@ -348,16 +362,19 @@ namespace Hoodrich.Gangs
                 {
                     node.Say("Moved all your work.", () => PayForWork(def, gang),
                              "Get paid for his package");
+                    node.WithIcon(Icons.Cash);
                 }
                 else if (_state.HasFrontedWork)
                 {
                     node.Say("Still got your work.", () => WorkProgress(def, gang),
                              "You're still holding his package");
+                    node.WithIcon(Icons.Stash);
                 }
                 else
                 {
                     node.Say("I'm broke. Front me something.", () => OfferWork(def, gang),
                              "Sell a package for him");
+                    node.WithIcon(Icons.Money);
                 }
             }
 
