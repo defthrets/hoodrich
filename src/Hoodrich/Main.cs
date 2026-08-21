@@ -741,6 +741,9 @@ namespace Hoodrich
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
 
+                // So a wedge can call a set out and bring them here.
+                pages.War = _war;
+
                 // Two other gangs with a problem, picked fresh each time.
                 //
                 // Every gang with rivals is a candidate, including the ones Franklin has

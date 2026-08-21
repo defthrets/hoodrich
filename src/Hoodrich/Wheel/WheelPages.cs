@@ -552,6 +552,14 @@ namespace Hoodrich.Wheel
                 value: "");
             page.WithIcon(Icons.Warning);
 
+            // The same thing the diss threatens, meant this time.
+            page.AddSub("Call a set out", "!", BuildCallOutPage,
+                detail: "Tell them where you are. They come to you",
+                value: War != null && War.IsRunning ? "already on" : "",
+                enabled: War != null && !War.IsRunning,
+                disabledReason: War == null ? "Not right now" : "Something's already going on");
+            page.WithIcon(Icons.Guns);
+
             return page;
         }
 
@@ -561,6 +569,62 @@ namespace Hoodrich.Wheel
         /// Your own is not on the list, and neither is anybody you happen to be running with:
         /// there is no version of this where Franklin posts a diss aimed at the Families.
         /// </summary>
+        /// <summary>Set by Main, so a wedge can start one.</summary>
+        public Gangs.GangWar War;
+
+        /// <summary>
+        /// Which set you are bringing down on yourself.
+        ///
+        /// The same list the diss page uses and for the same reasons -- your own is not on it
+        /// -- but this one is not a post. They turn up where you are standing, so it says so
+        /// in the panel rather than letting you find out.
+        /// </summary>
+        private WheelPage BuildCallOutPage()
+        {
+            var page = new WheelPage("Call a set out", "They come to you");
+
+            page.PanelTitle = "Before you do this";
+            page.Row("Where", "right where you're standing", Palette.Danger);
+            page.Row("Who turns up", "carload after carload", Palette.Danger);
+            page.Row("Walk off", "and it's over", Palette.TextDim);
+
+            var any = false;
+
+            foreach (var gang in _gangs.All)
+            {
+                if (gang == null) continue;
+                if (_crew != null && _crew.Current != null &&
+                    string.Equals(gang.Id, _crew.Current.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var them = gang;
+                any = true;
+
+                page.Add(them.Name, them.Tag, () =>
+                {
+                    var refusal = War == null ? "Not right now." : War.CallOut(them);
+                    if (refusal != null) Notify.Problem(refusal);
+                },
+                    detail: "Bring " + them.Name + " to this block",
+                    value: _crew != null && _crew.Beefing(them.Id) ? "already beefing" : "",
+                    enabled: War != null && !War.IsRunning,
+                    disabledReason: "Something's already going on");
+
+                page.WithIcon(Icons.Warning);
+            }
+
+            if (!any)
+            {
+                page.Add("Nobody to call", "-", null,
+                    detail: "There is nobody you are not already with",
+                    enabled: false, disabledReason: "Nobody");
+            }
+
+            return page;
+        }
+
         private WheelPage BuildDissPage()
         {
             var page = new WheelPage("Start beef online", "They read this too");

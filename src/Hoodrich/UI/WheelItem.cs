@@ -35,12 +35,16 @@ namespace Hoodrich.UI
         public string IconBlip = "";
 
         /// <summary>
-        /// Set once a texture has been looked for and not found.
+        /// How many times a texture has been looked for and not found.
         ///
-        /// Without it the resolve is attempted every frame for the whole life of the entry,
-        /// because "not resolved yet" and "will never resolve" look identical from the outside.
+        /// A count rather than a flag, because "not resolved yet" and "will never resolve" look
+        /// identical from the outside and only time tells them apart. Thirty frames is long
+        /// enough for a dictionary that is merely slow, short enough that a missing one stops
+        /// asking -- one wheel entry once wrote 6,768 log lines about the same absent texture.
         /// </summary>
-        public bool IconGaveUp;
+        public int IconTries;
+
+        public const int IconAttempts = 30;
 
         /// <summary>
         /// Whether the icon is resident right now. Evaluated per frame rather than at page-build
@@ -148,8 +152,10 @@ namespace Hoodrich.UI
                 // Retried while it keeps failing rather than cached: a dictionary can report
                 // itself resident a frame before its textures answer to being measured, and
                 // locking in that first answer left the icon missing for good.
-                if (string.IsNullOrEmpty(item.IconTexture) && !item.IconGaveUp)
+                if (string.IsNullOrEmpty(item.IconTexture) && item.IconTries < WheelItem.IconAttempts)
                 {
+                    item.IconTries++;
+
                     // Resolved once and kept. The aspect comes from the texture that actually
                     // won, not from a guess -- without it every sprite was drawn square, which
                     // cost wide art half its width and made a couple of wedges read as empty.
@@ -167,11 +173,22 @@ namespace Hoodrich.UI
                     // frame the wheel was open. One session came to 6,768 lines of it for a
                     // single entry, all of them saying the same thing about the same missing
                     // texture. It gives up now, and says so once.
-                    Log.Info("Icon " + item.Label + ": " + icon.Dict + "/" +
-                             (string.IsNullOrEmpty(item.IconTexture) ? "(nothing matched)" : item.IconTexture) +
-                             " aspect " + aspect.ToString("0.00"));
+                    if (!string.IsNullOrEmpty(item.IconTexture))
+                    {
+                        Log.Info("Icon " + item.Label + ": " + icon.Dict + "/" + item.IconTexture +
+                                 " aspect " + aspect.ToString("0.00"));
+                    }
 
-                    if (string.IsNullOrEmpty(item.IconTexture)) item.IconGaveUp = true;
+                    // Only complain on the LAST attempt. The line above it is right about
+                    // giving up, and my first version of it gave up on the first frame -- when
+                    // a dictionary can report itself resident before its textures will answer
+                    // to being measured, which is the exact failure the comment above warns
+                    // about. So a texture that is simply slow gets thirty frames, and one that
+                    // is genuinely absent still stops asking.
+                    if (string.IsNullOrEmpty(item.IconTexture) && item.IconTries >= WheelItem.IconAttempts)
+                    {
+                        Log.Info("Icon " + item.Label + ": nothing in " + icon.Dict + " matched.");
+                    }
                 }
 
                 return !string.IsNullOrEmpty(item.IconTexture);

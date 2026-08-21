@@ -338,6 +338,38 @@ namespace Hoodrich.Gangs
         /// of yours musters -- you are the one on somebody else's block, which is the whole
         /// difference between this and a raid.
         /// </summary>
+        /// <summary>
+        /// Calls a set out and brings them to you. Returns a refusal, or null once it is on.
+        ///
+        /// The same war the three-kills trigger starts, reached deliberately instead of by
+        /// accident: you post their name and they come to where you are standing. Which is
+        /// what the diss already threatens and never actually did.
+        /// </summary>
+        public string CallOut(GangDef gang)
+        {
+            if (gang == null) return "Nobody to call out.";
+            if (IsRunning) return "Something's already going on.";
+            if (Busy != null && Busy()) return "Not while you're working.";
+            if (!_crew.IsAffiliated) return "You need a set behind you first.";
+
+            var mine = _crew.Current;
+            if (mine != null && string.Equals(mine.Id, gang.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return "That's your own set.";
+            }
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
+            if (player.IsInVehicle()) return "Get out the car first.";
+
+            // Costs the same as putting three of them down does, and for the same reason: this
+            // is not a taunt, it is an invitation, and they do not forget being invited.
+            _crew.Taunted(gang.Id, ProvokeStandingCost);
+
+            Provoke(gang);
+            return IsRunning ? null : "They didn't bite.";
+        }
+
         private void Provoke(GangDef gang)
         {
             var player = Game.Player.Character;
