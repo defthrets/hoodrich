@@ -118,10 +118,18 @@ namespace Hoodrich.Social
         private const int BurstMax = 4;
 
         /// <summary>How many recent bodies are remembered, so nobody repeats anybody.</summary>
-        private const int RecentMemory = 45;
+        /// <summary>
+        /// How many posts back the feed remembers, to avoid repeating itself.
+        ///
+        /// Was 45 against a catalogue of eighteen hundred lines, which is a memory of about
+        /// twenty minutes of play -- long enough to notice a repeat and too short to prevent
+        /// one. Raised well past the biggest single pool so a set has to be genuinely
+        /// exhausted before anything comes round again.
+        /// </summary>
+        private const int RecentMemory = 220;
 
         /// <summary>How hard to try for something nobody has said yet.</summary>
-        private const int UniqueTries = 14;
+        private const int UniqueTries = 24;
 
         /// <summary>
         /// How often a post comes from somebody with a name.
@@ -1135,7 +1143,32 @@ namespace Hoodrich.Social
 
                 if (candidates.Count > 0)
                 {
-                    by = candidates[_rng.Next(candidates.Count)];
+                    // Preferring somebody whose own words are not all in the recent list.
+                    //
+                    // This is why the same tweet kept coming back. The median voice has FOUR
+                    // lines for a set. Picking a voiced author at random and then asking for
+                    // an unused line meant a four-line voice failed almost every time, and the
+                    // retry re-rolled the author into the same small pools over and over --
+                    // fourteen attempts later Build gave up and printed a repeat.
+                    //
+                    // Now the author is chosen from the ones who still have something new to
+                    // say, and only falls back to the whole list if nobody does.
+                    var fresh = new List<Author>();
+
+                    foreach (var author in candidates)
+                    {
+                        foreach (var line in _voices[author.Voice][set])
+                        {
+                            if (_recentSet.Contains(line)) continue;
+
+                            fresh.Add(author);
+                            break;
+                        }
+                    }
+
+                    var pool = fresh.Count > 0 ? fresh : candidates;
+
+                    by = pool[_rng.Next(pool.Count)];
                     templates = _voices[by.Voice][set];
                 }
             }
