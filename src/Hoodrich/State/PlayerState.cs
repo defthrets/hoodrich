@@ -195,6 +195,31 @@ namespace Hoodrich.State
             Touch();
         }
 
+        /// <summary>
+        /// Back to nobody: no respect, no rank, no record of what you have moved.
+        ///
+        /// Rank is derived from Respect rather than stored, so putting the one back to nothing
+        /// puts the other back with it -- there is no second field to forget and no way for the
+        /// two to disagree.
+        ///
+        /// ProductRep goes to Neutral rather than to zero. Zero is not "unknown", it is the
+        /// worst possible name a man can have, and a reset that leaves the block believing you
+        /// sell chalk is not a reset.
+        /// </summary>
+        public void ForgetName()
+        {
+            Respect = 0f;
+            Notoriety = 0f;
+
+            TotalDealsMade = 0;
+            TotalEarned = 0L;
+            GramsSold = 0f;
+
+            ProductRep = Neutral;
+
+            Touch();
+        }
+
         public void MarkDone(string missionId)
         {
             if (string.IsNullOrEmpty(missionId) || HasDone(missionId)) return;

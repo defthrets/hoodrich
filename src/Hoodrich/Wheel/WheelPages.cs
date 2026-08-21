@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Color = System.Drawing.Color;
 using GTA;
+using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.Dealing;
 using Hoodrich.Economy;
@@ -1500,9 +1501,15 @@ namespace Hoodrich.Wheel
             page.PanelTitle = "Where you are";
             page.Row("Running with", _crew.IsAffiliated ? _crew.Current.Name : "nobody",
                      _crew.IsAffiliated ? _crew.Current.Colour : (Color?)Palette.TextDim);
+            page.Row("Respect", _state.Respect.ToString("N0") + "  ·  " + _state.RankName);
+            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
+            page.Row("On you", Stash.Total.ToString("0.#") + "g");
+            page.Row("At the house",
+                     _stash == null || _stash.Stash == null
+                         ? "0g"
+                         : _stash.Stash.Total.ToString("0.#") + "g");
             page.Row("Jobs finished", _state.MissionsDone.Count.ToString());
             page.Row("Followers", Followers == null ? "0" : Followers().ToString("N0"), Palette.Cash);
-            page.Row("Respect", _state.Respect.ToString("N0"));
 
             page.AddSub("The gangs", "%", () => Confirm(
                     "Wipe the gangs",
@@ -1534,21 +1541,98 @@ namespace Hoodrich.Wheel
                 disabledReason: "Nothing to wipe");
             page.WithIcon(Icons.Tattoo);
 
+            page.AddSub("Your name", "*", () => Confirm(
+                    "Back to nobody",
+                    "Respect to nothing, so the rank goes with it -- it is worked out from the " +
+                    "respect rather than stored. Deals, grams and earnings forgotten, and what " +
+                    "the block reckons of your product back to the middle.",
+                    () => _state.ForgetName()),
+                detail: "Respect, rank and everything you have moved",
+                value: _state.Respect.ToString("N0") + " respect");
+            page.WithIcon(Icons.Tattoo);
+
+            page.AddSub("Your money", "$", () => Confirm(
+                    "Empty your pockets",
+                    "Every dollar on you, gone. Not what is in the bank and not anything you " +
+                    "own -- this is the cash in hand and nothing else.",
+                    () => Game.Player.Money = 0),
+                detail: "The cash in your pocket",
+                value: "$" + Game.Player.Money.ToString("N0"),
+                enabled: Game.Player.Money > 0,
+                disabledReason: "You have not got any");
+            page.WithIcon(Icons.Money);
+
+            page.AddSub("Your guns", "!", () => Confirm(
+                    "Drop every gun",
+                    "Every weapon and every round, off you. You keep your fists, which is what " +
+                    "the game leaves you with whatever it is told.",
+                    DropAllGuns),
+                detail: "Every weapon and all the ammo",
+                value: "");
+            page.WithIcon(Icons.Guns);
+
+            page.AddSub("What you're carrying", "%", () => Confirm(
+                    "Bin what is on you",
+                    "Everything in your pockets, bagged and unbagged, gone. What is at the " +
+                    "stash house is a separate button and stays where it is.",
+                    () => Stash.Clear()),
+                detail: "Product on you, bagged and raw",
+                value: Stash.Total.ToString("0.#") + "g",
+                enabled: Stash.Total > 0.005f,
+                disabledReason: "You are not carrying anything");
+            page.WithIcon(Icons.Stash);
+
+            page.AddSub("The stash house", "%", () => Confirm(
+                    "Empty the house",
+                    "Everything kept at the house, gone. What is on you right now is a separate " +
+                    "button and stays in your pockets.",
+                    () => { if (_stash != null && _stash.Stash != null) _stash.Stash.Clear(); }),
+                detail: "Everything kept at the house",
+                value: _stash == null || _stash.Stash == null
+                    ? "0g" : _stash.Stash.Total.ToString("0.#") + "g",
+                enabled: _stash != null && _stash.Stash != null && _stash.Stash.Total > 0.005f,
+                disabledReason: "There is nothing in it");
+            page.WithIcon(Icons.Stash);
+
             page.AddSub("All of it", "x", () => Confirm(
                     "Wipe all of it",
-                    "Gangs, jobs and socials together. Respect, rank, money and product survive -- " +
-                    "wanting a clean slate almost never means wanting to be broke.",
+                    "Gangs, jobs, socials, your name, your money, your guns and every gram on " +
+                    "you and at the house. Everything on this page at once, and none of it " +
+                    "comes back.",
                     () =>
                     {
                         _crew.ResetEverything();
                         _state.ForgetMissions();
+                        _state.ForgetName();
+
                         WipeSocials?.Invoke();
+
+                        Game.Player.Money = 0;
+                        DropAllGuns();
+
+                        Stash.Clear();
+                        if (_stash != null && _stash.Stash != null) _stash.Stash.Clear();
                     }),
-                detail: "Gangs, jobs and socials at once",
+                detail: "Every button on this page at once",
                 value: "");
             page.WithIcon(Icons.Warning);
 
             return page;
+        }
+
+        /// <summary>
+        /// Every weapon and every round.
+        ///
+        /// The flag says "and the ammo with them" -- without it the guns go and the rounds stay
+        /// in a pocket nothing can see, so picking one up off the floor hands it back loaded.
+        /// </summary>
+        private static void DropAllGuns()
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            try { Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, player.Handle, true); }
+            catch { /* he keeps them, and the panel still says he has them */ }
         }
 
         /// <summary>
