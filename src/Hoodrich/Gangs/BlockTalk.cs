@@ -170,7 +170,15 @@ namespace Hoodrich.Gangs
                    string.Equals(theirs.Id, mine.Id, StringComparison.OrdinalIgnoreCase);
         }
 
-        /// <summary>The prompt, and the key. Drawn from the main tick so it lands every frame.</summary>
+        /// <summary>
+        /// Watches the key. Nothing is drawn.
+        ///
+        /// There was a help prompt here -- "press this to say something", "press this to check
+        /// on him" -- and it was the wrong idea. Everything else in the mod that owns this key
+        /// owns a PLACE, and a prompt is how you learn a place exists. A man stood next to you
+        /// is not a place, and captioning every homie on the block turns walking down your own
+        /// street into reading. He just talks when you press it.
+        /// </summary>
         public void Draw()
         {
             if (_target == null || !_target.Exists()) return;
@@ -179,18 +187,9 @@ namespace Hoodrich.Gangs
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to " + PromptFor());
-
             if (!Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return;
 
             Act(player);
-        }
-
-        private string PromptFor()
-        {
-            if (_targetIsBody) return IsOneOfOurs(_target) ? "check on him" : "look at him";
-
-            return PostedUp(_target) ? "talk to him" : "say something";
         }
 
         /// <summary>
@@ -263,7 +262,7 @@ namespace Hoodrich.Gangs
         private void Nod(Ped player, Ped ped)
         {
             Say(player, GreetSpeech);
-            Dialogue.Say("", Pick(Greetings));
+            Dialogue.Say("Franklin", Pick(Greetings));
 
             // Him a moment later, so it reads as an answer rather than a chorus.
             Say(ped, GreetSpeech);
@@ -382,7 +381,7 @@ namespace Hoodrich.Gangs
             var ours = IsOneOfOurs(ped);
 
             Say(player, ours ? GriefSpeech : ColdSpeech);
-            Dialogue.Say("", Pick(ours ? OverOurs : OverTheirs));
+            Dialogue.Say("Franklin", Pick(ours ? OverOurs : OverTheirs));
 
             try
             {
