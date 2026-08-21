@@ -701,8 +701,14 @@ namespace Hoodrich.Gangs
 
                 if (driver != null)
                 {
-                    var drop = World.GetNextPositionOnStreet(_target.Where.Around(DropRange));
-                    if (drop == Vector3.Zero) drop = _target.Where;
+                    // The place itself, not the nearest road node to it.
+                    //
+                    // GetNextPositionOnStreet was the whole reason they parked blocks away: the
+                    // targets are yards and corners, so the nearest STREET to one can be forty
+                    // metres off through a fence, and that is where the drive task was pointed.
+                    // Aimed at the spot, the game gets the car as close as the roads allow --
+                    // which is the actual answer -- and stops.
+                    var drop = _target.Where;
 
                     // 786606 rather than 786603: the same "go round it" style the delivery uses.
                     // Stopping dead behind stationary traffic is how a raid quietly never
@@ -1021,6 +1027,36 @@ namespace Hoodrich.Gangs
             for (var i = 0; i < _defenders.Count; i++) Order(_defenders[i], false, player, now);
         }
 
+        /// <summary>
+        /// Points a carload at the block again.
+        ///
+        /// Used when one has stopped a long way out. Re-issued on the car's CURRENT driver
+        /// rather than the man we happen to be thinking about, because the one who is stuck is
+        /// not necessarily the one holding the wheel.
+        /// </summary>
+        private void DriveAtTheBlock(Vehicle car)
+        {
+            try
+            {
+                if (car == null || !car.Exists() || _target == null) return;
+
+                var driver = car.Driver;
+                if (driver == null || !driver.Exists() || !driver.IsAlive) return;
+
+                Function.Call(Hash.CLEAR_PED_TASKS, driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
+                              _target.Where.X, _target.Where.Y, _target.Where.Z,
+                              22f, 0, car.Model.Hash, 786606, DropRange, true);
+
+                Log.Debug("Gang war: a carload was stuck out wide, sent at it again.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not re-task a stuck carload: " + ex.Message);
+            }
+        }
+
         /// <summary>One person, one order.</summary>
         private void Order(Ped ped, bool theirs, Ped player, int now)
         {
@@ -1065,7 +1101,30 @@ namespace Hoodrich.Gangs
                                 var close = car.Position.DistanceTo(_target.Where) <= CloseEnoughRange;
                                 var waited = now - order.CarStuckSince;
 
-                                if (waited > (close ? CloseEnoughStopMs : StuckOutMs)) arrived = true;
+                                // Stopped and CLOSE is arrived. Stopped and far away is a
+                                // driver who needs telling again -- getting out there and
+                                // walking the last two streets is exactly the thing that looks
+                                // like nobody turned up.
+                                if (close)
+                                {
+                                    if (waited > CloseEnoughStopMs) arrived = true;
+                                }
+                                else if (waited > StuckOutMs)
+                                {
+                                    order.CarStuckSince = 0;
+
+                                    if (order.Retries < MaxDriveRetries)
+                                    {
+                                        order.Retries++;
+                                        DriveAtTheBlock(car);
+                                    }
+                                    else
+                                    {
+                                        // Genuinely wedged. Out they get, rather than sitting
+                                        // in a car behind a bin lorry for the whole raid.
+                                        arrived = true;
+                                    }
+                                }
                             }
                         }
                         else
@@ -1241,6 +1300,9 @@ namespace Hoodrich.Gangs
 
         private sealed class WarOrder
         {
+            /// <summary>Times this carload has been sent at the block again after stopping.</summary>
+            public int Retries;
+
             public int NextThink;
             public int NextWalk;
             public int Target;
@@ -1308,6 +1370,13 @@ namespace Hoodrich.Gangs
 
         /// <summary>How long a stopped car this close has to sit before they just get out.</summary>
         private const int CloseEnoughStopMs = 1400;
+
+        /// <summary>
+        /// How many times a carload stuck out wide is sent at the block again before they give
+        /// up and walk. Three tries is about forty seconds of trying, which is longer than any
+        /// jam that is going to clear on its own.
+        /// </summary>
+        private const int MaxDriveRetries = 3;
 
         /// <summary>A car stopped this long is a car they finish the journey without.</summary>
         private const int StuckOutMs = 9000;
