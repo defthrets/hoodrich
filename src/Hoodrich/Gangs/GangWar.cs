@@ -1289,7 +1289,8 @@ namespace Hoodrich.Gangs
             var player = Game.Player.Character;
 
             for (var i = 0; i < _rivals.Count; i++) Order(_rivals[i], true, player, now);
-            for (var i = 0; i < _defenders.Count; i++) Order(_defenders[i], false, player, now);
+            // The index goes with him, because it is what decides which arc of the ring is his.
+            for (var i = 0; i < _defenders.Count; i++) Order(_defenders[i], false, player, now, i);
         }
 
         /// <summary>
@@ -1323,7 +1324,7 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>One person, one order.</summary>
-        private void Order(Ped ped, bool theirs, Ped player, int now)
+        private void Order(Ped ped, bool theirs, Ped player, int now, int slot = 0)
         {
             if (ped == null || !ped.Exists() || !ped.IsAlive) return;
             if (_target == null) return;
@@ -1470,7 +1471,7 @@ namespace Hoodrich.Gangs
                     if (!theirs && !order.DugIn)
                     {
                         order.DugIn = true;
-                        Dig(ped, HomeFor(), player);
+                        Dig(ped, HomeFor(), slot, Math.Max(1, _defenders.Count));
                     }
 
                     // Anybody in reach, not one particular person. The game finds whoever is
@@ -1639,37 +1640,79 @@ namespace Hoodrich.Gangs
         private const float DefendLeash = 32f;
 
         /// <summary>
-        /// How far a defender may move from what he is holding. Roughly a front garden.
+        /// How far a defender may move from HIS POST. Roughly a front garden.
         ///
-        /// Small on purpose. Inside a sphere this size he can cross a road to a wall or drop
-        /// behind a car, and he cannot follow anybody round a corner -- which is the whole
-        /// complaint. Wider and the engine starts treating the far edge as somewhere worth
-        /// advancing to.
+        /// Small on purpose, and smaller now that each man has his own post rather than all of
+        /// them sharing the middle: inside a sphere this size he can cross to a wall or drop
+        /// behind a car, and he cannot follow anybody round a corner. Wider and the engine
+        /// starts treating the far edge as somewhere worth advancing to -- and the ring stops
+        /// being a ring, because every arc overlaps its neighbours.
         /// </summary>
-        private const float HoldRadius = 14f;
+        private const float HoldRadius = 9f;
 
         /// <summary>
-        /// The width of the box that follows the man being protected.
+        /// How far out from the spot the ring of posts sits.
         ///
-        /// SET_PED_DEFENSIVE_AREA_ATTACHED_TO_PED takes an angled box in his local space and
-        /// it MOVES WITH HIM, which is the actual bodyguard primitive -- R* build theirs from
-        /// corners (5,0,5) and (-5,0,-5) with only the width varying. Ten metres puts them
-        /// around you rather than on top of you.
+        /// Far enough that they are between the trouble and the thing, close enough that the
+        /// ring is one position rather than four men in four different fights. Sixteen metres
+        /// on a residential block is roughly the width of the property and the pavement either
+        /// side of it.
         /// </summary>
-        private const float GuardBox = 10f;
+        private const float PerimeterRadius = 16f;
 
         /// <summary>
-        /// Digs a defender in, and points him at whoever needs defending.
+        /// One post on the ring, by number.
+        ///
+        /// Evenly spaced and rotated a little, so a four-man ring does not land its posts on
+        /// due north, south, east and west -- which on a street grid puts two of them in the
+        /// middle of the road and two in somebody's back garden.
+        ///
+        /// The height is the spot's own. These blocks are flat and the alternative is a ground
+        /// probe that finds a roof, which this file has already been bitten by once.
+        /// </summary>
+        private static Vector3 PostOnTheRing(Vector3 home, int slot, int outOf)
+        {
+            if (outOf < 1) outOf = 1;
+
+            var angle = (slot % outOf) * (Math.PI * 2.0 / outOf) + RingOffset;
+
+            // The ring tightens when there are fewer men on it, which is both the fix for a
+            // hole and simply true: four men cannot hold as wide a perimeter as eight.
+            //
+            // Two neighbouring posts sit 2*R*sin(pi/n) apart and each man reaches HoldRadius
+            // from his own, so past R = HoldRadius / sin(pi/n) their arcs stop touching and
+            // there is a gap somebody can walk through. At four men the full ring leaves five
+            // metres of exactly that.
+            var reach = HoldRadius / Math.Sin(Math.PI / outOf);
+            var radius = (float)Math.Min(PerimeterRadius, reach);
+
+            return new Vector3(
+                home.X + (float)Math.Cos(angle) * radius,
+                home.Y + (float)Math.Sin(angle) * radius,
+                home.Z);
+        }
+
+        private const double RingOffset = Math.PI / 5.0;
+
+        /// <summary>
+        /// Digs a defender in, on his own piece of the ring.
+        ///
+        /// Each man gets a POST rather than a person. The posts are spaced evenly round the
+        /// spot, so with four of them one is on each corner and with eight they are every
+        /// forty-five degrees -- a perimeter, which is what a block being raided actually
+        /// needs.
+        ///
+        /// The first version of this attached the area to the PLAYER whenever you were stood on
+        /// the block, on the theory that they should protect whoever is being shot at. What that
+        /// produces is every man on the set walking around behind you in a clump while the other
+        /// three sides of the spot stand open -- so a raid is won by driving round the back,
+        /// which is exactly what the leash was written to prevent in the first place.
         ///
         /// The order below is not preference, it is the order R* use 512 times against 161 --
-        /// area first, combat task LAST -- and steps two to four must not be re-issued over
-        /// the top of the task afterwards.
-        ///
-        /// If you are on the block being hit, the area is attached to YOU and travels with
-        /// you, so they form up around whoever is actually being shot at. If you are not, they
-        /// hold a sphere on the spot itself. Either way nobody leaves it.
+        /// area first, combat task LAST -- and the area must not be re-issued over the top of
+        /// the task afterwards.
         /// </summary>
-        private void Dig(Ped ped, Vector3 home, Ped player)
+        private void Dig(Ped ped, Vector3 home, int slot, int outOf)
         {
             try
             {
@@ -1678,19 +1721,16 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.REMOVE_PED_DEFENSIVE_AREA, ped.Handle, false);
                 Function.Call(Hash.REMOVE_PED_DEFENSIVE_AREA, ped.Handle, true);
 
-                var guarding = player != null && player.Exists() && player.IsAlive &&
-                               player.Position.DistanceTo(home) <= DefendRange;
+                var post = PostOnTheRing(home, slot, outOf);
 
-                if (guarding)
-                {
-                    Function.Call(Hash.SET_PED_DEFENSIVE_AREA_ATTACHED_TO_PED, ped.Handle,
-                                  player.Handle, 5f, 0f, 5f, -5f, 0f, -5f, GuardBox, false, false);
-                }
-                else
-                {
-                    Function.Call(Hash.SET_PED_SPHERE_DEFENSIVE_AREA, ped.Handle,
-                                  home.X, home.Y, home.Z, HoldRadius, false, false);
-                }
+                Function.Call(Hash.SET_PED_SPHERE_DEFENSIVE_AREA, ped.Handle,
+                              post.X, post.Y, post.Z, HoldRadius, false, false);
+
+                // Facing OUT. Trouble comes from off the block, and a man whose area points
+                // back at the middle of it is watching his own people.
+                Function.Call(Hash.SET_PED_DEFENSIVE_AREA_DIRECTION, ped.Handle,
+                              post.X + (post.X - home.X), post.Y + (post.Y - home.Y), post.Z,
+                              false);
 
                 // Defensive, near. CM_Defensive is the mode that hugs cover -- corroborated by
                 // the flags either side of it being named EnableTacticalPointsWhenDefensive and
