@@ -116,6 +116,31 @@ namespace Hoodrich.Missions
         };
 
         /// <summary>
+        /// Lamar's own wall-tagging animation, which is the one this mission is about.
+        ///
+        /// Michael supplied the clip names -- lamar_tagging_wall_loop_lamar and its exit -- but
+        /// not the dictionary they live in, and the clips are from a story mission so it is one
+        /// of the mission sets rather than a freemode one. These are the candidates; the first
+        /// that exists on this install and actually plays wins, and the poster-tag set below is
+        /// the proven fallback if none of them do.
+        ///
+        /// If the right dictionary turns up, it goes at the front of this list and everything
+        /// under it can go.
+        /// </summary>
+        private static readonly string[] LamarDicts =
+        {
+            "missfam3_int",
+            "missfam3leadinoutfam3_mcs_1",
+            "misslamar1leadinoutlamar",
+            "misslamar1_int",
+            "missfam5_int",
+            "anim@missfam3",
+        };
+
+        private const string LamarLoop = "lamar_tagging_wall_loop_lamar";
+        private const string LamarExit = "lamar_tagging_wall_exit_lamar";
+
+        /// <summary>
         /// The poster-tagging set. Every clip in it is suffixed by who it drives: _male is the
         /// ped, _spraycan is the can in his hand, _cam is the camera.
         /// </summary>
@@ -719,6 +744,52 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
+        /// Lamar's wall-tagging clip, from whichever mission dictionary holds it.
+        ///
+        /// Loop then exit, as a sequence -- two TASK_PLAY_ANIMs issued back to back replace
+        /// each other, so the exit would win and the painting would never happen. Returns false
+        /// if no candidate dictionary exists, which sends the caller to the fallback.
+        /// </summary>
+        private static bool PlayLamarsOne(Ped player)
+        {
+            foreach (var dict in LamarDicts)
+            {
+                try
+                {
+                    if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) continue;
+
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
+
+                    var seq = new OutputArgument();
+                    Function.Call(Hash.OPEN_SEQUENCE_TASK, seq);
+                    var handle = seq.GetResult<int>();
+
+                    // Flag 1 loops the painting for the length of the timer; the exit runs once
+                    // at the end and puts him back on his feet.
+                    Function.Call(Hash.TASK_PLAY_ANIM, 0, dict, LamarLoop,
+                                  4f, -4f, SprayMs, 1, 0f, false, false, false);
+
+                    Function.Call(Hash.TASK_PLAY_ANIM, 0, dict, LamarExit,
+                                  4f, -4f, -1, 0, 0f, false, false, false);
+
+                    Function.Call(Hash.CLOSE_SEQUENCE_TASK, handle);
+                    Function.Call(Hash.TASK_PERFORM_SEQUENCE, player.Handle, handle);
+                    Function.Call(Hash.CLEAR_SEQUENCE_TASK, seq);
+
+                    Log.Info("Painting with Lamar's set from " + dict + ".");
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Lamar's tagging set would not play from " + dict + ": " + ex.Message);
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// The poster-tagging sequence: step up, shake the can, paint.
         ///
         /// A task sequence rather than three calls, because three TASK_PLAY_ANIMs back to back
@@ -767,7 +838,10 @@ namespace Hoodrich.Missions
 
         private static void PlaySprayClip(Ped player)
         {
-            // The real set first, played as the sequence it is rather than as one clip.
+            // Lamar's own, if this install has the dictionary it lives in.
+            if (PlayLamarsOne(player)) return;
+
+            // Otherwise the poster-tag sequence, which is confirmed to exist.
             if (PlayTheProperOne(player)) return;
 
             foreach (var dict in SprayDicts)
