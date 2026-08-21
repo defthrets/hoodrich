@@ -773,6 +773,67 @@ namespace Hoodrich.Social
         /// </summary>
         public Func<string[]> BickerPair;
 
+        /// <summary>
+        /// Set by Main: what the block currently reckons of the product, 0..1.
+        ///
+        /// A function rather than a value because this class does not get to hold a reference
+        /// to the player's state -- it knows about authors and words, and what is in the bags
+        /// is somebody else's business. Null simply means nobody is talking about it.
+        /// </summary>
+        public Func<float> ProductRep;
+
+        /// <summary>
+        /// How far off neutral before anybody bothers mentioning it.
+        ///
+        /// Matched to the point where the readout starts saying something -- below this the
+        /// block genuinely has no opinion, which is the correct thing for it to say about
+        /// somebody who has sold four bags. It also means these never fire on a new save.
+        /// </summary>
+        private const float WorthSaying = 0.15f;
+
+        /// <summary>
+        /// The chance at maximum notoriety. Scaled down by how far off neutral you actually are.
+        ///
+        /// So one ambient post in twenty when word is only just going round, and better than
+        /// one in four once you are known for it either way. It should feel like the talk
+        /// builds rather than switching on.
+        /// </summary>
+        private const double WordChance = 0.35;
+
+        /// <summary>
+        /// The block, on your product. True when it took the slot.
+        ///
+        /// Deliberately competing with ordinary ambient chatter rather than running on its own
+        /// timer: the feed has a fixed rate and this is the block choosing to talk about you
+        /// instead of about the bins, which is what a reputation IS.
+        /// </summary>
+        private bool Word(bool backdated)
+        {
+            if (ProductRep == null) return false;
+
+            var rep = ProductRep();
+
+            // Distance from the middle, as 0..1. The middle is nobody knowing who you are.
+            var off = Math.Abs(rep - 0.5f) * 2f;
+            if (off < WorthSaying) return false;
+
+            if (_rng.NextDouble() > off * WordChance) return false;
+
+            var post = Build(rep >= 0.5f ? "ProductGood" : "ProductBad", null);
+            if (post == null) return false;
+
+            if (backdated)
+            {
+                post.At -= _rng.Next(120000, 3600000);
+                Add(post);
+                return true;
+            }
+
+            Add(post);
+            Notify(post);
+            return true;
+        }
+
         /// <summary>How often an ambient post is one gang being rude about another.</summary>
         private const double BickerChance = 0.22;
 
@@ -785,6 +846,9 @@ namespace Hoodrich.Social
             // eight gangs read as one gang and seven audiences. The Vagos and the Marabunta
             // have their own problem and it has nothing to do with Franklin.
             if (!business && _rng.NextDouble() < BickerChance && Bicker(backdated)) return;
+
+            // And some of what is left is the block talking about what you are selling.
+            if (!business && Word(backdated)) return;
 
             var post = Build(business ? "AmbientOrg" : "Ambient", null);
             if (post == null) return;
@@ -1132,6 +1196,10 @@ namespace Hoodrich.Social
                 {
                     if (!author.HasVoice) continue;
 
+                    // Same rule as the shared pool below. A written account with its own lines
+                    // for one of these sets still has to be somebody who would say it.
+                    if (OursOnly(set) && !Ours(author)) continue;
+
                     Dictionary<string, List<string>> sets;
                     if (!_voices.TryGetValue(author.Voice, out sets)) continue;
 
@@ -1184,6 +1252,7 @@ namespace Hoodrich.Social
                            || string.Equals(set, "OrgEvent", StringComparison.OrdinalIgnoreCase);
 
                 var wantGang = GangFor(set);
+                var oursOnly = OursOnly(set);
 
                 // Anybody with a voice of their own is excluded, with no exception.
                 //
@@ -1205,6 +1274,8 @@ namespace Hoodrich.Social
                     {
                         continue;
                     }
+
+                    if (oursOnly && !Ours(author)) continue;
 
                     open.Add(author);
                 }
@@ -1248,6 +1319,27 @@ namespace Hoodrich.Social
         /// own going down, which is the sort of thing that reads as a bug even when nobody can
         /// say why.
         /// </summary>
+        /// <summary>
+        /// Sets that only neighbours and our own people would ever say.
+        ///
+        /// GangFor forces a pool to ONE gang, which is the wrong shape for these. The block
+        /// talking about your product is the neighbours AND the set, both, and never theirs --
+        /// a Balla telling you your work is good is not a compliment, and a Balla telling you
+        /// it is garbage is not information.
+        /// </summary>
+        private static bool OursOnly(string set)
+        {
+            return string.Equals(set, "ProductGood", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(set, "ProductBad", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>Somebody with no gang at all, or one of ours.</summary>
+        private static bool Ours(Author author)
+        {
+            return string.IsNullOrEmpty(author.Gang)
+                || string.Equals(author.Gang, "families", StringComparison.OrdinalIgnoreCase);
+        }
+
         private string GangFor(string set)
         {
             // A reply to a diss has to come from the set that was dissed, and the set name

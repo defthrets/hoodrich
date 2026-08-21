@@ -752,6 +752,9 @@ namespace Hoodrich
                 // Every gang with rivals is a candidate, including the ones Franklin has
                 // nothing to do with -- Cheng's people and Simeon's people being rude about
                 // each other is the city carrying on without him, which is the whole point.
+                // What the block reckons of the product, for the posts that talk about it.
+                _social.ProductRep = () => _state == null ? 0.5f : _state.ProductRep;
+
                 _social.BickerPair = () =>
                 {
                     var speakers = new List<GangDef>();
