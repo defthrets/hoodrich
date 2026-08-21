@@ -22,6 +22,15 @@ namespace Hoodrich.Missions
         public Vector3 Where;
         public float Heading;
 
+        /// <summary>
+        /// Whether nobody turns up to defend this one.
+        ///
+        /// Their paint can be on a wall without their people being round the corner from it.
+        /// A tag on Forum Drive is somebody who drove over, wrote on a wall and left -- it is
+        /// an insult precisely BECAUSE they could not have stood there afterwards.
+        /// </summary>
+        public bool Quiet;
+
         public override string ToString() => Id;
     }
 
@@ -266,7 +275,8 @@ namespace Hoodrich.Missions
                     Zone = node["zone"].AsString(""),
                     Gang = node["gang"].AsString(""),
                     Where = new Vector3(node["x"].AsFloat(), node["y"].AsFloat(), node["z"].AsFloat()),
-                    Heading = node["heading"].AsFloat()
+                    Heading = node["heading"].AsFloat(),
+                    Quiet = node["quiet"].AsBool()
                 });
             }
 
@@ -575,8 +585,9 @@ namespace Hoodrich.Missions
                 Log.Debug("Could not start painting: " + ex.Message);
             }
 
-            // Their block, and you are stood on it with your back to the road.
-            if (_rng.NextDouble() < TroubleChance) SpawnTrouble(player, spot);
+            // Their block, and you are stood on it with your back to the road -- unless it is
+            // ours, in which case it is just a wall and nobody is coming.
+            if (!spot.Quiet && _rng.NextDouble() < TroubleChance) SpawnTrouble(player, spot);
         }
 
         private void TickSpraying(Ped player, int now)
