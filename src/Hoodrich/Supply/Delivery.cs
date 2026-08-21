@@ -51,14 +51,20 @@ namespace Hoodrich.Supply
         /// a U-turn outside the house every time reads as a car that cannot drive rather than a
         /// man who does this for a living.
         /// </summary>
-        private static readonly Vector3 ParkSpot = new Vector3(-21.817f, -1455.482f, 30.424f);
-        private const float ParkHeading = 276.921f;
+        private static readonly Vector3 ParkSpot = new Vector3(-23.045f, -1455.360f, 30.047f);
+        private const float ParkHeading = 101.923f;
 
         /// <summary>How far west he is aimed before the final approach.</summary>
         private const float ApproachWest = 55f;
 
-        /// <summary>And how far east he heads once the box is down.</summary>
-        private const float DepartEast = 90f;
+        /// <summary>
+        /// Where he is heading once the box is down.
+        ///
+        /// A place rather than a bearing. This used to be the park spot with ninety metres
+        /// added to its X, which is a direction dressed up as a destination -- and the nearest
+        /// street node to a point ninety metres off a kerb is whatever happens to be there.
+        /// </summary>
+        private static readonly Vector3 LeaveFor = new Vector3(-146.676f, -1489.605f, 32.786f);
 
         /// <summary>How long he spends walking it in before it counts as delivered.</summary>
         private const int CarryTimeoutMs = 45000;
@@ -1384,13 +1390,12 @@ namespace Hoodrich.Supply
 
                     try
                     {
-                        // East, up the street he came down, rather than wandering off the moment
-                        // the door shuts and turning round in somebody's driveway.
-                        var east = ParkSpot;
-                        east.X += DepartEast;
-
-                        var away = World.GetNextPositionOnStreet(east);
-                        if (away == Vector3.Zero) away = east;
+                        // A named place he is actually going, up towards Chamberlain, rather
+                        // than a point measured off the kerb he is stood on. Same reason as
+                        // before -- a car that wanders the moment the door shuts turns round in
+                        // somebody's driveway -- but now it is somewhere rather than "that way".
+                        var away = World.GetNextPositionOnStreet(LeaveFor);
+                        if (away == Vector3.Zero) away = LeaveFor;
 
                         // He is PARKED ON A STREET, so the nearest street node to a point up the
                         // road is very often a node he is nearly on top of already -- and the
@@ -1936,7 +1941,7 @@ namespace Hoodrich.Supply
         /// Read off the HUD standing on the spot. A straight run in from there: short enough
         /// that there is little to go wrong on, far enough that he arrives rather than appears.
         /// </summary>
-        private static readonly Vector3 StartPoint = new Vector3(48.125f, -1489.673f, 29.265f);
+        private static readonly Vector3 StartPoint = new Vector3(72.825f, -1474.496f, 28.665f);
 
         /// <summary>
         /// Which way he is pointing when he appears.
@@ -1945,7 +1950,7 @@ namespace Hoodrich.Supply
         /// whatever the road does, so the first thing he did was a three point turn on a main
         /// road in front of anybody standing there.
         /// </summary>
-        private const float StartHeading = 47.694f;
+        private const float StartHeading = 143.024f;
 
         /// <summary>
         /// A road far enough out that the spawn is never witnessed, preferring somewhere behind

@@ -61,12 +61,6 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main: opens the feed, and reads the follower count for the wedge.</summary>
         public Action ShowSocials;
 
-        /// <summary>Posts an ordinary line about the day.</summary>
-        public Action SayDaily;
-
-        /// <summary>Names a set in public, and starts the clock on their answer.</summary>
-        public Action<string> Diss;
-
         /// <summary>Whether somebody is already on their way about something you said.</summary>
         public Func<bool> PaybackDue;
         public Func<int> Followers;
@@ -698,163 +692,23 @@ namespace Hoodrich.Wheel
             // Its own wedge rather than a line inside something else. What the block is saying
             // about you is not a sub-heading of your inventory, and burying it two levels down
             // would mean nobody ever reads it -- which defeats the entire point of writing it.
-            page.AddSub("Socials", "@", BuildSocialsPage,
-                detail: "What the block is saying, and what you say back",
-                value: Followers == null ? "" : Followers().ToString("N0") + " followers");
+            //
+            // A leaf, not a submenu. Everything the sub-page offered -- saying something,
+            // naming a set, calling one out -- is a section inside the feed screen now, next to
+            // the timeline those posts land in. A wheel page whose four items were "open a
+            // screen" and three things belonging ON that screen was one door too many.
+            page.Add("Socials", "@", () => ShowSocials?.Invoke(),
+                detail: PaybackDue != null && PaybackDue()
+                    ? "Somebody's coming about what you said"
+                    : "What the block is saying, and what you say back",
+                value: Followers == null ? "" : Followers().ToString("N0") + " followers",
+                enabled: ShowSocials != null,
+                disabledReason: "Not right now");
             page.WithIcon(Icons.Tattoo);
 
             return page;
         }
 
-        /// <summary>
-        /// Read the feed, or say something into it.
-        ///
-        /// Posting is the first thing on this feed that goes the other way -- everything else
-        /// happens to you and you read about it afterwards. Two kinds, and the difference
-        /// between them is the entire point: a line about your day costs nothing, and naming a
-        /// set in public costs you a visit.
-        /// </summary>
-        private WheelPage BuildSocialsPage()
-        {
-            var page = new WheelPage("Socials", "What the block is saying");
-
-            page.PanelTitle = "Your account";
-            page.Row("Followers", Followers == null ? "0" : Followers().ToString("N0"), Palette.Cash);
-
-            if (PaybackDue != null && PaybackDue())
-            {
-                page.Row("Owed a visit", "somebody's coming", Palette.Danger);
-            }
-
-            page.Add("Feed", "@", () => ShowSocials?.Invoke(),
-                detail: "Everything the block has said lately",
-                value: "");
-            page.WithIcon(Icons.Tattoo);
-
-            page.Add("Say something", "~", () => SayDaily?.Invoke(),
-                detail: "About the day. Costs you nothing",
-                value: "",
-                enabled: SayDaily != null);
-            page.WithIcon(Icons.Mask);
-
-            page.AddSub("Start beef online", "!", BuildDissPage,
-                detail: "Name a set in public and see who turns up",
-                value: "");
-            page.WithIcon(Icons.Warning);
-
-            // The same thing the diss threatens, meant this time.
-            page.AddSub("Call a set out", "!", BuildCallOutPage,
-                detail: "Tell them where you are. They come to you",
-                value: War != null && War.IsRunning ? "already on" : "",
-                enabled: War != null && !War.IsRunning,
-                disabledReason: War == null ? "Not right now" : "Something's already going on");
-            page.WithIcon(Icons.Guns);
-
-            return page;
-        }
-
-        /// <summary>
-        /// Which set you are naming.
-        ///
-        /// Your own is not on the list, and neither is anybody you happen to be running with:
-        /// there is no version of this where Franklin posts a diss aimed at the Families.
-        /// </summary>
-        /// <summary>Set by Main, so a wedge can start one.</summary>
-        public Gangs.GangWar War;
-
-        /// <summary>
-        /// Which set you are bringing down on yourself.
-        ///
-        /// The same list the diss page uses and for the same reasons -- your own is not on it
-        /// -- but this one is not a post. They turn up where you are standing, so it says so
-        /// in the panel rather than letting you find out.
-        /// </summary>
-        private WheelPage BuildCallOutPage()
-        {
-            var page = new WheelPage("Call a set out", "They come to you");
-
-            page.PanelTitle = "Before you do this";
-            page.Row("Where", "right where you're standing", Palette.Danger);
-            page.Row("Who turns up", "carload after carload", Palette.Danger);
-            page.Row("Walk off", "and it's over", Palette.TextDim);
-
-            var any = false;
-
-            foreach (var gang in _gangs.All)
-            {
-                if (gang == null) continue;
-                if (_crew != null && _crew.Current != null &&
-                    string.Equals(gang.Id, _crew.Current.Id, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                var them = gang;
-                any = true;
-
-                page.Add(them.Name, them.Tag, () =>
-                {
-                    var refusal = War == null ? "Not right now." : War.CallOut(them);
-                    if (refusal != null) Notify.Problem(refusal);
-                },
-                    detail: "Bring " + them.Name + " to this block",
-                    value: _crew != null && _crew.Beefing(them.Id) ? "already beefing" : "",
-                    enabled: War != null && !War.IsRunning,
-                    disabledReason: "Something's already going on");
-
-                page.WithIcon(Icons.Warning);
-            }
-
-            if (!any)
-            {
-                page.Add("Nobody to call", "-", null,
-                    detail: "There is nobody you are not already with",
-                    enabled: false, disabledReason: "Nobody");
-            }
-
-            return page;
-        }
-
-        private WheelPage BuildDissPage()
-        {
-            var page = new WheelPage("Start beef online", "They read this too");
-
-            page.PanelTitle = "Before you send it";
-            page.Row("They answer", "on here, within the minute", Palette.TextDim);
-            page.Row("Then", "somebody comes to find you", Palette.Danger);
-
-            var any = false;
-
-            foreach (var gang in _gangs.All)
-            {
-                if (gang == null) continue;
-                if (string.Equals(gang.Id, "families", StringComparison.OrdinalIgnoreCase)) continue;
-                if (_crew != null && _crew.Current != null &&
-                    string.Equals(gang.Id, _crew.Current.Id, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                var them = gang;
-                any = true;
-
-                page.Add(gang.Name, gang.Tag, () => Diss?.Invoke(them.Id),
-                    detail: string.IsNullOrEmpty(gang.TurfHint)
-                        ? "Say it where they can see it"
-                        : gang.TurfHint,
-                    value: "",
-                    enabled: Diss != null);
-                page.WithIcon(Icons.Warning);
-            }
-
-            if (!any)
-            {
-                page.Add("Nobody", "-", null, detail: "Nobody worth the trouble",
-                         enabled: false, disabledReason: "Nobody worth the trouble");
-            }
-
-            return page;
-        }
 
         private string DrugsSummary()
         {

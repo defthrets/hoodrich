@@ -5,6 +5,7 @@ using Control = GTA.Control;
 using GTA;
 using GTA.Native;
 using Hoodrich.Core;
+using Hoodrich.Gangs;
 using Hoodrich.Social;
 using Hud = Hoodrich.UI.Draw;
 
@@ -85,7 +86,103 @@ namespace Hoodrich.UI
         /// AboutYou is authored per post, is already drawn, and is the one question anybody
         /// opens this screen twice to ask.
         /// </summary>
-        private static readonly string[] TabNames = { "ALL", "ABOUT YOU" };
+        private static readonly string[] TabNames =
+            { "ALL", "ABOUT YOU", "POST", "DISS", "CALL OUT" };
+
+        private const int TabPost = 2;
+        private const int TabDiss = 3;
+        private const int TabCall = 4;
+
+        /// <summary>Whether the body is the timeline rather than a list of things to do.</summary>
+        private bool IsFeedTab { get { return _tab < 2; } }
+
+        /// <summary>How long a hold has to last. A war costs twice what naming a set does.</summary>
+        private const int CallHoldMs = 1100;
+        private const int DissHoldMs = 550;
+
+        /// <summary>After a tab change, no hold may begin. Mirrors the open grace.</summary>
+        private const int TabGraceMs = 140;
+
+        /// <summary>How long a result, a refusal or a nudge stays on screen.</summary>
+        private const int NoteMs = 2600;
+        private const int NudgeMs = 1200;
+
+        private const float BodyTop = 0.208f;
+        private const float FirstRow = 0.242f;
+        private const float RowPitch = 0.034f;
+        private const float RowHeight = 0.030f;
+        private const float NoteGap = 0.014f;
+
+        private const float TabGap = 0.022f;
+        private const float SplitGap = 0.034f;
+
+        private static readonly Color RowWash = Color.FromArgb(46, 255, 255, 255);
+        private static readonly Color DeadWash = Color.FromArgb(22, 255, 255, 255);
+        private static readonly Color Hairline = Color.FromArgb(40, 200, 205, 200);
+        private static readonly Color SplitInk = Color.FromArgb(70, 200, 205, 200);
+
+        /// <summary>One line you can put out that costs nothing.</summary>
+        private struct Sayable
+        {
+            public string Label;
+            public string Set;
+            public string Head;
+            public string Line;
+        }
+
+        /// <summary>
+        /// A table rather than a hardcoded row.
+        ///
+        /// There is exactly one non-diss "you" set in the content today, and a section holding
+        /// a single row reads like something failed to load. A second line is one entry here
+        /// plus one set in the json.
+        /// </summary>
+        private static readonly Sayable[] Says =
+        {
+            new Sayable { Label = "About the day", Set = "YouDaily",
+                          Head = "ABOUT THE DAY", Line = "Costs you nothing." },
+        };
+
+        /// <summary>Posts one of the free sets. True if anything actually went out.</summary>
+        public Func<string, bool> Say;
+
+        /// <summary>Names a set in public. True if the post went out.</summary>
+        public Func<string, bool> Diss;
+
+        /// <summary>Whether somebody is already coming about something you said.</summary>
+        public Func<bool> PaybackDue;
+
+        public GangRegistry Gangs;
+        public Affiliation Crew;
+        public GangWar War;
+
+        /// <summary>Where the cursor is inside the current action tab's list.</summary>
+        private int _pick;
+        private int _tabAt;
+
+        private int _holdFrom;
+        private bool _holdArmed;
+        private bool _holdSpent;
+
+        private string _note;
+        private Color _noteInk = Palette.TextDim;
+        private int _noteAt;
+
+        private string _nudge;
+        private int _nudgeAt;
+
+        /// <summary>Whether the row under the cursor can be fired, and why not. Written in Update.</summary>
+        private bool _live;
+        private string _why;
+
+        private readonly List<GangDef> _dissList = new List<GangDef>();
+        private readonly List<GangDef> _callList = new List<GangDef>();
+
+        /// <summary>Strip metrics, measured once when the screen opens rather than every frame.</summary>
+        private readonly float[] _stripW = new float[5];
+        private float _stripScale = 0.26f;
+        private float _stripGap = TabGap;
+        private float _stripSplit = SplitGap;
 
         private int _tab;
 
@@ -143,6 +240,17 @@ namespace Hoodrich.UI
             _seenCount = _tally[0];
             _openedAt = Game.GameTime;
 
+            _pick = 0;
+            _tabAt = Game.GameTime;
+            _holdFrom = 0;
+            _holdArmed = false;
+            _holdSpent = false;
+            _note = null;
+            _nudge = null;
+
+            BuildLists();
+            Strip();
+
             RequestMugshot();
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -150,7 +258,88 @@ namespace Hoodrich.UI
         public void Close()
         {
             IsOpen = false;
+            _holdFrom = 0;
             ReleaseMugshot();
+        }
+
+        /// <summary>
+        /// Who can be named, and who can be called out. Built once per open.
+        ///
+        /// Your own set is on neither list and the Families are on neither, which is the same
+        /// rule the wheel pages had: there is no version of this where Franklin posts a diss
+        /// aimed at the Families.
+        /// </summary>
+        private void BuildLists()
+        {
+            _dissList.Clear();
+            _callList.Clear();
+
+            if (Gangs == null) return;
+
+            foreach (var gang in Gangs.All)
+            {
+                if (gang == null) continue;
+
+                if (Crew != null && Crew.Current != null &&
+                    string.Equals(gang.Id, Crew.Current.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(gang.Id, "families", StringComparison.OrdinalIgnoreCase))
+                {
+                    _dissList.Add(gang);
+                }
+
+                _callList.Add(gang);
+            }
+        }
+
+        /// <summary>
+        /// Fits five labels and a right-hand readout across the panel, stepping down if it has to.
+        ///
+        /// Measured once here rather than twice a frame in Tabs, which is a net saving on what
+        /// it replaces. No label is ever dropped or cut -- the gaps close first, then the type
+        /// comes down, because a strip you cannot read all of is worse than a slightly tighter
+        /// one.
+        /// </summary>
+        private void Strip()
+        {
+            _stripScale = 0.26f;
+            _stripGap = TabGap;
+            _stripSplit = SplitGap;
+
+            var readout = 0.05f;
+
+            try
+            {
+                readout = Math.Max(Hud.MeasureText("999 POSTS", 0.24f, Hud.FontLabel),
+                                   Hud.MeasureText("WAR ON", 0.24f, Hud.FontLabel));
+            }
+            catch { /* the estimate will do */ }
+
+            for (var pass = 0; pass < 3; pass++)
+            {
+                var run = 0f;
+
+                for (var i = 0; i < TabNames.Length; i++)
+                {
+                    _stripW[i] = 0.02f;
+
+                    try { _stripW[i] = Hud.MeasureText(TabNames[i], _stripScale, Hud.FontLabel); }
+                    catch { /* the estimate will do */ }
+
+                    run += _stripW[i];
+                }
+
+                var left = 0.5f - PanelWidth * 0.5f;
+                var need = left + Pad + run + _stripGap * 3f + _stripSplit + 0.010f + readout;
+
+                if (need <= left + PanelWidth - Pad) return;
+
+                if (pass == 0) { _stripGap = 0.015f; _stripSplit = 0.024f; }
+                else if (pass == 1) _stripScale = 0.235f;
+            }
         }
 
         // ---- the profile picture -----------------------------------------------
@@ -220,17 +409,267 @@ namespace Hoodrich.UI
             HoldPosition();
             LockControls();
 
-            if (Game.GameTime - _openedAt < OpenGraceMs) return;
+            // Everything is written here. Draw only reads.
+            _live = CanFire(out _why);
 
-            if (Pressed(Control.PhoneUp)) Scroll(-1);
-            else if (Pressed(Control.PhoneDown)) Scroll(1);
-            else if (Pressed(Control.PhoneLeft)) Tab(-1);
-            else if (Pressed(Control.PhoneRight)) Tab(1);
-            else if (Pressed(Control.PhoneCancel) || Pressed(Control.PhoneSelect))
+            if (Game.GameTime - _openedAt < OpenGraceMs)
+            {
+                // Whatever opened the wheel must not become a hold the instant this appears.
+                _holdFrom = 0;
+                _holdArmed = false;
+                return;
+            }
+
+            // The way out, before anything else can read a key. It is the panic key and it
+            // never means anything else, on any tab, mid-hold included.
+            if (Pressed(Control.PhoneCancel))
             {
                 Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 Close();
+                return;
             }
+
+            if (Pressed(Control.PhoneLeft)) { Tab(-1); return; }
+            if (Pressed(Control.PhoneRight)) { Tab(1); return; }
+
+            if (IsFeedTab)
+            {
+                if (Pressed(Control.PhoneUp)) Scroll(-1);
+                else if (Pressed(Control.PhoneDown)) Scroll(1);
+
+                // ENTER does nothing on a feed tab. It used to close the screen, which made
+                // this the one screen in the mod where ENTER meant leave.
+                return;
+            }
+
+            var rows = Rows();
+
+            if (Pressed(Control.PhoneUp)) Move(-1);
+            else if (Pressed(Control.PhoneDown)) Move(1);
+
+            Commit(rows);
+        }
+
+        private int Rows()
+        {
+            if (_tab == TabPost) return Says.Length;
+            if (_tab == TabDiss) return _dissList.Count;
+            if (_tab == TabCall) return _callList.Count;
+
+            return 0;
+        }
+
+        private void Move(int step)
+        {
+            var rows = Rows();
+            if (rows <= 0) return;
+
+            var next = _pick + step;
+            if (next < 0) next = 0;
+            if (next > rows - 1) next = rows - 1;
+            if (next == _pick) return;
+
+            _pick = next;
+
+            // A cursor move cancels a hold. Otherwise a bar started on one gang finishes on
+            // whoever you happened to scroll onto.
+            _holdFrom = 0;
+            _note = null;
+
+            Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>
+        /// A tap posts. A hold starts a fight.
+        ///
+        /// The tap is read on RELEASE rather than on the press edge, because the press edge and
+        /// the first frame of a hold are the same frame -- reading the tap on press would make
+        /// it impossible ever to begin a hold on the same key.
+        /// </summary>
+        private void Commit(int rows)
+        {
+            var now = Game.GameTime;
+            var down = Held(Control.PhoneSelect) || Held(Control.Jump) || Held(Control.Context);
+
+            if (!down)
+            {
+                // Down and back up before the bar filled: that was a tap.
+                if (_holdFrom != 0 && !_holdSpent) Tapped();
+
+                _holdFrom = 0;
+                _holdSpent = false;
+                _holdArmed = true;
+                return;
+            }
+
+            if (!_holdArmed || _holdSpent) return;
+            if (now - _tabAt < TabGraceMs) return;
+            if (rows == 0) return;
+
+            if (!_live)
+            {
+                // A refused row never starts a timer -- and if it goes refused MID-HOLD, because
+                // a war started elsewhere or you got in a car, the bar is zeroed the same frame
+                // rather than freezing full and then bouncing.
+                if (_holdFrom != 0)
+                {
+                    _holdFrom = 0;
+                    Note(_why, Palette.Warn);
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                }
+
+                _holdSpent = true;
+                return;
+            }
+
+            if (_holdFrom == 0)
+            {
+                _holdFrom = now;
+
+                // A free line fires on the press, so posting feels like a button rather than
+                // a chore. Only the two that start something need holding.
+                if (_tab == TabPost)
+                {
+                    _holdSpent = true;
+                    _holdFrom = 0;
+                    Fire();
+                }
+
+                return;
+            }
+
+            if (now - _holdFrom >= (_tab == TabCall ? CallHoldMs : DissHoldMs))
+            {
+                _holdSpent = true;
+                _holdFrom = 0;
+                Fire();
+            }
+        }
+
+        /// <summary>
+        /// A tap on a row that wants a hold. Answered, never ignored.
+        ///
+        /// A guard that silently does nothing reads as a broken screen, and somebody who thinks
+        /// a screen is broken presses harder. This is the one place a wrong guess should teach
+        /// rather than punish.
+        /// </summary>
+        private void Tapped()
+        {
+            if (_tab == TabPost) return;
+
+            _nudge = "HOLD IT DOWN";
+            _nudgeAt = Game.GameTime;
+
+            Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        private void Fire()
+        {
+            if (_tab == TabPost)
+            {
+                var went = Say != null && Say(Says[_pick].Set);
+
+                Note(went ? "Posted." : "Nothing to say right now.",
+                     went ? Palette.Cash : Palette.TextDim);
+
+                Hud.PlaySound(went ? "SELECT" : "ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            if (_tab == TabDiss)
+            {
+                if (_pick >= _dissList.Count) return;
+
+                var gang = _dissList[_pick];
+                var went = Diss != null && Diss(gang.Id);
+
+                Note(went ? "That's out there now. They read it too." : "Not right now.",
+                     went ? Palette.Danger : Palette.Warn);
+
+                Hud.PlaySound(went ? "SELECT" : "ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            if (_pick >= _callList.Count || War == null) return;
+
+            // CallOut returns null when it took, and the REASON when it did not -- shown
+            // verbatim, so the screen and the system can never disagree about why.
+            var no = War.CallOut(_callList[_pick]);
+
+            Note(no ?? "Told them where you are.", no == null ? Palette.Danger : Palette.Warn);
+            Hud.PlaySound(no == null ? "SELECT" : "ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        private void Note(string text, Color ink)
+        {
+            _note = text;
+            _noteInk = ink;
+            _noteAt = Game.GameTime;
+        }
+
+        /// <summary>
+        /// Whether the row under the cursor can be fired, and what to say if not.
+        ///
+        /// Mirrors GangWar.CallOut's own gates with the SAME strings, so the pre-check and the
+        /// real refusal can never disagree. Being in a set matters most: without it an
+        /// unaffiliated player sees a live, holdable list of nine gangs, every one of which
+        /// refuses after a full hold -- and CallOut charges the standing BEFORE some of those
+        /// refusals, so they are not even free.
+        /// </summary>
+        private bool CanFire(out string why)
+        {
+            why = null;
+
+            if (_tab == TabPost)
+            {
+                if (Say == null) { why = "Not right now."; return false; }
+                return true;
+            }
+
+            if (_tab == TabDiss)
+            {
+                if (Diss == null) { why = "Not right now."; return false; }
+                if (_dissList.Count == 0) { why = "Nobody worth the trouble."; return false; }
+                return true;
+            }
+
+            if (_tab != TabCall) return false;
+
+            if (War == null) { why = "Not right now."; return false; }
+            if (_callList.Count == 0) { why = "Nobody to call out."; return false; }
+            if (War.IsRunning) { why = "Something's already going on."; return false; }
+            if (War.Busy != null && War.Busy()) { why = "Not while you're working."; return false; }
+            if (Crew == null || !Crew.IsAffiliated) { why = "You need a set behind you first."; return false; }
+
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists() || !player.IsAlive)
+                {
+                    why = "Not right now.";
+                    return false;
+                }
+
+                if (player.IsInVehicle()) { why = "Get out the car first."; return false; }
+            }
+            catch
+            {
+                why = "Not right now.";
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>How far through a hold, 0..1.</summary>
+        private float Progress()
+        {
+            if (_holdFrom == 0) return 0f;
+
+            var span = _tab == TabCall ? CallHoldMs : DissHoldMs;
+            var t = (Game.GameTime - _holdFrom) / (float)span;
+
+            return t < 0f ? 0f : t > 1f ? 1f : t;
         }
 
         /// <summary>Whether a post belongs to a tab.</summary>
@@ -265,18 +704,32 @@ namespace Hoodrich.UI
 
         private void Tab(int step)
         {
-            var next = (_tab + step) % TabNames.Length;
-            if (next < 0) next += TabNames.Length;
+            // Clamped, NOT wrapped. A modulo would put CALL OUT one LEFT press from where every
+            // open starts, which is the single worst adjacency available on this screen.
+            var next = _tab + step;
+            if (next < 0) next = 0;
+            if (next > TabNames.Length - 1) next = TabNames.Length - 1;
             if (next == _tab) return;
 
             _tab = next;
+            _tabAt = Game.GameTime;
+
+            _pick = 0;
+            _holdFrom = 0;
+            _holdSpent = false;
+            _note = null;
+            _nudge = null;
 
             // Required, not tidiness. Index 14 of ALL is not index 14 of ABOUT YOU, so carrying
             // the scroll across lands you somewhere arbitrary -- or, at 30 with six matching
             // posts, on a blank panel.
             _scroll = 0;
             _lastShown = 0;
-            _seenCount = _tally[_tab];
+
+            // _tally has two entries and the strip has five. It also goes stale while you are
+            // away on an action tab, because HoldPosition returns early there -- which is why
+            // it is reassigned here, on the way back in, alongside the scroll being zeroed.
+            _seenCount = _tab < 2 ? _tally[_tab] : 0;
 
             Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -290,6 +743,8 @@ namespace Hoodrich.UI
         /// </summary>
         private int MaxScroll()
         {
+            if (!IsFeedTab) return 0;
+
             var count = _tally[_tab];
             if (count <= 0) return 0;
 
@@ -299,6 +754,8 @@ namespace Hoodrich.UI
         /// <summary>Keeps the reader looking at the same post when new ones arrive above it.</summary>
         private void HoldPosition()
         {
+            if (!IsFeedTab) return;
+
             var count = _tally[_tab];
             var arrived = count - _seenCount;
 
@@ -326,6 +783,12 @@ namespace Hoodrich.UI
             return Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0, (int)control);
         }
 
+        /// <summary>Whether a key is down right now, which is what a hold is made of.</summary>
+        private static bool Held(Control control)
+        {
+            return Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)control);
+        }
+
         private static void LockControls()
         {
             Game.DisableControlThisFrame(Control.Attack);
@@ -341,6 +804,11 @@ namespace Hoodrich.UI
             Game.DisableControlThisFrame(Control.PhoneRight);
             Game.DisableControlThisFrame(Control.PhoneSelect);
             Game.DisableControlThisFrame(Control.PhoneCancel);
+
+            // Not cosmetic. Several things in this mod read E on the ENABLED path, so without
+            // this, pressing E with the feed open greets a homie or walks you through a door
+            // while you are looking at a menu.
+            Game.DisableControlThisFrame(Control.Context);
         }
 
         // ---- drawing -----------------------------------------------------------
@@ -358,13 +826,24 @@ namespace Hoodrich.UI
             // The soft grey halo that used to sit outside the panel is gone. Two framing
             // systems on one screen -- a glow out here and an accent rule in the header -- was
             // one more than the rest of the mod uses, and the rule is the one that matches.
+            // The bar across the very top turns red on the two tabs that start fights. It is
+            // the one mode signal readable without looking at any particular element.
+            var edge = _tab >= TabDiss ? Palette.Danger : Palette.Accent;
+
             Hud.RectFrom(left, PanelTop, PanelWidth, PanelHeight, Color.FromArgb(238, 12, 13, 15));
-            Hud.RectFrom(left, PanelTop, PanelWidth, 0.0028f, Palette.Accent);
+            Hud.RectFrom(left, PanelTop, PanelWidth, 0.0028f, edge);
 
             Count();
 
-            var y = DrawHeader(left, right);
-            y = Tabs(x, right, y + 0.010f);
+            var y = DrawHeader(left, right, edge);
+            y = Tabs(x, right, y + 0.010f, edge);
+
+            if (!IsFeedTab)
+            {
+                Action(left, x, right);
+                Keys(x, right);
+                return;
+            }
 
             var feedTop = y;
             var bottom = PanelTop + PanelHeight - 0.030f;
@@ -407,46 +886,299 @@ namespace Hoodrich.UI
         /// shove ABOUT YOU sideways every ten seconds -- fine in a still, twitching all evening
         /// in motion.
         /// </summary>
-        private float Tabs(float x, float right, float y)
+        private float Tabs(float x, float right, float y, Color edge)
         {
             var cx = x;
 
             for (var i = 0; i < TabNames.Length; i++)
             {
                 var here = i == _tab;
-                var empty = _tally[i] == 0;
 
-                var width = 0.02f;
-                try { width = Hud.MeasureText(TabNames[i], 0.26f, Hud.FontLabel); }
-                catch { /* the estimate will do */ }
+                // _tally has TWO entries and the strip now has FIVE.
+                var empty = i < 2 && _tally[i] == 0;
 
                 if (here)
                 {
-                    Hud.RectFrom(cx - 0.004f, y - 0.004f, width + 0.008f, 0.024f,
-                                 Color.FromArgb(46, 255, 255, 255));
+                    Hud.RectFrom(cx - 0.004f, y - 0.004f, _stripW[i] + 0.008f, 0.024f, RowWash);
 
-                    Hud.RectFrom(cx - 0.004f, y + 0.019f, width + 0.008f, 0.0022f, Palette.Accent);
+                    Hud.RectFrom(cx - 0.004f, y + 0.019f, _stripW[i] + 0.008f, 0.0022f,
+                                 i < 2 ? Palette.Accent : Palette.Danger);
                 }
 
-                // An empty tab says so before you press it. NOT Palette.TextDisabled: that is
-                // full alpha and composites BRIGHTER than TextDim, so it would have made the
-                // empty tab the loudest thing on the strip.
+                // Two of the five in warning colour, not three. POST costs nothing and should
+                // not be dressed as though it did, and three amber labels stops the strip
+                // reading as one strip.
+                //
+                // An empty feed tab says so before you press it. NOT Palette.TextDisabled: that
+                // is full alpha and composites BRIGHTER than TextDim, which would make the
+                // empty tab the loudest thing on the row.
                 var ink = here ? Palette.Text
-                    : empty ? Palette.Alpha(Palette.TextDim, 90) : Palette.TextDim;
+                    : i < 2 ? (empty ? Palette.Alpha(Palette.TextDim, 90) : Palette.TextDim)
+                    : i == TabPost ? Palette.TextDim
+                    : Palette.Alpha(Palette.Warn, 170);
 
-                Hud.Text(TabNames[i], cx, y, 0.26f, ink, Hud.FontLabel, centre: false);
+                Hud.Text(TabNames[i], cx, y, _stripScale, ink, Hud.FontLabel, centre: false);
 
-                cx += width + 0.022f;
+                cx += _stripW[i] + (i == 1 ? _stripSplit : _stripGap);
+
+                // Looking, and doing. A wide GAP does the work here -- a hairline on its own is
+                // two pixels and cannot carry a divide this important, so the rule sits inside
+                // the gap rather than replacing it.
+                if (i == 1)
+                {
+                    Hud.RectFrom(cx - _stripSplit * 0.5f, y - 0.002f, 0.0022f, 0.020f, SplitInk);
+                }
             }
 
-            var n = _tally[_tab];
+            if (IsFeedTab)
+            {
+                var n = _tally[_tab];
 
-            Hud.TextRight(n + (n == 1 ? " POST" : " POSTS"), right, y + 0.0015f, 0.24f,
-                          Palette.TextDim, Hud.FontLabel);
+                Hud.TextRight(n + (n == 1 ? " POST" : " POSTS"), right, y + 0.0015f, 0.24f,
+                              Palette.TextDim, Hud.FontLabel);
+            }
+            else if (_tab == TabCall && War != null && War.IsRunning)
+            {
+                Hud.TextRight("WAR ON", right, y + 0.0015f, 0.24f, Palette.Danger, Hud.FontLabel);
+            }
 
             y += 0.032f;
-            Hud.RectFrom(x, y, PanelWidth - Pad * 2f, 0.0022f, Palette.Accent);
+            Hud.RectFrom(x, y, PanelWidth - Pad * 2f, 0.0022f, edge);
             return y + 0.012f;
+        }
+
+        /// <summary>The list of things you can put out, and what each one costs you.</summary>
+        private void Action(float left, float x, float right)
+        {
+            var rows = Rows();
+            var head = _tab == TabPost ? "SAY SOMETHING" : "WHO";
+
+            Hud.Text(head, x, BodyTop, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+            Hud.RectFrom(x, BodyTop + 0.022f, PanelWidth - Pad * 2f, 0.0010f, Hairline);
+
+            var t = Progress();
+
+            // Nine rows never reach the floor today. Computed anyway, so a tenth gang added
+            // later clips cleanly instead of drawing off the bottom of the panel.
+            var maxRows = (int)((0.760f - FirstRow) / RowPitch);
+            var draw = Math.Min(rows, maxRows);
+
+            for (var i = 0; i < draw; i++)
+            {
+                var top = FirstRow + i * RowPitch;
+                var here = i == _pick;
+
+                string label;
+                string value;
+                Color valueInk;
+                var tick = Color.Transparent;
+
+                if (_tab == TabPost)
+                {
+                    label = Says[i].Label;
+                    value = "FREE";
+                    valueInk = Palette.Cash;
+                }
+                else
+                {
+                    var gang = _tab == TabDiss ? _dissList[i] : _callList[i];
+
+                    label = gang.Name;
+                    tick = gang.Colour;
+
+                    // A four-character tag that is readable beats a name that is cut off. It is
+                    // a bad thing to aim a war at a name you cannot read.
+                    try
+                    {
+                        if (Hud.MeasureText(label, 0.30f, Hud.FontChaletLondon) > 0.230f)
+                        {
+                            label = gang.Tag;
+                        }
+                    }
+                    catch { /* the name will do */ }
+
+                    var beefing = Crew != null && Crew.Beefing(gang.Id);
+
+                    value = beefing ? "ALREADY BEEFING" : gang.Tag;
+                    valueInk = beefing ? Palette.Warn : Palette.TextDim;
+                }
+
+                Row(left, x, right, top, here, !_live, tick, label, value, valueInk,
+                    here && t > 0f ? t : 0f);
+            }
+
+            if (rows == 0)
+            {
+                Hud.Text(_tab == TabDiss
+                             ? "Nobody worth the trouble"
+                             : "There's nobody you're not already with",
+                         x + 0.006f, FirstRow + 0.006f, 0.30f,
+                         Palette.Alpha(Palette.TextDim, 110), Hud.FontChaletLondon, centre: false);
+            }
+
+            NoteStrip(x, right, FirstRow + Math.Max(1, draw) * RowPitch + NoteGap, t);
+        }
+
+        private static void Row(float left, float x, float right, float top, bool here, bool dead,
+                                Color tick, string label, string value, Color valueInk, float fill)
+        {
+            if (here)
+            {
+                // Under a dead row the cursor is still visibly SOMEWHERE, but visibly on
+                // something inert.
+                Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.012f, RowHeight,
+                             dead ? DeadWash : RowWash);
+
+                Hud.RectFrom(left + 0.002f, top, 0.0022f, RowHeight,
+                             dead ? Palette.Alpha(Palette.TextDim, 120) : Palette.Accent);
+            }
+
+            var textX = x + 0.006f;
+
+            if (tick.A > 0)
+            {
+                // Their own colour, which is the one identity mark that costs no width.
+                Hud.RectFrom(x, top + 0.006f, 0.0022f, 0.018f,
+                             dead ? Palette.Alpha(tick, 90) : tick);
+
+                textX = x + 0.010f;
+            }
+
+            var ink = dead ? Palette.Alpha(Palette.TextDim, 110)
+                : here ? Palette.Text
+                : Palette.Alpha(Palette.Text, 175);
+
+            Hud.Text(label, textX, top + 0.006f, 0.30f, ink, Hud.FontChaletLondon, centre: false);
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                Hud.TextRight(value, right, top + 0.008f, 0.24f,
+                              dead ? Palette.Alpha(Palette.TextDim, 110) : valueInk,
+                              Hud.FontLabel);
+            }
+
+            if (fill > 0f)
+            {
+                Hud.RectFrom(left + 0.002f, top + RowHeight - 0.0022f,
+                             (PanelWidth - 0.012f) * fill, 0.0022f, Palette.Danger);
+            }
+        }
+
+        /// <summary>
+        /// What this row actually does, rewritten every frame from the row the cursor is on.
+        ///
+        /// Under the list rather than at the top of the tab, because on a nine-row list a
+        /// warning above the list is most of a screen away from the thing it warns about -- and
+        /// the moment that matters is the moment your thumb is on the key. Stronger than the
+        /// wheel page ever was: that showed one warning for a whole sub-page, this one names
+        /// the set.
+        /// </summary>
+        private void NoteStrip(float x, float right, float top, float t)
+        {
+            Hud.RectFrom(x, top, PanelWidth - Pad * 2f, 0.0010f, Hairline);
+
+            // The hold again, across the words it is about, so the bar and the warning read as
+            // one object rather than two.
+            if (t > 0f)
+            {
+                Hud.RectFrom(x, top - 0.004f, (PanelWidth - Pad * 2f) * t, 0.0022f, Palette.Danger);
+            }
+
+            string headTxt;
+            Color headInk;
+            var icon = "";
+
+            string l1 = "", l2 = "", l3 = "";
+            Color i1 = Palette.TextDim, i2 = Palette.TextDim, i3 = Palette.TextDim;
+
+            if (!_live)
+            {
+                headTxt = "NOT RIGHT NOW";
+                headInk = Palette.Warn;
+                l1 = _why;
+            }
+            else if (_tab == TabPost)
+            {
+                headTxt = Says[_pick].Head;
+                headInk = Palette.TextDim;
+                icon = "reply.png";
+                l1 = Says[_pick].Line;
+            }
+            else if (_tab == TabDiss)
+            {
+                var g = _dissList[_pick];
+
+                headTxt = "NAMING " + g.Name.ToUpperInvariant();
+                headInk = Palette.Danger;
+                icon = "megaphone.png";
+
+                l1 = "They answer -- on here, within the minute.";
+                l2 = "Then -- somebody comes to find you.";
+                i2 = Palette.Danger;
+                l3 = string.IsNullOrEmpty(g.TurfHint) ? "Say it where they can see it" : g.TurfHint;
+                i3 = Palette.Alpha(Palette.TextDim, 150);
+            }
+            else
+            {
+                var g = _callList[_pick];
+
+                headTxt = "CALLING OUT " + g.Name.ToUpperInvariant();
+                headInk = Palette.Danger;
+                icon = "skull.png";
+
+                l1 = "Where -- right where you're standing.";
+                i1 = Palette.Danger;
+                l2 = "Who turns up -- carload after carload.";
+                i2 = Palette.Danger;
+                l3 = "Walk off -- and it's over.";
+            }
+
+            // A result or a refusal replaces the LINES and keeps the HEAD, so the set you are
+            // aiming at never leaves the screen at the moment you are aiming at it.
+            if (_note != null && Game.GameTime - _noteAt < NoteMs)
+            {
+                l1 = _note;
+                i1 = _noteInk;
+                l2 = "";
+                l3 = "";
+            }
+            else _note = null;
+
+            var hx = x;
+
+            if (icon != "" &&
+                Hud.File(icon, x + Hud.ToX(0.018f) * 0.5f, top + 0.016f, 0.018f, 0f, headInk))
+            {
+                hx = x + Hud.ToX(0.018f) + 0.006f;
+            }
+
+            Hud.Text(headTxt, hx, top + 0.008f, 0.25f, headInk, Hud.FontLabel, centre: false);
+
+            // The mark slot: the whole feedback channel for the hold, three states and no more.
+            var mark = "";
+            var markInk = Palette.Warn;
+
+            if (t > 0f) mark = "RELEASE TO STOP";
+            else if (_nudge != null && Game.GameTime - _nudgeAt < NudgeMs)
+            {
+                mark = _nudge;
+                markInk = Palette.Danger;
+            }
+            else _nudge = null;
+
+            if (mark != "")
+            {
+                Hud.TextRight(mark, right, top + 0.008f, 0.24f, markInk, Hud.FontLabel);
+            }
+
+            var w = PanelWidth - Pad * 2f;
+
+            if (l1 != "") Hud.Text(Hud.Fit(l1, w, 0.27f, Hud.FontBody), x, top + 0.030f, 0.27f,
+                                   i1, Hud.FontBody, centre: false);
+            if (l2 != "") Hud.Text(Hud.Fit(l2, w, 0.27f, Hud.FontBody), x, top + 0.052f, 0.27f,
+                                   i2, Hud.FontBody, centre: false);
+            if (l3 != "") Hud.Text(Hud.Fit(l3, w, 0.27f, Hud.FontBody), x, top + 0.074f, 0.27f,
+                                   i3, Hud.FontBody, centre: false);
         }
 
         /// <summary>
@@ -511,14 +1243,26 @@ namespace Hoodrich.UI
             Hud.RectFrom(x, PanelTop + PanelHeight - 0.026f, PanelWidth - Pad * 2f, 0.0012f,
                          Color.FromArgb(60, 200, 205, 200));
 
-            Hud.Text("UP/DOWN  SCROLL      LEFT/RIGHT  FILTER      ENTER  CLOSE",
-                     x, y, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
+            // "TABS" rather than "FILTER", which would be a lie about half the strip now. And
+            // every line ends in BACKSPACE OUT, so the way out is the last thing read in every
+            // state.
+            string keys;
+
+            if (Progress() > 0f) keys = "KEEP HOLDING      LET GO TO STOP";
+            else if (IsFeedTab) keys = "UP/DOWN  SCROLL      LEFT/RIGHT  TABS      BACKSPACE  OUT";
+            else if (Rows() == 0) keys = "LEFT/RIGHT  TABS      BACKSPACE  OUT";
+            else if (!_live) keys = "UP/DOWN  PICK      BACKSPACE  OUT";
+            else if (_tab == TabPost) keys = "UP/DOWN  PICK      ENTER  POST      BACKSPACE  OUT";
+            else if (_tab == TabDiss) keys = "UP/DOWN  PICK      HOLD ENTER  SEND      BACKSPACE  OUT";
+            else keys = "UP/DOWN  PICK      HOLD ENTER  CALL      BACKSPACE  OUT";
+
+            Hud.Text(keys, x, y, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
 
             // The other half of the scroll indicator, and nearly free. HoldPosition bumps the
             // scroll when new posts land so the one you are reading stays put, which means the
             // reader silently accumulates unread posts above them with nothing saying so.
             // _scroll IS that number.
-            if (_scroll > 0)
+            if (IsFeedTab && _scroll > 0)
             {
                 Hud.TextRight(_scroll + " ABOVE", right, y, 0.24f, Palette.TextDim, Hud.FontLabel);
             }
@@ -537,12 +1281,12 @@ namespace Hoodrich.UI
         /// thousandths to the right of it, which read as a second ragged left edge down a narrow
         /// panel.
         /// </summary>
-        private float DrawHeader(float left, float right)
+        private float DrawHeader(float left, float right, Color edge)
         {
             Hud.RectFrom(left, PanelTop, PanelWidth, CardHeight, Color.FromArgb(240, 18, 20, 22));
 
             // Re-asserted, so draw order cannot eat it.
-            Hud.RectFrom(left, PanelTop, PanelWidth, 0.0028f, Palette.Accent);
+            Hud.RectFrom(left, PanelTop, PanelWidth, 0.0028f, edge);
 
             var headX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
 
@@ -584,8 +1328,16 @@ namespace Hoodrich.UI
             Hud.Text(_feed.Handle, headX + nw + 0.006f, PanelTop + 0.060f, 0.26f,
                      Palette.TextDim, Hud.FontLabel, centre: false);
 
-            Hud.TextRight("FOLLOWERS  ·  " + _feed.Following.ToString("N0") + " FOLLOWING",
-                          right, PanelTop + 0.0595f, 0.24f, Palette.TextDim, Hud.FontLabel);
+            // The wheel panel's "owed a visit" row, in a slot that already existed and was
+            // already right-aligned -- so it is visible the frame the screen opens rather than
+            // four tabs away, and it costs no layout.
+            var payback = PaybackDue != null && PaybackDue();
+
+            Hud.TextRight(payback
+                              ? "SOMEBODY'S COMING"
+                              : "FOLLOWERS  ·  " + _feed.Following.ToString("N0") + " FOLLOWING",
+                          right, PanelTop + 0.0595f, 0.24f,
+                          payback ? Palette.Danger : Palette.TextDim, Hud.FontLabel);
 
             // No underline here. The tab strip's rule closes the masthead, and two full-width
             // accent rules a few hundredths apart on a panel this narrow is a ladder.

@@ -765,8 +765,34 @@ namespace Hoodrich
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
 
-                // So a wedge can call a set out and bring them here.
-                pages.War = _war;
+                // The feed screen posts now, so it gets what the wheel page used to hold. The
+                // wedge is a door and nothing else.
+                _socialScreen.Gangs = _gangs;
+                _socialScreen.Crew = _crew;
+                _socialScreen.War = _war;
+                _socialScreen.PaybackDue = () => _payback != null && _payback.IsOwed;
+
+                _socialScreen.Say = set => _social.PostAsYou(set, "") != null;
+
+                // Naming a set does three things at once and they have to happen together: the
+                // post goes up, they answer it on the feed, and somebody starts driving.
+                _socialScreen.Diss = id =>
+                {
+                    var gang = _gangs.Get(id);
+                    if (gang == null) return false;
+
+                    var said = _social.PostAsYou("YouDiss" + Pretty(id), gang.Name);
+                    if (said == null) return false;
+
+                    _social.Dissed(gang.Id, gang.Name, 2 + _rng.Next(3));
+                    _payback.Owed(gang.Id);
+
+                    // And it costs you with them. Enough of it and they cross into beef on
+                    // their own, without anybody declaring anything -- which is the only way to
+                    // make an enemy of somebody who was not one.
+                    _crew.Taunted(gang.Id);
+                    return true;
+                };
 
                 // Two other gangs with a problem, picked fresh each time.
                 //
@@ -792,37 +818,9 @@ namespace Hoodrich
                     return about == null ? null : new[] { who.Id, about.Name };
                 };
 
-                pages.SayDaily = () =>
-                {
-                    var said = _social.PostAsYou("YouDaily", "");
-                    Notify.Ticker(said == null ? "~s~Nothing to say right now."
-                                               : "~g~Posted.~s~");
-                };
-
-                // Naming a set does three things at once, and they have to happen together:
-                // the post goes up, they answer it on the feed, and somebody starts driving.
-                pages.Diss = id =>
-                {
-                    var gang = _gangs.Get(id);
-                    if (gang == null) return;
-
-                    var said = _social.PostAsYou("YouDiss" + Pretty(id), gang.Name);
-                    if (said == null)
-                    {
-                        Notify.Ticker("~s~You've said all that already.");
-                        return;
-                    }
-
-                    _social.Dissed(gang.Id, gang.Name, 2 + _rng.Next(3));
-                    _payback.Owed(gang.Id);
-
-                    // And it costs you with them. Enough of it and they cross into beef on
-                    // their own, without anybody declaring anything -- which is the only way
-                    // to make an enemy of somebody who was not one.
-                    _crew.Taunted(gang.Id);
-
-                    Notify.Important("~r~That's out there now.~s~ They read it too.");
-                };
+                // The tickers that used to sit here are gone with them. Those exact words are
+                // in the note strip now, a hair under the cursor, on a screen that is open and
+                // being read -- and two channels saying one sentence is noise.
 
                 pages.PaybackDue = () => _payback != null && _payback.IsOwed;
 

@@ -237,6 +237,31 @@ def heroin():
     save(img, 'heroin.png')
 
 
+def megaphone():
+    """
+    Saying it where they can hear it. Marks the DISS section.
+
+    A horn opening right, a grip hanging under it, and one arc of sound. At the size this
+    draws the ARC is the only thing separating it from a plain wedge, so it is drawn far
+    thicker than looks right at full size -- and the horn is a blunt wedge rather than a cone,
+    because a knife edge vanishes on the downsample.
+    """
+    img, d = canvas()
+
+    d.polygon([(170, 202), (170, 310), (348, 428), (348, 84)], fill=W)      # the horn
+    d.rounded_rectangle([322, 84, 372, 428], radius=24, fill=W)             # the mouth
+    d.rounded_rectangle([116, 212, 192, 300], radius=26, fill=W)            # the throat
+    d.polygon([(126, 288), (198, 288), (176, 452), (110, 452)], fill=W)     # the grip
+
+    d.arc([300, 26, 502, 486], start=-52, end=52, fill=W, width=56)
+
+    # A bite where the grip meets the horn, so the two read as separate parts of one thing
+    # rather than a single blob.
+    d.polygon([(188, 296), (240, 296), (214, 332)], fill=CLEAR)
+
+    save(img, 'megaphone.png')
+
+
 print('writing to %s' % OUT)
 skull()
 police()
@@ -248,3 +273,4 @@ tick()
 crack()
 pills()
 heroin()
+megaphone()
