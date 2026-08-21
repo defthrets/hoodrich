@@ -956,7 +956,8 @@
       "gender": "female",
       "pic": "CHAR_ASHLEY",
       "verified": false,
-      "voice": "ashley_lost"
+      "voice": "ashley_lost",
+      "gang": "lost"
     },
     {
       "handle": "clay_lostmc",
@@ -964,7 +965,8 @@
       "gender": "male",
       "pic": "",
       "verified": false,
-      "voice": "clay_lostmc"
+      "voice": "clay_lostmc",
+      "gang": "lost"
     },
     {
       "handle": "terry_lostmc",
@@ -972,7 +974,8 @@
       "gender": "male",
       "pic": "",
       "verified": false,
-      "voice": "terry_lostmc"
+      "voice": "terry_lostmc",
+      "gang": "lost"
     },
     {
       "handle": "oscar_guzman",
@@ -1316,6 +1319,231 @@
       "gender": "none",
       "pic": "",
       "voice": "chengholdings_ls"
+    },
+    {
+      "handle": "vla_chato",
+      "name": "Chato",
+      "gang": "aztecas",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "turquoise_nena",
+      "name": "Nena",
+      "gang": "aztecas",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "rancho_pelon",
+      "name": "Pelon",
+      "gang": "aztecas",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "azteca_sil",
+      "name": "Sil",
+      "gang": "aztecas",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "vla_smiley",
+      "name": "Smiley",
+      "gang": "aztecas",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "mg_cipote",
+      "name": "Cipote",
+      "gang": "marabunta",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "cypress_beto",
+      "name": "Beto",
+      "gang": "marabunta",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "mg13_flaca",
+      "name": "Flaca",
+      "gang": "marabunta",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "elburro_chele",
+      "name": "Chele",
+      "gang": "marabunta",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "grande_yesi",
+      "name": "Yesi",
+      "gang": "marabunta",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "lost_dutch",
+      "name": "Dutch",
+      "gang": "lost",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "stabcity_rae",
+      "name": "Rae",
+      "gang": "lost",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "onepercent_hoss",
+      "name": "Hoss",
+      "gang": "lost",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "lost_wrench",
+      "name": "Wrench",
+      "gang": "lost",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "sandy_bett",
+      "name": "Bett",
+      "gang": "lost",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "am_sevan",
+      "name": "Sevan",
+      "gang": "armenians",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "lapuerta_aram",
+      "name": "Aram",
+      "gang": "armenians",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "hayastan_nara",
+      "name": "Nara",
+      "gang": "armenians",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "am_garo",
+      "name": "Garo",
+      "gang": "armenians",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "armen_lilit",
+      "name": "Lilit",
+      "gang": "armenians",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "gingerst_dae",
+      "name": "Dae",
+      "gang": "koreans",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "kkangpae_jin",
+      "name": "Jin",
+      "gang": "koreans",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "seoul_hana",
+      "name": "Hana",
+      "gang": "koreans",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "ls_kwon",
+      "name": "Kwon",
+      "gang": "koreans",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "littleseoul_mina",
+      "name": "Mina",
+      "gang": "koreans",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "voice": ""
     }
   ],
   "slots": {
@@ -1400,7 +1628,12 @@
       "the yellow",
       "Triads",
       "Wei Cheng",
-      "them Little Seoul boys"
+      "them Little Seoul boys",
+      "Aztecas",
+      "Marabunta",
+      "the Lost",
+      "the Armenians",
+      "Kkangpae"
     ],
     "weathertalk": [
       "It's too hot",
@@ -4938,14 +5171,16 @@
     ],
     "triads": [
       "Triads",
-      "Wei Cheng"
+      "Wei Cheng",
+      "Little Seoul"
     ],
     "armenians": [
       "Armenians",
       "the Armenian Mob"
     ],
     "koreans": [
-      "Kkangpae"
+      "Kkangpae",
+      "Little Seoul"
     ]
   }
 }

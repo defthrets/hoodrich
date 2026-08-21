@@ -1716,8 +1716,17 @@ namespace Hoodrich.Social
                 case "ballas":   return "~p~";
                 case "vagos":    return "~y~";
                 case "lost":     return "~r~";
-                case "koreans":  return "~b~";
                 case "marabunta":return "~b~";
+
+                // Teal, and blue is the closest the ticker has to it.
+                case "aztecas":  return "~b~";
+
+                // Both dark red in gangs.json -- 150,40,60 and 150,40,55, near enough the
+                // same colour. The Kkangpae were answering "~b~" here, which is not a shade
+                // of what they wear; it was the only case in this switch that contradicted
+                // the file it is supposed to be approximating.
+                case "armenians":return "~r~";
+                case "koreans":  return "~r~";
 
                 // Wei Cheng's red. Added with the Triad accounts -- they had no case here at
                 // all, so every line they posted came out in the plain text colour and read
