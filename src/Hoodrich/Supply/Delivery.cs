@@ -1100,6 +1100,8 @@ namespace Hoodrich.Supply
                 // he strolled up the path with a box welded to his hand and his arms by his
                 // sides. It is an upper-body clip, so layered on top of the walk it plays.
                 GiveBox();
+
+                Stagger(true);
             }
             catch (Exception ex)
             {
@@ -1180,6 +1182,9 @@ namespace Hoodrich.Supply
                                       1.0f, 8000, 1.0f, 0, 0f);
                     }
                     catch { /* he will get there or he will not */ }
+
+                    // Asked for again in case the clipset was still streaming when he set off.
+                    if (!_staggering) Stagger(true);
                 }
 
                 return;
@@ -1390,6 +1395,52 @@ namespace Hoodrich.Supply
         /// <summary>The last package left on the floor of the house.</summary>
         private Prop _lastDropped;
 
+        /// <summary>
+        /// The walk of a man who has had a few, for the trip up the path and back.
+        ///
+        /// A movement clipset rather than an animation: it replaces how he walks for as long as
+        /// it is set, so it survives the nav-mesh task being re-issued every four seconds on the
+        /// way in. An animation would be cancelled by the first of those and he would be sober
+        /// again for the rest of the path.
+        ///
+        /// Cleared explicitly when he is let go. A clipset left on a ped the game then recycles
+        /// is a random pedestrian staggering round Davis for the rest of the session.
+        /// </summary>
+        private const string DrunkWalk = "move_m@drunk@moderatedrunk";
+
+        private bool _staggering;
+
+        private void Stagger(bool on)
+        {
+            if (_driver == null || !_driver.Exists()) return;
+
+            try
+            {
+                if (on)
+                {
+                    Function.Call(Hash.REQUEST_ANIM_SET, DrunkWalk);
+
+                    // Streaming is asynchronous, so a clipset asked for this frame is not ready
+                    // this frame. TickCarrying calls back in while he walks, and the walk takes
+                    // several seconds, so it lands well before he reaches the door.
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_SET_LOADED, DrunkWalk)) return;
+
+                    Function.Call(Hash.SET_PED_MOVEMENT_CLIPSET, _driver.Handle, DrunkWalk, 1.0f);
+                    _staggering = true;
+                    return;
+                }
+
+                if (!_staggering) return;
+
+                Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, _driver.Handle, 1.0f);
+                _staggering = false;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not set the walk: " + ex.Message);
+            }
+        }
+
         private void TakeBox()
         {
             try
@@ -1430,6 +1481,12 @@ namespace Hoodrich.Supply
             // Whatever happened, the phone comes down. A call that is called off leaving the
             // player walking round with a handset up is worse than no animation at all.
             EndPhoneAnimation();
+
+            // Before he is handed back, and here rather than at each of the three places that
+            // release him -- this is the one funnel every ending goes through. A movement
+            // clipset left on a ped the game then recycles is a stranger staggering round Davis
+            // for the rest of the session.
+            Stagger(false);
 
             try
             {
