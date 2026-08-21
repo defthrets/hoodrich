@@ -797,6 +797,30 @@ namespace Hoodrich.Supply
             {
                 if (_car == null || !_car.Exists()) return;
 
+                // Not while you are watching him.
+                //
+                // This straightens the car onto the mark, and straightening means moving --
+                // which from the pavement is a car jumping two metres sideways and rotating.
+                // Close enough is close enough when somebody is looking; the tidy-up happens
+                // the moment they are not.
+                var watched = Function.Call<bool>(Hash.IS_ENTITY_ON_SCREEN, _car.Handle) &&
+                              _car.Position.DistanceTo(Game.Player.Character.Position) < 60f;
+
+                var near = _car.Position.DistanceTo(ParkSpot) < 6f;
+
+                if (watched && near)
+                {
+                    // Parked as far as anybody cares. Let him stop where he stopped.
+                    if (_driver != null && _driver.Exists())
+                    {
+                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _driver.Handle, _car.Handle, 1, 1000);
+                    }
+
+                    return;
+                }
+
+                if (watched) return;
+
                 _car.Position = ParkSpot;
                 _car.Heading = ParkHeading;
 
@@ -1336,12 +1360,51 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>
+        /// Where he sets off from.
+        ///
+        /// A named spot round the corner rather than a random road hundreds of metres out. The
+        /// long version was chosen so the spawn could never be witnessed, and it bought that
+        /// with a drive across half of Chamberlain -- which is where all the getting stuck came
+        /// from, and every recovery for it ends in a car moving on its own.
+        ///
+        /// This is one junction away. Short enough that there is nothing to go wrong on, far
+        /// enough that he still arrives rather than appears.
+        /// </summary>
+        private static readonly Vector3 StartPoint = new Vector3(-103.745f, -1515.022f, 33.710f);
+
+        private const float StartHeading = 317.670f;
+
+        /// <summary>
         /// A road far enough out that the spawn is never witnessed, preferring somewhere behind
         /// the camera so even a long sightline down a street does not catch it.
+        ///
+        /// Only used when the named start is in view. A fixed spot you can see a car appear on
+        /// is worse than a longer drive.
         /// </summary>
         private bool TryStartPoint(Vector3 origin, out Vector3 spot)
         {
             spot = Vector3.Zero;
+
+            // The named spot first, unless you are looking straight at it.
+            try
+            {
+                var player = Game.Player.Character;
+                var seen = player != null && player.Exists() &&
+                           player.Position.DistanceTo(StartPoint) < 90f &&
+                           Function.Call<bool>(Hash.IS_SPHERE_VISIBLE,
+                                               StartPoint.X, StartPoint.Y, StartPoint.Z, 3f);
+
+                if (!seen)
+                {
+                    spot = StartPoint;
+                    return true;
+                }
+            }
+            catch
+            {
+                spot = StartPoint;
+                return true;
+            }
 
             var behind = -Vector3.Zero;
             try { behind = GameplayCamera.Direction; }

@@ -341,11 +341,11 @@ namespace Hoodrich.UI
             // of the wheel needs.
             var topDy = Crosses(angFromDeg, angToDeg, 0f)
                 ? rOuter
-                : Math.Max(Reach(a0, rInner, rOuter), Reach(a1, rInner, rOuter));
+                : Math.Max(ReachTop(a0, rInner, rOuter), ReachTop(a1, rInner, rOuter));
 
             var bottomDy = Crosses(angFromDeg, angToDeg, 180f)
                 ? -rOuter
-                : Math.Min(Reach(a0, rInner, rOuter), Reach(a1, rInner, rOuter));
+                : Math.Min(ReachBottom(a0, rInner, rOuter), ReachBottom(a1, rInner, rOuter));
 
             var pxTop = (int)Math.Floor((cy - topDy) * ScreenHeight);
             var pxBottom = (int)Math.Ceiling((cy - bottomDy) * ScreenHeight);
@@ -392,21 +392,36 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
-        /// How far up a boundary ray reaches, in the dy the scan measures.
+        /// The HIGHEST point on a boundary ray, in the dy the scan measures.
         ///
-        /// Up the ray it is rOuter that matters; down it, rInner -- the annulus has a hole in
-        /// it, so the lowest point of a downward ray is on the INNER edge, not the outer one.
+        /// dy is r * cos(angle) and r runs from rInner to rOuter, so where cos is positive the
+        /// highest point is at the outer edge, and where it is negative -- the ray pointing
+        /// downward -- the highest point is the INNER one, because the annulus has a hole in
+        /// the middle and the ray starts at the edge of it.
         /// </summary>
-        private static float Reach(double angleRad, float rInner, float rOuter)
+        private static float ReachTop(double angleRad, float rInner, float rOuter)
         {
             var c = (float)Math.Cos(angleRad);
             return c > 0f ? rOuter * c : rInner * c;
         }
 
+        /// <summary>
+        /// The LOWEST point on a boundary ray, which is the other way round.
+        ///
+        /// This is the one that was missing, and it is why a wedge in the lower half came out
+        /// as a crescent. Both bounds were taken from the function above, so for a downward ray
+        /// the bottom of the band was computed at the INNER radius -- cutting off every row
+        /// between there and the outer edge, which is most of the wedge.
+        /// </summary>
+        private static float ReachBottom(double angleRad, float rInner, float rOuter)
+        {
+            var c = (float)Math.Cos(angleRad);
+            return c < 0f ? rOuter * c : rInner * c;
+        }
+
         /// <summary>Whether a sector spans a given bearing, wrapping properly at 360.</summary>
         private static bool Crosses(float fromDeg, float toDeg, float bearing)
         {
-            var from = ((fromDeg % 360f) + 360f) % 360f;
             var span = toDeg - fromDeg;
             var at = (((bearing - fromDeg) % 360f) + 360f) % 360f;
 

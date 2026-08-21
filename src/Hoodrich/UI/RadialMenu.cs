@@ -494,7 +494,7 @@ namespace Hoodrich.UI
             {
                 if (string.IsNullOrEmpty(page.Subtitle)) return;
 
-                Draw.Text(page.Subtitle, cx, top + 0.044f, 0.36f, Palette.TextDim,
+                Draw.Text(page.Subtitle, cx, top + 0.044f, 0.32f, Palette.TextDim,
                           Draw.FontChaletLondon);
                 return;
             }
@@ -509,18 +509,24 @@ namespace Hoodrich.UI
             Draw.Text(item.Label.ToUpperInvariant(), cx, top - 0.006f, 0.90f, Palette.Text,
                       Draw.FontCursive);
 
-            var y = top + 0.060f;
+            // Everything under the title is Chalet London, at two sizes.
+            //
+            // The name is the sign-painter script and everything below it is the plain face --
+            // one display face and one reading face, which is the same pair the tweet cards and
+            // every full screen in the mod use. Three faces in four centimetres of screen is
+            // what makes a HUD look assembled rather than designed.
+            var y = top + 0.058f;
 
             if (!string.IsNullOrEmpty(item.Value))
             {
-                Draw.Text(item.Value, cx, y, 0.42f,
+                Draw.Text(item.Value, cx, y, 0.38f,
                           item.Enabled ? Palette.Cash : Palette.TextDisabled, Draw.FontChaletLondon);
-                y += 0.034f;
+                y += 0.030f;
             }
 
             if (!string.IsNullOrEmpty(detail))
             {
-                Draw.Text(detail, cx, y, 0.32f,
+                Draw.Text(detail, cx, y, 0.30f,
                           item.Enabled ? Palette.TextDim : Palette.Warn, Draw.FontChaletLondon);
             }
         }

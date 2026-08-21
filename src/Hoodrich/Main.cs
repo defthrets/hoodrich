@@ -387,12 +387,12 @@ namespace Hoodrich
                         .Stand(new Vector3(-165.765f, -1630.464f, 33.655f), 288.636f,
                                "WORLD_HUMAN_SMOKING_POT", armed: false)
 
-                        // On the gate, armed, and one of the set. He was a dealer model
-                        // doing the dealing idle -- scenery, to make the block look like a
-                        // place where this happens whether or not you are the one doing it.
-                        // The gate is a way in, and a way in gets somebody who can hold it.
+                        // On the gate, one of the set, and not carrying. He was a dealer
+                        // model doing the dealing idle, then a rifle guard -- both wrong for a
+                        // gate you walk through to talk to somebody. A man stood at the front
+                        // of a courtyard is watching who comes in, not holding a position.
                         .Stand(new Vector3(-172.341f, -1632.777f, 33.463f), 101.654f,
-                               "WORLD_HUMAN_GUARD_STAND")
+                               "WORLD_HUMAN_GUARD_STAND", armed: false)
 
                         // Down the south end, facing back up the walkway.
                         .Stand(new Vector3(-159.851f, -1681.244f, 36.966f), 181.575f,
