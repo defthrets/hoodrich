@@ -323,6 +323,29 @@ namespace Hoodrich.Supply
         public bool IsDry(DealerDef def) => def != null && _dry.Contains(def.Id);
 
         /// <summary>Deducts what was bought. Returns how much he could actually supply.</summary>
+        /// <summary>
+        /// Puts back weight that was taken off him and then not sold.
+        ///
+        /// TakeStock happens before the stash is asked whether it has room, because he cannot
+        /// sell what he is not holding and that has to be settled first. When the stash then
+        /// takes less than was handed over -- or none of it, because it is full -- the
+        /// difference had nowhere to go and simply stopped existing. The player was charged
+        /// correctly either way, so nobody was robbed; the weight just left the world. A
+        /// dealer could be emptied by a man with a full stash walking up and failing to buy.
+        ///
+        /// Capped at what he is allowed to hold, so this can never be used to stack him past
+        /// a full load.
+        /// </summary>
+        public void GiveStock(DealerDef def, string drugId, float grams)
+        {
+            if (def == null || string.IsNullOrEmpty(drugId) || grams <= 0f) return;
+
+            var s = StockFor(def.Id);
+            var have = s.TryGetValue(drugId, out var now) ? now : 0f;
+
+            s[drugId] = Math.Min(_cfg.DealerMaxStockGrams, have + grams);
+        }
+
         public float TakeStock(DealerDef def, string drugId, float grams)
         {
             if (def == null || grams <= 0f) return 0f;

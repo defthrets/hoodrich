@@ -1411,8 +1411,21 @@ namespace Hoodrich.Wheel
             var accepted = Stash.AddBulk(product.Id, supplied);
             if (accepted <= 0f)
             {
+                // Back in his bag before we walk away. It was taken off him a few lines up so
+                // that he could not sell what he was not holding, and with nowhere to put it
+                // the weight would otherwise stop existing -- a man with a full stash could
+                // empty a dealer just by failing to buy from him, over and over.
+                _dealers.GiveStock(def, product.Id, supplied);
+
                 Notify.Problem("you can't carry no more.");
                 return;
+            }
+
+            // The same thing for a partial fit. The player is charged for what fitted, which
+            // was always right; what did not fit needs to go back rather than evaporate.
+            if (supplied - accepted > 0.005f)
+            {
+                _dealers.GiveStock(def, product.Id, supplied - accepted);
             }
 
             var charged = (int)Math.Round(cost * (accepted / grams));
