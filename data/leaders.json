@@ -64,7 +64,7 @@
     {
       "gang": "marabunta",
       "name": "Chavo",
-      "zone": "ELBURRO",
+      "zone": "EBURO",
       "x": 0.0,
       "y": 0.0,
       "heading": 270,
@@ -105,7 +105,7 @@
     {
       "gang": "armenians",
       "name": "Sarkis",
-      "zone": "LAPUER",
+      "zone": "LOSPUER",
       "x": 0.0,
       "y": 0.0,
       "heading": 250,
@@ -113,6 +113,36 @@
         "g_m_m_armboss_01",
         "g_m_m_armgoon_01",
         "a_m_m_eastsa_02"
+      ],
+      "z": 0.0
+    },
+    {
+      "gang": "aztecas",
+      "name": "Chuy",
+      "zone": "RANCHO",
+      "x": 300.0,
+      "y": -1930.0,
+      "heading": 65,
+      "awayFromHour": 0,
+      "awayToHour": 0,
+      "models": [
+        "g_m_y_azteca_01"
+      ],
+      "z": 0.0
+    },
+    {
+      "gang": "koreans",
+      "name": "Mr Kim",
+      "zone": "KOREAT",
+      "x": 0.0,
+      "y": 0.0,
+      "heading": 0,
+      "awayFromHour": 0,
+      "awayToHour": 0,
+      "models": [
+        "g_m_m_korboss_01",
+        "g_m_y_korlieut_01",
+        "g_m_y_korean_01"
       ],
       "z": 0.0
     }

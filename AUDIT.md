@@ -142,11 +142,25 @@ questioned yet, and might deserve the same scepticism.
 Still open: the mission has no site coordinate, so targets fall back to the zone
 centre. It wants one.
 
-### C. The Aztecas have no leader — OPEN
+### C. The Aztecas have no leader — DONE, and it uncovered a worse bug
 
-Every other gang has one, so they cannot be talked to or joined. They were added
-for a mission that then moved to the Vagos, so they currently exist only as
-somebody to shoot at and post about.
+Chuy, in the pocket the map shows: inside Rancho on the Davis side, clear of El
+Tio in the middle of it and of the Vagos corner at the south end. The Kkangpae
+got one too — Mr Kim on Ginger Street — so all nine gangs can now be walked up
+to.
+
+**Placing them found something the audit missed.** `ELBURRO` and `LAPUER` are
+not zone codes. The game calls them `EBURO` and `LOSPUER`. So the Marabunta and
+the Armenians have had turf the mod could never resolve — `TurfWatch` could not
+tell you you were standing on it, no zone lookup could match it, and the leader
+move would have put Chavo and Sarkis at the world origin, because
+`GroundedCentre` returns zero for a zone that does not exist.
+
+The audit script *had* a zone cross-check. It silently did nothing, because it
+failed to parse `zones.json` and ended up comparing against an empty set — a
+check that cannot fail is worse than no check, because it reads as a pass.
+Every turf code, leader zone and mission zone is now verified against the 93
+real ones.
 
 ### D. The coke ladder was upside down — DONE
 
@@ -244,5 +258,6 @@ Answering back would close the loop, and `Argue` is nearly the whole mechanism.
 
 *Audited at commit `5d570fe`; recommendations actioned through `062b402`.*
 
-**Still open:** C (Aztecas have no leader), K (turf map questions), spots for
-Chavo, Uncle Wei and Sarkis, and a site coordinate for `driveby_lamesa`.
+**Still open:** K (turf map questions), real spots for Chavo, Uncle Wei, Sarkis
+and Mr Kim — all four currently stand at their zone's centre, which is correct
+turf but an arbitrary spot in it — and a site coordinate for `driveby_lamesa`.

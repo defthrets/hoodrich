@@ -260,7 +260,7 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(70, 200, 200), 3,
                 new[] { "meth", "coke" },
                 new[] { "vagos", "ballas", "lost" },
-                new[] { "ELBURRO", "VESP" },
+                new[] { "EBURO", "VESP" },
                 "Cypress Flats, Textile City, Elysian Island",
                 new[] { "g_m_y_salvaboss_01", "g_m_y_salvagoon_01", "g_m_y_salvagoon_02", "a_m_y_mexthug_01" }));
 
@@ -284,7 +284,7 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(150, 40, 60), 76,
                 new[] { "heroin" },
                 new[] { "triads", "lost", "koreans" },
-                new[] { "LAPUER" },
+                new[] { "LOSPUER" },
                 "Alta, Burton, Pillbox Hill",
                 new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_y_armgoon_02", "a_m_m_eastsa_02" }));
         }
