@@ -206,6 +206,7 @@ namespace Hoodrich
         private readonly BlockLife _block;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
+        private GunScreen _gunScreen;
         private DealerTalk _juanTalk;
         private readonly FixerTalk _fixerTalk;
         private readonly MissionRunner _jobs;
@@ -516,7 +517,8 @@ namespace Hoodrich
                     // Not over a full-screen UI. They keep queueing and keep ageing while it is
                     // up, so nothing is lost -- they are simply not drawn across a menu.
                     Hidden = () => _wheel.IsOpen || _socialScreen.IsOpen || _stashScreen.IsOpen
-                                   || _info.IsOpen || _talk.IsOpen || _cook.IsOpen,
+                                   || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
+                                   || _gunScreen.IsOpen,
                 };
 
                 _social.Toasts = _toasts;
@@ -661,6 +663,12 @@ namespace Hoodrich
                 _fixerTalk.BlockUnderAttack = () => _war != null && _war.IsRunning;
 
                 _bigjTalk = new ArmourerTalk(_bigj, _crew, _state);
+
+                // The rack is a screen now. The conversation is still how you get to it -- you
+                // walk up to a man and he says something -- but what he shows you once you have
+                // asked is a laid-out stock list rather than five pages of dialogue choices.
+                _gunScreen = new GunScreen(_state);
+                _bigjTalk.Rack = () => _gunScreen.Open();
                 _bigj.Talk = _talk;
                 _bigj.TalkBuilder = () =>
                 {
@@ -811,6 +819,22 @@ namespace Hoodrich
                     {
                         _stashScreen.Update();
                         _stashScreen.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
+                // The rack owns the screen the same way the kitchen does. Without this the
+                // wheel could be opened on top of it, both would fight over up and down, and
+                // every walk-up prompt in the mod would carry on showing behind it.
+                if (_gunScreen.IsOpen)
+                {
+                    if (!available || !_bigj.InReach) _gunScreen.Close();
+                    else
+                    {
+                        _gunScreen.Update();
+                        _gunScreen.Draw();
                         SlowTick();
                         _failures = 0;
                         return;
