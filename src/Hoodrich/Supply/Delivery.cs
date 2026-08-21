@@ -80,20 +80,34 @@ namespace Hoodrich.Supply
         /// <summary>
         /// What he is actually carrying: a package, not a parcel.
         ///
-        /// The game has purpose-made drug props from the story missions -- the taped bale from
-        /// the trash-run, the brick from the meth deals -- and one of those in his hands says
-        /// what this is without a word of dialogue. A cardboard carton says he is helping
-        /// somebody move house.
+        /// This list used to open with prop_drug_package_02, which measures 25 by 17 by 6
+        /// centimetres -- a flat taped envelope. Being base game it was present in every
+        /// install, so it won the loop every single time and no other entry was ever reached.
+        /// A man drove a kilo of weight across Los Santos and carried in something the size of
+        /// a paperback.
         ///
-        /// Tried in order, and an install missing all of them still gets the delivery: it just
-        /// gets it with nothing in shot, which is a worse scene rather than a broken one, so
-        /// the ordinary boxes stay on the end of the list as a last resort.
+        /// The biker and gunrunning packs ship proper bales, and those go first now: a metre
+        /// of shrink-wrapped kilos, which is what the trip was for. They are DLC, so the base
+        /// game bale is under them and an ordinary carton is under that -- an install missing
+        /// everything still gets the delivery, just with nothing in shot, which is a worse
+        /// scene rather than a broken one.
+        ///
+        /// Deliberately not here: imp_prop_impexp_boxcoke_01, which is the biggest of the lot
+        /// and has no collision. PutDown drops the box 20cm up and lets gravity finish, so a
+        /// collisionless prop would hang in the air in Franklin's front room forever.
         /// </summary>
         private static readonly string[] BoxProps =
         {
-            "prop_drug_package_02", "prop_drug_package", "prop_meth_bag_01",
-            "prop_cash_case_01", "prop_michael_backpack",
-            "prop_cs_cardbox_01", "prop_paper_box_01"
+            // ~0.98m of stacked, shrink-wrapped kilos. Two packs ship the same mesh.
+            "bkr_prop_coke_block_01a", "ba_prop_battle_coke_block_01a",
+
+            // Fatter and shorter, if the slab turns out to overhang his arms.
+            "bkr_prop_meth_bigbag_01a", "ba_prop_battle_meth_bigbag_01a",
+            "bkr_prop_weed_bigbag_01a", "ba_prop_battle_weed_bigbag_01a",
+
+            // Base game, so the list can never fall all the way through. Still nine times the
+            // volume of the envelope that used to win.
+            "prop_drug_package", "prop_mp_drug_pack_red", "prop_paper_box_01"
         };
 
         /// <summary>
@@ -1434,9 +1448,12 @@ namespace Hoodrich.Supply
 
                     // Held out in front with both hands, on the left hand bone, which is where
                     // the carry animation puts a crate.
+                    float yaw;
+                    var off = CarryOffset(model, out yaw);
+
                     Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
                                   Function.Call<int>(Hash.GET_PED_BONE_INDEX, _driver.Handle, 60309),
-                                  0.05f, 0.10f, -0.18f, 0f, 0f, 0f,
+                                  off.X, off.Y, off.Z, 0f, 0f, yaw,
                                   false, false, false, false, 2, true);
 
                     PlayCarry();
@@ -1450,6 +1467,71 @@ namespace Hoodrich.Supply
 
             Log.Debug("No box prop in this install; he will carry it in his hands.");
         }
+
+        /// <summary>
+        /// Where to hang a prop off the hand bone, worked out from the prop.
+        ///
+        /// A single hardcoded offset cannot serve a list like the one above, because the props
+        /// do not agree on where their own origin is. prop_drug_package_02 is base-pivoted --
+        /// its mesh sits entirely ABOVE the origin -- while prop_drug_package is centre-pivoted
+        /// and straddles it. An offset tuned against one of those makes the other float or sink
+        /// by half its own height, which is most of what "glued to his hip" looked like.
+        ///
+        /// So the mesh's own middle is measured and cancelled out, and what is left is one
+        /// number for where a carried thing belongs relative to the hand. Swap the prop list
+        /// again and this still holds.
+        ///
+        /// The dimensions go in the log, because the push-away-from-the-chest below is the one
+        /// part that is a judgement rather than arithmetic, and a line saying exactly how big
+        /// the winning prop turned out to be is what makes tuning it one edit instead of five.
+        /// </summary>
+        private static Vector3 CarryOffset(Model model, out float yaw)
+        {
+            yaw = 0f;
+
+            try
+            {
+                var lo = new OutputArgument();
+                var hi = new OutputArgument();
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, model.Hash, lo, hi);
+
+                var min = lo.GetResult<Vector3>();
+                var max = hi.GetResult<Vector3>();
+                var size = max - min;
+
+                if (size.Length() < 0.01f) return CarriedAt;
+
+                var centre = (min + max) * 0.5f;
+
+                // A long prop lies ACROSS him. Left at zero rotation a metre-long bale points
+                // straight out from his hip like a plank, because its long axis is local Y.
+                if (size.Y > size.X * 1.4f)
+                {
+                    yaw = 90f;
+                    centre = new Vector3(-centre.Y, centre.X, centre.Z);
+                }
+
+                Log.Info("Carry prop " + model.Hash + ": " +
+                         size.X.ToString("0.00") + " x " + size.Y.ToString("0.00") + " x " +
+                         size.Z.ToString("0.00") + ", yaw " + yaw.ToString("0") + ".");
+
+                return CarriedAt - centre;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not measure the box: " + ex.Message);
+                return CarriedAt;
+            }
+        }
+
+        /// <summary>
+        /// Where the MIDDLE of whatever he is carrying sits, relative to the hand bone.
+        ///
+        /// Out in front rather than against him: the old 0.10 was measured against a prop six
+        /// centimetres thick, and anything with real depth at that distance is inside his
+        /// chest.
+        /// </summary>
+        private static readonly Vector3 CarriedAt = new Vector3(0.06f, 0.26f, -0.16f);
 
         private void PlayCarry()
         {
