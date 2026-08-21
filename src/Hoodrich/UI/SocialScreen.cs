@@ -303,6 +303,40 @@ namespace Hoodrich.UI
             return PanelTop + height + 0.008f;
         }
 
+        /// <summary>
+        /// Draws the author's picture, and says whether it managed to.
+        ///
+        /// A dictionary that is not in this install streams forever and never arrives, so the
+        /// caller needs a straight answer rather than a blank square -- false and it falls back
+        /// to the letter. Names that never resolve are logged once each, so a guessed contact
+        /// dictionary that does not exist tells us rather than quietly showing nothing.
+        /// </summary>
+        private bool Avatar(Post post, float cx, float cy)
+        {
+            var pic = post.By == null ? "" : post.By.Pic;
+            if (string.IsNullOrEmpty(pic)) return false;
+
+            if (!Hud.EnsureTextureDict(pic))
+            {
+                Grumble(pic);
+                return false;
+            }
+
+            Hud.Sprite(pic, pic, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f, Color.White);
+            return true;
+        }
+
+        private static readonly HashSet<string> Moaned =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private static void Grumble(string pic)
+        {
+            if (Moaned.Contains(pic)) return;
+
+            Moaned.Add(pic);
+            Log.Debug("Avatar '" + pic + "' would not load; falling back to the initial.");
+        }
+
         private void DrawPost(float left, float top, Post post)
         {
             var lines = Lines(post);
@@ -317,10 +351,19 @@ namespace Hoodrich.UI
             var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;
             var cy = top + 0.004f + AvatarSize * 0.5f;
 
-            Hud.Disc(cx, cy, AvatarSize * 0.5f, post.By.Tint);
+            // The author's own face, if they have one.
+            //
+            // The field has always been there and the toasts have always drawn it -- this
+            // screen never looked at it, so the same author had a photograph on the right of
+            // the screen and a coloured circle with a letter in it here. A logo is the whole
+            // difference between a business account and a name.
+            if (!Avatar(post, cx, cy))
+            {
+                Hud.Disc(cx, cy, AvatarSize * 0.5f, post.By.Tint);
 
-            Hud.Text(post.By.Initial, cx, cy - 0.0135f, 0.46f,
-                     Color.FromArgb(235, 250, 250, 248), Hud.FontChaletLondon);
+                Hud.Text(post.By.Initial, cx, cy - 0.0135f, 0.46f,
+                         Color.FromArgb(235, 250, 250, 248), Hud.FontChaletLondon);
+            }
 
             var textX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
             var y = top + 0.002f;

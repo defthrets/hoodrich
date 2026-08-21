@@ -369,7 +369,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_CALL911",
       "voice": "ls_scanner_feed"
     },
     {
@@ -378,7 +378,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_BLIMP",
       "voice": "weazelnewsla"
     },
     {
@@ -405,7 +405,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_CALL911",
       "voice": "lspd_watch_ls"
     },
     {
@@ -414,7 +414,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_CLUCKIN_BELL",
       "voice": "cluckin_deals"
     },
     {
@@ -423,7 +423,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_BETTAPHARMACEUTICALS",
       "voice": "bettapharma"
     },
     {
@@ -432,7 +432,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_LIFEINVADER",
       "voice": "lifeinvader_ls"
     },
     {
@@ -441,7 +441,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_BLIMP",
       "voice": "radio_westcoast"
     },
     {
@@ -477,7 +477,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_LSCUSTOMS",
       "voice": "bennys_ls"
     },
     {
@@ -513,7 +513,7 @@
       "gang": "",
       "verified": false,
       "gender": "male",
-      "pic": "",
+      "pic": "CHAR_TAXI",
       "voice": ""
     },
     {
@@ -549,7 +549,7 @@
       "gang": "",
       "verified": false,
       "gender": "male",
-      "pic": "",
+      "pic": "CHAR_MP_MORS_MUTUAL",
       "voice": "towtruck_terry"
     },
     {
@@ -594,7 +594,7 @@
       "gang": "",
       "verified": false,
       "gender": "male",
-      "pic": "",
+      "pic": "CHAR_MECHANIC",
       "voice": "mechanic_hector"
     },
     {
@@ -639,7 +639,7 @@
       "gang": "",
       "verified": true,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_BLIMP",
       "voice": "weazelnews"
     },
     {
@@ -648,7 +648,7 @@
       "gang": "",
       "verified": true,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_LIFEINVADER",
       "voice": "lifeinvader"
     },
     {
@@ -657,7 +657,7 @@
       "gang": "",
       "verified": true,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_BLEETER",
       "voice": "bleeter_ls"
     },
     {
@@ -1042,7 +1042,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_CALL911",
       "voice": "lspd_official"
     },
     {
@@ -1051,7 +1051,7 @@
       "gang": "",
       "verified": false,
       "gender": "none",
-      "pic": "",
+      "pic": "CHAR_CALL911",
       "voice": "lssd_blaine"
     },
     {
