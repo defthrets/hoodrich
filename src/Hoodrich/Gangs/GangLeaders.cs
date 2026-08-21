@@ -353,8 +353,15 @@ namespace Hoodrich.Gangs
 
         // ---- map markers -------------------------------------------------------
 
-        /// <summary>Weed leaf: what he is there for is product, not violence.</summary>
-        private const int GangIconSprite = 496;
+        /// <summary>
+        /// radar_ped_gang_leader -- the sprite the game keeps for exactly this.
+        ///
+        /// It was the weed leaf, on the reasoning that what a leader is there for is product
+        /// rather than violence. That is true of what you DO with them and wrong about who they
+        /// are, and it put the same marker on Stretch as on a grow. This one says gang leader,
+        /// which is the whole of it, and the gang's own colour underneath says which gang.
+        /// </summary>
+        private const int GangIconSprite = 855;
 
         /// <summary>
         /// Marks the one leader worth finding, attached to the MAN rather than to a coordinate

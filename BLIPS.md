@@ -17,7 +17,7 @@ what it is and `496` does not.
 | 84 | `radar_lester` | Lamar, the fixer -- `Fixer.cs` |
 | 110 | `radar_gun_shop` | Grimes -- `Armourer.cs` |
 | 464 | `radar_spray_can` | tag spots -- `TagRun.cs` |
-| 496 | `radar_production_weed` | gang leaders -- `GangLeaders.cs` |
+| 855 | `radar_ped_gang_leader` | gang leaders, Stretch included -- `GangLeaders.cs` |
 | -- | `BlipSprite.Weed` | drug markers |
 | -- | `BlipSprite.Cocaine` | drug markers |
 | -- | `BlipSprite.Package` | the plug's drop |
@@ -124,6 +124,7 @@ raiding carload of anybody.
 | 148 | `radar_mp_friend` |
 | 274 | `radar_dead` |
 | 280 | `radar_friend` |
+| 855 | `radar_ped_gang_leader` |
 | 143 | `radar_objective_blue` |
 | 144 | `radar_objective_green` |
 | 145 | `radar_objective_red` |
