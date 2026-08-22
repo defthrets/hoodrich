@@ -142,7 +142,22 @@ namespace Hoodrich.Gangs
         /// <summary>Always present, for the install that has none of the above.</summary>
         private static readonly string[] SpareCars = { "buccaneer2", "voodoo", "manana", "primo2" };
 
-        private static readonly string[] Bikes = { "inductor", "inductor2" };
+        /// <summary>
+        /// What they ride, which is no longer only bicycles.
+        ///
+        /// Two pushbikes, two quads, a trike and a dirt bike. They all take the same treatment
+        /// -- pavement to aim at and the short way to it -- because the thing that makes this
+        /// read is a rider cutting between the yards rather than what he is sat on, and a quad
+        /// up on the footpath is more of that, not less.
+        ///
+        /// Names read off the spawn menu's own hash. Note sanchez is the one WITH the livery
+        /// and sanchez2 is the plain one, which is the wrong way round from what you would
+        /// guess; the paint goes over it either way.
+        /// </summary>
+        private static readonly string[] Bikes =
+        {
+            "inductor", "inductor2", "stryder", "sanchez", "blazer", "blazer4"
+        };
         private static readonly string[] SpareBikes = { "bmx", "scorcher" };
 
         /// <summary>Dark green, out of the game's own paint table.</summary>
@@ -501,7 +516,12 @@ namespace Hoodrich.Gangs
                 // Two or four up. A bike is one man, and a two-seater is a man and his mate --
                 // asking for four in a coupe gets you two and a warning nobody reads.
                 var room = Function.Call<int>(Hash.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS, roll.Car.Handle);
-                var want = bike ? 0 : (_rng.Next(2) == 0 ? 1 : 3);
+                // Two up where there is a pillion to sit on. Bicycles have none, so the clamp
+                // below quietly puts those back to one man -- which is why this asks for it
+                // rather than checking what he is riding.
+                var want = bike
+                    ? (_rng.Next(100) < 40 ? 1 : 0)
+                    : (_rng.Next(2) == 0 ? 1 : 3);
                 if (want > room) want = room;
 
                 for (var seat = -1; seat < want; seat++)
