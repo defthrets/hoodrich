@@ -49,6 +49,16 @@ namespace Hoodrich.UI
         public static readonly Color Warn = Color.FromArgb(255, 232, 177, 44);
         public static readonly Color Danger = Color.FromArgb(255, 214, 69, 58);
 
+        /// <summary>
+        /// The verified blue, and the only blue in the whole palette.
+        ///
+        /// Deliberately not the accent. Everything else on these screens is white, green, amber
+        /// or red and means something about YOU -- money, warning, trouble. This one means
+        /// something about somebody else, so it is the one colour that is not part of that
+        /// conversation.
+        /// </summary>
+        public static readonly Color Verified = Color.FromArgb(255, 72, 158, 240);
+
         /// <summary>Same colour at a different alpha.</summary>
         public static Color Alpha(Color c, int alpha) => Color.FromArgb(alpha, c.R, c.G, c.B);
 

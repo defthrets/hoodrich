@@ -26,6 +26,14 @@ namespace Hoodrich.Gangs
         public readonly List<string> Models = new List<string>();
 
         /// <summary>
+        /// His map mark, or 0 for the ordinary gang-leader one.
+        ///
+        /// In the data rather than in the code because it is a judgement about a person, and
+        /// the person is in the data. Editable in leaders.json.
+        /// </summary>
+        public int Sprite;
+
+        /// <summary>
         /// Exactly where he stands, from leaders.json. Zero means fall back to the pavement
         /// nearest the zone centre, which is how a leader ends up in the middle of the road.
         /// Ground height is probed at runtime so there is no Z to author wrongly.
@@ -147,6 +155,7 @@ namespace Hoodrich.Gangs
                 def.SpotY = node["y"].AsFloat();
                 def.SpotZ = node["z"].AsFloat();
                 def.Heading = node["heading"].AsFloat();
+                def.Sprite = node["sprite"].AsInt(def.Sprite);
                 def.AwayFromHour = node["awayFromHour"].AsInt(0);
                 def.AwayToHour = node["awayToHour"].AsInt(0);
 
@@ -364,6 +373,15 @@ namespace Hoodrich.Gangs
         private const int GangIconSprite = 855;
 
         /// <summary>
+        /// radar_dead -- the skull, for a leader who has earned it.
+        ///
+        /// Per leader rather than for all of them, because it is a thing about the MAN. Stretch
+        /// carries it: everything he has you do ends with somebody down, and the mark should say
+        /// so before you walk over. Anybody without an entry keeps the leader icon.
+        /// </summary>
+        private const int SkullSprite = 274;
+
+        /// <summary>
         /// Marks the one leader worth finding, attached to the MAN rather than to a coordinate
         /// so the marker walks with him.
         ///
@@ -428,7 +446,8 @@ namespace Hoodrich.Gangs
                         if (blip == null || !blip.Exists()) continue;
                     }
 
-                    Function.Call(Hash.SET_BLIP_SPRITE, blip.Handle, GangIconSprite);
+                    Function.Call(Hash.SET_BLIP_SPRITE, blip.Handle,
+                                  def.Sprite > 0 ? def.Sprite : GangIconSprite);
                     Function.Call(Hash.SET_BLIP_COLOUR, blip.Handle, gang.BlipColour);
 
                     blip.Name = def.Name + " -- " + gang.Name;

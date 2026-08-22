@@ -1483,7 +1483,11 @@ namespace Hoodrich.UI
             // screen never looked at it, so the same author had a photograph on the right of
             // the screen and a coloured circle with a letter in it here. A logo is the whole
             // difference between a business account and a name.
-            if (!Avatar(post, cx, cy))
+            // Whether they have a real face rather than a coloured circle with a letter in it.
+            // Kept, because it is also the answer to whether they get a tick.
+            var pictured = Avatar(post, cx, cy);
+
+            if (!pictured)
             {
                 Hud.Disc(cx, cy, AvatarSize * 0.5f, post.By.Tint);
 
@@ -1504,17 +1508,31 @@ namespace Hoodrich.UI
 
             var tail = textX + nameWidth + 0.006f;
 
-            if (post.By.Verified)
+            // A tick for anybody with a real photograph, as well as for anybody flagged.
+            //
+            // A display picture in this feed means a contact dictionary the game ships, which
+            // means a story character -- there is no way to have one by accident. So the two
+            // questions "is this somebody" and "does this somebody have a face" have the same
+            // answer, and the picture is the more reliable half of it: it is a fact about the
+            // game's own data rather than a flag somebody had to remember to set.
+            if (post.By.Verified || pictured)
             {
                 // A shape, not a dot. The mark was a small white disc immediately followed by
                 // the "  ·  " in the handle string -- a dot, a gap, then another dot, which
                 // reads as punctuation rather than as a badge.
+                //
+                // On a blue disc now, which is the one thing on this screen that is not saying
+                // something about you.
                 const float th = 0.014f;
                 var icx = tail + Hud.ToX(th) * 0.5f;
 
-                if (!Hud.File("tick.png", icx, y + 0.0095f, th, 0f, Palette.Accent))
+                Hud.Disc(icx, y + 0.0098f, 0.0068f, Palette.Verified);
+
+                if (!Hud.File("tick.png", icx, y + 0.0095f, th * 0.72f, 0f,
+                              Color.FromArgb(255, 18, 20, 22)))
                 {
-                    Hud.Disc(icx, y + 0.010f, 0.005f, Palette.Accent);
+                    // No tick art in this install, so the disc says it on its own.
+                    Hud.Disc(icx, y + 0.0098f, 0.0028f, Color.FromArgb(255, 18, 20, 22));
                 }
 
                 tail += Hud.ToX(th) + 0.004f;

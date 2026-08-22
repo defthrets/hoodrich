@@ -36,8 +36,14 @@ namespace Hoodrich.Missions
         private const float TalkRange = 3.0f;
         private const int UpdateIntervalMs = 700;
 
-        /// <summary>Skull: he is the one who sends you at people.</summary>
-        private const int Sprite = 84;
+        /// <summary>
+        /// radar_ped_gang_leader, which is what he actually is now.
+        ///
+        /// It was radar_lester -- a favour-broker on a phone -- with a comment above it calling
+        /// it a skull, which it also was not. He is the one you run with and the one who hands
+        /// out the work, and there is a sprite in the game for exactly that.
+        /// </summary>
+        private const int Sprite = 855;
 
         private static readonly string[] Models =
         {

@@ -14,14 +14,15 @@ what it is and `496` does not.
 
 | id | name | where |
 |---|---|---|
-| 84 | `radar_lester` | Lamar, the fixer -- `Fixer.cs` |
+| 855 | `radar_ped_gang_leader` | Lamar, the fixer -- `Fixer.cs` |
 | 110 | `radar_gun_shop` | Grimes -- `Armourer.cs` |
 | 464 | `radar_spray_can` | tag spots -- `TagRun.cs` |
 | 952 | `radar_trashbag` | bad end of the reputation bar -- `PostUp.cs` |
 | 621 | `radar_pickup_dtb_health` | good end of the reputation bar |
 | 774 | `radar_sub_periscope` | inside the heat bar -- `PostUp.cs` |
 | 835 | `radar_community_series` | inside the reputation bar |
-| 855 | `radar_ped_gang_leader` | gang leaders, Stretch included -- `GangLeaders.cs` |
+| 855 | `radar_ped_gang_leader` | gang leaders by default -- `GangLeaders.cs` |
+| 274 | `radar_dead` | Stretch, per-leader override in `leaders.json` |
 | 58 | `radar_crim_wanted` | Oxycodone, everywhere it is drawn -- `Icons.cs` |
 | -- | `BlipSprite.Weed` | drug markers |
 | 51 | `radar_crim_drugs` | the crack den door -- `Settings.cs` |
