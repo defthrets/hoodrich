@@ -23,7 +23,7 @@ W = (255, 255, 255, 255)
 CLEAR = (0, 0, 0, 0)
 
 
-def bez(p0, p1, p2, n):
+def bez(p0, p1, p2, n=32):
     """Quadratic Bezier, as a list of points."""
     out = []
     for i in range(n + 1):
@@ -61,6 +61,30 @@ def ribbon(d, spine, w0, w1, fill):
         right.append((x - nx * half, y - ny * half))
 
     d.polygon(left + right[::-1], fill=fill)
+
+
+def ribbon_pts(spine, w0, w1, scale=1):
+    """ribbon()'s outline, returned as points and scaled, for a supersampled canvas."""
+    import math as _m
+    left, right = [], []
+
+    for i, (x, y) in enumerate(spine):
+        t = i / float(len(spine) - 1)
+        half = (w0 + (w1 - w0) * t) * 0.5
+
+        if i == 0:
+            dx, dy = spine[1][0] - x, spine[1][1] - y
+        elif i == len(spine) - 1:
+            dx, dy = x - spine[-2][0], y - spine[-2][1]
+        else:
+            dx, dy = spine[i + 1][0] - spine[i - 1][0], spine[i + 1][1] - spine[i - 1][1]
+
+        n = _m.hypot(dx, dy) or 1.0
+        nx, ny = -dy / n, dx / n
+        left.append(((x + nx * half) * scale, (y + ny * half) * scale))
+        right.append(((x - nx * half) * scale, (y - ny * half) * scale))
+
+    return left + right[::-1]
 
 
 def canvas():
@@ -470,75 +494,77 @@ def cash():
 
 def guns():
     """
-    An AK-47, drawn from the reference rather than from memory.
+    A STOCKLESS AK -- the pistol-grip build -- lying flat, muzzle right.
 
-    The one before this was described as a compact rifle and read as an SMG: a horizontal
-    brick with a curve under it. Two things were wrong. It was horizontal, which wastes a
-    square canvas and is not how anybody pictures the gun, and it had no stock, which took
-    away a quarter of the silhouette people actually recognise.
+    Third drawing of this icon and the second reference. The one before was a full-stock AK on
+    the diagonal, which matched the reference it was drawn against; this reference has no stock
+    and lies horizontal, so it is a redraw rather than a rotate.
 
-    Built HORIZONTALLY here and rotated as one piece at the end. Every part is then a
-    rectangle or a ribbon whose numbers mean something -- a barrel is thirty units thick, a
-    magazine is eighty -- where drawing it on the diagonal makes every edge a two-point guess.
+    It has to survive being a SILHOUETTE. The reference is two-tone -- orange furniture on black
+    metal -- and every icon here is a white mask tinted at draw time, so the handguard and grip
+    stop being a separate colour and join one outline. What carries it instead is the profile:
+    the banana magazine, the pistol grip, a long thin barrel, and the back of the receiver
+    simply ending where a stock would be.
 
-    Slender on purpose. The gun is a long thin line with ONE fat curve under it, and the first
-    attempt at this made the magazine as wide as the receiver was deep, which turned the whole
-    thing to porridge. The barrel is barely thicker than a line so the banana reads loudest --
-    it is the most recognisable shape in small arms and the only part that survives being
-    shrunk, because it is one big curve rather than any amount of detail.
+    ONE MASS AT THE FRONT. The first attempt at this pose drew the gas tube, the barrel and the
+    receiver as three separate bars with daylight between them, and a thin straight magazine --
+    which together read as an MP5. Everything from the receiver forward now overlaps its
+    neighbour so there is no seam, and the top line runs unbroken from the rear sight to the
+    front sight, which is what the reference does.
     """
-    cw, ch = 1160, 640
-    img = Image.new('RGBA', (cw, ch), CLEAR)
-    d = ImageDraw.Draw(img)
+    cw, ch = 1080, 620
+    ss = 4
+    big = Image.new('RGBA', (cw * ss, ch * ss), CLEAR)
+    d = ImageDraw.Draw(big)
 
-    ax = 260          # the bore line
+    ax = 250.0
 
-    # ---- muzzle and barrel ---------------------------------------------
-    d.rectangle([78, ax - 11, 400, ax + 11], fill=W)
-    d.rectangle([70, ax - 20, 92, ax + 20], fill=W)
+    def P(pts):
+        d.polygon([(x * ss, y * ss) for x, y in pts], fill=W)
 
-    # The canted front sight post: the AK's other tell after the magazine.
-    d.polygon([(84, ax - 11), (112, ax - 11), (112, ax - 62),
-               (98, ax - 76), (86, ax - 62)], fill=W)
+    def R(x0, y0, x1, y1):
+        d.rectangle([x0 * ss, y0 * ss, x1 * ss, y1 * ss], fill=W)
 
-    # ---- gas block, gas tube, handguard --------------------------------
-    d.polygon([(372, ax - 11), (408, ax - 11), (408, ax - 58),
-               (394, ax - 70), (378, ax - 58)], fill=W)
-    d.rectangle([408, ax - 44, 596, ax - 16], fill=W)
-    d.polygon([(430, ax - 11), (596, ax - 11), (596, ax + 40),
-               (470, ax + 40), (430, ax + 16)], fill=W)
+    # ---- receiver, and the back of it simply ending ----------------------
+    R(70, ax - 56, 400, ax + 48)
+    P([(70, ax - 56), (36, ax - 40), (36, ax + 30), (70, ax + 48)])
 
-    # ---- receiver ------------------------------------------------------
-    d.rectangle([596, ax - 40, 812, ax + 40], fill=W)
-    d.polygon([(624, ax - 40), (700, ax - 40), (700, ax - 62), (640, ax - 62)], fill=W)
-    d.polygon([(812, ax - 40), (852, ax - 34), (852, ax + 26), (812, ax + 40)], fill=W)
+    # Top cover and rear sight, level with the handguard so the top line is unbroken.
+    R(150, ax - 84, 330, ax - 50)
+    R(206, ax - 104, 272, ax - 80)
 
-    # ---- the magazine --------------------------------------------------
-    # Curving FORWARD, toward the muzzle, which is the way round an AK's sits.
-    ribbon(d, bez((694, ax + 28), (652, ax + 158), (560, ax + 242), 26), 84, 64, W)
+    # ---- pistol grip, where a stock is not -------------------------------
+    P([(146, ax + 44), (236, ax + 44), (212, ax + 244), (140, ax + 244), (124, ax + 150)])
 
-    # ---- trigger guard and grip ----------------------------------------
-    ribbon(d, bez((790, ax + 44), (786, ax + 112), (846, ax + 116), 20), 22, 22, W)
-    d.polygon([(846, ax + 34), (912, ax + 34), (906, ax + 210),
-               (846, ax + 210), (828, ax + 120)], fill=W)
+    # ---- trigger guard ----------------------------------------------------
+    d.polygon(ribbon_pts(bez((242, ax + 50), (256, ax + 122), (330, ax + 108)), 22, 22, ss),
+              fill=W)
 
-    # ---- buttstock -----------------------------------------------------
-    # One tapering bar rather than a plank: it leaves the receiver high and drops away.
-    d.polygon([(852, ax - 26), (1082, ax + 86), (1082, ax + 150),
-               (1020, ax + 150), (872, ax + 74), (852, ax + 40)], fill=W)
-    d.polygon([(1016, ax + 96), (1086, ax + 130), (1086, ax + 176), (1016, ax + 160)], fill=W)
+    # ---- the magazine, fat and curving FORWARD ----------------------------
+    d.polygon(ribbon_pts(bez((300, ax + 40), (352, ax + 168), (500, ax + 236)), 114, 86, ss),
+              fill=W)
 
-    # ---- and on the diagonal, muzzle up ---------------------------------
-    rot = img.rotate(-33.0, resample=Image.BICUBIC, expand=True)
-    rot = rot.crop(rot.getbbox())
+    # ---- the front half, as one mass --------------------------------------
+    hg0, hg1 = 385, 635
+    R(hg0, ax - 84, hg1, ax - 30)                       # gas tube, flush with the top line
+    P([(hg0, ax - 30), (hg1, ax - 30), (hg1 - 26, ax + 44), (hg0 + 6, ax + 44)])
+    P([(hg1 - 34, ax - 84), (hg1 + 6, ax - 84), (hg1 + 6, ax - 24), (hg1 - 34, ax - 24)])
 
-    pad = 12
-    inner = S - pad * 2
-    k = min(inner / float(rot.width), inner / float(rot.height))
-    rot = rot.resize((max(1, int(rot.width * k)), max(1, int(rot.height * k))), Image.LANCZOS)
+    b0, b1 = hg1 - 10, hg1 + 210
+    R(b0, ax - 20, b1, ax + 20)
+
+    # ---- front sight, sat on the barrel rather than floating past it -------
+    P([(b1 - 62, ax - 20), (b1 - 26, ax - 20), (b1 - 26, ax - 96),
+       (b1 - 44, ax - 112), (b1 - 62, ax - 96)])
+    R(b1 - 24, ax - 34, b1, ax + 34)
+
+    art = big.resize((cw, ch), Image.LANCZOS)
+    art = art.crop(art.getbbox())
 
     out = Image.new('RGBA', (S, S), CLEAR)
-    out.alpha_composite(rot, ((S - rot.width) // 2, (S - rot.height) // 2))
+    k = min((S - 28) / float(art.width), (S - 28) / float(art.height))
+    art = art.resize((max(1, int(art.width * k)), max(1, int(art.height * k))), Image.LANCZOS)
+    out.alpha_composite(art, ((S - art.width) // 2, (S - art.height) // 2))
 
     save(out, 'guns.png')
 
