@@ -1481,8 +1481,12 @@ def cut_33():
     purity(0.33, 'cut_33.png')
 
 
+def cut_25():
+    purity(0.25, 'cut_25.png')
+
+
 ALL = [eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
-       cut_100, cut_75, cut_50, cut_33]
+       cut_100, cut_75, cut_50, cut_33, cut_25]
 
 
 if __name__ == '__main__':

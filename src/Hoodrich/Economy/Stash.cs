@@ -48,7 +48,12 @@ namespace Hoodrich.Economy
             if (purity >= 0.625f) return "cut_75.png";
             if (purity >= 0.415f) return "cut_50.png";
 
-            return "cut_33.png";
+            if (purity >= 0.29f) return "cut_33.png";
+
+            // Below the sellable floor, so it gets a mark of its own rather than
+            // wearing the third's. A bag you cannot move is not a weaker version of
+            // one you can.
+            return "cut_25.png";
         }
 
         /// <summary>The same four as a number, for anywhere with the room to say it.</summary>
@@ -58,13 +63,41 @@ namespace Hoodrich.Economy
             if (purity >= 0.625f) return 75;
             if (purity >= 0.415f) return 50;
 
-            return 33;
+            if (purity >= 0.29f) return 33;
+
+            return 25;
         }
+
+        /// <summary>
+        /// Weakest anybody on the street will take off you.
+        ///
+        /// Below this it is not cheap product, it is not product. Cutting fifty per cent weight
+        /// to a half again lands here, which is the whole reason the number exists: stretching
+        /// stepped-on weight has to have an end, and the end is a bag nobody buys rather than a
+        /// bag that sells for slightly less.
+        /// </summary>
+        public const float Unsellable = 0.30f;
+
+        /// <summary>Whether anybody would take it.</summary>
+        public static bool Sellable(float purity) => purity >= Unsellable;
 
         public const float MinPurity = 0.2f;
         public const float MaxPurity = 1.0f;
 
-        private readonly Dictionary<string, float> _bulk = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// Weight, and how strong it already is.
+        ///
+        /// It used to be a bare number, on the assumption that everything a supplier sells is
+        /// untouched. That is true of a plug at the docks and false of everybody else: a man
+        /// selling weight off his own person has already stepped on it, and what he hands over
+        /// is fifty per cent before you have done anything to it.
+        ///
+        /// Which makes cutting MULTIPLICATIVE rather than absolute. Cut fifty per cent weight
+        /// to a half again and you have twenty-five, and twenty-five is not a product, it is a
+        /// thing nobody on the street will take off you twice.
+        /// </summary>
+        private readonly Dictionary<string, Holding> _bulk =
+            new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Holding> _packaged = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>Combined carry limit across bulk and packaged, in grams.</summary>
@@ -72,7 +105,7 @@ namespace Hoodrich.Economy
 
         public float TotalBulk
         {
-            get { var s = 0f; foreach (var v in _bulk.Values) s += v; return s; }
+            get { var s = 0f; foreach (var h in _bulk.Values) s += h.Grams; return s; }
         }
 
         public float TotalPackaged
@@ -89,18 +122,41 @@ namespace Hoodrich.Economy
         public float BulkOf(string drugId)
         {
             if (string.IsNullOrEmpty(drugId)) return 0f;
-            return _bulk.TryGetValue(drugId, out var v) ? v : 0f;
+            return _bulk.TryGetValue(drugId, out var h) ? h.Grams : 0f;
         }
 
-        /// <summary>Adds uncut weight, capped by free space. Returns how much fit.</summary>
-        public float AddBulk(string drugId, float grams)
+        /// <summary>How strong the weight on hand is. 1.0 when holding none.</summary>
+        public float BulkPurityOf(string drugId)
+        {
+            if (string.IsNullOrEmpty(drugId)) return 1f;
+            return _bulk.TryGetValue(drugId, out var h) && h.Grams > 0.005f ? h.Purity : 1f;
+        }
+
+        /// <summary>
+        /// Adds weight at a strength, blending by weight. Returns how much fit.
+        ///
+        /// Full strength by default, so every caller that was written when weight was simply
+        /// weight still means what it said. Only somebody who KNOWS his product is stepped on
+        /// has to say so.
+        /// </summary>
+        public float AddBulk(string drugId, float grams, float purity = 1f)
         {
             if (string.IsNullOrEmpty(drugId) || grams <= 0f) return 0f;
 
             var accepted = Math.Min(grams, FreeSpace);
             if (accepted <= 0f) return 0f;
 
-            _bulk[drugId] = BulkOf(drugId) + accepted;
+            purity = Clamp(purity, MinPurity, MaxPurity);
+
+            if (!_bulk.TryGetValue(drugId, out var h))
+            {
+                _bulk[drugId] = new Holding { Grams = accepted, Purity = purity };
+                return accepted;
+            }
+
+            var total = h.Grams + accepted;
+            h.Purity = total <= 0f ? purity : (h.Purity * h.Grams + purity * accepted) / total;
+            h.Grams = total;
             return accepted;
         }
 
@@ -108,13 +164,13 @@ namespace Hoodrich.Economy
         {
             if (string.IsNullOrEmpty(drugId) || grams <= 0f) return 0f;
 
-            var held = BulkOf(drugId);
-            var taken = Math.Min(grams, held);
+            if (!_bulk.TryGetValue(drugId, out var h)) return 0f;
+
+            var taken = Math.Min(grams, h.Grams);
             if (taken <= 0f) return 0f;
 
-            var left = held - taken;
-            if (left < 0.005f) _bulk.Remove(drugId);
-            else _bulk[drugId] = left;
+            h.Grams -= taken;
+            if (h.Grams < 0.005f) _bulk.Remove(drugId);
 
             return taken;
         }
@@ -208,7 +264,12 @@ namespace Hoodrich.Economy
             var obj = Json.Object();
 
             var bulk = Json.Object();
-            foreach (var kv in _bulk) bulk.Set(kv.Key, Math.Round(kv.Value, 3));
+            foreach (var kv in _bulk)
+            {
+                bulk.Set(kv.Key, Json.Object()
+                    .Set("grams", Math.Round(kv.Value.Grams, 3))
+                    .Set("purity", Math.Round(kv.Value.Purity, 3)));
+            }
             obj.Set("bulk", bulk);
 
             var packaged = Json.Object();
@@ -228,11 +289,27 @@ namespace Hoodrich.Economy
             Clear();
             if (node == null || node.IsNull) return;
 
+            // Read BOTH shapes, because the old one is in every save that already exists.
+            //
+            // Bulk used to be written as a bare number of grams. Reading that as an object gets
+            // nothing and silently empties somebody's stash, which is the worst possible way to
+            // handle a format change. A number means weight from before strength was tracked,
+            // and weight from back then was untouched by definition -- so it loads at full.
             var bulk = node["bulk"];
             foreach (var key in bulk.Keys)
             {
-                var v = bulk[key].AsFloat(0f);
-                if (v > 0.005f) _bulk[key] = v;
+                var entry = bulk[key];
+
+                var grams = entry["grams"].AsFloat(0f);
+                var purity = Clamp(entry["purity"].AsFloat(1f), MinPurity, MaxPurity);
+
+                if (grams <= 0.005f)
+                {
+                    grams = entry.AsFloat(0f);
+                    purity = 1f;
+                }
+
+                if (grams > 0.005f) _bulk[key] = new Holding { Grams = grams, Purity = purity };
             }
 
             var packaged = node["packaged"];

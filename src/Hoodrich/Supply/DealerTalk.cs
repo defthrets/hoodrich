@@ -287,29 +287,24 @@ namespace Hoodrich.Supply
             // anywhere -- that whole sequence belongs to the man who drove out to your door.
             if (Who != null)
             {
-                // Weight, or bags?
+                // Weight either way -- his is just weaker.
                 //
-                // A plug at the docks sells you a brick and leaves the stretching to you: it
-                // arrives as weight, worth nothing until you have cut and bagged it. A man
-                // selling off his own person has already made that decision -- what he hands
-                // over is street-ready at whatever he cut it to, and it goes straight into the
-                // bagged pile. You cannot un-cut it, which is what you are paying less for.
+                // It used to land as finished bags when a plug sold cut product, on the reading
+                // that "already cut" meant "already bagged". It does not. A man who steps on
+                // his weight before he sells it has sold you weaker WEIGHT: you still have to
+                // cut and bag it, you simply have less to work with, and cutting fifty per cent
+                // to a half again leaves you twenty-five, which is the punishment for trying.
                 var strength = Def == null ? 1f : Def.Purity;
                 var cut = strength < 0.999f;
 
-                var pocket = cut
-                    ? _state.Stash.AddPackaged(product.Id, grams, strength)
-                    : _state.Stash.AddBulk(product.Id, grams);
-
+                var pocket = _state.Stash.AddBulk(product.Id, grams, strength);
                 var spare = grams - pocket;
 
                 // Whatever will not fit goes to the house, and anything that fits nowhere is
                 // refunded rather than taken off you for nothing.
                 if (spare > 0.005f && House != null)
                 {
-                    spare -= cut
-                        ? House.AddPackaged(product.Id, spare, strength)
-                        : House.AddBulk(product.Id, spare);
+                    spare -= House.AddBulk(product.Id, spare, strength);
                 }
 
                 if (spare > 0.005f) Game.Player.Money += (int)(cost * (spare / grams));

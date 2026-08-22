@@ -495,9 +495,17 @@ namespace Hoodrich.UI
             var product = chosen.Source;
             var made = chosen.Output ?? chosen.Source;
 
-            var purity = Purities[_purity];
+            // What is on the counter, and what you can cut it to.
+            //
+            // A target above the source is not a choice, it is arithmetic that does not exist:
+            // no amount of filler makes a gram stronger. So the chooser is capped at what the
+            // weight already is, and fifty per cent weight simply has fewer options than
+            // untouched weight does.
+            var from = _stash.BulkPurityOf(product.Id);
+            var purity = Math.Min(from, Purities[_purity]);
+
             var batch = Math.Min(MaxBatch, Workable(product));
-            var yield = Cutting.YieldOf(product, made, batch, purity);
+            var yield = Cutting.YieldOf(product, made, batch, from, purity);
             var worth = _pricing.SaleValue(made, yield, purity);
             var risk = Pricing.BadCutChance(purity);
             var fits = _stash.FreeSpace >= yield - batch - 0.001f;
@@ -590,6 +598,7 @@ namespace Hoodrich.UI
             if (purity >= 0.95f) return "Untouched";
             if (purity >= 0.75f) return "Barely stepped on";
             if (purity >= 0.50f) return "Cut half and half";
+            if (purity < Stash.Unsellable) return "~r~Nobody will buy this";
             return "Stepped on hard";
         }
     }

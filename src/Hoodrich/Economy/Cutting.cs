@@ -52,6 +52,9 @@ namespace Hoodrich.Economy
         private DrugDef _output;
         private float _bulkGrams;
         private float _targetPurity;
+
+        /// <summary>How strong the weight was when this batch started.</summary>
+        private float _fromPurity = 1f;
         private int _startedAt;
         private int _durationMs;
         private Vector3 _startPosition;
@@ -82,11 +85,25 @@ namespace Hoodrich.Economy
             }
         }
 
-        /// <summary>Grams of packaged product a given bulk amount yields at a purity.</summary>
-        public static float Yield(float bulkGrams, float purity)
+        /// <summary>
+        /// Grams of packaged product a given weight yields at a target strength.
+        ///
+        /// What matters is how much ACTIVE there is, which does not change: grams times the
+        /// strength it came in at. Dividing that by the strength you are cutting to gives what
+        /// comes off the counter. Untouched weight behaves exactly as it always did, because
+        /// its from-strength is one.
+        ///
+        /// You cannot go up. Cutting is adding filler, and no amount of it makes a gram
+        /// stronger than the gram it was -- so a target above what went in is clamped to what
+        /// went in and yields the weight back unchanged.
+        /// </summary>
+        public static float Yield(float bulkGrams, float fromPurity, float toPurity)
         {
-            if (purity <= 0f) return 0f;
-            return bulkGrams / Math.Max(Stash.MinPurity, Math.Min(Stash.MaxPurity, purity));
+            fromPurity = Math.Max(Stash.MinPurity, Math.Min(Stash.MaxPurity, fromPurity));
+            toPurity = Math.Max(Stash.MinPurity, Math.Min(fromPurity, toPurity));
+
+            if (toPurity <= 0f) return 0f;
+            return bulkGrams * fromPurity / toPurity;
         }
 
         /// <summary>
@@ -95,9 +112,10 @@ namespace Hoodrich.Economy
         /// A gram makes a joint, so the count is grams over grams-per-unit -- and stretching it
         /// still stretches it, because a joint rolled thin is still a joint somebody paid for.
         /// </summary>
-        public static float YieldOf(DrugDef product, DrugDef output, float bulkGrams, float purity)
+        public static float YieldOf(DrugDef product, DrugDef output, float bulkGrams,
+                                   float fromPurity, float toPurity)
         {
-            var stretched = Yield(bulkGrams, purity);
+            var stretched = Yield(bulkGrams, fromPurity, toPurity);
 
             if (output == null || product == null || output.Id == product.Id) return stretched;
 
@@ -131,7 +149,15 @@ namespace Hoodrich.Economy
                 return "Only holding " + product.Amount(_stash.BulkOf(product.Id)) + " of bulk " + product.Name + ".";
             }
 
-            var yield = YieldOf(product, output, bulkGrams, targetPurity);
+            // What is actually on the counter, which is not always full strength any more.
+            var from = _stash.BulkPurityOf(product.Id);
+
+            if (targetPurity > from + 0.001f)
+            {
+                return "That's already cut to " + Stash.Percent(from) + "%. You can't put it back.";
+            }
+
+            var yield = YieldOf(product, output, bulkGrams, from, targetPurity);
             var gained = yield - bulkGrams;
             if (_stash.FreeSpace < gained - 0.001f)
             {
@@ -145,7 +171,8 @@ namespace Hoodrich.Economy
             _output = output;
             _scenarioTried = false;
             _bulkGrams = bulkGrams;
-            _targetPurity = targetPurity;
+            _fromPurity = from;
+            _targetPurity = Math.Min(from, targetPurity);
             _startedAt = Game.GameTime;
 
             // How long it takes is how much went in, and nothing else now.
@@ -336,7 +363,10 @@ namespace Hoodrich.Economy
 
             var output = _output ?? product;
 
-            var yield = YieldOf(product, output, taken, purity);
+            // The strength it came in at, remembered when the batch started rather than read
+            // now: the weight it was cut from has already been taken off the pile by the time
+            // this runs, so asking the stash again would answer about whatever is left.
+            var yield = YieldOf(product, output, taken, _fromPurity, purity);
             var made = _stash.AddPackaged(output.Id, yield, purity);
 
             // Whatever would not fit goes in the cupboard rather than nowhere.

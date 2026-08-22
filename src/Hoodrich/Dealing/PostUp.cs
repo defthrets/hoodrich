@@ -281,6 +281,15 @@ namespace Hoodrich.Dealing
                     : "You ain't holding no " + product.Name.ToLowerInvariant() + ".";
             }
 
+            // Stretched past the point of being product. Refused at the corner rather than
+            // priced down at it, because a bag this weak does not sell cheap -- it sells once,
+            // to somebody who tells everybody, and then never again.
+            if (!Stash.Sellable(Stash.PurityOf(product.Id)))
+            {
+                return "That " + product.Name.ToLowerInvariant() + " is stepped on to nothing. " +
+                       "Nobody out here is taking that off you.";
+            }
+
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
             if (player.IsInVehicle()) return "Get out of the car first.";
