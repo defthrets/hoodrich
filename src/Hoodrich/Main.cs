@@ -480,6 +480,18 @@ namespace Hoodrich
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80)
                 });
 
+                // A quad against the shutters, the same green as everything else in the lot.
+                //
+                // The neon is asked for and may simply not answer: underglow is a Los Santos
+                // Customs slot, and a quad has not got one. It costs two calls to try and
+                // nothing to be told no, so it is tried.
+                _cars.Add(new ParkedCar(new Vector3(-197.960f, -1714.836f, 31.955f), 290.056f,
+                                        MetallicDarkGreen,
+                                        "blazer4", "blazer", "faggio2")
+                {
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80)
+                });
+
                 // The shop's van, up on the road above the lot.
                 _cars.Add(new ParkedCar(new Vector3(-214.160f, -1739.805f, 31.709f), 52.137f,
                                         ShopGreen,

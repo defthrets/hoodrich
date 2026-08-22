@@ -140,13 +140,24 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_VEHICLE_COLOURS, _car.Handle, _paint, _paint);
 
-                // Benny's Original, and a rim out of that set. Lowered on its springs, because
-                // a lowrider sitting at factory height is a saloon with nice wheels.
-                Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, _car.Handle, BennysWheels);
-                Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 23, BennysRim, false);
-                Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 15, 3, false);
+                // Everything below the paint is car-shaped: lowrider rims, lowered springs and
+                // tinted glass mean nothing on two wheels or four small ones. Asked rather than
+                // assumed, so a bike parked here later does not quietly get a suspension kit it
+                // has no springs for.
+                var onWheels = !Function.Call<bool>(Hash.IS_THIS_MODEL_A_BIKE, _car.Model.Hash)
+                               && !Function.Call<bool>(Hash.IS_THIS_MODEL_A_QUADBIKE, _car.Model.Hash);
 
-                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
+                if (onWheels)
+                {
+                    // Benny's Original, and a rim out of that set. Lowered on its springs,
+                    // because a lowrider sitting at factory height is a saloon with nice wheels.
+                    Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, _car.Handle, BennysWheels);
+                    Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 23, BennysRim, false);
+                    Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 15, 3, false);
+
+                    Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
+                }
+
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, Built ? 0.4f : 1.5f);
 
                 if (Built) BuildIt();
