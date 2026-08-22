@@ -904,13 +904,40 @@ namespace Hoodrich.Missions
         {
             RemountHomies(player);
 
-            if (player.Position.DistanceTo(RideHome) > HomeRange) return;
+            // LAMAR has to get back, not just you.
+            //
+            // It used to end on the player's distance alone, so riding home ahead of him
+            // finished the job while he was still two streets away -- and the last thing the
+            // mission did was send a man home who had not arrived. The ride out was with him;
+            // the ride back is too.
+            //
+            // Your own arrival still counts, and has to: if he is gone -- dead, deleted,
+            // dropped by the watchdog -- waiting for him would be waiting forever.
+            var youHome = player.Position.DistanceTo(RideHome) <= HomeRange;
+            if (!youHome) return;
+
+            var lamar = _lamar != null && _lamar.Exists() && _lamar.IsAlive;
+            if (lamar && _lamar.Position.DistanceTo(LamarHome) > LamarHomeRange) return;
 
             SendLamarHome();
 
             ReadyToCollect = true;
             ClearMarker();
         }
+
+        /// <summary>
+        /// Where Lamar has to get to before the job is done, read off the HUD stood on it.
+        ///
+        /// Under the walkway outside his own door rather than out on the street with you, which
+        /// is where he ends up anyway once SendLamarHome walks him back.
+        /// </summary>
+        private static readonly Vector3 LamarHome = new Vector3(-94.579f, -1609.991f, 32.314f);
+
+        /// <summary>
+        /// How close he has to be. Wider than his own mark, because he arrives on a bicycle
+        /// and parks it wherever the nav mesh lets him rather than on a spot.
+        /// </summary>
+        private const float LamarHomeRange = 14f;
 
         // ---- the people --------------------------------------------------------
 
