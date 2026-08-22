@@ -189,6 +189,17 @@ namespace Hoodrich.Core
         /// <summary>Fine when a search finds product on you.</summary>
         public int PostUpFine = 2500;
 
+        // ---- Lamar's list ------------------------------------------------------
+
+        /// <summary>
+        /// Minutes he wants to himself after a job before he has another one.
+        ///
+        /// Not difficulty, pacing. Finishing one job and immediately being handed the next
+        /// makes him a vending machine; a gap in which nothing is on and he is somewhere
+        /// thinking makes the next one arrive rather than queue. 0 turns it off.
+        /// </summary>
+        public float LamarRestMinutes = 10f;
+
         // ---- the block ---------------------------------------------------------
 
         /// <summary>Whether the set drives its own blocks while you are stood on them.</summary>
@@ -314,6 +325,9 @@ namespace Hoodrich.Core
             s.PostUpFine = Math.Max(0, ini.GetInt("PostUp", "PostUpFine", s.PostUpFine));
 
             s.LeaderFrontGrams = Math.Max(0f, ini.GetFloat("Map", "LeaderFrontGrams", s.LeaderFrontGrams));
+
+            s.LamarRestMinutes =
+                Math.Max(0f, ini.GetFloat("Jobs", "LamarRestMinutes", s.LamarRestMinutes));
 
             s.RollersEnabled = ini.GetBool("Block", "RollersEnabled", s.RollersEnabled);
             s.RollerCars = (int)Clamp(ini.GetInt("Block", "RollerCars", s.RollerCars), 0f, 6f);

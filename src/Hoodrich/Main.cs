@@ -361,6 +361,10 @@ namespace Hoodrich
                 // The bike ride borrows him off his corner and rides him out with the rest.
                 _jobs.Boss = _fixer;
                 _jobs.Book = _missions;
+
+                // How long he wants to himself between jobs, read live so the settings screen
+                // can change it without a reload.
+                _jobs.RestMinutes = () => _cfg.LamarRestMinutes;
                 _bigj = new Armourer(_gangs);
 
                 _social = SocialFeed.Load();

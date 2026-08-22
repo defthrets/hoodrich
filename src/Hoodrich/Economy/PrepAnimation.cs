@@ -49,6 +49,14 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Clip[] Counter =
         {
+            // Somebody bent over a surface with his hands busy, which is the actual picture.
+            // The clubhouse mechanic loop is a man working at a bench and reads as work in a
+            // way a maid wiping a counter never quite did; the hammering idle is the same
+            // shape from a different dictionary, in case the first is not in this install.
+            new Clip("anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechanic"),
+            new Clip("amb@world_human_hammering@male@base", "base"),
+            new Clip("anim@amb@business@weed@weed_sorting_seated@", "sorter_idle_a"),
+
             new Clip("timetable@maid@ig_2@", "base"),
             new Clip("timetable@maid@ig_2@", "idle_a"),
             new Clip("timetable@maid@ig_2@", "idle_b"),
@@ -228,8 +236,18 @@ namespace Hoodrich.Economy
                 // retries every frame and a batch lasts seconds, so it gets there.
                 if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, clip.Dict)) return false;
 
+                // The last three arguments are the position locks, and they are the whole
+                // reason this used to throw him off a roof.
+                //
+                // These clips were authored inside a scene -- a kitchen somewhere, at a
+                // coordinate that is not where you are standing. Played with the locks off, the
+                // root motion in them is applied to the ped, so he is dragged toward wherever
+                // the animation thinks the floor is. In a first-floor kitchen that is out
+                // through the wall and down, which is exactly what it looked like.
+                //
+                // Locked on all three axes he plays the clip and stays where he is put.
                 Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, clip.Dict, clip.Name,
-                              4f, -4f, -1, LoopFlag, 0f, false, false, false);
+                              4f, -4f, -1, LoopFlag, 0f, true, true, true);
 
                 // A clip name that is not in the dictionary fails silently, so the only honest
                 // test is whether the ped is now visibly playing it.

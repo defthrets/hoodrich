@@ -597,9 +597,74 @@ namespace Hoodrich.Missions
         /// Once per job, tracked by id in the save, because a nag every time you rank up is
         /// worse than never being told.
         /// </summary>
+        /// <summary>
+        /// How long he has left to himself, or 0.
+        ///
+        /// Session time rather than saved. Reloading a save clears it, which is the kinder
+        /// answer of the two: a countdown you cannot see, that survives a reload, and that
+        /// stops a man talking to you is a bug report waiting to be written.
+        /// </summary>
+        private int _restUntil;
+
+        /// <summary>Whether he is off scheming rather than available.</summary>
+        public bool Resting => !IsRunning && _restUntil != 0 && Game.GameTime < _restUntil;
+
+        /// <summary>Whole minutes left of that, rounded up, never less than one.</summary>
+        public int RestLeft =>
+            !Resting ? 0 : Math.Max(1, (int)Math.Ceiling((_restUntil - Game.GameTime) / 60000.0));
+
+        /// <summary>How long he wants, as the settings have it. Wired by the house script.</summary>
+        public Func<float> RestMinutes;
+
+        /// <summary>
+        /// What he sends when he has had his think.
+        ///
+        /// One of several, because the same sentence arriving after every job is a reminder
+        /// that a timer just went off. These are him having had an idea, which is what the gap
+        /// was for.
+        /// </summary>
+        private static readonly string[] BackOnLines =
+        {
+            "aye cuz. i been thinkin. come see me, i got somethin",
+            "ok ok ok. new idea. come thru when you can",
+            "yo. that thing i was workin out? worked it out. come find me",
+            "franklin. FRANKLIN. come see me man, this one different",
+            "aight i'm done schemin. come get this"
+        };
+
+        /// <summary>And what he says the moment you have been paid for the last one.</summary>
+        private static readonly string[] RestLines =
+        {
+            "good look on that. gimme a minute to scheme on the next one, i'll hit you",
+            "that's that. lemme think on somethin, i'll text you when i got it",
+            "aight, breathe. i gotta work out the next play. i'll let you know",
+            "we good. gimme a minute cuz, i'm cookin somethin up. i'll hit your line"
+        };
+
         private void TellHimIfThereIsWork()
         {
             if (_state == null || Book == null || IsRunning) return;
+
+            // The rest ends here rather than in a tick of its own, because this is already the
+            // one thing in the file that runs whether or not a job is on.
+            if (_restUntil != 0 && Game.GameTime >= _restUntil)
+            {
+                _restUntil = 0;
+
+                try
+                {
+                    Notify.Text("CHAR_LAMAR", "Lamar", "Los Santos",
+                                BackOnLines[_rng.Next(BackOnLines.Length)], true);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not text about being back on: " + ex.Message);
+                }
+
+                Log.Info("Lamar is done scheming.");
+            }
+
+            if (Resting) return;
             if (Game.GameTime < _nextWorkCheck) return;
 
             _nextWorkCheck = Game.GameTime + WorkCheckMs;
@@ -1817,6 +1882,27 @@ namespace Hoodrich.Missions
 
                 // And the job itself, so a run of work reads as a run of work.
                 Social.On(SocialEvent.MissionDone, def.Name, pay);
+            }
+
+            // And then he wants a minute. Set before Clear, because Clear is where the job
+            // stops existing and this is a fact about the man rather than about the job.
+            var rest = RestMinutes == null ? 10f : RestMinutes();
+
+            if (rest > 0.01f)
+            {
+                _restUntil = Game.GameTime + (int)(rest * 60000f);
+
+                try
+                {
+                    Notify.Text("CHAR_LAMAR", "Lamar", "Los Santos",
+                                RestLines[_rng.Next(RestLines.Length)], false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not text about needing a minute: " + ex.Message);
+                }
+
+                Log.Info("Lamar is off for " + rest.ToString("0.#") + " minutes.");
             }
 
             Clear();

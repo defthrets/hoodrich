@@ -328,6 +328,11 @@ namespace Hoodrich.UI
                         ? "none" : c.TimecycleModifier,
                     "A timecycle name. Ini only -- there is no list to pick from");
 
+            Head("Lamar's list");
+            Slide("He rests between jobs", "Jobs", "LamarRestMinutes",
+                  () => c.LamarRestMinutes, v => c.LamarRestMinutes = v, 0f, 60f, 1f, "0", "m",
+                  note: "0 hands you the next one the moment he pays for the last");
+
             Head("The block");
             Tick("The set rides the block", "Block", "RollersEnabled",
                  () => c.RollersEnabled, v => c.RollersEnabled = v,

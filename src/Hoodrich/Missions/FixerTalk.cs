@@ -58,6 +58,19 @@ namespace Hoodrich.Missions
                 return _runner.ReadyToCollect ? HandIn() : StillOn();
             }
 
+            // He has just paid you and he wants a minute. Said in person as well as texted,
+            // because walking back to a man who told you he would call is the obvious thing to
+            // do and being shown his ordinary job list would make the text a lie.
+            if (_runner.Resting)
+            {
+                var wait = Node("I told you cuz, I'm still schemin. Gimme like " +
+                                _runner.RestLeft + (_runner.RestLeft == 1 ? " minute" : " minutes") +
+                                " and I'll hit your line.");
+
+                wait.Leave("Aight, later.");
+                return wait;
+            }
+
             if (BlockUnderAttack != null && BlockUnderAttack())
             {
                 var busy = Node("Not now, Frank. They ON the block right now. " +
