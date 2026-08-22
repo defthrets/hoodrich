@@ -359,7 +359,18 @@ namespace Hoodrich.UI
                 // bright street and a dark alley.
                 if (!item.Enabled)
                 {
-                    DrawEmptySlot(cx, cy, rInner, rOuter, from, to, t);
+                    if (!Sprite("wheel_slot_", n, mid, rOuter,
+                                Color.FromArgb((int)(195 * t), 84, 88, 96)))
+                    {
+                        DrawEmptySlot(cx, cy, rInner, rOuter, from, to, t);
+                    }
+                    else
+                    {
+                        // The dark inside of the slot, which the outline sits on.
+                        Draw.Wedge(cx, cy, rInner, rOuter, from, to,
+                                   Color.FromArgb((int)(155 * t), 0, 0, 0));
+                    }
+
                     continue;
                 }
 
@@ -370,9 +381,19 @@ namespace Hoodrich.UI
 
                 if (_wedgeMode)
                 {
-                    Draw.Wedge(cx, cy, rInner, rOuter, from, to, fill);
+                    // Artwork first, rectangles only if it is not there.
+                    //
+                    // A wedge drawn as one rotated sprite is the same shape with its edges
+                    // resolved properly, for one draw call instead of a hundred. See Sprite()
+                    // below for why that matters as much as how it looks.
+                    if (!Sprite("wheel_seg_", n, mid, rOuter, fill))
+                    {
+                        Draw.Wedge(cx, cy, rInner, rOuter, from, to, fill);
+                    }
 
-                    if (hovered)
+                    if (hovered &&
+                        !Sprite("wheel_keel_", n, mid, rOuter,
+                                Palette.Alpha(Palette.Warn, (int)(255 * t))))
                     {
                         Draw.Wedge(cx, cy, rInner, rInner + KeelDepth, from, to,
                                    Palette.Alpha(Palette.Warn, (int)(255 * t)));
@@ -410,6 +431,31 @@ namespace Hoodrich.UI
         /// reads as part of the line rather than as a bullet in front of it.
         /// </summary>
         private const float PanelArt = 0.017f;
+
+        /// <summary>
+        /// One piece of the ring, drawn as artwork.
+        ///
+        /// Every filled shape this HUD can make is a DRAW_RECT, and a circle built out of
+        /// rectangles is a staircase. The only way to shrink the steps is more rectangles, and
+        /// that is what put the wheel over the frame's draw budget and made the last wedge
+        /// disappear -- measured at 954 rectangles at 1080p and 1,382 at 1440p for rows fine
+        /// enough to look smooth, against about 593 for the wheel this replaced.
+        ///
+        /// So the shape is drawn once, offline, at 1024 with real anti-aliasing, and rotated
+        /// into place. One call, no staircase, and the same file serves every position because
+        /// the art points straight up and the rotation does the rest.
+        ///
+        /// A set per item count, because a fifth of a ring is not the same shape as an eighth.
+        /// Outside 2..8 there is no art and this returns false, which is not a failure -- the
+        /// caller falls back to the rectangles, which is exactly what it did before.
+        /// </summary>
+        private static bool Sprite(string prefix, int items, float midAngleDeg, float rOuter,
+                                   Color c)
+        {
+            if (items < 2 || items > 8) return false;
+
+            return Draw.File(prefix + items + ".png", 0.5f, 0.5f, rOuter * 2f, midAngleDeg, c);
+        }
 
         /// <summary>
         /// A slot with nothing in it, which is what a thing you cannot pick looks like.
@@ -581,9 +627,21 @@ namespace Hoodrich.UI
                 // so without a rim the ring and the readout run together into one black blob.
                 // A hairline boundary is not a third way of separating peers -- it is the edge
                 // between two different KINDS of thing.
-                Draw.Disc(cx, cy, rInner, Color.FromArgb((int)(120 * t), 255, 255, 255));
-                Draw.Disc(cx, cy, rInner - 0.0028f,
-                          Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t)));
+                //
+                // The rim is the roundest thing on the screen and was the worst staircase on
+                // it. As a sprite it is a circle.
+                var rim = Color.FromArgb((int)(120 * t), 255, 255, 255);
+                var fill = Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t));
+
+                if (Draw.File("wheel_disc.png", cx, cy, rInner * 2f, 0f, rim))
+                {
+                    Draw.File("wheel_disc.png", cx, cy, (rInner - 0.0028f) * 2f, 0f, fill);
+                }
+                else
+                {
+                    Draw.Disc(cx, cy, rInner, rim);
+                    Draw.Disc(cx, cy, rInner - 0.0028f, fill);
+                }
             }
 
             if (t < 0.75f) return;
