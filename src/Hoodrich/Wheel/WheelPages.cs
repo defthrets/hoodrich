@@ -343,6 +343,36 @@ namespace Hoodrich.Wheel
 
             sections.Add(you);
 
+            // ---- your set ----------------------------------------------------
+            //
+            // This was its own wheel page one flick away -- "Who you run with" -- which asked
+            // the same question this screen asks and answered it in a different kind of
+            // window. Four rows do not need a page of their own, and standing and set are one
+            // subject: who you are with is most of what your standing IS.
+            if (_crew.IsAffiliated)
+            {
+                var mine = _crew.Current;
+                var set = new InfoSection { Title = "Your set" };
+
+                set.Hero("Running with", mine.Name, mine.Colour,
+                         "They run " + mine.TurfHint,
+                    r => r.ArtFile = "mask.png");
+
+                set.Row("They move", DrugNames(mine), null,
+                    r => r.ArtFile = "pills.png");
+
+                set.Row("Their old rivals", RivalNames(mine), null,
+                    r => r.ArtFile = "guns.png");
+
+                var beefing = _crew.Beefing(mine.Id);
+
+                set.Row("Beef", beefing ? "at war" : "no problem",
+                        beefing ? Palette.Danger : Palette.Cash,
+                    r => r.ArtFile = beefing ? "warning.png" : "tick.png");
+
+                sections.Add(set);
+            }
+
             // ---- trade -------------------------------------------------------
             var trade = new InfoSection { Title = "Trade" };
 
@@ -1477,19 +1507,6 @@ namespace Hoodrich.Wheel
                 value: _turf.ZoneName);
             page.WithIcon(Icons.Garage);
 
-            if (_crew.IsAffiliated)
-            {
-                // You run WITH them; you do not run them. One wedge for the gang you are down
-                // with -- listing all seven turned the wheel into a directory.
-                var mine = _crew.Current;
-
-                page.AddSub("Who you run with", "*", () => BuildGangPage(mine),
-                    detail: "They run " + mine.TurfHint,
-                    value: mine.Name);
-                page.Items[page.Items.Count - 1].Tint = mine.Colour;
-                page.WithIcon(Icons.Mask);
-            }
-
             // Two wedges used to live here that could not be pressed: one saying work comes
             // from Lamar, one saying go and find a leader. Both true, both already in the panel
             // above, and both taking a slot on a wheel where a slot is the scarcest thing
@@ -1511,18 +1528,23 @@ namespace Hoodrich.Wheel
             }
 
             // Standing is a gang question, so the readout lives here rather than on the root.
+            // One readout rather than two. "Who you run with" was a wheel page of rows about
+            // your own set, and "How you stand" was a readout of rows about you -- the same
+            // question asked twice, one flick apart, in two different kinds of screen.
             page.Add("How you stand", "*", ShowStatus,
-                detail: "Your rank, your heat, and what every gang thinks of you",
-                value: _state.RankName);
-            page.WithIcon(Icons.Tattoo);
+                detail: _crew.IsAffiliated
+                    ? "You, your set, and what every gang thinks of you"
+                    : "Your rank, your heat, and what every gang thinks of you",
+                value: _crew.IsAffiliated ? _crew.Current.Name : _state.RankName);
+            page.WithIcon(Icons.Mask);
 
             // Behind its own page, because none of it can be undone and a wheel is a thing you
             // flick through. One accidental commit should never erase a save's worth of
             // standing -- so the flick lands on a list of questions rather than on the act.
-            page.AddSub("Start over", "x", BuildStartOverPage,
-                detail: "Undo what you have done, in pieces or all at once",
+            page.AddSub("Settings", "*", BuildSettingsPage,
+                detail: "How the mod behaves, and how to undo what you have done",
                 value: "");
-            page.WithIcon(Icons.Warning);
+            page.WithIcon(Icons.FromFile("scales.png"));
 
             return page;
         }
@@ -1535,6 +1557,77 @@ namespace Hoodrich.Wheel
         /// Lamar's chain again, and neither has anything to do with a follower count that ran
         /// away with itself. One button for all three would make two of them collateral.
         /// </summary>
+        /// <summary>
+        /// How the mod behaves, and the way back out of anything you have done.
+        ///
+        /// Everything here writes to the ini as well as to the live settings object. A toggle
+        /// that only changed the object would work until you quit; one that only changed the
+        /// file would not work until you did. Both, or it is a setting in name only.
+        ///
+        /// Not every key in the ini is on here, and that is deliberate: there are seventy of
+        /// them, most are offsets and thresholds nobody tunes from a wheel, and a menu that
+        /// lists all seventy is a config file with worse ergonomics. These are the ones worth
+        /// reaching for mid-game.
+        /// </summary>
+        private WheelPage BuildSettingsPage()
+        {
+            var page = new WheelPage("Settings", "How this thing behaves");
+            page.PanelTitle = "Settings";
+
+            page.Row("Config file", "scripts\\Hoodrich.ini", Palette.TextDim, "box.png");
+            page.Row("Changes", "saved as you make them", Palette.Cash, "tick.png");
+
+            Toggle(page, "Sounds", "Wheel", "PlaySounds", _cfg.PlaySounds,
+                   v => _cfg.PlaySounds = v, "Menu clicks and confirmations");
+
+            Toggle(page, "Blur behind the wheel", "Wheel", "BlurBackground", _cfg.BlurBackground,
+                   v => _cfg.BlurBackground = v, "Softens the world while the wheel is open");
+
+            Toggle(page, "Hold to open", "Wheel", "HoldToOpen", _cfg.HoldToOpen,
+                   v => _cfg.HoldToOpen = v, "Hold the button for Hoodrich, tap it to holster");
+
+            Toggle(page, "Tweets on the right", "Socials", "TweetsOnTheRight",
+                   _cfg.TweetsOnTheRight, v => _cfg.TweetsOnTheRight = v,
+                   "Which side the feed pops up on");
+
+            Toggle(page, "Pause during story missions", "General", "PauseDuringMission",
+                   _cfg.PauseDuringMission, v => _cfg.PauseDuringMission = v,
+                   "Holds everything while a Rockstar mission is running");
+
+            page.AddSub("Start over", "x", BuildStartOverPage,
+                detail: "Undo what you have done, in pieces or all at once",
+                value: "");
+            page.WithIcon(Icons.Warning);
+
+            return page;
+        }
+
+        /// <summary>
+        /// One on/off setting, written to the live object and to the file together.
+        /// </summary>
+        private void Toggle(WheelPage page, string label, string section, string key, bool on,
+                            Action<bool> set, string detail)
+        {
+            page.Add(label, on ? "+" : "-", () =>
+            {
+                var now = !on;
+                set(now);
+
+                if (Core.Settings.Put(section, key, now ? "true" : "false"))
+                {
+                    Notify.Ticker(label + (now ? " ~g~on" : " ~y~off"));
+                }
+                else
+                {
+                    Notify.Problem("could not write that to the ini.");
+                }
+            },
+            detail: detail,
+            value: on ? "ON" : "OFF");
+
+            page.WithIcon(Icons.FromFile(on ? "tick.png" : "locked.png"));
+        }
+
         private WheelPage BuildStartOverPage()
         {
             var page = new WheelPage("Start over", "None of this can be undone");
@@ -1740,88 +1833,6 @@ namespace Hoodrich.Wheel
             if (standing.Rep <= -50f) return "HOSTILE";
             if (standing.Rep >= 100f) return "TRUSTED";
             return "rep " + standing.Rep.ToString("0");
-        }
-
-        /// <summary>Everything you can do with one particular gang.</summary>
-        private WheelPage BuildGangPage(GangDef gang)
-        {
-            var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
-            var standing = _crew.StandingFor(gang.Id);
-            var atWar = _crew.IsAffiliated && !mine &&
-                        _crew.Beefing(gang.Id);
-
-            var page = new WheelPage(gang.Name, mine ? "You run with them" : RelationLabel(gang));
-
-            page.PanelTitle = gang.Name;
-            page.Row("They run", gang.TurfHint, null, "pin.png");
-            page.Row("They move", DrugNames(gang), null, "pills.png");
-            page.Row("Their old rivals", RivalNames(gang), null, "guns.png");
-            // Two different questions, and they used to carry the same label -- the panel read
-            // "With you: no problem" directly above "With you: you run with them".
-            page.Row("Beef", _crew.Beefing(gang.Id) ? "at war" : "no problem",
-                     _crew.Beefing(gang.Id) ? Palette.Danger : (Color?)Palette.TextDim, "guns.png");
-            page.Row("Where you stand", mine ? "you run with them" : RelationLabel(gang),
-                     mine ? gang.Colour : atWar ? Palette.Danger : (Color?)null, "mask.png");
-
-            // Joining only. There is no walking away.
-            //
-            // The wedge that used to be here called Leave and put you in a state the rest of
-            // the mod has no answer for: no block to hold, nobody to stand with, no rep to
-            // earn, and no route back except the man you just walked out on. One set, and it
-            // is the one you are in.
-            if (mine)
-            {
-                page.Add("You run with them", "-", null,
-                    detail: "This is your set.",
-                    value: "",
-                    enabled: false, disabledReason: "You're already in");
-                page.WithIcon(Icons.Tick);
-            }
-            else
-            {
-                // Joining is a conversation with the man himself, never a wedge.
-                page.Add("You don't run with them", "-", null,
-                    detail: "Find their leader on the map and ask him yourself",
-                    value: "",
-                    enabled: false,
-                    disabledReason: "Go and talk to them");
-                page.WithIcon(Icons.Locked);
-            }
-
-            // Their supply contact, if they have one.
-            var plug = FindPlugFor(gang);
-            if (plug != null)
-            {
-                var refusal = _dealers.RefusalReason(plug, _state, _crew);
-                var mult = plug.PriceMultiplier;
-                var carries = plug.Drugs.Count == 0
-                    ? "everything"
-                    : string.Join(", ", plug.Drugs.ToArray()).ToUpperInvariant();
-
-                page.Add("Text " + plug.Name, "+", () => Call(plug),
-                    detail: plug.BuyLine,
-                    value: carries + "  ·  " + Multiplier(1f / Math.Max(0.01f, mult)),
-                    enabled: refusal == null,
-                    disabledReason: refusal ?? "");
-                page.WithIcon(Icons.FromFile("phone.png"));
-            }
-            else
-            {
-                page.Add("Text the plug", "+", null,
-                    detail: "They have nobody you can call",
-                    enabled: false, disabledReason: "No contact");
-                page.WithIcon(Icons.Locked);
-            }
-
-            // "How you stand" is what the Gangs page above calls its own status entry, and two
-            // wedges one level apart with the same words on them is how a menu stops being
-            // readable. This one is about THEM.
-            page.Add("What they think", "*", () => ShowGangDetail(gang),
-                detail: "What you have done for them, and what they hold",
-                value: "");
-            page.WithIcon(Icons.Tattoo);
-
-            return page;
         }
 
         private DealerDef FindPlugFor(GangDef gang)

@@ -194,6 +194,18 @@ namespace Hoodrich.Core
         /// <summary>Grams a gang leader fronts you when he takes you on.</summary>
         public float LeaderFrontGrams = 20f;
 
+        /// <summary>
+        /// Changes one setting and writes it to the ini, so it survives a reload.
+        ///
+        /// The in-memory value and the file are set together on purpose. A screen that changed
+        /// only the object would work until you quit; one that changed only the file would not
+        /// work until you quit. Both, or it is a setting in name only.
+        /// </summary>
+        public static bool Put(string section, string key, string value)
+        {
+            return IniFile.SetValue(Paths.Ini, section, key, value);
+        }
+
         public static Settings Load()
         {
             var s = new Settings();
