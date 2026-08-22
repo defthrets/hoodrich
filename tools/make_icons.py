@@ -10,7 +10,10 @@
 # is grey mush, so every shape here is big, blunt and high-contrast. Drawn at 8x and
 # downsampled, which is what gives the edges their smoothness.
 
+import math
 import os
+import sys
+
 from PIL import Image, ImageDraw
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "icons")
@@ -18,6 +21,46 @@ S = 512          # working size
 F = 8            # downsample factor -> 64px files
 W = (255, 255, 255, 255)
 CLEAR = (0, 0, 0, 0)
+
+
+def bez(p0, p1, p2, n):
+    """Quadratic Bezier, as a list of points."""
+    out = []
+    for i in range(n + 1):
+        t = i / float(n)
+        u = 1 - t
+        out.append((u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0],
+                    u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1]))
+    return out
+
+
+def ribbon(d, spine, w0, w1, fill):
+    """
+    A strip of varying thickness laid either side of a centreline.
+
+    A curved part -- a magazine, a trigger guard -- drawn as a polygon by hand is a row of
+    hand-placed points that never quite lie on a curve. This takes the line you actually mean
+    and puts the thickness on afterwards.
+    """
+    left, right = [], []
+
+    for i, (x, y) in enumerate(spine):
+        t = i / float(len(spine) - 1)
+        half = (w0 + (w1 - w0) * t) * 0.5
+
+        if i == 0:
+            dx, dy = spine[1][0] - x, spine[1][1] - y
+        elif i == len(spine) - 1:
+            dx, dy = x - spine[-2][0], y - spine[-2][1]
+        else:
+            dx, dy = spine[i + 1][0] - spine[i - 1][0], spine[i + 1][1] - spine[i - 1][1]
+
+        n = math.hypot(dx, dy) or 1.0
+        nx, ny = -dy / n, dx / n
+        left.append((x + nx * half, y + ny * half))
+        right.append((x - nx * half, y - ny * half))
+
+    d.polygon(left + right[::-1], fill=fill)
 
 
 def canvas():
@@ -295,17 +338,6 @@ def megaphone():
 
 
 print('writing to %s' % OUT)
-skull()
-police()
-heart()
-reply()
-repost()
-like()
-tick()
-crack()
-pills()
-heroin()
-megaphone()
 
 
 # ============================================================ the wedge and row set
@@ -438,41 +470,77 @@ def cash():
 
 def guns():
     """
-    A compact rifle -- an AK with the stock off.
+    An AK-47, drawn from the reference rather than from memory.
 
-    It was a pistol, and a pistol is the least distinctive gun silhouette there is: a brick
-    with a handle, which at twenty pixels is a brick with a handle. An AK is the opposite. The
-    banana magazine is the most recognisable shape in small arms, it hangs BELOW the line of
-    the weapon where nothing else in this set has anything, and it survives being shrunk
-    because it is one big curve rather than any amount of detail.
+    The one before this was described as a compact rifle and read as an SMG: a horizontal
+    brick with a curve under it. Two things were wrong. It was horizontal, which wastes a
+    square canvas and is not how anybody pictures the gun, and it had no stock, which took
+    away a quarter of the silhouette people actually recognise.
 
-    Stockless on purpose. A full stock pushes the whole thing wider and the icon has to fit a
-    square, so every part gets smaller to make room for the part nobody looks at.
+    Built HORIZONTALLY here and rotated as one piece at the end. Every part is then a
+    rectangle or a ribbon whose numbers mean something -- a barrel is thirty units thick, a
+    magazine is eighty -- where drawing it on the diagonal makes every edge a two-point guess.
+
+    Slender on purpose. The gun is a long thin line with ONE fat curve under it, and the first
+    attempt at this made the magazine as wide as the receiver was deep, which turned the whole
+    thing to porridge. The barrel is barely thicker than a line so the banana reads loudest --
+    it is the most recognisable shape in small arms and the only part that survives being
+    shrunk, because it is one big curve rather than any amount of detail.
     """
-    img, d = canvas()
+    cw, ch = 1160, 640
+    img = Image.new('RGBA', (cw, ch), CLEAR)
+    d = ImageDraw.Draw(img)
 
-    # Receiver, running the width of the icon.
-    d.rectangle([88, 214, 372, 288], fill=W)
+    ax = 260          # the bore line
 
-    # Barrel out the front, thick, with the gas block standing on it.
-    d.rectangle([372, 232, 486, 268], fill=W)
-    d.rectangle([392, 196, 428, 236], fill=W)
-    d.polygon([(462, 232), (486, 232), (486, 196), (474, 186)], fill=W)   # front sight
+    # ---- muzzle and barrel ---------------------------------------------
+    d.rectangle([78, ax - 11, 400, ax + 11], fill=W)
+    d.rectangle([70, ax - 20, 92, ax + 20], fill=W)
 
-    # The magazine. The whole reason this reads as a rifle rather than a plank.
-    d.polygon([(196, 288), (286, 288), (272, 392), (222, 428),
-               (170, 420), (176, 344)], fill=W)
-    d.polygon([(214, 306), (268, 306), (256, 378), (222, 400),
-               (196, 394), (200, 340)], fill=CLEAR)
+    # The canted front sight post: the AK's other tell after the magazine.
+    d.polygon([(84, ax - 11), (112, ax - 11), (112, ax - 62),
+               (98, ax - 76), (86, ax - 62)], fill=W)
 
-    # Pistol grip behind it, angled the way an AK's is.
-    d.polygon([(300, 288), (368, 288), (352, 414), (300, 414)], fill=W)
+    # ---- gas block, gas tube, handguard --------------------------------
+    d.polygon([(372, ax - 11), (408, ax - 11), (408, ax - 58),
+               (394, ax - 70), (378, ax - 58)], fill=W)
+    d.rectangle([408, ax - 44, 596, ax - 16], fill=W)
+    d.polygon([(430, ax - 11), (596, ax - 11), (596, ax + 40),
+               (470, ax + 40), (430, ax + 16)], fill=W)
 
-    # Trigger, and the stub where the stock would be.
-    d.rectangle([286, 292, 302, 330], fill=CLEAR)
-    d.rectangle([56, 230, 92, 272], fill=W)
+    # ---- receiver ------------------------------------------------------
+    d.rectangle([596, ax - 40, 812, ax + 40], fill=W)
+    d.polygon([(624, ax - 40), (700, ax - 40), (700, ax - 62), (640, ax - 62)], fill=W)
+    d.polygon([(812, ax - 40), (852, ax - 34), (852, ax + 26), (812, ax + 40)], fill=W)
 
-    save(img, 'guns.png')
+    # ---- the magazine --------------------------------------------------
+    # Curving FORWARD, toward the muzzle, which is the way round an AK's sits.
+    ribbon(d, bez((694, ax + 28), (652, ax + 158), (560, ax + 242), 26), 84, 64, W)
+
+    # ---- trigger guard and grip ----------------------------------------
+    ribbon(d, bez((790, ax + 44), (786, ax + 112), (846, ax + 116), 20), 22, 22, W)
+    d.polygon([(846, ax + 34), (912, ax + 34), (906, ax + 210),
+               (846, ax + 210), (828, ax + 120)], fill=W)
+
+    # ---- buttstock -----------------------------------------------------
+    # One tapering bar rather than a plank: it leaves the receiver high and drops away.
+    d.polygon([(852, ax - 26), (1082, ax + 86), (1082, ax + 150),
+               (1020, ax + 150), (872, ax + 74), (852, ax + 40)], fill=W)
+    d.polygon([(1016, ax + 96), (1086, ax + 130), (1086, ax + 176), (1016, ax + 160)], fill=W)
+
+    # ---- and on the diagonal, muzzle up ---------------------------------
+    rot = img.rotate(-33.0, resample=Image.BICUBIC, expand=True)
+    rot = rot.crop(rot.getbbox())
+
+    pad = 12
+    inner = S - pad * 2
+    k = min(inner / float(rot.width), inner / float(rot.height))
+    rot = rot.resize((max(1, int(rot.width * k)), max(1, int(rot.height * k))), Image.LANCZOS)
+
+    out = Image.new('RGBA', (S, S), CLEAR)
+    out.alpha_composite(rot, ((S - rot.width) // 2, (S - rot.height) // 2))
+
+    save(out, 'guns.png')
 
 
 def mobile():
@@ -582,22 +650,6 @@ def locked():
     d.ellipse([222, 300, 290, 368], fill=CLEAR)
     d.rectangle([238, 340, 274, 410], fill=CLEAR)
     save(img, 'locked.png')
-
-weed()
-coke()
-meth()
-money()
-cash()
-guns()
-mobile()
-ammo()
-garage()
-mask()
-health()
-tattoo()
-stash()
-warning()
-locked()
 
 
 # ============================================================ the sets
@@ -987,34 +1039,6 @@ def key():
     save(img, 'key.png')
 
 
-gang_families()
-gang_ballas()
-gang_vagos()
-gang_aztecas()
-gang_marabunta()
-gang_lost()
-gang_triads()
-gang_armenians()
-gang_koreans()
-
-footfall()
-rank()
-people()
-pin()
-deal()
-crate()
-box()
-phone()
-spray()
-fire()
-car()
-scales()
-dog()
-bed()
-music()
-key()
-
-
 # ======================================================================= more product
 #
 # A spread to pick from rather than one drawing per drug. Every one of these is a DIFFERENT
@@ -1252,19 +1276,24 @@ def poppy():
     save(img, 'poppy.png')
 
 
-lean()
-acid()
-shrooms()
-xanax()
-hash_()
-dabs()
-edibles()
-vape()
-speed()
-ketamine()
-fentanyl()
-blunt()
-brick()
-crystal()
-bong()
-poppy()
+# Every icon in the file, by name. Run with no arguments to draw all of them, or name the
+# ones you want -- "python make_icons.py guns mobile" -- which is the difference between
+# regenerating one symbol and rewriting sixty-nine files to change one.
+ALL = [skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy]
+
+
+if __name__ == '__main__':
+    wanted = set(a.rstrip('_') for a in sys.argv[1:])
+    drew = 0
+
+    for fn in ALL:
+        if wanted and fn.__name__.rstrip('_') not in wanted:
+            continue
+        fn()
+        drew += 1
+
+    if wanted and not drew:
+        print('no icon called: ' + ', '.join(sorted(wanted)))
+        sys.exit(1)
+
+    print('%d icon(s) written' % drew)
