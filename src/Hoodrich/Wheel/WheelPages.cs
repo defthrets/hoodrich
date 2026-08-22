@@ -891,6 +891,15 @@ namespace Hoodrich.Wheel
                 disabledReason: "You're working the counter");
             page.WithIcon(Icons.Weed);
 
+            // Contacts sits on the RIGHT, two slots off Socials rather than next to it. The
+            // wheel fills clockwise from the top, so where a wedge is added is where it lands
+            // -- and the two most phone-shaped things on here sharing an edge made them read
+            // as one pair rather than as the feed and the phone book.
+            page.AddSub("Contacts", "#", BuildContactsPage,
+                detail: "Everyone you can reach, and what you can say to them",
+                value: ContactsSummary());
+            page.WithIcon(Icons.FromFile("phone.png"));
+
             page.AddSub("Gangs", "%", BuildGangsPage,
                 detail: _crew.IsAffiliated
                     ? "You run with " + _crew.Current.Name
@@ -913,11 +922,6 @@ namespace Hoodrich.Wheel
             // naming a set, calling one out -- is a section inside the feed screen now, next to
             // the timeline those posts land in. A wheel page whose four items were "open a
             // screen" and three things belonging ON that screen was one door too many.
-            page.AddSub("Contacts", "#", BuildContactsPage,
-                detail: "Everyone you can reach, and what you can say to them",
-                value: ContactsSummary());
-            page.WithIcon(Icons.FromFile("phone.png"));
-
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
                 detail: PaybackDue != null && PaybackDue()
                     ? "Somebody's coming about what you said"
@@ -1023,14 +1027,6 @@ namespace Hoodrich.Wheel
             return lines;
         }
 
-        private string SupplyDetail()
-        {
-            if (_dealers.InReach != null) return "Your contact is right here";
-            if (_dealers.HasMeet) return _dealers.MeetDealer.Name + " -- " +
-                                          _dealers.MeetDistance.ToString("0") + "m away";
-            return "Text a contact for bulk weight";
-        }
-
         // ---- drugs -------------------------------------------------------------
 
         /// <summary>Everything to do with product, in the order you actually do it.</summary>
@@ -1119,11 +1115,6 @@ namespace Hoodrich.Wheel
             // Denise's, which is usually the number you actually wanted.
             page.PanelTitle = "What you're holding";
             HoldingRows(page);
-
-            page.AddSub("Re-up", "+", BuildSupplyPage,
-                detail: SupplyDetail(),
-                value: "$" + Game.Player.Money.ToString("N0"));
-            page.WithIcon(Icons.Money);
 
             if (_postUp.IsPosted)
             {
@@ -1261,145 +1252,6 @@ namespace Hoodrich.Wheel
         }
 
         // ---- supply ------------------------------------------------------------
-
-        /// <summary>
-        /// Supply is about people, not a catalogue. What this page shows depends entirely on
-        /// who is in front of you: the dealer you are standing at, the one you called out and
-        /// have not reached yet, or -- if neither -- who you could phone and where to find them.
-        /// </summary>
-        private WheelPage BuildSupplyPage()
-        {
-            // A delivery outranks everything: he drove out here for you.
-            if (Delivery.IsActive)
-            {
-                if (Delivery.State == DeliveryState.Waiting && Delivery.Distance <= 4f)
-                {
-                    return BuildDealerPage(Delivery.Def);
-                }
-
-                var run = new WheelPage("Supply", Delivery.Status);
-                run.PanelTitle = Delivery.Def.Name;
-                run.Row("Where", Delivery.State == DeliveryState.Texting
-                                 ? "on the phone"
-                                 : Delivery.Distance.ToString("0") + "m away", null, "pin.png");
-                run.Row("Carries", Carries(Delivery.Def), null, "crate.png");
-                run.Row("Price", Multiplier(1f / Math.Max(0.01f, Delivery.Def.PriceMultiplier)), null, "cash.png");
-
-                run.Add("Waiting on him", ">", null,
-                    detail: Delivery.State == DeliveryState.Waiting
-                        ? "He is parked up. Walk over to the car."
-                        : "Follow the blip. He is driving to you.",
-                    value: Delivery.Distance.ToString("0") + "m",
-                    enabled: false,
-                    disabledReason: "He's on his way");
-                run.WithIcon(Icons.Garage);
-
-                run.Add("Call it off", "x", () => Delivery.Cancel("Told him not to bother."),
-                    detail: "Send him back",
-                    value: "");
-                run.WithIcon(Icons.Warning);
-
-                return run;
-            }
-
-            // Standing in front of someone: talk and trade.
-            var here = _dealers.InReach;
-            if (here != null) return BuildDealerPage(here);
-
-            // Called someone out but not there yet.
-            if (_dealers.HasMeet)
-            {
-                var def = _dealers.MeetDealer;
-                var page = new WheelPage("Supply", "Meet is on");
-                page.PanelTitle = def.Name;
-                page.Row("Distance", _dealers.MeetDistance.ToString("0") + "m", null, "pin.png");
-                page.Row("Carries", Carries(def), null, "crate.png");
-                page.Row("Price", "x" + def.PriceMultiplier.ToString("0.00"), null, "cash.png");
-                page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g", null, "crate.png");
-
-                page.Add("Waiting", ">", null,
-                    detail: "Follow the blip and walk up on him",
-                    value: _dealers.MeetDistance.ToString("0") + "m",
-                    enabled: false, disabledReason: "Get to the meet");
-                page.WithIcon(Icons.FromFile("mask.png"));
-
-                page.Add("Call off", "x", () => _dealers.CancelMeet("You called it off."),
-                    detail: "Cancel the meet");
-                page.WithIcon(Icons.FromFile("warning.png"));
-                return page;
-            }
-
-            // Nobody in reach. Exactly one thing you can do from here: phone the docks. The
-            // gangs are people you walk up to and the independents are places you drive to, so
-            // listing all seven as pickable wedges was a directory pretending to be a menu.
-            var list = new WheelPage("Re-up", "Buying weight");
-
-            list.PanelTitle = "Where the weight comes from";
-            list.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash, "cash.png");
-            list.Row("Room left", Stash.FreeSpace.ToString("0") + "g", null, "box.png");
-            list.Row("Gangs", "talk to their leader", Palette.TextDim, "people.png");
-            list.Row("The port", _state.DocksUnlocked ? "he delivers" : "you don't know nobody",
-                     _state.DocksUnlocked ? Palette.Cash : (Color?)Palette.TextDim, "crate.png");
-
-            // Your own set first, because he is four streets away and always answers.
-            //
-            // Dearer than the port and it should be -- you are paying for a man on a pushbike
-            // rather than a van from Elysian Island, and he only carries what the Families
-            // actually move.
-            var stretch = _dealers.Find("stretch_run");
-
-            if (stretch != null)
-            {
-                var no = _dealers.RefusalReason(stretch, _state, _crew);
-
-                list.Add("Text Stretch", "=", () => Call(stretch),
-                    detail: no ?? "He rides over from the block with weed, pills or bars",
-                    value: "closer, dearer",
-                    enabled: no == null,
-                    disabledReason: no ?? "");
-                list.WithIcon(Icons.FromFile("gang_families.png"));
-            }
-
-            var docks = _dealers.Docks();
-
-            if (docks == null)
-            {
-                list.Add("Nothing", "-", null,
-                    detail: "Nobody in your phone",
-                    enabled: false, disabledReason: "Nobody to text");
-                list.WithIcon(Icons.FromFile("locked.png"));
-
-                return list;
-            }
-
-            if (!_state.DocksUnlocked)
-            {
-                var toGo = DealerManager.GramsUntilSource(_state, _cfg.DocksUnlockGrams);
-
-                list.Add("Text the plug", "=", null,
-                    detail: "Dock worker. Ask Stretch about him once you've moved enough",
-                    value: toGo.ToString("0") + "g more to sell",
-                    enabled: false, disabledReason: "You don't know nobody at the port");
-                list.WithIcon(Icons.Locked);
-                return list;
-            }
-
-            var blocked = _dealers.RefusalReason(docks, _state, _crew);
-
-            // His NAME once you have it. "Text the plug" is what he is called before you are
-            // told who he is; afterwards it reads as a different man from the one the contacts
-            // page lists as Tao Cheng, and the wedge next to it already says "Text Stretch".
-            list.Add("Text " + docks.Name, "=", () => Call(docks),
-                detail: blocked == null
-                    ? "Dock worker. Pulls up out front with whatever you want"
-                    : blocked,
-                value: "everything, cheapest",
-                enabled: blocked == null,
-                disabledReason: blocked ?? "");
-            list.WithIcon(Icons.FromFile("phone.png"));
-
-            return list;
-        }
 
         private static string Carries(DealerDef def)
         {

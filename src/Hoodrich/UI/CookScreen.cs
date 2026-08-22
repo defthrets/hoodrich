@@ -166,8 +166,61 @@ namespace Hoodrich.UI
             var onYou = _stash.BulkOf(drug.Id);
             if (_house == null) return onYou;
 
-            var fromHouse = Math.Min(_house.BulkOf(drug.Id), _stash.FreeSpace);
+            var fromHouse = Math.Min(_house.BulkOf(drug.Id), RoomToWork());
             return onYou + Math.Max(0f, fromHouse);
+        }
+
+        /// <summary>
+        /// How much you could get onto the counter, which is not the same as your free space.
+        ///
+        /// This deadlocked after exactly one batch, and it deadlocked hard: the cut PUTS its
+        /// yield in your pockets, so the moment you finished one your pockets were full, free
+        /// space was nil, and the cupboard's share clamped to nothing. Every row read zero, the
+        /// batch read "0g -> 0g", and the screen said there was nothing to cut with thirty five
+        /// kilos of it listed above the message.
+        ///
+        /// Free space was the wrong measure because you are STOOD IN THE HOUSE. Finished bags
+        /// go in the cupboard -- that is what the cupboard is for -- so the room available is
+        /// your pockets plus whatever of what you are carrying the cupboard would take. Begin
+        /// does exactly that before it fetches, so this is a promise the next line keeps.
+        /// </summary>
+        private float RoomToWork()
+        {
+            if (_stash == null) return 0f;
+            if (_house == null) return _stash.FreeSpace;
+
+            return _stash.FreeSpace + Math.Min(_stash.Total, _house.FreeSpace);
+        }
+
+        /// <summary>
+        /// Puts finished product in the cupboard until there is room to work.
+        ///
+        /// Only packaged, and only as much as is needed. Bulk stays where it is because bulk is
+        /// the thing about to be worked, and taking more than the batch needs would empty your
+        /// pockets every time you walked in here.
+        /// </summary>
+        private void MakeRoom(float wanted)
+        {
+            if (_house == null || _stash == null) return;
+
+            foreach (var drug in _catalogue.All)
+            {
+                if (_stash.FreeSpace >= wanted - 0.001f) return;
+
+                var held = _stash.PackagedOf(drug.Id);
+                if (held <= 0.005f) continue;
+
+                var need = wanted - _stash.FreeSpace;
+                var move = Math.Min(held, Math.Min(need, _house.FreeSpace));
+                if (move <= 0.005f) continue;
+
+                var purity = _stash.PurityOf(drug.Id);
+                var taken = _stash.RemovePackaged(drug.Id, move);
+                if (taken <= 0f) continue;
+
+                var put = _house.AddPackaged(drug.Id, taken, purity);
+                if (put < taken - 0.005f) _stash.AddPackaged(drug.Id, taken - put, purity);
+            }
         }
 
         /// <summary>
@@ -284,9 +337,18 @@ namespace Hoodrich.UI
             var row = _rows[_selected];
             var batch = Math.Min(MaxBatch, Workable(row.Source));
 
+            // Bags in the cupboard first, so there is somewhere to put the weight.
+            //
+            // Without this the second batch could not start: your pockets came out of the first
+            // one full of product, and bulk cannot be fetched into a full pocket. You are stood
+            // at the cupboard -- putting the finished ones away is what a person does before
+            // starting the next lot.
+            var wanted = FromHouse(row.Source, batch);
+            if (wanted > 0.005f) MakeRoom(wanted);
+
             // Out of the cupboard and onto the counter, which is the step that used to have to
             // be done by hand through a different screen in a different room.
-            var fetched = Fetch(row.Source, FromHouse(row.Source, batch));
+            var fetched = Fetch(row.Source, wanted);
             if (fetched > 0.005f)
             {
                 Notify.Ticker("~s~You took " + row.Source.Short(fetched) + " out the cupboard.");

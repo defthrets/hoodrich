@@ -1528,6 +1528,10 @@ namespace Hoodrich
             // The house stash goes in too: you are standing in the kitchen of the place the
             // weight is kept, and having to walk to the other screen to move a kilo eight feet
             // is not a decision, it is an errand.
+            // The batch finishes after this screen has closed, so Cutting needs the cupboard
+            // itself rather than borrowing the kitchen's copy of it.
+            _cutting.House = _stash == null ? null : _stash.Stash;
+
             _cook.Open(_state.Stash, _stash == null ? null : _stash.Stash, _drugs, _pricing,
                        (drug, output, grams, purity) =>
                            _cutting.TryStart(drug, output, grams, purity));

@@ -36,6 +36,16 @@ namespace Hoodrich.Economy
         private readonly Stash _stash;
         private readonly PlayerState _state;
 
+        /// <summary>
+        /// The cupboard, for anything that will not fit in your pockets when a batch lands.
+        ///
+        /// AddPackaged clamps silently at free space and returns what it took -- so a yield
+        /// bigger than the room left was simply DELETED, and the ticker still announced all of
+        /// it. Worked weight vanishing between the counter and your pocket is a worse bug than
+        /// the one that stopped the batch starting.
+        /// </summary>
+        public Stash House;
+
         private DrugDef _product;
 
         /// <summary>What it comes out as. The same product, unless it is being rolled.</summary>
@@ -328,6 +338,10 @@ namespace Hoodrich.Economy
 
             var yield = YieldOf(product, output, taken, purity);
             var made = _stash.AddPackaged(output.Id, yield, purity);
+
+            // Whatever would not fit goes in the cupboard rather than nowhere.
+            var over = yield - made;
+            if (over > 0.005f && House != null) made += House.AddPackaged(output.Id, over, purity);
 
             _state.Touch();
 
