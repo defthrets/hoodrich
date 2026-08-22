@@ -132,7 +132,8 @@ namespace Hoodrich.Wheel
                        kinds == 0
                            ? "nothing ready to move"
                            : kinds + (kinds == 1 ? " kind  ·  " : " kinds  ·  ") +
-                             readyGrams.ToString("0.#") + "g ready");
+                             readyGrams.ToString("0.#") + "g ready",
+                r => r.ArtFile = "money.png");
 
             var cap = Math.Max(1f, Stash.Capacity);
 
@@ -142,9 +143,11 @@ namespace Hoodrich.Wheel
                         Stash.FreeSpace < 15f ? Palette.Danger
                             : Stash.FreeSpace < 40f ? Palette.Warn
                             : Palette.Cash,
-                        Stash.FreeSpace.ToString("0") + "g of room left");
+                        Stash.FreeSpace.ToString("0") + "g of room left",
+                r => r.ArtFile = "stash.png");
 
-            onYou.Row("Cash", Money(Game.Player.Money), Palette.Cash);
+            onYou.Row("Cash", Money(Game.Player.Money), Palette.Cash,
+                r => r.ArtFile = "cash.png");
             sections.Add(onYou);
 
             // ---- ready to sell -----------------------------------------------
@@ -171,7 +174,8 @@ namespace Hoodrich.Wheel
                 bagged++;
             }
 
-            if (bagged == 0) ready.Row("Nothing bagged up", "", Palette.TextDim);
+            if (bagged == 0) ready.Row("Nothing bagged up", "", Palette.TextDim,
+                r => r.ArtFile = "box.png");
             sections.Add(ready);
 
             // ---- still to bag up ---------------------------------------------
@@ -194,7 +198,8 @@ namespace Hoodrich.Wheel
 
             if (raw <= 0.005f)
             {
-                weight.Row("No weight on you", "", Palette.TextDim);
+                weight.Row("No weight on you", "", Palette.TextDim,
+                    r => r.ArtFile = "box.png");
             }
             else
             {
@@ -221,8 +226,10 @@ namespace Hoodrich.Wheel
                     kept++;
                 }
 
-                if (kept == 0) home.Row("Empty", "", Palette.TextDim);
-                home.Row("Room here", den.FreeSpace.ToString("0") + "g");
+                if (kept == 0) home.Row("Empty", "", Palette.TextDim,
+                    r => r.ArtFile = "box.png");
+                home.Row("Room here", den.FreeSpace.ToString("0") + "g", null,
+                    r => r.ArtFile = "garage.png");
                 sections.Add(home);
             }
 
@@ -275,7 +282,8 @@ namespace Hoodrich.Wheel
                          ? "top of the ladder"
                          : "OG at " +
                            PlayerState.RankThresholds[PlayerState.RankThresholds.Length - 1]
-                               .ToString("N0") + " respect");
+                               .ToString("N0") + " respect",
+                r => r.ArtFile = "rank.png");
 
             if (!maxed)
             {
@@ -283,7 +291,8 @@ namespace Hoodrich.Wheel
 
                 you.Meter("Next up", PlayerState.RankNames[_state.Rank + 1], _state.RankProgress,
                           Palette.Cash,
-                          Math.Max(0f, need).ToString("N0") + " respect to go");
+                          Math.Max(0f, need).ToString("N0") + " respect to go",
+                    r => r.ArtFile = "rank.png");
             }
 
             // Five rows saying "you are third of five" become one row that shows it.
@@ -291,6 +300,10 @@ namespace Hoodrich.Wheel
                     Palette.Cash,
                     r =>
                     {
+                        // Inside the hand it already had, the way the Heat row below does it.
+                        // Appending a second lambda would be Row(label, value, colour, Action,
+                        // Action), which is not an overload that exists.
+                        r.ArtFile = "rank.png";
                         r.Pips = PlayerState.RankNames.Length;
                         r.PipsOn = _state.Rank;
                         r.PipAt = _state.Rank;
@@ -326,7 +339,8 @@ namespace Hoodrich.Wheel
             // Deals and grams are the supporting detail for the money, which is what a note is.
             trade.Hero("Total earned", Money(_state.TotalEarned), Palette.Cash,
                        _state.TotalDealsMade.ToString("N0") + " deals  ·  " +
-                       _state.GramsSold.ToString("0.#") + "g moved");
+                       _state.GramsSold.ToString("0.#") + "g moved",
+                r => r.ArtFile = "money.png");
 
             sections.Add(trade);
 
@@ -434,18 +448,21 @@ namespace Hoodrich.Wheel
             var holding = new InfoSection { Title = "On you" };
             var carried = DrugLines(Stash);
 
-            if (carried.Count == 0) holding.Row("Nothing on you", "", Palette.TextDim);
+            if (carried.Count == 0) holding.Row("Nothing on you", "", Palette.TextDim,
+                r => r.ArtFile = "box.png");
             foreach (var line in carried) holding.Row(line[0], line[1], Palette.Cash);
 
             holding.Row("Free space", Stash.FreeSpace.ToString("0") + "g", null,
                         r => r.ArtFile = "box.png");
-            holding.Row("Worth", "$" + PackagedValue().ToString("N0"), Palette.Cash);
+            holding.Row("Worth", "$" + PackagedValue().ToString("N0"), Palette.Cash,
+                r => r.ArtFile = "money.png");
             sections.Add(holding);
 
             var atHouse = new InfoSection { Title = "At the house" };
             var stored = _stash == null ? new List<string[]>() : DrugLines(_stash.Stash);
 
-            if (stored.Count == 0) atHouse.Row("Nothing at the house", "", Palette.TextDim);
+            if (stored.Count == 0) atHouse.Row("Nothing at the house", "", Palette.TextDim,
+                r => r.ArtFile = "garage.png");
             foreach (var line in stored) atHouse.Row(line[0], line[1]);
 
             if (_stash != null)
@@ -486,7 +503,8 @@ namespace Hoodrich.Wheel
         {
             var block = new InfoSection { Title = "This block" };
 
-            block.Row("Where", _turf.ZoneName, TurfTint());
+            block.Row("Where", _turf.ZoneName, TurfTint(),
+                r => r.ArtFile = "pin.png");
 
             // The owner's own emblem, in the owner's own colour. It is the one row on this
             // panel where the art means IDENTITY rather than state, so it keeps its tint
@@ -804,22 +822,30 @@ namespace Hoodrich.Wheel
 
             var you = new InfoSection { Title = "You and them" };
             you.Row("Where you stand", mine ? "one of theirs" : RelationLabel(gang),
-                    mine ? gang.Colour : standing.Rep < 0 ? Palette.Danger : (Color?)Palette.Text);
+                    mine ? gang.Colour : standing.Rep < 0 ? Palette.Danger : (Color?)Palette.Text,
+                r => r.ArtFile = "mask.png");
             you.Row("Rep with them", standing.Rep.ToString("N0"),
-                    standing.Rep < 0 ? Palette.Danger : Palette.Cash);
-            you.Row("Bodies for them", standing.Kills.ToString("N0"));
+                    standing.Rep < 0 ? Palette.Danger : Palette.Cash,
+                r => r.ArtFile = "rank.png");
+            you.Row("Bodies for them", standing.Kills.ToString("N0"), null,
+                r => r.ArtFile = "skull.png");
             you.Row("Deals done", standing.Deals.ToString("N0"), null,
                     r => r.ArtFile = "deal.png");
-            you.Row("Money made them", "$" + standing.MoneyEarned.ToString("N0"), Palette.Cash);
+            you.Row("Money made them", "$" + standing.MoneyEarned.ToString("N0"), Palette.Cash,
+                r => r.ArtFile = "money.png");
             sections.Add(you);
 
             var them = new InfoSection { Title = "Them" };
-            them.Row("Blocks", gang.TurfHint);
-            them.Row("Product", DrugNames(gang));
-            them.Row("Beefing with", RivalNames(gang));
+            them.Row("Blocks", gang.TurfHint, null,
+                r => r.ArtFile = "pin.png");
+            them.Row("Product", DrugNames(gang), null,
+                r => r.ArtFile = "pills.png");
+            them.Row("Beefing with", RivalNames(gang), null,
+                r => r.ArtFile = "guns.png");
             them.Row("To get in", gang.JoinRespect > 0
                 ? gang.JoinRespect.ToString("F0") + " respect"
-                : "just ask their leader");
+                : "just ask their leader", null,
+                r => r.ArtFile = "locked.png");
             sections.Add(them);
 
             Info?.Open(gang.Name, mine ? "You run with them" : RelationLabel(gang), sections);
@@ -942,14 +968,14 @@ namespace Hoodrich.Wheel
             var onYou = DrugLines(Stash);
             var atHouse = house == null ? new List<string[]>() : DrugLines(house);
 
-            page.Row("ON YOU", "", Palette.TextDim);
+            page.Row("ON YOU", "", Palette.TextDim, "stash.png");
 
-            if (onYou.Count == 0) page.Row("nothing", "", Palette.TextDim);
+            if (onYou.Count == 0) page.Row("nothing", "", Palette.TextDim, "box.png");
             foreach (var line in onYou) page.Row(line[0], line[1], Palette.Cash);
 
-            page.Row("AT THE HOUSE", "", Palette.TextDim);
+            page.Row("AT THE HOUSE", "", Palette.TextDim, "garage.png");
 
-            if (atHouse.Count == 0) page.Row("nothing", "", Palette.TextDim);
+            if (atHouse.Count == 0) page.Row("nothing", "", Palette.TextDim, "box.png");
             foreach (var line in atHouse) page.Row(line[0], line[1], Palette.Text);
         }
 
@@ -1103,11 +1129,11 @@ namespace Hoodrich.Wheel
             var page = new WheelPage("Post up", "Pick what you are moving");
 
             page.PanelTitle = _turf.ZoneName;
-            page.Row("This spot", TurfWord(), TurfTint());
+            page.Row("This spot", TurfWord(), TurfTint(), "pin.png");
             page.Row("Foot traffic", FootfallWord(),
-                     _postUp.Footfall == 0 ? Palette.Warn : Palette.Cash);
+                     _postUp.Footfall == 0 ? Palette.Warn : Palette.Cash, "footfall.png");
             page.Row("Gang around", _crew.NearbyAllies > 0 ? "yes" : "no",
-                     _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim);
+                     _crew.NearbyAllies > 0 ? Palette.Cash : (Color?)Palette.TextDim, "people.png");
 
             var held = Stash.WithPackaged(_drugs);
             if (held.Count == 0)
@@ -1167,9 +1193,9 @@ namespace Hoodrich.Wheel
                 run.PanelTitle = Delivery.Def.Name;
                 run.Row("Where", Delivery.State == DeliveryState.Texting
                                  ? "on the phone"
-                                 : Delivery.Distance.ToString("0") + "m away");
-                run.Row("Carries", Carries(Delivery.Def));
-                run.Row("Price", Multiplier(1f / Math.Max(0.01f, Delivery.Def.PriceMultiplier)));
+                                 : Delivery.Distance.ToString("0") + "m away", null, "pin.png");
+                run.Row("Carries", Carries(Delivery.Def), null, "crate.png");
+                run.Row("Price", Multiplier(1f / Math.Max(0.01f, Delivery.Def.PriceMultiplier)), null, "cash.png");
 
                 run.Add("Waiting on him", ">", null,
                     detail: Delivery.State == DeliveryState.Waiting
@@ -1198,10 +1224,10 @@ namespace Hoodrich.Wheel
                 var def = _dealers.MeetDealer;
                 var page = new WheelPage("Supply", "Meet is on");
                 page.PanelTitle = def.Name;
-                page.Row("Distance", _dealers.MeetDistance.ToString("0") + "m");
-                page.Row("Carries", Carries(def));
-                page.Row("Price", "x" + def.PriceMultiplier.ToString("0.00"));
-                page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g");
+                page.Row("Distance", _dealers.MeetDistance.ToString("0") + "m", null, "pin.png");
+                page.Row("Carries", Carries(def), null, "crate.png");
+                page.Row("Price", "x" + def.PriceMultiplier.ToString("0.00"), null, "cash.png");
+                page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g", null, "crate.png");
 
                 page.Add("Waiting", ">", null,
                     detail: "Follow the blip and walk up on him",
@@ -1221,11 +1247,11 @@ namespace Hoodrich.Wheel
             var list = new WheelPage("Re-up", "Buying weight");
 
             list.PanelTitle = "Where the weight comes from";
-            list.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
-            list.Row("Room left", Stash.FreeSpace.ToString("0") + "g");
-            list.Row("Gangs", "talk to their leader", Palette.TextDim);
+            list.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash, "cash.png");
+            list.Row("Room left", Stash.FreeSpace.ToString("0") + "g", null, "box.png");
+            list.Row("Gangs", "talk to their leader", Palette.TextDim, "people.png");
             list.Row("The port", _state.DocksUnlocked ? "he delivers" : "you don't know nobody",
-                     _state.DocksUnlocked ? Palette.Cash : (Color?)Palette.TextDim);
+                     _state.DocksUnlocked ? Palette.Cash : (Color?)Palette.TextDim, "crate.png");
 
             var docks = _dealers.Docks();
 
@@ -1260,7 +1286,7 @@ namespace Hoodrich.Wheel
                 value: "everything, cheapest",
                 enabled: blocked == null,
                 disabledReason: blocked ?? "");
-            list.WithIcon(Icons.Money);
+            list.WithIcon(Icons.FromFile("phone.png"));
 
             return list;
         }
@@ -1308,12 +1334,12 @@ namespace Hoodrich.Wheel
 
             var page = new WheelPage(def.Name, def.BuyLine);
             page.PanelTitle = def.Name;
-            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
-            page.Row("Free space", Stash.FreeSpace.ToString("0") + "g");
-            page.Row("Carries", Carries(def));
-            page.Row("Price", "x" + mult.ToString("0.00"));
-            page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g");
-            page.Row("Sold so far", _state.GramsSold.ToString("0.#") + "g");
+            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash, "cash.png");
+            page.Row("Free space", Stash.FreeSpace.ToString("0") + "g", null, "box.png");
+            page.Row("Carries", Carries(def), null, "crate.png");
+            page.Row("Price", "x" + mult.ToString("0.00"), null, "cash.png");
+            page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g", null, "crate.png");
+            page.Row("Sold so far", _state.GramsSold.ToString("0.#") + "g", null, "deal.png");
 
             // The question that opens the game up. Only a gang dealer knows the answer.
             if (def.IsGangDealer)
@@ -1476,13 +1502,13 @@ namespace Hoodrich.Wheel
                 var mine = _crew.CurrentStanding;
 
                 page.Row("Your rep", mine == null ? "0" : mine.Rep.ToString("0"),
-                         mine != null && mine.Rep < 0 ? Palette.Danger : Palette.Cash);
-                page.Row("Bodies for them", mine == null ? "0" : mine.Kills.ToString("N0"));
-                page.Row("Beefing with", BeefNames(), Palette.Danger);
+                         mine != null && mine.Rep < 0 ? Palette.Danger : Palette.Cash, "rank.png");
+                page.Row("Bodies for them", mine == null ? "0" : mine.Kills.ToString("N0"), null, "skull.png");
+                page.Row("Beefing with", BeefNames(), Palette.Danger, "guns.png");
             }
 
-            page.Row("You are on", _turf.ZoneName, TurfTint());
-            page.Row("Whose block", TurfWord(), TurfTint());
+            page.Row("You are on", _turf.ZoneName, TurfTint(), "pin.png");
+            page.Row("Whose block", TurfWord(), TurfTint(), "mask.png");
 
             page.AddSub("This block", "#", BuildTurfPage,
                 detail: TurfWord(),
@@ -1515,11 +1541,11 @@ namespace Hoodrich.Wheel
                 page.Row("Get put on", leader != null
                         ? "talk to " + leader.Name
                         : "leaders are on your map",
-                    Palette.TextDim);
+                    Palette.TextDim, "key.png");
             }
             else
             {
-                page.Row("Work", "Lamar's got it", Palette.TextDim);
+                page.Row("Work", "Lamar's got it", Palette.TextDim, "car.png");
             }
 
             // Standing is a gang question, so the readout lives here rather than on the root.
@@ -1553,16 +1579,16 @@ namespace Hoodrich.Wheel
 
             page.PanelTitle = "Where you are";
             page.Row("Running with", _crew.IsAffiliated ? _crew.Current.Name : "nobody",
-                     _crew.IsAffiliated ? _crew.Current.Colour : (Color?)Palette.TextDim);
-            page.Row("Respect", _state.Respect.ToString("N0") + "  ·  " + _state.RankName);
-            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash);
-            page.Row("On you", Stash.Total.ToString("0.#") + "g");
+                     _crew.IsAffiliated ? _crew.Current.Colour : (Color?)Palette.TextDim, "mask.png");
+            page.Row("Respect", _state.Respect.ToString("N0") + "  ·  " + _state.RankName, null, "rank.png");
+            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash, "cash.png");
+            page.Row("On you", Stash.Total.ToString("0.#") + "g", null, "stash.png");
             page.Row("At the house",
                      _stash == null || _stash.Stash == null
                          ? "0g"
-                         : _stash.Stash.Total.ToString("0.#") + "g");
-            page.Row("Jobs finished", _state.MissionsDone.Count.ToString());
-            page.Row("Followers", Followers == null ? "0" : Followers().ToString("N0"), Palette.Cash);
+                         : _stash.Stash.Total.ToString("0.#") + "g", null, "garage.png");
+            page.Row("Jobs finished", _state.MissionsDone.Count.ToString(), null, "tick.png");
+            page.Row("Followers", Followers == null ? "0" : Followers().ToString("N0"), Palette.Cash, "people.png");
 
             page.AddSub("The gangs", "%", () => Confirm(
                     "Wipe the gangs",
@@ -1765,15 +1791,15 @@ namespace Hoodrich.Wheel
             var page = new WheelPage(gang.Name, mine ? "You run with them" : RelationLabel(gang));
 
             page.PanelTitle = gang.Name;
-            page.Row("They run", gang.TurfHint);
-            page.Row("They move", DrugNames(gang));
-            page.Row("Their old rivals", RivalNames(gang));
+            page.Row("They run", gang.TurfHint, null, "pin.png");
+            page.Row("They move", DrugNames(gang), null, "pills.png");
+            page.Row("Their old rivals", RivalNames(gang), null, "guns.png");
             // Two different questions, and they used to carry the same label -- the panel read
             // "With you: no problem" directly above "With you: you run with them".
             page.Row("Beef", _crew.Beefing(gang.Id) ? "at war" : "no problem",
-                     _crew.Beefing(gang.Id) ? Palette.Danger : (Color?)Palette.TextDim);
+                     _crew.Beefing(gang.Id) ? Palette.Danger : (Color?)Palette.TextDim, "guns.png");
             page.Row("Where you stand", mine ? "you run with them" : RelationLabel(gang),
-                     mine ? gang.Colour : atWar ? Palette.Danger : (Color?)null);
+                     mine ? gang.Colour : atWar ? Palette.Danger : (Color?)null, "mask.png");
 
             // Joining only. There is no walking away.
             //
@@ -1815,7 +1841,7 @@ namespace Hoodrich.Wheel
                     value: carries + "  ·  " + Multiplier(1f / Math.Max(0.01f, mult)),
                     enabled: refusal == null,
                     disabledReason: refusal ?? "");
-                page.WithIcon(Icons.Money);
+                page.WithIcon(Icons.FromFile("phone.png"));
             }
             else
             {
@@ -1856,10 +1882,10 @@ namespace Hoodrich.Wheel
 
             page.PanelTitle = _turf.ZoneName;
             page.Row("Whose", _turf.Owner == null ? "nobody's" : _turf.Owner.Name,
-                     _turf.Owner?.Colour ?? (Color?)Palette.TextDim);
-            page.Row("To you", TurfWord(), TurfTint());
+                     _turf.Owner?.Colour ?? (Color?)Palette.TextDim, "mask.png");
+            page.Row("To you", TurfWord(), TurfTint(), "mask.png");
             page.Row("Been clocked", _turf.IsExposed ? "yes -- they have seen you" : "not yet",
-                     _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim);
+                     _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim, "warning.png");
 
             // It is no longer only about this block, so it no longer says it is. The panel
             // behind this opens on the block and then runs through every set in the city.

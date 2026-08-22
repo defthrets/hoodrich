@@ -94,6 +94,16 @@ namespace Hoodrich.UI
 
         /// <summary>Overrides the value colour; null uses the default.</summary>
         public Color? Tint;
+
+        /// <summary>
+        /// A PNG in data\icons, drawn in the gutter to the left of the label.
+        ///
+        /// The side panel was the last surface in the mod with no art at all -- every other
+        /// screen had been given icons and this one kept printing seventy-odd rows of bare
+        /// words beside them. Optional, so a row that has nothing worth a picture stays
+        /// flush left rather than sitting in an empty column.
+        /// </summary>
+        public string ArtFile;
     }
 
     /// <summary>A ring of items plus the header shown while it is open.</summary>
@@ -116,9 +126,9 @@ namespace Hoodrich.UI
             Subtitle = subtitle;
         }
 
-        public WheelPage Row(string label, string value, Color? tint = null)
+        public WheelPage Row(string label, string value, Color? tint = null, string art = null)
         {
-            Panel.Add(new PanelRow { Label = label, Value = value, Tint = tint });
+            Panel.Add(new PanelRow { Label = label, Value = value, Tint = tint, ArtFile = art ?? "" });
             return this;
         }
 

@@ -124,11 +124,12 @@ namespace Hoodrich.Missions
             switch (def.Kind)
             {
                 case MissionKind.BikeRide: return Icons.Health;
-                case MissionKind.DriveBy: return Icons.Garage;
+                case MissionKind.DriveBy: return Icons.FromFile("car.png");
 
-                // A car, same as the drive-by -- it is still a job you do from one, and the
-                // burning is the part he does not put on the menu.
-                case MissionKind.TorchJob: return Icons.Garage;
+                // The fire, now that there is one. It wore the garage icon on the grounds that
+                // a torch job is still a job you do from a car -- with a comment admitting the
+                // burning was the part it did not show. It shows it.
+                case MissionKind.TorchJob: return Icons.FromFile("fire.png");
                 case MissionKind.Tags: return Icons.FromFile("spray.png");
                 case MissionKind.Hit: return Icons.Guns;
                 default: return Icons.Mask;

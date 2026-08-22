@@ -144,6 +144,67 @@ namespace Hoodrich.UI
             return this;
         }
 
+        /// <summary>
+        /// The three overloads that were missing, so every row shape can carry art.
+        ///
+        /// Row already had a hand-on-the-row form; Hero and Meter did not, and Row had no way
+        /// to take a note AND a hand at the same time. That is why a wiring pass over the whole
+        /// file could give art to a plain row and not to the rank hero sitting above it.
+        /// </summary>
+        public InfoSection Row(string label, string value, Color? colour, string note,
+                               Action<InfoRow> with)
+        {
+            var row = new InfoRow
+            {
+                Label = label,
+                Value = value,
+                Colour = colour ?? Palette.Text,
+                Note = note
+            };
+
+            if (with != null) with(row);
+
+            Rows.Add(row);
+            return this;
+        }
+
+        public InfoSection Hero(string label, string value, Color colour, string note,
+                                Action<InfoRow> with)
+        {
+            var row = new InfoRow
+            {
+                Kind = InfoKind.Hero,
+                Label = label,
+                Value = value,
+                Colour = colour,
+                Note = note
+            };
+
+            if (with != null) with(row);
+
+            Rows.Add(row);
+            return this;
+        }
+
+        public InfoSection Meter(string label, string value, float fraction, Color colour,
+                                 string note, Action<InfoRow> with)
+        {
+            var row = new InfoRow
+            {
+                Kind = InfoKind.Meter,
+                Label = label,
+                Value = value,
+                Colour = colour,
+                Meter = fraction,
+                Note = note
+            };
+
+            if (with != null) with(row);
+
+            Rows.Add(row);
+            return this;
+        }
+
         public InfoSection Gap()
         {
             Rows.Add(new InfoRow());
@@ -622,6 +683,22 @@ namespace Hoodrich.UI
                          Palette.Alpha(row.Colour, 200));
 
             var tx = x + Pad;
+
+            // Art on a hero row, which it could not have before.
+            //
+            // The draw returns here rather than falling through to the shared row path, so the
+            // HasArt check further up was never reached for a hero -- a Hero could be given an
+            // ArtFile and would silently ignore it. It is drawn beside the number rather than
+            // beside the caption, because the number is the thing the row exists for and the
+            // caption is three-quarters the height of the art itself.
+            var heroArt = 0.030f;
+
+            if (row.HasArt &&
+                Hud.File(row.ArtFile, tx + Hud.ToX(heroArt) * 0.5f, y + 0.034f, heroArt, 0f,
+                         row.ArtTint ?? row.Colour))
+            {
+                tx += Hud.ToX(heroArt) + 0.008f;
+            }
 
             // Caption above the number, small and dim. The number is what is being looked for;
             // the label is only needed once it has been found.

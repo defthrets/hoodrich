@@ -346,13 +346,32 @@ namespace Hoodrich.UI
 
                 if (!isSpacer)
                 {
-                    Draw.Text(row.Label, left + padding * 0.5f, y, 0.28f, Palette.TextDim,
+                    // Art in the gutter, if the row has any.
+                    //
+                    // Draw.File places by its CENTRE and Draw.Text by its TOP edge, so it is
+                    // pushed down a third of a row to sit level with the words. A row with no
+                    // art keeps its old left edge exactly, so nothing that was already laid
+                    // out moves.
+                    var lx = left + padding * 0.5f;
+                    var indent = 0f;
+
+                    if (!string.IsNullOrEmpty(row.ArtFile) &&
+                        Draw.File(row.ArtFile, lx + Draw.ToX(PanelArt) * 0.5f,
+                                  y + rowHeight * 0.34f, PanelArt, 0f, Palette.TextDim))
+                    {
+                        indent = Draw.ToX(PanelArt) + 0.005f;
+                    }
+
+                    Draw.Text(row.Label, lx + indent, y, 0.28f, Palette.TextDim,
                               Draw.FontBody, centre: false);
 
                     // Whatever is left after the label has had its share, less a gutter so the
                     // two never touch. Nothing used to check this, and a gang with four rivals
                     // printed its list straight through its own label.
-                    var taken = Draw.MeasureText(row.Label, 0.28f, Draw.FontBody);
+                    //
+                    // The art is charged to the label's share, so a row with a picture gets
+                    // less room for its value rather than overrunning into it.
+                    var taken = Draw.MeasureText(row.Label, 0.28f, Draw.FontBody) + indent;
                     var room = width - padding - taken - RowGutter;
 
                     Draw.TextRight(Draw.Fit(row.Value, room, 0.28f, Draw.FontBody),
@@ -367,6 +386,14 @@ namespace Hoodrich.UI
 
         /// <summary>Clear space kept between a panel row's label and its value.</summary>
         private const float RowGutter = 0.012f;
+
+        /// <summary>
+        /// How tall a side-panel row's art is, as a fraction of screen height.
+        ///
+        /// Matched to the 0.28 body text it sits beside rather than to the row box, so it
+        /// reads as part of the line rather than as a bullet in front of it.
+        /// </summary>
+        private const float PanelArt = 0.017f;
 
         /// <summary>Node-mode segment: an axis-aligned card centred on the segment's mid angle.</summary>
         private static void DrawCard(float cx, float cy, float rMid, float midAngleDeg,

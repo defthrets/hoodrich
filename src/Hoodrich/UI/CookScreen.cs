@@ -439,6 +439,15 @@ namespace Hoodrich.UI
             // What comes off the counter gets its art too, out on the right where the verb
             // and the purity word already sit -- so the line that says how far you are
             // stepping on it is next to a picture of the thing being stepped on.
+            // The scales beside the purity word. How far you have stepped on it is a weight
+            // question, and this line is the one place the screen says the answer out loud.
+            try
+            {
+                Hud.File("scales.png", x + Hud.ToX(ArtSize) * 0.5f, y + 0.011f, ArtSize, 0f,
+                         Palette.Accent);
+            }
+            catch { /* the words carry it */ }
+
             var outArt = Icons.ForDrug(made.Id);
             var words = (chosen.Rolling ? made.WorkVerb : product.WorkVerb) + "  ·  " + PurityWord(purity);
 
