@@ -468,7 +468,6 @@ namespace Hoodrich.Supply
             _def = def;
             State = DeliveryState.Texting;
             _stateSince = Game.GameTime;
-            _parking = false;
             _messageSent = false;
             _greeted = false;
 
@@ -896,24 +895,20 @@ namespace Hoodrich.Supply
 
             if (toSpot > ArriveDistance)
             {
-                // The last thirty metres are a park, not a drive.
+                // He drives at the mark. There is no park manoeuvre any more.
                 //
-                // Driving to a coordinate aims the car AT a point and stops when it is within
-                // the task's radius, facing wherever it happened to be facing -- which on a
-                // street is a car halted in a lane near the kerb rather than a car parked at
-                // it. The park task is the game's own, takes the heading, and pulls in.
+                // TASK_VEHICLE_PARK was doing the job it is for and the job was wrong: style 2
+                // is a parallel park, which means driving past the space and reversing into it,
+                // and style 3 still hands the last few metres to a manoeuvre that shuffles. The
+                // last few metres of a park are the hardest thing the driving AI does, and a
+                // spot outside a front gate with a fence one side and a parked car the other is
+                // exactly where it gives up and rocks back and forth.
                 //
-                // Issued once. Re-issuing it every few seconds restarts the manoeuvre from the
-                // beginning, which is a car that shuffles at the kerb forever and never settles.
-                if (toSpot <= ParkTaskRange)
+                // A straight drive gets him near the mark facing roughly the right way, and
+                // ParkOnTheMark straightens him onto it the moment nobody is looking. That was
+                // always the fallback; it is the whole plan now.
+                if (Game.GameTime - _lastRetask > RetaskIntervalMs)
                 {
-                    if (!_parking) PullIn();
-                }
-                else if (Game.GameTime - _lastRetask > RetaskIntervalMs)
-                {
-                    // Still a drive. Re-aimed on a plain clock so the legs chain whether or not
-                    // anybody moves.
-                    _parking = false;
                     _lastRetask = Game.GameTime;
                     DriveTo(Kerb());
                 }
@@ -922,15 +917,15 @@ namespace Hoodrich.Supply
 
                 // He has had long enough.
                 //
-                // A car can be forty seconds from a kerb it will never quite reach: the last
-                // few metres of a park are the hardest thing the driving AI does, and a spot
-                // outside somebody's front gate with a fence one side and a parked car the
-                // other is exactly where it gives up and shuffles. Everything above is still
-                // tried first and this only ever fires after a minute of trying, but a delivery
-                // that never arrives is the one outcome that cannot be allowed to stand.
+                // A car can be forty seconds from a kerb it will never quite reach. A mark on
+                // a street with a fence one side and a parked car the other is somewhere the
+                // driving AI can circle without ever closing the last few metres, and dropping
+                // the park task does not change that -- it only removes the reversing. The
+                // drive above is still tried first and this only fires after a minute of it,
+                // but a delivery that never arrives is the one outcome that cannot stand.
                 if (Game.GameTime - _stateSince > SettleForItMs && toSpot < 90f)
                 {
-                    Log.Warn("Delivery: close but not parking after " +
+                    Log.Warn("Delivery: close but not arriving after " +
                              ((Game.GameTime - _stateSince) / 1000) + "s; putting him on the mark.");
 
                     ParkOnTheMark();
@@ -945,7 +940,6 @@ namespace Hoodrich.Supply
             // vehicle, so the last check is that he has actually stopped.
             if (_car.Speed > ParkedSpeed && Game.GameTime - _stateSince < SettleForItMs)
             {
-                if (!_parking) PullIn();
                 Unstick();
                 return;
             }
@@ -1035,8 +1029,7 @@ namespace Hoodrich.Supply
 
                 _stillSince = 0;
                 _lastRetask = 0;
-                _parking = false;
-
+    
                 DriveTo(ParkSpot);
 
                 Log.Warn("Delivery: he was wedged, so he has been put back on the road.");
@@ -1131,51 +1124,12 @@ namespace Hoodrich.Supply
         /// <summary>How long he is given to park himself before he is simply put on the mark.</summary>
         private const int SettleForItMs = 60000;
 
-        /// <summary>Inside this, he stops driving at the mark and starts parking on it.</summary>
-        private const float ParkTaskRange = 32f;
-
-        /// <summary>Whether the park manoeuvre has been handed out for this run.</summary>
-        private bool _parking;
-
         /// <summary>Whether the phone has been put away for this run.</summary>
         private bool _messageSent;
 
         /// <summary>
         /// Parks him on the mark, facing the way the street runs.
         ///
-        /// He PULLS UP, he does not parallel park.
-        ///
-        /// Style 2 is a parallel park, and a parallel park is a reversing manoeuvre by
-        /// definition -- he drove past the mark, stopped, and backed into it, which is exactly
-        /// what it looked like. Style 3 drives up to the point and stops on it.
-        ///
-        /// The shuffle radius comes down with it. Twenty-two metres is a lot of room to be
-        /// clever in, and every metre of it is somewhere he might decide to reverse through
-        /// on his way to being tidy.
-        /// </summary>
-        private void PullIn()
-        {
-            if (_driver == null || !_driver.Exists() || _car == null || !_car.Exists()) return;
-
-            try
-            {
-                Function.Call(Hash.TASK_VEHICLE_PARK, _driver.Handle, _car.Handle,
-                              ParkSpot.X, ParkSpot.Y, ParkSpot.Z, ParkHeading,
-                              PullUp, ParkWithin, true);
-
-                _parking = true;
-            }
-            catch (Exception ex)
-            {
-                // No park task, so he keeps driving at it -- worse, but not broken.
-                Log.Debug("Could not hand out the park: " + ex.Message);
-                _parking = false;
-            }
-        }
-
-        private const int PullUp = 3;
-        private const float ParkWithin = 12f;
-
         /// <summary>
         /// Where he is aiming right now.
         ///
