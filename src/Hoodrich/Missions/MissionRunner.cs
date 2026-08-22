@@ -250,6 +250,20 @@ namespace Hoodrich.Missions
         {
             if (def == null) return "No such job.";
             if (IsRunning) return "You're already on something.";
+            try
+            {
+                if (!def.OpenNow(Function.Call<int>(Hash.GET_CLOCK_HOURS)))
+                {
+                    return "that place is shut. Come back between " +
+                           MissionDef.Clock(def.OpensHour) + " and " +
+                           MissionDef.Clock(def.ClosesHour) + ".";
+                }
+            }
+            catch
+            {
+                // No clock, no restriction.
+            }
+
             if (!_crew.IsAffiliated) return "You don't run with nobody.";
 
             var player = Game.Player.Character;

@@ -1,6 +1,7 @@
 using System;
 using Color = System.Drawing.Color;
 using GTA;
+using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.Gangs;
 using Hoodrich.State;
@@ -92,6 +93,17 @@ namespace Hoodrich.Missions
                 var pick = def;
                 var done = _state.HasDone(def.Id);
 
+                // Shut is shown rather than hidden. A job that quietly vanishes from his list
+                // between two and six in the morning reads as the mod having lost it; the same
+                // job sat there saying when it opens reads as a shop with hours.
+                if (!Open(def))
+                {
+                    node.Say(def.Name, () => Shut(pick), "shut  ·  " + Hours(def));
+                    node.WithIcon(IconFor(def));
+                    offered++;
+                    continue;
+                }
+
                 node.Say(def.Name, () => Brief(pick),
                          (done ? "again  ·  $" : "$") +
                          def.PayMin.ToString("N0") + "-" + def.PayMax.ToString("N0"));
@@ -135,6 +147,39 @@ namespace Hoodrich.Missions
                 default: return Icons.Mask;
             }
         }
+        /// <summary>Whether the clock is inside this job's window, if it has one.</summary>
+        private static bool Open(MissionDef def)
+        {
+            try
+            {
+                return def.OpenNow(Function.Call<int>(Hash.GET_CLOCK_HOURS));
+            }
+            catch
+            {
+                // No clock, no restriction. Refusing a job because a native did not answer is
+                // the worst of both.
+                return true;
+            }
+        }
+
+        /// <summary>The window, said the way he would say it.</summary>
+        private static string Hours(MissionDef def)
+        {
+            return MissionDef.Clock(def.OpensHour) + " to " + MissionDef.Clock(def.ClosesHour);
+        }
+
+        /// <summary>Him telling you to come back when the place is open.</summary>
+        private DialogueNode Shut(MissionDef def)
+        {
+            var node = Node("Nah, not right now. The whole thing ends up at that store and " +
+                            "they got the shutter down. Come see me between " + Hours(def) +
+                            " and we'll go.");
+
+            node.Say("Alright, later.", Root);
+            node.Leave("Cool.");
+            return node;
+        }
+
         private DialogueNode Nothing(string line = null)
         {
             var node = Node(string.IsNullOrEmpty(line)

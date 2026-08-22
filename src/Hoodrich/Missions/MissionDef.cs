@@ -113,6 +113,44 @@ namespace Hoodrich.Missions
         public float Rep = 40f;
         public int MinRank;
 
+        /// <summary>
+        /// The hours this job can be taken in, or -1 for any.
+        ///
+        /// On the definition rather than in the code because it is a fact about ONE job: the
+        /// bike ride finishes inside a shop, and a shop with the shutter down is a mission that
+        /// cannot be completed no matter how well it is played. Every other job happens in the
+        /// street and the street is open all night.
+        ///
+        /// The window may wrap past midnight -- open 6, shut 2 is eight hours of the night on
+        /// the far side of the day boundary -- so it is read as a window and not as a range.
+        /// </summary>
+        public int OpensHour = -1;
+        public int ClosesHour = -1;
+
+        /// <summary>Whether the clock is inside that window right now.</summary>
+        public bool OpenNow(int hour)
+        {
+            if (OpensHour < 0 || ClosesHour < 0) return true;
+            if (OpensHour == ClosesHour) return true;
+
+            return ClosesHour > OpensHour
+                ? hour >= OpensHour && hour < ClosesHour
+                : hour >= OpensHour || hour < ClosesHour;
+        }
+
+        /// <summary>An hour of the clock as somebody would say it out loud.</summary>
+        public static string Clock(int hour)
+        {
+            hour = ((hour % 24) + 24) % 24;
+
+            if (hour == 0) return "midnight";
+            if (hour == 12) return "midday";
+
+            return hour < 12
+                ? hour.ToString() + " in the mornin"
+                : (hour - 12).ToString() + " at night";
+        }
+
         /// <summary>Homies who ride with you.</summary>
         public int Homies = 2;
 
@@ -193,6 +231,8 @@ namespace Hoodrich.Missions
                     PayMax = Math.Max(0, node["payMax"].AsInt(1200)),
                     Rep = Math.Max(0f, node["rep"].AsFloat(40f)),
                     MinRank = Math.Max(0, node["minRank"].AsInt(0)),
+                    OpensHour = node["opensHour"].AsInt(-1),
+                    ClosesHour = node["closesHour"].AsInt(-1),
                     Homies = Math.Max(0, node["homies"].AsInt(2))
                 };
 
