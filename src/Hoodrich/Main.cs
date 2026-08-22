@@ -857,6 +857,10 @@ namespace Hoodrich
                 _fixerTalk = new FixerTalk(_fixer, _missions, _jobs, _crew, _state);
                 _fixer.Talk = _talk;
                 _fixer.TalkBuilder = () => _fixerTalk.Root();
+
+                // The one thing that lets him be spoken to while a job still technically has
+                // him: the work is done and the only thing left is getting paid for it.
+                _fixer.Finished = () => _jobs != null && _jobs.ReadyToCollect;
                 _fixerTalk.BlockUnderAttack = () => _war != null && _war.IsRunning;
 
                 _bigjTalk = new ArmourerTalk(_bigj, _crew, _state);

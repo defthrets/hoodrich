@@ -55,6 +55,30 @@ namespace Hoodrich.Missions
         private bool _lent;
         private bool _talkHeld;
 
+        /// <summary>
+        /// Whether the job he lent himself to is finished and waiting to be handed in.
+        ///
+        /// A deadlock lived exactly here. Lend sets _lent, TakeBack clears it, and TakeBack
+        /// only runs when you COLLECT -- but collecting means talking to him, and being lent
+        /// is what stops you talking to him. So the bike ride ended, he walked back to his own
+        /// corner, stood on it, and could not be spoken to by the man stood next to him.
+        ///
+        /// The lend is still right and still has to outlast the ride: TakeBack puts him back
+        /// on his mark or despawns him if he has drifted, and doing either while he is walking
+        /// home would undo the walk. This is the narrower question the guard actually wanted to
+        /// ask -- not "is a job using him" but "is a job still using him".
+        /// </summary>
+        public Func<bool> Finished;
+
+        private bool HandInDue
+        {
+            get
+            {
+                try { return Finished != null && Finished(); }
+                catch { return false; }
+            }
+        }
+
         public Fixer(Affiliation crew)
         {
             _crew = crew;
@@ -117,7 +141,13 @@ namespace Hoodrich.Missions
             // is demonstrably not standing on is worse than no marker.
             if (_lent)
             {
-                DropBlip();
+                // The blip comes back with him. Everything else stays hands-off -- the mission
+                // still owns the ped until it hands him over, so this must not spawn, despawn
+                // or re-task him. It only decides whether there is a marker on the corner he is
+                // demonstrably standing on.
+                if (HandInDue) SyncBlip();
+                else DropBlip();
+
                 return;
             }
 
@@ -353,7 +383,7 @@ namespace Hoodrich.Missions
             // is up, so the one screen the mission actually needed could be blocked by the one
             // that should not have been available. Lend sets this and TakeBack clears it, so
             // he goes back to being a man you can talk to the moment the job is over.
-            if (_lent) return;
+            if (_lent && !HandInDue) return;
 
             if (Talk == null || Talk.IsOpen || !InReach) return;
 
