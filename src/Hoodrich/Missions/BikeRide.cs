@@ -82,6 +82,24 @@ namespace Hoodrich.Missions
         /// as people who happened to be in the same postcode.
         /// </summary>
         private static readonly Vector3 HomieSpot = new Vector3(-109.105f, -1598.494f, 31.091f);
+
+        /// <summary>
+        /// Where the ride ends.
+        ///
+        /// The alley behind the block rather than Fixer.Spot. The fixer stands where he stands
+        /// for every other job; this one started in the alley and it finishes there, which is
+        /// also where the bikes came from.
+        /// </summary>
+        private static readonly Vector3 RideHome = new Vector3(-107.822f, -1600.699f, 31.074f);
+
+        /// <summary>
+        /// How he drives while following you: everything except the parts that make him wait.
+        ///
+        /// 786603 with StopBeforeVehicles, StopBeforePeds and StopAtTrafficLights cleared and
+        /// AllowGoingWrongWay set. AvoidObjects and AvoidEmptyVehicles stay, so he goes round
+        /// a parked car rather than into it.
+        /// </summary>
+        private const int FollowStyle = 786984;
         private const float HomieHeading = 320.830f;
 
         // ---- ranges and timings ------------------------------------------------
@@ -266,6 +284,13 @@ namespace Hoodrich.Missions
                 return;
             }
 
+            // Every phase, not three of them.
+            //
+            // This was called from the robbery, the escape and the ride home -- which are
+            // exactly the parts where he was already beside you, and not the two-neighbourhood
+            // ride where he actually gets lost. Up here it covers the whole job.
+            KeepLamarClose(player);
+
             // Hands only, all the way through, not just during the fight. Pulling a gun on a
             // straightener is the whole thing you were told not to do, and it should not stop
             // being true the moment the last one goes down.
@@ -306,7 +331,9 @@ namespace Hoodrich.Missions
             _nextChatter = Game.GameTime + ChatterGapMs;
 
             Mark(Courts, "The courts", BlipColor.Yellow);
-            Notify.Ticker("~g~The homies rolled out with you.~s~");
+            Notify.Ticker(_lamar != null && _lamar.Exists()
+                ? "~g~Lamar rolled out with you.~s~"
+                : "~g~The homies rolled out with you.~s~");
         }
 
         private void TickRiding(Ped player)
@@ -435,7 +462,6 @@ namespace Hoodrich.Missions
         private void TickRob(Ped player)
         {
             RemountHomies(player);
-            KeepLamarClose(player);
 
             var range = player.Position.DistanceTo(Shop);
 
@@ -458,11 +484,11 @@ namespace Hoodrich.Missions
                     LamarSays("Pull in right here. Nah, I ain't thirsty. Just pull in.");
                 }
 
-                if (!_robOffered && _shouted && range <= ShopRange && Stopped(player))
-                {
-                    _robOffered = true;
-                    Talk?.Open(TheOffer(), this);
-                }
+                // He does not open a menu at you. He tells you to pull in, and then you go
+                // and ask him what for -- which is the same thing every other conversation in
+                // the mod asks of you, and it stops a screen appearing over the handlebars
+                // while you are still rolling.
+                if (_shouted && range <= ShopRange && Stopped(player)) OfferWhenAsked(player);
 
                 return;
             }
@@ -480,8 +506,30 @@ namespace Hoodrich.Missions
 
             Phase = BikePhase.Escape;
 
-            Mark(Fixer.Spot, "The spot", BlipColor.Yellow);
+            Mark(RideHome, "The spot", BlipColor.Yellow);
             Notify.Important("~r~That's the till.~s~ " + Objective + ".");
+        }
+
+        /// <summary>
+        /// Walk up to him and he will tell you what he stopped for.
+        ///
+        /// The same shape as the words at the courts: get near, a prompt appears, you press,
+        /// and the screen opens. He is the one who has something to say, so he is the one you
+        /// go to -- and it means a menu never lands on top of you unasked.
+        /// </summary>
+        private void OfferWhenAsked(Ped player)
+        {
+            if (Talk == null || Talk.IsOpen || _robOffered) return;
+            if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive) return;
+
+            if (Flat(player.Position, _lamar.Position) > TalkRange) return;
+
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to see what he wants.");
+
+            if (!Pressed()) return;
+
+            _robOffered = true;
+            Talk.Open(TheOffer(), this);
         }
 
         /// <summary>
@@ -500,10 +548,10 @@ namespace Hoodrich.Missions
             // having right now, and hanging it off something Franklin actually wants -- the
             // grow room needs paying for, and Lamar knows it does.
             var node = new DialogueNode("Lamar",
-                "Aight so. Hear me out. That grow you got goin'? Lights, fans, all that -- " +
-                "that's real money, dawg, and neither of us got it. One man in there, one " +
-                "till, and them cameras been dead since we was in school. That's seed money " +
-                "sittin' on a counter.")
+                "Aight so. Hear me out. That grow I been settin' up? Lights, fans, all that " +
+                "-- that's real money, dawg, and I ain't got it. One man in there, one till, " +
+                "and them cameras been dead since we was in school. That's my seed money " +
+                "sittin' on a counter and you the one with the steady hands.")
             {
                 SpeakerColour = Palette.Cash
             };
@@ -526,7 +574,7 @@ namespace Hoodrich.Missions
                 // Taken as done. The shop is finished with either way, and the ride home is
                 // the same ride home -- he just complains the whole way.
                 _gotCash = true;
-                LamarSays("Man... aight. AIGHT. But when that grow dry up don't call me.");
+                LamarSays("Man... aight. AIGHT. Then I'm startin' that grow with lint.");
                 return null;
             }, "Ride back with what you came for");
 
@@ -661,7 +709,6 @@ namespace Hoodrich.Missions
         private void TickEscape(Ped player)
         {
             RemountHomies(player);
-            KeepLamarClose(player);
 
             // Still hot. Getting back to the spot with a helicopter over you is not getting
             // away with it, so the job does not end until they have lost you.
@@ -709,6 +756,58 @@ namespace Hoodrich.Missions
             catch (Exception ex)
             {
                 Log.Debug("Could not keep Lamar on his bike: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Off the bike, and back to the corner he was standing on.
+        ///
+        /// The job used to end with him sitting on a bicycle in an alley until the handback
+        /// either put him back on his mark or, if he had drifted too far, deleted him outright
+        /// -- so the man who runs the set finished every ride by vanishing.
+        ///
+        /// He gets out and walks it instead. The group is dropped first, because a man still
+        /// in your crew will turn round and follow you again the moment you move, and the
+        /// walk is a sequence so the exit finishes before the walk starts rather than being
+        /// replaced by it.
+        /// </summary>
+        private void SendLamarHome()
+        {
+            if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.REMOVE_PED_FROM_GROUP, _lamar.Handle);
+                Function.Call(Hash.SET_PED_NEVER_LEAVES_GROUP, _lamar.Handle, false);
+
+                // Back to the man who hands out jobs: not a target, and not looking for a
+                // fight on his own corner.
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _lamar.Handle, 3, true);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _lamar.Handle, 5, false);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _lamar.Handle, false);
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _lamar.Handle, false);
+
+                _lamar.Task.ClearAll();
+
+                var seq = new OutputArgument();
+                Function.Call(Hash.OPEN_SEQUENCE_TASK, seq);
+                var handle = seq.GetResult<int>();
+
+                Function.Call(Hash.TASK_LEAVE_ANY_VEHICLE, 0, 0, 0);
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, 0,
+                              Fixer.Spot.X, Fixer.Spot.Y, Fixer.Spot.Z, 1.0f, -1, 1.5f, 0, 0f);
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, 0,
+                              "WORLD_HUMAN_STAND_MOBILE", 0, true);
+
+                Function.Call(Hash.CLOSE_SEQUENCE_TASK, handle);
+                Function.Call(Hash.TASK_PERFORM_SEQUENCE, _lamar.Handle, handle);
+                Function.Call(Hash.CLEAR_SEQUENCE_TASK, seq);
+
+                Log.Info("Lamar is walking back to his corner.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not send Lamar home: " + ex.Message);
             }
         }
 
@@ -760,9 +859,10 @@ namespace Hoodrich.Missions
         private void TickHome(Ped player)
         {
             RemountHomies(player);
-            KeepLamarClose(player);
 
-            if (player.Position.DistanceTo(Fixer.Spot) > HomeRange) return;
+            if (player.Position.DistanceTo(RideHome) > HomeRange) return;
+
+            SendLamarHome();
 
             ReadyToCollect = true;
             ClearMarker();
@@ -1043,13 +1143,31 @@ namespace Hoodrich.Missions
                     // happily carry on to that position when you stop, which is why they rode
                     // off. Following a vehicle means what it says: they go where you went, at
                     // your speed, and they stop when you stop.
+                    // 786984, not 786603.
+                    //
+                    // The default is the law-abiding set: StopBeforeVehicles, StopBeforePeds
+                    // and StopAtTrafficLights all on. A man following you across two
+                    // neighbourhoods on that set stops at every red you rode through and is a
+                    // block behind by the second junction -- which is most of what "he doesn't
+                    // keep up" actually was. Those three come off and AllowGoingWrongWay goes
+                    // on; he keeps AvoidObjects and AvoidEmptyVehicles so he still goes ROUND
+                    // things rather than through them.
                     Function.Call(Hash.TASK_VEHICLE_FOLLOW, ped.Handle, bike.Handle, target.Handle,
-                                  25f, 786603, 8);
+                                  25f, FollowStyle, 8);
                     return;
                 }
 
-                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, ped.Handle, bike.Handle,
-                              Courts.X, Courts.Y, Courts.Z, 16f, 0, bike.Model.Hash, 786603, 6f, true);
+                // You are not on a bike yet, so there is nothing to follow -- and this used
+                // to send him to the COURTS.
+                //
+                // That is the whole of "Lamar rode off the other way". Escort is called the
+                // moment he is put on his bike, which is while you are still walking to yours,
+                // so the fallback fired every single time and he set off across Chamberlain on
+                // his own while you were getting on.
+                //
+                // He waits instead. The group follow takes over the second you are moving, and
+                // KeepLamarClose picks him up if it does not.
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, ped.Handle, bike.Handle, 1, 4000);
             }
             catch
             {
@@ -1251,7 +1369,7 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>Past this he is behind rather than beside you, and the clock starts.</summary>
-        private const float LamarLeash = 12f;
+        private const float LamarLeash = 20f;
 
         /// <summary>How long he gets to close it before he is simply moved.</summary>
         private const int LamarStuckMs = 4000;
@@ -1805,6 +1923,10 @@ namespace Hoodrich.Missions
             _homies.Clear();
 
             // And the man himself, back on his corner.
+            // He is walking home under his own sequence by now, so the handback must not
+            // clear it out from under him. Fixer.TakeBack puts him back on his mark or
+            // despawns him if he has drifted -- neither is wanted while he is on his way
+            // there, and both are fine once he arrives.
             if (_lamar != null)
             {
                 _lamar = null;
