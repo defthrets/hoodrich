@@ -957,20 +957,43 @@ namespace Hoodrich.Missions
             var ride = player.CurrentVehicle;
             if (ride == null || !ride.Exists())
             {
+                _ridingSince = 0;
                 Unlock();
                 return;
             }
 
-            LockThemIn(ride);
+            if (_ridingSince == 0) _ridingSince = Game.GameTime;
+
+            var waiting = 0;
 
             foreach (var homie in _homies)
             {
                 if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
                 if (homie.IsInVehicle()) continue;
 
+                waiting++;
                 SitBackDown(homie, ride);
             }
+
+            // Locked only once everybody who is coming is IN, and locked anyway after fifteen
+            // seconds of you sitting in it.
+            //
+            // This is the fix for what the lock broke. Locking on the frame you got in locked
+            // the homies out of the car they were walking to -- they stood at the handle of a
+            // door that would not open while the mission waited for them, which is a worse bug
+            // than the one being fixed and it is caused by the fix.
+            //
+            // The count is the real condition; the timer is the safety net for the man who
+            // died on the way to the door or got stuck on a bin, because "wait for everybody"
+            // with nobody left to wait for is a car that never locks at all.
+            if (waiting == 0 || Game.GameTime - _ridingSince > LockAfterMs) LockThemIn(ride);
         }
+
+        /// <summary>When you got into the current ride, or 0 if you are not in one.</summary>
+        private int _ridingSince;
+
+        /// <summary>How long they get to catch up before the doors go anyway.</summary>
+        private const int LockAfterMs = 15000;
 
         /// <summary>
         /// Locks the doors, which is the difference between preventing this and tidying it up.
@@ -1028,6 +1051,7 @@ namespace Hoodrich.Missions
             catch { /* it is unlocked or it is gone */ }
 
             _lockedRide = null;
+            _ridingSince = 0;
         }
 
         /// <summary>The one car we locked, so exactly one gets unlocked again.</summary>
