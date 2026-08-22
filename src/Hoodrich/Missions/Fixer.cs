@@ -21,8 +21,15 @@ namespace Hoodrich.Missions
     internal sealed class Fixer
     {
         /// <summary>The courtyard on Chamberlain, where he waits.</summary>
-        internal static readonly Vector3 Spot = new Vector3(-84.972f, -1610.382f, 31.485f);
-        private const float Heading = 206f;
+        /// <summary>
+        /// The lot behind the lab, not the Chamberlain courtyard.
+        ///
+        /// He is where the party is now. Everything about him follows this one coordinate --
+        /// his blip, the walk-up prompt, where a raid defends, where a job hands in -- so the
+        /// move is this line and the four spots around it rather than a rewrite.
+        /// </summary>
+        internal static readonly Vector3 Spot = new Vector3(-199.669f, -1718.827f, 32.664f);
+        private const float Heading = 124.548f;
 
         private const float SpawnRange = 110f;
         private const float DespawnRange = 190f;

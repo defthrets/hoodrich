@@ -55,8 +55,8 @@ namespace Hoodrich.Missions
         // ---- the route ---------------------------------------------------------
 
         /// <summary>Where the bike is left for you, round the corner from Lamar.</summary>
-        private static readonly Vector3 BikeSpot = new Vector3(-97.042f, -1610.761f, 32.313f);
-        private const float BikeHeading = 56.429f;
+        private static readonly Vector3 BikeSpot = new Vector3(-223.169f, -1723.002f, 32.629f);
+        private const float BikeHeading = 54.779f;
 
         /// <summary>The courts in Chamberlain Hills.</summary>
         private static readonly Vector3 Courts = new Vector3(-227.173f, -1541.756f, 31.607f);
@@ -69,11 +69,14 @@ namespace Hoodrich.Missions
         ///
         /// A named spot rather than two metres from wherever he happens to be stood. He is
         /// borrowed off his corner and put straight onto it, the same way the homies are put
-        /// straight onto theirs -- and it lands round the side, out of the courtyard, so three
-        /// men and three bikes are not materialising in the space you are stood in.
+        /// straight onto theirs -- and it lands up the far end of the lot, so three men and
+        /// three bikes are not materialising in the space you are stood in.
         /// </summary>
-        private static readonly Vector3 LamarBike = new Vector3(-105.510f, -1603.331f, 31.153f);
-        private const float LamarBikeHeading = 345.805f;
+        /// Three and a bit metres to the right of yours and seven for the homies, worked out
+        /// off the one mark that was given rather than read separately: three bikes at the same
+        /// coordinate is one bike and two the game has shoved somewhere.
+        private static readonly Vector3 LamarBike = new Vector3(-221.093f, -1720.061f, 32.629f);
+        private const float LamarBikeHeading = 54.779f;
 
         /// <summary>
         /// Where the other two are waiting, up the alley from Lamar's bike.
@@ -81,16 +84,16 @@ namespace Hoodrich.Missions
         /// Four metres from his, so the three of them read as one crew setting off rather than
         /// as people who happened to be in the same postcode.
         /// </summary>
-        private static readonly Vector3 HomieSpot = new Vector3(-109.105f, -1598.494f, 31.091f);
+        private static readonly Vector3 HomieSpot = new Vector3(-219.017f, -1717.120f, 32.629f);
 
         /// <summary>
         /// Where the ride ends.
         ///
-        /// The alley behind the block rather than Fixer.Spot. The fixer stands where he stands
-        /// for every other job; this one started in the alley and it finishes there, which is
-        /// also where the bikes came from.
+        /// The far corner of the lot rather than Fixer.Spot. He stands where he stands for
+        /// every other job; this one is handed back on its own mark, by the skip, a few strides
+        /// off him.
         /// </summary>
-        private static readonly Vector3 RideHome = new Vector3(-107.822f, -1600.699f, 31.074f);
+        private static readonly Vector3 RideHome = new Vector3(-205.515f, -1719.239f, 32.664f);
 
         /// <summary>
         /// How he drives while following you: everything except the parts that make him wait.
@@ -1182,7 +1185,7 @@ namespace Hoodrich.Missions
         /// Under the walkway outside his own door rather than out on the street with you, which
         /// is where he ends up anyway once SendLamarHome walks him back.
         /// </summary>
-        private static readonly Vector3 LamarHome = new Vector3(-94.579f, -1609.991f, 32.314f);
+        private static readonly Vector3 LamarHome = new Vector3(-199.669f, -1718.827f, 32.664f);
 
         /// <summary>
         /// How close he has to be. Wider than his own mark, because he arrives on a bicycle

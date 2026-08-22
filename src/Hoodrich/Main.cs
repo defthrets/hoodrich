@@ -716,26 +716,17 @@ namespace Hoodrich
                     .Defend("Lamar", Fixer.Spot)
                     .Defend("Grimes", new Vector3(-129.187f, -1461.375f, 33.823f));
 
-                _lamarCrew = new Entourage(_gangs, "families", Fixer.Spot, 206f, "Lamar")
-                    .Stand(new Vector3(-82.4f, -1613.8f, 31.485f), 120f, "WORLD_HUMAN_GUARD_STAND")
-                    .Stand(new Vector3(-89.1f, -1607.9f, 31.485f), 250f, "WORLD_HUMAN_SMOKING_POT")
-
-                    // Somebody working the courtyard. Not one of the set and not armed -- she
-                    // is here because a block with nobody on it but soldiers is a barracks.
-                    .Stand(new Vector3(-84.832f, -1609.433f, 31.485f), 237.436f,
-                           "WORLD_HUMAN_PROSTITUTE_HIGH_CLASS", WorkingGirls, armed: false)
-
-                    // On the steps at the front with a rifle, watching the way in.
-                    .Stand(new Vector3(-95.614f, -1614.153f, 32.314f), 23.701f,
-                           "WORLD_HUMAN_GUARD_STAND")
-
-                    // And one on a beer by the pool.
-                    .Stand(new Vector3(-87.599f, -1607.578f, 32.312f), 102.240f,
-                           "WORLD_HUMAN_DRINKING", armed: false)
-
-                    // Round the back, covering the other way in.
-                    .Stand(new Vector3(-73.146f, -1617.436f, 31.469f), 243.053f,
-                           "WORLD_HUMAN_GUARD_STAND");
+                // Lamar's own guard is gone with the move.
+                //
+                // Its six marks were hand-placed around the Chamberlain courtyard -- a rifle on
+                // those steps, a beer by that pool -- and none of them mean anything in a lot a
+                // hundred and twenty metres away. Leaving them where they were is six armed men
+                // standing round a corner the man they were guarding has left.
+                //
+                // And the new yard does not need them: there are already fifteen people in it,
+                // one of them on a rifle by the shutters. Say the word with marks read off the
+                // HUD and he gets a guard again; until then the party IS his crew.
+                _lamarCrew = new Entourage(_gangs, "families", Fixer.Spot, 124.548f, "Lamar");
 
                 // One for Stretch, on the spot it was read off the HUD at.
                 var stretch = _leaders.Get("families");

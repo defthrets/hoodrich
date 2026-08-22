@@ -348,6 +348,15 @@ namespace Hoodrich.Missions
         /// in cars with you, they keep up, and they fight what you fight, without a script
         /// nannying them every frame.
         /// </summary>
+        /// <summary>
+        /// Where the homies wait for a job that has no car, read off the HUD stood on it.
+        ///
+        /// The middle of the lot, where everybody else already is. A job on foot used to put
+        /// them at the player's elbow, which is three men appearing inside whatever you were
+        /// looking at.
+        /// </summary>
+        private static readonly Vector3 FootMuster = new Vector3(-196.639f, -1727.089f, 32.664f);
+
         private void SpawnHomies(Ped player, MissionDef def)
         {
             var gang = _crew.Current;
@@ -371,7 +380,12 @@ namespace Hoodrich.Missions
 
             // A drive-by crew waits at the car, not at your elbow. The walk round to where
             // the car is parked is the start of the job.
-            var muster = Ground(new Vector3(def.CarX, def.CarY, def.CarZ));
+            // At the car if the job has one, and on their own corner of the lot if it does
+            // not. Falling back to the PLAYER'S position was the old answer and it put three
+            // men through whatever you happened to be standing in front of.
+            var muster = def.CarX != 0f || def.CarY != 0f
+                ? Ground(new Vector3(def.CarX, def.CarY, def.CarZ))
+                : Ground(FootMuster);
 
             if (muster == Vector3.Zero) muster = player.Position;
 
