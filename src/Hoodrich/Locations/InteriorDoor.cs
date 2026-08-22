@@ -95,11 +95,49 @@ namespace Hoodrich.Locations
         /// </summary>
         private const float OriginTrust = 60f;
 
+        /// <summary>
+        /// Close enough to the entry mark to be in the doorway rather than out of the room.
+        ///
+        /// Only used by the watchdog below, which needs to tell "stepped through the frame for
+        /// a second" apart from "walked out of the building".
+        /// </summary>
+        private const float DoorwaySlack = 8f;
+
+        /// <summary>Long enough after the warp for the room to have decided he is in it.</summary>
+        private const int SettleGraceMs = 2500;
+
         private readonly DoorSpec _spec;
 
         private Blip _blip;
         private bool _inside;
         private bool _busy;
+
+        /// <summary>
+        /// Where he was stood when he pressed the key, and which way he was facing.
+        ///
+        /// The way out is the way in, rather than the coordinate in the ini. Those are usually
+        /// the same spot to within a stride, and the ini value is still the fallback for a
+        /// reload -- but "put him back where he was" is the thing that is actually meant, and
+        /// saying it outright means the exit cannot drift away from the entrance.
+        /// </summary>
+        private Vector3 _cameFrom;
+        private float _cameFacing;
+
+        /// <summary>
+        /// Where he was actually PUT inside, which is not always where the ini says.
+        ///
+        /// This is the grow room bug. The recorded coordinate for that room is twenty-one
+        /// metres outside its own volume, so entering corrects it to the room's own origin and
+        /// stands him there -- and then the way out was measured against the ini coordinate he
+        /// had just been moved off. The prompt to leave was therefore twenty-one metres away,
+        /// through a wall, at the one spot in the area that is not inside the room. Walk to it
+        /// and you are stood outside the building at its real place on the map, which is
+        /// exactly what it looked like from the outside: a door that dumps you at the docks.
+        /// </summary>
+        private Vector3 _standing;
+
+        /// <summary>When the warp finished, so the watchdog does not fire during streaming.</summary>
+        private int _enteredAt;
 
         public InteriorDoor(DoorSpec spec)
         {
@@ -108,6 +146,14 @@ namespace Hoodrich.Locations
 
         private Vector3 Door => new Vector3(_spec.DoorX, _spec.DoorY, _spec.DoorZ);
         private Vector3 Inside => new Vector3(_spec.InsideX, _spec.InsideY, _spec.InsideZ);
+
+        /// <summary>The mark to leave from: where he was actually stood, or the ini's guess.</summary>
+        private Vector3 Mark => _standing == Vector3.Zero ? Inside : _standing;
+
+        /// <summary>The way back out: the doorway he used, or the ini's door after a reload.</summary>
+        private Vector3 Back => _cameFrom == Vector3.Zero ? Door : _cameFrom;
+
+        private float BackFacing => _cameFrom == Vector3.Zero ? _spec.DoorHeading : _cameFacing;
 
         public bool IsInside => _inside;
 
@@ -122,7 +168,9 @@ namespace Hoodrich.Locations
 
             if (_inside)
             {
-                if (player.Position.DistanceTo(Inside) > ExitRange) return;
+                if (WanderedOut(player)) return;
+
+                if (player.Position.DistanceTo(Mark) > ExitRange) return;
 
                 Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to leave the " + _spec.Name + ".");
 
@@ -150,6 +198,12 @@ namespace Hoodrich.Locations
         private void Enter(Ped player)
         {
             _busy = true;
+
+            // Taken before anything moves him, because this is what "back outside" means. He
+            // is within a stride of the door -- the prompt does not appear otherwise -- so this
+            // is the doorway, read off him rather than typed into a file.
+            _cameFrom = player.Position;
+            _cameFacing = player.Heading;
 
             try
             {
@@ -291,7 +345,8 @@ namespace Hoodrich.Locations
                     Log.Warn("No interior at " + to + " for " + _spec.Ipl +
                              "; the coordinate in Hoodrich.ini is wrong.");
 
-                    player.Position = Door;
+                    player.Position = Back;
+                    player.Heading = BackFacing;
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
                     Wait(400);
@@ -332,7 +387,8 @@ namespace Hoodrich.Locations
                     Log.Warn("The " + _spec.Name + " is not there: no floor and no interior at " +
                              to + ". Check [" + _spec.Section + "] Inside in the ini.");
 
-                    player.Position = Door;
+                    player.Position = Back;
+                    player.Heading = BackFacing;
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
                     Wait(400);
@@ -344,6 +400,11 @@ namespace Hoodrich.Locations
                 }
 
                 _inside = true;
+
+                // Where he ended up, not where the ini said to put him. Everything about
+                // getting out again is measured from here.
+                _standing = player.Position;
+                _enteredAt = Game.GameTime;
 
                 // Let go last, with the floor under him and the screen still black.
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
@@ -363,7 +424,7 @@ namespace Hoodrich.Locations
                 try { Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false); }
                 catch { /* nothing else to try */ }
 
-                try { player.Position = Door; } catch { /* nothing else to try */ }
+                try { player.Position = Back; } catch { /* nothing else to try */ }
                 Fade(true);
             }
             finally
@@ -372,6 +433,66 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// Whether he has got out of the room some way other than the door he came in by.
+        ///
+        /// These interiors are real places on the map, sitting forty metres under it, and their
+        /// own openings lead into nothing. Walking out of one leaves a man stood in the dark at
+        /// the far end of the map with the mod still believing he is in the grow room -- which
+        /// reads as the teleport having gone wrong rather than as him having walked somewhere.
+        ///
+        /// Out of the interior but still where the interior is means exactly that, and he is
+        /// put back at the shutter. Out of it and nowhere near it means something else moved
+        /// him -- Pillbox, a cell, another script -- and then the right thing is to forget he
+        /// was ever in there rather than to drag him across the map.
+        /// </summary>
+        private bool WanderedOut(Ped player)
+        {
+            if (_enteredAt != 0 && Game.GameTime - _enteredAt < SettleGraceMs) return false;
+
+            int room;
+
+            try
+            {
+                room = Function.Call<int>(Hash.GET_INTERIOR_FROM_ENTITY, player.Handle);
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (room != 0) return false;
+
+            var away = player.Position.DistanceTo(Mark);
+
+            // A doorway reads as no interior for a step or two. Not acted on until he is
+            // properly clear of it.
+            if (away < DoorwaySlack) return false;
+
+            if (away > OriginTrust)
+            {
+                Log.Info("Out of the " + _spec.Name + " and " + (int)away +
+                         "m from it; something else moved him, so it is forgotten.");
+
+                _inside = false;
+                _standing = Vector3.Zero;
+                return true;
+            }
+
+            Log.Info("Walked out of the " + _spec.Name + " itself; putting him back at the door.");
+
+            Leave(player);
+            return true;
+        }
+
+        /// <summary>
+        /// Out, to the doorway he came in by.
+        ///
+        /// Not to the coordinate in the ini. They are the same place in the ordinary case, and
+        /// the ini is still what a reload falls back on -- but the room does not decide where
+        /// the street is, and putting him back exactly where he was standing is the only
+        /// version of this that cannot come out somewhere else.
+        /// </summary>
         private void Leave(Ped player)
         {
             _busy = true;
@@ -380,10 +501,11 @@ namespace Hoodrich.Locations
             {
                 Fade(false);
 
-                player.Position = Door;
-                player.Heading = _spec.DoorHeading;
+                player.Position = Back;
+                player.Heading = BackFacing;
 
                 _inside = false;
+                _standing = Vector3.Zero;
 
                 Wait(400);
                 Fade(true);
