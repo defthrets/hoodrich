@@ -3304,6 +3304,20 @@
       "I don't touch none of that and after what I watched {timeofday} I never will",
       "Slow out there now and we did that to ourselves",
       "keep your money in your pocket til whatever that is gets sorted out"
+    ],
+    "StoreRobbed": [
+      "the 24/7 on {street} just got done. dude had a gun on the counter man",
+      "police outside the corner store on {here}. again",
+      "whoever robbed that shop, the man in there is somebody's uncle. not cool",
+      "heard the 24/7 got hit. that's the third one this year",
+      "you can't even buy a drink round {here} no more without it being a whole thing",
+      "shop on {street} shut early. you know why",
+      "somebody walked in that store with a whole pistol out {timeofday}",
+      "little bro just told me the 24/7 got robbed. i was in there an hour ago",
+      "sirens on {street} and the shop's got tape on the door",
+      "man came out that store with the whole till {filler}",
+      "cameras in that shop don't even work. everybody know that",
+      "hope the man behind the counter alright. he never did nothing to nobody"
     ]
   },
   "voices": {

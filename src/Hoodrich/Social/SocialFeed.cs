@@ -13,6 +13,10 @@ namespace Hoodrich.Social
     internal enum SocialEvent
     {
         Ambient,
+
+        /// <summary>The corner shop got done. Its own set, because neither Shots nor
+        /// Busted is what happened -- nobody fired and nobody was arrested.</summary>
+        StoreRobbed,
         MissionTaken,
         MissionDone,
         MissionFailed,

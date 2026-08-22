@@ -36,14 +36,14 @@
       "kind": "BikeRide",
       "name": "Get on a bike with me.",
       "brief": "Aye. Frank. Come here, come here. Ballas been posted on the Chamberlain courts all week, sittin' on OUR rims like somebody handed 'em the keys to the gate. Ain't nobody hooped down there since Tuesday. TUESDAY, dawg. Little homies out playin' in the street behind this.",
-      "done": "HAAA! Look at my boy! Nah, look at US. That's how we used to get down at fifteen, and the whole court seen it, that's the part that count. Left, LEFT, told you that one. That's two jobs, dawg. My hand hurt too, that's a real hand hurt. Nobody shot, nobody locked up, they ain't comin' back to that rim. Give me one second. One. MY plan.",
+      "done": "HAAA! Look at my boy! Nah, look at US. That's how we used to get down at fifteen, and the whole court seen it, that's the part that count. Left, LEFT, told you that one. My hand hurt too, that's a real hand hurt. They ain't comin' back to that rim. And whatever else we got into on the way home -- that's between me, you and the bikes. Give me one second. One. MY plan.",
       "targetGang": "ballas",
       "zone": "CHAMH",
       "x": 0,
       "y": 0,
       "z": 0,
       "targets": 4,
-      "homies": 2,
+      "homies": 0,
       "escapeHeat": false,
       "payMin": 400,
       "payMax": 800,
@@ -51,7 +51,8 @@
       "minRank": 0,
       "briefMore": [
         "Now I could send somebody down there to get busy. I could. Straight up. But then it's laws all over this block by dinner over a damn basketball court, and everybody out here eatin' it for nothin'. Not over no hoop. We ain't spendin' a body on a rim. That's the difference between me and them fools.",
-        "And I'm comin'. Don't look at me like that, I'm COMIN'. This my plan, I ain't watchin' it from no corner like some old head. Grab a bike, two of the homies rollin' with us, and it's HANDS. Thought of that in the shower this mornin', dawg. No straps, don't even have one on you. You pull somethin' out there and I ain't never met you. Who is that? Don't know him."
+        "So it's me and you. Just us, don't need nobody else for this -- two of us rollin' up on bikes says more than ten of us in cars anyway, that's psychology, dawg. Grab a bike and it's HANDS. Thought of that in the shower this mornin'. No straps, don't even have one on you. You pull somethin' out there and I ain't never met you. Who is that? Don't know him.",
+        "And after? We ride back, we sit down, we talk about that grow you been buildin'. I got ideas, cuz. I always got ideas."
       ]
     },
     {

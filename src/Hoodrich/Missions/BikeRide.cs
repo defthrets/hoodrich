@@ -28,7 +28,11 @@ namespace Hoodrich.Missions
         Fight,
 
         /// <summary>Thirsty. The shop is down the road.</summary>
-        Drink,
+        /// <summary>Outside the 24/7, deciding whether to do it.</summary>
+        Rob,
+
+        /// <summary>Done it. Lose them.</summary>
+        Escape,
 
         /// <summary>Drink got. Ride back to the spot.</summary>
         Home
@@ -193,7 +197,12 @@ namespace Hoodrich.Missions
                     case BikePhase.Riding: return "Ride to the courts in Chamberlain Hills";
                     case BikePhase.Words: return "Go say something to them";
                     case BikePhase.Fight: return "Hands only -- pull a gun and it's over";
-                    case BikePhase.Drink: return "Go get a drink from the 24/7";
+                    case BikePhase.Rob:
+                        return _robAccepted
+                            ? (_gotCash ? "Get out and get on the bike" : "Aim at the clerk until he empties the till")
+                            : "Pull up outside the 24/7";
+
+                    case BikePhase.Escape: return "Lose them";
                     case BikePhase.Home: return "Ride back to the spot";
                     default: return "";
                 }
@@ -210,6 +219,14 @@ namespace Hoodrich.Missions
 
             _def = def;
             _wentInside = false;
+            _shouted = false;
+            _robOffered = false;
+            _robAccepted = false;
+            _gotCash = false;
+            _heldAt = 0;
+            _clerk = null;
+            _lamarSlipSince = 0;
+            _lamarWasAt = 0f;
             _wordsSaid = false;
             ReadyToCollect = false;
             Failure = null;
@@ -264,7 +281,8 @@ namespace Hoodrich.Missions
                 case BikePhase.Riding: TickRiding(player); return;
                 case BikePhase.Words: TickWords(player); return;
                 case BikePhase.Fight: TickFight(); return;
-                case BikePhase.Drink: TickDrink(player); return;
+                case BikePhase.Rob: TickRob(player); return;
+                case BikePhase.Escape: TickEscape(player); return;
                 case BikePhase.Home: TickHome(player); return;
             }
         }
@@ -393,46 +411,356 @@ namespace Hoodrich.Missions
 
             if (standing > 0) return;
 
-            Phase = BikePhase.Drink;
+            Phase = BikePhase.Rob;
+
             _wentInside = false;
+            _shouted = false;
+            _robOffered = false;
+            _robAccepted = false;
+            _gotCash = false;
+            _clerk = null;
 
             Mark(Shop, "24/7", BlipColor.Yellow);
-            Notify.Important("~g~That's that.~s~ Everybody's thirsty now. " + Objective + ".");
+            Notify.Important("~g~That's that.~s~ Lamar wants to stop at the 24/7. " + Objective + ".");
         }
 
-        private void TickDrink(Ped player)
+        /// <summary>
+        /// Outside the 24/7, and then inside it.
+        ///
+        /// Told in the order it happens: he shouts before you have stopped, the offer comes
+        /// when you have, and the shop itself only starts once you have said yes. Nothing here
+        /// forces you -- riding off without taking it is a way to finish the job, it is just
+        /// a worse-paid one.
+        /// </summary>
+        private void TickRob(Ped player)
         {
             RemountHomies(player);
+            KeepLamarClose(player);
 
-            var near = player.Position.DistanceTo(Shop) <= ShopRange;
+            var range = player.Position.DistanceTo(Shop);
 
-            if (!_wentInside)
+            // He calls it before you get there. Far enough out that you can still choose to
+            // pull in rather than being told after you already have.
+            if (!_shouted && range <= ShoutRange)
             {
-                // Inside is the interior, not a radius. A radius around a shop front counts the
-                // pavement outside it, and standing on the pavement is not going in.
-                if (near && Inside(player))
+                _shouted = true;
+
+                GTA.UI.Screen.ShowSubtitle("~y~LAMAR:~s~ AYO! FRANKLIN HOL UP!", 4500);
+                _weaselAt = Game.GameTime + 4600;
+            }
+
+            if (!_robAccepted)
+            {
+                // The second line lands after the shout has cleared, so they do not stack.
+                if (_weaselAt != 0 && Game.GameTime >= _weaselAt)
                 {
-                    _wentInside = true;
-                    Notify.Ticker("~g~Grab something and get out.~s~");
+                    _weaselAt = 0;
+                    LamarSays("Pull in right here. Nah, I ain't thirsty. Just pull in.");
+                }
+
+                if (!_robOffered && _shouted && range <= ShopRange && Stopped(player))
+                {
+                    _robOffered = true;
+                    Talk?.Open(TheOffer(), this);
                 }
 
                 return;
             }
 
+            LamarStaysOut();
+
+            if (!_gotCash)
+            {
+                Robbery(player);
+                return;
+            }
+
+            // Cash in hand. Out, on the bike, and gone.
             if (Inside(player)) return;
 
-            Phase = BikePhase.Home;
+            Phase = BikePhase.Escape;
 
-            // The place, not the man. He is riding next to you, so a waypoint with his name
-            // on it pointing at an empty corner is the game telling you to go and find somebody
-            // who is already there.
             Mark(Fixer.Spot, "The spot", BlipColor.Yellow);
-            Notify.Important("~g~Drink got.~s~ " + Objective + ".");
+            Notify.Important("~r~That's the till.~s~ " + Objective + ".");
         }
+
+        /// <summary>
+        /// The offer, as a screen rather than a prompt.
+        ///
+        /// A robbery is not something to walk into by accident, so it is asked properly and it
+        /// explains itself: what to do once you are in there is not obvious, and finding out by
+        /// standing in a shop wondering why nothing is happening is not a puzzle worth having.
+        /// </summary>
+        private DialogueNode TheOffer()
+        {
+            // He did not mention this on the ride out, and that is the point.
+            //
+            // The brief was a basketball court and hands only. This is Lamar arriving at the
+            // shop with a second plan he has been sitting on, presenting it as an idea he is
+            // having right now, and hanging it off something Franklin actually wants -- the
+            // grow room needs paying for, and Lamar knows it does.
+            var node = new DialogueNode("Lamar",
+                "Aight so. Hear me out. That grow you got goin'? Lights, fans, all that -- " +
+                "that's real money, dawg, and neither of us got it. One man in there, one " +
+                "till, and them cameras been dead since we was in school. That's seed money " +
+                "sittin' on a counter.")
+            {
+                SpeakerColour = Palette.Cash
+            };
+
+            node.Say("ROB THE CONVENIENCE STORE", () =>
+            {
+                _robAccepted = true;
+
+                Notify.Important("~r~In you go.~s~ Aim at the man behind the counter and hold " +
+                                 "it on him until he empties the till.");
+
+                LamarSays("I'm right here on the bike. Go on.");
+                return null;
+            }, "Walk in, aim at the clerk, hold it on him -- somebody will call it in");
+
+            node.WithIcon(Icons.FromFile("cash.png"));
+
+            node.Say("Nah. We said hands, we did hands.", () =>
+            {
+                // Taken as done. The shop is finished with either way, and the ride home is
+                // the same ride home -- he just complains the whole way.
+                _gotCash = true;
+                LamarSays("Man... aight. AIGHT. But when that grow dry up don't call me.");
+                return null;
+            }, "Ride back with what you came for");
+
+            node.WithIcon(Icons.FromFile("car.png"));
+
+            return node;
+        }
+
+        /// <summary>
+        /// The shop floor.
+        ///
+        /// Held rather than pressed. Waving a gun once and getting paid is a button; keeping it
+        /// on a frightened man while he empties a till is the thing the scene is about.
+        /// </summary>
+        private void Robbery(Ped player)
+        {
+            if (!Inside(player))
+            {
+                _heldAt = 0;
+                return;
+            }
+
+            if (!_wentInside)
+            {
+                _wentInside = true;
+                Notify.Ticker("~r~Aim at him.~s~ Hold it on him.");
+            }
+
+            if (_clerk == null || !_clerk.Exists() || !_clerk.IsAlive) _clerk = FindClerk(player);
+            if (_clerk == null) return;
+
+            var onHim = Function.Call<bool>(Hash.IS_PLAYER_FREE_AIMING_AT_ENTITY,
+                                            Game.Player.Handle, _clerk.Handle);
+
+            if (!onHim)
+            {
+                if (_heldAt != 0)
+                {
+                    _heldAt = 0;
+                    Notify.Problem("keep it on him.");
+                }
+
+                return;
+            }
+
+            if (_heldAt == 0)
+            {
+                _heldAt = Game.GameTime;
+
+                try
+                {
+                    // Hands up, and he stays put. Without the block he runs the moment the
+                    // first shot goes off anywhere in the neighbourhood.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _clerk.Handle, true);
+                    Function.Call(Hash.TASK_HANDS_UP, _clerk.Handle, HoldMs + 2000, 0, -1, false);
+                    Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _clerk.Handle,
+                                  "GENERIC_FRIGHTENED_HIGH", "SPEECH_PARAMS_FORCE");
+                }
+                catch { /* he can be frightened silently */ }
+
+                return;
+            }
+
+            var held = Game.GameTime - _heldAt;
+            if (held < HoldMs)
+            {
+                Help.ShowThisFrame("Keep it on him.");
+                return;
+            }
+
+            _gotCash = true;
+
+            var take = _rng.Next(TillMin, TillMax);
+            Game.Player.Money += take;
+
+            Notify.Important("~g~+$" + take.ToString("N0") + "~s~ out the till.");
+            LamarSays("THAT'S what I'm talkin' about! Go, go, go!");
+
+            Social?.On(Hoodrich.Social.SocialEvent.StoreRobbed, "");
+
+            try
+            {
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _clerk.Handle, false);
+            }
+            catch { /* he is free either way */ }
+
+            // Somebody presses the button under the counter. That is the whole second half of
+            // the job, so it is not left to chance.
+            try
+            {
+                Game.Player.Wanted.SetWantedLevel(RobberyStars, false);
+                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+            }
+            catch { /* then it is a very easy escape */ }
+        }
+
+        /// <summary>
+        /// Whoever is behind the counter.
+        ///
+        /// Nearest ped in the shop who is not you and not one of ours. The 24/7 has exactly one
+        /// person working in it, so nearest-inside is the right answer rather than a guess.
+        /// </summary>
+        private Ped FindClerk(Ped player)
+        {
+            try
+            {
+                Ped best = null;
+                var bestAt = float.MaxValue;
+
+                foreach (var ped in World.GetNearbyPeds(player, 14f))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (ped.Handle == player.Handle) continue;
+                    if (_homies.Contains(ped)) continue;
+
+                    var at = player.Position.DistanceTo(ped.Position);
+                    if (at >= bestAt) continue;
+
+                    best = ped;
+                    bestAt = at;
+                }
+
+                return best;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Out the door, on the bike, and away from them.</summary>
+        private void TickEscape(Ped player)
+        {
+            RemountHomies(player);
+            KeepLamarClose(player);
+
+            // Still hot. Getting back to the spot with a helicopter over you is not getting
+            // away with it, so the job does not end until they have lost you.
+            LamarStaysOut();
+
+            if (Game.Player.Wanted.WantedLevel > 0)
+            {
+                Help.ShowThisFrame("Lose them, then get back to the spot.");
+                return;
+            }
+
+            Phase = BikePhase.Home;
+            Notify.Important("~g~They lost you.~s~ " + Objective + ".");
+        }
+
+        /// <summary>
+        /// Lamar keeps his seat and keeps out of the police's way.
+        ///
+        /// He is a bodyguard for the courts and that is what the group task makes him -- which
+        /// is exactly wrong from the moment there is a wanted level. A man who fights whoever
+        /// you are fighting, sat on a bike outside a shop you have just robbed, gets off it and
+        /// opens up on the first patrol car. That is Lamar dead or Lamar arrested over a till.
+        ///
+        /// So for the robbery and the ride out he loses the two attributes that make him do
+        /// that -- 3 is BF_CanLeaveVehicle and 5 is BF_AlwaysFight -- and the events that
+        /// would provoke it are blocked outright. He still rides, because the group task is a
+        /// task rather than a threat response.
+        ///
+        /// Idempotent and cheap; it runs every tick of two phases and sets the same flags.
+        /// </summary>
+        private void LamarStaysOut()
+        {
+            if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _lamar.Handle, 3, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _lamar.Handle, 5, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _lamar.Handle, 46, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _lamar.Handle, 2, false);
+
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _lamar.Handle, true);
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _lamar.Handle, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not keep Lamar on his bike: " + ex.Message);
+            }
+        }
+
+        /// <summary>A line out of Lamar's mouth, as a subtitle, because these are written.</summary>
+        private void LamarSays(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+
+            try { GTA.UI.Screen.ShowSubtitle("~y~LAMAR:~s~ " + line, 3500); }
+            catch { /* the objective still says what to do */ }
+        }
+
+        /// <summary>Stopped enough to be pulling in rather than riding past.</summary>
+        private static bool Stopped(Ped player)
+        {
+            try
+            {
+                var car = player.CurrentVehicle;
+                return car == null || !car.Exists() || car.Speed < 2.5f;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        /// <summary>He calls it out here, before you have stopped.</summary>
+        private const float ShoutRange = 70f;
+
+        /// <summary>How long the gun stays on him before he gives it up.</summary>
+        private const int HoldMs = 4000;
+
+        private const int TillMin = 900;
+        private const int TillMax = 2600;
+
+        /// <summary>Somebody presses the button under the counter. One, and you are on a bike.</summary>
+        private const int RobberyStars = 1;
+
+        /// <summary>When his second line is due, so it does not land on top of the shout.</summary>
+        private int _weaselAt;
+
+        private bool _shouted;
+        private bool _robOffered;
+        private bool _robAccepted;
+        private bool _gotCash;
+        private int _heldAt;
+        private Ped _clerk;
 
         private void TickHome(Ped player)
         {
             RemountHomies(player);
+            KeepLamarClose(player);
 
             if (player.Position.DistanceTo(Fixer.Spot) > HomeRange) return;
 
@@ -558,7 +886,13 @@ namespace Hoodrich.Missions
             var gang = _crew.Current;
             if (gang == null) return;
 
-            var count = Math.Max(1, _def.Homies);
+            // Zero means zero.
+            //
+            // This was Max(1, ...), so a job written with no homies got one anyway. The bike
+            // ride is Lamar and you -- he is brought separately, by BringLamar -- and two
+            // extra men on bicycles turned a conversation between two people into a convoy.
+            var count = Math.Max(0, _def.Homies);
+            if (count == 0) return;
 
             for (var i = 0; i < count; i++)
             {
@@ -829,6 +1163,105 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>Puts them back on their bikes once you are back on yours.</summary>
+        /// <summary>
+        /// Keeps Lamar on your wheel, and picks him up when he is not.
+        ///
+        /// The group task handles following. It does not handle being wedged on a kerb, boxed
+        /// in by traffic, or knocked off and left half a neighbourhood back -- and on a job
+        /// that is two people, losing one of them is losing half the job.
+        ///
+        /// STUCK, not merely far. A plain distance check fires constantly on a bike: ten metres
+        /// is a second of riding, and warping him every second is worse than losing him. So the
+        /// distance only opens the question and the CLOSING of it answers: if he has not got
+        /// any nearer in four seconds, he is not coming, and he goes behind you instead.
+        ///
+        /// Behind and slightly to the side, on the ground, facing the way you are facing --
+        /// so he arrives where a man who had been following would be, rather than appearing
+        /// in front of you.
+        /// </summary>
+        private void KeepLamarClose(Ped player)
+        {
+            if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive) return;
+            if (player == null || !player.Exists()) return;
+
+            var gap = player.Position.DistanceTo(_lamar.Position);
+            var now = Game.GameTime;
+
+            if (gap <= LamarLeash)
+            {
+                _lamarSlipSince = 0;
+                _lamarWasAt = gap;
+                return;
+            }
+
+            if (_lamarSlipSince == 0)
+            {
+                _lamarSlipSince = now;
+                _lamarWasAt = gap;
+                return;
+            }
+
+            // Closing the gap counts as coming. Only a man who is no closer than he was is
+            // actually stuck.
+            if (gap < _lamarWasAt - 2f)
+            {
+                _lamarSlipSince = now;
+                _lamarWasAt = gap;
+                return;
+            }
+
+            if (now - _lamarSlipSince < LamarStuckMs && gap < LamarLost) return;
+
+            try
+            {
+                var behind = player.Position - player.ForwardVector * 6f + player.RightVector * 1.5f;
+
+                float groundZ;
+                if (World.GetGroundHeight(new Vector3(behind.X, behind.Y, behind.Z + 2f),
+                                          out groundZ, GetGroundHeightMode.Normal))
+                {
+                    behind = new Vector3(behind.X, behind.Y, groundZ + 0.2f);
+                }
+
+                // The bike he is on, if he is on one -- otherwise he lands next to it and walks.
+                var bike = _lamar.CurrentVehicle;
+
+                if (bike != null && bike.Exists())
+                {
+                    bike.Position = behind;
+                    bike.Heading = player.Heading;
+                    Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, bike.Handle);
+                }
+                else
+                {
+                    _lamar.Position = behind;
+                    _lamar.Heading = player.Heading;
+                }
+
+                Escort(_lamar, bike, player);
+                Log.Info("Lamar was " + gap.ToString("0") + "m back and not closing; brought him up.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not bring Lamar up: " + ex.Message);
+            }
+
+            _lamarSlipSince = 0;
+            _lamarWasAt = 0f;
+        }
+
+        /// <summary>Past this he is behind rather than beside you, and the clock starts.</summary>
+        private const float LamarLeash = 12f;
+
+        /// <summary>How long he gets to close it before he is simply moved.</summary>
+        private const int LamarStuckMs = 4000;
+
+        /// <summary>Far enough that he is gone rather than slow, and the clock is not waited on.</summary>
+        private const float LamarLost = 120f;
+
+        private int _lamarSlipSince;
+        private float _lamarWasAt;
+
         private void RemountHomies(Ped player)
         {
             if (!player.IsInVehicle()) return;
@@ -1082,7 +1515,12 @@ namespace Hoodrich.Missions
             if (Game.GameTime < _nextChatter) return;
             _nextChatter = Game.GameTime + ChatterGapMs;
 
-            var speaker = _homies.Count == 0 ? null : _homies[_rng.Next(_homies.Count)];
+            // Lamar first. He is the only one out here now, and a silent ride with the man
+            // who invited you on it is worse than no chatter at all.
+            var speaker = _lamar != null && _lamar.Exists() && _lamar.IsAlive
+                ? _lamar
+                : _homies.Count == 0 ? null : _homies[_rng.Next(_homies.Count)];
+
             if (speaker == null || !speaker.Exists() || !speaker.IsAlive) return;
 
             try
@@ -1389,6 +1827,14 @@ namespace Hoodrich.Missions
             ReadyToCollect = false;
             Failure = null;
             _wentInside = false;
+            _shouted = false;
+            _robOffered = false;
+            _robAccepted = false;
+            _gotCash = false;
+            _heldAt = 0;
+            _clerk = null;
+            _lamarSlipSince = 0;
+            _lamarWasAt = 0f;
             _wordsSaid = false;
         }
     }
