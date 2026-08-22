@@ -666,12 +666,130 @@ namespace Hoodrich.Missions
         /// </summary>
         private void Paint(Ped player)
         {
+            if (_paintFx != -1) return;
+            if (_spraying == null) return;
+
+            // Four seconds in, not straight away.
+            //
+            // The clip opens with him shaking the can and reaching up, and paint coming out
+            // while his arm is still on the way to the wall reads as a leak. By four seconds he
+            // is up against it and moving, which is when a can would actually be laying down
+            // colour -- and it leaves the back half of the eight seconds spraying, which is the
+            // half anybody is looking at.
+            if (Game.GameTime - _sprayingSince < PaintDelayMs) return;
+
+            // Requested in BeginSpray, checked HERE. A named PTFX asset streams in like an
+            // anim dict does: the request returns immediately and the file lands some frames
+            // later, so asking whether it is loaded on the line after asking for it is a
+            // question that can only be answered no.
+            if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, PaintAsset))
+            {
+                Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PaintAsset);
+                return;
+            }
+
+            try
+            {
+                foreach (var effect in PaintEffects)
+                {
+                    // Has to be re-declared before every start, not once at load: the call sets
+                    // which asset the NEXT start reads from and the game resets it constantly.
+                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PaintAsset);
+
+                    // On the PED, not on the hand bone. A bone's local axes are its own and
+                    // point wherever the skeleton happens to face, so aiming a jet off one is
+                    // guesswork; a ped's are not -- +Y is the way he is looking, which during
+                    // this clip is the wall. The offset puts it out at the end of his right
+                    // arm, at the height the can is held.
+                    var fx = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY,
+                                                effect, player.Handle,
+                                                PaintRight, PaintForward, PaintUp,
+                                                PaintPitch, 0f, 0f,
+                                                PaintScale, false, false, false);
+
+                    if (fx == 0 || !Function.Call<bool>(Hash.DOES_PARTICLE_FX_LOOPED_EXIST, fx))
+                    {
+                        continue;
+                    }
+
+                    _paintFx = fx;
+
+                    // Green, because that is what a Families tag is sprayed in. The effect
+                    // itself is a colourless jet -- steam or water -- so the colour is entirely
+                    // this call, and without it the can appears to spray nothing at all.
+                    Function.Call(Hash.SET_PARTICLE_FX_LOOPED_COLOUR, fx, 0.24f, 0.86f, 0.32f, false);
+                    Function.Call(Hash.SET_PARTICLE_FX_LOOPED_ALPHA, fx, 0.85f);
+
+                    Log.Debug("Tag paint: " + effect + " started.");
+                    return;
+                }
+
+                Log.Debug("Tag paint: none of the effects would start; painting stays silent.");
+
+                // Do not try again every frame for the rest of the spray. -2 is "asked and
+                // answered", and StopPaint treats anything that is not a live handle as
+                // nothing to stop.
+                _paintFx = -2;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not start the paint: " + ex.Message);
+                _paintFx = -2;
+            }
         }
+
+        /// <summary>
+        /// How long into the clip the can starts laying down colour.
+        ///
+        /// Half of SprayMs. He shakes the can and reaches up first.
+        /// </summary>
+        private const int PaintDelayMs = 4000;
+
+        /// <summary>
+        /// Where the jet starts, in the player's own space: right hand, arm's length, chest
+        /// height. +Y is the way he is facing, which during this clip is the wall.
+        /// </summary>
+        private const float PaintRight = 0.20f;
+        private const float PaintForward = 0.42f;
+        private const float PaintUp = 0.48f;
+
+        /// <summary>
+        /// How far the jet is tipped over from its own resting direction, in degrees.
+        ///
+        /// A jet effect points along its own axis and which axis that is varies per effect --
+        /// steam rises, a hose sprays out. -90 tips a rising one flat, so it goes the way the
+        /// player is facing, which during this clip is the wall. This is the ONE number to
+        /// change if it comes out of the can pointing at the floor or the sky.
+        /// </summary>
+        private const float PaintPitch = -90f;
+
+        private const float PaintScale = 0.55f;
+
+        /// <summary>
+        /// Candidates, tried in order, first one that actually starts wins.
+        ///
+        /// All three are in "core", which is always resident, so this is not really about an
+        /// install missing them -- it is that a PTFX name that does not exist fails SILENTLY,
+        /// returning a handle for an effect that is not there. The handle is checked rather
+        /// than assumed, and the one that took is logged, which is the only way to find out
+        /// from outside the game which of these the build actually has.
+        /// </summary>
+        private static readonly string[] PaintEffects =
+        {
+            PaintEffect, "ent_sht_water", "ent_sht_extinguisher"
+        };
 
         /// <summary>Turns the paint off. Called from every path out of painting.</summary>
         private void StopPaint()
         {
-            if (_paintFx == -1) return;
+            // -1 is "never started", -2 is "tried and could not". Neither is a handle, and
+            // telling the game to stop one is at best a no-op and at worst a stop aimed at
+            // somebody else's effect.
+            if (_paintFx < 0)
+            {
+                _paintFx = -1;
+                return;
+            }
 
             try
             {
