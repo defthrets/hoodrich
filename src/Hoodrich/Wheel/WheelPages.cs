@@ -1509,7 +1509,11 @@ namespace Hoodrich.Wheel
             {
                 var mine = _crew.CurrentStanding;
 
-                page.Row("Your rep", mine == null ? "0" : mine.Rep.ToString("0"),
+                // The number and what it makes you, on one line. A figure on its own is a
+                // score; the same figure next to "Enforcer" is a position, and the position is
+                // the part you actually hold.
+                page.Row("Your rep",
+                         (mine == null ? "0" : mine.Rep.ToString("0")) + "  ·  " + _state.RankName,
                          mine != null && mine.Rep < 0 ? Palette.Danger : Palette.Cash, "rank.png");
                 page.Row("Bodies for them", mine == null ? "0" : mine.Kills.ToString("N0"), null, "skull.png");
                 page.Row("Beefing with", BeefNames(), Palette.Danger, "guns.png");

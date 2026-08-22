@@ -98,13 +98,48 @@ namespace Hoodrich.Missions
 
             var offered = 0;
 
-            for (var i = 0; i <= reached + 1 && i < _missions.All.Count; i++)
+            // The WHOLE list, every time, with the ones you cannot take yet greyed out and
+            // saying why.
+            //
+            // It used to show only what you could take. Which meant his list grew as you worked
+            // through it, and a man with one job on Tuesday and four on Thursday reads as a mod
+            // that has just started working rather than as a chain you are getting through --
+            // and there was no way at all to find out that the fourth one wants a rank you have
+            // not made. A locked row you can see is a reason to go and earn something; a row
+            // that is not there is nothing.
+            for (var i = 0; i < _missions.All.Count; i++)
             {
                 var def = _missions.All[i];
-                if (_state.Rank < def.MinRank) continue;
 
                 var pick = def;
                 var done = _state.HasDone(def.Id);
+
+                // Rank first, because it is the one you can do something about tonight, and it
+                // outranks the chain: a job you have not earned stays locked whether or not it
+                // is next.
+                if (_state.Rank < def.MinRank)
+                {
+                    var need = PlayerState.RankNames[
+                        Math.Min(def.MinRank, PlayerState.RankNames.Length - 1)];
+
+                    node.Say(def.Name, () => null, "needs " + need, false,
+                             "You have to be " + need + " for this one. You're " + _state.RankName);
+
+                    node.WithIcon(IconFor(def));
+                    offered++;
+                    continue;
+                }
+
+                // Further down the chain than you have got. He works his list in order.
+                if (i > reached + 1)
+                {
+                    node.Say(def.Name, () => null, "locked", false,
+                             "He'll get to this one. Finish what's above it first");
+
+                    node.WithIcon(IconFor(def));
+                    offered++;
+                    continue;
+                }
 
                 // Shut is shown rather than hidden. A job that quietly vanishes from his list
                 // between two and six in the morning reads as the mod having lost it; the same
@@ -129,9 +164,7 @@ namespace Hoodrich.Missions
             {
                 // Either the list is empty, or everything open to you wants a bigger name than
                 // you have. Those are different sentences, so which one he says depends on it.
-                return Nothing(_missions.All.Count == 0
-                    ? "Ain't got nothing right now. Come see me later."
-                    : "Got something for you, but not yet. Go make more of a name first.");
+                return Nothing("Ain't got nothing right now. Come see me later.");
             }
 
             node.Leave("Not today.");

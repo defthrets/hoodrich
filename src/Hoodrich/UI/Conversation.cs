@@ -80,6 +80,29 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
+        /// The same, for a row that is shown but cannot be picked.
+        ///
+        /// The choice has carried Enabled and DisabledReason since it was written and there was
+        /// no way to set them from here, so every list in the mod either offered a thing or hid
+        /// it. Greyed out with a reason on it is the third answer, and it is usually the right
+        /// one: a locked row you can see is a reason to go and earn something.
+        /// </summary>
+        public DialogueNode Say(string label, Func<DialogueNode> pick, string detail,
+                                bool enabled, string disabledReason = "")
+        {
+            Choices.Add(new DialogueChoice
+            {
+                Label = label,
+                Detail = detail,
+                Pick = pick,
+                Enabled = enabled,
+                DisabledReason = disabledReason
+            });
+
+            return this;
+        }
+
+        /// <summary>
         /// Gives the choice just added a weapon's own model art.
         ///
         /// Weapon dictionaries are named after the weapon, so the name is enough -- the panel
