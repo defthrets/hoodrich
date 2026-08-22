@@ -108,6 +108,31 @@ if ($exit -ne 0) { throw "Compilation failed (csc exit $exit)." }
 Write-Host ("OK  {0:N0} bytes in {1:N1}s" -f (Get-Item $outDll).Length, $sw.Elapsed.TotalSeconds) -ForegroundColor Green
 
 # --- deploy -----------------------------------------------------------------
+function Read-IniKeys {
+    <#
+        Every "Section.Key" in an ini, so two of them can be compared by what they actually
+        SET rather than by which headings they happen to have. Comments and blank lines are
+        skipped; a key outside any section is ignored, because the parser in the mod ignores
+        it too.
+    #>
+    param([string]$Path)
+
+    $section = ''
+    $keys = New-Object System.Collections.Generic.List[string]
+
+    foreach ($line in (Get-Content -LiteralPath $Path)) {
+        $t = $line.Trim()
+
+        if ($t -match '^\[(.+)\]$') { $section = $Matches[1]; continue }
+        if ($t.StartsWith(';') -or -not $t.Contains('=')) { continue }
+        if (-not $section) { continue }
+
+        $keys.Add("$section.$($t.Split('=')[0].Trim())")
+    }
+
+    return $keys
+}
+
 function Deploy-To([string]$gameDir, [string]$label) {
     if (-not (Test-Path $gameDir)) {
         Write-Host "skip $label - not installed at $gameDir" -ForegroundColor DarkGray
@@ -186,17 +211,34 @@ function Deploy-To([string]$gameDir, [string]$label) {
             Copy-Item $iniSrc $iniDst
             Write-Host "  new    Hoodrich.ini" -ForegroundColor DarkGray
         } else {
-            $srcSections = (Select-String -Path $iniSrc -Pattern '^\[(.+)\]').Matches.Groups |
-                Where-Object { $_.Name -eq '1' } | ForEach-Object { $_.Value }
-            $dstSections = (Select-String -Path $iniDst -Pattern '^\[(.+)\]').Matches.Groups |
-                Where-Object { $_.Name -eq '1' } | ForEach-Object { $_.Value }
+            # Compared KEY by key, not section by section.
+            #
+            # This used to compare section headings only, and only in one direction. So an ini
+            # that still had every section the template has looked fine while carrying twenty
+            # dead keys inside them -- which is exactly what happened: [TurfWars] was deleted
+            # from the template months ago and sat in both deployed inis regardless, along with
+            # four hideout prices, two map settings and a wheel texture. None of it was read by
+            # anything, and the deploy said "keep" every single time.
+            $srcKeys = Read-IniKeys $iniSrc
+            $dstKeys = Read-IniKeys $iniDst
 
-            $missing = $srcSections | Where-Object { $dstSections -notcontains $_ }
-            if ($missing) {
-                Write-Host "  STALE  Hoodrich.ini is missing [$($missing -join '] [')]" -ForegroundColor Yellow
-                Write-Host "         Defaults still apply. Copy Hoodrich.ini over it to get the new options." -ForegroundColor DarkGray
-            } else {
-                Write-Host "  keep   Hoodrich.ini" -ForegroundColor DarkGray
+            $absent = $srcKeys | Where-Object { $dstKeys -notcontains $_ }
+            $stale  = $dstKeys | Where-Object { $srcKeys -notcontains $_ }
+
+            if ($absent) {
+                Write-Host "  STALE  Hoodrich.ini is missing $($absent.Count) setting(s):" -ForegroundColor Yellow
+                Write-Host "         $($absent -join ', ')" -ForegroundColor DarkGray
+                Write-Host "         Defaults apply until they are added." -ForegroundColor DarkGray
+            }
+
+            if ($stale) {
+                Write-Host "  STALE  Hoodrich.ini has $($stale.Count) setting(s) nothing reads:" -ForegroundColor Yellow
+                Write-Host "         $($stale -join ', ')" -ForegroundColor DarkGray
+                Write-Host "         Left alone -- it is your file. Delete them, or copy Hoodrich.ini over it." -ForegroundColor DarkGray
+            }
+
+            if (-not $absent -and -not $stale) {
+                Write-Host "  keep   Hoodrich.ini (70 settings, all current)" -ForegroundColor DarkGray
             }
         }
     }
