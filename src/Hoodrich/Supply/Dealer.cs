@@ -62,6 +62,15 @@ namespace Hoodrich.Supply
         /// </summary>
         public readonly List<string> Zones = new List<string>();
 
+        /// <summary>
+        /// What he turns up ON, if it is not a car.
+        ///
+        /// Empty means the delivery picks its own, which is the sensible default for somebody
+        /// driving a load in from the port. Stretch is coming from four streets away with a
+        /// bag, and a man who lives on the block arriving in a van reads as a stranger.
+        /// </summary>
+        public readonly List<string> Rides = new List<string>();
+
         public float PriceMultiplier = 1f;
         public int MinRank;
         public float MaxOrderGrams = 100f;

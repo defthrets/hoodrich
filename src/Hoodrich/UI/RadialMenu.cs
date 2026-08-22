@@ -22,6 +22,9 @@ namespace Hoodrich.UI
         /// 1.6 degrees is two pixels there, and two pixels is not a division, it is a seam.
         /// </summary>
         private const float SegmentGapDegrees = 4f;
+
+        /// <summary>How much of the ring a lone item takes, rather than all of it.</summary>
+        private const float SingleSpanDegrees = 90f;
         private const int OpenAnimationMs = 140;
 
         /// <summary>
@@ -314,6 +317,19 @@ namespace Hoodrich.UI
             var step = 360f / n;
             var gap = n > 1 ? SegmentGapDegrees : 0f;
 
+            // ONE item is not a ring, and drawing it as one looks like a fault.
+            //
+            // A single wedge spans the full 360 with no gap, so it comes out as a solid disc
+            // with the hub floating in the middle of it -- and when that one item is hovered,
+            // the disc is near-white and fills a third of the screen. The keel goes all the way
+            // round with it. Pages that end up with one thing to offer are common: the re-up
+            // page is exactly that until the port opens.
+            //
+            // Given a slice instead. It reads as a wheel with one thing on it, which is what
+            // it is, and it leaves the rest of the ring as empty backdrop rather than as a
+            // statement.
+            if (n == 1) step = SingleSpanDegrees;
+
             // Every segment is its own wedge.
             //
             // It was drawing ONE ring in the segment colour and then overdrawing only the
@@ -452,7 +468,7 @@ namespace Hoodrich.UI
         private static bool Sprite(string prefix, int items, float midAngleDeg, float rOuter,
                                    Color c)
         {
-            if (items < 2 || items > 8) return false;
+            if (items < 1 || items > 8) return false;
 
             return Draw.File(prefix + items + ".png", 0.5f, 0.5f, rOuter * 2f, midAngleDeg, c);
         }
@@ -521,6 +537,8 @@ namespace Hoodrich.UI
         /// <summary>Our PNG, the game's sprite, a blip tag or the text glyph -- in that order.</summary>
         private static void DrawArtOrGlyph(WheelItem item, float px, float py, float size, Color ink)
         {
+            // Ours first, and asked directly rather than through HasIcon -- which wants a
+            // texture dictionary a PNG does not have.
             if (!string.IsNullOrEmpty(item.IconFile) &&
                 Draw.File(item.IconFile, px, py, size, 0f, ink))
             {

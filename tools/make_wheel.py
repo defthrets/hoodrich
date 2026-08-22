@@ -72,10 +72,24 @@ def ring(d, r0, r1, a0, a1, fill):
     d.ellipse([c - ri, c - ri, c + ri, c + ri], fill=CLEAR)
 
 
+def span(n):
+    """
+    Half the angle one wedge covers.
+
+    A lone item does NOT get the whole ring. Drawn as 360 degrees it is a solid disc with the
+    hub floating in it -- and hovered, a near-white disc filling a third of the screen. It gets
+    a slice, matching SingleSpanDegrees in RadialMenu.
+    """
+    if n <= 1:
+        return 45.0
+
+    return 360.0 / n * 0.5 - GAP_DEG * 0.5
+
+
 def segment(n):
     """One filled wedge of an n-item wheel, pointing straight up."""
     img, d = canvas()
-    half = 360.0 / n * 0.5 - GAP_DEG * 0.5
+    half = span(n)
 
     ring(d, R_IN, R_OUT, -half, half, W)
     save(img, 'wheel_seg_%d.png' % n)
@@ -84,7 +98,7 @@ def segment(n):
 def keel(n):
     """The amber bar along the wedge's inner edge."""
     img, d = canvas()
-    half = 360.0 / n * 0.5 - GAP_DEG * 0.5
+    half = span(n)
 
     ring(d, R_IN, R_IN + KEEL, -half, half, W)
     save(img, 'wheel_keel_%d.png' % n)
@@ -99,7 +113,7 @@ def slot(n):
     rectangles could only ever manage a staircase.
     """
     img, d = canvas()
-    half = 360.0 / n * 0.5 - GAP_DEG * 0.5
+    half = span(n)
 
     # The frame, in degrees, is the same arc length at the mid radius as it is in depth.
     inset = math.degrees(FRAME / ((R_IN + R_OUT) * 0.5))
@@ -136,7 +150,7 @@ if not os.path.isdir(OUT):
 
 hub()
 
-for n in range(2, 9):
+for n in range(1, 9):
     segment(n)
     keel(n)
     slot(n)

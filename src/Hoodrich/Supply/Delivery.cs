@@ -693,8 +693,17 @@ namespace Hoodrich.Supply
                 return;
             }
 
+            // His own ride first, the mod's default second.
+            //
+            // A pushbike is a vehicle like any other as far as everything downstream is
+            // concerned -- he gets on it, drives it to the mark, gets off and walks the bag in
+            // -- so this is a list swap rather than a second delivery.
+            var rides = _def != null && _def.Rides.Count > 0
+                ? _def.Rides.ToArray()
+                : CarModels;
+
             Model? carModel = null;
-            foreach (var name in CarModels)
+            foreach (var name in rides)
             {
                 var m = new Model(name);
                 if (!m.IsValid || !m.IsInCdImage || !m.Request(2000)) continue;

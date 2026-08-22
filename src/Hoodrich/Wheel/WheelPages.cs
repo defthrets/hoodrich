@@ -1253,6 +1253,25 @@ namespace Hoodrich.Wheel
             list.Row("The port", _state.DocksUnlocked ? "he delivers" : "you don't know nobody",
                      _state.DocksUnlocked ? Palette.Cash : (Color?)Palette.TextDim, "crate.png");
 
+            // Your own set first, because he is four streets away and always answers.
+            //
+            // Dearer than the port and it should be -- you are paying for a man on a pushbike
+            // rather than a van from Elysian Island, and he only carries what the Families
+            // actually move.
+            var stretch = _dealers.Find("stretch_run");
+
+            if (stretch != null)
+            {
+                var no = _dealers.RefusalReason(stretch, _state, _crew);
+
+                list.Add("Text Stretch", "=", () => Call(stretch),
+                    detail: no ?? "He rides over from the block with weed, pills or bars",
+                    value: "closer, dearer",
+                    enabled: no == null,
+                    disabledReason: no ?? "");
+                list.WithIcon(Icons.FromFile("gang_families.png"));
+            }
+
             var docks = _dealers.Docks();
 
             if (docks == null)

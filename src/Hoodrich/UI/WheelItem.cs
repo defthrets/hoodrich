@@ -159,6 +159,22 @@ namespace Hoodrich.UI
                 return this;
             }
 
+            // Ours is settled here and now, and that is a fix rather than a shortcut.
+            //
+            // A file needs nothing streamed and nothing resolved, so it was being answered
+            // inside the readiness lambda below -- which is only ever CALLED from HasIcon, and
+            // HasIcon opens with `!string.IsNullOrEmpty(IconDict)`. A FromFile icon has no
+            // dictionary, so HasIcon was false, so the lambda never ran, so IconFile was never
+            // set and every one of them silently fell back to its text glyph. That is why
+            // "Text the plug" was drawing an equals sign.
+            if (icon.HasFile)
+            {
+                item.IconFile = icon.File;
+                item.IconAspect = 1f;
+                item.IconTries = WheelItem.IconAttempts;
+                return this;
+            }
+
             item.IconDict = icon.Dict;
 
             // Resolved per frame rather than here: the dictionary is usually still streaming

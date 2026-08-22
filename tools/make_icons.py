@@ -785,12 +785,36 @@ def box():
 
 
 def phone():
-    """A handset. Texting the plug is a thing you do often enough to want a picture of it."""
+    """
+    A phone with a message coming off it, because texting the plug is what it means.
+
+    The first one was a bare handset outline -- a rounded rectangle with a hole in it, which
+    at twenty pixels is a rounded rectangle with a hole in it. The screen is filled now rather
+    than punched out, so the shape reads as a phone rather than as a frame, and a speech bubble
+    lifts off the corner: that is the half that says TEXT rather than merely PHONE, and it
+    breaks the silhouette so it cannot be mistaken for the door, the box or the crate.
+    """
     img, d = canvas()
 
-    d.rounded_rectangle([146, 40, 366, 472], radius=42, fill=W)
-    d.rounded_rectangle([180, 108, 332, 380], radius=12, fill=CLEAR)
-    d.ellipse([236, 404, 276, 444], fill=CLEAR)
+    # The body, and a screen that is part of the phone rather than a hole in it.
+    d.rounded_rectangle([120, 96, 330, 486], radius=38, fill=W)
+    d.rounded_rectangle([152, 150, 298, 396], radius=10, fill=CLEAR)
+
+    # Earpiece and button, so the top and bottom are not identical.
+    d.rounded_rectangle([196, 120, 254, 134], radius=7, fill=CLEAR)
+    d.ellipse([203, 420, 247, 464], fill=CLEAR)
+
+    # Three lines of a message on the screen.
+    for i, w in enumerate((104, 84, 62)):
+        d.rounded_rectangle([172, 186 + i * 48, 172 + w, 208 + i * 48], radius=11, fill=W)
+
+    # The bubble coming off it, with a tail pointing back at the phone.
+    d.rounded_rectangle([300, 40, 500, 190], radius=44, fill=W)
+    d.polygon([(330, 176), (392, 176), (322, 246)], fill=W)
+    d.ellipse([300, 40, 500, 190], outline=CLEAR)
+
+    for i, cx in enumerate((352, 400, 448)):
+        d.ellipse([cx - 17, 98, cx + 17, 132], fill=CLEAR)
 
     save(img, 'phone.png')
 

@@ -151,6 +151,7 @@ namespace Hoodrich.Supply
 
                 ReplaceList(def.Models, node["models"]);
                 ReplaceList(def.Drugs, node["drugs"]);
+                ReplaceList(def.Rides, node["rides"]);
                 ReplaceList(def.Zones, node["zones"]);
 
                 if (isNew) _defs.Add(def);
@@ -395,7 +396,24 @@ namespace Hoodrich.Supply
                                    string.Equals(d.GangId, gangId, StringComparison.OrdinalIgnoreCase));
         }
 
-        public DealerDef Docks() => _defs.Find(d => d.Kind == DealerKind.Docks);
+        /// <summary>
+        /// The man at the port, by NAME rather than by kind.
+        ///
+        /// This used to be the first dealer of kind Docks, which was unambiguous while there
+        /// was one of them. Stretch delivers now and is the same kind -- he phones, he rides
+        /// over, he hands a bag across, which is the same machinery -- so "the first one that
+        /// looks like this" would have started answering with whoever happened to sort first
+        /// in the file. The port is the port.
+        /// </summary>
+        public DealerDef Docks() => Find("docks");
+
+        /// <summary>One dealer by id, or null.</summary>
+        public DealerDef Find(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+
+            return _defs.Find(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
+        }
 
         // ---- placement ---------------------------------------------------------
 
