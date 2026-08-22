@@ -227,9 +227,20 @@ namespace Hoodrich
 
         private static readonly string[] Deejaying =
         {
+            // Working the decks, if this install has the club DLC that shipped these.
             "anim@amb@nightclub@djs@dixon@", "dixn_dance_cntr_up_dix",
             "anim@amb@nightclub@djs@black_madonna@", "bmad_dance_cntr_up_bm",
-            "anim@amb@nightclub@mini@dance@dance_solo@female@var_a@", "high_center"
+            "anim@amb@nightclub@djs@solomun@", "solo_dance_cntr_up_solo",
+            "anim@amb@nightclub@djs@tale_of_us@", "tou_dance_cntr_up_tou",
+
+            // And dancing if it has not. A woman dancing behind a pair of decks reads fine;
+            // the scenario underneath this is WORLD_HUMAN_MUSICIAN, which without a prop in
+            // her hands is a woman playing an air guitar at a mixer. The list ends on the
+            // base-game clip so there is something here for an install with no DLC at all.
+            "anim@amb@nightclub@mini@dance@dance_solo@female@var_a@", "high_center",
+            "anim@amb@nightclub@mini@dance@dance_solo@female@var_b@", "high_center",
+            "anim@amb@nightclub@dancers@crowddance_facedj_11_amy@", "hi_dance_facedj_11_v2_amy",
+            "mini@strip_club@idle_dance@idle_a", "idle_a_song_a"
         };
 
         private static string[] Fam(int which)
