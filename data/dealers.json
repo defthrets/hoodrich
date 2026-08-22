@@ -43,11 +43,11 @@
       "maxOrderGrams": 500,
       "openHour": 5,
       "closeHour": 21,
-      "greeting": "Stretch's people, right? Keep it quiet and keep it quick. Whatever's in the box, I can get it off the box.",
-      "buyLine": "I deal in bricks. Nothing smaller. Say what and say how many.",
-      "sourceReply": "Where do I get it? Man, I AM where you get it.",
+      "greeting": "Stretch's people. Stretch's. Yeah. Keep it quiet, keep it quick, and whatever's in the box -- I get it off the box. That's the. that's the whole business, right there.",
+      "buyLine": "Bricks. I deal in bricks, nothing smaller, dont ask. So say what, and say how many. In that order please.",
+      "sourceReply": "Where do I get it. Where do I -- man. I AM where you get it. I'm the. yeah. me.",
       "sourceTooSoon": "",
-      "farewell": "Go on. And don't come back in daylight if you're carrying."
+      "farewell": "Go on. Go. And dont come back in daylight if youre carryin, thats. thats just manners."
     },
     {
       "id": "stretch_run",

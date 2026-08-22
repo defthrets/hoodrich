@@ -437,14 +437,70 @@ def cash():
 
 
 def guns():
-    """A pistol silhouette, blocky. A slim barrel is the first thing to go, so it is thick."""
+    """
+    A compact rifle -- an AK with the stock off.
+
+    It was a pistol, and a pistol is the least distinctive gun silhouette there is: a brick
+    with a handle, which at twenty pixels is a brick with a handle. An AK is the opposite. The
+    banana magazine is the most recognisable shape in small arms, it hangs BELOW the line of
+    the weapon where nothing else in this set has anything, and it survives being shrunk
+    because it is one big curve rather than any amount of detail.
+
+    Stockless on purpose. A full stock pushes the whole thing wider and the icon has to fit a
+    square, so every part gets smaller to make room for the part nobody looks at.
+    """
     img, d = canvas()
-    d.rectangle([70, 190, 430, 268], fill=W)        # slide
-    d.rectangle([96, 268, 190, 300], fill=W)        # frame under the slide
-    d.polygon([(150, 300), (250, 300), (206, 452), (110, 452)], fill=W)   # grip
-    d.rectangle([250, 268, 300, 306], fill=W)       # trigger guard top
-    d.rectangle([236, 296, 252, 340], fill=W)       # trigger
+
+    # Receiver, running the width of the icon.
+    d.rectangle([88, 214, 372, 288], fill=W)
+
+    # Barrel out the front, thick, with the gas block standing on it.
+    d.rectangle([372, 232, 486, 268], fill=W)
+    d.rectangle([392, 196, 428, 236], fill=W)
+    d.polygon([(462, 232), (486, 232), (486, 196), (474, 186)], fill=W)   # front sight
+
+    # The magazine. The whole reason this reads as a rifle rather than a plank.
+    d.polygon([(196, 288), (286, 288), (272, 392), (222, 428),
+               (170, 420), (176, 344)], fill=W)
+    d.polygon([(214, 306), (268, 306), (256, 378), (222, 400),
+               (196, 394), (200, 340)], fill=CLEAR)
+
+    # Pistol grip behind it, angled the way an AK's is.
+    d.polygon([(300, 288), (368, 288), (352, 414), (300, 414)], fill=W)
+
+    # Trigger, and the stub where the stock would be.
+    d.rectangle([286, 292, 302, 330], fill=CLEAR)
+    d.rectangle([56, 230, 92, 272], fill=W)
+
     save(img, 'guns.png')
+
+
+def mobile():
+    """
+    A plain mobile phone, for the socials.
+
+    Not phone.png. That one has a message bubble coming off it because it means TEXT SOMEBODY
+    -- it is the plug's icon. This is the feed itself, so it is the handset on its own with
+    the screen full of lines, and the two read as related rather than as the same thing.
+
+    The tattoo machine that used to sit here was a good drawing of the wrong object.
+    """
+    img, d = canvas()
+
+    d.rounded_rectangle([146, 44, 366, 486], radius=44, fill=W)
+    d.rounded_rectangle([180, 108, 332, 404], radius=12, fill=CLEAR)
+
+    d.rounded_rectangle([228, 70, 284, 84], radius=7, fill=CLEAR)
+    d.ellipse([232, 428, 280, 476], fill=CLEAR)
+
+    # A feed on the screen: an avatar and its line, three times down.
+    for i in range(3):
+        y = 130 + i * 92
+        d.ellipse([196, y, 244, y + 48], fill=W)
+        d.rounded_rectangle([256, y + 6, 318, y + 22], radius=8, fill=W)
+        d.rounded_rectangle([256, y + 30, 300, y + 44], radius=7, fill=W)
+
+    save(img, 'mobile.png')
 
 
 def ammo():
@@ -533,6 +589,7 @@ meth()
 money()
 cash()
 guns()
+mobile()
 ammo()
 garage()
 mask()

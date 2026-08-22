@@ -126,23 +126,14 @@ namespace Hoodrich.Supply
         /// </summary>
         private static readonly string[] BoxProps =
         {
-            // A box, because he is playing a box carry.
+            // A DRUG PACKAGE, not a cardboard box.
             //
-            // The animation below is anim@heists@box_carry@, which is both arms out in front
-            // cradling something with real width to it. Under that pose went the small taped
-            // package -- twenty-five centimetres of flat envelope held as though it were a
-            // crate, hands apart around nothing. The pose was right and the prop was not.
-            //
-            // hei_prop_heist_box is the prop that animation was authored against, so it sits
-            // in the hands the way the hands are already shaped. The two under it are the same
-            // idea from the base game, in case an install is missing the heist pack.
-            "hei_prop_heist_box", "prop_cs_cardbox_01", "prop_boxpile_07d",
-
-            // The packages keep their place underneath. Nothing here is guaranteed to be in a
-            // given install, and the loop below takes the first name that actually resolves --
-            // so a missing box costs a fallback rather than an empty pair of hands.
-            "prop_drug_package_02",
-            "prop_drug_package", "prop_mp_drug_pack_red",
+            // It was the heist box for a while, on the reasoning that the carry animation is
+            // both arms out cradling something wide and a box is what fits those hands. That
+            // is true and it is beside the point: this is a man delivering weight, and a
+            // moving carton is a man delivering a carton. The reach maths already sizes the
+            // hold to whatever prop wins, so a package sits in them properly regardless.
+            "prop_drug_package", "prop_drug_package_02", "prop_mp_drug_pack_red",
             "bkr_prop_coke_block_01a", "ba_prop_battle_coke_block_01a",
             "bkr_prop_meth_bigbag_01a", "bkr_prop_weed_bigbag_01a",
             "prop_paper_box_01"
@@ -343,6 +334,18 @@ namespace Hoodrich.Supply
         /// careful driver.
         /// </summary>
         private const int DriveStyle = 786476;
+
+        /// <summary>
+        /// How fast he comes, in metres per second.
+        ///
+        /// He was doing twenty-two on the long leg and sixteen on the approach, which on
+        /// Forum Drive is a man arriving at fifty miles an hour to hand over a bag. Fourteen
+        /// and ten reads as somebody who knows the address and is not in a hurry to be seen
+        /// at it -- and it gives the last few metres a chance to settle rather than arriving
+        /// hot and overshooting the mark.
+        /// </summary>
+        private const float CruiseSpeed = 14f;
+        private const float ApproachSpeed = 10f;
 
         /// <summary>
         /// How close before he stops following roads and drives straight at the point.
@@ -842,13 +845,13 @@ namespace Hoodrich.Supply
                     // already finished.
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD_LONGRANGE,
                                   _driver.Handle, _car.Handle,
-                                  where.X, where.Y, where.Z, 22f, DriveStyle, 18f);
+                                  where.X, where.Y, where.Z, CruiseSpeed, DriveStyle, 18f);
                     return;
                 }
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _driver.Handle, _car.Handle,
                               where.X, where.Y, where.Z,
-                              16f, 0, _car.Model.Hash, DriveStyle, 3f, StraightLineAt);
+                              ApproachSpeed, 0, _car.Model.Hash, DriveStyle, 3f, StraightLineAt);
             }
             catch (Exception ex)
             {
@@ -1953,7 +1956,24 @@ namespace Hoodrich.Supply
                     var handle = seq.GetResult<int>();
 
                     Function.Call(Hash.TASK_ENTER_VEHICLE, 0, _car.Handle, 10000, -1, 2f, 1, 0);
-                    Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, 0, _car.Handle, 20f, DriveStyle);
+
+                    // A DESTINATION first, and only then a wander.
+                    //
+                    // He used to go straight to TASK_VEHICLE_DRIVE_WANDER off a kerbside stop
+                    // with a fence one side and parked cars the other. Wander has no
+                    // destination -- it picks a direction and negotiates from where it is
+                    // standing -- and from that spot it is a car rocking back and forth
+                    // against a kerb for as long as anybody watches it.
+                    //
+                    // Arriving was never the problem and is untouched. Leaving now has a road
+                    // to get to first: he drives to the departure point, which is out on a
+                    // through road, and wanders from THERE where wandering works.
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, 0, _car.Handle,
+                                  LeaveFor.X, LeaveFor.Y, LeaveFor.Z,
+                                  CruiseSpeed, 0, _car.Model.Hash, DriveStyle, 12f, StraightLineAt);
+
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, 0, _car.Handle,
+                                  CruiseSpeed, DriveStyle);
 
                     Function.Call(Hash.CLOSE_SEQUENCE_TASK, handle);
                     Function.Call(Hash.TASK_PERFORM_SEQUENCE, _driver.Handle, handle);

@@ -910,7 +910,7 @@ namespace Hoodrich.Wheel
                 value: Followers == null ? "" : Followers().ToString("N0") + " followers",
                 enabled: ShowSocials != null,
                 disabledReason: "Not right now");
-            page.WithIcon(Icons.Tattoo);
+            page.WithIcon(Icons.FromFile("mobile.png"));
 
             return page;
         }
