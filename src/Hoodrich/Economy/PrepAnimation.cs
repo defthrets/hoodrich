@@ -54,7 +54,12 @@ namespace Hoodrich.Economy
             new Clip("timetable@maid@ig_2@", "idle_b"),
             new Clip("timetable@maid@ig_2@", "idle_c"),
             new Clip("timetable@maid@ig_2@", "ig_2_base"),
-            new Clip("timetable@maid@ig_2@", "maid_base")
+            new Clip("timetable@maid@ig_2@", "maid_base"),
+
+            // Floyd cleaning his kitchen, which is the same shape of action in the same shape
+            // of room. Named as the one to use if the maid dict does not take, so it sits
+            // after those six and before anything drug-specific.
+            new Clip("timetable@floyd@clean_kitchen@base", "base")
         };
 
         /// <summary>
