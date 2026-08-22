@@ -11,3 +11,7 @@ tools/*.zip
 # Local runtime artefacts
 *.log
 *.user
+
+# Python bytecode, from importing the icon tools
+__pycache__/
+*.pyc
