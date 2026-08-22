@@ -231,8 +231,14 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(60, 180, 75), 2,
                 new[] { "weed", "crack" },
                 new[] { "ballas", "vagos", "lost", "aztecas" },
-                new[] { "CHAMH", "STRAW", "DAVIS" },
-                "Chamberlain Hills, Strawberry, Davis",
+                // These are the fallbacks for when gangs.json does not say, and they were
+                // both wrong AND contradictory: the Families defaulted to owning Davis, the
+                // Ballas defaulted to owning Chamberlain, and each of the four crews down here
+                // had a hint that named different ground from its own turf list. Latent, since
+                // the data overrides them -- and a landmine, because the day a zone goes
+                // missing from the data is the day the wrong one surfaces.
+                new[] { "CHAMH", "STRAW" },
+                "Chamberlain Hills and Strawberry",
                 // The three Families models and nothing else. A generic South Central civilian
                 // used to sit on the end of this list for variety, and it is how a man in a
                 // pink shirt and a blazer ended up guarding Lamar's yard with a rifle.
@@ -244,24 +250,24 @@ namespace Hoodrich.Gangs
                 Color.FromArgb(145, 70, 190), 27,
                 new[] { "crack", "weed" },
                 new[] { "families", "vagos", "marabunta", "aztecas" },
-                new[] { "DAVIS", "CHAMH" },
-                "Rancho, Murrieta Heights, Davis Quartz",
+                new[] { "DAVIS", "STAD" },
+                "Davis, Grove Street and the blocks by the arena",
                 new[] { "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01", "a_m_m_soucent_02" }));
 
             Register(Make("vagos", "Los Santos Vagos", "VAGO", "AMBIENT_GANG_MEXICAN",
                 Color.FromArgb(235, 195, 40), 5,
                 new[] { "coke", "meth" },
                 new[] { "families", "ballas", "marabunta", "aztecas" },
-                new[] { "RANCHO", "LMESA" },
-                "El Burro Heights, La Mesa, Tataviam Mountains",
+                new[] { "RANCHO", "LMESA", "MURRI", "EBURO" },
+                "Rancho, La Mesa, Murrieta and El Burro Heights",
                 new[] { "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03", "a_m_y_mexthug_01" }));
 
             Register(Make("marabunta", "Marabunta Grande", "MARA", "AMBIENT_GANG_MARABUNTE",
                 Color.FromArgb(70, 200, 200), 3,
                 new[] { "meth", "coke" },
                 new[] { "vagos", "ballas", "lost" },
-                new[] { "EBURO", "VESP" },
-                "Cypress Flats, Textile City, Elysian Island",
+                new[] { "CYPRE", "TEXTI" },
+                "Cypress Flats and Textile City",
                 new[] { "g_m_y_salvaboss_01", "g_m_y_salvagoon_01", "g_m_y_salvagoon_02", "a_m_y_mexthug_01" }));
 
             Register(Make("lost", "The Lost MC", "LOST", "AMBIENT_GANG_LOST",

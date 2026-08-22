@@ -97,9 +97,9 @@
       ],
       "turf": [
         "DAVIS",
-        "VESP"
+        "STAD"
       ],
-      "turfHint": "Davis, Grove Street and Vespucci",
+      "turfHint": "Davis, Grove Street and the blocks by the arena",
       "joinRespect": 0
     },
     {
@@ -154,10 +154,9 @@
       ],
       "turf": [
         "CYPRE",
-        "ELYSIAN",
         "TEXTI"
       ],
-      "turfHint": "Cypress Flats, Elysian Island and Textile City",
+      "turfHint": "Cypress Flats and Textile City",
       "joinRespect": 250
     },
     {
