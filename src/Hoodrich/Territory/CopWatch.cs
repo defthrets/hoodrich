@@ -66,7 +66,17 @@ namespace Hoodrich.Territory
                     _counted.Add(ped.Handle);
 
                     Log.Info("An officer was killed by the player.");
-                    if (Social != null) Social.On(SocialEvent.CopKilled);
+
+                    if (Social != null)
+                    {
+                        Social.On(SocialEvent.CopKilled);
+
+                        // And he posts about it, which is the joke: the one thing you should
+                        // absolutely not put on the internet. Two minutes between, because a
+                        // shootout with the law is several of these and the second one is not
+                        // funny.
+                        Social.PostAsYouSometimes("YouDroppedACop", "", 120000, 80);
+                    }
                 }
             }
             catch (Exception ex)

@@ -1844,6 +1844,25 @@ namespace Hoodrich.Missions
             Notify.Important("~g~You're clear.~s~ Get back to Lamar.");
         }
 
+        /// <summary>
+        /// Which of his own sets a finished job is talked about with.
+        ///
+        /// A drive-by falls through to the general one on purpose. The torch lines are all
+        /// about the car not coming back, which is the half of that job a drive-by has not got,
+        /// and a wrong-but-fluent post is worse than a plain one.
+        /// </summary>
+        private static string SaidAbout(MissionKind kind)
+        {
+            switch (kind)
+            {
+                case MissionKind.BikeRide: return "YouDidTheRide";
+                case MissionKind.TorchJob: return "YouDidTheTorch";
+                case MissionKind.Tags: return "YouDidTheTags";
+                case MissionKind.Hit: return "YouDidTheHit";
+                default: return "YouDidTheJob";
+            }
+        }
+
         /// <summary>Raises the wanted level, never lowers it.</summary>
         private static void Wanted(int stars)
         {
@@ -1920,6 +1939,17 @@ namespace Hoodrich.Missions
 
                 // And the job itself, so a run of work reads as a run of work.
                 Social.On(SocialEvent.MissionDone, def.Name, pay);
+
+                // Then HIS post about it. The block saying something happened and the man it
+                // happened to saying something are two different posts, and the second one is
+                // the only place in this feed where the story is told from the inside.
+                //
+                // The specific set first and the general one behind it, so a job kind nobody
+                // has written lines for still gets a post rather than silence.
+                if (Social.PostAsYou(SaidAbout(def.Kind), def.Name) == null)
+                {
+                    Social.PostAsYou("YouDidTheJob", def.Name);
+                }
             }
 
             // And then he wants a minute. Set before Clear, because Clear is where the job

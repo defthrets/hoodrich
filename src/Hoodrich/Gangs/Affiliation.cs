@@ -663,7 +663,15 @@ namespace Hoodrich.Gangs
                     // The block hears about some of them and not others, which is the feed's
                     // own decision -- a neighbourhood that comments on every single one is a
                     // neighbourhood watching you rather than living in the same place as you.
-                    if (Social != null) Social.On(SocialEvent.RivalKilled, gang.Name);
+                    if (Social != null)
+                    {
+                        Social.On(SocialEvent.RivalKilled, gang.Name);
+
+                        // And he says something about it himself, sometimes. Seventy-five
+                        // seconds between and a bit better than a coin toss -- a man who taunts
+                        // every single body is not taunting, he is narrating.
+                        Social.PostAsYouSometimes("YouDroppedOne", gang.Name, 75000, 55);
+                    }
                 }
             }
             catch (Exception ex)

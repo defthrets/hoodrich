@@ -577,6 +577,36 @@ namespace Hoodrich.Social
         /// caller can put it in a ticker, or null when the set has nothing left that has not
         /// been said recently.
         /// </summary>
+        /// <summary>
+        /// Posts as him, but not every time and not twice in a row.
+        ///
+        /// The reason this exists rather than a bool at each call site: a firefight is ten
+        /// bodies in fifteen seconds, and ten taunts is not a man reacting, it is a bot. The
+        /// gap is stamped WHETHER OR NOT THE DICE PASS, which is the whole trick -- ten kills
+        /// in ten seconds get one roll between them rather than ten rolls, so a burst reads as
+        /// one comment on the burst instead of a stream.
+        ///
+        /// Per set, so being quiet about bodies does not also make him quiet about jobs.
+        /// </summary>
+        public string PostAsYouSometimes(string set, string subject, int gapMs, int chancePercent)
+        {
+            if (string.IsNullOrEmpty(set)) return null;
+
+            var now = Game.GameTime;
+
+            if (_yourNext.TryGetValue(set, out var next) && now < next) return null;
+
+            _yourNext[set] = now + Math.Max(0, gapMs);
+
+            if (chancePercent < 100 && _rng.Next(100) >= chancePercent) return null;
+
+            return PostAsYou(set, subject);
+        }
+
+        /// <summary>When each of his own sets is allowed to speak again.</summary>
+        private readonly Dictionary<string, int> _yourNext =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
         public string PostAsYou(string set, string subject)
         {
             var post = Build(set, subject ?? "");
