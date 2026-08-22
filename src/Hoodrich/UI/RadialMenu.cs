@@ -628,16 +628,23 @@ namespace Hoodrich.UI
                 // A hairline boundary is not a third way of separating peers -- it is the edge
                 // between two different KINDS of thing.
                 //
-                // The rim is the roundest thing on the screen and was the worst staircase on
-                // it. As a sprite it is a circle.
+                // The FILL is rectangles and the RIM is a sprite, and the split is not a
+                // preference.
+                //
+                // ScriptHookV draws its textures in a pass of its own, after everything a
+                // script has drawn. So a filled circle sprite lands on top of the hub text --
+                // the name, the value and the detail all went behind the disc, which is what
+                // "the text needs to come to the front" was. Rectangles are in the script's
+                // own layer, so text drawn after them sits over them the way it always did.
+                //
+                // The rim is a ring with nothing in the middle, so it cannot cover anything,
+                // and it is the only part of the hub anybody reads as a curve.
                 var rim = Color.FromArgb((int)(120 * t), 255, 255, 255);
                 var fill = Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t));
 
-                if (Draw.File("wheel_disc.png", cx, cy, rInner * 2f, 0f, rim))
-                {
-                    Draw.File("wheel_disc.png", cx, cy, (rInner - 0.0028f) * 2f, 0f, fill);
-                }
-                else
+                Draw.Disc(cx, cy, rInner, fill);
+
+                if (!Draw.File("wheel_hub.png", cx, cy, rInner * 2f, 0f, rim))
                 {
                     Draw.Disc(cx, cy, rInner, rim);
                     Draw.Disc(cx, cy, rInner - 0.0028f, fill);

@@ -960,6 +960,28 @@ namespace Hoodrich
                     }
                 }
 
+                // Once, on a save that has never seen it.
+                //
+                // Almost nothing in this mod is discoverable by pressing things. Weight cannot
+                // be sold until it has been cut, the wheel is on a button that already does
+                // something else, and a corner sells at a rate set by how busy the pavement is.
+                // Somebody who does not know that buys a kilo, stands on a corner, sells
+                // nothing and concludes the mod is broken.
+                //
+                // Gated on being able to act rather than on a timer, so it does not open behind
+                // a loading screen or during a cutscene, and the flag is set the moment it is
+                // shown -- not when it is closed -- because a player who dismisses it with the
+                // pause menu should not be handed it again on the next load.
+                if (available && _state != null && !_state.SeenWelcome && !_info.IsOpen
+                    && !_menu.IsOpen && !_talk.IsOpen)
+                {
+                    _state.SeenWelcome = true;
+                    _state.Touch();
+
+                    _info.Open("Hoodrich", "Everything you need, once", Welcome.Pages());
+                    Log.Info("Showed the first-run guide.");
+                }
+
                 // A popup readout owns the screen the same way a conversation does: the wheel
                 // would fight it for the same buttons.
                 if (_info.IsOpen)

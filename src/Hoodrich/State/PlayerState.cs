@@ -306,9 +306,19 @@ namespace Hoodrich.State
             return arr;
         }
 
+        /// <summary>
+        /// Whether the first-run guide has been shown.
+        ///
+        /// Saved, so it is once per save rather than once per session. A player who reloads
+        /// should not be told what a corner is again, and a NEW save should be -- which is the
+        /// same thing as saying this lives with the character rather than with the install.
+        /// </summary>
+        public bool SeenWelcome;
+
         public Json ToJson()
         {
             return Json.Object()
+                .Set("seenWelcome", SeenWelcome)
                 .Set("respect", Math.Round(Respect, 2))
                 .Set("notoriety", Math.Round(Notoriety, 2))
                 .Set("totalDeals", TotalDealsMade)
@@ -343,6 +353,11 @@ namespace Hoodrich.State
                 ProductRep = Math.Min(1f, Math.Max(0.1f, doc["productRep"].AsFloat(Neutral)));
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
+
+                // Defaults to FALSE, so a save from before this existed shows the guide once
+                // and then never again. That is the right way round: somebody who has been
+                // playing already loses nothing by being told, and somebody new needs it.
+                SeenWelcome = doc["seenWelcome"].AsBool(false);
                 Followers = Math.Max(0, doc["followers"].AsInt(0));
 
                 FrontedDrug = doc["frontedDrug"].AsString("");

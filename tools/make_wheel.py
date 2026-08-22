@@ -30,6 +30,10 @@ R_IN = 0.124
 R_OUT = 0.252
 GAP_DEG = 4.0
 KEEL = 0.016
+
+# The hub, and how thick its edge is drawn.
+HUB_R = 0.124
+HUB_RIM = 0.004
 FRAME = 0.0055
 
 SIDE = 1024           # a little over 1:1 at 4K, where the ring is 1089 pixels across
@@ -106,18 +110,31 @@ def slot(n):
     save(img, 'wheel_slot_%d.png' % n)
 
 
-def disc():
-    """A circle, for the hub. One sprite, one draw, no staircase."""
+def hub():
+    """
+    The hub's RIM, as a ring with nothing in the middle.
+
+    Not a filled disc, and that is the point. ScriptHookV draws its textures in a pass of its
+    own, after everything a script has drawn -- so a filled circle sprite goes over the hub
+    text rather than under it, which is exactly what a solid one did. A ring leaves the middle
+    alone, the fill underneath stays a stack of rectangles where the text can sit on top of
+    it, and the only part anybody looks at is still a real curve.
+    """
     img, d = canvas()
     c = SIDE * SS * 0.5
-    d.ellipse([0, 0, SIDE * SS - 1, SIDE * SS - 1], fill=W)
-    save(img, 'wheel_disc.png')
+    ro = HUB_R / (R_OUT * 2.0) * SIDE * SS
+    ri = (HUB_R - HUB_RIM) / (R_OUT * 2.0) * SIDE * SS
+
+    d.ellipse([c - ro, c - ro, c + ro, c + ro], fill=W)
+    d.ellipse([c - ri, c - ri, c + ri, c + ri], fill=CLEAR)
+
+    save(img, 'wheel_hub.png')
 
 
 if not os.path.isdir(OUT):
     os.makedirs(OUT)
 
-disc()
+hub()
 
 for n in range(2, 9):
     segment(n)
