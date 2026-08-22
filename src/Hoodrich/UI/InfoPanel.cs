@@ -246,7 +246,7 @@ namespace Hoodrich.UI
         private const float Pad = 0.012f;
 
         /// <summary>How tall the wordmark sits above a panel's own title.</summary>
-        private const float BrandHeight = 0.017f;
+        private const float BrandHeight = 0.024f;
 
         /// <summary>
         /// The header band: the wordmark, the panel's own title, and the air round them.
@@ -256,7 +256,7 @@ namespace Hoodrich.UI
         /// scroll track begins are all off this one number -- so moving the title down without
         /// it would have put the title through the first row.
         /// </summary>
-        private const float HeaderH = 0.070f;
+        private const float HeaderH = 0.076f;
         private const float BodyLead = 0.010f;
         private const float FooterH = 0.026f;
 
@@ -474,14 +474,14 @@ namespace Hoodrich.UI
             // The mark sits above the screen's own title: the mod saying who is talking,
             // then the screen saying what about. Dim, because it is a letterhead rather than
             // a heading -- it should be the second thing read, not the first.
-            Hud.Brand(x + Pad, top + 0.013f, BrandHeight, Palette.Alpha(Palette.TextDim, 150));
+            Hud.BrandCentre(0.5f, top + 0.017f, BrandHeight, Palette.Alpha(Palette.TextDim, 165));
 
-            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.030f, 0.74f, Palette.Text,
+            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.034f, 0.74f, Palette.Text,
                      Hud.FontCursive, centre: false);
 
             if (!string.IsNullOrEmpty(_subtitle))
             {
-                Hud.TextRight(_subtitle, right, top + 0.044f, 0.34f, Palette.Cash,
+                Hud.TextRight(_subtitle, right, top + 0.048f, 0.34f, Palette.Cash,
                               Hud.FontChaletLondon);
             }
 

@@ -51,7 +51,6 @@
           "price": 200
         }
       ],
-      "rollsInto": "joints",
       "perUnit": 1.0
     },
     {
@@ -217,27 +216,6 @@
           "quantity": 1.0,
           "label": "a gram",
           "price": 80
-        }
-      ]
-    },
-    {
-      "id": "joints",
-      "name": "Pre-rolls",
-      "tag": "J",
-      "tier": 1,
-      "basePrice": 25,
-      "bulkPrice": 0,
-      "heatFactor": 0.5,
-      "splitVerb": "Roll",
-      "unitName": "joints",
-      "counted": true,
-      "madeOnly": true,
-      "workVerb": "Rolling",
-      "deals": [
-        {
-          "quantity": 1,
-          "label": "a joint",
-          "price": 25
         }
       ]
     }

@@ -233,6 +233,20 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
+        /// The same mark, centred on a point rather than started from one.
+        ///
+        /// Every panel that carries it is itself centred on the screen, so left-aligning the
+        /// mark put the mod's name in the corner of its own letterhead while the title under
+        /// it ran to the middle. Centred is what a letterhead does, and it means the call
+        /// sites stop each working the width out for themselves.
+        /// </summary>
+        public static void BrandCentre(float centreX, float middle, float height, Color c)
+        {
+            var wide = ToX(height) * WordmarkAspect;
+            File("logo.png", centreX, middle, wide, height, 0f, c);
+        }
+
+        /// <summary>
         /// How many times wider than tall logo.png is. Printed by tools/make_logo.py.
         ///
         /// A constant rather than something read off the texture, because CustomSprite does not

@@ -467,7 +467,7 @@ namespace Hoodrich.UI
             // 0.062 rather than 0.048: the wordmark went in above the speaker's name and the
             // panel has to be that much taller, or the last line of choices runs off the bottom
             // of its own ground.
-            var total = 0.062f + bodyHeight + 0.012f + choiceHeight + 0.030f;
+            var total = 0.068f + bodyHeight + 0.012f + choiceHeight + 0.030f;
             if (!string.IsNullOrEmpty(Title)) total += 0.036f;
             var top = Math.Max(0.06f, 0.5f - total * 0.5f);
 
@@ -475,10 +475,9 @@ namespace Hoodrich.UI
             Hud.RectFrom(PanelX, top, PanelWidth, 0.0035f, _node.SpeakerColour);
 
             // Same idea as the info panels: the mod first, quietly, then who is speaking.
-            Hud.Brand(PanelX + 0.014f, top + 0.014f, 0.016f,
-                      Palette.Alpha(Palette.TextDim, 130));
+            Hud.BrandCentre(0.5f, top + 0.017f, 0.022f, Palette.Alpha(Palette.TextDim, 150));
 
-            var y = top + 0.026f;
+            var y = top + 0.032f;
 
             if (!string.IsNullOrEmpty(Title))
             {

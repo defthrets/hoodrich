@@ -1977,20 +1977,51 @@ namespace Hoodrich.Dealing
         {
             var edge = width * 0.5f - BarEndGap;
 
+            // WHITE, both of them, and that is the whole point.
+            //
+            // The skull was drawn in Palette.Danger and the clean end in Palette.Cash -- which
+            // are the two colours the bar itself fills with. So each icon disappeared into the
+            // fill in exactly the direction it was there to warn about: the skull invisible on
+            // a red bar, the heart invisible on a green one, each of them legible only while
+            // the thing it marks was not happening.
+            //
+            // The bar is amber, green, red or dark grey depending on where you stand. White is
+            // the one ink that reads on all four, and it is what the police icon in the middle
+            // has always used.
+            // A dark disc under each, because white alone does not do it.
+            //
+            // Measured rather than assumed: white on the green fill is 2.1:1 and on the amber
+            // 1.9:1, both under the 3:1 a graphic needs to be told apart from its background.
+            // The fill slides under these icons and changes colour as it goes, so there is no
+            // single ink that works on all of it -- the answer is to give the icon a ground of
+            // its own instead of a better colour.
+            Hud.Disc(x - edge, cy, BarEndDisc, BarEndShade);
+            Hud.Disc(x + edge, cy, BarEndDisc, BarEndShade);
+
             if (!BarIcon(SkullFile, SkullArt, ref _skullArt, ref _skullDone, "skull",
-                         x - edge, cy, Palette.Danger))
+                         x - edge, cy, BarInk))
             {
-                Hud.Text(low, x - edge, cy - RepEndHalf, RepEndScale,
-                         Palette.Danger, Hud.FontLabel);
+                Hud.Text(low, x - edge, cy - RepEndHalf, RepEndScale, BarInk, Hud.FontLabel);
             }
 
             if (!BarIcon(HeartFile, HeartArt, ref _heartArt, ref _heartDone, "heart",
-                         x + edge, cy, Palette.Cash))
+                         x + edge, cy, BarInk))
             {
-                Hud.Text(high, x + edge, cy - RepEndHalf, RepEndScale,
-                         Palette.Cash, Hud.FontLabel);
+                Hud.Text(high, x + edge, cy - RepEndHalf, RepEndScale, BarInk, Hud.FontLabel);
             }
         }
+
+        /// <summary>
+        /// The ink for anything drawn ON a status bar rather than beside it.
+        ///
+        /// Not pure white: a hair off it, so it sits with the rest of the HUD rather than
+        /// glowing out of it, and fully opaque so a fill sliding underneath cannot wash it out.
+        /// </summary>
+        private static readonly Color BarInk = Color.FromArgb(255, 250, 250, 248);
+
+        /// <summary>The dark ground each end icon sits on, and how far it reaches.</summary>
+        private static readonly Color BarEndShade = Color.FromArgb(225, 10, 11, 13);
+        private const float BarEndDisc = 0.0092f;
 
         private const float RepEndScale = 0.22f;
         private const float RepEndHalf = 0.0082f;
@@ -2009,13 +2040,12 @@ namespace Hoodrich.Dealing
         {
             if (word == "HEAT" &&
                 BarIcon(PoliceFile, PoliceArt, ref _policeArt, ref _policeDone, "police",
-                        x, cy, Color.White))
+                        x, cy, BarInk))
             {
                 return;
             }
 
-            Hud.Text(word, x, cy - RepLabelHalf, RepLabelScale,
-                     Color.FromArgb(240, 252, 252, 250), Hud.FontChaletLondon);
+            Hud.Text(word, x, cy - RepLabelHalf, RepLabelScale, BarInk, Hud.FontChaletLondon);
         }
 
         /// <summary>A scuffle outside your pitch is its own kind of attention.</summary>
