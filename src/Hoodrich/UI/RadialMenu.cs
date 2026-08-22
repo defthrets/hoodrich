@@ -301,6 +301,16 @@ namespace Hoodrich.UI
                 return;
             }
 
+            // The hub goes down BEFORE the wedges, and the hovered wedge before the rest.
+            //
+            // Nothing overlaps -- the hub disc ends exactly where the ring begins -- so the
+            // order makes no visual difference at all. It makes a difference when the frame's
+            // draw-call budget runs out, because GTA does not report that, it just stops
+            // drawing. Whatever is emitted last is what disappears, so the two things you
+            // cannot do without go first: the readout you are reading, and the wedge you are
+            // pointing at.
+            DrawHub(cx, cy, rInner, page, t);
+
             var step = 360f / n;
             var gap = n > 1 ? SegmentGapDegrees : 0f;
 
@@ -325,8 +335,15 @@ namespace Hoodrich.UI
             // three arcs come to 948 rectangles a frame, where five plain wedges and the hub
             // come to 593. The optimisation was thirty to forty per cent MORE expensive than
             // the thing it replaced, on top of causing every visual defect above.
-            for (var i = 0; i < n; i++)
+            // Hovered first, then the rest in order. Same picture, different survival odds.
+            for (var slot = 0; slot < n; slot++)
             {
+                var i = slot == 0 ? Math.Max(0, _hovered)
+                      : slot <= Math.Max(0, _hovered) ? slot - 1
+                      : slot;
+
+                if (_hovered < 0) i = slot;
+
                 var item = items[i];
                 var mid = i * step;
                 var from = mid - step * 0.5f + gap * 0.5f;
@@ -381,7 +398,6 @@ namespace Hoodrich.UI
                 DrawWedgeLabel(cx, cy, rOuter + LabelOut, i * step, items[i], i == _hovered, t);
             }
 
-            DrawHub(cx, cy, rInner, page, t);
             DrawPlinth(page, rOuter, t);
         }
         /// <summary>Clear space kept between a panel row's label and its value.</summary>

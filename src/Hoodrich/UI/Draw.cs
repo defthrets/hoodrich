@@ -279,7 +279,32 @@ namespace Hoodrich.UI
         /// noticeably smoother on the diagonals and still tiles perfectly, because whole pixels
         /// are whole pixels.
         /// </summary>
-        private const int RowPixels = 2;
+        /// <summary>
+        /// How tall one scanline row of a filled shape is, in device pixels.
+        ///
+        /// SCALED WITH THE SCREEN, and that is the whole point. It was a flat 2, which meant
+        /// the cost of every wedge and disc grew with resolution -- and GTA silently stops
+        /// drawing once a script has issued too many DRAW_RECTs in a frame. Measured on the
+        /// redesigned wheel: 954 rectangles at 1080p and 1,382 at 1440p with eight items,
+        /// against roughly 593 for the wheel it replaced.
+        ///
+        /// What that looks like is not a warning. It is the LAST things drawn quietly going
+        /// missing -- the fifth wedge cut off halfway down its own scan, and the hub discs
+        /// after it never appearing at all, while every icon and label still drew because
+        /// sprites and text do not come out of the same budget.
+        ///
+        /// Dividing by 270 keeps the row count per ring constant instead: three rows at 720p,
+        /// four at 1080p, five at 1440p, eight at 2160p, and the whole wheel lands between 423
+        /// and 555 rectangles at every one of them.
+        /// </summary>
+        private static int RowPixels
+        {
+            get
+            {
+                var n = (int)Math.Round(ScreenHeight / 270f);
+                return n < 2 ? 2 : n;
+            }
+        }
 
         /// <summary>The row height as the game wants it: a fraction of screen height.</summary>
         private static float RowHeight => RowPixels / (float)ScreenHeight;
@@ -362,14 +387,15 @@ namespace Hoodrich.UI
             // neighbours. Otherwise growing one wedge shifts its rows half a pixel and draws a
             // seam down both of its edges.
             var pxCentre = (int)Math.Round(cy * ScreenHeight);
-            pxTop -= ((pxTop - pxCentre) % RowPixels + RowPixels) % RowPixels;
+            var rows = RowPixels;
+            pxTop -= ((pxTop - pxCentre) % rows + rows) % rows;
 
             var rowHeight = RowHeight;
 
-            for (var py = pxTop; py < pxBottom; py += RowPixels)
+            for (var py = pxTop; py < pxBottom; py += rows)
             {
                 // The centre of this row, on the pixel grid.
-                var rowY = (py + RowPixels * 0.5f) / ScreenHeight;
+                var rowY = (py + rows * 0.5f) / ScreenHeight;
                 var dy = cy - rowY;
 
                 var dy2 = dy * dy;
@@ -484,14 +510,6 @@ namespace Hoodrich.UI
             Rect(cx + ToX(centreDx), rowY, ToX(width), rowHeight, c);
         }
 
-        /// <summary>
-        /// Ring outline, walked around the circumference rather than filled row by row.
-        ///
-        /// Scanning rows to draw a hairline ring means covering the whole height of the disc to
-        /// light up a couple of pixels at each end of every row, which cost hundreds of
-        /// rectangles for a line you can barely see. Stepping along the arc costs one small
-        /// square per step and looks the same.
-        /// </summary>
         /// <summary>
         /// Filled disc.
         ///
