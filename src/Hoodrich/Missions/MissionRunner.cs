@@ -628,6 +628,36 @@ namespace Hoodrich.Missions
         {
             TellHimIfThereIsWork();
 
+            // Going down, or being taken in, ends whatever was running -- and it has to be
+            // taken again from the start.
+            //
+            // This was three different answers to one question. The ordinary jobs checked,
+            // behind a half-second throttle, and failed properly. The bike ride checked inside
+            // its own Update. The tag run did not check at all: you could be shot off a wall,
+            // come round in Pillbox, and the run would still be live with every spot still
+            // blipped and the paint still counting.
+            //
+            // One check, above the dispatch, so there is one answer for all three. Not
+            // throttled, deliberately -- the player is only dead for the couple of seconds
+            // before the game puts him outside a hospital, and a check that runs twice a
+            // second can miss that window and conclude he was fine all along.
+            if (IsRunning)
+            {
+                var who = Game.Player.Character;
+
+                if (who == null || !who.Exists() || !who.IsAlive || Game.Player.IsDead)
+                {
+                    Fail("You went down out there.");
+                    return;
+                }
+
+                if (Function.Call<bool>(Hash.IS_PLAYER_BEING_ARRESTED, Game.Player.Handle, false))
+                {
+                    Fail("They took you in.");
+                    return;
+                }
+            }
+
             if (OnBike)
             {
                 _bike.Update();
@@ -652,21 +682,8 @@ namespace Hoodrich.Missions
 
             var player = Game.Player.Character;
 
-            if (player == null || !player.Exists() || !player.IsAlive)
-            {
-                Fail("You went down out there.");
-                return;
-            }
-
-            // Being taken in ends it the same as being killed. Coming round in a cell with the
-            // job still marked live, and the blip still on the map, is the game pretending
-            // nothing happened.
-            if (Game.Player.IsDead || Function.Call<bool>(Hash.IS_PLAYER_BEING_ARRESTED, Game.Player.Handle, false))
-            {
-                Fail("They took you in.");
-                return;
-            }
-
+            // The death and arrest checks that used to sit here are at the top of Update now,
+            // where the bike ride and the tag run get them too.
             CountLostHomies();
 
             switch (State)

@@ -210,6 +210,47 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
+        /// Wraps him in plot armour for the length of a job, or takes it off again.
+        ///
+        /// He was shot dead on the bike ride, and the mission did not fail -- it STOPPED.
+        /// Every phase tick opens by checking he is alive and returning if he is not, which is
+        /// the right guard for one frame and a deadlock for the rest of the job: no phase
+        /// advances, no objective changes, and nothing left that can end it.
+        ///
+        /// This belongs here rather than in any one mission because Lend is the single door
+        /// every job takes him through and TakeBack is the only way back out. On his corner he
+        /// is an ordinary man and can be shot like one. From the moment a job borrows him he
+        /// cannot die, cannot be dropped, and cannot be pulled off his bike.
+        /// </summary>
+        private void Protect(bool on)
+        {
+            if (_ped == null || !_ped.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.SET_ENTITY_INVINCIBLE, _ped.Handle, on);
+                Function.Call(Hash.SET_PED_DIES_WHEN_INJURED, _ped.Handle, !on);
+                Function.Call(Hash.SET_PED_SUFFERS_CRITICAL_HITS, _ped.Handle, !on);
+                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, _ped.Handle, !on);
+
+                // Not dying and not going down are different things, and the second one is what
+                // actually breaks the ride. Police shooting at a man on a bike knock him OFF
+                // it, and an invincible Lamar face down in the road is no more use to the
+                // mission than a dead one. 1 is never; 0 is the default he goes back to.
+                Function.Call(Hash.SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE, _ped.Handle, on ? 1 : 0);
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL, _ped.Handle, !on);
+
+                // Whatever he took before the armour went on. A job that starts with him on
+                // one bar of health is a job that starts with him already knocked about.
+                if (on) _ped.Health = _ped.MaxHealth;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not " + (on ? "protect" : "release") + " Lamar: " + ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Hands him to a mission. Null if he is not around to be handed over.
         /// </summary>
         public Ped Lend()
@@ -217,6 +258,7 @@ namespace Hoodrich.Missions
             if (_ped == null || !_ped.Exists() || !_ped.IsAlive) return null;
 
             _lent = true;
+            Protect(true);
 
             // The conversation is over -- whoever is borrowing him is about to task him, and a
             // hold left on would have him turning to face you for the length of a bike ride.
@@ -241,6 +283,7 @@ namespace Hoodrich.Missions
             if (!_lent) return;
 
             _lent = false;
+            Protect(false);
 
             if (_ped == null || !_ped.Exists() || !_ped.IsAlive)
             {

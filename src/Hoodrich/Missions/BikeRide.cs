@@ -166,6 +166,14 @@ namespace Hoodrich.Missions
         /// </summary>
         private Ped _lamar;
 
+        /// <summary>
+        /// When he stopped being usable, or 0 while he is fine. See the check in Update.
+        /// </summary>
+        private int _lamarGoneSince;
+
+        /// <summary>How long he can be missing before the job gives up on him.</summary>
+        private const int LamarGoneMs = 6000;
+
         /// <summary>Set by MissionRunner. Who to borrow him from, and give him back to.</summary>
         public Fixer Boss;
 
@@ -245,6 +253,7 @@ namespace Hoodrich.Missions
             _clerk = null;
             _lamarSlipSince = 0;
             _lamarWasAt = 0f;
+            _lamarGoneSince = 0;
             _wordsSaid = false;
             ReadyToCollect = false;
             Failure = null;
@@ -282,6 +291,33 @@ namespace Hoodrich.Missions
             {
                 Failure = "You went down out there.";
                 return;
+            }
+
+            // He is protected from the moment he is lent out, so this should not fire. It
+            // exists because the failure it catches is unrecoverable: every phase tick guards
+            // on him and returns, so losing him does not fail the job, it freezes it -- with
+            // the objective still on screen and nothing left that can clear it. Ending gives
+            // the job back, which beats a save that has to be reloaded.
+            //
+            // Given a few seconds first: he is legitimately absent for a moment while being
+            // adopted, and between a bike being spawned and him being put on it.
+            if (Phase > BikePhase.ToBike)
+            {
+                if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive)
+                {
+                    if (_lamarGoneSince == 0) _lamarGoneSince = Game.GameTime;
+
+                    if (Game.GameTime - _lamarGoneSince > LamarGoneMs)
+                    {
+                        Log.Warn("Lamar is gone mid-ride; ending rather than hanging.");
+                        Failure = "Lost Lamar out there.";
+                        return;
+                    }
+                }
+                else
+                {
+                    _lamarGoneSince = 0;
+                }
             }
 
             // Every phase, not three of them.
@@ -1957,6 +1993,7 @@ namespace Hoodrich.Missions
             _clerk = null;
             _lamarSlipSince = 0;
             _lamarWasAt = 0f;
+            _lamarGoneSince = 0;
             _wordsSaid = false;
         }
     }
