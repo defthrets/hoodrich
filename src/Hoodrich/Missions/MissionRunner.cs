@@ -876,7 +876,13 @@ namespace Hoodrich.Missions
             if (player == null || !player.Exists()) return;
 
             var ride = player.CurrentVehicle;
-            if (ride == null || !ride.Exists()) return;
+            if (ride == null || !ride.Exists())
+            {
+                Unlock();
+                return;
+            }
+
+            LockThemIn(ride);
 
             foreach (var homie in _homies)
             {
@@ -886,6 +892,67 @@ namespace Hoodrich.Missions
                 SitBackDown(homie, ride);
             }
         }
+
+        /// <summary>
+        /// Locks the doors, which is the difference between preventing this and tidying it up.
+        ///
+        /// Everything above this line REACTS: a man gets out, and a tick later he is told to
+        /// get back in. You watch him climb out, walk round the car and climb back in, which is
+        /// most of the way to just leaving him out there. A locked door means he never opens it.
+        ///
+        /// Locked for everyone and then unlocked for YOU, in that order, because the first call
+        /// includes the player and the second takes him back out of it. Otherwise the fix for
+        /// the homies would be a car you cannot get out of at the exact moment the job wants
+        /// you to -- a torch job ends with you stood next to the thing you are burning.
+        /// </summary>
+        private void LockThemIn(Vehicle ride)
+        {
+            if (_lockedRide != null && _lockedRide.Exists() &&
+                _lockedRide.Handle == ride.Handle) return;
+
+            Unlock();
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, ride.Handle, 2);
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER, ride.Handle,
+                              Game.Player.Handle, false);
+
+                _lockedRide = ride;
+                Log.Debug("Doors locked on the ride for the length of the job.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not lock the ride: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Gives the car back the way it was found.
+        ///
+        /// A car left locked becomes somebody else's problem the moment the job ends -- traffic
+        /// nobody can get into, or your own car refusing the next passenger.
+        /// </summary>
+        private void Unlock()
+        {
+            if (_lockedRide == null) return;
+
+            try
+            {
+                if (_lockedRide.Exists())
+                {
+                    Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _lockedRide.Handle, 1);
+                    Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER, _lockedRide.Handle,
+                                  Game.Player.Handle, false);
+                }
+            }
+            catch { /* it is unlocked or it is gone */ }
+
+            _lockedRide = null;
+        }
+
+        /// <summary>The one car we locked, so exactly one gets unlocked again.</summary>
+        private Vehicle _lockedRide;
 
         private int _nextSeatCheck;
         private const int SeatCheckMs = 900;
@@ -1825,6 +1892,10 @@ namespace Hoodrich.Missions
         {
             // Before the job's own record of who it was against is thrown away.
             if (_feuding) SetFeud(false);
+
+            // And before the car is forgotten about, or it stays locked for the rest of the
+            // session with nobody left who knows it was us.
+            Unlock();
 
             _bike.Clear();
             _tags.Clear();
