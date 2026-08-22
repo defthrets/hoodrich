@@ -1386,9 +1386,12 @@ namespace Hoodrich.Wheel
 
             var blocked = _dealers.RefusalReason(docks, _state, _crew);
 
-            list.Add("Text the plug", "=", () => Call(docks),
+            // His NAME once you have it. "Text the plug" is what he is called before you are
+            // told who he is; afterwards it reads as a different man from the one the contacts
+            // page lists as Tao Cheng, and the wedge next to it already says "Text Stretch".
+            list.Add("Text " + docks.Name, "=", () => Call(docks),
                 detail: blocked == null
-                    ? "Dock worker. " + docks.Name + " pulls up out front with whatever you want"
+                    ? "Dock worker. Pulls up out front with whatever you want"
                     : blocked,
                 value: "everything, cheapest",
                 enabled: blocked == null,
@@ -1943,7 +1946,7 @@ namespace Hoodrich.Wheel
                     ? "everything"
                     : string.Join(", ", plug.Drugs.ToArray()).ToUpperInvariant();
 
-                page.Add("Text the plug", "+", () => Call(plug),
+                page.Add("Text " + plug.Name, "+", () => Call(plug),
                     detail: plug.BuyLine,
                     value: carries + "  ·  " + Multiplier(1f / Math.Max(0.01f, mult)),
                     enabled: refusal == null,

@@ -48,7 +48,13 @@
       "sourceReply": "Where do I get it. Where do I -- man. I AM where you get it. I'm the. yeah. me.",
       "sourceTooSoon": "",
       "farewell": "Go on. Go. And dont come back in daylight if youre carryin, thats. thats just manners.",
-      "openingText": "my friend. my FRIEND. whatever you need i have it. bricks only tho. dont ask me for grams, thats. thats insulting"
+      "openingText": "my friend. my FRIEND. whatever you need i have it. bricks only tho. dont ask me for grams, thats. thats insulting",
+      "textCalled": "yeah yeah im comin. give me a. give me a minute",
+      "textLeaving": "leaving now. dont go anywhere. im leaving NOW",
+      "textOutside": "im outside. im outside your. im here. come out",
+      "lotValue": 60000,
+      "lotStep": 500,
+      "drunk": true
     },
     {
       "id": "stretch_run",
@@ -85,7 +91,13 @@
       "sourceReply": "The port? Man, I'll put you on when you moved enough for it to be worth my name. Not before.",
       "sourceTooSoon": "Nah. Keep sellin' and ask me again.",
       "farewell": "Aight. And next time somebody's ridin' out here, it better be you.",
-      "openingText": "aye. you good to work now. weed, pills, xans, whatever you movin. just dont have me ridin over there for nothin"
+      "openingText": "heard you workin now. aight. weed, pills, bars, thats me. and dont be callin me for no bricks, im not the port",
+      "textCalled": "aight. im comin. and you gon remember i came out for you",
+      "textLeaving": "on the bike now. dont have me sat out there waitin. thats how people get caught slippin",
+      "textOutside": "im outside. come get it. i aint standin on no corner for nobody",
+      "lotValue": 240,
+      "lotStep": 5,
+      "drunk": false
     }
   ]
 }

@@ -677,10 +677,7 @@ namespace Hoodrich.Supply
                         // From HIM, with his face on it. You have just phoned a contact; a
                         // grey ticker saying he says give him a minute is the mod relaying a
                         // message he is perfectly capable of sending himself.
-                        Notify.Text(Portrait, _def.Name, "Los Santos",
-                                    _def.Id == "docks"
-                                        ? "yeah yeah im comin. give me a. give me a minute"
-                                        : "on my way. give me a minute");
+                        Notify.Text(Portrait, _def.Name, "Los Santos", _def.TextCalled);
                     }
 
                     if (Game.GameTime - _stateSince >= CallMs + SettingOffMs) Dispatch(player);
@@ -793,11 +790,7 @@ namespace Hoodrich.Supply
                 _stateSince = Game.GameTime;
                 _stillSince = 0;
 
-                Notify.Text(Portrait, _def.Name, "Los Santos",
-                            _def.Id == "docks"
-                                ? "leaving now. dont go anywhere. im leaving NOW"
-                                : "rollin out. be there in a minute",
-                            true);
+                Notify.Text(Portrait, _def.Name, "Los Santos", _def.TextLeaving, true);
                 Log.Info("Delivery dispatched from " + start + ".");
             }
             catch (Exception ex)
@@ -1151,11 +1144,7 @@ namespace Hoodrich.Supply
                 Log.Debug("Delivery driver could not get out: " + ex.Message);
             }
 
-            Notify.Text(Portrait, _def.Name, "Los Santos",
-                        _def.Id == "docks"
-                            ? "im outside. im outside your. im here. come out"
-                            : "outside. come get it",
-                        true);
+            Notify.Text(Portrait, _def.Name, "Los Santos", _def.TextOutside, true);
         }
 
         /// <summary>How long he is given to park himself before he is simply put on the mark.</summary>
@@ -1747,6 +1736,11 @@ namespace Hoodrich.Supply
         private void Stagger(bool on)
         {
             if (_driver == null || !_driver.Exists()) return;
+
+            // His, not whoever is carrying. The clipset was applied to the courier rather than
+            // to the drunk, so the man whose whole character is being wound too tight walked
+            // the parcel up the path like he had been in Bahama Mamas all afternoon.
+            if (on && (_def == null || !_def.Drunk)) return;
 
             try
             {

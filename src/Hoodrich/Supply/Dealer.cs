@@ -72,6 +72,42 @@ namespace Hoodrich.Supply
         public string Portrait = "CHAR_DEFAULT";
 
         /// <summary>
+        /// The three texts a courier sends on a run: answering the call, setting off, and
+        /// arriving outside.
+        ///
+        /// Data rather than code because they are VOICE, and every other line this man says is
+        /// already in the same file next to them. They lived in Delivery as a ternary on his
+        /// id -- drunk if he was Tao, flat if he was anybody else -- which is fine for two
+        /// couriers and means the third one ever added inherits Stretch's personality by
+        /// default. These are the neutral versions; the data overrides them per man.
+        /// </summary>
+        public string TextCalled = "on my way. give me a minute";
+        public string TextLeaving = "leaving now";
+        public string TextOutside = "im outside";
+
+        /// <summary>
+        /// Roughly what one lot off him is worth, before his own multiplier, and the weight it
+        /// is rounded to.
+        ///
+        /// This is the difference between a plug and a port. Tao moves bricks and says so --
+        /// "nothing smaller, dont ask" -- so a lot off him is sixty thousand dollars of
+        /// something rounded to the nearest half kilo. Stretch says the opposite in his own
+        /// buy line, that he is not the port and not to ask him for bricks, and then offered
+        /// twelve kilos of weed for fifty-five thousand dollars anyway.
+        /// </summary>
+        public float LotValue = 60000f;
+        public float LotStep = 500f;
+
+        /// <summary>
+        /// Whether he walks the parcel in like a man who has had a few.
+        ///
+        /// One courier is a drunk and it is his whole character. It was applied to whoever
+        /// happened to be carrying, so the other one -- who is not drunk, and whose entire
+        /// personality is being wound too tight -- staggered up the path as well.
+        /// </summary>
+        public bool Drunk;
+
+        /// <summary>
         /// Zone codes this dealer stands in. Empty on a gang dealer means "wherever my crew
         /// holds turf", read live from the gang data.
         /// </summary>

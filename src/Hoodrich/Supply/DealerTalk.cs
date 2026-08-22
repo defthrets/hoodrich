@@ -15,13 +15,11 @@ namespace Hoodrich.Supply
     {
         public readonly string DrugId;
         public readonly float Grams;
-        public readonly string Label;
 
-        public Brick(string drugId, float grams, string label)
+        public Brick(string drugId, float grams)
         {
             DrugId = drugId;
             Grams = grams;
-            Label = label;
         }
     }
 
@@ -42,36 +40,6 @@ namespace Hoodrich.Supply
         public const int Floor = 50000;
 
         /// <summary>
-        /// What he breaks it down into.
-        ///
-        /// Sized per product so every one of them clears the floor on its own -- twelve kilos of
-        /// weed and three of heroin both come to fifty-odd thousand, which is what makes them
-        /// the same rung on the same ladder rather than two unrelated numbers.
-        ///
-        /// These have to be re-checked whenever a price moves. Heroin dropping from $200 to $80
-        /// a gram took its kilo down to nineteen thousand, and the floor would then have quietly
-        /// charged you fifty for it -- $50 a gram wholesale on something that sells at $80.
-        /// A floor that rounds UP is only safe while every brick is genuinely above it.
-        /// </summary>
-        /// <summary>
-        /// The six that have a load written for them by hand.
-        ///
-        /// Anything else in the catalogue gets one worked out below rather than being left
-        /// off the menu. This list used to BE the menu, so a product added to drugs.json
-        /// simply could not be bought off him -- Alprazolam went in and he carried on offering
-        /// the same six he was written with.
-        /// </summary>
-        private static readonly Brick[] WrittenBricks =
-        {
-            new Brick("weed",    12000f, "Twelve kilos of weed"),
-            new Brick("ecstasy",  9000f, "Nine kilos of pills"),
-            new Brick("meth",     4000f, "Four kilos of meth"),
-            new Brick("crack",    2500f, "Two and a half of crack"),
-            new Brick("coke",     1500f, "A kilo and a half of coke"),
-            new Brick("heroin",   3000f, "Three kilos of heroin"),
-        };
-
-        /// <summary>
         /// What he is holding today: the written six, then everything else in the catalogue.
         ///
         /// A load is sized by what it is WORTH rather than by weight, because the six that
@@ -84,47 +52,58 @@ namespace Hoodrich.Supply
         /// </summary>
         private Brick[] StockToday()
         {
+            var def = _delivery == null ? null : _delivery.Def;
             var list = new List<Brick>();
 
-            foreach (var b in WrittenBricks)
-            {
-                if (_drugs.Get(b.DrugId) != null) list.Add(b);
-            }
-
+            // What HE carries, which is a thing the dealer data has always said and this menu
+            // has never once read. Every dealer was offered the whole catalogue -- so the man
+            // whose own buy line is "I ain't the port, don't ask me for no bricks" was stood
+            // there selling twelve kilos of weed, cocaine and heroin.
+            //
+            // An empty list still means everything, which is how the port is described.
             foreach (var d in _drugs.All)
             {
                 if (d.MadeOnly) continue;
-                if (list.Exists(b => string.Equals(b.DrugId, d.Id, StringComparison.OrdinalIgnoreCase)))
-                {
-                    continue;
-                }
+                if (def != null && def.Drugs.Count > 0 && !Sells(def, d.Id)) continue;
 
-                var grams = (float)Math.Round(BrickValue / Math.Max(1f, d.BulkPrice) / 500f) * 500f;
-                if (grams < 500f) grams = 500f;
-
-                list.Add(new Brick(d.Id, grams, Kilos(grams) + " of " + d.Name.ToLowerInvariant()));
+                list.Add(new Brick(d.Id, LotOf(def, d)));
             }
 
             return list.ToArray();
         }
 
-        /// <summary>Roughly what one load off him is worth, before his own multiplier.</summary>
-        private const float BrickValue = 60000f;
-
-        /// <summary>A weight said the way he would say it, not printed to one decimal place.</summary>
-        private static string Kilos(float grams)
+        private static bool Sells(DealerDef def, string drugId)
         {
-            var k = grams / 1000f;
-
-            if (k < 1f) return (grams / 1000f).ToString("0.#") + " of a kilo";
-            if (Math.Abs(k - Math.Round(k)) < 0.01f)
+            for (var i = 0; i < def.Drugs.Count; i++)
             {
-                var whole = (int)Math.Round(k);
-                return whole == 1 ? "A kilo" : whole + " kilos";
+                if (string.Equals(def.Drugs[i], drugId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
             }
 
-            return k.ToString("0.#") + " kilos";
+            return false;
         }
+
+        /// <summary>
+        /// One lot of this off this man, in grams.
+        ///
+        /// Sized from what he deals in rather than from a constant, and rounded to his own
+        /// step -- half a kilo for the port, five grams for somebody on a pushbike -- so the
+        /// number is always one a person would actually say out loud.
+        /// </summary>
+        private static float LotOf(DealerDef def, DrugDef drug)
+        {
+            var value = def == null ? BrickValue : def.LotValue;
+            var step = def == null ? 500f : def.LotStep;
+            if (step < 1f) step = 1f;
+
+            var grams = (float)Math.Round(value / Math.Max(1f, drug.BulkPrice) / step) * step;
+            return grams < step ? step : grams;
+        }
+
+        /// <summary>Roughly what one load off him is worth, before his own multiplier.</summary>
+        private const float BrickValue = 60000f;
 
         /// <summary>How many of one thing you can take at once.</summary>
         private static readonly int[] Lots = { 1, 2, 4 };
@@ -169,8 +148,11 @@ namespace Hoodrich.Supply
                 var pick = brick;
                 var cost = Cost(product, brick.Grams, 1);
 
+                // The product's own words for the amount -- "40 pills", "112g" -- rather than
+                // a kilo count. Kilos are true of the port and nonsense off a bicycle, where
+                // the same routine was rendering an ounce as "0.1 of a kilo".
                 node.Say(product.Name + ".", () => Amounts(pick, product),
-                         "from $" + cost.ToString("N0"));
+                         product.Amount(brick.Grams) + " from $" + cost.ToString("N0"));
 
                 node.WithIcon(Icons.ForDrug(product.Id));
             }
@@ -211,7 +193,7 @@ namespace Hoodrich.Supply
                             : "";
 
                 node.SayIf(blocked.Length == 0, blocked,
-                           Weight(brick, count),
+                           Weight(product, brick, count),
                            () => Buy(product, grams, cost),
                            "$" + cost.ToString("N0"));
 
@@ -223,12 +205,18 @@ namespace Hoodrich.Supply
             return node;
         }
 
-        private static string Weight(Brick brick, int lot)
+        /// <summary>
+        /// One line of the how-many list, in the product's own units.
+        ///
+        /// This used to read a hand-written phrase off the brick for a single lot and print
+        /// KILOS for anything more -- both of which assume the man you are stood in front of
+        /// deals in bricks. Off a pushbike that rendered sixty grams of weed as "0.1 kilos",
+        /// and the single-lot line as nothing at all once the phrases went.
+        /// </summary>
+        private static string Weight(DrugDef product, Brick brick, int lot)
         {
-            if (lot == 1) return brick.Label;
-
-            var kilos = brick.Grams * lot / 1000f;
-            return lot + "x  --  " + kilos.ToString("0.#") + " kilos";
+            var amount = product.Amount(brick.Grams * lot);
+            return lot == 1 ? amount : lot + "x  --  " + amount;
         }
 
         /// <summary>

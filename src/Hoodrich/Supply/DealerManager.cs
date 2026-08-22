@@ -154,6 +154,12 @@ namespace Hoodrich.Supply
                 ReplaceList(def.Rides, node["rides"]);
                 def.OpeningText = node["openingText"].AsString(def.OpeningText);
                 def.Portrait = node["portrait"].AsString(FaceFor(def.Id));
+                def.TextCalled = node["textCalled"].AsString(def.TextCalled);
+                def.TextLeaving = node["textLeaving"].AsString(def.TextLeaving);
+                def.TextOutside = node["textOutside"].AsString(def.TextOutside);
+                def.LotValue = node["lotValue"].AsFloat(def.LotValue);
+                def.LotStep = node["lotStep"].AsFloat(def.LotStep);
+                def.Drunk = node["drunk"].AsBool(def.Drunk);
                 ReplaceList(def.Zones, node["zones"]);
 
                 if (isNew) _defs.Add(def);
