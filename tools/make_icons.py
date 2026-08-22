@@ -541,7 +541,19 @@ def guns():
               fill=W)
 
     # ---- the magazine, fat and curving FORWARD ----------------------------
-    d.polygon(ribbon_pts(bez((300, ax + 40), (352, ax + 168), (500, ax + 236)), 114, 86, ss),
+    #
+    # A hundred and forty-five further forward than it was first drawn, and fifteen higher, and
+    # the whole icon turns on the first of those. Hung directly under the trigger the mag met
+    # the pistol grip and the two became one wedge, so the trigger guard had nothing to be a
+    # hole in and the profile that carries this thing -- grip, gap, banana -- was a single mass.
+    # Moved ahead of the guard it separates, the guard reads as an opening, and the magazine
+    # curves on its own.
+    #
+    # The lift closes the notch that opened up between the top of the magazine and the underside
+    # of the handguard once it had moved that far forward. Both numbers were chosen by rendering
+    # the range at the size the wheel actually draws and looking at it, rather than reasoned
+    # about -- at sixty-four pixels the only test that means anything is whether it still reads.
+    d.polygon(ribbon_pts(bez((445, ax + 25), (497, ax + 153), (645, ax + 221)), 114, 86, ss),
               fill=W)
 
     # ---- the front half, as one mass --------------------------------------
