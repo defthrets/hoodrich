@@ -33,8 +33,18 @@ namespace Hoodrich.UI
         /// <summary>Most you will work in one batch.</summary>
         private const float MaxBatch = 50f;
 
-        /// <summary>How far it can be stretched, cleanest first.</summary>
-        private static readonly float[] Purities = { 1.0f, 0.75f, 0.5f, 0.33f };
+        /// <summary>
+        /// How far it can be stretched, cleanest first.
+        ///
+        /// The quarter is deliberately below what anybody will buy. Stretching has to have an
+        /// end, and an end you can walk into is worth more than one the game refuses to show
+        /// you -- the screen says plainly that nobody will take it, in the danger colour, and
+        /// then lets you do it anyway.
+        /// </summary>
+        private static readonly float[] Purities = { 1.0f, 0.75f, 0.5f, 0.33f, 0.25f };
+
+        /// <summary>How big the disc beside a percentage draws. A suffix, not a picture.</summary>
+        private const float MarkSize = 0.0135f;
 
         /// <summary>
         /// The bag size used to be chosen here, and is not any more.
@@ -535,7 +545,15 @@ namespace Hoodrich.UI
                 var label = (Purities[i] * 100f).ToString("0") + "%";
                 var on = i == _purity;
 
-                var width = Hud.MeasureText(label, 0.30f, Hud.FontBody) + 0.014f;
+                // The mark this step would leave on the bag, beside the number that makes it.
+                // The same discs the stash shows afterwards, so what you pick here and what you
+                // read on the shelf later are visibly one thing rather than two ways of saying
+                // it.
+                var mark = Stash.Mark(Purities[i]);
+                var markW = Hud.ToX(MarkSize);
+
+                var width = markW + 0.005f +
+                            Hud.MeasureText(label, 0.30f, Hud.FontBody) + 0.014f;
 
                 if (on)
                 {
@@ -543,8 +561,20 @@ namespace Hoodrich.UI
                                  Color.FromArgb(210, 240, 242, 240));
                 }
 
-                Hud.Text(label, cx + 0.003f, y + 0.002f, 0.30f,
-                         on ? Palette.TextOnHover : Palette.TextDim, Hud.FontBody, centre: false);
+                var ink = on ? Palette.TextOnHover : Palette.TextDim;
+
+                // Under the floor it is drawn in the danger colour whether the cursor is on it
+                // or not: "nobody will buy this" is a fact about the step, not about what you
+                // happen to be looking at.
+                if (Purities[i] < Stash.Unsellable)
+                {
+                    ink = on ? Palette.Danger : Palette.Alpha(Palette.Danger, 175);
+                }
+
+                Hud.File(mark, cx + 0.003f + markW * 0.5f, y + 0.0115f, MarkSize, 0f, ink);
+
+                Hud.Text(label, cx + 0.003f + markW + 0.005f, y + 0.002f, 0.30f, ink,
+                         Hud.FontBody, centre: false);
 
                 cx += width + 0.006f;
             }
