@@ -126,7 +126,7 @@ namespace Hoodrich.UI
 
         // Product. The multiplayer inventory dictionary carries one sprite per drug, which is
         // as close to purpose-made art as this mod is ever going to get.
-        public static readonly Icon Weed = new Icon(Inventory, "mp_specitem_weed").WithFile("leaf.png");
+        public static readonly Icon Weed = new Icon(Inventory, "mp_specitem_weed").WithFile("bong.png");
         public static readonly Icon Coke = new Icon(Inventory, "mp_specitem_coke").WithFile("coke.png");
         /// <summary>
         /// Crack, ecstasy and heroin have no sprite of their own anywhere in the game, so each

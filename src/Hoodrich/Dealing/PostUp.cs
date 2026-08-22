@@ -2251,13 +2251,23 @@ namespace Hoodrich.Dealing
             // How tall the wordmark stands in for the words it replaced.
             const float StateMarkHeight = 0.024f;
 
-            var state = State == PostState.Questioned ? "BEING SEARCHED"
-                : State == PostState.Investigated ? "PATROL INCOMING"
-                : "POSTED UP";
+            // Whether the LAW is interested, which is not the same as "not idle".
+            //
+            // The test used to be State == Posted, and there are two perfectly ordinary states
+            // that are not: Approaching, while somebody walks over, and Dealing, mid-handoff.
+            // So the moment a customer set off the wordmark dropped back to typeset words and
+            // only came back once the sale finished -- which is exactly "it worked, but only
+            // after a deal". Those two are business as usual; heat is the two below.
+            // Named apart from the corner-heat number a few lines up, which is a float in the
+            // same scope and means how much attention you have drawn rather than whether
+            // anybody has come over about it.
+            var lawOnYou = State == PostState.Investigated || State == PostState.Questioned;
 
-            var detail = _product == null ? "" : "SELLING " + _product.Name.ToUpperInvariant();
+            var detail = lawOnYou
+                ? (State == PostState.Questioned ? "BEING SEARCHED" : "PATROL INCOMING")
+                : _product == null ? "" : "SELLING " + _product.Name.ToUpperInvariant();
 
-            var tint = State == PostState.Posted ? Palette.Text : Palette.Danger;
+            var tint = lawOnYou ? Palette.Danger : Palette.Text;
 
             // The wordmark itself when you are simply posted up, and words when something is
             // going wrong. "POSTED UP" is the mod's own name and it was being SET in a font;
@@ -2266,15 +2276,17 @@ namespace Hoodrich.Dealing
             //
             // Brand places by its left edge, so the width is worked out and halved rather than
             // guessed -- the aspect is a constant the generator prints.
-            if (State == PostState.Posted)
-            {
-                var wide = Hud.ToX(StateMarkHeight) * Hud.WordmarkAspect;
-                Hud.Brand(x - wide * 0.5f, y - 0.077f, StateMarkHeight, tint);
-            }
-            else
-            {
-                Hud.Text(state, x, y - 0.088f, 0.62f, tint, Hud.FontCursive);
-            }
+            // The mark, always, and RED when the law is interested.
+            //
+            // It does not need a second file to do that. The wordmark is a white mask and the
+            // colour goes on at draw time, the same way every icon in this mod is coloured --
+            // so red is a tint rather than an asset, and one file cannot fall out of step with
+            // the other.
+            //
+            // The warning itself moves to the line underneath, where the product name sits the
+            // rest of the time. Nothing is lost: the mark turning red is the alarm and the word
+            // below it says which alarm.
+            Hud.BrandCentre(x, y - 0.077f, StateMarkHeight, tint);
 
             // Where you stand, directly under the bar it belongs to, and without a prefix --
             // the bar says REPUTATION, so repeating it here said the word twice in two inches.
@@ -2286,7 +2298,8 @@ namespace Hoodrich.Dealing
 
             if (!string.IsNullOrEmpty(detail))
             {
-                Hud.Text(detail, x, y - 0.052f, 0.30f, Palette.TextDim, Hud.FontLabel);
+                Hud.Text(detail, x, y - 0.052f, 0.30f,
+                         lawOnYou ? Palette.Danger : Palette.TextDim, Hud.FontLabel);
             }
 
             // What is left is the number that decides whether you stay, so it goes first and

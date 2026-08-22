@@ -569,7 +569,6 @@ def guns():
     save(out, 'guns.png')
 
 
-
 def leaf():
     """
     A seven-blade cannabis leaf, for the Dealing wedge.
