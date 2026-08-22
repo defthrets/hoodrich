@@ -79,6 +79,20 @@ namespace Hoodrich.Locations
         {
             _prop.Update();
 
+            // EVERY FRAME, before the throttle, and this is what was missing.
+            //
+            // The setup was right and the log proves it ran: the speaker spawns, the engine
+            // goes on, the station is set and the radio is enabled and loud. It was silent
+            // anyway, because an UNOCCUPIED vehicle does not keep its radio on by being told
+            // to once. SET_VEH_FORCED_RADIO_THIS_FRAME is the native for that case and its
+            // name is the whole contract -- it lasts one frame and then the game goes back to
+            // deciding for itself, which for a parked car with nobody in it means off.
+            //
+            // Everything else here runs on a 1.5 second throttle, so the forcing was being
+            // applied for one frame in ninety even where it was applied at all. Above the
+            // throttle it runs on every tick, which is what the native wants.
+            ForceRadio();
+
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;
@@ -100,6 +114,30 @@ namespace Hoodrich.Locations
 
             if (_speaker == null) Make();
             else KeepPlaying();
+        }
+
+        /// <summary>
+        /// Holds the radio on for this frame.
+        ///
+        /// Cheap enough to run unconditionally: two natives on one handle, and it does nothing
+        /// at all when there is no speaker because there is nothing near enough to hear it.
+        /// </summary>
+        private void ForceRadio()
+        {
+            if (_speaker == null || !_speaker.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.SET_VEH_FORCED_RADIO_THIS_FRAME, _speaker.Handle);
+
+                // Positional radio muted globally is a setting a player can be sitting on, and
+                // it silences exactly this. Cleared while there is something to hear.
+                Function.Call(Hash.SET_RADIO_POSITION_AUDIO_MUTE, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not hold the boombox radio on: " + ex.Message);
+            }
         }
 
         private void Make()
