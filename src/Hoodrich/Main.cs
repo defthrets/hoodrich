@@ -489,7 +489,11 @@ namespace Hoodrich
                     // It is the reason there is a party in this yard.
                     Interior = MetallicDarkGreen,
                     Running = true,
-                    Radio = "RADIO_03_HIPHOP_NEW"
+                    Radio = "RADIO_03_HIPHOP_NEW",
+
+                    // Key out at two, back in at six, with the yard.
+                    QuietFrom = 2,
+                    QuietTo = 6
                 });
 
                 // A quad against the shutters, the same green as everything else in the lot.
@@ -583,7 +587,19 @@ namespace Hoodrich
                     // is low enough to come over. Armed, and the only man here who is -- a yard
                     // full of people drinking needs one person who is not.
                     .Stand(new Vector3(-204.430f, -1725.562f, 32.664f), 79.008f,
-                           "WORLD_HUMAN_GUARD_STAND", Fam(2), weapon: "WEAPON_COMPACTRIFLE");
+                           "WORLD_HUMAN_GUARD_STAND", Fam(2), weapon: "WEAPON_COMPACTRIFLE",
+                           nights: true)
+
+                    // And one on the near corner who does not go home either. Two is the number:
+                    // one is a man forgotten in a yard, and three is the party still going.
+                    .Stand(new Vector3(-196.532f, -1725.500f, 32.664f), 300.596f,
+                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false, nights: true);
+
+                // Two till six the yard empties out. Everybody without a reason to be stood in
+                // it goes home, which is the one thing that makes the other twenty hours read
+                // as a party rather than as scenery that happens to be lit.
+                _party.QuietFrom = 2;
+                _party.QuietTo = 6;
 
                 // The barrel IS the fire -- it burns on its own. A camp fire was stacked on
                 // top of it as well, which is two fires a metre apart and reads as a bug even

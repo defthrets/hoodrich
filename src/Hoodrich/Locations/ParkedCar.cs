@@ -55,6 +55,24 @@ namespace Hoodrich.Locations
                 var driver = _car.Driver;
                 if (driver != null && driver.Exists()) return;
 
+                // Off hours: the key comes out. All three go together because they are one
+                // switch -- somebody turned it off and went inside.
+                if (Quiet)
+                {
+                    Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, false, true, false);
+                    Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _car.Handle, false);
+
+                    if (Neon.HasValue)
+                    {
+                        for (var side = 0; side < 4; side++)
+                        {
+                            Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, _car.Handle, side, false);
+                        }
+                    }
+
+                    return;
+                }
+
                 if (Running)
                 {
                     Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, true, true, false);
@@ -111,6 +129,38 @@ namespace Hoodrich.Locations
 
         /// <summary>The station, if it is playing anything.</summary>
         public string Radio;
+
+        /// <summary>
+        /// The hours it goes dark and quiet, or -1 for never.
+        ///
+        /// The engine, the radio and the underglow all go together, because they are the same
+        /// switch: somebody came out, turned the key off and went in. A van still thumping at
+        /// four in the morning in a yard everybody has left is the one thing that would give
+        /// the whole trick away.
+        /// </summary>
+        public int QuietFrom = -1;
+        public int QuietTo = -1;
+
+        private bool Quiet
+        {
+            get
+            {
+                if (QuietFrom < 0 || QuietTo < 0 || QuietFrom == QuietTo) return false;
+
+                try
+                {
+                    var hour = Function.Call<int>(Hash.GET_CLOCK_HOURS);
+
+                    return QuietTo > QuietFrom
+                        ? hour >= QuietFrom && hour < QuietTo
+                        : hour >= QuietFrom || hour < QuietTo;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
 
         private Vehicle _car;
         private int _lastUpdate;

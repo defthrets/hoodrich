@@ -93,6 +93,51 @@ namespace Hoodrich.Gangs
         private readonly List<bool> _onProp = new List<bool>();
 
         /// <summary>
+        /// Per station: whether he is still there at four in the morning.
+        ///
+        /// Almost nobody is. A yard that is full at four is not a yard people live near, it is
+        /// a set dressing that happens to be lit -- and the difference between the two is that
+        /// one of them empties out. The handful who stay are the ones with a reason to.
+        /// </summary>
+        private readonly List<bool> _allNight = new List<bool>();
+
+        /// <summary>
+        /// The hours everybody without a reason goes home, or -1 for never.
+        ///
+        /// A window rather than a range, because it wraps past midnight -- two to six is four
+        /// hours on the far side of the day boundary and reading it as "from 2 to 6" the way
+        /// you would read a number line gets you the twenty hours nobody asked for.
+        /// </summary>
+        public int QuietFrom = -1;
+        public int QuietTo = -1;
+
+        /// <summary>Whether it is those hours now.</summary>
+        private bool Quiet
+        {
+            get
+            {
+                if (QuietFrom < 0 || QuietTo < 0 || QuietFrom == QuietTo) return false;
+
+                try
+                {
+                    var hour = Function.Call<int>(Hash.GET_CLOCK_HOURS);
+
+                    return QuietTo > QuietFrom
+                        ? hour >= QuietFrom && hour < QuietTo
+                        : hour >= QuietFrom || hour < QuietTo;
+                }
+                catch
+                {
+                    // No clock, no curfew.
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>What the clock said last time it was looked at, so the flip can be caught.</summary>
+        private bool _wasQuiet;
+
+        /// <summary>
         /// Per station: a looping animation instead of a scenario, as dict then clip.
         ///
         /// Scenarios cover standing, smoking, drinking and guarding, and they cover nothing
@@ -136,8 +181,9 @@ namespace Hoodrich.Gangs
         /// <summary>Adds one of them, on his own mark, doing his own thing.</summary>
         public Entourage Stand(Vector3 where, float facing, string scenario,
                                string[] models = null, bool armed = true, bool onProp = false,
-                               string[] anim = null, string weapon = null)
+                               string[] anim = null, string weapon = null, bool nights = false)
         {
+            _allNight.Add(nights);
             _stations.Add(where);
             _facings.Add(facing);
             _doing.Add(scenario);
@@ -260,7 +306,23 @@ namespace Hoodrich.Gangs
 
             var away = player.Position.DistanceTo(_spot);
 
-            if (_crew.Count > 0)
+            // Two o'clock, or six. Everybody goes at once rather than drifting off one at a
+            // time, which is a compromise and worth naming: people leaving a yard individually
+            // over twenty minutes would be better and there is nowhere for them to walk TO.
+            // What there is instead is a yard that is full at one and quiet at three, which is
+            // the thing you actually notice.
+            var quiet = Quiet;
+
+            if (quiet != _wasQuiet)
+            {
+                _wasQuiet = quiet;
+
+                if (_crew.Count > 0) Despawn();
+            }
+
+            // Standing rather than Count, now the list keeps a slot for everybody. A crew of
+            // fifteen nulls is not a crew.
+            if (Standing() > 0)
             {
                 if (away > DespawnRange) Despawn();
                 else Settle();
@@ -268,6 +330,7 @@ namespace Hoodrich.Gangs
                 return;
             }
 
+            if (_crew.Count > 0) Despawn();
             if (away <= SpawnRange) Spawn();
         }
 
@@ -278,7 +341,21 @@ namespace Hoodrich.Gangs
 
             _marks.Clear();
 
-            if (_stations.Count > 0)
+            // Quiet hours: only the ones with a reason to be out here are placed at all. The
+            // rest are not hidden, they are simply not made -- an invisible ped is still a ped
+            // the game is paying for, and there is nothing to see either way.
+            var quiet = Quiet;
+
+            if (quiet && _stations.Count > 0)
+            {
+                for (var i = 0; i < _stations.Count; i++)
+                {
+                    if (i < _allNight.Count && _allNight[i]) _marks.Add(_stations[i]);
+                }
+
+                if (_marks.Count == 0) return;
+            }
+            else if (_stations.Count > 0)
             {
                 _marks.AddRange(_stations);
             }
@@ -293,17 +370,54 @@ namespace Hoodrich.Gangs
                 _marks.Add(_spot - right * StandOff + back * 1.6f);
             }
 
+            // One entry per MARK, in mark order, null for anybody not stood up.
+            //
+            // The alignment is the whole thing. Facing, models, weapon, scenario, animation and
+            // the two animation timers are all per-station lists read by the same index, so a
+            // crew list that skips an entry hands man number four the fifth man's face, the
+            // sixth man's gun and somebody else's dance. Quiet hours skip a lot of entries, so
+            // this had to be right before they could exist at all.
             for (var i = 0; i < _marks.Count; i++)
             {
+                // Quiet hours: nobody without a reason to be out here is even made. An
+                // invisible ped is still a ped the game is paying for, and there is nothing to
+                // see either way.
+                if (quiet && !AllNight(i))
+                {
+                    _crew.Add(null);
+                    continue;
+                }
+
                 var ped = SpawnMember(gang, MarkAt(i), Facing(i), ModelsFor(i, gang), ArmedAt(i),
                                       WeaponAt(i));
-                if (ped == null) continue;
 
                 _crew.Add(ped);
+                if (ped == null) continue;
+
                 Idle(i, ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
             }
 
-            if (_crew.Count > 0) Log.Info(_crew.Count + " of " + gang.Name + " stood with " + _who + ".");
+            var up = Standing();
+            if (up > 0) Log.Info(up + " of " + gang.Name + " stood with " + _who + ".");
+        }
+
+        /// <summary>Whether the man at that station is one of the ones who stays.</summary>
+        private bool AllNight(int index)
+        {
+            return index < _allNight.Count && _allNight[index];
+        }
+
+        /// <summary>How many of them are actually stood there, nulls and bodies aside.</summary>
+        private int Standing()
+        {
+            var n = 0;
+
+            foreach (var ped in _crew)
+            {
+                if (ped != null && ped.Exists() && ped.IsAlive) n++;
+            }
+
+            return n;
         }
 
         private float Facing(int index)
@@ -534,7 +648,12 @@ namespace Hoodrich.Gangs
                 {
                     // Dead or gone is left alone. Replacing a man who was just shot in front of
                     // you is worse than being two men down.
-                    _crew.RemoveAt(i);
+                    //
+                    // Nulled rather than REMOVED. Removing him shortened the list under
+                    // everybody after him, and every per-station lookup is by index -- so one
+                    // body handed the rest of the yard each other's faces, guns and animations,
+                    // and it looked like nothing because they were all plausible men.
+                    _crew[i] = null;
                     continue;
                 }
 
