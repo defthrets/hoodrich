@@ -71,6 +71,15 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main: opens the feed, and reads the follower count for the wedge.</summary>
         public Action ShowSocials;
 
+        /// <summary>
+        /// Opens the settings screen.
+        ///
+        /// A wedge used to BUILD a page of five toggles here. Five was never the number -- there
+        /// are fifty-one settings in the ini -- and a ring of eight things you pick between is
+        /// the wrong shape for a column of things you adjust.
+        /// </summary>
+        public Action ShowSettings;
+
         /// <summary>Whether somebody is already on their way about something you said.</summary>
         public Func<bool> PaybackDue;
         public Func<int> Followers;
@@ -1548,221 +1557,129 @@ namespace Hoodrich.Wheel
             // Behind its own page, because none of it can be undone and a wheel is a thing you
             // flick through. One accidental commit should never erase a save's worth of
             // standing -- so the flick lands on a list of questions rather than on the act.
-            page.AddSub("Settings", "*", BuildSettingsPage,
+            page.Add("Settings", "*", () => ShowSettings?.Invoke(),
                 detail: "How the mod behaves, and how to undo what you have done",
-                value: "");
+                value: "",
+                enabled: ShowSettings != null,
+                disabledReason: "Not wired up");
             page.WithIcon(Icons.FromFile("scales.png"));
 
             return page;
         }
 
+
+
+
         /// <summary>
-        /// Everything you can undo, in pieces.
+        /// The undo half of the settings screen, handed to it as rows.
         ///
-        /// Separate entries rather than one big reset, because the reasons people want these are
-        /// unrelated: wanting to run with a different set has nothing to do with wanting to play
-        /// Lamar's chain again, and neither has anything to do with a follower count that ran
-        /// away with itself. One button for all three would make two of them collateral.
+        /// Built here rather than in the screen because everything they touch lives here -- the
+        /// affiliation, the save, the stash, the feed. The screen knows how to draw a thing you
+        /// hold down and what to do when the holding finishes; it has no business knowing what
+        /// resetting a gang standing means.
+        ///
+        /// Held rather than confirmed on a second page. Each of these used to open a page that
+        /// spelled out what survived and asked again, which is a good pattern for a wheel and a
+        /// bad one inside a list -- you either meant it or you did not, and a second of holding
+        /// says so without going anywhere. The wording that was on those pages is the note
+        /// under each row now, so nothing about what survives has been lost.
         /// </summary>
-        /// <summary>
-        /// How the mod behaves, and the way back out of anything you have done.
-        ///
-        /// Everything here writes to the ini as well as to the live settings object. A toggle
-        /// that only changed the object would work until you quit; one that only changed the
-        /// file would not work until you did. Both, or it is a setting in name only.
-        ///
-        /// Not every key in the ini is on here, and that is deliberate: there are seventy of
-        /// them, most are offsets and thresholds nobody tunes from a wheel, and a menu that
-        /// lists all seventy is a config file with worse ergonomics. These are the ones worth
-        /// reaching for mid-game.
-        /// </summary>
-        private WheelPage BuildSettingsPage()
+        public IEnumerable<Opt> ResetOptions()
         {
-            var page = new WheelPage("Settings", "How this thing behaves");
-            page.PanelTitle = "Settings";
+            yield return new Opt { Kind = OptKind.Heading, Label = "Start over" };
 
-            page.Row("Config file", "scripts\\Hoodrich.ini", Palette.TextDim, "box.png");
-            page.Row("Changes", "saved as you make them", Palette.Cash, "tick.png");
-
-            Toggle(page, "Sounds", "Wheel", "PlaySounds", _cfg.PlaySounds,
-                   v => _cfg.PlaySounds = v, "Menu clicks and confirmations");
-
-            Toggle(page, "Blur behind the wheel", "Wheel", "BlurBackground", _cfg.BlurBackground,
-                   v => _cfg.BlurBackground = v, "Softens the world while the wheel is open");
-
-            Toggle(page, "Hold to open", "Wheel", "HoldToOpen", _cfg.HoldToOpen,
-                   v => _cfg.HoldToOpen = v, "Hold the button for Hoodrich, tap it to holster");
-
-            Toggle(page, "Tweets on the right", "Socials", "TweetsOnTheRight",
-                   _cfg.TweetsOnTheRight, v => _cfg.TweetsOnTheRight = v,
-                   "Which side the feed pops up on");
-
-            Toggle(page, "Pause during story missions", "General", "PauseDuringMission",
-                   _cfg.PauseDuringMission, v => _cfg.PauseDuringMission = v,
-                   "Holds everything while a Rockstar mission is running");
-
-            Toggle(page, "The set rides the block", "Block", "RollersEnabled",
-                   _cfg.RollersEnabled, v => _cfg.RollersEnabled = v,
-                   "Cars and bikes of ours going round while you are on our turf");
-
-            page.AddSub("Start over", "x", BuildStartOverPage,
-                detail: "Undo what you have done, in pieces or all at once",
-                value: "");
-            page.WithIcon(Icons.Warning);
-
-            return page;
-        }
-
-        /// <summary>
-        /// One on/off setting, written to the live object and to the file together.
-        /// </summary>
-        private void Toggle(WheelPage page, string label, string section, string key, bool on,
-                            Action<bool> set, string detail)
-        {
-            page.Add(label, on ? "+" : "-", () =>
+            yield return new Opt
             {
-                var now = !on;
-                set(now);
+                Kind = OptKind.Danger,
+                Label = "The gangs",
+                Note = "Every standing, every body, every dollar you made them, and whoever you " +
+                       "run with. Respect, money and product untouched",
+                Do = () => _crew.ResetEverything()
+            };
 
-                if (Core.Settings.Put(section, key, now ? "true" : "false"))
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Lamar's work",
+                Note = "He works down his list from the top again. What he already paid you stays paid",
+                Enabled = () => _state.MissionsDone.Count > 0,
+                Do = () => _state.ForgetMissions()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Your socials",
+                Note = "Followers back to nobody and the timeline cleared. The block carries on " +
+                       "talking; it stops knowing who you are",
+                Enabled = () => WipeSocials != null,
+                Do = () => WipeSocials?.Invoke()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Your name",
+                Note = "Respect to nothing, and the rank with it. Deals, grams and earnings forgotten",
+                Do = () => _state.ForgetName()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Your money",
+                Note = "The cash in hand. Not the bank and not anything you own",
+                Enabled = () => Game.Player.Money > 0,
+                Do = () => Game.Player.Money = 0
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Your guns",
+                Note = "Every weapon and every round. You keep your fists",
+                Do = DropAllGuns
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "What you're carrying",
+                Note = "Everything in your pockets, bagged and raw. The house is a separate row",
+                Enabled = () => Stash.Total > 0.005f,
+                Do = () => Stash.Clear()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "The stash house",
+                Note = "Everything kept at the house. What is on you stays in your pockets",
+                Enabled = () => _stash != null && _stash.Stash != null && _stash.Stash.Total > 0.005f,
+                Do = () => { if (_stash != null && _stash.Stash != null) _stash.Stash.Clear(); }
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "All of it",
+                Note = "Gangs, jobs, socials, your name, your money, your guns and every gram. " +
+                       "None of it comes back",
+                Do = () =>
                 {
-                    Notify.Ticker(label + (now ? " ~g~on" : " ~y~off"));
+                    _crew.ResetEverything();
+                    _state.ForgetMissions();
+                    _state.ForgetName();
+
+                    WipeSocials?.Invoke();
+
+                    Game.Player.Money = 0;
+                    DropAllGuns();
+
+                    Stash.Clear();
+                    if (_stash != null && _stash.Stash != null) _stash.Stash.Clear();
                 }
-                else
-                {
-                    Notify.Problem("could not write that to the ini.");
-                }
-            },
-            detail: detail,
-            value: on ? "ON" : "OFF");
-
-            page.WithIcon(Icons.FromFile(on ? "tick.png" : "locked.png"));
-        }
-
-        private WheelPage BuildStartOverPage()
-        {
-            var page = new WheelPage("Start over", "None of this can be undone");
-
-            page.PanelTitle = "Where you are";
-            page.Row("Running with", _crew.IsAffiliated ? _crew.Current.Name : "nobody",
-                     _crew.IsAffiliated ? _crew.Current.Colour : (Color?)Palette.TextDim, "mask.png");
-            page.Row("Respect", _state.Respect.ToString("N0") + "  ·  " + _state.RankName, null, "rank.png");
-            page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash, "cash.png");
-            page.Row("On you", Stash.Total.ToString("0.#") + "g", null, "stash.png");
-            page.Row("At the house",
-                     _stash == null || _stash.Stash == null
-                         ? "0g"
-                         : _stash.Stash.Total.ToString("0.#") + "g", null, "garage.png");
-            page.Row("Jobs finished", _state.MissionsDone.Count.ToString(), null, "tick.png");
-            page.Row("Followers", Followers == null ? "0" : Followers().ToString("N0"), Palette.Cash, "people.png");
-
-            page.AddSub("The gangs", "%", () => Confirm(
-                    "Wipe the gangs",
-                    "Every standing, every body, every dollar you made them, and whoever you run " +
-                    "with. Your respect, your money and your product are untouched.",
-                    () => _crew.ResetEverything()),
-                detail: "Standings, affiliation and any debt",
-                value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
-            page.WithIcon(Icons.Mask);
-
-            page.AddSub("Lamar's work", "!", () => Confirm(
-                    "Forget the jobs",
-                    "He works down his list from the top again. What he already paid you stays paid.",
-                    () => _state.ForgetMissions()),
-                detail: "Play his chain from the beginning",
-                value: _state.MissionsDone.Count + " done",
-                enabled: _state.MissionsDone.Count > 0,
-                disabledReason: "You have not finished any yet");
-            page.WithIcon(Icons.Tick);
-
-            page.AddSub("Your socials", "@", () => Confirm(
-                    "Wipe your socials",
-                    "Followers back to nobody and the timeline cleared. The block carries on " +
-                    "talking; it just stops knowing who you are.",
-                    () => WipeSocials?.Invoke()),
-                detail: "Followers and the whole timeline",
-                value: Followers == null ? "" : Followers().ToString("N0") + " followers",
-                enabled: WipeSocials != null,
-                disabledReason: "Nothing to wipe");
-            page.WithIcon(Icons.Tattoo);
-
-            page.AddSub("Your name", "*", () => Confirm(
-                    "Back to nobody",
-                    "Respect to nothing, so the rank goes with it -- it is worked out from the " +
-                    "respect rather than stored. Deals, grams and earnings forgotten, and what " +
-                    "the block reckons of your product back to the middle.",
-                    () => _state.ForgetName()),
-                detail: "Respect, rank and everything you have moved",
-                value: _state.Respect.ToString("N0") + " respect");
-            page.WithIcon(Icons.Tattoo);
-
-            page.AddSub("Your money", "$", () => Confirm(
-                    "Empty your pockets",
-                    "Every dollar on you, gone. Not what is in the bank and not anything you " +
-                    "own -- this is the cash in hand and nothing else.",
-                    () => Game.Player.Money = 0),
-                detail: "The cash in your pocket",
-                value: "$" + Game.Player.Money.ToString("N0"),
-                enabled: Game.Player.Money > 0,
-                disabledReason: "You have not got any");
-            page.WithIcon(Icons.Money);
-
-            page.AddSub("Your guns", "!", () => Confirm(
-                    "Drop every gun",
-                    "Every weapon and every round, off you. You keep your fists, which is what " +
-                    "the game leaves you with whatever it is told.",
-                    DropAllGuns),
-                detail: "Every weapon and all the ammo",
-                value: "");
-            page.WithIcon(Icons.Guns);
-
-            page.AddSub("What you're carrying", "%", () => Confirm(
-                    "Bin what is on you",
-                    "Everything in your pockets, bagged and unbagged, gone. What is at the " +
-                    "stash house is a separate button and stays where it is.",
-                    () => Stash.Clear()),
-                detail: "Product on you, bagged and raw",
-                value: Stash.Total.ToString("0.#") + "g",
-                enabled: Stash.Total > 0.005f,
-                disabledReason: "You are not carrying anything");
-            page.WithIcon(Icons.Stash);
-
-            page.AddSub("The stash house", "%", () => Confirm(
-                    "Empty the house",
-                    "Everything kept at the house, gone. What is on you right now is a separate " +
-                    "button and stays in your pockets.",
-                    () => { if (_stash != null && _stash.Stash != null) _stash.Stash.Clear(); }),
-                detail: "Everything kept at the house",
-                value: _stash == null || _stash.Stash == null
-                    ? "0g" : _stash.Stash.Total.ToString("0.#") + "g",
-                enabled: _stash != null && _stash.Stash != null && _stash.Stash.Total > 0.005f,
-                disabledReason: "There is nothing in it");
-            page.WithIcon(Icons.Stash);
-
-            page.AddSub("All of it", "x", () => Confirm(
-                    "Wipe all of it",
-                    "Gangs, jobs, socials, your name, your money, your guns and every gram on " +
-                    "you and at the house. Everything on this page at once, and none of it " +
-                    "comes back.",
-                    () =>
-                    {
-                        _crew.ResetEverything();
-                        _state.ForgetMissions();
-                        _state.ForgetName();
-
-                        WipeSocials?.Invoke();
-
-                        Game.Player.Money = 0;
-                        DropAllGuns();
-
-                        Stash.Clear();
-                        if (_stash != null && _stash.Stash != null) _stash.Stash.Clear();
-                    }),
-                detail: "Every button on this page at once",
-                value: "");
-            page.WithIcon(Icons.Warning);
-
-            return page;
+            };
         }
 
         /// <summary>
@@ -1780,33 +1697,6 @@ namespace Hoodrich.Wheel
             catch { /* he keeps them, and the panel still says he has them */ }
         }
 
-        /// <summary>
-        /// A page that asks before it does.
-        ///
-        /// Built rather than written out four times, and the wording is always specific about
-        /// what survives -- "are you sure" tells nobody anything they can weigh.
-        /// </summary>
-        private WheelPage Confirm(string title, string what, Action act)
-        {
-            var page = new WheelPage(title, "There is no undo");
-
-            page.PanelTitle = title;
-            foreach (var line in Split(what)) page.Row(line, "");
-
-            page.Add("Do it", "!", act,
-                detail: what,
-                value: "no undo");
-            page.WithIcon(Icons.Warning);
-
-            page.Add("Leave it", "-", null,
-                detail: "Nothing changes",
-                value: "",
-                enabled: false,
-                disabledReason: "Back out with LT");
-            page.WithIcon(Icons.Tick);
-
-            return page;
-        }
 
         /// <summary>Breaks a sentence into panel rows, since a row is not a paragraph.</summary>
         private static IEnumerable<string> Split(string text)

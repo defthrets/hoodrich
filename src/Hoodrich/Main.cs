@@ -76,6 +76,7 @@ namespace Hoodrich
         private BlockTalk _blockTalk;
         private readonly InfoPanel _info;
         private readonly StashScreen _stashScreen;
+        private readonly SettingsScreen _settingsScreen = new SettingsScreen();
         private readonly StashHouse _stash;
         private readonly SleepSpot _sleep;
         private readonly Kitchen _kitchen;
@@ -700,6 +701,7 @@ namespace Hoodrich
                     // Not over a full-screen UI. They keep queueing and keep ageing while it is
                     // up, so nothing is lost -- they are simply not drawn across a menu.
                     Hidden = () => _wheel.IsOpen || _socialScreen.IsOpen || _stashScreen.IsOpen
+                                   || _settingsScreen.IsOpen
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
                                    || _gunScreen.IsOpen,
                 };
@@ -937,6 +939,18 @@ namespace Hoodrich
                 pages.WorkWaiting = () => _jobs == null ? null : _jobs.WorkWaiting;
                 pages.StashScreen = _stashScreen;
                 pages.ShowSocials = () => _socialScreen.Open();
+                pages.ShowSettings = () => _settingsScreen.Open(_cfg, pages.ResetOptions());
+
+                // The two settings that are COPIED rather than read live, pushed again whenever
+                // the screen changes anything. Both would otherwise have looked broken: the log
+                // level is handed to Log once at load, and the toast switch was read into the
+                // toaster when it was built -- change either on the screen and nothing happened
+                // until the next restart, which is the exact failure this screen exists to end.
+                _settingsScreen.Changed = () =>
+                {
+                    Log.Level = _cfg.LogLevel;
+                    if (_toasts != null) _toasts.Enabled = _cfg.TweetsOnTheRight;
+                };
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
 
@@ -1113,6 +1127,20 @@ namespace Hoodrich
                 // The feed owns the screen like every other full UI. It was the one screen that
                 // did not, so the wheel could be opened on top of it, both fought over up and
                 // down, and every walk-up prompt in the mod carried on showing behind it.
+                if (_settingsScreen.IsOpen)
+                {
+                    if (!available) _settingsScreen.Close();
+                    else
+                    {
+                        _settingsScreen.Update();
+                        _settingsScreen.Draw();
+
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_socialScreen.IsOpen)
                 {
                     if (!available) _socialScreen.Close();
@@ -1280,7 +1308,7 @@ namespace Hoodrich
                 {
                     _parked = true;
                     Log.Error("Too many consecutive failures; Hoodrich is parked for this session.");
-                    Notify.Failure("Hoodrich shut itself off for this session. Check the log.");
+                    Notify.Failure("shut itself off for this session. Check the log.");
                 }
             }
         }

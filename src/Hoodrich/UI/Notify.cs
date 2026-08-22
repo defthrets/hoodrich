@@ -11,6 +11,17 @@ namespace Hoodrich.UI
     /// </summary>
     internal static class Notify
     {
+        /// <summary>
+        /// What this thing is called on screen.
+        ///
+        /// One place, because it was in two and both said the old name. The namespace, the
+        /// assembly, the ini and the log still say Hoodrich and are meant to -- those are file
+        /// names and a rename of them is a different job with real risk in it. This is the only
+        /// one the player reads.
+        /// </summary>
+        private const string Brand = "Posted Up";
+
+
         public static void Ticker(string message)
         {
             if (string.IsNullOrEmpty(message)) return;
@@ -27,12 +38,12 @@ namespace Hoodrich.UI
         /// <summary>Something went wrong, phrased for the player rather than the log.</summary>
         public static void Problem(string message)
         {
-            Ticker("~o~Hoodrich:~s~ " + message);
+            Ticker("~o~" + Brand + ":~s~ " + message);
         }
 
         public static void Failure(string message)
         {
-            Important("~r~Hoodrich:~s~ " + message);
+            Important("~r~" + Brand + ":~s~ " + message);
         }
 
         /// <summary>

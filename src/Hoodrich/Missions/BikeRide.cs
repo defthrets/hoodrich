@@ -699,6 +699,22 @@ namespace Hoodrich.Missions
             if (!_gotCash) Help.ShowThisFrame("Aim at the man behind the counter.");
 
             if (_clerk == null || !_clerk.Exists() || !_clerk.IsAlive) _clerk = FindClerk(player);
+
+            // Nobody there. The game staffs its own shops and mostly does, but "mostly" is not
+            // a thing a mission can be built on: turn up on the wrong night and the robbery is
+            // a man stood in an empty shop with an instruction telling him to aim at somebody.
+            //
+            // Given a moment first, because the shop's own peds stream in a beat behind the
+            // room does -- spawning instantly would put two clerks behind one counter.
+            if (_clerk == null)
+            {
+                if (_clerkDue == 0) _clerkDue = Game.GameTime + ClerkGraceMs;
+                if (Game.GameTime < _clerkDue) return;
+
+                _clerk = MakeClerk(player);
+                _clerkDue = 0;
+            }
+
             if (_clerk == null) return;
 
             var onHim = Function.Call<bool>(Hash.IS_PLAYER_FREE_AIMING_AT_ENTITY,
@@ -756,8 +772,18 @@ namespace Hoodrich.Missions
             }
             catch { /* he is free either way */ }
 
-            // Somebody presses the button under the counter. That is the whole second half of
-            // the job, so it is not left to chance.
+            // The police come back on FIRST, and this is the whole fix.
+            //
+            // The job holds the wanted system off for its whole length, for a good reason: a
+            // fist fight on a basketball court should not put a helicopter over Chamberlain.
+            // But the hold sets the maximum wanted level to zero, so the star this line asks
+            // for was being asked for against a ceiling of none -- set, and gone in the same
+            // frame. There has been no heat on the ride home since the robbery was written.
+            //
+            // Robbing a shop is exactly the moment that reasoning stops applying. Somebody
+            // presses the button under the counter, and from here it is meant to be a chase.
+            HoldTheLaw(false);
+
             try
             {
                 Game.Player.Wanted.SetWantedLevel(RobberyStars, false);
@@ -765,6 +791,128 @@ namespace Hoodrich.Missions
             }
             catch { /* then it is a very easy escape */ }
         }
+
+        /// <summary>How long the game gets to staff its own shop before we do it for it.</summary>
+        private const int ClerkGraceMs = 1500;
+
+        /// <summary>When that grace runs out, or 0 if it has not started.</summary>
+        private int _clerkDue;
+
+        /// <summary>Who serves in a shop the game did not staff.</summary>
+        private static readonly string[] ClerkModels =
+        {
+            "mp_m_shopkeep_01", "s_m_y_shop_mask", "a_m_m_indian_01", "a_m_y_business_01"
+        };
+
+        /// <summary>
+        /// Puts somebody behind the counter.
+        ///
+        /// Found rather than placed. The till is a prop with a known model and it is by
+        /// definition on the counter, so the game is asked where the nearest one is and the
+        /// clerk goes a step behind it -- which beats a coordinate typed into a file, because
+        /// it is right in whichever shop you happen to be stood in.
+        ///
+        /// Which side is "behind" is worked out by trying both and keeping the one with floor
+        /// under it. A till faces the customer, but whether that is the prop's forward or its
+        /// back depends on the prop, and guessing wrong puts the man on your side of the
+        /// counter looking at the crisps.
+        /// </summary>
+        private Ped MakeClerk(Ped player)
+        {
+            var where = player.Position;
+            var facing = player.Heading;
+            var found = false;
+
+            foreach (var till in new[] { "prop_till_01", "prop_till_02", "prop_till_03",
+                                         "v_ret_gc_till", "prop_cash_register_01" })
+            {
+                try
+                {
+                    var handle = Function.Call<int>(Hash.GET_CLOSEST_OBJECT_OF_TYPE,
+                                                    where.X, where.Y, where.Z, 12f,
+                                                    Function.Call<int>(Hash.GET_HASH_KEY, till),
+                                                    false, false, false);
+
+                    var prop = Entity.FromHandle(handle);
+                    if (prop == null || !prop.Exists()) continue;
+
+                    var at = prop.Position;
+                    var away = prop.ForwardVector * 0.85f;
+
+                    var behind = Behind(at + away) ? at + away : at - away;
+
+                    where = behind;
+                    facing = (float)(Math.Atan2(at.Y - behind.Y, at.X - behind.X) * 180.0 / Math.PI) - 90f;
+                    found = true;
+                    break;
+                }
+                catch
+                {
+                    // Try the next till model.
+                }
+            }
+
+            if (!found)
+            {
+                Log.Warn("No till in the 24/7 to stand a clerk behind; using the doorway instead.");
+            }
+
+            foreach (var name in ClerkModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    var handle = Function.Call<int>(Hash.CREATE_PED, 4, model.Hash,
+                                                    where.X, where.Y, where.Z, facing, false, false);
+
+                    model.MarkAsNoLongerNeeded();
+                    if (handle == 0) continue;
+
+                    var man = Entity.FromHandle(handle) as Ped;
+                    if (man == null || !man.Exists()) continue;
+
+                    man.IsPersistent = true;
+
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, man.Handle, true, true);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, man.Handle, true);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, man.Handle, false);
+                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, man.Handle,
+                                  "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
+
+                    _madeClerk = man;
+
+                    Log.Info("Staffed the 24/7 with a " + name + " at " + where + ".");
+                    return man;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not stand a clerk up: " + ex.Message);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Whether there is floor at a spot, which is how the right side of a counter
+        /// is told from the wrong one.</summary>
+        private static bool Behind(Vector3 at)
+        {
+            try
+            {
+                return World.GetGroundHeight(new Vector3(at.X, at.Y, at.Z + 1f), out var z,
+                                             GetGroundHeightMode.Normal)
+                       && Math.Abs(z - at.Z) < 1.5f;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The one we stood up, so he can be cleared away with everything else.</summary>
+        private Ped _madeClerk;
 
         /// <summary>
         /// Whoever is behind the counter.
@@ -2155,6 +2303,17 @@ namespace Hoodrich.Missions
             _wordsAt = 0;
             _laughAt = 0;
             _thirstyAt = 0;
+            _clerkDue = 0;
+
+            // A clerk the game provided is the game's to keep. One WE stood up is ours, and
+            // leaving him behind the counter after the job would put two men there next time.
+            if (_madeClerk != null)
+            {
+                try { if (_madeClerk.Exists()) _madeClerk.Delete(); }
+                catch { /* teardown */ }
+
+                _madeClerk = null;
+            }
         }
     }
 }
