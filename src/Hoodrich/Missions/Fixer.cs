@@ -200,17 +200,34 @@ namespace Hoodrich.Missions
         {
             var spot = Spot;
 
+            // The probe is BELIEVED ONLY IF IT AGREES, which is the whole of this fix.
+            //
+            // It used to look down from twenty metres above the mark and take whatever it hit,
+            // unconditionally. In the Chamberlain courtyard that was the courtyard. In the lot
+            // behind the lab it is the ROOF of the shed he is stood next to, and that is where
+            // he appeared -- twenty feet up, looking down at his own blip.
+            //
+            // The bike ride learnt this exact lesson and wrote it down: every authored position
+            // in this mod was read off the HUD while stood on the spot, so the height is
+            // already right, and a downward probe finds the first thing it meets rather than
+            // the floor somebody measured. A probe that disagrees by more than a storey is
+            // wrong about a coordinate a person took by standing on it.
+            //
+            // So it is kept for the case it was written for -- a mark taken a foot off the
+            // deck, ground that has moved under a mod -- and ignored for the case that put him
+            // on a roof.
             try
             {
-                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 20f), out var groundZ,
-                                          GetGroundHeightMode.Normal) && groundZ > 0f)
+                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 3f), out var groundZ,
+                                          GetGroundHeightMode.Normal) &&
+                    groundZ > 0f && Math.Abs(groundZ - spot.Z) <= 2.5f)
                 {
                     spot.Z = groundZ;
                 }
             }
             catch
             {
-                // Use the authored height.
+                // Use the authored height, which is the one somebody stood on.
             }
 
             foreach (var name in Models)
