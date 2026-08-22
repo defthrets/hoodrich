@@ -2218,6 +2218,9 @@ namespace Hoodrich.Dealing
             // Two lines rather than one. "POSTED UP" is the state you are in and the product
             // is what you happen to be moving while in it, so they are not the same sentence --
             // and the state reads better in the house script face above the detail.
+            // How tall the wordmark stands in for the words it replaced.
+            const float StateMarkHeight = 0.024f;
+
             var state = State == PostState.Questioned ? "BEING SEARCHED"
                 : State == PostState.Investigated ? "PATROL INCOMING"
                 : "POSTED UP";
@@ -2226,12 +2229,30 @@ namespace Hoodrich.Dealing
 
             var tint = State == PostState.Posted ? Palette.Text : Palette.Danger;
 
-            Hud.Text(state, x, y - 0.088f, 0.62f, tint, Hud.FontCursive);
+            // The wordmark itself when you are simply posted up, and words when something is
+            // going wrong. "POSTED UP" is the mod's own name and it was being SET in a font;
+            // the two states either side of it are warnings and have to stay readable text,
+            // which is why this is a branch rather than a straight swap.
+            //
+            // Brand places by its left edge, so the width is worked out and halved rather than
+            // guessed -- the aspect is a constant the generator prints.
+            if (State == PostState.Posted)
+            {
+                var wide = Hud.ToX(StateMarkHeight) * Hud.WordmarkAspect;
+                Hud.Brand(x - wide * 0.5f, y - 0.077f, StateMarkHeight, tint);
+            }
+            else
+            {
+                Hud.Text(state, x, y - 0.088f, 0.62f, tint, Hud.FontCursive);
+            }
 
             // Where you stand, directly under the bar it belongs to, and without a prefix --
             // the bar says REPUTATION, so repeating it here said the word twice in two inches.
+            // The house script, like every other title in the mod. It is a verdict on you
+            // rather than a readout, so it reads as handwriting rather than as a label -- and
+            // the scale goes up with it, because a script face at a label's size is a smudge.
             Hud.Text(_state == null ? "" : _state.ProductRepWord.ToUpperInvariant(),
-                     x, y + 0.056f, 0.26f, repColour, Hud.FontChaletLondon);
+                     x, y + 0.054f, 0.38f, repColour, Hud.FontCursive);
 
             if (!string.IsNullOrEmpty(detail))
             {

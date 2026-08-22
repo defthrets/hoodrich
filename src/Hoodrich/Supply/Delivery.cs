@@ -1831,8 +1831,8 @@ namespace Hoodrich.Supply
         /// far enough round the car that you are not talking to him through it, and facing the
         /// way you come from.
         /// </summary>
-        private static readonly Vector3 MeetSpot = new Vector3(-19.963f, -1455.739f, 30.535f);
-        private const float MeetHeading = 322.349f;
+        private static readonly Vector3 MeetSpot = new Vector3(-18.198f, -1455.772f, 30.481f);
+        private const float MeetHeading = 356.059f;
 
         /// <summary>How far he may drift before he is walked back.</summary>
         private const float MeetDrift = 1.8f;
@@ -1879,6 +1879,14 @@ namespace Hoodrich.Supply
 
             try
             {
+                // Weaving, if he is the one who weaves.
+                //
+                // The clipset was only ever put on for the walk up the path with the parcel,
+                // so the walk from the car to where he stands -- the one you actually watch
+                // him do, every single delivery -- was a sober man's. Stagger checks whose
+                // delivery this is, so the other courier still walks like a man on a bike.
+                Stagger(true);
+
                 Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _driver.Handle,
                               MeetSpot.X, MeetSpot.Y, MeetSpot.Z,
                               1.2f, 20000, 0.5f, 0, MeetHeading);
