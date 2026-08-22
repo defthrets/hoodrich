@@ -202,30 +202,13 @@ namespace Hoodrich.Locations
                     if (ped == null || !ped.Exists() || ped.Handle == player.Handle) continue;
                     if (!IsHousehold(ped)) continue;
 
-                    // Hidden on the same frame she is spotted, before anything else is tried.
-                    //
-                    // The delete does not always take on the first pass -- she can be mid-
-                    // scenario, or the interior can be streaming -- and the sweep runs four
-                    // times a second, so a delete that keeps failing is a woman flickering in
-                    // and out of the living room rather than a woman who is not there. Invisible
-                    // and intangible is instant and cannot fail, so the worst case is a ped you
-                    // cannot see instead of one that strobes.
-                    ped.IsVisible = false;
-                    Function.Call(Hash.SET_ENTITY_COLLISION, ped.Handle, false, false);
-
-                    // Claimed, THEN deleted. This was the wrong way round: she was released to
-                    // the game with MarkAsNoLongerNeeded and taken off mission-entity duty first,
-                    // which hands her back to the population system -- and you cannot delete a
-                    // ped you have just given away. The game re-populated her every sweep, and
-                    // the mod deleted her again, which is exactly what the flicker was.
-                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
-                    ped.IsPersistent = true;
-                    ped.Delete();
+                    Settle(ped);
+                    _settled = ped;
 
                     if (!_saidCouchIsFree)
                     {
                         _saidCouchIsFree = true;
-                        Log.Info("Denise cleared off the couch.");
+                        Log.Info("Denise settled in the front room.");
                     }
                 }
             }
@@ -234,6 +217,64 @@ namespace Hoodrich.Locations
                 Log.Debug("Could not clear the couch: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// Leaves her where she is and stops her doing anything.
+        ///
+        /// She used to be deleted outright -- hidden, decollided, claimed and removed on every
+        /// sweep -- because a woman wandering round the room while you are counting product on
+        /// her worktop is in the way. Taking the house's own occupant out of the house to fix
+        /// that is too blunt: it is her place, Franklin lives there, and an empty front room
+        /// reads as a bug rather than as a choice.
+        ///
+        /// So she stays and goes quiet. Frozen where she stands, deaf to everything happening
+        /// around her, and with her ambient chatter stopped -- she is furniture that happens
+        /// to be his aunt.
+        ///
+        /// Idempotent, because the sweep runs four times a second and will keep finding her.
+        /// Every call here is a set rather than a toggle, so re-running it costs nothing and
+        /// changes nothing.
+        /// </summary>
+        private static void Settle(Ped ped)
+        {
+            try
+            {
+                // Ours, so the population system does not recycle her mid-sentence.
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
+                ped.IsPersistent = true;
+
+                ped.IsVisible = true;
+                Function.Call(Hash.SET_ENTITY_COLLISION, ped.Handle, true, true);
+
+                // Still. The freeze is what stops her walking into the kitchen while you are
+                // stood at the counter, which is the whole reason she was removed.
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, ped.Handle, true);
+
+                // And quiet. Blocking non-temporary events stops her reacting to gunfire, to
+                // the player, to anything -- which is most of what makes an ambient ped talk.
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
+                Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, ped.Handle);
+                Function.Call(Hash.SET_PED_CAN_PLAY_AMBIENT_ANIMS, ped.Handle, false);
+                Function.Call(Hash.DISABLE_PED_PAIN_AUDIO, ped.Handle, true);
+
+                // Not a target. She is in a house you fire a lot of rounds near.
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped.Handle, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not settle the household: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// The one we froze, so she can be let go on unload.
+        ///
+        /// A frozen ped with non-temporary events blocked stays that way after the script has
+        /// gone, and there is nothing left running to undo it -- a woman standing rigid in her
+        /// own front room for the rest of the save, which is a worse state than the one this
+        /// replaced.
+        /// </summary>
+        private Ped _settled;
 
         private bool _saidCouchIsFree;
 
@@ -268,6 +309,23 @@ namespace Hoodrich.Locations
             catch { /* teardown */ }
 
             _blip = null;
+
+            // Let her go. Frozen and deaf is fine while the mod is running and looking after
+            // her; it is not something to leave behind on a save.
+            try
+            {
+                if (_settled != null && _settled.Exists())
+                {
+                    Function.Call(Hash.FREEZE_ENTITY_POSITION, _settled.Handle, false);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _settled.Handle, false);
+                    Function.Call(Hash.SET_PED_CAN_PLAY_AMBIENT_ANIMS, _settled.Handle, true);
+                    Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _settled.Handle, true);
+                    _settled.MarkAsNoLongerNeeded();
+                }
+            }
+            catch { /* teardown */ }
+
+            _settled = null;
         }
 
         public Json ToJson() => Stash.ToJson();

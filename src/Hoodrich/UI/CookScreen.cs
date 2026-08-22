@@ -136,7 +136,7 @@ namespace Hoodrich.UI
 
             foreach (var drug in _catalogue.All)
             {
-                if (Available(drug) <= 0.005f) continue;
+                if (Held(drug) <= 0.005f) continue;
 
                 _rows.Add(new CookRow { Source = drug, Output = drug });
 
@@ -159,7 +159,7 @@ namespace Hoodrich.UI
         /// to physically come across the room before it can go on the counter. Offering to work
         /// a kilo you have no room to carry is offering something that cannot happen.
         /// </summary>
-        private float Available(DrugDef drug)
+        private float Workable(DrugDef drug)
         {
             if (drug == null || _stash == null) return 0f;
 
@@ -168,6 +168,28 @@ namespace Hoodrich.UI
 
             var fromHouse = Math.Min(_house.BulkOf(drug.Id), _stash.FreeSpace);
             return onYou + Math.Max(0f, fromHouse);
+        }
+
+        /// <summary>
+        /// How much of this there IS, on you and in the cupboard together.
+        ///
+        /// Kept apart from Workable, and that separation is the whole point. Workable clamps
+        /// the cupboard's share by your free space -- correctly, because a batch has to cross
+        /// the room before it can go on the counter -- but free space is ONE number shared by
+        /// every product. So the moment the house held more of anything than you could carry,
+        /// every row on this screen printed that same free-space figure instead of its own
+        /// amount: marijuana 161g, oxycodone 161 pills, cocaine 161g, all of it the same 161.
+        ///
+        /// It looked exactly like the products were sharing a pool. They never were -- Stash
+        /// keys bulk by drug id and always has. Pressing fifty pills only moved the number on
+        /// the weed row because it moved your free space, and every row was quoting that.
+        /// </summary>
+        private float Held(DrugDef drug)
+        {
+            if (drug == null || _stash == null) return 0f;
+
+            var onYou = _stash.BulkOf(drug.Id);
+            return _house == null ? onYou : onYou + _house.BulkOf(drug.Id);
         }
 
         /// <summary>How much of this batch is coming out of the cupboard rather than your pocket.</summary>
@@ -260,7 +282,7 @@ namespace Hoodrich.UI
         private void Begin()
         {
             var row = _rows[_selected];
-            var batch = Math.Min(MaxBatch, Available(row.Source));
+            var batch = Math.Min(MaxBatch, Workable(row.Source));
 
             // Out of the cupboard and onto the counter, which is the step that used to have to
             // be done by hand through a different screen in a different room.
@@ -344,7 +366,7 @@ namespace Hoodrich.UI
             foreach (var row in _rows)
             {
                 var picked = _rows[_selected] == row;
-                var have = Available(row.Source);
+                var have = Held(row.Source);
                 var stored = _house == null ? 0f : _house.BulkOf(row.Source.Id);
 
                 if (picked)
@@ -402,7 +424,7 @@ namespace Hoodrich.UI
             var made = chosen.Output ?? chosen.Source;
 
             var purity = Purities[_purity];
-            var batch = Math.Min(MaxBatch, Available(product));
+            var batch = Math.Min(MaxBatch, Workable(product));
             var yield = Cutting.YieldOf(product, made, batch, purity);
             var worth = _pricing.SaleValue(made, yield, purity);
             var risk = Pricing.BadCutChance(purity);
@@ -415,7 +437,18 @@ namespace Hoodrich.UI
             // all available -- left and right has stepped through them since the day it was
             // written -- but the screen only ever showed the one, so there was nothing to tell
             // you the other three existed.
+            // The scales mark the row, and the chips start after them.
+            //
+            // They were drawn at x -- the same x the chips start at -- so the picture landed
+            // straight on top of the first percentage. An icon over a number is worse than no
+            // icon at all, because now neither can be read.
             var cx = x;
+
+            if (Hud.File("scales.png", x + Hud.ToX(ArtSize) * 0.5f, y + 0.011f, ArtSize, 0f,
+                         Palette.TextDim))
+            {
+                cx = x + Hud.ToX(ArtSize) + 0.008f;
+            }
 
             for (var i = 0; i < Purities.Length; i++)
             {
@@ -439,15 +472,6 @@ namespace Hoodrich.UI
             // What comes off the counter gets its art too, out on the right where the verb
             // and the purity word already sit -- so the line that says how far you are
             // stepping on it is next to a picture of the thing being stepped on.
-            // The scales beside the purity word. How far you have stepped on it is a weight
-            // question, and this line is the one place the screen says the answer out loud.
-            try
-            {
-                Hud.File("scales.png", x + Hud.ToX(ArtSize) * 0.5f, y + 0.011f, ArtSize, 0f,
-                         Palette.Accent);
-            }
-            catch { /* the words carry it */ }
-
             var outArt = Icons.ForDrug(made.Id);
             var words = (chosen.Rolling ? made.WorkVerb : product.WorkVerb) + "  ·  " + PurityWord(purity);
 

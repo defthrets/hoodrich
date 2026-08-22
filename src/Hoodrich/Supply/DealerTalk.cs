@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Color = System.Drawing.Color;
 using GTA;
 using Hoodrich.Core;
@@ -52,7 +53,15 @@ namespace Hoodrich.Supply
         /// charged you fifty for it -- $50 a gram wholesale on something that sells at $80.
         /// A floor that rounds UP is only safe while every brick is genuinely above it.
         /// </summary>
-        private static readonly Brick[] Bricks =
+        /// <summary>
+        /// The six that have a load written for them by hand.
+        ///
+        /// Anything else in the catalogue gets one worked out below rather than being left
+        /// off the menu. This list used to BE the menu, so a product added to drugs.json
+        /// simply could not be bought off him -- Alprazolam went in and he carried on offering
+        /// the same six he was written with.
+        /// </summary>
+        private static readonly Brick[] WrittenBricks =
         {
             new Brick("weed",    12000f, "Twelve kilos of weed"),
             new Brick("ecstasy",  9000f, "Nine kilos of pills"),
@@ -61,6 +70,61 @@ namespace Hoodrich.Supply
             new Brick("coke",     1500f, "A kilo and a half of coke"),
             new Brick("heroin",   3000f, "Three kilos of heroin"),
         };
+
+        /// <summary>
+        /// What he is holding today: the written six, then everything else in the catalogue.
+        ///
+        /// A load is sized by what it is WORTH rather than by weight, because the six that
+        /// were written by hand already work that way -- they come to somewhere between forty
+        /// and eighty thousand a brick whatever the product is, which is what makes them read
+        /// as one man's van rather than as six unrelated numbers. Rounded to the nearest half
+        /// kilo so the figure still sounds like something a person would say.
+        ///
+        /// Made-only products are skipped. Nobody buys rolled joints off a container.
+        /// </summary>
+        private Brick[] StockToday()
+        {
+            var list = new List<Brick>();
+
+            foreach (var b in WrittenBricks)
+            {
+                if (_drugs.Get(b.DrugId) != null) list.Add(b);
+            }
+
+            foreach (var d in _drugs.All)
+            {
+                if (d.MadeOnly) continue;
+                if (list.Exists(b => string.Equals(b.DrugId, d.Id, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                var grams = (float)Math.Round(BrickValue / Math.Max(1f, d.BulkPrice) / 500f) * 500f;
+                if (grams < 500f) grams = 500f;
+
+                list.Add(new Brick(d.Id, grams, Kilos(grams) + " of " + d.Name.ToLowerInvariant()));
+            }
+
+            return list.ToArray();
+        }
+
+        /// <summary>Roughly what one load off him is worth, before his own multiplier.</summary>
+        private const float BrickValue = 60000f;
+
+        /// <summary>A weight said the way he would say it, not printed to one decimal place.</summary>
+        private static string Kilos(float grams)
+        {
+            var k = grams / 1000f;
+
+            if (k < 1f) return (grams / 1000f).ToString("0.#") + " of a kilo";
+            if (Math.Abs(k - Math.Round(k)) < 0.01f)
+            {
+                var whole = (int)Math.Round(k);
+                return whole == 1 ? "A kilo" : whole + " kilos";
+            }
+
+            return k.ToString("0.#") + " kilos";
+        }
 
         /// <summary>How many of one thing you can take at once.</summary>
         private static readonly int[] Lots = { 1, 2, 4 };
@@ -97,7 +161,7 @@ namespace Hoodrich.Supply
 
             var node = Node("Ain't got time to stand here. What you taking?");
 
-            foreach (var brick in Bricks)
+            foreach (var brick in StockToday())
             {
                 var product = _drugs.Get(brick.DrugId);
                 if (product == null) continue;
@@ -112,6 +176,19 @@ namespace Hoodrich.Supply
             }
 
             node.Leave("Not today.");
+
+            // Sending him off, which there was no way to do.
+            //
+            // "Not today" only closes the conversation -- he stays parked outside until
+            // something else moves him. This is the other half: he gets in and drives away,
+            // the same exit he takes once a delivery has landed.
+            node.Say("That's you done. Go on.", () =>
+            {
+                _delivery?.Finish();
+                return null;
+            }, "He gets in and goes");
+
+            node.WithIcon(Icons.FromFile("car.png"));
             return node;
         }
 

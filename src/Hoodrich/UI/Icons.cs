@@ -136,8 +136,8 @@ namespace Hoodrich.UI
         /// anything that resolves wins, and if none do the item keeps its text glyph.
         /// </summary>
         public static readonly Icon Crack = new Icon(Menu,
-            "mp_specitem_crack", "shop_ammo_icon_a", "shop_franklin_icon_a").WithFile("crack.png");
-        public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth").WithFile("crystal.png");
+            "mp_specitem_crack", "shop_ammo_icon_a", "shop_franklin_icon_a").WithFile("crystal.png");
+        public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth").WithFile("meth.png");
         public static readonly Icon Heroin = new Icon(Menu,
             "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a").WithFile("heroin.png");
         /// <summary>

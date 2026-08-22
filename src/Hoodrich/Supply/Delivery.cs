@@ -1143,9 +1143,15 @@ namespace Hoodrich.Supply
         /// <summary>
         /// Parks him on the mark, facing the way the street runs.
         ///
-        /// Style 2 is parallel -- a kerbside stop, which is what a man dropping a box off
-        /// outside a house does. The radius is what he is allowed to shuffle within to achieve
-        /// it, and the engine stays on because he is not stopping long.
+        /// He PULLS UP, he does not parallel park.
+        ///
+        /// Style 2 is a parallel park, and a parallel park is a reversing manoeuvre by
+        /// definition -- he drove past the mark, stopped, and backed into it, which is exactly
+        /// what it looked like. Style 3 drives up to the point and stops on it.
+        ///
+        /// The shuffle radius comes down with it. Twenty-two metres is a lot of room to be
+        /// clever in, and every metre of it is somewhere he might decide to reverse through
+        /// on his way to being tidy.
         /// </summary>
         private void PullIn()
         {
@@ -1155,7 +1161,7 @@ namespace Hoodrich.Supply
             {
                 Function.Call(Hash.TASK_VEHICLE_PARK, _driver.Handle, _car.Handle,
                               ParkSpot.X, ParkSpot.Y, ParkSpot.Z, ParkHeading,
-                              ParallelPark, ParkWithin, true);
+                              PullUp, ParkWithin, true);
 
                 _parking = true;
             }
@@ -1167,8 +1173,8 @@ namespace Hoodrich.Supply
             }
         }
 
-        private const int ParallelPark = 2;
-        private const float ParkWithin = 22f;
+        private const int PullUp = 3;
+        private const float ParkWithin = 12f;
 
         /// <summary>
         /// Where he is aiming right now.
