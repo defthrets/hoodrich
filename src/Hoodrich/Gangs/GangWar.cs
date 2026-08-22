@@ -775,6 +775,7 @@ namespace Hoodrich.Gangs
 
             CountKills();
             CullTheDead();
+            CullTheStragglers(now, player);
             ListenForShots(player);
             PushIn(now);
 
@@ -1265,7 +1266,6 @@ namespace Hoodrich.Gangs
             var player = Game.Player.Character;
 
             for (var i = 0; i < _rivals.Count; i++) Order(_rivals[i], true, player, now);
-            // The index goes with him, because it is what decides which arc of the ring is his.
             for (var i = 0; i < _defenders.Count; i++) Order(_defenders[i], false, player, now);
         }
 
@@ -1586,6 +1586,25 @@ namespace Hoodrich.Gangs
 
             /// <summary>When the car they are riding in stopped moving, or zero.</summary>
             public int CarStuckSince;
+
+            /// <summary>
+            /// Theirs: the closest he has ever got to the block, and when he last got closer.
+            ///
+            /// Best is the measure because it cannot be gamed by a man rocking back and forth
+            /// against a kerb -- going backwards and forwards over the same two metres never
+            /// improves it, which is exactly the behaviour being caught.
+            /// </summary>
+            public float Best;
+            public int BestAt;
+
+            /// <summary>Theirs: reached the circle at least once, so he is no longer a journey.</summary>
+            public bool Arrived;
+
+            /// <summary>Theirs: already re-tasked once for being stuck. One shove, not a habit.</summary>
+            public bool Nudged;
+
+            /// <summary>Theirs: when he first came under the straggler check.</summary>
+            public int Since;
         }
 
         private readonly Dictionary<int, WarOrder> _orders = new Dictionary<int, WarOrder>();
@@ -1842,6 +1861,180 @@ namespace Hoodrich.Gangs
                 _defenders.RemoveAt(i);
             }
         }
+
+        /// <summary>
+        /// Shoves anybody who has stopped making progress, and lets go of anybody who still
+        /// will not arrive after being shoved.
+        ///
+        /// Two of theirs get wedged in every single war -- behind a bin lorry, the wrong side
+        /// of a fence, in a stairwell the navmesh will not path out of. That would be cosmetic
+        /// except the early ending waits on every last rival being DEAD, so two men stuck three
+        /// streets away hold the whole war open for the rest of the clock. The bar reads three
+        /// on the block, the block is empty, and there is nothing to do but wait out the timer.
+        ///
+        /// Progress, not a stopwatch. A man in a car ten streets out is not stuck, he is
+        /// driving, and a flat deadline would punish him for where he happened to spawn. What
+        /// separates the wedged from the merely slow is that the wedged stop getting CLOSER --
+        /// so the clock runs on his best distance to the block and any real ground gained
+        /// resets it.
+        ///
+        /// Shoved before dropped, because being told again is usually enough: a fresh
+        /// GO_TO_COORD_ANY_MEANS re-paths him, and ANY_MEANS will put him in a car if walking
+        /// cannot get there. Only a man who has been re-tasked and STILL gained no ground is
+        /// treated as never coming.
+        ///
+        /// Anybody in a fight is left alone whatever his distance. Somebody shooting at you
+        /// from outside the circle has not failed to arrive; he has arrived at you.
+        /// </summary>
+        private void CullTheStragglers(int now, Ped player)
+        {
+            if (_target == null) return;
+
+            for (var i = _rivals.Count - 1; i >= 0; i--)
+            {
+                var ped = _rivals[i];
+
+                // The dead are CountKills' business, and they must stay in the list until it
+                // has had them or their kill is never counted.
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                WarOrder order;
+                if (!_orders.TryGetValue(ped.Handle, out order))
+                {
+                    order = new WarOrder();
+                    _orders[ped.Handle] = order;
+                }
+
+                if (order.BestAt == 0)
+                {
+                    order.Best = float.MaxValue;
+                    order.BestAt = now;
+                    order.Since = now;
+                }
+
+                var away = ped.Position.DistanceTo(_target.Where);
+
+                // Inside the circle once is enough. He is on the block; what happens to him
+                // after that is the fight rather than the journey, and a man who gets pushed
+                // back out of it by gunfire has not failed to turn up.
+                if (away <= DefendRange) order.Arrived = true;
+                if (order.Arrived) continue;
+
+                if (Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0) != 0)
+                {
+                    order.BestAt = now;
+                    continue;
+                }
+
+                // A ceiling as well as a progress clock, because the progress clock alone has
+                // a hole in it: a man re-pathing into the same wall who gains four metres every
+                // twenty seconds resets it forever while never actually arriving. Run offline
+                // against a crawler and he survives the whole war, which is the exact bug being
+                // fixed here wearing a different hat.
+                //
+                // Generous on purpose. Covering the ride in from a hundred and fifty metres
+                // inside this needs less than 0.8 m/s, and a ped walks at nearly twice that --
+                // so nobody who is actually moving is ever caught by it.
+                if (now - order.Since > MustArriveMs)
+                {
+                    Log.Info("Gang war: dropping one of theirs who never made it -- " +
+                             (int)away + "m out after " + ((now - order.Since) / 1000) + "s.");
+
+                    Drop(ped, player);
+                    _rivals.RemoveAt(i);
+                    continue;
+                }
+
+                if (away < order.Best - ProgressStep)
+                {
+                    order.Best = away;
+                    order.BestAt = now;
+                    continue;
+                }
+
+                var stalled = now - order.BestAt;
+
+                // Told again, once. The clock is deliberately not reset: this is one attempt
+                // inside the same deadline, not a way to live forever by being re-tasked.
+                if (stalled >= NudgeMs && !order.Nudged)
+                {
+                    order.Nudged = true;
+
+                    try
+                    {
+                        Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                        Function.Call(Hash.TASK_GO_TO_COORD_ANY_MEANS, ped.Handle,
+                                      _target.Where.X, _target.Where.Y, _target.Where.Z,
+                                      2f, 0, false, 786603, 0f);
+                    }
+                    catch { /* then he is dropped below like anybody else */ }
+
+                    continue;
+                }
+
+                if (stalled < GaveUpMs) continue;
+
+                Log.Info("Gang war: dropping one of theirs who never made it -- " +
+                         (int)away + "m out, no ground gained in " + (stalled / 1000) + "s.");
+
+                Drop(ped, player);
+                _rivals.RemoveAt(i);
+            }
+        }
+
+        /// <summary>
+        /// Takes somebody out of the war, and out of the world if nobody would see it go.
+        ///
+        /// Removed from the list while still ALIVE, which is the point: CountKills only ever
+        /// sees the list, so a man dropped this way is not counted as anybody's kill. He was
+        /// never in the fight and the tally should not say he was.
+        /// </summary>
+        private void Drop(Ped ped, Ped player)
+        {
+            Forget(ped);
+
+            try
+            {
+                if (ped == null || !ped.Exists()) return;
+
+                var seen = player != null && player.Exists() &&
+                           ped.Position.DistanceTo(player.Position) <= OutOfSightRange;
+
+                // Close enough to be watched and he simply stops being part of this -- an
+                // ordinary man on an ordinary street, who the player can deal with or ignore.
+                // Deleting one in view is a body vanishing in front of you.
+                if (seen)
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                    ped.IsPersistent = false;
+                    return;
+                }
+
+                ped.Delete();
+            }
+            catch { /* he is out of the war either way, which is the part that matters */ }
+        }
+
+        /// <summary>Ground he has to actually gain for it to count as getting closer.</summary>
+        private const float ProgressStep = 4f;
+
+        /// <summary>No ground gained for this long and he gets told again.</summary>
+        private const int NudgeMs = 11000;
+
+        /// <summary>Still none this long after arriving nowhere, and he is not coming.</summary>
+        private const int GaveUpMs = 26000;
+
+        /// <summary>
+        /// The outside limit, whatever he has been doing, before he stops counting.
+        ///
+        /// Behind the progress clock rather than instead of it -- that one catches the wedged
+        /// in under half a minute, and this only exists for the man who inches just fast enough
+        /// to keep resetting it.
+        /// </summary>
+        private const int MustArriveMs = 100000;
+
+        /// <summary>Past this he can be taken out of the world without it being seen.</summary>
+        private const float OutOfSightRange = 90f;
 
         /// <summary>Takes somebody's marker off the map and hands the body back to the game.</summary>
         private void Forget(Ped ped)
