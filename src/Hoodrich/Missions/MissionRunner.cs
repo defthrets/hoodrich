@@ -125,6 +125,15 @@ namespace Hoodrich.Missions
         /// runner built for "drive there, deal with them, come back" would leave both harder to
         /// follow than either is on its own.
         /// </summary>
+        /// <summary>
+        /// The job list, so the runner can notice when a new one opens up.
+        ///
+        /// Set by Main rather than taken in the constructor: FixerTalk owns the book and reads
+        /// it when you walk up to him, and this only needs to LOOK at it on a slow tick to see
+        /// whether there is anything worth a text.
+        /// </summary>
+        public MissionBook Book;
+
         private readonly BikeRide _bike;
 
         /// <summary>Set by Main. Null-checked everywhere, so the feed is never load-bearing.</summary>
@@ -563,8 +572,62 @@ namespace Hoodrich.Missions
 
         // ---- per-tick ----------------------------------------------------------
 
+        /// <summary>
+        /// Lamar texts when there is something new, once each.
+        ///
+        /// Work unlocks on rank and on what you have finished, and nothing announced either --
+        /// so a job could sit on his menu for an hour with no reason to go and look. He is a
+        /// contact with your number; him saying so is both the obvious fix and the one that
+        /// costs nothing to believe.
+        ///
+        /// Once per job, tracked by id in the save, because a nag every time you rank up is
+        /// worse than never being told.
+        /// </summary>
+        private void TellHimIfThereIsWork()
+        {
+            if (_state == null || Book == null || IsRunning) return;
+            if (Game.GameTime < _nextWorkCheck) return;
+
+            _nextWorkCheck = Game.GameTime + WorkCheckMs;
+
+            // The same window FixerTalk offers from: everything up to one past the last one
+            // finished, gated on rank.
+            var reached = -1;
+
+            for (var i = 0; i < Book.All.Count; i++)
+            {
+                if (_state.HasDone(Book.All[i].Id)) reached = i;
+            }
+
+            for (var i = 0; i <= reached + 1 && i < Book.All.Count; i++)
+            {
+                var def = Book.All[i];
+
+                if (_state.Rank < def.MinRank) continue;
+                if (_state.HasDone(def.Id)) continue;
+                if (_state.HasBeenOffered(def.Id)) continue;
+
+                _state.MarkOffered(def.Id);
+                _state.Touch();
+
+                Notify.Text("CHAR_LAMAR", "Lamar", "Los Santos",
+                            "aye. got somethin for you. come find me when you ready, cuz",
+                            true);
+
+                Log.Info("Lamar texted about " + def.Id + ".");
+                return;
+            }
+        }
+
+        private int _nextWorkCheck;
+
+        /// <summary>Rank and progress do not change fast. Every ten seconds is plenty.</summary>
+        private const int WorkCheckMs = 10000;
+
         public void Update()
         {
+            TellHimIfThereIsWork();
+
             if (OnBike)
             {
                 _bike.Update();

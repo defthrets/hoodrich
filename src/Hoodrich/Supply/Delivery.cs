@@ -360,6 +360,29 @@ namespace Hoodrich.Supply
         /// </summary>
         private const float StraightLineAt = 20f;
 
+        /// <summary>
+        /// Whose face goes on his messages.
+        ///
+        /// A CHAR_ dictionary the game already ships, chosen from who he is rather than
+        /// configured -- there are two couriers and the mod knows both of them. An unknown one
+        /// draws no picture and keeps the words, so a new dealer costs a blank portrait rather
+        /// than a broken message.
+        /// </summary>
+        private string Portrait
+        {
+            get
+            {
+                if (_def == null) return "CHAR_DEFAULT";
+
+                switch (_def.Id)
+                {
+                    case "docks": return "CHAR_CHENG";
+                    case "stretch_run": return "CHAR_STRETCH";
+                    default: return "CHAR_DEFAULT";
+                }
+            }
+        }
+
         /// <summary>Close enough to do business over the roof of the car.</summary>
         private const float TalkRange = 4.5f;
 
@@ -663,7 +686,13 @@ namespace Hoodrich.Supply
                     {
                         _messageSent = true;
                         EndPhoneAnimation();
-                        Notify.Ticker("~y~" + _def.Name + " says give him a minute.~s~");
+                        // From HIM, with his face on it. You have just phoned a contact; a
+                        // grey ticker saying he says give him a minute is the mod relaying a
+                        // message he is perfectly capable of sending himself.
+                        Notify.Text(Portrait, _def.Name, "Los Santos",
+                                    _def.Id == "docks"
+                                        ? "yeah yeah im comin. give me a. give me a minute"
+                                        : "on my way. give me a minute");
                     }
 
                     if (Game.GameTime - _stateSince >= CallMs + SettingOffMs) Dispatch(player);
@@ -776,7 +805,11 @@ namespace Hoodrich.Supply
                 _stateSince = Game.GameTime;
                 _stillSince = 0;
 
-                Notify.Important("~y~" + _def.Name + "~s~ is on his way to you.");
+                Notify.Text(Portrait, _def.Name, "Los Santos",
+                            _def.Id == "docks"
+                                ? "leaving now. dont go anywhere. im leaving NOW"
+                                : "rollin out. be there in a minute",
+                            true);
                 Log.Info("Delivery dispatched from " + start + ".");
             }
             catch (Exception ex)
@@ -1130,7 +1163,11 @@ namespace Hoodrich.Supply
                 Log.Debug("Delivery driver could not get out: " + ex.Message);
             }
 
-            Notify.Important("~g~" + _def.Name + " has pulled up.~s~ Go and see him.");
+            Notify.Text(Portrait, _def.Name, "Los Santos",
+                        _def.Id == "docks"
+                            ? "im outside. im outside your. im here. come out"
+                            : "outside. come get it",
+                        true);
         }
 
         /// <summary>How long he is given to park himself before he is simply put on the mark.</summary>

@@ -306,6 +306,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json OfferedJson()
+        {
+            var arr = Json.Array();
+            foreach (var id in _offered) arr.Add(Json.Str(id));
+            return arr;
+        }
+
         /// <summary>
         /// Whether the first-run guide has been shown.
         ///
@@ -314,6 +321,26 @@ namespace Hoodrich.State
         /// same thing as saying this lives with the character rather than with the install.
         /// </summary>
         public bool SeenWelcome;
+
+        /// <summary>
+        /// Jobs Lamar has already texted about.
+        ///
+        /// Separate from the finished list, because "he told you it existed" and "you did it"
+        /// are different facts and the first must survive you ignoring him.
+        /// </summary>
+        private readonly List<string> _offered = new List<string>();
+
+        public bool HasBeenOffered(string id)
+        {
+            return !string.IsNullOrEmpty(id) &&
+                   _offered.Exists(x => string.Equals(x, id, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public void MarkOffered(string id)
+        {
+            if (string.IsNullOrEmpty(id) || HasBeenOffered(id)) return;
+            _offered.Add(id);
+        }
 
         public Json ToJson()
         {
@@ -332,6 +359,7 @@ namespace Hoodrich.State
                 .Set("frontedGrams", FrontedGrams)
                 .Set("frontedAtGrams", FrontedAtGrams)
                 .Set("missionsDone", MissionsJson())
+                .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson());
         }
 
@@ -370,6 +398,18 @@ namespace Hoodrich.State
                     var id = node.AsString("");
                     if (!string.IsNullOrEmpty(id) && !HasDone(id)) MissionsDone.Add(id);
                 }
+
+                // Read back, or Lamar texts about the same job every time you load.
+                _offered.Clear();
+                foreach (var node in doc["missionsOffered"].Items)
+                {
+                    MarkOffered(node.AsString(""));
+                }
+
+                // A job already finished counts as told. An existing save has no offered list
+                // at all, so without this he would text about everything you have ever done
+                // the first time you load after updating.
+                foreach (var id in MissionsDone) MarkOffered(id);
 
                 // "inventory" is the 0.1.0 key; migrate it so old saves keep their product.
                 Stash.LoadFrom(doc.Has("stash") ? doc["stash"] : doc["inventory"]);
