@@ -1309,7 +1309,17 @@ namespace Hoodrich
                     // Read on the frame he goes down, not when he wakes up. The game clears
                     // the source and the cause once the ped is respawned, so waiting until
                     // Pillbox means asking a question that no longer has an answer.
-                    if (!_wasDown) RememberWhoGotYou(player);
+                    if (!_wasDown)
+                    {
+                        RememberWhoGotYou(player);
+
+                        // And the job ends here, on the frame he goes down. This is the only
+                        // code still running at that moment: the whole gameplay tick is gated
+                        // on IsPlayable, which is false while he is dead, so anything that
+                        // waited for the runner's own update waited until he was alive again
+                        // at Pillbox -- by which point the mission had simply resumed.
+                        if (_jobs != null) _jobs.Died();
+                    }
 
                     _wasDown = true;
                     _pillboxAt = 0;

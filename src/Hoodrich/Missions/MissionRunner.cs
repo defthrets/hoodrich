@@ -1742,6 +1742,58 @@ namespace Hoodrich.Missions
             return line;
         }
 
+        /// <summary>
+        /// You went down on a job.
+        ///
+        /// Separate from Fail because it is called from somewhere Fail could not reach. The
+        /// death check inside Update never once ran: Main gates the whole tick on IsPlayable,
+        /// IsPlayable is false while the player is not alive, so the runner stops ticking at
+        /// the exact moment it needed to notice -- and by the time it started again the player
+        /// was alive at Pillbox and the job carried on as though nothing had happened.
+        ///
+        /// The house script watches for the death frame anyway, for the socials feed. This
+        /// hangs off that, which is the one place in the mod that is still looking.
+        /// </summary>
+        public void Died()
+        {
+            if (!IsRunning) return;
+
+            var giver = _def;
+            Fail("You went down out there.");
+
+            // And he hears about it. Not the mod telling you the job ended -- a man you know
+            // saying he heard, and that the work is still there.
+            try
+            {
+                Notify.Text("CHAR_LAMAR", "Lamar", "Los Santos",
+                            DeathTexts[_rng.Next(DeathTexts.Length)], false);
+
+                Log.Info("Died on " + (giver == null ? "a job" : giver.Id) + "; Lamar texted.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not text about the wipe: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// What he sends after you have been carried into Pillbox.
+        ///
+        /// Sympathy in his own register, which is not much sympathy -- and every one of them
+        /// ends by telling you the job is still on, because the point of the message is that
+        /// dying costs you the run rather than the chain.
+        /// </summary>
+        private static readonly string[] DeathTexts =
+        {
+            "damn dawg. heard they got you. you good? come see me when you up, we run it back",
+            "aw man that sucks. get well soon cuz. job's still here when you are",
+            "yo i heard. take a minute, get yourself right, then come find me. we ain't done",
+            "they got you out there?? damn. rest up. come see me and we go again",
+            "man. i told you it was gon be like that. anyway. come find me when you healed up",
+            "pillbox again. aight. when they let you out, you know where im at"
+        };
+
+
         public void Fail(string reason)
         {
             if (!IsRunning) return;
