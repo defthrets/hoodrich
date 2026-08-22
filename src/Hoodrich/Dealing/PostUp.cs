@@ -250,6 +250,10 @@ namespace Hoodrich.Dealing
 
         public bool IsPosted => State != PostState.Idle;
 
+        /// <summary>What you are moving, said the way you would say it in public.</summary>
+        public string CodeWord =>
+            _product == null || string.IsNullOrEmpty(_product.CodeWord) ? "" : _product.CodeWord;
+
         public DrugDef Product => _product;
 
         /// <summary>Heat from something that happened here but is not ours to time.</summary>

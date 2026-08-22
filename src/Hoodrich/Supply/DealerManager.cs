@@ -159,6 +159,8 @@ namespace Hoodrich.Supply
                 def.TextOutside = node["textOutside"].AsString(def.TextOutside);
                 def.LotValue = node["lotValue"].AsFloat(def.LotValue);
                 def.LotStep = node["lotStep"].AsFloat(def.LotStep);
+                def.PriceFloor = (int)node["priceFloor"].AsFloat(def.PriceFloor);
+                def.PriceStep = Math.Max(1, (int)node["priceStep"].AsFloat(def.PriceStep));
                 def.Drunk = node["drunk"].AsBool(def.Drunk);
                 ReplaceList(def.Zones, node["zones"]);
 

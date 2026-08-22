@@ -661,6 +661,51 @@ def mobile():
     save(img, 'mobile.png')
 
 
+
+# ---------------------------------------------------------------- feed glyphs
+#
+# Three pictures the feed needs that nothing else in the mod already draws. They render at
+# about twenty-four pixels -- a fifth of a wheel icon -- so every shape here is blunter than it
+# would otherwise be: no outlines, no thin strokes, and nothing that relies on a detail.
+
+def eyes():
+    """Two eyes, looking sideways. The pupils are the whole read, so they are enormous."""
+    img, d = canvas()
+
+    for cx in (168, 344):
+        d.ellipse([cx - 92, 176, cx + 92, 336], fill=W)          # the almond
+        d.ellipse([cx - 44, 212, cx + 44, 300], fill=CLEAR)      # punched out
+        d.ellipse([cx - 30, 226, cx + 30, 286], fill=W)          # the pupil
+
+    save(img, 'eyes.png')
+
+
+def cap():
+    """A baseball cap in profile -- a dome and a brim. Means somebody is lying."""
+    img, d = canvas()
+
+    d.pieslice([128, 132, 384, 388], 180, 360, fill=W)           # the crown
+    d.rectangle([128, 250, 384, 300], fill=W)
+    d.polygon([(360, 250), (470, 262), (470, 306), (356, 300)], fill=W)   # the brim
+    d.ellipse([234, 108, 278, 152], fill=W)                      # the button
+
+    save(img, 'cap.png')
+
+
+def crown():
+    """Three points and a band. Nothing else in the set is this shape."""
+    img, d = canvas()
+
+    d.polygon([(96, 372), (96, 168), (176, 258), (256, 132), (336, 258), (416, 168), (416, 372)],
+              fill=W)
+    d.rectangle([80, 372, 432, 436], fill=W)
+
+    for x in (176, 256, 336):
+        d.ellipse([x - 26, 130, x + 26, 182], fill=W)
+
+    save(img, 'crown.png')
+
+
 def ammo():
     """Three rounds standing up. Fewer, fatter shapes than a real magazine."""
     img, d = canvas()
@@ -1369,7 +1414,7 @@ def poppy():
 # Every icon in the file, by name. Run with no arguments to draw all of them, or name the
 # ones you want -- "python make_icons.py guns mobile" -- which is the difference between
 # regenerating one symbol and rewriting sixty-nine files to change one.
-ALL = [leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy]
+ALL = [eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy]
 
 
 if __name__ == '__main__':

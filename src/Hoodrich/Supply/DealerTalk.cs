@@ -227,10 +227,18 @@ namespace Hoodrich.Supply
         /// </summary>
         private int Cost(DrugDef product, float gramsPerBrick, int lot)
         {
+            var def = _delivery == null ? null : _delivery.Def;
+
+            // His floor and his rounding, not the port's. A five hundred dollar step on a two
+            // hundred and eighty dollar bag is a forty percent error before the floor gets
+            // anywhere near it.
+            var floor = def == null ? Floor : def.PriceFloor;
+            var step = def == null || def.PriceStep < 1 ? 500 : def.PriceStep;
+
             var raw = _pricing.WholesalePrice(product, Multiplier) * gramsPerBrick * lot;
 
-            var rounded = (int)(Math.Round(raw / 500.0) * 500);
-            return Math.Max(Floor * lot, rounded);
+            var rounded = (int)(Math.Round(raw / step) * step);
+            return Math.Max(floor * lot, rounded);
         }
 
         /// <summary>

@@ -64,6 +64,15 @@ namespace Hoodrich.Economy
         /// </summary>
         public string SplitVerb = "Cut";
 
+        /// <summary>
+        /// What it is called in public.
+        ///
+        /// Nobody posts the word cocaine on a feed the police can read. The corner post uses
+        /// this instead, so a line can say what is on offer without the post being a
+        /// confession -- green, blues, bars, hard.
+        /// </summary>
+        public string CodeWord = "";
+
         /// <summary>What one sellable unit is called, for the wheel.</summary>
         public string UnitName = "grams";
 
@@ -238,6 +247,7 @@ namespace Hoodrich.Economy
                 def.Tier = Math.Max(1, node["tier"].AsInt(def.Tier));
                 def.HeatFactor = Math.Max(0f, node["heatFactor"].AsFloat(def.HeatFactor));
                 def.SplitVerb = node["splitVerb"].AsString(def.SplitVerb);
+                def.CodeWord = node["codeWord"].AsString(def.CodeWord);
                 def.UnitName = node["unitName"].AsString(def.UnitName);
                 def.Counted = node["counted"].AsBool(def.Counted);
                 def.WorkVerb = node["workVerb"].AsString(def.WorkVerb);

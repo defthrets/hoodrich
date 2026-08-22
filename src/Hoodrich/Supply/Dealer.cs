@@ -99,6 +99,18 @@ namespace Hoodrich.Supply
         public float LotStep = 500f;
 
         /// <summary>
+        /// The least a lot off him can cost, and what the price is rounded to.
+        ///
+        /// Both were constants belonging to the port -- a fifty thousand dollar floor and
+        /// rounding to the nearest five hundred -- and they were applied to everybody. On a man
+        /// selling thirty five pills that turned a two hundred and eighty dollar bag into fifty
+        /// thousand dollars: the floor is larger than anything he sells, so every line on his
+        /// menu quoted the same absurd number.
+        /// </summary>
+        public int PriceFloor = 50000;
+        public int PriceStep = 500;
+
+        /// <summary>
         /// Whether he walks the parcel in like a man who has had a few.
         ///
         /// One courier is a drunk and it is his whole character. It was applied to whoever

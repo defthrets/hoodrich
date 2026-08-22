@@ -42,7 +42,14 @@ namespace Hoodrich.UI
         private const int OpenGraceMs = 220;
 
         /// <summary>The fixed identity card. Everything under it scrolls; this does not.</summary>
-        private const float CardHeight = 0.084f;
+        /// <summary>
+        /// The header card: the wordmark, the screen's name, your avatar and your numbers.
+        ///
+        /// Grew by 0.023 when the mark went in above the title, and everything under it moved
+        /// by the same amount. This one number is where the FEED starts, so getting it wrong
+        /// does not clip the header -- it slides the whole timeline up over it.
+        /// </summary>
+        private const float CardHeight = 0.107f;
 
         /// <summary>Your own face. Larger than a stranger's, and the best-rendered thing here.</summary>
         private const float HeadSize = 0.046f;
@@ -1217,15 +1224,21 @@ namespace Hoodrich.UI
 
             var headX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
 
-            Hud.Text("SOCIALS", headX, PanelTop + 0.009f, 0.74f, Palette.Text,
+            // The mark over the middle of the panel, the same letterhead every other screen in
+            // the mod carries. Centred on the PANEL rather than on the title, because the title
+            // is left-aligned against the avatar and the mark belongs to the whole thing.
+            Hud.BrandCentre(left + PanelWidth * 0.5f, PanelTop + 0.017f, 0.024f,
+                            Palette.Alpha(Palette.TextDim, 165));
+
+            Hud.Text("SOCIALS", headX, PanelTop + 0.032f, 0.74f, Palette.Text,
                      Hud.FontCursive, centre: false);
 
             // The one number, right, in the money colour -- the hub's exact title rhythm.
-            Hud.TextRight(_feed.Followers.ToString("N0"), right, PanelTop + 0.023f, 0.34f,
+            Hud.TextRight(_feed.Followers.ToString("N0"), right, PanelTop + 0.046f, 0.34f,
                           Palette.Cash, Hud.FontChaletLondon);
 
             var cx = left + Pad + Hud.ToX(HeadSize) * 0.5f;
-            var cy = PanelTop + 0.042f;
+            var cy = PanelTop + 0.065f;
 
             if (MugshotReady())
             {
@@ -1245,14 +1258,14 @@ namespace Hoodrich.UI
                 Hud.Text(initial, cx, cy - 0.016f, 0.60f, Palette.Text, Hud.FontChaletLondon);
             }
 
-            Hud.Text(_feed.DisplayName, headX, PanelTop + 0.057f, 0.34f, Palette.Text,
+            Hud.Text(_feed.DisplayName, headX, PanelTop + 0.080f, 0.34f, Palette.Text,
                      Hud.FontChaletLondon, centre: false);
 
             var nw = 0.06f;
             try { nw = Hud.MeasureText(_feed.DisplayName, 0.34f, Hud.FontChaletLondon); }
             catch { /* the estimate will do */ }
 
-            Hud.Text(_feed.Handle, headX + nw + 0.006f, PanelTop + 0.060f, 0.26f,
+            Hud.Text(_feed.Handle, headX + nw + 0.006f, PanelTop + 0.083f, 0.26f,
                      Palette.TextDim, Hud.FontLabel, centre: false);
 
             // The wheel panel's "owed a visit" row, in a slot that already existed and was
@@ -1263,7 +1276,7 @@ namespace Hoodrich.UI
             Hud.TextRight(payback
                               ? "SOMEBODY'S COMING"
                               : "FOLLOWERS  ·  " + _feed.Following.ToString("N0") + " FOLLOWING",
-                          right, PanelTop + 0.0595f, 0.24f,
+                          right, PanelTop + 0.0825f, 0.24f,
                           payback ? Palette.Danger : Palette.TextDim, Hud.FontLabel);
 
             // No underline here. The tab strip's rule closes the masthead, and two full-width
@@ -1382,7 +1395,10 @@ namespace Hoodrich.UI
 
             foreach (var line in lines)
             {
-                Hud.Text(line, textX, y, BodyScale, Palette.Text, Hud.FontBody, centre: false);
+                // Through Emoji, which is a plain Hud.Text for any line without a picture in
+                // it -- which is most of them -- and runs of text with sprites between them
+                // for the ones that have.
+                Emoji.Draw(line, textX, y, BodyScale, Palette.Text, Hud.FontBody);
                 y += LineHeight;
             }
 
@@ -1494,8 +1510,11 @@ namespace Hoodrich.UI
             {
                 var candidate = current.Length == 0 ? word : current + " " + word;
 
+                // Measured with the pictures counted at the size they will DRAW at, not at
+                // the width of ":fire:" as six characters -- otherwise a line wraps against a
+                // width that has nothing to do with what ends up on screen.
                 float measured;
-                try { measured = Hud.MeasureText(candidate, scale, Hud.FontBody); }
+                try { measured = Emoji.Measure(candidate, scale, Hud.FontBody); }
                 catch { measured = candidate.Length * scale * 0.011f; }
 
                 if (measured <= width || current.Length == 0)

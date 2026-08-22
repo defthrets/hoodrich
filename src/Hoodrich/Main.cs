@@ -893,7 +893,26 @@ namespace Hoodrich
                 _socialScreen.Crew = _crew;
                 _socialScreen.PaybackDue = () => _payback != null && _payback.IsOwed;
 
-                _socialScreen.Say = set => _social.PostAsYou(set, "") != null;
+                _socialScreen.Say = set =>
+                {
+                    // Stood on a corner, the day post is about the corner.
+                    //
+                    // Not spelled out. It goes up as the product's street name and the
+                    // neighbourhood, which is what somebody actually posts -- a man announcing
+                    // his inventory to a public feed is a man who gets a visit.
+                    if (set == "YouDaily" && _postUp != null && _postUp.IsPosted)
+                    {
+                        var code = _postUp.CodeWord;
+
+                        if (!string.IsNullOrEmpty(code) &&
+                            _social.PostAsYou("YouPosted", code) != null)
+                        {
+                            return true;
+                        }
+                    }
+
+                    return _social.PostAsYou(set, "") != null;
+                };
 
                 // Naming a set does three things at once and they have to happen together: the
                 // post goes up, they answer it on the feed, and somebody starts driving.

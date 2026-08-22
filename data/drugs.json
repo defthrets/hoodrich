@@ -51,7 +51,8 @@
           "price": 200
         }
       ],
-      "perUnit": 1.0
+      "perUnit": 1.0,
+      "codeWord": "green"
     },
     {
       "id": "ecstasy",
@@ -81,7 +82,8 @@
           "label": "four pills",
           "price": 100
         }
-      ]
+      ],
+      "codeWord": "blues"
     },
     {
       "id": "xanax",
@@ -111,7 +113,8 @@
           "label": "five bars",
           "price": 170
         }
-      ]
+      ],
+      "codeWord": "bars"
     },
     {
       "id": "crack",
@@ -140,7 +143,8 @@
           "label": "a hundred rock",
           "price": 100
         }
-      ]
+      ],
+      "codeWord": "hard"
     },
     {
       "id": "meth",
@@ -164,7 +168,8 @@
           "label": "a gram",
           "price": 200
         }
-      ]
+      ],
+      "codeWord": "glass"
     },
     {
       "id": "coke",
@@ -188,7 +193,8 @@
           "label": "an 8-ball",
           "price": 850
         }
-      ]
+      ],
+      "codeWord": "soft"
     },
     {
       "id": "heroin",
@@ -217,7 +223,8 @@
           "label": "a gram",
           "price": 80
         }
-      ]
+      ],
+      "codeWord": "brown"
     }
   ]
 }

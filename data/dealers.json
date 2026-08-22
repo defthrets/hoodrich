@@ -54,7 +54,9 @@
       "textOutside": "im outside. im outside your. im here. come out",
       "lotValue": 60000,
       "lotStep": 500,
-      "drunk": true
+      "drunk": true,
+      "priceFloor": 50000,
+      "priceStep": 500
     },
     {
       "id": "stretch_run",
@@ -97,7 +99,9 @@
       "textOutside": "im outside. come get it. i aint standin on no corner for nobody",
       "lotValue": 240,
       "lotStep": 5,
-      "drunk": false
+      "drunk": false,
+      "priceFloor": 0,
+      "priceStep": 5
     }
   ]
 }
