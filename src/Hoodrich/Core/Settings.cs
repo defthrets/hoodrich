@@ -189,6 +189,17 @@ namespace Hoodrich.Core
         /// <summary>Fine when a search finds product on you.</summary>
         public int PostUpFine = 2500;
 
+        // ---- the block ---------------------------------------------------------
+
+        /// <summary>Whether the set drives its own blocks while you are stood on them.</summary>
+        public bool RollersEnabled = true;
+
+        /// <summary>Carloads out at once. Two is a neighbourhood; six is a convoy.</summary>
+        public int RollerCars = 2;
+
+        /// <summary>Riders on the footpaths at once.</summary>
+        public int RollerBikes = 2;
+
         // ---- joining -----------------------------------------------------------
 
         /// <summary>Grams a gang leader fronts you when he takes you on.</summary>
@@ -303,6 +314,10 @@ namespace Hoodrich.Core
             s.PostUpFine = Math.Max(0, ini.GetInt("PostUp", "PostUpFine", s.PostUpFine));
 
             s.LeaderFrontGrams = Math.Max(0f, ini.GetFloat("Map", "LeaderFrontGrams", s.LeaderFrontGrams));
+
+            s.RollersEnabled = ini.GetBool("Block", "RollersEnabled", s.RollersEnabled);
+            s.RollerCars = (int)Clamp(ini.GetInt("Block", "RollerCars", s.RollerCars), 0f, 6f);
+            s.RollerBikes = (int)Clamp(ini.GetInt("Block", "RollerBikes", s.RollerBikes), 0f, 6f);
 
             // An inner radius at or past the outer one would render nothing at all.
             if (s.InnerRadius >= s.OuterRadius - 0.02f)

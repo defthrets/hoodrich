@@ -297,6 +297,7 @@ namespace Hoodrich
         private readonly Fixture _grimesStockB;
         private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
         private readonly BlockLife _block;
+        private readonly Rollers _rollers;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
         private GunScreen _gunScreen;
@@ -672,6 +673,11 @@ namespace Hoodrich
 
                 _payback = new Payback(_gangs);
 
+                // Ours, out driving their own blocks, wanting nothing. Every other car in this
+                // mod turns up because of the player; these are the ones that would be there
+                // whether he was or not.
+                _rollers = new Rollers(_cfg, _gangs, "families", _turf);
+
                 _toasts = new TweetToast
                 {
                     Enabled = _cfg.TweetsOnTheRight,
@@ -780,6 +786,12 @@ namespace Hoodrich
                 // the debt does not expire because you happened to be working when it came due.
                 _payback.Busy = () => (_jobs != null && _jobs.IsRunning)
                                       || (_war != null && _war.IsRunning);
+
+                // Nobody goes for a drive round the block during a raid. Existing ones are left
+                // where they are -- they simply stop being replaced.
+                _rollers.Busy = () => (_jobs != null && _jobs.IsRunning)
+                                      || (_war != null && _war.IsRunning)
+                                      || (_payback != null && _payback.IsRunning);
                 _copWatch.Social = _social;
                 _postUp.Social = _social;
                 _crew.Social = _social;
@@ -1194,6 +1206,7 @@ namespace Hoodrich
                     foreach (var door in _doors) door.Update();
                     _traffic.Update();
                     _payback.Update();
+                    _rollers.Update();
                     _war.Update();
 
                     _lamarCrew.Update();
@@ -1690,6 +1703,7 @@ namespace Hoodrich
             }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
+            try { _rollers?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesCrew?.RestoreWorld(); } catch { /* teardown */ }

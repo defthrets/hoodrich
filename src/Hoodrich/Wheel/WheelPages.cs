@@ -1594,6 +1594,10 @@ namespace Hoodrich.Wheel
                    _cfg.PauseDuringMission, v => _cfg.PauseDuringMission = v,
                    "Holds everything while a Rockstar mission is running");
 
+            Toggle(page, "The set rides the block", "Block", "RollersEnabled",
+                   _cfg.RollersEnabled, v => _cfg.RollersEnabled = v,
+                   "Cars and bikes of ours going round while you are on our turf");
+
             page.AddSub("Start over", "x", BuildStartOverPage,
                 detail: "Undo what you have done, in pieces or all at once",
                 value: "");
