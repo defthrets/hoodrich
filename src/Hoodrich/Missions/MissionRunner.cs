@@ -590,8 +590,33 @@ namespace Hoodrich.Missions
 
             _nextWorkCheck = Game.GameTime + WorkCheckMs;
 
-            // The same window FixerTalk offers from: everything up to one past the last one
-            // finished, gated on rank.
+            var def = NextInTheWindow(true);
+            if (def != null)
+            {
+                _state.MarkOffered(def.Id);
+                _state.Touch();
+
+                Notify.Text("CHAR_LAMAR", "Lamar", "Los Santos",
+                            "aye. got somethin for you. come find me when you ready, cuz",
+                            true);
+
+                Log.Info("Lamar texted about " + def.Id + ".");
+            }
+        }
+
+        /// <summary>
+        /// The next job he would offer you, or null.
+        ///
+        /// The same window FixerTalk offers from: everything up to one past the last one
+        /// finished, gated on rank. Written once and asked twice -- the text he sends wants
+        /// only jobs he has not mentioned yet, and the contacts page wants to know whether
+        /// there is anything at all, including the one he already texted about.
+        /// </summary>
+        /// <param name="unmentionedOnly">Skip anything he has already texted about.</param>
+        public MissionDef NextInTheWindow(bool unmentionedOnly)
+        {
+            if (_state == null || Book == null) return null;
+
             var reached = -1;
 
             for (var i = 0; i < Book.All.Count; i++)
@@ -605,19 +630,16 @@ namespace Hoodrich.Missions
 
                 if (_state.Rank < def.MinRank) continue;
                 if (_state.HasDone(def.Id)) continue;
-                if (_state.HasBeenOffered(def.Id)) continue;
+                if (unmentionedOnly && _state.HasBeenOffered(def.Id)) continue;
 
-                _state.MarkOffered(def.Id);
-                _state.Touch();
-
-                Notify.Text("CHAR_LAMAR", "Lamar", "Los Santos",
-                            "aye. got somethin for you. come find me when you ready, cuz",
-                            true);
-
-                Log.Info("Lamar texted about " + def.Id + ".");
-                return;
+                return def;
             }
+
+            return null;
         }
+
+        /// <summary>What he has for you, whether or not he has said so yet.</summary>
+        public MissionDef WorkWaiting => IsRunning ? null : NextInTheWindow(false);
 
         private int _nextWorkCheck;
 

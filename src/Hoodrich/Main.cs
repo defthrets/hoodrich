@@ -881,6 +881,7 @@ namespace Hoodrich
                 pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
                 pages.Info = _info;
                 pages.Delivery = _delivery;
+                pages.WorkWaiting = () => _jobs == null ? null : _jobs.WorkWaiting;
                 pages.StashScreen = _stashScreen;
                 pages.ShowSocials = () => _socialScreen.Open();
                 pages.Followers = () => _social.Followers;

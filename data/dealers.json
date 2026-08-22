@@ -47,7 +47,8 @@
       "buyLine": "Bricks. I deal in bricks, nothing smaller, dont ask. So say what, and say how many. In that order please.",
       "sourceReply": "Where do I get it. Where do I -- man. I AM where you get it. I'm the. yeah. me.",
       "sourceTooSoon": "",
-      "farewell": "Go on. Go. And dont come back in daylight if youre carryin, thats. thats just manners."
+      "farewell": "Go on. Go. And dont come back in daylight if youre carryin, thats. thats just manners.",
+      "openingText": "my friend. my FRIEND. whatever you need i have it. bricks only tho. dont ask me for grams, thats. thats insulting"
     },
     {
       "id": "stretch_run",
@@ -83,7 +84,8 @@
       "buyLine": "I ain't the port. Don't ask me for no bricks. Weed, pills, bars -- that's what I move. Say what and say how much.",
       "sourceReply": "The port? Man, I'll put you on when you moved enough for it to be worth my name. Not before.",
       "sourceTooSoon": "Nah. Keep sellin' and ask me again.",
-      "farewell": "Aight. And next time somebody's ridin' out here, it better be you."
+      "farewell": "Aight. And next time somebody's ridin' out here, it better be you.",
+      "openingText": "aye. you good to work now. weed, pills, xans, whatever you movin. just dont have me ridin over there for nothin"
     }
   ]
 }

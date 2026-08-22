@@ -57,6 +57,21 @@ namespace Hoodrich.Supply
         public readonly List<string> Drugs = new List<string>();
 
         /// <summary>
+        /// His first text, in his own voice. Empty falls back to a generic one.
+        /// </summary>
+        public string OpeningText = "";
+
+        /// <summary>
+        /// The CHAR_ dictionary his texts put a face on.
+        ///
+        /// This lived in Delivery as a switch on the id, which is the wrong home: whose face
+        /// this is is a fact about the MAN, not about one journey he happens to be making --
+        /// and the moment anything other than a delivery wanted to text you, it needed the
+        /// same switch a second time.
+        /// </summary>
+        public string Portrait = "CHAR_DEFAULT";
+
+        /// <summary>
         /// Zone codes this dealer stands in. Empty on a gang dealer means "wherever my crew
         /// holds turf", read live from the gang data.
         /// </summary>

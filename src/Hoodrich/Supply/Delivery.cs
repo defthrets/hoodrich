@@ -368,20 +368,8 @@ namespace Hoodrich.Supply
         /// draws no picture and keeps the words, so a new dealer costs a blank portrait rather
         /// than a broken message.
         /// </summary>
-        private string Portrait
-        {
-            get
-            {
-                if (_def == null) return "CHAR_DEFAULT";
-
-                switch (_def.Id)
-                {
-                    case "docks": return "CHAR_CHENG";
-                    case "stretch_run": return "CHAR_STRETCH";
-                    default: return "CHAR_DEFAULT";
-                }
-            }
-        }
+        private string Portrait =>
+            _def == null || string.IsNullOrEmpty(_def.Portrait) ? "CHAR_DEFAULT" : _def.Portrait;
 
         /// <summary>Close enough to do business over the roof of the car.</summary>
         private const float TalkRange = 4.5f;

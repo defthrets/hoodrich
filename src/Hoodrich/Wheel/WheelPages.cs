@@ -8,6 +8,7 @@ using Hoodrich.Dealing;
 using Hoodrich.Economy;
 using Hoodrich.Gangs;
 using Hoodrich.Locations;
+using Hoodrich.Missions;
 using Hoodrich.State;
 using Hoodrich.Supply;
 using Hoodrich.Territory;
@@ -54,6 +55,15 @@ namespace Hoodrich.Wheel
 
         /// <summary>Set by Main. The dock worker's run out to you.</summary>
         public Delivery Delivery;
+
+        /// <summary>
+        /// What Lamar has for you, or null. Set by the house script from the mission runner.
+        ///
+        /// A function rather than the runner itself, because the page wants one fact and
+        /// handing a whole subsystem to the menu so it can ask one question is how a menu ends
+        /// up able to start missions by accident.
+        /// </summary>
+        public Func<MissionDef> WorkWaiting;
 
         /// <summary>Set by Main. Moving product between your pockets and the house.</summary>
         public StashScreen StashScreen;
@@ -903,6 +913,11 @@ namespace Hoodrich.Wheel
             // naming a set, calling one out -- is a section inside the feed screen now, next to
             // the timeline those posts land in. A wheel page whose four items were "open a
             // screen" and three things belonging ON that screen was one door too many.
+            page.AddSub("Contacts", "#", BuildContactsPage,
+                detail: "Everyone you can reach, and what you can say to them",
+                value: ContactsSummary());
+            page.WithIcon(Icons.FromFile("phone.png"));
+
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
                 detail: PaybackDue != null && PaybackDue()
                     ? "Somebody's coming about what you said"
@@ -1019,6 +1034,79 @@ namespace Hoodrich.Wheel
         // ---- drugs -------------------------------------------------------------
 
         /// <summary>Everything to do with product, in the order you actually do it.</summary>
+        /// <summary>
+        /// The phone book.
+        ///
+        /// Texting a plug was reachable from exactly one place: three levels down, inside the
+        /// page for the gang he happens to supply. That is a fine place to find out what he
+        /// charges and a terrible one to find him when you just want a bag brought over -- and
+        /// it meant the second plug, who supplies nobody, could not be texted at all.
+        ///
+        /// So everybody you can reach is in one list: what they are to you, whether they are
+        /// answering, and the one thing you can say to them. It is not the game's own phone --
+        /// that needs a library this mod does not take -- but it is the same idea in the mod's
+        /// own furniture, and it is one flick from the wheel rather than three.
+        /// </summary>
+        private WheelPage BuildContactsPage()
+        {
+            var page = new WheelPage("Contacts", ContactsSummary());
+            page.PanelTitle = "Who you can reach";
+
+            // Him first. He is the only one on here who calls YOU.
+            var job = WorkWaiting == null ? null : WorkWaiting();
+
+            page.Add("Lamar", "L", null,
+                detail: job != null
+                    ? "He's got something. Go and see him on Forum Drive"
+                    : "Nothing on right now. He'll text when there is",
+                value: job != null ? job.Name : "quiet",
+                enabled: false,
+                disabledReason: job != null ? "Go and see him" : "Nothing on");
+            page.WithIcon(Icons.FromFile("people.png"));
+
+            // Then the plugs, in the order the data lists them.
+            foreach (var def in _dealers.All)
+            {
+                if (def == null) continue;
+
+                var plug = def;
+                var refusal = _dealers.RefusalReason(plug, _state, _crew);
+
+                var carries = plug.Drugs.Count == 0
+                    ? "everything"
+                    : string.Join(", ", plug.Drugs.ToArray()).ToUpperInvariant();
+
+                page.Add("Text " + plug.Name, ">", () => Call(plug),
+                    detail: refusal ?? plug.BuyLine,
+                    value: carries,
+                    enabled: refusal == null,
+                    disabledReason: refusal ?? "");
+
+                page.WithIcon(Icons.FromFile(plug.Drugs.Count == 0 ? "crate.png" : "weed.png"));
+            }
+
+            return page;
+        }
+
+        /// <summary>How many of them are actually answering.</summary>
+        private string ContactsSummary()
+        {
+            var open = 0;
+            var all = 0;
+
+            foreach (var def in _dealers.All)
+            {
+                if (def == null) continue;
+
+                all++;
+                if (_dealers.RefusalReason(def, _state, _crew) == null) open++;
+            }
+
+            if (all == 0) return "nobody yet";
+
+            return open + " of " + all + " plugs answering";
+        }
+
         private WheelPage BuildDrugsPage()
         {
             var page = new WheelPage("Dealing", DrugsSummary());

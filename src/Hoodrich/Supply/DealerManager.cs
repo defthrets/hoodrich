@@ -152,6 +152,8 @@ namespace Hoodrich.Supply
                 ReplaceList(def.Models, node["models"]);
                 ReplaceList(def.Drugs, node["drugs"]);
                 ReplaceList(def.Rides, node["rides"]);
+                def.OpeningText = node["openingText"].AsString(def.OpeningText);
+                def.Portrait = node["portrait"].AsString(FaceFor(def.Id));
                 ReplaceList(def.Zones, node["zones"]);
 
                 if (isNew) _defs.Add(def);
@@ -384,6 +386,22 @@ namespace Hoodrich.Supply
             // A dry dealer gets another roll next time he is seen.
             _dry.Clear();
             Log.Debug("Dealers restocked.");
+        }
+
+        /// <summary>
+        /// Whose face goes on his messages, when the data does not say.
+        ///
+        /// A fallback rather than the source of truth -- dealers.json can name a portrait for
+        /// anybody -- but the two the mod ships with should not have to.
+        /// </summary>
+        private static string FaceFor(string id)
+        {
+            switch (id)
+            {
+                case "docks": return "CHAR_CHENG";
+                case "stretch_run": return "CHAR_STRETCH";
+                default: return "CHAR_DEFAULT";
+            }
         }
 
         public DealerDef Get(string id) =>
@@ -637,8 +655,58 @@ namespace Hoodrich.Supply
 
         // ---- per-tick ----------------------------------------------------------
 
+        /// <summary>
+        /// A text from a plug the first time he is actually reachable.
+        ///
+        /// Lamar tells you when there is work. Nobody told you when there was GEAR -- a plug
+        /// went from refusing you to serving you on a rank you happened to cross while doing
+        /// something else, and the only way to find out was to open the wheel and read a menu
+        /// that had stopped saying no.
+        ///
+        /// Once per plug per save, tracked by id on PlayerState alongside the jobs, because
+        /// "he is open to you now" is a thing that happens once and should survive a reload.
+        /// </summary>
+        private void TextIfNewlyOpen(PlayerState state, Affiliation crew)
+        {
+            if (state == null) return;
+            if (Game.GameTime < _nextOpenCheck) return;
+            _nextOpenCheck = Game.GameTime + OpenCheckMs;
+
+            foreach (var def in All)
+            {
+                if (def == null) continue;
+
+                var key = "plug:" + def.Id;
+                if (state.HasBeenOffered(key)) continue;
+                if (RefusalReason(def, state, crew) != null) continue;
+
+                state.MarkOffered(key);
+                state.Touch();
+
+                var carries = def.Drugs.Count == 0
+                    ? "whatever you need"
+                    : string.Join(", ", def.Drugs.ToArray());
+
+                Notify.Text(def.Portrait, def.Name, "Los Santos",
+                            def.OpeningText.Length > 0
+                                ? def.OpeningText
+                                : "im good for " + carries + " when you are. hit me",
+                            false);
+
+                Log.Info("Plug " + def.Id + " texted that he is open.");
+                return;
+            }
+        }
+
+        private int _nextOpenCheck;
+
+        /// <summary>Rank does not move fast. Every few seconds is more than enough.</summary>
+        private const int OpenCheckMs = 6000;
+
         public void Update(TurfWatch turf, Affiliation crew, PlayerState state)
         {
+            TextIfNewlyOpen(state, crew);
+
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;
