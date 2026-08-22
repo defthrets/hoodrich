@@ -59,6 +59,9 @@ namespace Hoodrich.Gangs
         /// has a number of people and a limit to what it will spend, and when that is gone they
         /// have lost, which is a thing you can do to them.
         /// </summary>
+        /// <summary>What the street reports once the shooting has stopped.</summary>
+        private const int StarsAfter = 1;
+
         private const int SoldiersBeef = 6;
         private const int SoldiersWar = 14;
         private const int SoldiersHatred = 24;
@@ -2012,13 +2015,30 @@ namespace Hoodrich.Gangs
                 return;
             }
 
-            // Nobody calls it in. Not during, and not after either.
+            // One star, once it is over, and only if you were in it.
             //
-            // Two stars used to land the moment a raid ended, on the reasoning that the street
-            // reports it once the shooting stops. It reads as the police turning up FOR the
-            // raid, because that is the only wanted level anybody sees anywhere near one -- so
-            // "no stars during a gang war" and a guaranteed two stars at the end of every gang
-            // war are the same complaint. A raid on your own block is between the two sets.
+            // Nobody calls in a gang war while it is happening -- that part stands, and the
+            // law is held off for the whole fight. Afterwards is different: somebody on that
+            // street has a phone, and a single star is a patrol car taking an interest rather
+            // than a manhunt.
+            //
+            // It was two, briefly, and two reads as the police turning up FOR the raid. It was
+            // then nothing at all, which is its own kind of wrong -- a firefight on a
+            // residential road that the city never notices.
+            //
+            // Gated on having shown up. A raid you ignored is not something you can be wanted
+            // for, and the law hold is already released above, so this takes rather than being
+            // swallowed by a wanted ceiling still sitting at zero.
+            if (showed)
+            {
+                try
+                {
+                    Game.Player.Wanted.SetWantedLevel(StarsAfter, false);
+                    Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+                }
+                catch { /* the law will find him eventually */ }
+            }
+
 
             if (held)
             {
