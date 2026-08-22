@@ -179,15 +179,30 @@ namespace Hoodrich.UI
         public static bool File(string file, float x, float y, float heightFraction,
                                 float rotationDeg, Color c)
         {
+            return File(file, x, y, ToX(heightFraction), heightFraction, rotationDeg, c);
+        }
+
+        /// <summary>
+        /// The same, for art that is not square.
+        ///
+        /// Every icon in the set is, so File forced a square and that was right for all of
+        /// them. A wordmark is five times wider than it is tall, and squeezed into a square it
+        /// is unreadable -- so the width is its own argument, in X units, and the square
+        /// version above is now the special case rather than the only one.
+        /// </summary>
+        public static bool File(string file, float x, float y, float widthFraction,
+                                float heightFraction, float rotationDeg, Color c)
+        {
             var sprite = Load(file);
             if (sprite == null) return false;
 
             try
             {
-                var side = heightFraction * ScaledHeight;
-                if (side < 1f) return false;
+                var wide = widthFraction * GTA.UI.Screen.ScaledWidth;
+                var tall = heightFraction * ScaledHeight;
+                if (wide < 1f || tall < 1f) return false;
 
-                sprite.Size = new SizeF(side, side);
+                sprite.Size = new SizeF(wide, tall);
                 sprite.Position = new PointF(x * GTA.UI.Screen.ScaledWidth, y * ScaledHeight);
                 sprite.Color = c;
                 sprite.Rotation = rotationDeg;
@@ -200,6 +215,31 @@ namespace Hoodrich.UI
                 return false;
             }
         }
+
+        /// <summary>
+        /// The mod's own name, as art.
+        ///
+        /// Drawn rather than typed because it is a wordmark: an arched varsity block that no
+        /// font on the machine can set, so it is a PNG and the colour goes on here.
+        ///
+        /// Placed by its LEFT edge and vertical middle, because every header it sits in is
+        /// built left to right and a centre-anchored mark would have to be positioned by
+        /// working backwards from its own width at every call site.
+        /// </summary>
+        public static void Brand(float left, float middle, float height, Color c)
+        {
+            var wide = ToX(height) * WordmarkAspect;
+            File("logo.png", left + wide * 0.5f, middle, wide, height, 0f, c);
+        }
+
+        /// <summary>
+        /// How many times wider than tall logo.png is. Printed by tools/make_logo.py.
+        ///
+        /// A constant rather than something read off the texture, because CustomSprite does not
+        /// expose the source size -- and a wordmark whose proportions are guessed is a wordmark
+        /// that is subtly squashed on every screen it appears on.
+        /// </summary>
+        public const float WordmarkAspect = 5.2513f;
 
         /// <summary>
         /// The sprite for a file, made once.

@@ -869,7 +869,7 @@ namespace Hoodrich.Wheel
             // the time the player flicks into the weapons page rather than popping in under them.
             _weapons.PrewarmCarried();
 
-            var page = new WheelPage("Hoodrich",
+            var page = new WheelPage("Posted Up",
                 _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated");
 
             // Four wedges at 90 degrees each. Every top-level tab owns its own sub-tabs rather

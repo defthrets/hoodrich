@@ -245,7 +245,18 @@ namespace Hoodrich.UI
         private const float RowHeight = 0.0225f;
         private const float Pad = 0.012f;
 
-        private const float HeaderH = 0.048f;
+        /// <summary>How tall the wordmark sits above a panel's own title.</summary>
+        private const float BrandHeight = 0.017f;
+
+        /// <summary>
+        /// The header band: the wordmark, the panel's own title, and the air round them.
+        ///
+        /// Grew by the height of the mark when the mark went in. It is what every row below
+        /// measures from -- the panel's total height, where the body starts and where the
+        /// scroll track begins are all off this one number -- so moving the title down without
+        /// it would have put the title through the first row.
+        /// </summary>
+        private const float HeaderH = 0.070f;
         private const float BodyLead = 0.010f;
         private const float FooterH = 0.026f;
 
@@ -460,12 +471,17 @@ namespace Hoodrich.UI
             Hud.RectFrom(x, top, PanelWidth, height, Ground);
             Hud.RectFrom(x, top, PanelWidth, 0.0028f, Palette.Accent);
 
-            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.008f, 0.74f, Palette.Text,
+            // The mark sits above the screen's own title: the mod saying who is talking,
+            // then the screen saying what about. Dim, because it is a letterhead rather than
+            // a heading -- it should be the second thing read, not the first.
+            Hud.Brand(x + Pad, top + 0.013f, BrandHeight, Palette.Alpha(Palette.TextDim, 150));
+
+            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.030f, 0.74f, Palette.Text,
                      Hud.FontCursive, centre: false);
 
             if (!string.IsNullOrEmpty(_subtitle))
             {
-                Hud.TextRight(_subtitle, right, top + 0.022f, 0.34f, Palette.Cash,
+                Hud.TextRight(_subtitle, right, top + 0.044f, 0.34f, Palette.Cash,
                               Hud.FontChaletLondon);
             }
 

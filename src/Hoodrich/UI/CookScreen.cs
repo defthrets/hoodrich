@@ -333,7 +333,9 @@ namespace Hoodrich.UI
         {
             if (!IsOpen || _rows.Count == 0) return;
 
-            var height = 0.268f + _rows.Count * RowHeight;
+            // 0.286 rather than 0.268: the wordmark added a band above the title and the
+            // panel has to own that height, or the last row hangs off the bottom of it.
+            var height = 0.286f + _rows.Count * RowHeight;
 
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
@@ -346,7 +348,14 @@ namespace Hoodrich.UI
 
             var x = left + pad;
             var right = left + panelWidth - pad;
-            var y = top + 0.013f;
+            // The title line, moved down to leave room for the mark above it. Everything
+            // below steps off this, so shifting it here shifts the whole screen together.
+            var y = top + 0.031f;
+
+            // The mark, then the room -- the same order as every other screen. Anchored to
+            // the panel TOP rather than to the title, because measuring it off the title put
+            // it half a centimetre above the panel and outside its own ground.
+            Hud.Brand(x, top + 0.015f, 0.016f, Palette.Alpha(Palette.TextDim, 150));
 
             // The house script, the same face every other screen in the mod is titled in.
             Hud.Text("THE KITCHEN", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);

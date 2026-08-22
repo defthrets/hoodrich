@@ -1076,7 +1076,7 @@ namespace Hoodrich
                     _state.SeenWelcome = true;
                     _state.Touch();
 
-                    _info.Open("Hoodrich", "Everything you need, once", Welcome.Pages());
+                    _info.Open("Posted Up", "Everything you need, once", Welcome.Pages());
                     Log.Info("Showed the first-run guide.");
                 }
 
