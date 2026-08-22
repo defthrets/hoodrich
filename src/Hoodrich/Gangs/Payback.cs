@@ -60,6 +60,38 @@ namespace Hoodrich.Gangs
             "baller", "buccaneer", "manana", "peyton", "primo", "tornado", "voodoo",
         };
 
+        /// <summary>
+        /// What a particular set turns up in, where they have their own answer.
+        ///
+        /// Everybody used to arrive in the same seven lowriders, which is fine for a Los Santos
+        /// set and reads as nonsense for a biker gang: naming the Lost brought a Voodoo full of
+        /// bearded men. The Lost ride, the Triads and the Armenians drive something with money
+        /// in it, and everybody without an entry falls back to the list above.
+        /// </summary>
+        private static readonly Dictionary<string, string[]> Rides =
+            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "lost", new[] { "daemon", "hexer", "sovereign", "zombiea", "gburrito" } },
+                { "triads", new[] { "kuruma", "schafter2", "cavalcade", "landstalker" } },
+                { "armenians", new[] { "schafter2", "oracle", "felon", "cavalcade" } },
+                { "koreans", new[] { "kuruma", "sultan", "penumbra", "fugitive" } },
+                { "vagos", new[] { "tornado", "buccaneer", "chino", "voodoo" } },
+                { "marabunta", new[] { "tornado", "manana", "voodoo", "moonbeam" } },
+            };
+
+        /// <summary>
+        /// Who a set is made of when nothing has said.
+        ///
+        /// Gangs added in gangs.json rather than in code arrive with an EMPTY model list, and
+        /// an empty list means every seat fails to fill, which means no driver, which means the
+        /// visit is quietly binned. Naming the Koreans did nothing at all for exactly this
+        /// reason, and from the street it was indistinguishable from the feature being broken.
+        /// </summary>
+        private static readonly string[] AnyGoons =
+        {
+            "g_m_y_lost_01", "g_m_y_mexgoon_01", "g_m_y_salvagoon_01", "a_m_m_soucent_01"
+        };
+
         private enum Flavour { DriveBy, Hands, Guns }
 
         private readonly GangRegistry _gangs;
@@ -108,6 +140,21 @@ namespace Hoodrich.Gangs
         /// it pulls the one that is coming forward. Two carloads converging because you pressed
         /// the button twice is a bug that looks like a feature until it happens.
         /// </summary>
+        /// <summary>
+        /// Puts the debt back on the clock after an attempt that could not start.
+        ///
+        /// Sooner than a fresh one, because it is not a new grudge -- it is the same one, still
+        /// owed, having failed to find a road.
+        /// </summary>
+        private void Rearm()
+        {
+            if (_who == null) return;
+
+            _dueAt = Game.GameTime + 20000 + _rng.Next(25000);
+            Log.Info("Payback to " + _who.Id + " could not start; trying again in " +
+                     ((_dueAt - Game.GameTime) / 1000) + "s.");
+        }
+
         public void Owed(string gangId)
         {
             var gang = _gangs == null ? null : _gangs.Get(gangId);
@@ -158,10 +205,29 @@ namespace Hoodrich.Gangs
                 // Behind him and on a road, so it comes round a corner instead of appearing.
                 var back = player.Position - player.ForwardVector * SpawnRange;
                 var spawn = World.GetNextPositionOnStreet(back);
-                if (spawn == Vector3.Zero) return;
 
-                var model = new Model(Cars[_rng.Next(Cars.Length)]);
-                if (!model.IsValid || !model.Request(2000)) return;
+                if (spawn == Vector3.Zero)
+                {
+                    // No road behind you -- indoors, up an alley, out in a field. The debt is
+                    // put BACK rather than swallowed, which is the bug this whole method had:
+                    // _dueAt is cleared before we get here, so one failed attempt was the end
+                    // of it and nobody ever came. From the street that is the feature not
+                    // working, and it fails most often exactly where you would post from.
+                    Rearm();
+                    return;
+                }
+
+                var list = _who != null && Rides.TryGetValue(_who.Id, out var theirs)
+                    ? theirs
+                    : Cars;
+
+                var model = new Model(list[_rng.Next(list.Length)]);
+                if (!model.IsValid || !model.Request(2000))
+                {
+                    // Their own ride is not in this copy of the game. Anybody can drive a Voodoo.
+                    model = new Model(Cars[_rng.Next(Cars.Length)]);
+                    if (!model.IsValid || !model.Request(2000)) { Rearm(); return; }
+                }
 
                 _car = World.CreateVehicle(model, spawn);
                 model.MarkAsNoLongerNeeded();
@@ -189,6 +255,7 @@ namespace Hoodrich.Gangs
                 if (_driver == null)
                 {
                     Pack();
+                    Rearm();
                     return;
                 }
 
@@ -344,11 +411,11 @@ namespace Hoodrich.Gangs
 
         private Ped Spawn(Vehicle car, int seat)
         {
-            if (_who.MemberModels.Count == 0) return null;
-
             try
             {
-                var name = _who.MemberModels[_rng.Next(_who.MemberModels.Count)];
+                var name = _who.MemberModels.Count > 0
+                    ? _who.MemberModels[_rng.Next(_who.MemberModels.Count)]
+                    : AnyGoons[_rng.Next(AnyGoons.Length)];
                 var model = new Model(name);
                 if (!model.IsValid || !model.Request(2000)) return null;
 

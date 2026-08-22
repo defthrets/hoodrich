@@ -197,19 +197,39 @@ namespace Hoodrich.Locations
 
             try
             {
+                var kept = false;
+
                 foreach (var ped in World.GetNearbyPeds(player, QuietRange))
                 {
                     if (ped == null || !ped.Exists() || ped.Handle == player.Handle) continue;
+
+                    // Ours, already stood in and already dressed. Skipped before the household
+                    // test, which she would not pass anyway -- she is not wearing that model.
+                    if (_stand != null && _stand.Exists() && ped.Handle == _stand.Handle)
+                    {
+                        kept = true;
+                        continue;
+                    }
+
                     if (!IsHousehold(ped)) continue;
 
-                    Settle(ped);
-                    _settled = ped;
-
-                    if (!_saidCouchIsFree)
+                    // The FIRST one is stood in for and the rest are simply deleted.
+                    //
+                    // There are two of her in that room -- the game places one and the interior
+                    // mod places another -- and two identical women three feet apart is the kind
+                    // of thing you cannot stop seeing once you have seen it. The old sweep
+                    // settled both of them and kept a handle on whichever came last, so the
+                    // other stayed frozen forever with nothing left that knew about it.
+                    if (kept)
                     {
-                        _saidCouchIsFree = true;
-                        Log.Info("Denise settled in the front room.");
+                        try { ped.Delete(); }
+                        catch { /* somebody else's to delete */ }
+
+                        continue;
                     }
+
+                    kept = true;
+                    StandIn(ped);
                 }
             }
             catch (Exception ex)
@@ -217,6 +237,115 @@ namespace Hoodrich.Locations
                 Log.Debug("Could not clear the couch: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// Puts our own woman where the game's was, and takes the game's away.
+        ///
+        /// A ped cannot be re-skinned in place -- the model IS the ped -- so the only way to
+        /// have somebody else sat in that chair is to note where the occupant was, remove her,
+        /// and create the one you wanted on the same mark.
+        ///
+        /// She is still Denise as far as everything else here is concerned: the same spot, the
+        /// same freeze, the same silence. It is a change of face and nothing else, and it costs
+        /// nothing to make because she has not had a line in this house since the day she was
+        /// muted.
+        /// </summary>
+        private void StandIn(Ped hers)
+        {
+            var at = hers.Position;
+            var facing = hers.Heading;
+
+            foreach (var name in StandInModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+
+                    var handle = Function.Call<int>(Hash.CREATE_PED, 4, model.Hash,
+                                                    at.X, at.Y, at.Z, facing, false, false);
+
+                    model.MarkAsNoLongerNeeded();
+                    if (handle == 0) continue;
+
+                    var her = Entity.FromHandle(handle) as Ped;
+                    if (her == null || !her.Exists()) continue;
+
+                    try { hers.Delete(); }
+                    catch { /* the game will tidy its own */ }
+
+                    Beachwear(her);
+                    Settle(her);
+
+                    _stand = her;
+                    _settled = her;
+
+                    if (!_saidCouchIsFree)
+                    {
+                        _saidCouchIsFree = true;
+                        Log.Info("Stood " + name + " in for Denise at " + at + ".");
+                    }
+
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not stand in for Denise: " + ex.Message);
+                }
+            }
+
+            // Nobody to stand in with, so the original is settled the way she always was.
+            Settle(hers);
+            _settled = hers;
+        }
+
+        /// <summary>
+        /// What she is wearing.
+        ///
+        /// Component 3 is the torso and arms, 4 the legs, 8 the undershirt, 11 the top layer.
+        /// The indices below are a first pass at her beach set and the log says what was
+        /// applied, so a wrong one is a number to change rather than a thing to go hunting for.
+        /// Anything the model has not got is refused by the game and simply leaves that slot
+        /// alone, which is why this is safe to try.
+        /// </summary>
+        private static void Beachwear(Ped her)
+        {
+            try
+            {
+                Function.Call(Hash.SET_PED_DEFAULT_COMPONENT_VARIATION, her.Handle);
+
+                foreach (var set in Beach)
+                {
+                    Function.Call(Hash.SET_PED_COMPONENT_VARIATION, her.Handle,
+                                  set[0], set[1], set[2], 0);
+                }
+
+                Log.Info("Beachwear applied: torso " + Beach[0][1] + ", legs " + Beach[1][1] +
+                         ", top " + Beach[2][1] + ".");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not dress her: " + ex.Message);
+            }
+        }
+
+        /// <summary>component, drawable, texture.</summary>
+        private static readonly int[][] Beach =
+        {
+            new[] { 3, 5, 0 },     // torso and arms -- bare
+            new[] { 4, 5, 0 },     // legs
+            new[] { 8, 3, 0 },     // undershirt, which is the bikini top on her
+            new[] { 11, 0, 0 },    // no jacket over it
+        };
+
+        /// <summary>Who stands in for her. First that this copy of the game has.</summary>
+        private static readonly string[] StandInModels =
+        {
+            "ig_tracydisanto", "csb_tracydisanto", "a_f_y_beach_01"
+        };
+
+        /// <summary>The one we made, so she goes when the script does.</summary>
+        private Ped _stand;
 
         /// <summary>
         /// Leaves her where she is and stops her doing anything.
@@ -325,6 +454,17 @@ namespace Hoodrich.Locations
             }
             catch { /* teardown */ }
 
+            // The stand-in is OURS, so she is deleted rather than let go. Handed back she would
+            // stay in that front room for the rest of the save with the game's own occupant
+            // repopulating alongside her -- two women again, and this time one of them is a
+            // stranger nobody can account for.
+            try
+            {
+                if (_stand != null && _stand.Exists()) _stand.Delete();
+            }
+            catch { /* teardown */ }
+
+            _stand = null;
             _settled = null;
         }
 
