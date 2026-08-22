@@ -79,8 +79,8 @@ namespace Hoodrich.Gangs
         /// <summary>Past this they are somebody else's problem, so they are handed back.</summary>
         private const float LetGoRange = 260f;
 
-        private const int GapMinMs = 18000;
-        private const int GapMaxMs = 55000;
+        private const int GapMinMs = 11000;
+        private const int GapMaxMs = 34000;
 
         /// <summary>How long they sit in an alley with the engine running.</summary>
         private const int SitMinMs = 12000;
@@ -156,7 +156,13 @@ namespace Hoodrich.Gangs
         /// </summary>
         private static readonly string[] Bikes =
         {
-            "inductor", "inductor2", "stryder", "sanchez", "blazer", "blazer4"
+            // pushbikes and quads
+            "inductor", "inductor2", "stryder", "blazer", "blazer4",
+
+            // and everything with an engine that somebody round here would actually own:
+            // dirt bikes, a scooter, a couple of cheap street bikes and two customs.
+            "sanchez", "sanchez2", "manchez", "esskey", "faggio2", "faggio3",
+            "ruffian", "pcj", "vader", "nemesis", "daemon", "bagger", "hexer"
         };
         private static readonly string[] SpareBikes = { "bmx", "scorcher" };
 
@@ -247,7 +253,7 @@ namespace Hoodrich.Gangs
 
                 // A bike is cheaper and reads better on a quiet street, so it wins the coin
                 // toss more often than not.
-                var wantBike = _rng.Next(100) < 55;
+                var wantBike = _rng.Next(100) < 72;
 
                 if (wantBike && Count(true) < MaxBikes) Send(player, true);
                 else if (Count(false) < MaxCars) Send(player, false);

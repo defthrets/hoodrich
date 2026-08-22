@@ -342,6 +342,14 @@ namespace Hoodrich.UI
             Slide("Riders at once", "Block", "RollerBikes",
                   () => c.RollerBikes, v => c.RollerBikes = (int)v, 0f, 6f, 1f, "0");
 
+            Head("The law");
+            Tick("Police patrol the blocks", "Police", "PatrolsEnabled",
+                 () => c.PatrolsEnabled, v => c.PatrolsEnabled = v,
+                 "Cars going round of their own accord -- nothing to do with heat");
+            Slide("Patrol cars at once", "Police", "PatrolCars",
+                  () => c.PatrolCars, v => c.PatrolCars = (int)v, 0f, 4f, 1f, "0",
+                  note: "One is a neighbourhood; three is an occupation");
+
             Head("Socials");
             Tick("Feed on the right", "Socials", "TweetsOnTheRight",
                  () => c.TweetsOnTheRight, v => c.TweetsOnTheRight = v);

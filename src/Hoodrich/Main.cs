@@ -299,6 +299,7 @@ namespace Hoodrich
         private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
         private readonly BlockLife _block;
         private readonly Rollers _rollers;
+        private readonly Patrol _patrol;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
         private GunScreen _gunScreen;
@@ -698,6 +699,14 @@ namespace Hoodrich
                 // whether he was or not.
                 _rollers = new Rollers(_cfg, _gangs, "families", _turf);
 
+                // The law, going round because the blocks are the blocks. Nothing to do with
+                // heat, a bust or a raid -- this car was coming down that street tonight
+                // whether you were on it or not.
+                _patrol = new Patrol(_cfg, _gangs, _turf, _state)
+                {
+                    Doorstep = StashHouse.House
+                };
+
                 _toasts = new TweetToast
                 {
                     Enabled = _cfg.TweetsOnTheRight,
@@ -804,6 +813,14 @@ namespace Hoodrich
                 _rollers.Busy = () => (_jobs != null && _jobs.IsRunning)
                                       || (_war != null && _war.IsRunning)
                                       || (_payback != null && _payback.IsRunning);
+
+                // And the law stays out of a raid, a job and a bust -- all three send police of
+                // their own, and two lots of police for two different reasons in one street is
+                // neither of them reading as what it is.
+                _patrol.Busy = () => (_jobs != null && _jobs.IsRunning)
+                                     || (_war != null && _war.IsRunning)
+                                     || (_payback != null && _payback.IsRunning)
+                                     || Game.Player.Wanted.WantedLevel > 0;
                 _copWatch.Social = _social;
                 _postUp.Social = _social;
                 _crew.Social = _social;
@@ -1249,6 +1266,7 @@ namespace Hoodrich
                     _traffic.Update();
                     _payback.Update();
                     _rollers.Update();
+                    _patrol.Update();
                     _war.Update();
 
                     _lamarCrew.Update();
@@ -1275,6 +1293,10 @@ namespace Hoodrich
                     _war.Draw();
                     _jobs.Draw();
                 }
+
+                // The spotlight, every frame rather than every tick -- a beam that exists for
+                // one frame in nine is a strobe.
+                _patrol.Draw();
 
                 _cutting.Draw();
                 _bust.Draw();
@@ -1746,6 +1768,7 @@ namespace Hoodrich
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _rollers?.RestoreWorld(); } catch { /* teardown */ }
+            try { _patrol?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _grimesCrew?.RestoreWorld(); } catch { /* teardown */ }

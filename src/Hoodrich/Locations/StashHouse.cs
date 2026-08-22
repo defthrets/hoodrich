@@ -21,7 +21,14 @@ namespace Hoodrich.Locations
     internal sealed class StashHouse
     {
         /// <summary>Aunt Denise's, Forum Drive, Davis.</summary>
-        private static readonly Vector3 House = new Vector3(-14.3f, -1438.4f, 31.1f);
+        /// <summary>
+        /// Franklin's aunt's, on Forum Drive.
+        ///
+        /// Internal rather than private now, because somebody else has a use for it: a patrol
+        /// car that sometimes pulls up outside a particular door and sits there with the light
+        /// on wants to know which door, and this is the one address in the mod that is his.
+        /// </summary>
+        internal static readonly Vector3 House = new Vector3(-14.3f, -1438.4f, 31.1f);
 
         /// <summary>
         /// Anywhere in or around the house counts.

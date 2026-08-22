@@ -189,6 +189,19 @@ namespace Hoodrich.Core
         /// <summary>Fine when a search finds product on you.</summary>
         public int PostUpFine = 2500;
 
+        // ---- the law -----------------------------------------------------------
+
+        /// <summary>
+        /// Whether the police drive the gang blocks of their own accord.
+        ///
+        /// Nothing to do with heat, a bust or a raid. This is the patrol that would have come
+        /// down that street tonight whether you were on it or not.
+        /// </summary>
+        public bool PatrolsEnabled = true;
+
+        /// <summary>Cars out at once. One is a neighbourhood; three is an occupation.</summary>
+        public int PatrolCars = 1;
+
         // ---- Lamar's list ------------------------------------------------------
 
         /// <summary>
@@ -209,7 +222,7 @@ namespace Hoodrich.Core
         public int RollerCars = 2;
 
         /// <summary>Riders on the footpaths at once.</summary>
-        public int RollerBikes = 2;
+        public int RollerBikes = 3;
 
         // ---- joining -----------------------------------------------------------
 
@@ -325,6 +338,9 @@ namespace Hoodrich.Core
             s.PostUpFine = Math.Max(0, ini.GetInt("PostUp", "PostUpFine", s.PostUpFine));
 
             s.LeaderFrontGrams = Math.Max(0f, ini.GetFloat("Map", "LeaderFrontGrams", s.LeaderFrontGrams));
+
+            s.PatrolsEnabled = ini.GetBool("Police", "PatrolsEnabled", s.PatrolsEnabled);
+            s.PatrolCars = (int)Clamp(ini.GetInt("Police", "PatrolCars", s.PatrolCars), 0f, 4f);
 
             s.LamarRestMinutes =
                 Math.Max(0f, ini.GetFloat("Jobs", "LamarRestMinutes", s.LamarRestMinutes));
