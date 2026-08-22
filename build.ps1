@@ -238,7 +238,10 @@ function Deploy-To([string]$gameDir, [string]$label) {
             }
 
             if (-not $absent -and -not $stale) {
-                Write-Host "  keep   Hoodrich.ini (70 settings, all current)" -ForegroundColor DarkGray
+                # Counted, not typed. The number was hardcoded at 70 and stayed at 70 through
+                # every setting added since -- on a line whose entire job is telling you whether
+                # your ini is current.
+                Write-Host "  keep   Hoodrich.ini ($($srcKeys.Count) settings, all current)" -ForegroundColor DarkGray
             }
         }
     }
