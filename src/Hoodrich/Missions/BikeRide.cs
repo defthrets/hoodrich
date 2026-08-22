@@ -182,7 +182,20 @@ namespace Hoodrich.Missions
         private int _nextRetask;
         private bool _wentInside;
         private bool _talkHeld;
-        private bool _wordsSaid;
+        /// <summary>
+        /// How far through the exchange at the courts we are, and when the next line is due.
+        ///
+        /// It runs itself. It used to be a prompt and a dialogue panel -- ride across two
+        /// neighbourhoods, then stand there and press a button to be shown a menu with one
+        /// option on it. Four men walk up to you on a court; you do not get asked whether you
+        /// would like the scene to begin.
+        /// </summary>
+        private int _wordsStep;
+        private int _wordsAt;
+
+        /// <summary>When Lamar laughs, and when he gets round to why he wants to stop.</summary>
+        private int _laughAt;
+        private int _thirstyAt;
 
         public BikeRide(Affiliation crew, GangRegistry gangs)
         {
@@ -254,7 +267,10 @@ namespace Hoodrich.Missions
             _lamarSlipSince = 0;
             _lamarWasAt = 0f;
             _lamarGoneSince = 0;
-            _wordsSaid = false;
+            _wordsStep = 0;
+            _wordsAt = 0;
+            _laughAt = 0;
+            _thirstyAt = 0;
             ReadyToCollect = false;
             Failure = null;
 
@@ -400,17 +416,22 @@ namespace Hoodrich.Missions
             Notify.Important("~r~They're already here.~s~ " + Objective + ".");
         }
 
+        /// <summary>
+        /// What gets said before it goes off, on its own, in subtitles.
+        ///
+        /// Nothing to press. There was a prompt and a one-option dialogue panel here, which is
+        /// the wrong shape for this beat twice over: you had already ridden across two
+        /// neighbourhoods to have this conversation, so being asked whether you would like to
+        /// have it is a question with one answer -- and four men walking up to you on a court
+        /// is not something you opt into. Get near enough for it to be them talking to you
+        /// rather than a caption from across the court, and it plays.
+        ///
+        /// Timed off the clock rather than waited on, because everything in this file runs
+        /// inside one tick and a wait would stop the whole mod mid-sentence.
+        /// </summary>
         private void TickWords(Ped player)
         {
-            if (Talk == null || Talk.IsOpen) return;
-
-            // The panel is gone and the line landed, so it goes off. Watched here rather than
-            // hooked into the conversation screen, which does not know or care what it was for.
-            if (_wordsSaid)
-            {
-                OnTalkClosed();
-                return;
-            }
+            if (Talk != null && Talk.IsOpen) return;
 
             var nearest = Nearest(_rivals, player);
             if (nearest == null)
@@ -419,41 +440,48 @@ namespace Hoodrich.Missions
                 return;
             }
 
-            if (Flat(player.Position, nearest.Position) > TalkRange) return;
+            if (_wordsStep == 0)
+            {
+                if (Flat(player.Position, nearest.Position) > TalkRange) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to say something.");
+                RivalSays("You been talking a lot of smack online. We here right now, boy. " +
+                          "Whatchu wanna do?", 4200);
 
-            if (!Pressed()) return;
+                _wordsAt = Game.GameTime + 3600;
+                _wordsStep = 1;
+                return;
+            }
 
-            _wordsSaid = false;
-            Talk.Open(Words(), this);
+            if (Game.GameTime < _wordsAt) return;
+
+            if (_wordsStep == 1)
+            {
+                Says("~g~FRANKLIN", "Say that again.", 1800);
+
+                _wordsAt = Game.GameTime + 1400;
+                _wordsStep = 2;
+                return;
+            }
+
+            ItGoesOff();
         }
 
-        /// <summary>
-        /// One page and one way out.
-        ///
-        /// No branches on purpose: you rode across two neighbourhoods to say this, and being
-        /// offered a polite exit at the last moment would make the ride pointless.
-        /// </summary>
-        private DialogueNode Words()
+        /// <summary>Whoever you came to see, in their own colour, saying it out loud.</summary>
+        private void RivalSays(string line, int ms)
         {
             var gang = _gangs.Get(_def.TargetGang);
             var who = gang == null ? "Ballas" : gang.Name;
 
-            var node = new DialogueNode(who,
-                "You been talking a lot of smack online. We here right now, boy. " +
-                "Whatchu wanna do?")
-            {
-                SpeakerColour = gang == null ? Palette.Danger : gang.Colour
-            };
+            Says("~p~" + who.ToUpperInvariant(), line, ms);
+        }
 
-            node.Say("Say that again.", () =>
-            {
-                _wordsSaid = true;
-                return null;
-            }, "It goes off");
+        /// <summary>A named line on screen. The colour is the tag, not the whole sentence.</summary>
+        private void Says(string who, string line, int ms)
+        {
+            if (string.IsNullOrEmpty(line)) return;
 
-            return node;
+            try { GTA.UI.Screen.ShowSubtitle(who + ":~s~ " + line, ms); }
+            catch { /* the objective still says what to do */ }
         }
 
         private void TickFight()
@@ -483,6 +511,8 @@ namespace Hoodrich.Missions
             _gotCash = false;
             _clerk = null;
 
+            Cheer();
+
             Mark(Shop, "24/7", BlipColor.Yellow);
             Notify.Important("~g~That's that.~s~ Lamar wants to stop at the 24/7. " + Objective + ".");
         }
@@ -497,6 +527,27 @@ namespace Hoodrich.Missions
         /// </summary>
         private void TickRob(Ped player)
         {
+            // The two lines that follow the fight, spaced so they do not stack. The laugh is
+            // audible and the thirst is written, which is on purpose: one of them is a noise a
+            // man makes and the other is a sentence he needs you to hear.
+            if (_laughAt != 0 && Game.GameTime >= _laughAt)
+            {
+                _laughAt = 0;
+                Mouth(_lamar, "LAUGH");
+            }
+
+            if (_thirstyAt != 0 && Game.GameTime >= _thirstyAt)
+            {
+                _thirstyAt = 0;
+
+                // Which he will deny at the shutter in about a minute. He is not thirsty and
+                // he was never thirsty -- he wants you parked outside that shop, and the drink
+                // is the reason he came up with on the way. Saying it out loud here is what
+                // makes "nah, I ain't thirsty, just pull in" land as him dropping the act.
+                LamarSays("Ay, hold up, I'm thirsty as hell, dawg. Slide on that 24/7, " +
+                          "let's get us somethin' to drink.");
+            }
+
             RemountHomies(player);
 
             var range = player.Position.DistanceTo(Shop);
@@ -852,6 +903,58 @@ namespace Hoodrich.Missions
             catch (Exception ex)
             {
                 Log.Debug("Could not send Lamar home: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Lamar, stood over it, enjoying himself.
+        ///
+        /// A scenario rather than an animation, which matters here: an anim dictionary is not
+        /// loaded in the frame it is asked for, so playing a clip the moment the last man goes
+        /// down means playing nothing at all. WORLD_HUMAN_CHEERING is already in the game and
+        /// starts on the frame it is given.
+        ///
+        /// He is not held there. If you get straight on the bike, RemountHomies puts him on
+        /// his -- somebody choosing to ride off IS the end of the moment, and freezing the
+        /// mission for three seconds to make sure a celebration is seen would be worse than
+        /// missing it.
+        /// </summary>
+        private void Cheer()
+        {
+            _laughAt = Game.GameTime + 1700;
+            _thirstyAt = Game.GameTime + 3400;
+
+            Says("~y~LAMAR", "AYYY! You seen that?! That's what I'm talkin' 'bout!", 3000);
+
+            if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, _lamar.Handle);
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _lamar.Handle,
+                              "WORLD_HUMAN_CHEERING", 0, true);
+            }
+            catch
+            {
+                // He will stand there pleased with himself instead.
+            }
+
+            Mouth(_lamar, "GENERIC_INSULT_HIGH");
+        }
+
+        /// <summary>Something out loud, which is not the same as something on screen.</summary>
+        private void Mouth(Ped who, string speech)
+        {
+            if (who == null || !who.Exists() || !who.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, who.Handle, speech,
+                              "SPEECH_PARAMS_FORCE_SHOUTED");
+            }
+            catch
+            {
+                // A line his voice has not got costs nothing.
             }
         }
 
@@ -1649,7 +1752,7 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>The exchange is over and somebody has to go first.</summary>
-        private void OnTalkClosed()
+        private void ItGoesOff()
         {
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
@@ -2048,7 +2151,10 @@ namespace Hoodrich.Missions
             _lamarSlipSince = 0;
             _lamarWasAt = 0f;
             _lamarGoneSince = 0;
-            _wordsSaid = false;
+            _wordsStep = 0;
+            _wordsAt = 0;
+            _laughAt = 0;
+            _thirstyAt = 0;
         }
     }
 }
