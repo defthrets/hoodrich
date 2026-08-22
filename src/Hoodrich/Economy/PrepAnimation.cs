@@ -34,8 +34,32 @@ namespace Hoodrich.Economy
         }
 
         /// <summary>
-        /// Tried in order per drug. Falls through to the shared list, so a drug with no entry
-        /// still gets hands rather than nothing.
+        /// The house animation for working a counter, tried before anything drug-specific.
+        ///
+        /// timetable@maid@ig_2@ is somebody stood at a worktop with both hands busy in front
+        /// of them, which is what bagging up actually looks like -- the business clips
+        /// underneath are packing crates and inspecting trays, authored for a warehouse rather
+        /// than for Aunt Denise's kitchen.
+        ///
+        /// Several clip names, and that is deliberate rather than indecisive. A clip that is
+        /// not in a dictionary fails SILENTLY -- the task is accepted and nothing moves -- so
+        /// the only way to find the one this install has is to try them and check. TryPlay
+        /// does check, and steps to the next on a miss, so an unlucky name costs a frame
+        /// rather than the animation.
+        /// </summary>
+        private static readonly Clip[] Counter =
+        {
+            new Clip("timetable@maid@ig_2@", "base"),
+            new Clip("timetable@maid@ig_2@", "idle_a"),
+            new Clip("timetable@maid@ig_2@", "idle_b"),
+            new Clip("timetable@maid@ig_2@", "idle_c"),
+            new Clip("timetable@maid@ig_2@", "ig_2_base"),
+            new Clip("timetable@maid@ig_2@", "maid_base")
+        };
+
+        /// <summary>
+        /// Tried in order per drug, once the counter clips have had their go. Falls through to
+        /// the shared list, so a drug with no entry still gets hands rather than nothing.
         /// </summary>
         private static readonly Dictionary<string, Clip[]> ByDrug =
             new Dictionary<string, Clip[]>(StringComparer.OrdinalIgnoreCase)
@@ -147,6 +171,7 @@ namespace Hoodrich.Economy
                     foreach (var clip in clips) Function.Call(Hash.REQUEST_ANIM_DICT, clip.Dict);
                 }
 
+                foreach (var clip in Counter) Function.Call(Hash.REQUEST_ANIM_DICT, clip.Dict);
                 foreach (var clip in Fallback) Function.Call(Hash.REQUEST_ANIM_DICT, clip.Dict);
             }
             catch
@@ -163,6 +188,14 @@ namespace Hoodrich.Economy
             if (player == null || !player.Exists()) return false;
 
             if (!ByDrug.TryGetValue(drugId ?? "", out var clips)) clips = Fallback;
+
+            // The counter animation first, whatever is being worked. Cutting is one action in
+            // one room, so it should look like one action -- the per-drug clips below are what
+            // happens if this install has not got it.
+            foreach (var clip in Counter)
+            {
+                if (TryPlay(player, clip)) return true;
+            }
 
             foreach (var clip in clips)
             {
@@ -203,6 +236,8 @@ namespace Hoodrich.Economy
 
                 _playingDict = clip.Dict;
                 _playingClip = clip.Name;
+
+                Log.Debug("Prep animation: " + clip.Dict + " / " + clip.Name + " took.");
                 return true;
             }
             catch (Exception ex)
