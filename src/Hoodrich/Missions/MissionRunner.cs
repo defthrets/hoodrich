@@ -685,6 +685,7 @@ namespace Hoodrich.Missions
             // The death and arrest checks that used to sit here are at the top of Update now,
             // where the bike ride and the tag run get them too.
             CountLostHomies();
+            KeepThemSeated();
 
             switch (State)
             {
@@ -819,6 +820,41 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
+        /// Puts anybody who has got out back in, for the whole length of a job done from a car.
+        ///
+        /// KeepShooting already did this, but only ever ran in the WORK state -- so the moment
+        /// the shooting was over and the objective read "lose the cops" nothing was watching
+        /// them any more, and that is exactly where they were last seen stood in the road
+        /// firing at a patrol car. The lock has to hold for the drive out, the work, the
+        /// escape and the run back, because it is the same car ride throughout.
+        ///
+        /// Released in Clear, which is what runs when the job hands in at Lamar's.
+        /// </summary>
+        private void KeepThemSeated()
+        {
+            if (!FromTheCar) return;
+            if (Game.GameTime < _nextSeatCheck) return;
+            _nextSeatCheck = Game.GameTime + SeatCheckMs;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            var ride = player.CurrentVehicle;
+            if (ride == null || !ride.Exists()) return;
+
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+                if (homie.IsInVehicle()) continue;
+
+                SitBackDown(homie, ride);
+            }
+        }
+
+        private int _nextSeatCheck;
+        private const int SeatCheckMs = 900;
+
+        /// <summary>
         /// Puts anybody idle back on a target, a couple of times a second at most.
         /// </summary>
         private void KeepShooting()
@@ -936,7 +972,17 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 0, true);
 
                     Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, homie.Handle, 2);
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
+
+                    // Locked in, on a job done out of a window.
+                    //
+                    // Attribute 3 alone was not enough and they kept piling out. Two other
+                    // things were letting them: non-temporary events were left UNBLOCKED, so
+                    // being shot at is an event they answer by bailing out and taking cover,
+                    // and nothing stopped them being pulled out by anybody who fancied it.
+                    // On foot jobs none of this applies -- getting out is the job.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS,
+                                  homie.Handle, FromTheCar);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, !FromTheCar);
 
                     // Named targets rather than "everybody hated within a hundred and twenty
                     // metres". The area order sweeps in whoever the game currently considers an
@@ -1174,6 +1220,8 @@ namespace Hoodrich.Missions
             // back on his own judgement, which is to get out and go after somebody. Re-issuing
             // is what keeps him in his seat for the length of the street.
             if (FromTheCar) KeepShooting();
+
+            KeepThemSeated();
 
             var standing = 0;
             foreach (var ped in _targets)
@@ -1714,6 +1762,14 @@ namespace Hoodrich.Missions
                 try
                 {
                     if (ped == null || !ped.Exists()) continue;
+
+                    // Let go of them. They were locked into the car for the length of the job
+                    // and would otherwise spend the rest of the session unable to get out of
+                    // one, unable to be pulled out of one, and deaf to everything around them.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 3, true);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, ped.Handle, true);
+
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
                     ped.MarkAsNoLongerNeeded();
                 }
@@ -1774,19 +1830,211 @@ namespace Hoodrich.Missions
             _tags.Draw();
 
             // Centred at the top: it belongs to the job, not to the corner of the screen.
-            const float width = 0.26f;
-            const float y = 0.075f;
+            var left = 0.5f - CardWidth * 0.5f;
+            var ink = PhaseColour();
 
-            var left = 0.5f - width * 0.5f;
-            var x = left + 0.010f;
+            // Backing, a rail down the left and a hairline along the top. The rail and the
+            // line are the only two things that change colour, so the card reads as the same
+            // object throughout a job while still saying which part of it you are in.
+            Hud.RectFrom(left, CardTop, CardWidth, CardHeight, CardBack);
+            Hud.RectFrom(left, CardTop, CardRail, CardHeight, ink);
+            Hud.RectFrom(left, CardTop, CardWidth, 0.0022f, ink);
 
-            Hud.RectFrom(left, y - 0.008f, width, 0.052f, Color.FromArgb(200, 12, 13, 15));
-            Hud.RectFrom(left, y - 0.008f, width, 0.0025f, Palette.Accent);
+            // The icon, in its own well so it reads as a badge rather than as a stray glyph.
+            var iconLeft = left + CardRail + CardPad;
+            var iconWide = Hud.ToX(IconSize);
 
-            Hud.Text(_def.Name.ToUpperInvariant(), x, y, 0.28f, Palette.Text,
+            Hud.RectFrom(iconLeft, CardTop + (CardHeight - IconSize) * 0.5f,
+                         iconWide, IconSize, Color.FromArgb(20, 255, 255, 255));
+
+            Hud.File(KindIcon(), iconLeft + iconWide * 0.5f, CardTop + CardHeight * 0.5f,
+                     IconSize * 0.62f, 0f, ink);
+
+            var x = iconLeft + iconWide + CardPad;
+
+            Hud.Text(_def.Name.ToUpperInvariant(), x, CardTop + 0.009f, 0.30f, Palette.Text,
                      Hud.FontLabel, centre: false);
 
-            Hud.Text(Objective, x, y + 0.022f, 0.26f, Palette.TextDim, Hud.FontBody, centre: false);
+            Hud.Text(Objective, x, CardTop + 0.030f, 0.26f, Palette.TextDim,
+                     Hud.FontBody, centre: false);
+
+            // The chip: the one number that matters in this phase, right-aligned so it does
+            // not move about as the objective text changes length underneath it.
+            Color chipInk;
+            var chip = Chip(out chipInk);
+
+            if (!string.IsNullOrEmpty(chip))
+            {
+                Hud.TextRight(chip, left + CardWidth - CardPad, CardTop + 0.031f, 0.23f,
+                              chipInk, Hud.FontLabel);
+            }
+
+            // And the bar. Drawn even at zero so the card does not change height between
+            // phases -- a readout that reflows while you are reading it is worse than one
+            // that shows an empty track.
+            var barWide = CardWidth - (x - left) - CardPad;
+            var barY = CardTop + CardHeight - 0.010f;
+
+            Hud.RectFrom(x, barY, barWide, BarHeight, Color.FromArgb(40, 255, 255, 255));
+
+            var done = Progress();
+            if (done > 0f) Hud.RectFrom(x, barY, barWide * done, BarHeight, ink);
+        }
+
+        private const float CardWidth = 0.300f;
+        private const float CardTop = 0.052f;
+        private const float CardHeight = 0.070f;
+        private const float CardPad = 0.008f;
+        private const float CardRail = 0.0022f;
+        private const float IconSize = 0.034f;
+        private const float BarHeight = 0.0045f;
+
+        private static readonly Color CardBack = Color.FromArgb(232, 12, 13, 15);
+
+        /// <summary>
+        /// What colour this part of the job is.
+        ///
+        /// Amber for going somewhere, white for doing the thing, red for the law. Three states
+        /// worth telling apart at a glance, rather than five that each need reading.
+        /// </summary>
+        private Color PhaseColour()
+        {
+            if (OnBike || OnTags) return Palette.Accent;
+
+            switch (State)
+            {
+                case MissionState.Escape: return Palette.Danger;
+                case MissionState.Travel: return Palette.Warn;
+                case MissionState.Dump:
+                case MissionState.Torch: return Palette.Warn;
+                default: return Palette.Accent;
+            }
+        }
+
+        /// <summary>The job's own symbol, so the card is recognisable before it is read.</summary>
+        private string KindIcon()
+        {
+            if (OnTags) return "spray.png";
+            if (OnBike) return "people.png";
+
+            switch (_def.Kind)
+            {
+                case MissionKind.TorchJob: return "fire.png";
+                case MissionKind.DriveBy: return "car.png";
+                case MissionKind.Hit: return "guns.png";
+                default: return "people.png";
+            }
+        }
+
+        /// <summary>
+        /// How far through this phase you are, 0 to 1.
+        ///
+        /// Per phase rather than across the job, because the phases are not comparable: a bar
+        /// that crawled across a whole mission would sit still for the entire drive out and
+        /// then jump. Travel closes on the block, work counts bodies, an escape counts stars
+        /// coming back down, and the torch counts its own two steps.
+        /// </summary>
+        private float Progress()
+        {
+            try
+            {
+                if (OnBike || OnTags) return 0f;
+
+                var player = Game.Player.Character;
+
+                switch (State)
+                {
+                    case MissionState.Travel:
+                        if (player == null || !player.Exists()) return 0f;
+                        var away = player.Position.DistanceTo(_site);
+                        return Clamp01(1f - away / TravelBarRange);
+
+                    case MissionState.Work:
+                        var total = Math.Max(1, _def.Targets);
+                        return Clamp01((total - Standing()) / (float)total);
+
+                    case MissionState.Escape:
+                        // Falling stars fill it, so it reads as getting away rather than as
+                        // getting deeper in.
+                        return Clamp01(1f - Game.Player.Wanted.WantedLevel / 5f);
+
+                    case MissionState.Torch:
+                        return _poured ? 0.66f : 0.33f;
+
+                    default:
+                        return 0f;
+                }
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
+        /// <summary>The short right-hand label, and what colour it should be.</summary>
+        private string Chip(out Color ink)
+        {
+            ink = Palette.TextDim;
+
+            try
+            {
+                if (OnBike || OnTags) return "";
+
+                switch (State)
+                {
+                    case MissionState.Travel:
+                        ink = Palette.Warn;
+                        return ZoneName().ToUpperInvariant();
+
+                    case MissionState.Work:
+                        var total = Math.Max(1, _def.Targets);
+                        var down = Math.Max(0, total - Standing());
+                        ink = down >= total ? Palette.Cash : Palette.Text;
+                        return down + " OF " + total;
+
+                    case MissionState.Escape:
+                        ink = Palette.Danger;
+                        return "WANTED";
+
+                    case MissionState.Dump:
+                        ink = Palette.Warn;
+                        return "DUMP IT";
+
+                    case MissionState.Torch:
+                        ink = Palette.Warn;
+                        return _poured ? "STEP 2 OF 2" : "STEP 1 OF 2";
+
+                    default:
+                        return "";
+                }
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        /// <summary>How many of them are still up.</summary>
+        private int Standing()
+        {
+            var n = 0;
+
+            for (var i = 0; i < _targets.Count; i++)
+            {
+                var ped = _targets[i];
+                if (ped != null && ped.Exists() && ped.IsAlive) n++;
+            }
+
+            return n;
+        }
+
+        /// <summary>Where the travel bar starts filling from.</summary>
+        private const float TravelBarRange = 900f;
+
+        private static float Clamp01(float v)
+        {
+            if (v < 0f) return 0f;
+            return v > 1f ? 1f : v;
         }
     }
 }

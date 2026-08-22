@@ -243,6 +243,32 @@ namespace Hoodrich
             "mini@strip_club@idle_dance@idle_a", "idle_a_song_a"
         };
 
+        /// <summary>
+        /// Her, and two fallbacks. All base game, so this needs no DLC.
+        /// </summary>
+        private static readonly string[] Working =
+        {
+            "s_f_y_hooker_01", "s_f_y_hooker_02", "s_f_y_hooker_03"
+        };
+
+        /// <summary>
+        /// A different dance from the one the other woman is doing.
+        ///
+        /// Same idea as Dancing and deliberately NOT the same order: two people a few metres
+        /// apart playing the identical clip are a copy-paste, and the wheel-sized version of
+        /// that problem is why the models rotate by station in the first place.
+        ///
+        /// Led by the base-game strip club clips rather than the nightclub ones -- they are in
+        /// every install, and on this model they are the right dance anyway.
+        /// </summary>
+        private static readonly string[] DancingAlt =
+        {
+            "mini@strip_club@idle_dance@idle_a", "idle_a_song_a",
+            "mini@strip_club@private_dance@part1", "priv_dance_p1",
+            "anim@amb@nightclub@mini@dance@dance_solo@female@var_b@", "high_center",
+            "anim@amb@nightclub@dancers@crowddance_facedj_11_amy@", "hi_dance_facedj_11_v2_amy"
+        };
+
         private static string[] Fam(int which)
         {
             var all = new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01" };
@@ -497,8 +523,11 @@ namespace Hoodrich
                     // men drinking shoulder to shoulder read as one prop repeated. The pair by
                     // the lowrider are a smoke and a drink; the two nearest the decks both
                     // dance, which is the one place that is right.
+                    // Not one of the set. She is at the party rather than in it, the same way
+                    // the women round the fire are, and she gets her own clip list so the two
+                    // women dancing in the same yard are not doing the identical loop in sync.
                     .Stand(new Vector3(-194.412f, -1727.852f, 32.664f), 349.215f,
-                           "WORLD_HUMAN_PARTYING", Fam(0), armed: false, anim: DancingMen)
+                           "WORLD_HUMAN_PARTYING", Working, armed: false, anim: DancingAlt)
 
                     .Stand(new Vector3(-196.532f, -1725.500f, 32.664f), 300.596f,
                            "WORLD_HUMAN_DRINKING", Fam(1), armed: false)
