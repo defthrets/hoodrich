@@ -105,6 +105,20 @@ namespace Hoodrich.Gangs
         /// </summary>
         private readonly List<string[]> _anims = new List<string[]>();
 
+        /// <summary>
+        /// Which pair of <see cref="_anims"/> is on him, per station, or -1 for none yet --
+        /// and the time after which it is fair to ask whether it took.
+        ///
+        /// Both exist because the two interesting questions cannot be answered when they were
+        /// being asked. A streaming request is not readable in the frame it is made, and a task
+        /// is not readable in the frame it is issued.
+        /// </summary>
+        private readonly List<int> _animPick = new List<int>();
+        private readonly List<int> _animDue = new List<int>();
+
+        /// <summary>How long a clip gets to visibly start before it is written off.</summary>
+        private const int AnimGraceMs = 900;
+
         private readonly List<Ped> _crew = new List<Ped>();
         private readonly List<Vector3> _marks = new List<Vector3>();
 
@@ -131,6 +145,8 @@ namespace Hoodrich.Gangs
             _armed.Add(armed);
             _onProp.Add(onProp);
             _anims.Add(anim);
+            _animPick.Add(-1);
+            _animDue.Add(0);
             _weapons.Add(weapon);
             return this;
         }
@@ -142,33 +158,46 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>
-        /// Tries the station's clips, and says whether one took.
+        /// Starts one of these clips on him, and says WHICH one -- or -1 if none can start yet.
         ///
-        /// Verified rather than assumed. A clip name that is not in this install fails silently
-        /// -- the task is accepted and nothing moves -- so the only honest test is whether the
-        /// ped is visibly playing it afterwards.
+        /// This asked two questions that could not yet have answers, and the dancer and the DJ
+        /// stood still for the entire life of the mod because of it.
+        ///
+        /// REQUEST_ANIM_DICT is a request, not a load: it returns immediately and the file
+        /// arrives some frames later, so HAS_ANIM_DICT_LOADED on the very next line read false
+        /// essentially always. Every candidate was skipped and every animated station fell
+        /// straight through to its scenario. The request is now made for all of them on the way
+        /// past, and residency is asked of a LATER call.
+        ///
+        /// TASK_PLAY_ANIM likewise has not started by the time the next line runs, so
+        /// IS_ENTITY_PLAYING_ANIM read false even on success. That did more than fail: it
+        /// stacked the second and third candidates on top of the first, reported failure, and
+        /// the caller then started the scenario -- which cancels the animation. Several times a
+        /// second, forever. Verification still happens, in Update, a tick later, where the
+        /// answer means something.
         /// </summary>
-        private static bool PlayAnim(Ped ped, string[] pairs)
+        /// <param name="from">Pair offset to start at, so a clip proved missing is not retried.</param>
+        private static int PlayAnim(Ped ped, string[] pairs, int from)
         {
-            if (pairs == null || pairs.Length < 2) return false;
+            if (pairs == null || pairs.Length < 2) return -1;
 
+            // Ask for all of them, including ones already passed over. The list is short, the
+            // call is cheap, and a dict already resident costs nothing to request again.
             for (var i = 0; i + 1 < pairs.Length; i += 2)
             {
-                var dict = pairs[i];
-                var clip = pairs[i + 1];
+                try { Function.Call(Hash.REQUEST_ANIM_DICT, pairs[i]); }
+                catch { /* a name this install has never heard of */ }
+            }
 
+            for (var i = from < 0 ? 0 : from; i + 1 < pairs.Length; i += 2)
+            {
                 try
                 {
-                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
-                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pairs[i])) continue;
 
-                    Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, dict, clip,
+                    Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, pairs[i], pairs[i + 1],
                                   4f, -4f, -1, LoopingAnim, 0f, false, false, false);
-
-                    if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, ped.Handle, dict, clip, 3))
-                    {
-                        return true;
-                    }
+                    return i;
                 }
                 catch
                 {
@@ -176,7 +205,7 @@ namespace Hoodrich.Gangs
                 }
             }
 
-            return false;
+            return -1;
         }
 
         /// <summary>Looping, full body -- a dancer who stops dancing is worse than no dancer.</summary>
@@ -271,7 +300,7 @@ namespace Hoodrich.Gangs
                 if (ped == null) continue;
 
                 _crew.Add(ped);
-                Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
+                Idle(i, ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
             }
 
             if (_crew.Count > 0) Log.Info(_crew.Count + " of " + gang.Name + " stood with " + _who + ".");
@@ -380,8 +409,8 @@ namespace Hoodrich.Gangs
         /// exactly that condition -- so the failure was not a man standing still, it was a man
         /// being re-tasked to sit down forever.
         /// </summary>
-        private static void Idle(Ped ped, string scenario, float facing, Vector3 at, bool seated,
-                                 string[] anim = null)
+        private void Idle(int index, Ped ped, string scenario, float facing, Vector3 at,
+                          bool seated, string[] anim = null)
         {
             try
             {
@@ -390,7 +419,23 @@ namespace Hoodrich.Gangs
                 if (anim != null)
                 {
                     ped.Heading = facing;
-                    if (PlayAnim(ped, anim)) return;
+
+                    var from = index >= 0 && index < _animPick.Count ? _animPick[index] : 0;
+                    var picked = PlayAnim(ped, anim, from);
+
+                    if (picked >= 0)
+                    {
+                        if (index >= 0 && index < _animPick.Count)
+                        {
+                            _animPick[index] = picked;
+                            _animDue[index] = Game.GameTime + AnimGraceMs;
+                        }
+
+                        return;
+                    }
+
+                    // Nothing resident yet. The scenario below is what he does in the meantime,
+                    // and the next pass tries again -- by which time the dict has usually landed.
                 }
 
                 if (seated)
@@ -510,10 +555,28 @@ namespace Hoodrich.Gangs
                     var clips = AnimAt(i);
                     if (clips != null)
                     {
-                        if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, ped.Handle,
-                                                clips[0], clips[1], 3))
+                        var pick = i < _animPick.Count ? _animPick[i] : -1;
+                        if (pick >= 0 && pick + 1 < clips.Length)
                         {
-                            continue;
+                            // Issued, but not long enough ago to have started. Asking now and
+                            // acting on the answer is the bug this whole path had.
+                            if (Game.GameTime < _animDue[i]) continue;
+
+                            if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, ped.Handle,
+                                                    clips[pick], clips[pick + 1], 3))
+                            {
+                                continue;
+                            }
+
+                            // Resident, issued, given its grace, and still not playing: this
+                            // install has the dict but not that CLIP. Step past it so the next
+                            // attempt tries the one below, which is what a candidate list is
+                            // supposed to do.
+                            Log.Debug(string.Format(
+                                "entourage: {0} station {1} has no {2} / {3}, trying the next",
+                                _who, i, clips[pick], clips[pick + 1]));
+
+                            _animPick[i] = pick + 2 < clips.Length ? pick + 2 : -1;
                         }
                     }
                     else if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, ped.Handle, 118)) continue;
@@ -530,7 +593,7 @@ namespace Hoodrich.Gangs
                         continue;
                     }
 
-                    Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
+                    Idle(i, ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
                     continue;
                 }
 
@@ -557,7 +620,7 @@ namespace Hoodrich.Gangs
                     {
                         ped.Position = mark;
                         ped.Task.ClearAll();
-                        Idle(ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
+                        Idle(i, ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
                         continue;
                     }
 

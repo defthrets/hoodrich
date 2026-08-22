@@ -205,8 +205,24 @@ namespace Hoodrich
         private static readonly string[] Dancing =
         {
             "anim@amb@nightclub@mini@dance@dance_solo@female@var_a@", "high_center",
+            "anim@amb@nightclub@mini@dance@dance_solo@female@var_b@", "high_center",
             "anim@amb@nightclub@dancers@crowddance_facedj_11_amy@", "hi_dance_facedj_11_v2_amy",
             "mini@strip_club@idle_dance@idle_a", "idle_a_song_a"
+        };
+
+        /// <summary>
+        /// The same idea for the men, because the women's clips do not read right on them.
+        ///
+        /// Ends on the club crowd clip and then the base-game one, so an install without After
+        /// Hours still gets movement -- and failing all of it, the scenario these stations are
+        /// given is WORLD_HUMAN_PARTYING, which is at least somebody at a party.
+        /// </summary>
+        private static readonly string[] DancingMen =
+        {
+            "anim@amb@nightclub@mini@dance@dance_solo@male@var_a@", "high_center",
+            "anim@amb@nightclub@mini@dance@dance_solo@male@var_b@", "high_center",
+            "anim@amb@nightclub@dancers@crowddance_groups@hi_intensity@", "hi_dance_crowd_15_v1_male^1",
+            "anim@amb@nightclub@dancers@crowddance_facedj_11_amy@", "hi_dance_facedj_11_v2_amy"
         };
 
         private static readonly string[] Deejaying =
@@ -447,7 +463,7 @@ namespace Hoodrich
                     // drink and nodding; this is somebody actually moving to what is coming
                     // out of the decks, which is the difference between a yard with people in
                     // it and a yard with a party in it.
-                    .Stand(new Vector3(-198.072f, -1730.828f, 32.664f), 130.367f,
+                    .Stand(new Vector3(-197.722f, -1730.278f, 32.664f), 130.367f,
                            "WORLD_HUMAN_PARTYING", Women, armed: false, anim: Dancing)
 
                     .Stand(new Vector3(-201.294f, -1730.396f, 32.664f), 46.000f,
@@ -458,7 +474,47 @@ namespace Hoodrich
 
                     // On the decks. Facing the yard, which is the direction the music goes.
                     .Stand(new Vector3(-194.279f, -1723.069f, 32.664f), 148.079f,
-                           "WORLD_HUMAN_MUSICIAN", Women, armed: false, anim: Deejaying);
+                           "WORLD_HUMAN_MUSICIAN", Women, armed: false, anim: Deejaying)
+
+                    // ---- the rest of the yard ------------------------------------------
+                    //
+                    // Marks read off the game: somebody stood where they wanted the man and
+                    // faced the way they wanted him facing, so the position and the heading
+                    // come from the same reading and neither is guessed.
+                    //
+                    // Mixed on purpose, and mixed by NEIGHBOUR rather than at random -- two
+                    // men drinking shoulder to shoulder read as one prop repeated. The pair by
+                    // the lowrider are a smoke and a drink; the two nearest the decks both
+                    // dance, which is the one place that is right.
+                    .Stand(new Vector3(-194.412f, -1727.852f, 32.664f), 349.215f,
+                           "WORLD_HUMAN_PARTYING", Fam(0), armed: false, anim: DancingMen)
+
+                    .Stand(new Vector3(-196.532f, -1725.500f, 32.664f), 300.596f,
+                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false)
+
+                    .Stand(new Vector3(-198.213f, -1721.872f, 32.664f), 157.292f,
+                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false)
+
+                    .Stand(new Vector3(-199.096f, -1723.577f, 32.664f), 319.476f,
+                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
+
+                    .Stand(new Vector3(-196.101f, -1729.308f, 32.664f), 20.826f,
+                           "WORLD_HUMAN_PARTYING", Fam(1), armed: false, anim: DancingMen)
+
+                    .Stand(new Vector3(-198.543f, -1731.535f, 32.664f), 16.019f,
+                           "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false)
+
+                    .Stand(new Vector3(-203.007f, -1729.627f, 32.664f), 251.512f,
+                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
+
+                    .Stand(new Vector3(-206.169f, -1731.598f, 32.664f), 340.253f,
+                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false)
+
+                    // Somebody watching the back of the lot, where the skips are and the fence
+                    // is low enough to come over. Armed, and the only man here who is -- a yard
+                    // full of people drinking needs one person who is not.
+                    .Stand(new Vector3(-204.430f, -1725.562f, 32.664f), 79.008f,
+                           "WORLD_HUMAN_GUARD_STAND", Fam(2), weapon: "WEAPON_COMPACTRIFLE");
 
                 // The barrel IS the fire -- it burns on its own. A camp fire was stacked on
                 // top of it as well, which is two fires a metre apart and reads as a bug even
