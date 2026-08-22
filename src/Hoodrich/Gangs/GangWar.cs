@@ -2045,8 +2045,13 @@ namespace Hoodrich.Gangs
             {
                 _orders.Remove(ped.Handle);
 
-                if (!ped.Exists()) return;
-
+                // The MARKER first, and before the exists check, which is the whole bug.
+                //
+                // This used to return early when the ped was gone, so a body the engine had
+                // already cleaned up left its blip on the map with nothing under it and
+                // nothing that would ever remove it -- a war leaving a trail of red dots for
+                // the rest of the session. A blip is not owned by the ped; it has to be
+                // deleted whether or not there is still a body to delete it from.
                 Blip blip;
 
                 if (_pedBlips.TryGetValue(ped.Handle, out blip))
@@ -2059,6 +2064,8 @@ namespace Hoodrich.Gangs
                         blip.Delete();
                     }
                 }
+
+                if (!ped.Exists()) return;
 
                 ped.MarkAsNoLongerNeeded();
             }

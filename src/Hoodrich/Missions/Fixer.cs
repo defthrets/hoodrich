@@ -343,6 +343,18 @@ namespace Hoodrich.Missions
         /// <summary>Offers the conversation and opens it, same button as the leaders.</summary>
         public void UpdatePrompt()
         {
+            // Not while a job has him.
+            //
+            // This never checked, so the "talk to Lamar" prompt stayed live through the whole
+            // bike ride -- including stood in the 24/7 with him -- and opening it put his
+            // ordinary mission-giver conversation on screen in the middle of a mission.
+            //
+            // Worse than untidy: the ROBBERY offer refuses to open while another conversation
+            // is up, so the one screen the mission actually needed could be blocked by the one
+            // that should not have been available. Lend sets this and TakeBack clears it, so
+            // he goes back to being a man you can talk to the moment the job is over.
+            if (_lent) return;
+
             if (Talk == null || Talk.IsOpen || !InReach) return;
 
             Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to talk to Lamar.");

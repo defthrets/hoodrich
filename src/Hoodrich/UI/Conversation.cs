@@ -230,15 +230,6 @@ namespace Hoodrich.UI
             "GENERIC_BYE", "GENERIC_THANKS"
         };
 
-        /// <summary>
-        /// Whose turn it is.
-        ///
-        /// A conversation is two people alternating, not one person answering himself. Without
-        /// this the NPC spoke on every page and Franklin spoke on every pick, which meant they
-        /// talked over each other twice per choice.
-        /// </summary>
-        private bool _theirTurn = true;
-
         private static readonly Random Rng = new Random();
 
         /// <summary>One ambient line, cutting off whatever they were already saying.</summary>
@@ -285,7 +276,6 @@ namespace Hoodrich.UI
             if (_openedFresh)
             {
                 _openedFresh = false;
-                _theirTurn = false;
                 Speak(Speaker, Theirs);
             }
         }
@@ -303,7 +293,7 @@ namespace Hoodrich.UI
             TheirVoice = null;
             Title = "";
             _openedFresh = true;
-            _theirTurn = true;
+            _replyAt = 0;
         }
 
         /// <summary>True until the opening line has been said, so pages do not re-greet you.</summary>
@@ -333,6 +323,9 @@ namespace Hoodrich.UI
             }
 
             LockControls();
+
+            // His answer, once the beat after your line has passed.
+            TickReply();
 
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
@@ -368,6 +361,30 @@ namespace Hoodrich.UI
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
+        /// <summary>
+        /// When he is due to answer, or 0.
+        ///
+        /// A beat rather than immediately, because two ambient lines started in the same frame
+        /// talk over each other and the game keeps the louder one.
+        /// </summary>
+        private int _replyAt;
+
+        private const int ReplyDelayMs = 700;
+
+        /// <summary>Plays his answer once it is due. Called every frame the panel is up.</summary>
+        private void TickReply()
+        {
+            if (_replyAt == 0 || Game.GameTime < _replyAt) return;
+
+            _replyAt = 0;
+
+            // Only if there is still a page up. Committing the last choice closes the panel,
+            // and a man answering a conversation that has ended is a voice from nowhere.
+            if (_node == null) return;
+
+            Speak(Speaker, Theirs);
+        }
+
         private void Commit()
         {
             if (_selected < 0 || _selected >= _node.Choices.Count) return;
@@ -381,11 +398,17 @@ namespace Hoodrich.UI
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
-            // Turn and turn about.
-            Speak(_theirTurn ? Speaker : Game.Player.Character,
-                  _theirTurn ? Theirs : YourLines);
+            // You speak, and then HE answers -- rather than the two of you taking it in
+            // turns to be the only one who makes a noise.
+            //
+            // Alternating meant every second page was silent on his side: press Go on, hear
+            // yourself, press Go on, hear him. But the words on screen are always HIS, so the
+            // page where he says nothing is the page that looks broken. He now replies to
+            // every page that has any, and the reply is queued rather than played here so it
+            // lands after your line instead of on top of it.
+            Speak(Game.Player.Character, YourLines);
 
-            _theirTurn = !_theirTurn;
+            _replyAt = Game.GameTime + ReplyDelayMs;
 
             DialogueNode next = null;
             try

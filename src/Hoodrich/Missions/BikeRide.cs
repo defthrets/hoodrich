@@ -639,6 +639,14 @@ namespace Hoodrich.Missions
                 Notify.Ticker("~r~Aim at him.~s~ Hold it on him.");
             }
 
+            // And it stays on screen for as long as you are in there.
+            //
+            // The ticker above is one shot: look at the shelves for ten seconds and the only
+            // instruction the robbery ever gave you has gone, leaving a man stood in a shop
+            // with no idea what the game wants. This is the standing instruction, and it
+            // changes to "keep it on him" once the gun is up.
+            if (!_gotCash) Help.ShowThisFrame("Aim at the man behind the counter.");
+
             if (_clerk == null || !_clerk.Exists() || !_clerk.IsAlive) _clerk = FindClerk(player);
             if (_clerk == null) return;
 
@@ -1377,14 +1385,33 @@ namespace Hoodrich.Missions
                     behind = new Vector3(behind.X, behind.Y, groundZ + 0.2f);
                 }
 
-                // The bike he is on, if he is on one -- otherwise he lands next to it and walks.
+                // The bike he is on -- and if he has not got one, he gets one.
+                //
+                // He loses his somewhere on most runs: knocked off it, or it is left behind
+                // when the engine cleans up a street he is no longer on. Teleporting him
+                // without one puts a man on foot behind a bicycle and he is dropped again
+                // within seconds, which is most of what "he keeps getting stuck" actually was.
                 var bike = _lamar.CurrentVehicle;
+
+                if (bike == null || !bike.Exists())
+                {
+                    bike = SpawnBike(behind, player.Heading);
+
+                    if (bike != null && bike.Exists())
+                    {
+                        _bikes.Add(bike);
+                        _lamar.SetIntoVehicle(bike, VehicleSeat.Driver);
+                    }
+                }
 
                 if (bike != null && bike.Exists())
                 {
                     bike.Position = behind;
                     bike.Heading = player.Heading;
                     Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, bike.Handle);
+
+                    // Back on it if he is beside it rather than on it.
+                    if (!_lamar.IsInVehicle(bike)) _lamar.SetIntoVehicle(bike, VehicleSeat.Driver);
                 }
                 else
                 {

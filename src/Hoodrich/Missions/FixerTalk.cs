@@ -198,13 +198,29 @@ namespace Hoodrich.Missions
                 return no;
             }
 
-            // Not on a job he sends you out on alone. The tag run is one man on a bike with a
-            // can -- deliberately, because two dudes with cans is a whole story and one is a
-            // kid -- and being told to take homies who are never coming is the mission
-            // contradicting its own brief in the same breath.
-            var yes = Node(def.Homies > 0
-                ? "Good. Take the homies, they know where they going."
-                : "Good. And you go by yourself, remember. Just you.");
+            // THREE cases, not two, because "no homies" and "on your own" are not the same
+            // thing and reading them as one had him telling you to go alone on the one job he
+            // personally comes with you on.
+            //
+            // The tag run really is one man: two dudes on bikes with cans is a whole story for
+            // the laws and one is a kid, which is the brief's own reasoning. The bike ride is
+            // him and you, no crew -- that is the entire point of it.
+            string line;
+
+            if (def.Homies > 0)
+            {
+                line = "Good. Take the homies, they know where they going.";
+            }
+            else if (def.Kind == MissionKind.BikeRide)
+            {
+                line = "Good. Just me and you on this one. No crew, no convoy, none of that.";
+            }
+            else
+            {
+                line = "Good. And you go by yourself, remember. Just you.";
+            }
+
+            var yes = Node(line);
             yes.Say("Say less.", () => null, _runner.Objective);
             return yes;
         }
