@@ -46,6 +46,16 @@ namespace Hoodrich.UI
         /// </summary>
         public Color? ArtTint;
 
+        /// <summary>
+        /// A PNG drawn immediately after the label, hard against its last letter.
+        ///
+        /// The pip strip already owned that spot and this shares its anchor, because they are
+        /// the same idea: a small thing after a name that says a number without printing one.
+        /// A row may have either; nothing wants both, and if one ever does the pips win because
+        /// they were there first.
+        /// </summary>
+        public string MarkFile = "";
+
         /// <summary>A colour bar at the row's left edge. A gang's colour, never its name.</summary>
         public Color? Tab;
 
@@ -273,6 +283,9 @@ namespace Hoodrich.UI
         private static float Gutter { get { return Hud.ToX(IconH) + IconGap; } }
 
         private const float TabW = 0.0055f;
+        /// <summary>How big a mark after a name draws. A suffix, not a picture.</summary>
+        private const float MarkSize = 0.0125f;
+
         private const float PipPitch = 0.017f;
 
         private static readonly Color Ground = Color.FromArgb(238, 12, 13, 15);
@@ -635,10 +648,23 @@ namespace Hoodrich.UI
                 : Hud.MeasureText(row.Value, 0.28f, Hud.FontBody);
 
             var pipsW = row.Pips > 0 ? 0.012f + row.Pips * Hud.ToX(PipPitch) : 0f;
-            var labelMax = right - tx - valueW - pipsW - 0.010f;
+
+            var markW = row.Pips <= 0 && !string.IsNullOrEmpty(row.MarkFile)
+                ? 0.004f + Hud.ToX(MarkSize)
+                : 0f;
+
+            var labelMax = right - tx - valueW - pipsW - markW - 0.010f;
 
             Hud.Text(Hud.Fit(row.Label, labelMax, 0.28f, Hud.FontBody), tx, y, 0.28f,
                      Palette.TextDim, Hud.FontBody, centre: false);
+
+            if (row.Pips <= 0 && !string.IsNullOrEmpty(row.MarkFile))
+            {
+                Hud.File(row.MarkFile,
+                         tx + Hud.MeasureText(Hud.Fit(row.Label, labelMax, 0.28f, Hud.FontBody),
+                                              0.28f, Hud.FontBody) + 0.004f + Hud.ToX(MarkSize) * 0.5f,
+                         y + 0.0095f, MarkSize, 0f, row.Colour);
+            }
 
             if (row.Pips > 0)
             {

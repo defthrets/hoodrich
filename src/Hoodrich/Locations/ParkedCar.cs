@@ -11,8 +11,9 @@ namespace Hoodrich.Locations
     /// A car that belongs somewhere and stays there.
     ///
     /// The same idea as <see cref="Fixture"/>, which streams a prop at an exact spot, except a
-    /// vehicle needs three things a prop does not: a paint job, an engine that is off, and --
-    /// most importantly -- somebody to tell the traffic watchdog that it is parked on purpose.
+    /// vehicle needs three things a prop does not: a paint job, something decided about the
+    /// engine, and -- most importantly -- somebody to tell the traffic watchdog that it is
+    /// parked on purpose.
     ///
     /// That last one is not optional. TrafficWatch removes empty cars standing in a lane, which
     /// is exactly what this is, and without the exemption the mod would spend its afternoon
@@ -31,6 +32,50 @@ namespace Hoodrich.Locations
         private readonly int _paint;
 
         /// <summary>
+        /// Puts back the three things the game turns off behind your back.
+        ///
+        /// Engine, radio and underglow are all electrics, and the game switches them off on an
+        /// unoccupied vehicle -- on a timer, when the area streams out and back, and whenever
+        /// anything else in the world decides a parked car should be quiet. Set once at spawn
+        /// they were correct for about a minute, which is exactly as long as it takes to walk
+        /// over and notice.
+        ///
+        /// Only while nobody is in it. The moment somebody gets in it stops being scenery and
+        /// becomes their car -- fighting a player over his own radio every second and a half is
+        /// worse than a van that goes quiet when it is driven away.
+        /// </summary>
+        private void Keep()
+        {
+            if (!Running && Neon == null && string.IsNullOrEmpty(Radio)) return;
+
+            try
+            {
+                if (_car == null || !_car.Exists()) return;
+
+                var driver = _car.Driver;
+                if (driver != null && driver.Exists()) return;
+
+                if (Running)
+                {
+                    Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, true, true, false);
+                }
+
+                if (!string.IsNullOrEmpty(Radio))
+                {
+                    Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _car.Handle, true);
+                    Function.Call(Hash.SET_VEH_RADIO_STATION, _car.Handle, Radio);
+                    Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _car.Handle, true);
+                }
+
+                if (Neon.HasValue) Light(Neon.Value);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not keep the parked car going: " + ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Every performance mod at its top index, the turbo, and the body kit.
         ///
         /// Off by default, because most of these are somebody's parked car and a stock car is
@@ -43,6 +88,29 @@ namespace Hoodrich.Locations
 
         /// <summary>Whether the boot is standing open -- a van being unloaded, or worked on.</summary>
         public bool BootOpen;
+
+        /// <summary>
+        /// Interior and dashboard paint, or null for whatever it came with.
+        ///
+        /// The natives for this are in the enum as SET_VEHICLE_EXTRA_COLOUR_5 and _6, which is
+        /// why they look missing when you go searching for INTERIOR and DASHBOARD. Five is the
+        /// interior and six is the dash; checked against the assembly rather than called by a
+        /// hash typed from memory, because a wrong native hash is a crash and not an error.
+        /// </summary>
+        public int? Interior;
+
+        /// <summary>
+        /// Whether it sits there with the engine running.
+        ///
+        /// Not a detail. An unoccupied car with the engine off has no radio you can hear and no
+        /// underglow that stays lit -- the game switches both off with the electrics, which is
+        /// why the neon came on at spawn and was dark by the time anybody walked over. A van
+        /// somebody has parked up to play music out of is a van with the key still in it.
+        /// </summary>
+        public bool Running;
+
+        /// <summary>The station, if it is playing anything.</summary>
+        public string Radio;
 
         private Vehicle _car;
         private int _lastUpdate;
@@ -76,7 +144,11 @@ namespace Hoodrich.Locations
             // Once it is out there it is left alone. Not put back on its mark, not re-parked --
             // if somebody has taken it for a drive then it is a car that got taken, which is a
             // better thing to happen on a block than a car that cannot be moved.
-            if (_car != null) return;
+            if (_car != null)
+            {
+                Keep();
+                return;
+            }
 
             if (player.Position.DistanceTo(_where) > StreamRange) return;
 
@@ -103,7 +175,7 @@ namespace Hoodrich.Locations
 
                     // Engine off and on the ground properly, so it reads as parked rather than
                     // as something that has just been put there.
-                    Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, false, true, false);
+                    Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, Running, true, false);
                     Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, _car.Handle);
                     Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _car.Handle, 1);
 
@@ -161,6 +233,16 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, Built ? 0.4f : 1.5f);
 
                 if (Built) BuildIt();
+
+                // Five is the interior, six is the dash. Both, because a green interior with a
+                // black dashboard is half a job you can see from the door.
+                if (Interior.HasValue)
+                {
+                    Function.Call(Hash.SET_VEHICLE_EXTRA_COLOUR_5, _car.Handle, Interior.Value);
+                    Function.Call(Hash.SET_VEHICLE_EXTRA_COLOUR_6, _car.Handle, Interior.Value);
+                }
+
+                Keep();
                 if (Neon.HasValue) Light(Neon.Value);
 
                 // Door 5 is the boot. Instantly rather than swung, because the car is being

@@ -448,6 +448,9 @@ namespace Hoodrich.UI
         /// </summary>
         private const float PanelArt = 0.017f;
 
+        /// <summary>The mark after a name. Smaller than the gutter art -- it is a suffix.</summary>
+        private const float PanelMark = 0.0125f;
+
         /// <summary>
         /// One piece of the ring, drawn as artwork.
         ///
@@ -904,6 +907,21 @@ namespace Hoodrich.UI
                               Draw.FontBody, centre: false);
 
                     var taken = Draw.MeasureText(row.Label, 0.26f, Draw.FontBody) + indent;
+
+                    // After the word, not in front of it. Measured off the label rather than
+                    // placed at a fixed offset, so it stays welded to the name whatever the
+                    // name is -- and counted into what the value has left, or a long name plus
+                    // a mark would print the figure straight through it.
+                    if (!string.IsNullOrEmpty(row.MarkFile))
+                    {
+                        var mw = Draw.ToX(PanelMark);
+
+                        Draw.File(row.MarkFile, cl + taken + 0.004f + mw * 0.5f, y + 0.0128f,
+                                  PanelMark, 0f, row.Tint ?? Palette.Text);
+
+                        taken += 0.004f + mw;
+                    }
+
                     var room = colW - taken - RowGutter;
 
                     Draw.TextRight(Draw.Fit(row.Value, room, 0.26f, Draw.FontBody),

@@ -287,17 +287,37 @@ namespace Hoodrich.Supply
             // anywhere -- that whole sequence belongs to the man who drove out to your door.
             if (Who != null)
             {
-                var pocket = _state.Stash.AddBulk(product.Id, grams);
+                // Weight, or bags?
+                //
+                // A plug at the docks sells you a brick and leaves the stretching to you: it
+                // arrives as weight, worth nothing until you have cut and bagged it. A man
+                // selling off his own person has already made that decision -- what he hands
+                // over is street-ready at whatever he cut it to, and it goes straight into the
+                // bagged pile. You cannot un-cut it, which is what you are paying less for.
+                var strength = Def == null ? 1f : Def.Purity;
+                var cut = strength < 0.999f;
+
+                var pocket = cut
+                    ? _state.Stash.AddPackaged(product.Id, grams, strength)
+                    : _state.Stash.AddBulk(product.Id, grams);
+
                 var spare = grams - pocket;
 
                 // Whatever will not fit goes to the house, and anything that fits nowhere is
                 // refunded rather than taken off you for nothing.
-                if (spare > 0.005f && House != null) spare -= House.AddBulk(product.Id, spare);
+                if (spare > 0.005f && House != null)
+                {
+                    spare -= cut
+                        ? House.AddPackaged(product.Id, spare, strength)
+                        : House.AddBulk(product.Id, spare);
+                }
+
                 if (spare > 0.005f) Game.Player.Money += (int)(cost * (spare / grams));
 
                 Notify.Important("~y~-$" + cost.ToString("N0") + "~s~  " +
                                  product.Amount(grams - Math.Max(0f, spare)) + " of " +
-                                 product.Name.ToLowerInvariant());
+                                 product.Name.ToLowerInvariant() +
+                                 (cut ? "  ~y~" + Stash.Percent(strength) + "%" : ""));
 
                 Log.Info("Bought " + grams.ToString("0") + "g " + product.Id + " off " + Name +
                          " for $" + cost + ", hand to hand.");

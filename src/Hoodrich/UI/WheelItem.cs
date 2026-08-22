@@ -92,6 +92,15 @@ namespace Hoodrich.UI
         public string Label;
         public string Value;
 
+        /// <summary>
+        /// A PNG drawn immediately AFTER the label, hard against the last letter of it.
+        ///
+        /// Different job from ArtFile below, which sits in the gutter and says what the row is
+        /// about. This one modifies the name it follows -- how cut the bag is, in the place you
+        /// would write it if you were writing it: after the word.
+        /// </summary>
+        public string MarkFile;
+
         /// <summary>Overrides the value colour; null uses the default.</summary>
         public Color? Tint;
 
@@ -126,9 +135,17 @@ namespace Hoodrich.UI
             Subtitle = subtitle;
         }
 
-        public WheelPage Row(string label, string value, Color? tint = null, string art = null)
+        public WheelPage Row(string label, string value, Color? tint = null, string art = null,
+                             string mark = null)
         {
-            Panel.Add(new PanelRow { Label = label, Value = value, Tint = tint, ArtFile = art ?? "" });
+            Panel.Add(new PanelRow
+            {
+                Label = label,
+                Value = value,
+                Tint = tint,
+                ArtFile = art ?? "",
+                MarkFile = mark ?? ""
+            });
             return this;
         }
 

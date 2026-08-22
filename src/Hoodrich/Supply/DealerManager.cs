@@ -164,6 +164,10 @@ namespace Hoodrich.Supply
                 def.Drunk = node["drunk"].AsBool(def.Drunk);
                 ReplaceList(def.Zones, node["zones"]);
 
+                def.Purity = Math.Max(Economy.Stash.MinPurity,
+                                      Math.Min(Economy.Stash.MaxPurity,
+                                               node["purity"].AsFloat(def.Purity)));
+
                 if (isNew) _defs.Add(def);
             }
         }

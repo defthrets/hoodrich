@@ -1426,7 +1426,63 @@ def poppy():
 # Every icon in the file, by name. Run with no arguments to draw all of them, or name the
 # ones you want -- "python make_icons.py guns mobile" -- which is the difference between
 # regenerating one symbol and rewriting sixty-nine files to change one.
-ALL = [eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy]
+
+# ------------------------------------------------------------------- purity
+#
+# How stepped-on a bag is, as four shapes rather than four numbers.
+#
+# SHAPE, not colour, and not a percentage printed after the name. These draw at about
+# thirteen pixels beside a row label -- there is no hue worth reading at that size and no room
+# for three digits, but a full disc, a three-quarter disc, a half and a third are four
+# silhouettes anybody can tell apart across a room. The same reasoning as the rank pips, which
+# is the other thing in this mod that has to say a number without printing one.
+#
+# Filled clockwise from twelve, so the missing part is a bite out of the top right and grows
+# the same way every time. The ring is always whole: it is what makes a third read as "a third
+# of something" rather than as a small dot.
+
+
+def purity(fraction, name):
+    big = Image.new('RGBA', (S * 4, S * 4), CLEAR)
+    d = ImageDraw.Draw(big)
+
+    c = S * 4 * 0.5
+    r = S * 4 * 0.40
+    ring = S * 4 * 0.075
+
+    # The ring first, whole, always.
+    d.ellipse([c - r, c - r, c + r, c + r], outline=W, width=int(ring))
+
+    inner = r - ring * 1.55
+
+    if fraction >= 0.999:
+        d.ellipse([c - inner, c - inner, c + inner, c + inner], fill=W)
+    else:
+        # -90 puts zero at twelve o'clock; PIL sweeps clockwise from there.
+        d.pieslice([c - inner, c - inner, c + inner, c + inner],
+                   -90, -90 + 360.0 * fraction, fill=W)
+
+    save(big.resize((S, S), Image.LANCZOS), name)
+
+
+def cut_100():
+    purity(1.00, 'cut_100.png')
+
+
+def cut_75():
+    purity(0.75, 'cut_75.png')
+
+
+def cut_50():
+    purity(0.50, 'cut_50.png')
+
+
+def cut_33():
+    purity(0.33, 'cut_33.png')
+
+
+ALL = [eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
+       cut_100, cut_75, cut_50, cut_33]
 
 
 if __name__ == '__main__':

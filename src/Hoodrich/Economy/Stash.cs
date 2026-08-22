@@ -27,6 +27,40 @@ namespace Hoodrich.Economy
     /// </summary>
     internal sealed class Stash
     {
+        /// <summary>
+        /// Which of the four marks a purity wears.
+        ///
+        /// Four steps rather than a printed percentage, because these are drawn at about
+        /// thirteen pixels beside a row label -- there is no room for three digits there and no
+        /// hue worth reading at that size, but a full disc, a three-quarter, a half and a third
+        /// are four silhouettes you can tell apart across a room. Same reasoning as the rank
+        /// pips, which is the other thing in this mod that has to say a number without printing
+        /// one.
+        ///
+        /// The bands break at the midpoints, so a batch blended to 0.62 shows as a half rather
+        /// than rounding up to something it is not. Anything that has not been touched shows
+        /// the full disc, which is the point of the whole system: uncut looks different from
+        /// stepped on before you have read a single figure.
+        /// </summary>
+        public static string Mark(float purity)
+        {
+            if (purity >= 0.875f) return "cut_100.png";
+            if (purity >= 0.625f) return "cut_75.png";
+            if (purity >= 0.415f) return "cut_50.png";
+
+            return "cut_33.png";
+        }
+
+        /// <summary>The same four as a number, for anywhere with the room to say it.</summary>
+        public static int Percent(float purity)
+        {
+            if (purity >= 0.875f) return 100;
+            if (purity >= 0.625f) return 75;
+            if (purity >= 0.415f) return 50;
+
+            return 33;
+        }
+
         public const float MinPurity = 0.2f;
         public const float MaxPurity = 1.0f;
 

@@ -177,9 +177,16 @@ namespace Hoodrich.Wheel
                 var note = drug.Amount(have) + "  ·  " + PurityWord(purity);
                 var art = Icons.ForDrug(drug.Id);
 
+                // The mark goes on the packaged list and nowhere else, because this is the
+                // only list where purity is a number that varies. Weight still to be bagged is
+                // uncut by definition -- marking every row of it with a full disc would be
+                // four identical pictures saying something the heading already says.
+                var mark = Stash.Mark(purity);
+
                 ready.Row(drug.Name, "$" + _pricing.SaleValue(drug, have, purity).ToString("N0"),
                           Palette.Cash,
-                          r => { r.Note = note; r.Art = art; r.ArtTint = ProductArt; });
+                          r => { r.Note = note; r.Art = art; r.ArtTint = ProductArt;
+                                 r.MarkFile = mark; });
 
                 bagged++;
             }

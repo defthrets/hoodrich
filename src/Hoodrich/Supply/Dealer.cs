@@ -126,6 +126,20 @@ namespace Hoodrich.Supply
         public readonly List<string> Zones = new List<string>();
 
         /// <summary>
+        /// How pure what he sells is, and therefore what happens to it when you take it.
+        ///
+        /// Full strength means WEIGHT: uncut product that is worth nothing until you have cut
+        /// and bagged it yourself, which is what a plug at the docks sells. Anything less means
+        /// he has already done that -- what changes hands is street-ready and goes straight into
+        /// the bagged pile at the purity he cut it to.
+        ///
+        /// Which is the actual difference between the two men in this mod. One sells you a
+        /// brick and lets you decide how far to stretch it. The other sells you bags off his own
+        /// person, already halved, at a price that reflects it -- and you cannot un-cut them.
+        /// </summary>
+        public float Purity = 1f;
+
+        /// <summary>
         /// What he turns up ON, if it is not a car.
         ///
         /// Empty means the delivery picks its own, which is the sensible default for somebody

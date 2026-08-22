@@ -477,7 +477,13 @@ namespace Hoodrich
                 {
                     Built = true,
                     BootOpen = true,
-                    Neon = System.Drawing.Color.FromArgb(60, 200, 80)
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
+
+                    // Green inside as well as out, key in it, and something coming out of it.
+                    // It is the reason there is a party in this yard.
+                    Interior = MetallicDarkGreen,
+                    Running = true,
+                    Radio = "RADIO_03_HIPHOP_NEW"
                 });
 
                 // A quad against the shutters, the same green as everything else in the lot.
@@ -551,9 +557,6 @@ namespace Hoodrich
 
                     .Stand(new Vector3(-196.532f, -1725.500f, 32.664f), 300.596f,
                            "WORLD_HUMAN_DRINKING", Fam(1), armed: false)
-
-                    .Stand(new Vector3(-198.213f, -1721.872f, 32.664f), 157.292f,
-                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false)
 
                     .Stand(new Vector3(-199.096f, -1723.577f, 32.664f), 319.476f,
                            "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
