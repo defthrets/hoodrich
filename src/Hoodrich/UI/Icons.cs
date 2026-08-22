@@ -226,6 +226,12 @@ namespace Hoodrich.UI
                 case "heroin": return Heroin;
                 case "ecstasy":
                 case "pills": return Ecstasy;
+
+                // The joint drawing, which came free. weed.png WAS the weed icon until weed
+                // took the bong, and a pre-roll is exactly what it is a picture of -- so the
+                // one product on the wheel still falling back to a text glyph gets the art
+                // that was drawn for it in the first place.
+                case "joints": return FromFile("weed.png");
                 case "xanax": return FromFile("xanax.png");
                 default: return new Icon();
             }

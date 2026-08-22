@@ -84,6 +84,17 @@ namespace Hoodrich.Locations
         private const float FloorProbeUp = 3f;
         private const float FloorProbeBand = 4f;
 
+        /// <summary>
+        /// How far the room's own origin may be from the recorded coordinate before it is
+        /// treated as a different room entirely.
+        ///
+        /// GET_INTERIOR_AT_COORDS will answer for an interior the point is merely NEAR, so an
+        /// origin a hundred metres away means the ini is pointing at the wrong building rather
+        /// than at the wrong corner of the right one -- and warping to it would be worse than
+        /// failing honestly.
+        /// </summary>
+        private const float OriginTrust = 60f;
+
         private readonly DoorSpec _spec;
 
         private Blip _blip;
@@ -172,6 +183,33 @@ namespace Hoodrich.Locations
                 {
                     Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, interior);
                     Function.Call(Hash.SET_INTERIOR_ACTIVE, interior, true);
+                    Function.Call(Hash.REFRESH_INTERIOR, interior);
+
+                    // Where the room ACTUALLY is, asked of the game rather than read off a
+                    // coordinate somebody typed into an ini.
+                    //
+                    // This is what the grow room needed. The log said it plainly:
+                    //
+                    //   ipl bkr_biker_dlc_int_ware02 active=False,
+                    //   interior=235521, he is in interior=0
+                    //
+                    // An interior IS registered at the recorded coordinate -- that is the
+                    // 235521 -- but standing on that exact point put him OUTSIDE its volume,
+                    // with no collision under him and no room around him. Near enough to find
+                    // the room, not near enough to be in it, which is the one failure a
+                    // hand-taken reading produces and the one a person cannot debug by looking.
+                    //
+                    // The interior knows its own origin. Offset zero from it is the middle of
+                    // the room, which is somewhere a man can stand.
+                    var origin = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_INTERIOR_IN_WORLD_COORDS,
+                                                        interior, 0f, 0f, 0f);
+
+                    if (origin != Vector3.Zero && origin.DistanceTo(to) < OriginTrust)
+                    {
+                        Log.Info("The " + _spec.Name + " is really at " + origin +
+                                 ", not " + to + " -- using the room's own origin.");
+                        to = origin;
+                    }
                 }
 
                 // Waited ON rather than waited OUT.
