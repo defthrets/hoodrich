@@ -64,7 +64,7 @@
     {
       "gang": "marabunta",
       "name": "Chavo",
-      "zone": "EBURO",
+      "zone": "CYPRE",
       "x": 0.0,
       "y": 0.0,
       "heading": 270,
@@ -91,7 +91,7 @@
     {
       "gang": "triads",
       "name": "Uncle Wei",
-      "zone": "CYPRE",
+      "zone": "MIRR",
       "x": 0.0,
       "y": 0.0,
       "heading": 0,
@@ -105,7 +105,7 @@
     {
       "gang": "armenians",
       "name": "Sarkis",
-      "zone": "LOSPUER",
+      "zone": "ALTA",
       "x": 0.0,
       "y": 0.0,
       "heading": 250,
@@ -119,7 +119,7 @@
     {
       "gang": "aztecas",
       "name": "Chuy",
-      "zone": "RANCHO",
+      "zone": "BANNING",
       "x": 300.0,
       "y": -1930.0,
       "heading": 65,

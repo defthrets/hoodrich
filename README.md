@@ -3,190 +3,269 @@
 A drug-dealing and gang mod for GTA V, built from scratch, driven from a custom radial wheel
 that replaces the weapon wheel.
 
-You run with the Families. You buy weight, you take it home and bag it up, you post up on a
-corner and let the trade come to you, and you try to be gone before the police or somebody
+You run with the Families. You buy weight off a plug, you take it home and cut it, you post up
+on a corner and let the trade come to you, and you try to be gone before the police or somebody
 else's people decide you have been there long enough.
 
-Zero external dependencies. One DLL, some JSON, ScriptHookVDotNet. Nothing else to install.
+**Zero external dependencies.** One DLL, some JSON, ScriptHookVDotNet. No Lua, no NativeUI, no
+config framework, no installer. The INI parser and the JSON parser are both hand-rolled and
+live in `src/Hoodrich/Core`.
 
----
-
-## What is in it
-
-### The wheel
-
-Holding the weapon-wheel button opens Hoodrich instead. **Tapping** it still holsters your
-weapon, because that is what that button has always done and the mod should not fight muscle
-memory.
-
-Four wedges: **Weapons**, **Dealing**, **Gangs**, **Inventory**. Weapons hands the button back
-to the game for a few seconds so you get the real weapon wheel, selection and all.
-
-The wheel is a gateway and nothing more. It says "re-up" and "post up", not "turf price x1.05" —
-every number lives on a readout screen you open deliberately.
-
-### Dealing
-
-Buy **weight** off Stretch or, later, the docks. Weight cannot be sold. Take it to the kitchen
-counter at Aunt Denise's, pick what you are working and how far you stretch it, and you get
-street-ready product at a purity you chose. Cut it hard and you get more units that are worth
-less each and get handed back more often.
-
-Then **post up**. You do not pick customers, you pick a **spot**:
-
-- A dead alley has no footfall, so no sales and no heat
-- A busy pavement pushes buyers at you and stacks heat with every one of them
-- Buyers ask for a gram or an eighth, and prices are roughly what these things really cost
-- Too much heat and a patrol comes to ask what you are standing there for
-
-You are never locked in place. Walk the block; go too far and you have stopped working it.
-
-### The police
-
-- A cruiser sets off from a few streets away at a random point in a 50–210 second window,
-  drives in on normal traffic rules, pulls in near you and sits for ten seconds
-- Serving where a uniform can see you is **one star**, and that patrol drops what it is doing
-  and comes for you
-- A corner that has got hot enough draws a star on its own
-- Stay put while an officer is on you and you get searched, cleaned out and fined
-- And some of the people buying off you are not buying. If nobody saw the handoff and
-  the corner is still quiet, the buyer might back off and start making a call. You get a
-  few seconds: drop them, or get far enough from where it happened that what they say
-  does not place you. Let it land and you get stars **and** a much hotter corner. It is
-  the one thing here you can play your way out of
-
-### The other gangs
-
-- Deal on somebody's block and the ones who see you come and put hands on you — unarmed, because
-  on foot it is a beating
-- Work one pitch long enough and a carload turns up: one pass, three seconds of shooting from
-  alongside you, then gone. Only if the car stalls do they get out, and their weapons are taken
-  off them first
-- Turf follows the vanilla map. Grove Street is in Davis and Davis is Ballas
-
-### Stretch
-
-The Families' leader, on his corner in Chamberlain Hills, marked with a weed leaf. Walk up,
-press **D-pad right**, and talk to him properly — a panel with lines and choices, not a menu.
-
-He puts you on, sells you weight, tells you which blocks are safe, and once you have moved
-enough of it he tells you where it really comes from. That is what opens the docks.
-
-### The docks
-
-Phone the dock worker and he **drives out to you** in the same blacked-out Astron every time.
-Real phone animation, real drive on real roads, spawned far enough out that you never see the
-car appear. He pulls up, gets out, sells you anything in weight at the best price in the mod,
-then walks back to the car and leaves.
-
-### Lamar
-
-In the courtyard on Chamberlain, marked with a skull. He has **work** — three jobs at a time out
-of a bigger pool, one running at once, and he pays you himself when you come back.
-
-- **Ride out** — take homies, go put hands on some Ballas
-- **Drive-by** — same corner, everyone armed, from a car
-
-Homies are real: they ride with you in your ped group, they fight, they can die, and losing one
-costs rep off the payout.
-
-### The stash house
-
-Aunt Denise's on Forum Drive is yours from the start. No property to buy.
-
-- **Inventory** at the house opens a two-column transfer screen — what is on you, what is at
-  home, d-pad left and right to move it
-- **The kitchen counter** is the only place product gets worked
-- **The bed** sleeps six hours, heals you, saves the game, and a load puts you back there
-- **Chop** is in the yard
-- Denise is kept quiet while you are in there
-
-### Reputation
-
-Earned four ways, not one:
-
-| | |
-|---|---|
-| Standing on your own blocks | a slow drip |
-| Every sale | a nudge |
-| Every purchase | a nudge |
-| A rival dropped while working a corner | 12 |
-| A job finished for Lamar | 40 |
-
----
-
-## Installing
-
-**Requirements**
-
-- GTA V (Legacy or Enhanced — one build runs on both)
-- [ScriptHookV](http://www.dev-c.com/gtav/scripthookv/)
-- [ScriptHookVDotNet 3](https://github.com/scripthookvdotnet/scripthookvdotnet/releases)
-- .NET Framework 4.8
-
-**Steps**
-
-1. Install ScriptHookV and ScriptHookVDotNet 3 if you have not already
-2. Copy `Hoodrich.dll` and `Hoodrich.ini` into `Grand Theft Auto V\scripts\`
-3. Copy the `data` folder in as `Grand Theft Auto V\scripts\Hoodrich\`
-4. Launch the game
-
-The mod reads its data from `scripts\Hoodrich\`, not from `scripts\`. Files in the wrong place
-are silently ignored.
-
-**Open All Interiors** is recommended — the stash house is only reachable with it.
-
----
-
-## Configuring
-
-`Hoodrich.ini` holds the settings; the JSON in `scripts\Hoodrich\` holds the content.
-
-| File | What it decides |
-|---|---|
-| `gangs.json` | who exists, their colours, their turf, who they are at war with |
-| `drugs.json` | the catalogue and street prices |
-| `dealers.json` | suppliers. **Authoritative** — deleting somebody removes them |
-| `leaders.json` | where each leader stands, facing which way, and their hours |
-| `missions.json` | the work Lamar hands out |
-| `zones.json` | zone geometry, generated from the game's own bounds |
-
-Coordinates in `leaders.json` and `missions.json` take an optional `z`. Leave it at zero and the
-ground is found automatically; set it when the spot is on a raised walkway, where "the ground" is
-a floor below where you meant.
-
----
-
-## Building
-
-The build is self-contained. It does not need the .NET SDK — a Roslyn compiler lives in `tools\`.
-
-```powershell
-.\build.ps1                                    # build to .\build\Hoodrich.dll
-.\build.ps1 -Deploy -Target Both               # build and install to both editions
-.\build.ps1 -Deploy -Target Both -FreshData    # also overwrite the installed JSON
+```
+37,156 lines of C# across 72 files   ·   9 data files   ·   66 icons drawn from scratch
 ```
 
-Without `-FreshData` the installed data files are left alone, and any that differ from source
-are called out loudly — a build whose data does not match itself is worse than an overwrite.
+---
 
-`tools\make_map.ps1` draws every zone as a labelled SVG you can paint gang colours onto;
-`tools\read_map.ps1` reads it back into `gangs.json`.
+## Install
+
+1. **ScriptHookV** and **ScriptHookVDotNet 3** — the only prerequisites.
+2. Drop `Hoodrich.dll`, `Hoodrich.ini` and the `Hoodrich/` data folder into `scripts/`.
+3. Load a save. The wheel is on the weapon-wheel button.
+
+Works on both Legacy and Enhanced. `build.ps1 -Deploy -Target Both` puts it in both.
 
 ---
 
-## Notes
+## The wheel
 
-- **One `Script` subclass.** SHVDN ticks scripts in an unspecified order, so Hoodrich has a
-  single entry point and defines its own update order. One place to be exception-safe.
-- **No external runtime dependencies.** `scripts\` is one shared assembly-resolution namespace,
-  so a mod that drags in libraries can break its neighbours. The INI and JSON parsers are
-  hand-rolled for that reason.
-- **Everything fails soft.** A missing model, a texture that is not in this install, a native
-  that behaves differently between editions — each is caught and degraded, never thrown.
-- **The world gets put back.** Time scale, timecycle, relationships, every spawned ped and car
-  are restored on unload, including after a crash.
+**Hold** the weapon-wheel button and Hoodrich opens instead. **Tap** it and you still holster
+your weapon, because that is what that button has always done and a mod should not fight muscle
+memory. **Weapons** hands the button back to the game for a few seconds so you get the real
+weapon wheel, selection and all.
 
-## Licence
+The wheel was redesigned from the ground up in `preview/` — five directions were rendered as
+real images before a line of it was written, and `preview/wheel_current.py` still renders the
+old one so the comparison is arguable rather than a matter of taste.
 
-Personal project. GTA V and its assets belong to Rockstar Games.
+- **The ring is one thing.** Icons are big enough to be the wedge rather than decorate it, and
+  labels sit *outside* the rim on their own angle so they are not fighting the picture for
+  space.
+- **The hub is the only place words are read.** Breadcrumb, the hovered item's name, its value,
+  its detail. There is no top-of-screen readout and no side panel — both are gone.
+- **Hover has a keel**: an amber bar on the wedge's *inner* edge, pointing at the hub, which is
+  where the answer is written.
+- **Disabled is a silhouette, not a colour.** An outlined empty slot with a padlock and a
+  struck-through label. Colour alone measured four values out of 255 from an enabled wedge,
+  which is a rounding error rather than a state.
+- **Stat rows sit under the ring**, in two columns, so the composition stays symmetrical.
+
+Pages: **Weapons · Dealing · Gangs · Inventory · Socials**, and below those the supply,
+dealer, stock, sell, gang, turf and start-over pages.
+
+---
+
+## Dealing
+
+### Weight, and what you do to it
+
+Bulk **weight** cannot be sold. It has to be worked first.
+
+- **Buy** it off a gang leader, or off Tao Cheng at the port once you have moved enough to be
+  told he exists.
+- **Cut it** in the kitchen. You pick how far you step on it; you do not pick the bag size,
+  because the stash is measured by weight and an ounce and twenty-eight singles are the same
+  entry in it.
+- **Post up** on a corner and let buyers come to you.
+
+### Purity is the whole economy
+
+Everything you cut is stored at a purity, and purity does two jobs at once:
+
+- **It multiplies.** Cutting 100g at 50% gives you 200g to sell.
+- **It gets noticed.** Stepped-on product gets handed back, and a refusal is not just a lost
+  sale — the block remembers. Your product reputation moves every time somebody buys *or*
+  refuses, and the feed starts talking about it either way.
+
+A bag fronted to you by your own set arrives at **75%** — already stepped on once before it
+reached you, so the kitchen is worth walking into.
+
+### The catalogue
+
+| Product | Tier | Street | Bulk | Notes |
+|---|---|---|---|---|
+| Marijuana | 1 | $20 | $4 | rolls into pre-rolls |
+| Oxycodone | 1 | $25 | $7 | counted in pills |
+| Alprazolam | 2 | $40 | $11 | counted in bars |
+| Crack | 2 | $100 | $26 | |
+| Meth | 3 | $200 | $48 | |
+| Cocaine | 4 | $250 | $55 | |
+| Heroin | 5 | $100 | $21 | |
+| Pre-rolls | 1 | $25 | — | made only, never bought |
+
+Every one is a line in `data/drugs.json` with its own deal sizes, verbs and heat factor. Adding
+one is a JSON entry and an icon.
+
+### Posting up
+
+You pick a **spot**, not a customer. The footfall there decides both how fast product moves and
+how hot the corner gets — a dead alley sells nothing and draws nothing; a busy pavement does
+both. Stand somewhere long enough and you get clocked, and then it is a police matter.
+
+---
+
+## The sets
+
+Nine gangs, each with its own turf, product, rivals, colour and hand-drawn emblem.
+
+| Gang | Turf | Moves |
+|---|---|---|
+| The Families | Chamberlain Hills, Strawberry | weed, oxy, xanax |
+| Ballas | Davis, Vespucci | crack, weed |
+| Los Santos Vagos | Rancho, La Mesa, Murrieta, El Burro | coke, meth |
+| Marabunta Grande | Cypress Flats, Elysian Island, Textile City | meth, coke |
+| Varrios Los Aztecas | Banning | weed, coke |
+| The Lost MC | Stab City, Grapeseed, Sandy Shores | meth, heroin |
+| Wei Cheng Triads | Mirror Park, Hawick | oxy, heroin, xanax |
+| Armenian Mob | Alta, Burton, Pillbox Hill | heroin |
+| Kkangpae | Little Seoul | meth, coke |
+
+Every gang's `turfHint` names exactly the zones it actually holds, and no zone is claimed twice
+— both of which are checked, because the registry resolves a contested zone silently and a
+wrong claim costs a gang its turf with nothing on screen to say so.
+
+### Standing with each of them
+
+Kept **per gang**, not as one global number: rep, kills, deals, money earned and time affiliated.
+Fall far enough with a set and you are **beefing** with them, at which point their people go for
+you on sight.
+
+### Leaders
+
+Nine of them, each holding court on his own set's block: **Stretch** (Families, Chamberlain),
+**OG Reese** (Ballas, Davis), **El Tio** (Vagos, Rancho), **Chavo** (Marabunta, Cypress Flats),
+**Bull** (Lost, Stab City), **Uncle Wei** (Triads, Mirror Park), **Sarkis** (Armenians, Alta),
+**Chuy** (Aztecas, Banning), **Mr Kim** (Kkangpae, Little Seoul).
+
+Walk up and you get a conversation: join, buy weight, ask about work, ask who they are beefing
+with. Joining fronts you a starter bag.
+
+### Wars
+
+Somebody raids your block and it becomes a fight. Defenders **hold a perimeter** rather than
+chasing the attacker down the street — posted on a ring around the spot, spread evenly, with a
+radius that closes up as the group gets smaller so four men do not leave a gap.
+
+The police stay out of it. Nobody calls in a gang war while it is happening and nobody calls it
+in afterwards either.
+
+---
+
+## Missions
+
+Six, from Lamar, gated on rank.
+
+| Job | Rank | Pay |
+|---|---|---|
+| Get on a bike with me | Pee-Wee | $400–800 |
+| Spin Jamestown, burn the whip | Pee-Wee | $900–1,500 |
+| Cross this fool out | Soldier | $1,100–1,700 |
+| The cut house in Rancho | Soldier | $1,400–2,100 |
+| Get 'em off Grove | Enforcer | $1,700–2,500 |
+| Spin they route in La Mesa | Shotcaller | $2,000–3,000 |
+
+They include a bike ride that turns into a straightener on the courts, a drive-by where the
+homies stay in the car until it is time to burn it, and a tag run where you cross out somebody
+else's wall. Homies follow as bodyguards and get back in the car afterwards.
+
+**Ranks:** Pee-Wee → Soldier → Enforcer → Shotcaller → OG.
+
+---
+
+## Socials
+
+A working in-game feed, and the largest single thing in the mod by content.
+
+```
+174 accounts   ·   101 written voices   ·   70 post sets   ·   2,462 lines
+```
+
+- **Everybody has their own voice.** A hundred and one named characters — Wei Cheng, Tao Cheng,
+  Lamar, Stretch, the Weazel newsdesk, a bail bondsman, a bird-watcher, the barber on Grove —
+  say their own lines and nobody else's. An account with a written voice is never given somebody
+  else's words, which is why the LSPD does not post a shop's opening hours.
+- **Rank-and-file accounts** for all nine sets speak the shared templates, so a diss aimed at
+  the Triads gets answered by Triads.
+- **It reacts.** Sales, busts, bodies, wars, missions, tags, joining and leaving a set, and a
+  drive-by all reach the feed.
+- **Your product gets talked about.** Good work earns praise, weak work earns complaints — from
+  civilians and your own set only, never from rivals, because a Balla telling you your work is
+  good is not a compliment. And it *hints* rather than naming you: not one of the forty-eight
+  product posts says Franklin.
+- **You can post back.** Say something, or name a set and take the consequences — they answer
+  on the feed within the minute, and then somebody comes to find you.
+
+Tweets arrive as toasts down the right-hand side, or you open the full screen and read the
+timeline with tabs for what is about you.
+
+---
+
+## Around the map
+
+- **The stash house** — Aunt Denise's. Holds 300kg. Sleep there to pass time.
+- **The kitchen** — where weight becomes product.
+- **The grow room** and **the pill press** — real interiors, streamed in and waited on properly.
+- **Grimes** — sells guns and ammo out of the courtyard on Forum Drive, and says something when
+  money changes hands.
+- **Tao Cheng** — call him and he drives over from the port, parks at the kerb, opens the boot,
+  walks the box through the house and puts it down in the store room.
+- **Boombox, parked car, corner life** — the block has people on it who talk to each other.
+
+Franklin's own block never spawns hostiles. It is his hood; he does not get jumped outside his
+own house.
+
+---
+
+## The HUD
+
+Every surface is on the same art: the wheel, the dialogue panel, the info panels, the kitchen,
+the stash, the feed and the toasts. **66 icons**, all drawn from scratch as white masks and
+tinted at draw time, so the same file is the set's colour on a gang row and the money colour on
+a price.
+
+They are generated by `tools/make_icons.py` and checked against each other at the size the game
+actually draws them — every pair of the 2,145 is at least 0.100 apart, because two icons that
+measure the same *are* the same icon.
+
+Drugs look like paraphernalia rather than pill bottles: weed is a bong, meth is a shard cluster,
+coke is a razor blade, crack is a cut stone, heroin is a syringe. Sixteen more products are
+drawn and waiting for the catalogue to grow.
+
+---
+
+## Under it
+
+- **Saves** alongside your GTA save, round-tripped field for field.
+- **Everything is data.** Gangs, drugs, dealers, leaders, missions, zones, tags, weapons and the
+  whole social library are JSON. New gang, new drug, new mission — no rebuild.
+- **`Hoodrich.ini`** — 70 keys, every one of them read by something. Settings that do nothing
+  are worse than no settings.
+- **Deploy never overwrites your ini.**
+
+### Build
+
+```powershell
+powershell -NoProfile -File ./build.ps1 -Deploy -Target Both -FreshData
+```
+
+Compiles with a self-contained Roslyn in `tools/`, so it does not need a .NET SDK installed.
+
+---
+
+## Documents
+
+| File | What it is |
+|---|---|
+| `AUDIT.md` | first full audit, at 29,877 lines |
+| `AUDIT2.md` | second full audit — what was wrong, what was checked and found sound |
+| `TURF.md` | every source the turf table was built from, and how much each is trusted |
+| `COMBAT.md` | the combat attribute and defensive-area findings, verified against the assembly |
+| `BLIPS.md` | blip sprite reference |
+| `SPRITES.md` | the usable in-game sprite dictionaries |
+| `TEXTFORMAT.md` | Rockstar's `~tag~` codes |
+| `NEXT.md` | what is agreed and not yet built |
+| `preview/` | the icon sheet, and every wheel redesign rendered as a real image |
+
+---
+
+Built with [Claude Code](https://claude.com/claude-code).
