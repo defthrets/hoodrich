@@ -543,6 +543,71 @@ def guns():
     save(out, 'guns.png')
 
 
+
+def leaf():
+    """
+    A seven-blade cannabis leaf, for the Dealing wedge.
+
+    There is a note on weed() above from an earlier attempt at one: "A leaf is made of points,
+    and points are the first thing the downsample takes -- three fat leaflets still came out as
+    an arrowhead." That was true, and it was THREE leaflets drawn for a twenty-pixel icon. The
+    wheel actually draws these at about seventy-eight, and what makes a cannabis leaf
+    recognisable is not the serration -- it is the seven-blade fan. Seven blades hold that
+    shape down to about twenty-four pixels; the teeth are allowed to blur away and it still
+    reads, which is the opposite trade from the one that failed.
+
+    The outline is built as POINTS and rotated arithmetically rather than drawn upright and
+    rotated as a tile. A rotated tile with expand=True does not keep its root at the bottom
+    centre, so compositing as though it does puts every blade slightly wrong -- the first pass
+    at this welded the outer four into a slab across the bottom.
+    """
+    big = Image.new('RGBA', (S * 4, S * 4), CLEAR)
+    d = ImageDraw.Draw(big)
+
+    ox, oy = S * 4 * 0.5, S * 4 * 0.80          # the root, low in the frame
+    spread = 26.0
+    lengths = [290, 370, 425, 465, 425, 370, 290]
+    fats = [44, 52, 58, 62, 58, 52, 44]
+
+    for i in range(len(lengths)):
+        ang = math.radians((i - (len(lengths) - 1) / 2.0) * spread)
+        ca, sa = math.cos(ang), math.sin(ang)
+
+        # Half-width follows sin(pi * t^0.55): narrow at the stem, widest a third of the way
+        # up, tapering to a point. Fatter reads as a petal, thinner as a spider's leg.
+        left, right = [], []
+        teeth = 7 + (i % 2)
+
+        for k in range(121):
+            t = k / 120.0
+            w = fats[i] * 4 * math.sin(math.pi * (t ** 0.55)) * (1.0 - 0.10 * t)
+
+            if 0.10 < t < 0.94:
+                w *= 1.0 - 0.17 * (0.5 + 0.5 * math.cos(t * teeth * 2 * math.pi))
+
+            y = -lengths[i] * 4 * t
+            left.append((-w, y))
+            right.append((w, y))
+
+        pts = left + right[::-1]
+        d.polygon([(ox + x * ca - y * sa, oy + x * sa + y * ca) for x, y in pts], fill=W)
+
+    # A short stem, so it is a leaf rather than a firework.
+    d.polygon([(ox - 52, oy - 24), (ox + 52, oy - 24), (ox + 28, oy + 400), (ox - 28, oy + 400)],
+              fill=W)
+
+    art = big.resize((S, S), Image.LANCZOS)
+    box = art.getbbox()
+    art = art.crop(box)
+
+    out = Image.new('RGBA', (S, S), CLEAR)
+    k = min((S - 24) / float(art.width), (S - 24) / float(art.height))
+    art = art.resize((int(art.width * k), int(art.height * k)), Image.LANCZOS)
+    out.alpha_composite(art, ((S - art.width) // 2, (S - art.height) // 2))
+
+    save(out, 'leaf.png')
+
+
 def mobile():
     """
     A plain mobile phone, for the socials.
@@ -1279,7 +1344,7 @@ def poppy():
 # Every icon in the file, by name. Run with no arguments to draw all of them, or name the
 # ones you want -- "python make_icons.py guns mobile" -- which is the difference between
 # regenerating one symbol and rewriting sixty-nine files to change one.
-ALL = [skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy]
+ALL = [leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy]
 
 
 if __name__ == '__main__':
