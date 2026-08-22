@@ -49,7 +49,14 @@ namespace Hoodrich.UI
         /// by the same amount. This one number is where the FEED starts, so getting it wrong
         /// does not clip the header -- it slides the whole timeline up over it.
         /// </summary>
-        private const float CardHeight = 0.107f;
+        /// <summary>
+        /// Taller than it was, because the masthead is now three storeys rather than two.
+        ///
+        /// The mark, the word under it, and the account under that. Everything below the header
+        /// is laid out from what this method RETURNS rather than from a second constant, so the
+        /// tab strip and the whole feed move down with it on their own.
+        /// </summary>
+        private const float CardHeight = 0.121f;
 
         /// <summary>Your own face. Larger than a stranger's, and the best-rendered thing here.</summary>
         private const float HeadSize = 0.046f;
@@ -1223,22 +1230,34 @@ namespace Hoodrich.UI
             Hud.RectFrom(left, PanelTop, PanelWidth, 0.0028f, edge);
 
             var headX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
+            var middle = left + PanelWidth * 0.5f;
+
+            Sweep(left, edge);
 
             // The mark over the middle of the panel, the same letterhead every other screen in
-            // the mod carries. Centred on the PANEL rather than on the title, because the title
-            // is left-aligned against the avatar and the mark belongs to the whole thing.
-            Hud.BrandCentre(left + PanelWidth * 0.5f, PanelTop + 0.017f, 0.024f,
-                            Palette.Alpha(Palette.TextDim, 165));
+            // the mod carries.
+            Hud.BrandCentre(middle, PanelTop + 0.016f, 0.024f,
+                            Palette.Alpha(Palette.TextDim, 175));
 
-            Hud.Text("SOCIALS", headX, PanelTop + 0.032f, 0.74f, Palette.Text,
-                     Hud.FontCursive, centre: false);
+            // And the word under it, centred on the same axis, in the face the rest of the mod
+            // reads in rather than the script one.
+            //
+            // It used to sit out on the left in cursive, against the avatar, which put three
+            // different things -- a logo, a title and a name -- on three different alignments
+            // in one header. Logo and title share a centreline now and the account owns the
+            // left, which is two rules instead of none.
+            Hud.Text("SOCIALS", middle, PanelTop + 0.0315f, 0.50f, Palette.Text,
+                     Hud.FontChaletLondon);
 
-            // The one number, right, in the money colour -- the hub's exact title rhythm.
-            Hud.TextRight(_feed.Followers.ToString("N0"), right, PanelTop + 0.046f, 0.34f,
-                          Palette.Cash, Hud.FontChaletLondon);
+            Live(middle, PanelTop + 0.0405f);
+
+            // A hairline under the two of them, so the masthead is visibly a masthead and the
+            // account below it is visibly the account.
+            Hud.RectFrom(left + Pad, PanelTop + 0.0565f, PanelWidth - Pad * 2f, 0.0012f,
+                         Color.FromArgb(46, 255, 255, 255));
 
             var cx = left + Pad + Hud.ToX(HeadSize) * 0.5f;
-            var cy = PanelTop + 0.065f;
+            var cy = PanelTop + 0.0865f;
 
             if (MugshotReady())
             {
@@ -1258,31 +1277,144 @@ namespace Hoodrich.UI
                 Hud.Text(initial, cx, cy - 0.016f, 0.60f, Palette.Text, Hud.FontChaletLondon);
             }
 
-            Hud.Text(_feed.DisplayName, headX, PanelTop + 0.080f, 0.34f, Palette.Text,
+            // The name where the title used to be, and the handle UNDER it rather than trailing
+            // off the end of it. A name and a handle on one line is one long string that reads
+            // as neither; stacked, the name is who and the handle is where.
+            Hud.Text(_feed.DisplayName, headX, PanelTop + 0.0625f, 0.42f, Palette.Text,
                      Hud.FontChaletLondon, centre: false);
 
             var nw = 0.06f;
-            try { nw = Hud.MeasureText(_feed.DisplayName, 0.34f, Hud.FontChaletLondon); }
+            try { nw = Hud.MeasureText(_feed.DisplayName, 0.42f, Hud.FontChaletLondon); }
             catch { /* the estimate will do */ }
 
-            Hud.Text(_feed.Handle, headX + nw + 0.006f, PanelTop + 0.083f, 0.26f,
+            // A tick after it, drawn rather than loaded: a filled disc with the tick art punched
+            // over it in the panel's own dark, which is the same two calls every other badge in
+            // this mod is made of.
+            var badge = headX + nw + 0.008f;
+
+            Hud.Disc(badge, PanelTop + 0.0715f, 0.0062f, Palette.Alpha(Palette.Cash, 225));
+            Hud.File("tick.png", badge, PanelTop + 0.0715f, 0.0092f, 0f,
+                     Color.FromArgb(255, 18, 20, 22));
+
+            Hud.Text(_feed.Handle, headX, PanelTop + 0.0885f, 0.28f,
                      Palette.TextDim, Hud.FontLabel, centre: false);
 
             // The wheel panel's "owed a visit" row, in a slot that already existed and was
             // already right-aligned -- so it is visible the frame the screen opens rather than
             // four tabs away, and it costs no layout.
+            // The one number, right, in the money colour -- the hub's exact title rhythm, with
+            // the little crowd beside it so it does not need the word FOLLOWERS to say what it
+            // counts.
+            var count = _feed.Followers.ToString("N0");
+
+            Hud.TextRight(count, right, PanelTop + 0.0625f, 0.42f, Gained(), Hud.FontChaletLondon);
+
+            var cw = 0.05f;
+            try { cw = Hud.MeasureText(count, 0.42f, Hud.FontChaletLondon); }
+            catch { /* the estimate will do */ }
+
+            Hud.File("people.png", right - cw - 0.011f, PanelTop + 0.0715f, 0.0145f, 0f,
+                     Palette.Alpha(Gained(), 200));
+
             var payback = PaybackDue != null && PaybackDue();
 
             Hud.TextRight(payback
                               ? "SOMEBODY'S COMING"
-                              : "FOLLOWERS  ·  " + _feed.Following.ToString("N0") + " FOLLOWING",
-                          right, PanelTop + 0.0825f, 0.24f,
+                              : _feed.Following.ToString("N0") + " FOLLOWING",
+                          right, PanelTop + 0.0895f, 0.24f,
                           payback ? Palette.Danger : Palette.TextDim, Hud.FontLabel);
 
             // No underline here. The tab strip's rule closes the masthead, and two full-width
             // accent rules a few hundredths apart on a panel this narrow is a ladder.
             return PanelTop + CardHeight;
         }
+
+        /// <summary>
+        /// A bright segment travelling along the accent rule, once every two and a half seconds.
+        ///
+        /// The whole animation budget of this screen, spent in one place. A feed is a thing that
+        /// is supposed to be live and every pixel of it was static, so one moving highlight on
+        /// the rule at the top says "this is running" without anything underneath it moving --
+        /// which matters, because the thing underneath is text somebody is trying to read.
+        ///
+        /// Clipped to the panel rather than drawn over it: it enters from off the left edge and
+        /// leaves past the right, and a rectangle that starts outside the card would be a bar
+        /// across the screen for the frames either side.
+        /// </summary>
+        private void Sweep(float left, Color edge)
+        {
+            const int PeriodMs = 2600;
+
+            var t = (Game.GameTime % PeriodMs) / (float)PeriodMs;
+            var wide = PanelWidth * 0.20f;
+
+            var from = left - wide + (PanelWidth + wide * 2f) * t;
+
+            var x0 = Math.Max(left, from);
+            var x1 = Math.Min(left + PanelWidth, from + wide);
+
+            if (x1 <= x0) return;
+
+            Hud.RectFrom(x0, PanelTop, x1 - x0, 0.0028f,
+                         Color.FromArgb(150, 255, 255, 255));
+        }
+
+        /// <summary>
+        /// The dot that says the feed is on, breathing rather than blinking.
+        ///
+        /// Blinking is an alarm. This fades between two alphas on a slow sine, which reads as a
+        /// light that is on rather than as something demanding to be looked at.
+        /// </summary>
+        private void Live(float middle, float y)
+        {
+            const int PeriodMs = 1900;
+
+            var t = (Game.GameTime % PeriodMs) / (float)PeriodMs;
+            var glow = 0.5f + 0.5f * (float)Math.Sin(t * Math.PI * 2.0);
+
+            var alpha = (int)(90 + 130 * glow);
+
+            var wide = 0.06f;
+            try { wide = Hud.MeasureText("SOCIALS", 0.50f, Hud.FontChaletLondon); }
+            catch { /* the estimate will do */ }
+
+            Hud.Disc(middle - wide * 0.5f - 0.010f, y, 0.0038f,
+                     Palette.Alpha(Palette.Danger, alpha));
+        }
+
+        /// <summary>
+        /// The follower colour, flashed for a moment whenever the number goes up.
+        ///
+        /// A count that changes silently is a count nobody notices changing, and the number
+        /// going up is most of why anybody opens this screen.
+        /// </summary>
+        private Color Gained()
+        {
+            var now = _feed.Followers;
+
+            if (now != _followersWere)
+            {
+                if (now > _followersWere) _gainedAt = Game.GameTime;
+                _followersWere = now;
+            }
+
+            if (_gainedAt == 0) return Palette.Cash;
+
+            var since = Game.GameTime - _gainedAt;
+            if (since > 1400) { _gainedAt = 0; return Palette.Cash; }
+
+            // Bright at the top of the flash, back to the money colour by the end of it.
+            var t = 1f - since / 1400f;
+            var lift = (int)(255 * t);
+
+            return Color.FromArgb(255,
+                                  Math.Min(255, Palette.Cash.R + lift),
+                                  Math.Min(255, Palette.Cash.G + lift / 3),
+                                  Math.Min(255, Palette.Cash.B + lift));
+        }
+
+        private int _followersWere = -1;
+        private int _gainedAt;
 
         /// <summary>
         /// Draws the author's picture, and says whether it managed to.
