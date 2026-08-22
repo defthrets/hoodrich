@@ -1,5 +1,6 @@
 using System;
 using GTA;
+using Color = System.Drawing.Color;
 using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
@@ -28,6 +29,20 @@ namespace Hoodrich.Locations
         private readonly float _heading;
         private readonly string[] _models;
         private readonly int _paint;
+
+        /// <summary>
+        /// Every performance mod at its top index, the turbo, and the body kit.
+        ///
+        /// Off by default, because most of these are somebody's parked car and a stock car is
+        /// what a parked car looks like. On for the one that is somebody's PROJECT.
+        /// </summary>
+        public bool Built;
+
+        /// <summary>Underglow, if it has any. Null for a car nobody has lit.</summary>
+        public Color? Neon;
+
+        /// <summary>Whether the boot is standing open -- a van being unloaded, or worked on.</summary>
+        public bool BootOpen;
 
         private Vehicle _car;
         private int _lastUpdate;
@@ -132,7 +147,18 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 15, 3, false);
 
                 Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
-                Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, 1.5f);
+                Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, Built ? 0.4f : 1.5f);
+
+                if (Built) BuildIt();
+                if (Neon.HasValue) Light(Neon.Value);
+
+                // Door 5 is the boot. Instantly rather than swung, because the car is being
+                // created in front of you and a boot easing itself open on spawn is a car
+                // doing something rather than a car that was already like that.
+                if (BootOpen)
+                {
+                    Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, 5, false, true);
+                }
             }
             catch (Exception ex)
             {
@@ -140,11 +166,72 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// Everything the shop sells, at the top of each list.
+        ///
+        /// Asked for rather than assumed: GET_NUM_VEHICLE_MODS says how many a given car
+        /// actually has, and the top one is the last index. Hardcoding "4" fits some cars and
+        /// silently does nothing on the rest, which is the sort of thing that looks like the
+        /// mod not working.
+        /// </summary>
+        private void BuildIt()
+        {
+            // 11 engine, 12 brakes, 13 transmission, 15 suspension, 16 armour -- and then the
+            // body: 0 spoiler through 10 roof, which is what makes it read as somebody's build
+            // rather than a stock van with a fast engine nobody can see.
+            foreach (var kind in new[] { 11, 12, 13, 15, 16,
+                                         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })
+            {
+                try
+                {
+                    var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, kind);
+                    if (many > 0) Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, kind, many - 1, false);
+                }
+                catch { /* a slot this car has not got */ }
+            }
+
+            try
+            {
+                Function.Call(Hash.TOGGLE_VEHICLE_MOD, _car.Handle, 18, true);   // turbo
+                Function.Call(Hash.TOGGLE_VEHICLE_MOD, _car.Handle, 22, true);   // xenons
+            }
+            catch { /* neither is worth a log line */ }
+        }
+
+        /// <summary>
+        /// Underglow, all four sides, in one colour.
+        ///
+        /// The natives are SET_VEHICLE_NEON_ENABLED and SET_VEHICLE_NEON_COLOUR in this build
+        /// -- not the _LIGHT_ spellings the docs use, which are simply not in the enum. Checked
+        /// against the assembly rather than typed from memory.
+        /// </summary>
+        private void Light(Color c)
+        {
+            try
+            {
+                for (var side = 0; side < 4; side++)
+                {
+                    Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, _car.Handle, side, true);
+                }
+
+                Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, _car.Handle, (int)c.R, (int)c.G, (int)c.B);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not light the parked car: " + ex.Message);
+            }
+        }
+
         /// <summary>Wheel type 7 is the Benny's Original family.</summary>
         private const int BennysWheels = 7;
 
-        /// <summary>A wire-spoke rim out of that set.</summary>
-        private const int BennysRim = 3;
+        /// <summary>
+        /// Knock-Offs, out of that set.
+        ///
+        /// Fourth in the shop's list, which is index 2: the list opens with Stock -- index -1,
+        /// the absence of a wheel choice -- so the numbered ones start one line below it.
+        /// </summary>
+        private const int BennysRim = 2;
 
         public void RestoreWorld()
         {

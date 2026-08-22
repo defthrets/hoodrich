@@ -463,14 +463,21 @@ namespace Hoodrich
                     .Stand(new Vector3(-186.874f, -1700.152f, 32.920f), 308.772f,
                            "WORLD_HUMAN_GUARD_STAND", Fam(0), armed: false);
 
-                // And their car outside it. The Voodoo is the lowrider, and it is painted the
-                // exact green the set is drawn in everywhere else rather than a paint index
-                // that is roughly right.
+                // The sound van, next to the decks. A Minivan Custom rather than the Voodoo
+                // that used to sit here: a saloon parked by a set of decks is a car, and a
+                // built van with its boot up is where the music is coming from.
+                //
                 // Paint 49 is metallic dark green -- the set's colour with flake in it rather
-                // than the flat poster green an RGB triple gives you.
+                // than the flat poster green an RGB triple gives you -- and the underglow is
+                // the same green, so the van reads as theirs after dark as well.
                 _cars.Add(new ParkedCar(new Vector3(-196.745f, -1718.838f, 32.664f), 319.530f,
                                         MetallicDarkGreen,
-                                        "voodoo", "buccaneer2", "chino2"));
+                                        "minivan2", "voodoo", "buccaneer2")
+                {
+                    Built = true,
+                    BootOpen = true,
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80)
+                });
 
                 // The shop's van, up on the road above the lot.
                 _cars.Add(new ParkedCar(new Vector3(-214.160f, -1739.805f, 31.709f), 52.137f,
