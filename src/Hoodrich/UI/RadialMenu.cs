@@ -663,22 +663,30 @@ namespace Hoodrich.UI
                 // A rectangle per pixel row. The hub is the one circle in the mod whose edge
                 // anybody actually looks at, and at the old row height its bands poked through
                 // the rim as a ring of notches.
+                // No rim. It was a ring drawn straight through the readout, and the reason
+                // is a scale error rather than a taste one: wheel_hub.png is authored in the
+                // FULL wheel's space -- its canvas spans RingOuter*2, and the ring sits at
+                // RingInner inside that, so it covers half the file's width. Drawn at
+                // rInner*2 the whole picture was squeezed to the hub's diameter and the ring
+                // landed at HALF the hub's radius: a circle through the middle of the title,
+                // exactly where nothing should be.
+                //
+                // It was there to keep the hub from merging with the wedges, and the fill is
+                // a different black from theirs, which does that job on its own. Drawing it
+                // correctly would put it back on the hub's edge; it is not being drawn at all
+                // because a readout wants nothing over it.
                 Draw.Disc(cx, cy, rInner, fill, 1);
-
-                if (!Draw.File("wheel_hub.png", cx, cy, rInner * 2f, 0f, rim))
-                {
-                    Draw.Disc(cx, cy, rInner, rim, 1);
-                    Draw.Disc(cx, cy, rInner - 0.0028f, fill, 1);
-                }
             }
 
             if (t < 0.75f) return;
 
             var crumb = _stack.Count > 1 ? "< " + page.Title : page.Title;
+            // No rule under it either. The breadcrumb is already a different size, a
+            // different weight and a different colour from the title below it, so the line
+            // was separating two things that were not in danger of being confused -- and it
+            // sat close enough to the title to read as a strike through it.
             Draw.Text(crumb.ToUpperInvariant(), cx, cy - 0.076f, 0.26f,
                       Palette.Alpha(Palette.TextDim, 225), Draw.FontLabel);
-            Draw.Rect(cx, cy - 0.0455f, 0.062f, 0.0022f,
-                      Color.FromArgb(70, 255, 255, 255));
 
             var chord = Chord(rInner, 0.058f);
 
@@ -770,12 +778,18 @@ namespace Hoodrich.UI
         /// splitting the rows into two columns keeps the block wide and low rather than tall
         /// and lopsided.
         /// </summary>
+        /// <summary>How tall a plinth row is at most, and the least it may be squeezed to.</summary>
+        private const float MaxRowHeight = 0.030f;
+        private const float MinRowHeight = 0.019f;
+
+        /// <summary>Clear air left under the plinth, so it never touches the screen edge.</summary>
+        private const float PlinthMargin = 0.014f;
+
         private void DrawPlinth(WheelPage page, float rOuter, float t)
         {
             if (page.Panel.Count == 0 || t < 0.9f) return;
 
             const float plinthW = 0.44f;
-            const float rowH = 0.030f;
             const float headH = 0.032f;
             const float pad = 0.010f;
 
@@ -795,7 +809,31 @@ namespace Hoodrich.UI
             }
 
             var tall = Math.Max(cutAt, page.Panel.Count - cutAt);
-            var bodyH = pad * 2f + tall * rowH;
+
+            // Fitted to what is left under the wheel, rather than assumed.
+            //
+            // The plinth hangs off the bottom of the ring at a fixed offset -- 0.798 down the
+            // screen -- and then grew downward by however many rows it had. On a 16:9 screen
+            // that mostly got away with it. On anything wider there is barely a fifth of the
+            // height left below the wheel, and a page with more than four rows in a column
+            // simply walked off the bottom edge and took its last rows with it.
+            //
+            // So the rows are sized to the space: as tall as they were up to the old 0.030,
+            // squeezed down to MinRowHeight when there are more of them, and only then capped
+            // in number -- with the ones that did not make it counted on the last line rather
+            // than silently missing.
+            var forRows = 1f - top - PlinthMargin - headH - pad * 2f;
+
+            var rowH = Math.Min(MaxRowHeight, forRows / Math.Max(1, tall));
+            var shown = tall;
+
+            if (rowH < MinRowHeight)
+            {
+                rowH = MinRowHeight;
+                shown = Math.Max(1, (int)(forRows / rowH));
+            }
+
+            var bodyH = pad * 2f + shown * rowH;
 
             Draw.RectFrom(left, top, plinthW, headH, Palette.PanelHeader);
             Draw.RectFrom(left, top + headH - 0.0028f, plinthW, 0.0028f, Palette.Accent);
@@ -819,9 +857,21 @@ namespace Hoodrich.UI
 
                 var cl = left + pad + col * (colW + pad);
                 var y = top + headH + pad;
+                var drawn = 0;
 
                 for (var i = first; i < last; i++)
                 {
+                    // Out of room. Say how many did not fit rather than just stopping.
+                    if (drawn >= shown)
+                    {
+                        Draw.Text("+" + (last - i) + " more", cl, y - rowH + 0.002f, 0.24f,
+                                  Palette.Alpha(Palette.TextDim, 190), Draw.FontBody,
+                                  centre: false);
+                        break;
+                    }
+
+                    drawn++;
+
                     var row = page.Panel[i];
 
                     if (string.IsNullOrEmpty(row.Label) && string.IsNullOrEmpty(row.Value))
