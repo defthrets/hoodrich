@@ -660,12 +660,15 @@ namespace Hoodrich.UI
                 var rim = Color.FromArgb((int)(120 * t), 255, 255, 255);
                 var fill = Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t));
 
-                Draw.Disc(cx, cy, rInner, fill);
+                // A rectangle per pixel row. The hub is the one circle in the mod whose edge
+                // anybody actually looks at, and at the old row height its bands poked through
+                // the rim as a ring of notches.
+                Draw.Disc(cx, cy, rInner, fill, 1);
 
                 if (!Draw.File("wheel_hub.png", cx, cy, rInner * 2f, 0f, rim))
                 {
-                    Draw.Disc(cx, cy, rInner, rim);
-                    Draw.Disc(cx, cy, rInner - 0.0028f, fill);
+                    Draw.Disc(cx, cy, rInner, rim, 1);
+                    Draw.Disc(cx, cy, rInner - 0.0028f, fill, 1);
                 }
             }
 
@@ -677,10 +680,7 @@ namespace Hoodrich.UI
             Draw.Rect(cx, cy - 0.0455f, 0.062f, 0.0022f,
                       Color.FromArgb(70, 255, 255, 255));
 
-            // The widest line that fits inside a circle at this height is a CHORD, not the
-            // diameter -- half of it is 0.058 up from the centre.
-            var chord = Draw.ToX(2f * (float)Math.Sqrt(Math.Max(0.0,
-                            rInner * rInner - 0.058f * 0.058f))) - 0.012f;
+            var chord = Chord(rInner, 0.058f);
 
             var item = HoveredItem;
 
@@ -711,11 +711,54 @@ namespace Hoodrich.UI
 
             if (!string.IsNullOrEmpty(line))
             {
-                Draw.Text(Draw.Fit(line, chord + 0.014f, 0.24f, Draw.FontBody), cx, cy + 0.048f,
-                          0.24f, item.Enabled ? Palette.Alpha(Palette.TextDim, 225) : Palette.Warn,
-                          Draw.FontBody);
+                // Three lines, not one cut off mid-word. "Opens the game's own weapon w..."
+                // is a caption that has given up, and the hub has the room for the rest of it
+                // -- the only reason that room went unused is that nothing here could wrap.
+                //
+                // THREE rather than two because of how fast a chord narrows. The first line
+                // holds about seventeen characters and the third about ten, so two lines cap a
+                // caption at roughly thirty and most of them are longer than that; wrapping to
+                // two just moved where the ellipsis landed. The ellipsis is still there for
+                // anything genuinely too long, which is the honest end of the scale.
+                //
+                // Each line is measured against the chord at ITS OWN depth, taken at the line's
+                // lower edge, which is the tight end for anything below the middle.
+                var ink = item.Enabled ? Palette.Alpha(Palette.TextDim, 225) : Palette.Warn;
+
+                var wrapped = Draw.Wrap(line, DetailScale, Draw.FontBody,
+                                        Chord(rInner, DetailTop + DetailLine),
+                                        Chord(rInner, DetailTop + DetailStep + DetailLine),
+                                        Chord(rInner, DetailTop + DetailStep * 2f + DetailLine));
+
+                for (var i = 0; i < wrapped.Length; i++)
+                {
+                    Draw.Text(wrapped[i], cx, cy + DetailTop + i * DetailStep,
+                              DetailScale, ink, Draw.FontBody);
+                }
             }
         }
+
+        /// <summary>
+        /// How wide a line may be at <paramref name="depth"/> from the middle of a circle of
+        /// radius <paramref name="r"/>, in X units, with a margin off the curve.
+        ///
+        /// The widest line that fits inside a circle at a given height is a CHORD, not the
+        /// diameter, and it narrows fast -- text set to the diameter overhangs the curve well
+        /// before it gets near the top or the bottom of the hub.
+        /// </summary>
+        private static float Chord(float r, float depth)
+        {
+            var half = (float)Math.Sqrt(Math.Max(0.0, r * r - depth * depth));
+            return Math.Max(0f, Draw.ToX(half * 2f) - 0.014f);
+        }
+
+        /// <summary>The caption under the hub: where it starts, its line pitch, and its size.</summary>
+        private const float DetailTop = 0.044f;
+        private const float DetailStep = 0.021f;
+        private const float DetailScale = 0.24f;
+
+        /// <summary>Roughly how tall a DetailScale line draws, for measuring its lower edge.</summary>
+        private const float DetailLine = 0.017f;
 
         /// <summary>
         /// The old right-hand panel, folded back onto the vertical axis and squared up under

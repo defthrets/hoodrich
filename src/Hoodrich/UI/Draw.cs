@@ -517,31 +517,125 @@ namespace Hoodrich.UI
         /// circle into four sectors, each of which walks every row of the whole disc to fill
         /// its own quarter -- so three quarters of the work is thrown away four times over.
         /// </summary>
-        public static void Disc(float cx, float cy, float radius, Color c)
+        /// <summary>
+        /// A filled circle, as horizontal rows.
+        ///
+        /// Rewritten because the hub looked chewed round the edge, and there were two separate
+        /// faults doing it -- both of them ones Wedge already documents and solves. This was
+        /// written the naive way and never revisited.
+        ///
+        /// THE FIRST is that each band took its width at its own CENTRE, so both outer corners
+        /// of every band stuck out past the true circle. The rim sprite drawn over the top
+        /// follows the real curve, so what showed was a ring of dark notches poking through it
+        /// -- the "dotted" edge. Measuring at the band's FAR edge instead keeps every band
+        /// inside the circle, and the rim covers the hairline that leaves.
+        ///
+        /// THE SECOND is that dy was a float stepped by a fraction while each band was drawn
+        /// 1.02x taller than its step, so bands OVERLAPPED. The fill is 88% opaque, so every
+        /// overlap blended twice and left a horizontal seam -- stripes across the middle of the
+        /// wheel. Walking whole device pixels makes rows tile exactly: no gap for the
+        /// background to show through, no overlap to blend twice.
+        ///
+        /// The rows were also deliberately half resolution, on the grounds that nobody studies
+        /// solid fill. True of the middle and false of the edge, which is the only part anybody
+        /// sees. A row per pixel costs 268 rectangles for the wheel hub at 1080p, which is
+        /// affordable now the wedges are sprites rather than five hundred rectangles.
+        /// </summary>
+        /// <param name="rowPx">Row height in device pixels. 0 picks one from the size.</param>
+        public static void Disc(float cx, float cy, float radius, Color c, int rowPx = 0)
         {
             if (radius <= 0f || c.A <= 0) return;
 
             var r2 = radius * radius;
 
-            // Twice the row height of a wedge. This is solid fill with opaque text on top of it,
-            // so the extra resolution was being spent somewhere nobody was ever going to look.
-            // Same pixel grid as the wedges. A hub drawn on its own phase banded exactly the
-            // way they did, which is why the centre of the wheel had stripes across it too.
-            var step = RowPixels * 2 / (float)ScreenHeight;
+            // A rectangle per pixel row, unless the disc is big enough that that is silly.
+            var rows = rowPx > 0
+                ? rowPx
+                : Math.Max(1, (int)Math.Ceiling(radius * 2f * ScreenHeight / 300f));
 
-            for (var dy = -radius; dy <= radius; dy += step)
+            var pxTop = (int)Math.Floor((cy - radius) * ScreenHeight);
+            var pxBottom = (int)Math.Ceiling((cy + radius) * ScreenHeight);
+
+            // Anchored to the centre for the same reason Wedge is: so a disc and anything drawn
+            // concentric with it land on the same grid rather than half a row apart.
+            var pxCentre = (int)Math.Round(cy * ScreenHeight);
+            pxTop -= ((pxTop - pxCentre) % rows + rows) % rows;
+
+            var rowHeight = rows / (float)ScreenHeight;
+
+            for (var py = pxTop; py < pxBottom; py += rows)
             {
-                var dy2 = dy * dy;
-                if (dy2 > r2) continue;
+                var rowY = (py + rows * 0.5f) / ScreenHeight;
 
-                var half = (float)Math.Sqrt(r2 - dy2);
+                // The row's far edge from the equator, not its centre. This is the whole
+                // difference between a clean edge and a ring of notches.
+                var edge = Math.Abs(cy - rowY) + rowHeight * 0.5f;
+                var e2 = edge * edge;
+                if (e2 >= r2) continue;
+
+                var half = (float)Math.Sqrt(r2 - e2);
                 if (half <= 0f) continue;
 
-                Rect(cx, cy - dy, ToX(half * 2f), step * 1.02f, c);
+                Rect(cx, rowY, ToX(half * 2f), rowHeight, c);
             }
         }
 
         // ---- text --------------------------------------------------------------
+
+        /// <summary>
+        /// Breaks text over a fixed number of lines, each with its own width.
+        ///
+        /// Per-line widths because the thing being written into is a CIRCLE. The room on the
+        /// second line of a hub caption is a shorter chord than on the first, so wrapping to a
+        /// single width either wastes the wide line or overruns the narrow one.
+        ///
+        /// Anything still left after the last line is ellipsised there rather than dropped, so
+        /// a caption that genuinely will not fit says so, instead of stopping mid-word with no
+        /// sign that there was ever any more of it.
+        /// </summary>
+        public static string[] Wrap(string text, float scale, int font, params float[] widths)
+        {
+            if (string.IsNullOrEmpty(text) || widths == null || widths.Length == 0)
+            {
+                return new string[0];
+            }
+
+            var words = text.Split(' ');
+            var lines = new List<string>();
+            var i = 0;
+
+            while (i < words.Length && lines.Count < widths.Length)
+            {
+                var max = widths[lines.Count];
+                var line = "";
+
+                while (i < words.Length)
+                {
+                    if (words[i].Length == 0) { i++; continue; }
+
+                    var candidate = line.Length == 0 ? words[i] : line + " " + words[i];
+
+                    // A word wider than the whole line still goes on it, or nothing is ever
+                    // taken and the loop never ends.
+                    if (line.Length > 0 && MeasureText(candidate, scale, font) > max) break;
+
+                    line = candidate;
+                    i++;
+                }
+
+                lines.Add(line);
+            }
+
+            if (i < words.Length && lines.Count > 0)
+            {
+                var rest = lines[lines.Count - 1];
+                for (var j = i; j < words.Length; j++) rest += " " + words[j];
+
+                lines[lines.Count - 1] = Fit(rest, widths[widths.Length - 1], scale, font);
+            }
+
+            return lines.ToArray();
+        }
 
         /// <summary>
         /// The game's built-in font slots. Hoodrich only ever uses fonts the game already
