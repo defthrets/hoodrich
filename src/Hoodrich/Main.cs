@@ -865,7 +865,22 @@ namespace Hoodrich
                 };
 
                 _delivery.Talk = _talk;
-                _delivery.TalkBuilder = () => _juanTalk.Root();
+
+                // Who is null for a delivery: the screen reads the courier off the run itself.
+                _delivery.TalkBuilder = () =>
+                {
+                    _juanTalk.Who = null;
+                    return _juanTalk.Root();
+                };
+
+                // And named when you have walked up to somebody instead, so the same screen
+                // quotes the same man's prices either way.
+                _dealers.Talk = _talk;
+                _dealers.TalkBuilder = def =>
+                {
+                    _juanTalk.Who = def;
+                    return _juanTalk.Root();
+                };
 
                 // He delivers to an address, so he needs the address -- and the only place you
                 // can call him from is standing at it.
@@ -1144,6 +1159,7 @@ namespace Hoodrich
                     _turf.Update();
                     _dealers.Update(_turf, _crew, _state);
                     _dealers.GreetIfNeeded();
+                    _dealers.UpdatePrompt();
                     _delivery.Update();
                     _delivery.UpdatePrompt();
                     _cutting.Update();

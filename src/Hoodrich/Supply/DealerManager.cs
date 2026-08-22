@@ -996,6 +996,69 @@ namespace Hoodrich.Supply
             return Math.Max(0f, requiredGrams - state.GramsSold);
         }
 
+        /// <summary>The conversation panel, and how to build the page for a given dealer.</summary>
+        public Conversation Talk;
+        public Func<DealerDef, DialogueNode> TalkBuilder;
+
+        /// <summary>
+        /// Offers the trade to somebody you have walked up to.
+        ///
+        /// This is how you buy from a dealer you arranged to meet, and for a while there was no
+        /// way at all: the only route in was a wheel page reached from Re-up, and when Re-up
+        /// went the page went with it and nothing replaced it. A man stood at his meet spot
+        /// with a marker over his head and no way to do business.
+        ///
+        /// It opens the SAME screen the delivery uses, which is the point -- one dealer should
+        /// not quote two sets of prices depending on whether he drove or you walked.
+        /// </summary>
+        public void UpdatePrompt()
+        {
+            var def = InReach;
+            if (def == null || Talk == null || Talk.IsOpen || TalkBuilder == null) return;
+
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to talk to " + def.Name + ".");
+
+            if (!WantsToTalk()) return;
+
+            var root = TalkBuilder(def);
+            if (root == null) return;
+
+            Talk.Speaker = _livePed;
+            Talk.Title = def.Name;
+            Talk.Open(root, this);
+        }
+
+        /// <summary>
+        /// The talk button, read the same way Lamar's corner reads it.
+        ///
+        /// Several controls and two raw keys, because the one the prompt names is not always
+        /// the one that arrives -- and edge-detected, so holding it down opens the screen once
+        /// rather than reopening it every frame you stand there.
+        /// </summary>
+        private bool WantsToTalk()
+        {
+            var down = false;
+
+            try
+            {
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Right)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E);
+            }
+            catch
+            {
+                // Unreadable control is simply not pressed.
+            }
+
+            var pressed = down && !_talkHeld;
+            _talkHeld = down;
+            return pressed;
+        }
+
+        private bool _talkHeld;
+
         /// <summary>Plays the dealer's greeting once per approach, as a subtitle.</summary>
         public void GreetIfNeeded()
         {

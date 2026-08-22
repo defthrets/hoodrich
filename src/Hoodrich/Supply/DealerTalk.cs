@@ -52,7 +52,7 @@ namespace Hoodrich.Supply
         /// </summary>
         private Brick[] StockToday()
         {
-            var def = _delivery == null ? null : _delivery.Def;
+            var def = Def;
             var list = new List<Brick>();
 
             // What HE carries, which is a thing the dealer data has always said and this menu
@@ -109,6 +109,22 @@ namespace Hoodrich.Supply
         private static readonly int[] Lots = { 1, 2, 4 };
 
         private readonly Delivery _delivery;
+
+        /// <summary>
+        /// Who you are stood in front of, when it is not a delivery.
+        ///
+        /// This screen was written for the man who drives to your door, so it read the dealer
+        /// off the DELIVERY -- and the only other way to buy, walking up to one at his own meet
+        /// spot, went through a completely separate wheel page with its own prices. Two screens
+        /// quoting different numbers for the same man.
+        ///
+        /// Set before Root() to talk to somebody in person; left null for a delivery, which
+        /// still answers with whoever is driving.
+        /// </summary>
+        public DealerDef Who;
+
+        /// <summary>The man this conversation is about, however it started.</summary>
+        private DealerDef Def => Who ?? (_delivery == null ? null : _delivery.Def);
         private readonly Drugs _drugs;
         private readonly Pricing _pricing;
         private readonly PlayerState _state;
@@ -127,9 +143,9 @@ namespace Hoodrich.Supply
             _crew = crew;
         }
 
-        private string Name => _delivery.Def == null ? "Tao Cheng" : _delivery.Def.Name;
+        private string Name => Def == null ? "Tao Cheng" : Def.Name;
 
-        private float Multiplier => _delivery.Def == null ? 0.75f : _delivery.Def.PriceMultiplier;
+        private float Multiplier => Def == null ? 0.75f : Def.PriceMultiplier;
 
         private DialogueNode Node(string line) =>
             new DialogueNode(Name, line) { SpeakerColour = Palette.Cash };
@@ -164,13 +180,19 @@ namespace Hoodrich.Supply
             // "Not today" only closes the conversation -- he stays parked outside until
             // something else moves him. This is the other half: he gets in and drives away,
             // the same exit he takes once a delivery has landed.
-            node.Say("That's you done. Go on.", () =>
+            // Only offered when there is something to send away. A man you walked up to at
+            // his own spot leaves when he leaves; telling him to go is the delivery's exit.
+            if (Who == null)
             {
-                _delivery?.Finish();
-                return null;
-            }, "He gets in and goes");
+                node.Say("That's you done. Go on.", () =>
+                {
+                    _delivery?.Finish();
+                    return null;
+                }, "He gets in and goes");
 
-            node.WithIcon(Icons.FromFile("car.png"));
+                node.WithIcon(Icons.FromFile("car.png"));
+            }
+
             return node;
         }
 
@@ -227,7 +249,7 @@ namespace Hoodrich.Supply
         /// </summary>
         private int Cost(DrugDef product, float gramsPerBrick, int lot)
         {
-            var def = _delivery == null ? null : _delivery.Def;
+            var def = Def;
 
             // His floor and his rounding, not the port's. A five hundred dollar step on a two
             // hundred and eighty dollar bag is a forty percent error before the floor gets
@@ -260,6 +282,30 @@ namespace Hoodrich.Supply
             _state.Touch();
 
             if (_crew != null) _crew.CreditPurchase();
+
+            // In person, it changes hands where you are stood. There is no courier to walk it
+            // anywhere -- that whole sequence belongs to the man who drove out to your door.
+            if (Who != null)
+            {
+                var pocket = _state.Stash.AddBulk(product.Id, grams);
+                var spare = grams - pocket;
+
+                // Whatever will not fit goes to the house, and anything that fits nowhere is
+                // refunded rather than taken off you for nothing.
+                if (spare > 0.005f && House != null) spare -= House.AddBulk(product.Id, spare);
+                if (spare > 0.005f) Game.Player.Money += (int)(cost * (spare / grams));
+
+                Notify.Important("~y~-$" + cost.ToString("N0") + "~s~  " +
+                                 product.Amount(grams - Math.Max(0f, spare)) + " of " +
+                                 product.Name.ToLowerInvariant());
+
+                Log.Info("Bought " + grams.ToString("0") + "g " + product.Id + " off " + Name +
+                         " for $" + cost + ", hand to hand.");
+
+                var got = Node("Don't stand there holding it. Go on.");
+                got.Leave("Aight.");
+                return got;
+            }
 
             _delivery.Deliver(product.Id, grams);
 
