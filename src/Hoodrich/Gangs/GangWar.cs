@@ -1266,7 +1266,7 @@ namespace Hoodrich.Gangs
 
             for (var i = 0; i < _rivals.Count; i++) Order(_rivals[i], true, player, now);
             // The index goes with him, because it is what decides which arc of the ring is his.
-            for (var i = 0; i < _defenders.Count; i++) Order(_defenders[i], false, player, now, i);
+            for (var i = 0; i < _defenders.Count; i++) Order(_defenders[i], false, player, now);
         }
 
         /// <summary>
@@ -1300,7 +1300,7 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>One person, one order.</summary>
-        private void Order(Ped ped, bool theirs, Ped player, int now, int slot = 0)
+        private void Order(Ped ped, bool theirs, Ped player, int now)
         {
             if (ped == null || !ped.Exists() || !ped.IsAlive) return;
             if (_target == null) return;
@@ -1406,18 +1406,19 @@ namespace Hoodrich.Gangs
 
                 var foe = NearestFoe(ped, theirs, player);
 
-                // Ours stay on the block they are defending.
+                // Ours stay inside the circle, and roam all of it.
                 //
-                // The area-combat order reaches a hundred and twenty metres, so a defender
-                // would chase somebody two streets away and leave the thing he is there to
-                // hold standing empty -- which is how a raid gets won by walking round the
-                // side of it. Past the leash he goes back, whatever he thinks he is doing,
-                // and picks up the fight again when he gets there.
+                // The area-combat order reaches a hundred and twenty metres, which is most of
+                // a neighbourhood -- so without a bound a man chases a runner two streets away
+                // and the block he came for is standing empty behind him. Past the circle he
+                // comes back, whatever he thinks he is doing, and picks the fight up again on
+                // the way in.
                 if (!theirs)
                 {
-                    var home = _target != null && Musters.ContainsKey(_target.Who)
-                        ? Musters[_target.Who]
-                        : _target.Where;
+                    // Measured from the SPOT, not the muster, because the spot is what the
+                    // red circle is drawn around and the circle is what the player is being
+                    // told the fight covers.
+                    var home = _target.Where;
 
                     if (ped.Position.DistanceTo(home) > DefendLeash)
                     {
@@ -1444,10 +1445,10 @@ namespace Hoodrich.Gangs
                     // The area is ped state and the combat order is a task, and the task does
                     // not clear the state -- so this holds for the whole fight without being
                     // re-issued over the top of it every tick.
-                    if (!theirs && !order.DugIn)
+                    if (!theirs && !order.Forward)
                     {
-                        order.DugIn = true;
-                        Dig(ped, HomeFor(), slot, Math.Max(1, _defenders.Count));
+                        order.Forward = true;
+                        Push(ped, _target.Where);
                     }
 
                     // Anybody in reach, not one particular person. The game finds whoever is
@@ -1479,7 +1480,7 @@ namespace Hoodrich.Gangs
                 // next wave digs him in again wherever he has ended up, which is what lets a
                 // defender who has been pushed back down the street hold the new line rather
                 // than the old one.
-                order.DugIn = false;
+                order.Forward = false;
 
                 var wasFighting = order.Target != 0;
                 order.Target = 0;
@@ -1569,11 +1570,19 @@ namespace Hoodrich.Gangs
             /// <summary>Ours, currently walking their own block rather than fighting.</summary>
             public bool Wandering;
 
+            /// <summary>
+            /// Ours, already pushed forward for this fight.
+            ///
+            /// Set once when the fight starts and cleared when there is nobody left in front of
+            /// him, so the next wave sends him forward from wherever he has ended up rather
+            /// than from where he started. The area is ped state and the combat order is a
+            /// task; the task does not clear the state, so this must not be re-issued over the
+            /// top of it every tick.
+            /// </summary>
+            public bool Forward;
+
             /// <summary>Thinks in a row where they were told to fight and still are not.</summary>
             public int Swings;
-
-            /// <summary>Whether he has been given his ground. Once per fight, not per tick.</summary>
-            public bool DugIn;
 
             /// <summary>When the car they are riding in stopped moving, or zero.</summary>
             public int CarStuckSince;
@@ -1606,89 +1615,37 @@ namespace Hoodrich.Gangs
         /// <summary>
         /// How far one of ours may get from the spot before he is walked back.
         ///
-        /// A backstop now rather than the mechanism. Holding ground is the defensive area's
-        /// job -- see Dig -- and this only catches a man the engine has somehow let wander.
+        /// This IS the red circle, deliberately. Ours are on offence now: the instruction is
+        /// to go at any rival inside the marked zone, so the marked zone is exactly the ground
+        /// they are allowed to cover -- no more, so they still do not chase a runner two
+        /// streets away and leave the block empty behind them, and no less, so there is no
+        /// part of the circle a rival can stand in unbothered.
         ///
-        /// The area-combat order reaches much further than this, so without a leash a defender
-        /// chases somebody two streets away and leaves the thing he is defending empty. Which
-        /// is how a raid gets won by going round the side of it.
+        /// A backstop rather than the mechanism. The defensive area set in Push is what
+        /// actually keeps them in; this catches a man the engine has let slip out of it.
         /// </summary>
-        private const float DefendLeash = 32f;
+        private const float DefendLeash = DefendRange;
 
         /// <summary>
-        /// How far a defender may move from HIS POST. Roughly a front garden.
+        /// Puts one of ours on the front foot, anywhere inside the circle.
         ///
-        /// Small on purpose, and smaller now that each man has his own post rather than all of
-        /// them sharing the middle: inside a sphere this size he can cross to a wall or drop
-        /// behind a car, and he cannot follow anybody round a corner. Wider and the engine
-        /// starts treating the far edge as somewhere worth advancing to -- and the ring stops
-        /// being a ring, because every arc overlaps its neighbours.
+        /// This used to dig him into a nine-metre sphere on a sixteen-metre ring, one post per
+        /// man, facing out, in the movement mode that hugs cover. That is a perimeter, and a
+        /// perimeter is the right answer to "hold this" and the wrong answer to the one being
+        /// asked for here -- which is that ours go at any rival standing in the marked zone.
+        /// A man pinned to a front garden watches a rival cross the far side of the circle and
+        /// does nothing about it, because the far side of the circle is not his post.
+        ///
+        /// So the area becomes the CIRCLE, whole, shared by all of them, and the movement mode
+        /// becomes advance. Bounded rather than unleashed: the area is what stops advance from
+        /// meaning "follow him to Vespucci", and it is drawn on exactly the ground the player
+        /// has been shown in red.
+        ///
+        /// The order is not preference, it is the order R* use 512 times against 161 -- area
+        /// first, combat task LAST -- and the area must not be re-issued over the top of the
+        /// task afterwards.
         /// </summary>
-        private const float HoldRadius = 9f;
-
-        /// <summary>
-        /// How far out from the spot the ring of posts sits.
-        ///
-        /// Far enough that they are between the trouble and the thing, close enough that the
-        /// ring is one position rather than four men in four different fights. Sixteen metres
-        /// on a residential block is roughly the width of the property and the pavement either
-        /// side of it.
-        /// </summary>
-        private const float PerimeterRadius = 16f;
-
-        /// <summary>
-        /// One post on the ring, by number.
-        ///
-        /// Evenly spaced and rotated a little, so a four-man ring does not land its posts on
-        /// due north, south, east and west -- which on a street grid puts two of them in the
-        /// middle of the road and two in somebody's back garden.
-        ///
-        /// The height is the spot's own. These blocks are flat and the alternative is a ground
-        /// probe that finds a roof, which this file has already been bitten by once.
-        /// </summary>
-        private static Vector3 PostOnTheRing(Vector3 home, int slot, int outOf)
-        {
-            if (outOf < 1) outOf = 1;
-
-            var angle = (slot % outOf) * (Math.PI * 2.0 / outOf) + RingOffset;
-
-            // The ring tightens when there are fewer men on it, which is both the fix for a
-            // hole and simply true: four men cannot hold as wide a perimeter as eight.
-            //
-            // Two neighbouring posts sit 2*R*sin(pi/n) apart and each man reaches HoldRadius
-            // from his own, so past R = HoldRadius / sin(pi/n) their arcs stop touching and
-            // there is a gap somebody can walk through. At four men the full ring leaves five
-            // metres of exactly that.
-            var reach = HoldRadius / Math.Sin(Math.PI / outOf);
-            var radius = (float)Math.Min(PerimeterRadius, reach);
-
-            return new Vector3(
-                home.X + (float)Math.Cos(angle) * radius,
-                home.Y + (float)Math.Sin(angle) * radius,
-                home.Z);
-        }
-
-        private const double RingOffset = Math.PI / 5.0;
-
-        /// <summary>
-        /// Digs a defender in, on his own piece of the ring.
-        ///
-        /// Each man gets a POST rather than a person. The posts are spaced evenly round the
-        /// spot, so with four of them one is on each corner and with eight they are every
-        /// forty-five degrees -- a perimeter, which is what a block being raided actually
-        /// needs.
-        ///
-        /// The first version of this attached the area to the PLAYER whenever you were stood on
-        /// the block, on the theory that they should protect whoever is being shot at. What that
-        /// produces is every man on the set walking around behind you in a clump while the other
-        /// three sides of the spot stand open -- so a raid is won by driving round the back,
-        /// which is exactly what the leash was written to prevent in the first place.
-        ///
-        /// The order below is not preference, it is the order R* use 512 times against 161 --
-        /// area first, combat task LAST -- and the area must not be re-issued over the top of
-        /// the task afterwards.
-        /// </summary>
-        private void Dig(Ped ped, Vector3 home, int slot, int outOf)
+        private void Push(Ped ped, Vector3 home)
         {
             try
             {
@@ -1697,69 +1654,69 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.REMOVE_PED_DEFENSIVE_AREA, ped.Handle, false);
                 Function.Call(Hash.REMOVE_PED_DEFENSIVE_AREA, ped.Handle, true);
 
-                var post = PostOnTheRing(home, slot, outOf);
-
+                // The whole circle, centred where the marker is. No direction is set: a man who
+                // owns all of it has no "out" to face, and pointing him at one edge is just the
+                // ring again with extra steps.
                 Function.Call(Hash.SET_PED_SPHERE_DEFENSIVE_AREA, ped.Handle,
-                              post.X, post.Y, post.Z, HoldRadius, false, false);
+                              home.X, home.Y, home.Z, DefendRange, false, false);
 
-                // Facing OUT. Trouble comes from off the block, and a man whose area points
-                // back at the middle of it is watching his own people.
-                Function.Call(Hash.SET_PED_DEFENSIVE_AREA_DIRECTION, ped.Handle,
-                              post.X + (post.X - home.X), post.Y + (post.Y - home.Y), post.Z,
-                              false);
+                // Advance, and at medium rather than hugging what he is stood behind. CM_
+                // Defensive was correct for a perimeter and is the single thing most in the way
+                // of offence: it is the mode that keeps him behind the nearest wall.
+                Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, ped.Handle, CmWillAdvance);
+                Function.Call(Hash.SET_PED_COMBAT_RANGE, ped.Handle, CrMedium);
 
-                // Defensive, near. CM_Defensive is the mode that hugs cover -- corroborated by
-                // the flags either side of it being named EnableTacticalPointsWhenDefensive and
-                // SwitchToDefensiveIfInCover. This was CM_WillAdvance, which is a literal
-                // instruction to charge, and no amount of leashing was ever going to beat it.
-                Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, ped.Handle, CmDefensive);
-                Function.Call(Hash.SET_PED_COMBAT_RANGE, ped.Handle, CrNear);
-
-                foreach (var on in HoldOn) Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, on, true);
-                foreach (var off in HoldOff) Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, off, false);
+                foreach (var on in PushOn) Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, on, true);
+                foreach (var off in PushOff) Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, off, false);
             }
             catch (Exception ex)
             {
-                // Without an area he behaves the way he did before, which the leash still
+                // Without an area he fights the way any ped fights, which the leash still
                 // catches. Worse, not broken.
-                Log.Debug("Could not dig a defender in: " + ex.Message);
+                Log.Debug("Could not put one of ours forward: " + ex.Message);
             }
         }
 
-        /// <summary>What the block is holding: the muster if it has one, else the spot.</summary>
-        private Vector3 HomeFor()
-        {
-            if (_target == null) return Vector3.Zero;
-
-            return Musters.ContainsKey(_target.Who) ? Musters[_target.Who] : _target.Where;
-        }
-
-        private const int CmDefensive = 1;
-        private const int CrNear = 0;
+        private const int CmWillAdvance = 2;
+        private const int CrMedium = 1;
 
         /// <summary>
-        /// Flags that make a man hold a spot and use what is on it.
+        /// Flags that send a man at somebody rather than keep him behind a wall.
         ///
-        /// 0 CanUseCover -- without it he never takes cover at all, whatever his movement says.
-        /// 5 AlwaysFight, 58 DisableFleeFromCombat -- he does not leave because he is losing.
-        /// 12 BlindFireWhenInCover, 44 SwitchToDefensiveIfInCover -- once he is behind
-        /// something he stays behind it and keeps shooting.
-        /// 29 MoveToLocationBeforeCoverSearch -- get to the post FIRST, then find cover there,
-        /// rather than taking the nearest wall on the way and holding that instead.
+        /// 0 CanUseCover stays on -- advancing is not the same as walking down the middle of
+        /// the road, and without it he never uses cover at all whatever his movement says.
+        /// 5 AlwaysFight, 46 CanFightArmedWhenNotArmed, 58 DisableFleeFromCombat -- he does not
+        /// leave because he is losing, and he does not decline because he is holding a bat.
+        /// 12 BlindFireWhenInCover -- he keeps shooting from behind whatever he does take.
+        ///
+        /// The two that turn a holder into a pusher:
+        /// 13 Aggressive, and 43 SwitchToAdvanceIfCantFindCover -- which is what closes the
+        /// distance on a rival stood in the open in the middle of a car park, where there is
+        /// no wall for a defensive man to want.
+        ///
+        /// 44 SwitchToDefensiveIfInCover and 29 MoveToLocationBeforeCoverSearch are gone: the
+        /// first turns him back into a defender the moment he touches a wall, and the second is
+        /// about reaching a post, which nobody has any more.
         /// </summary>
-        private static readonly int[] HoldOn = { 0, 5, 12, 29, 44, 46, 58 };
+        private static readonly int[] PushOn = { 0, 5, 12, 13, 43, 46, 58 };
 
         /// <summary>
         /// And the ones that would undo it.
         ///
-        /// 13 Aggressive and 43 SwitchToAdvanceIfCantFindCover are both "charge" in disguise --
-        /// 43 especially, because a defender with no wall near him would simply run at people.
-        /// 37, 45, 51, 62 all DELETE the defensive area on arrival, and 51 switches him to
-        /// advance while it does it, so a man would reach his post and immediately leave it.
-        /// 71 lets him charge past the edge of the area, which is the thing being prevented.
-        /// 47 sends him roaming tactical points instead of holding cover.
+        /// Every one of these DELETES the defensive area or lets him leave it, and the area is
+        /// the only thing keeping this inside the red circle -- so they stay off even though
+        /// several of them sound like exactly what offence wants.
+        ///
+        /// 37, 45, 51, 62 clear the area on arrival. 71 lets him charge straight past its edge.
+        /// Turning any of them on does not make him more aggressive, it makes him unbounded:
+        /// he takes the first rival who runs and follows him out of the neighbourhood, and the
+        /// block he was fighting over is empty. 51 is the tempting one -- it switches him to
+        /// advance, which is wanted -- but it deletes the area on the way, and the movement
+        /// mode set in Push gets the advance without the cost.
+        ///
+        /// 47 roams tactical points instead of going at anybody, which reads as milling about.
         /// </summary>
-        private static readonly int[] HoldOff = { 13, 37, 43, 45, 47, 51, 62, 71 };
+        private static readonly int[] PushOff = { 37, 45, 47, 51, 62, 71 };
 
         /// <summary>
         /// How close the car has to be before anybody gets out.
