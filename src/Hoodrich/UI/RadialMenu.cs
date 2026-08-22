@@ -21,11 +21,43 @@ namespace Hoodrich.UI
         /// Wide enough to be seen at the inner radius, which is where a gap is narrowest --
         /// 1.6 degrees is two pixels there, and two pixels is not a division, it is a seam.
         /// </summary>
-        private const float SegmentGapDegrees = 3f;
+        private const float SegmentGapDegrees = 4f;
         private const int OpenAnimationMs = 140;
 
-        /// <summary>How far past the ring the segment under the cursor reaches.</summary>
-        private const float HoverReach = 1.03f;
+        /// <summary>
+        /// The ring, and it is its own geometry rather than the ini's.
+        ///
+        /// InnerRadius and OuterRadius stay in Settings for anybody who wants to move the
+        /// whole thing, but this design is drawn to a proportion: the band has to be deep
+        /// enough for an icon at 0.072 and the hub wide enough for a name, a value and a line
+        /// of detail. Reading those two out of an ini that defaults to 0.085 and 0.20 gave a
+        /// band too thin for the icon and a hub too small for the words, which is most of what
+        /// "janky" was.
+        /// </summary>
+        private const float RingInner = 0.124f;
+        private const float RingOuter = 0.252f;
+
+        /// <summary>Where a label sits, measured out from the rim.</summary>
+        private const float LabelOut = 0.026f;
+
+        /// <summary>
+        /// The keel: an amber bar along the hovered wedge's INNER edge.
+        ///
+        /// Inner rather than outer, because the hub is where the answer is written and this
+        /// draws the eye along the exact path the reading takes. It also reads on a near-white
+        /// wedge AND against the near-black hub, which no single fill colour does.
+        /// </summary>
+        private const float KeelDepth = 0.016f;
+
+        /// <summary>Radial thickness of the bands that outline an empty slot.</summary>
+        private const float FrameBand = 0.0055f;
+
+        /// <summary>The icon IS the wedge. Everything else on a wedge is secondary to it.</summary>
+        private const float WedgeIcon = 0.072f;
+        private const float LockIcon = 0.028f;
+
+        /// <summary>An unselected wedge, a touch stronger than Palette.Segment on its own.</summary>
+        private const int SegmentAlpha = 235;
 
         private readonly Settings _cfg;
         private readonly List<WheelPage> _stack = new List<WheelPage>();
@@ -43,6 +75,38 @@ namespace Hoodrich.UI
         }
 
         public bool IsOpen { get; private set; }
+
+        /// <summary>
+        /// The lowest thing the wheel draws, so whatever comes after it knows where to start.
+        ///
+        /// The footer hint used to be placed at the ini's OuterRadius plus a margin. The ring
+        /// is drawn to its own proportion now and is deeper than the ini default, so that put
+        /// the hint ON the ring -- and on a page with stat rows it put it through the middle
+        /// of them. It asks here instead.
+        /// </summary>
+        public float BottomEdge
+        {
+            get
+            {
+                var page = Current;
+                var bottom = 0.5f + RingOuter + LabelOut + 0.030f;
+
+                if (page == null || page.Panel.Count == 0) return bottom;
+
+                var half = (page.Panel.Count + 1) / 2;
+                var cutAt = half;
+
+                for (var i = 0; i < page.Panel.Count; i++)
+                {
+                    var row = page.Panel[i];
+                    var isHead = string.IsNullOrEmpty(row.Value) && !string.IsNullOrEmpty(row.Label);
+                    if (isHead && Math.Abs(i - half) <= 2) { cutAt = i; break; }
+                }
+
+                var tall = Math.Max(cutAt, page.Panel.Count - cutAt);
+                return 0.5f + RingOuter + 0.046f + 0.032f + 0.010f * 2f + tall * 0.030f;
+            }
+        }
 
         public WheelPage Current => _stack.Count > 0 ? _stack[_stack.Count - 1] : null;
 
@@ -223,8 +287,8 @@ namespace Hoodrich.UI
             // The open animation fades rather than grows. Scaling the radii meant every frame
             // of it drew a smaller, part-formed ring, and a screenshot or a stutter caught
             // mid-animation showed a slice that looked broken rather than one that looked new.
-            var rInner = _cfg.InnerRadius;
-            var rOuter = _cfg.OuterRadius;
+            var rInner = RingInner;
+            var rOuter = RingOuter;
 
             Draw.SetDrawOrder(7);
             Draw.Rect(0.5f, 0.5f, 1f, 1f, Palette.Alpha(Palette.Backdrop, (int)(Palette.Backdrop.A * t)));
@@ -269,121 +333,57 @@ namespace Hoodrich.UI
                 var to = mid + step * 0.5f - gap * 0.5f;
 
                 var hovered = i == _hovered;
-                var fill = !item.Enabled
-                    ? Palette.SegmentDisabled
-                    : hovered
-                        ? (item.Tint ?? Palette.SegmentHover)
-                        : Palette.Segment;
+
+                // A thing you cannot pick is an EMPTY SLOT, not a darker version of a filled
+                // one. Measured on the old build, a disabled wedge came out four to six values
+                // out of 255 from an enabled one -- translucent grey over translucent black is
+                // not a state, it is a rounding error. An outlined hole is a different shape,
+                // and shape is the only thing that survives being composited over both a
+                // bright street and a dark alley.
+                if (!item.Enabled)
+                {
+                    DrawEmptySlot(cx, cy, rInner, rOuter, from, to, t);
+                    continue;
+                }
+
+                var fill = hovered ? (item.Tint ?? Palette.SegmentHover)
+                                   : Palette.Alpha(Palette.Segment, SegmentAlpha);
 
                 fill = Palette.Alpha(fill, (int)(fill.A * t));
 
                 if (_wedgeMode)
                 {
-                    // A hovered segment reaches slightly further out, the way the vanilla wheel
-                    // does. Slightly -- the point is to lift it, not to detach it into a fan
-                    // stuck on the side of the wheel.
-                    var outer = hovered ? rOuter * HoverReach : rOuter;
+                    Draw.Wedge(cx, cy, rInner, rOuter, from, to, fill);
 
-                    Draw.Wedge(cx, cy, rInner, outer, from, to, fill);
+                    if (hovered)
+                    {
+                        Draw.Wedge(cx, cy, rInner, rInner + KeelDepth, from, to,
+                                   Palette.Alpha(Palette.Warn, (int)(255 * t)));
+                    }
                 }
                 else
                 {
                     DrawCard(cx, cy, (rInner + rOuter) * 0.5f, mid, rOuter - rInner, step, fill, hovered);
                 }
+            }
 
-                DrawSegmentLabel(cx, cy, (rInner + rOuter) * 0.5f, mid, item, fill, t);
+            // Icons and labels in their own passes, AFTER every wedge is down.
+            //
+            // A label now sits outside the rim, which means it overlaps the neighbouring
+            // wedge's airspace. Drawn inline with the fills, the next wedge painted over it.
+            for (var i = 0; i < n; i++)
+            {
+                DrawWedgeIcon(cx, cy, (rInner + rOuter) * 0.5f, i * step, items[i], i == _hovered, t);
+            }
+
+            for (var i = 0; i < n; i++)
+            {
+                DrawWedgeLabel(cx, cy, rOuter + LabelOut, i * step, items[i], i == _hovered, t);
             }
 
             DrawHub(cx, cy, rInner, page, t);
-            DrawReadout(page, t);
-            DrawPanel(page, t);
+            DrawPlinth(page, rOuter, t);
         }
-
-        /// <summary>
-        /// Stat block to the right of the wheel. Only drawn for pages that supply rows, and
-        /// only once the open animation has settled so it does not pop in mid-slide.
-        /// </summary>
-        private void DrawPanel(WheelPage page, float t)
-        {
-            if (page.Panel.Count == 0 || t < 0.9f) return;
-
-            const float rowHeight = 0.032f;
-            const float padding = 0.018f;
-
-            var width = 0.235f;
-            var height = padding * 2f + rowHeight * (page.Panel.Count + (string.IsNullOrEmpty(page.PanelTitle) ? 0 : 1));
-
-            var left = 0.5f + _cfg.OuterRadius / Draw.Aspect + 0.045f;
-            var cx = left + width * 0.5f;
-            var cy = 0.5f;
-            var top = cy - height * 0.5f;
-
-            Draw.Rect(cx, cy, width, height, Palette.Alpha(Palette.Hub, 225));
-
-            var y = top + padding * 0.6f;
-
-            // Header strip, the way GTA's own menus title a column.
-            if (!string.IsNullOrEmpty(page.PanelTitle))
-            {
-                Draw.Rect(cx, top + rowHeight * 0.5f, width, rowHeight, Palette.PanelHeader);
-                Draw.Rect(cx, top + rowHeight - 0.0015f, width, 0.003f, Palette.Accent);
-
-                Draw.Text(page.PanelTitle.ToUpperInvariant(), left + padding * 0.5f, y, 0.30f,
-                          Palette.Accent, Draw.FontLabel, centre: false);
-                y += rowHeight;
-            }
-
-            var index = 0;
-            foreach (var row in page.Panel)
-            {
-                // A blank label AND value is a deliberate spacer between groups of rows.
-                var isSpacer = string.IsNullOrEmpty(row.Label) && string.IsNullOrEmpty(row.Value);
-
-                if (!isSpacer && (index & 1) == 1)
-                {
-                    Draw.Rect(cx, y + rowHeight * 0.34f, width, rowHeight, Palette.PanelRowAlt);
-                }
-
-                if (!isSpacer)
-                {
-                    // Art in the gutter, if the row has any.
-                    //
-                    // Draw.File places by its CENTRE and Draw.Text by its TOP edge, so it is
-                    // pushed down a third of a row to sit level with the words. A row with no
-                    // art keeps its old left edge exactly, so nothing that was already laid
-                    // out moves.
-                    var lx = left + padding * 0.5f;
-                    var indent = 0f;
-
-                    if (!string.IsNullOrEmpty(row.ArtFile) &&
-                        Draw.File(row.ArtFile, lx + Draw.ToX(PanelArt) * 0.5f,
-                                  y + rowHeight * 0.34f, PanelArt, 0f, Palette.TextDim))
-                    {
-                        indent = Draw.ToX(PanelArt) + 0.005f;
-                    }
-
-                    Draw.Text(row.Label, lx + indent, y, 0.28f, Palette.TextDim,
-                              Draw.FontBody, centre: false);
-
-                    // Whatever is left after the label has had its share, less a gutter so the
-                    // two never touch. Nothing used to check this, and a gang with four rivals
-                    // printed its list straight through its own label.
-                    //
-                    // The art is charged to the label's share, so a row with a picture gets
-                    // less room for its value rather than overrunning into it.
-                    var taken = Draw.MeasureText(row.Label, 0.28f, Draw.FontBody) + indent;
-                    var room = width - padding - taken - RowGutter;
-
-                    Draw.TextRight(Draw.Fit(row.Value, room, 0.28f, Draw.FontBody),
-                                   left + width - padding * 0.5f, y, 0.28f,
-                                   row.Tint ?? Palette.Text, Draw.FontBody);
-                }
-
-                y += rowHeight;
-                index++;
-            }
-        }
-
         /// <summary>Clear space kept between a panel row's label and its value.</summary>
         private const float RowGutter = 0.012f;
 
@@ -394,6 +394,334 @@ namespace Hoodrich.UI
         /// reads as part of the line rather than as a bullet in front of it.
         /// </summary>
         private const float PanelArt = 0.017f;
+
+        /// <summary>
+        /// A slot with nothing in it, which is what a thing you cannot pick looks like.
+        ///
+        /// Four thin wedges make the outline: a band at each radius and a sliver at each
+        /// edge. That is more draw calls than a flat fill, and it buys the one thing a fill
+        /// cannot -- a silhouette. Colour alone was measured at four to six values out of 255
+        /// between disabled and enabled, which is invisible on a bright street and invisible
+        /// again in a dark alley.
+        /// </summary>
+        private static void DrawEmptySlot(float cx, float cy, float rInner, float rOuter,
+                                          float from, float to, float t)
+        {
+            var interior = Color.FromArgb((int)(155 * t), 0, 0, 0);
+            var edge = Color.FromArgb((int)(195 * t), 84, 88, 96);
+
+            Draw.Wedge(cx, cy, rInner, rOuter, from, to, interior);
+
+            Draw.Wedge(cx, cy, rOuter - FrameBand, rOuter, from, to, edge);
+            Draw.Wedge(cx, cy, rInner, rInner + FrameBand, from, to, edge);
+
+            // The two radial slivers, converted from a thickness to an angle at the mid
+            // radius so they come out the same width as the bands rather than as wedges.
+            var rMid = (rInner + rOuter) * 0.5f;
+            var slice = (float)(FrameBand / rMid * (180.0 / Math.PI));
+
+            Draw.Wedge(cx, cy, rInner, rOuter, from, from + slice, edge);
+            Draw.Wedge(cx, cy, rInner, rOuter, to - slice, to, edge);
+        }
+
+        /// <summary>
+        /// The icon, centred in the band and big enough to be the wedge rather than decorate it.
+        ///
+        /// It used to sit at py-0.030 with the label at py+0.010, which left a hole between
+        /// them and made both small. The label is outside the ring now, so the whole band
+        /// belongs to the picture.
+        /// </summary>
+        private static void DrawWedgeIcon(float cx, float cy, float rMid, float midAngleDeg,
+                                          WheelItem item, bool hovered, float t)
+        {
+            if (t < 0.75f) return;
+
+            var rad = midAngleDeg * (float)(Math.PI / 180.0);
+            var px = cx + Draw.ToX(rMid * (float)Math.Sin(rad));
+            var py = cy - rMid * (float)Math.Cos(rad);
+
+            if (!item.Enabled)
+            {
+                DrawArtOrGlyph(item, px, py - 0.014f, WedgeIcon * 0.86f,
+                               Palette.Alpha(Palette.TextDisabled, 115));
+
+                Draw.File("locked.png", px, py + 0.042f, LockIcon, 0f,
+                          Palette.Alpha(Palette.TextDisabled, 235));
+                return;
+            }
+
+            var fill = hovered ? (item.Tint ?? Palette.SegmentHover)
+                               : Palette.Alpha(Palette.Segment, SegmentAlpha);
+
+            DrawArtOrGlyph(item, px, py, WedgeIcon, Palette.TextOn(fill));
+        }
+
+        /// <summary>Our PNG, the game's sprite, a blip tag or the text glyph -- in that order.</summary>
+        private static void DrawArtOrGlyph(WheelItem item, float px, float py, float size, Color ink)
+        {
+            if (!string.IsNullOrEmpty(item.IconFile) &&
+                Draw.File(item.IconFile, px, py, size, 0f, ink))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(item.IconBlip))
+            {
+                Draw.Text(item.IconBlip, px, py - size * 0.5f, size * 9f, ink, Draw.FontChaletLondon);
+                return;
+            }
+
+            if (item.HasIcon)
+            {
+                var aspect = item.IconAspect;
+                if (aspect < 0.25f || aspect > 4f || float.IsNaN(aspect)) aspect = 1f;
+
+                Draw.Sprite(item.IconDict, item.IconTexture, px, py,
+                            Draw.ToX(size * aspect), size, 0f, ink);
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(item.Symbol))
+            {
+                Draw.Text(item.Symbol, px, py - size * 0.5f, size * 9f, ink, Draw.FontLabel);
+            }
+        }
+
+        /// <summary>
+        /// The label, OUTSIDE the ring, on its own wedge's angle.
+        ///
+        /// Inside the band it competed with the icon for a space that could not hold both.
+        /// Outside it has as much room as it wants, the icon gets the whole wedge, and the
+        /// ring reads as a ring of pictures with names round it rather than as a ring of
+        /// cramped cards.
+        ///
+        /// Pushed clear by half its own measured width on whichever side it is on, so a label
+        /// at three o'clock starts at the rim instead of straddling it, and one at twelve is
+        /// left centred.
+        /// </summary>
+        private static void DrawWedgeLabel(float cx, float cy, float rLabel, float midAngleDeg,
+                                           WheelItem item, bool hovered, float t)
+        {
+            if (t < 0.75f) return;
+
+            var rad = midAngleDeg * (float)(Math.PI / 180.0);
+            var ux = (float)Math.Sin(rad);
+            var uy = (float)Math.Cos(rad);
+
+            const float scale = 0.32f;
+            const float boxH = 0.030f;
+
+            var label = item.Label.ToUpperInvariant();
+            var w = Draw.MeasureText(label, scale, Draw.FontLabel);
+
+            var ax = cx + Draw.ToX(rLabel * ux);
+            var ay = cy - rLabel * uy;
+
+            var side = ux > 0.02f ? 1f : (ux < -0.02f ? -1f : 0f);
+            ax += (w * 0.5f + 0.004f) * side;
+
+            // Text places by its TOP edge, so a label above the centre has to be lifted by its
+            // whole height and one below it by none -- which is what the uy term does.
+            ay -= boxH * (0.5f + 0.5f * uy);
+
+            var ink = hovered ? Palette.Text
+                    : item.Enabled ? Palette.Alpha(Palette.Text, 205)
+                    : Palette.TextDisabled;
+
+            Draw.Text(label, ax, ay, scale, ink, Draw.FontLabel);
+
+            if (hovered)
+            {
+                Draw.RectFrom(ax - w * 0.5f - 0.003f, ay + boxH * 0.92f, w + 0.006f, 0.0026f,
+                              Palette.Warn);
+            }
+
+            if (!item.Enabled)
+            {
+                // Struck through with a thin rect, which is the only kind of line this HUD owns.
+                Draw.RectFrom(ax - w * 0.5f - 0.004f, ay + boxH * 0.46f, w + 0.008f, 0.0024f,
+                              Palette.Alpha(Palette.TextDisabled, 235));
+            }
+        }
+
+        /// <summary>
+        /// The hub, which is now the only place on the screen that words are read.
+        ///
+        /// It carries the breadcrumb, the hovered item's name, its value and its detail -- so
+        /// the top-of-screen readout is gone entirely. That readout sat four hundred pixels
+        /// from the ring the eye was already on, and wrote the hovered item's name a second
+        /// time when the wedge under the cursor was already saying it.
+        /// </summary>
+        private void DrawHub(float cx, float cy, float rInner, WheelPage page, float t)
+        {
+            if (!_wedgeMode)
+            {
+                Draw.RectUniform(cx, cy, rInner * 1.7f, rInner * 1.7f,
+                                 Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t)));
+            }
+            else
+            {
+                // Two discs. The hub at 225 and an unselected wedge at 235 are the same value,
+                // so without a rim the ring and the readout run together into one black blob.
+                // A hairline boundary is not a third way of separating peers -- it is the edge
+                // between two different KINDS of thing.
+                Draw.Disc(cx, cy, rInner, Color.FromArgb((int)(120 * t), 255, 255, 255));
+                Draw.Disc(cx, cy, rInner - 0.0028f,
+                          Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t)));
+            }
+
+            if (t < 0.75f) return;
+
+            var crumb = _stack.Count > 1 ? "< " + page.Title : page.Title;
+            Draw.Text(crumb.ToUpperInvariant(), cx, cy - 0.076f, 0.26f,
+                      Palette.Alpha(Palette.TextDim, 225), Draw.FontLabel);
+            Draw.Rect(cx, cy - 0.0455f, 0.062f, 0.0022f,
+                      Color.FromArgb(70, 255, 255, 255));
+
+            // The widest line that fits inside a circle at this height is a CHORD, not the
+            // diameter -- half of it is 0.058 up from the centre.
+            var chord = Draw.ToX(2f * (float)Math.Sqrt(Math.Max(0.0,
+                            rInner * rInner - 0.058f * 0.058f))) - 0.012f;
+
+            var item = HoveredItem;
+
+            if (item == null)
+            {
+                if (string.IsNullOrEmpty(page.Subtitle)) return;
+
+                Draw.Text(Draw.Fit(page.Subtitle, chord, 0.30f, Draw.FontBody), cx, cy - 0.020f,
+                          0.30f, Palette.Alpha(Palette.TextDim, 220), Draw.FontBody);
+                return;
+            }
+
+            var nameInk = item.Enabled ? Palette.Text : Palette.TextDisabled;
+
+            Draw.Text(Draw.Fit(item.Label.ToUpperInvariant(), Draw.ToX(0.205f), 0.58f, Draw.FontLabel),
+                      cx, cy - 0.038f, 0.58f, nameInk, Draw.FontLabel);
+
+            if (!string.IsNullOrEmpty(item.Value))
+            {
+                Draw.Text(Draw.Fit(item.Value, chord + 0.010f, 0.34f, Draw.FontBody),
+                          cx, cy + 0.014f, 0.34f,
+                          item.Enabled ? Palette.Cash : Palette.TextDisabled, Draw.FontBody);
+            }
+
+            var line = !item.Enabled && !string.IsNullOrEmpty(item.DisabledReason)
+                ? item.DisabledReason
+                : item.Detail;
+
+            if (!string.IsNullOrEmpty(line))
+            {
+                Draw.Text(Draw.Fit(line, chord + 0.014f, 0.24f, Draw.FontBody), cx, cy + 0.048f,
+                          0.24f, item.Enabled ? Palette.Alpha(Palette.TextDim, 225) : Palette.Warn,
+                          Draw.FontBody);
+            }
+        }
+
+        /// <summary>
+        /// The old right-hand panel, folded back onto the vertical axis and squared up under
+        /// the ring.
+        ///
+        /// Off to one side it made the whole composition lean: the ring sat at screen centre
+        /// and the panel hung off the right, so the visual centre of mass was somewhere
+        /// between them with nothing in it. Under the ring the wheel is symmetrical again, and
+        /// splitting the rows into two columns keeps the block wide and low rather than tall
+        /// and lopsided.
+        /// </summary>
+        private void DrawPlinth(WheelPage page, float rOuter, float t)
+        {
+            if (page.Panel.Count == 0 || t < 0.9f) return;
+
+            const float plinthW = 0.44f;
+            const float rowH = 0.030f;
+            const float headH = 0.032f;
+            const float pad = 0.010f;
+
+            var top = 0.5f + rOuter + 0.046f;
+            var left = 0.5f - plinthW * 0.5f;
+
+            // Split at a group boundary near the middle, so a header keeps its own rows.
+            var half = (page.Panel.Count + 1) / 2;
+            var cutAt = half;
+
+            for (var i = 0; i < page.Panel.Count; i++)
+            {
+                var row = page.Panel[i];
+                var isHead = string.IsNullOrEmpty(row.Value) && !string.IsNullOrEmpty(row.Label);
+
+                if (isHead && Math.Abs(i - half) <= 2) { cutAt = i; break; }
+            }
+
+            var tall = Math.Max(cutAt, page.Panel.Count - cutAt);
+            var bodyH = pad * 2f + tall * rowH;
+
+            Draw.RectFrom(left, top, plinthW, headH, Palette.PanelHeader);
+            Draw.RectFrom(left, top + headH - 0.0028f, plinthW, 0.0028f, Palette.Accent);
+            Draw.RectFrom(left, top + headH, plinthW, bodyH, Palette.Hub);
+
+            if (!string.IsNullOrEmpty(page.PanelTitle))
+            {
+                Draw.Text(page.PanelTitle.ToUpperInvariant(), 0.5f, top + 0.0055f, 0.28f,
+                          Palette.Accent, Draw.FontLabel);
+            }
+
+            var colW = (plinthW - pad * 3f) * 0.5f;
+
+            Draw.RectFrom(0.5f - 0.0008f, top + headH + pad * 0.5f, 0.0016f, bodyH - pad,
+                          Color.FromArgb(46, 255, 255, 255));
+
+            for (var col = 0; col < 2; col++)
+            {
+                var first = col == 0 ? 0 : cutAt;
+                var last = col == 0 ? cutAt : page.Panel.Count;
+
+                var cl = left + pad + col * (colW + pad);
+                var y = top + headH + pad;
+
+                for (var i = first; i < last; i++)
+                {
+                    var row = page.Panel[i];
+
+                    if (string.IsNullOrEmpty(row.Label) && string.IsNullOrEmpty(row.Value))
+                    {
+                        y += rowH;
+                        continue;
+                    }
+
+                    // A row with a label and no value is a group heading.
+                    if (string.IsNullOrEmpty(row.Value))
+                    {
+                        Draw.Text(row.Label.ToUpperInvariant(), cl, y + 0.002f, 0.26f,
+                                  Palette.Alpha(Palette.Accent, 215), Draw.FontLabel, centre: false);
+                        Draw.RectFrom(cl, y + rowH - 0.0075f, colW, 0.0016f,
+                                      Color.FromArgb(60, 255, 255, 255));
+                        y += rowH;
+                        continue;
+                    }
+
+                    var indent = 0f;
+
+                    if (!string.IsNullOrEmpty(row.ArtFile) &&
+                        Draw.File(row.ArtFile, cl + Draw.ToX(PanelArt) * 0.5f, y + 0.0130f,
+                                  PanelArt, 0f, Palette.TextDim))
+                    {
+                        indent = Draw.ToX(PanelArt) + 0.005f;
+                    }
+
+                    Draw.Text(row.Label, cl + indent, y + 0.0025f, 0.26f, Palette.TextDim,
+                              Draw.FontBody, centre: false);
+
+                    var taken = Draw.MeasureText(row.Label, 0.26f, Draw.FontBody) + indent;
+                    var room = colW - taken - RowGutter;
+
+                    Draw.TextRight(Draw.Fit(row.Value, room, 0.26f, Draw.FontBody),
+                                   cl + colW, y + 0.0025f, 0.26f,
+                                   row.Tint ?? Palette.Text, Draw.FontBody);
+
+                    y += rowH;
+                }
+            }
+        }
 
         /// <summary>Node-mode segment: an axis-aligned card centred on the segment's mid angle.</summary>
         private static void DrawCard(float cx, float cy, float rMid, float midAngleDeg,
@@ -412,153 +740,6 @@ namespace Hoodrich.UI
             // of the first, which is invisible and costs a draw call out of a per-frame budget
             // this wheel has already been over once.
             Draw.RectUniform(px, py, w * scale, h * scale, fill);
-        }
-
-        /// <summary>Weapon art is wider than it is tall; these are height-relative.</summary>
-        private const float IconWidth = 0.115f;
-        private const float IconHeight = 0.056f;
-
-        private static void DrawSegmentLabel(float cx, float cy, float rMid, float midAngleDeg,
-                                             WheelItem item, Color fill, float t)
-        {
-            if (t < 0.75f) return; // Hold the text back until the ring has nearly finished opening.
-
-            var rad = midAngleDeg * (float)(Math.PI / 180.0);
-            var px = cx + Draw.ToX(rMid * (float)Math.Sin(rad));
-            var py = cy - rMid * (float)Math.Cos(rad);
-
-            // Contrast against whatever the wedge actually is: gang tints run from pale yellow
-            // to deep maroon, so a fixed dark-on-hover rule would lose half of them.
-            var colour = !item.Enabled ? Palette.TextDisabled : Palette.TextOn(fill);
-
-            // A blip icon is TEXT, not a sprite -- blip art has no route through DRAW_SPRITE.
-            if (!string.IsNullOrEmpty(item.IconBlip))
-            {
-                Draw.Text(item.IconBlip, px, py - 0.042f, 0.62f, colour, Draw.FontChaletLondon);
-            }
-            else if (item.HasIcon)
-            {
-                // The game's weapon art is a white silhouette, so it is tinted the same colour
-                // the label uses -- dark when it sits on a highlighted wedge, white otherwise.
-                //
-                // Fitted INSIDE the box rather than clamped to it. Capping the width alone left
-                // anything wider than the box squashed to fit, which is how a banner-shaped
-                // sprite ended up looking like half an icon; overflowing the width now costs
-                // height instead, so the art keeps its own proportions whatever shape it is.
-                // Clamped, because the measured aspect is not always the sprite's.
-                // GET_TEXTURE_RESOLUTION can answer with the size of the atlas page a texture
-                // sits on rather than the texture itself, and one extreme number fitted into
-                // the box shrinks the height to nothing -- which is an icon that is technically
-                // being drawn and is invisible. No real icon is outside 1:4 either way.
-                var aspect = item.IconAspect;
-                if (aspect < 0.25f || aspect > 4f || float.IsNaN(aspect)) aspect = 1f;
-
-                var w = IconHeight * aspect;
-                var h = IconHeight;
-
-                if (w > IconWidth)
-                {
-                    h *= IconWidth / w;
-                    w = IconWidth;
-                }
-
-                // Ours if there is one. A PNG is square and authored for this size, so it
-                // needs none of the aspect correction the shipped sprites do.
-                if (!string.IsNullOrEmpty(item.IconFile))
-                {
-                    Draw.File(item.IconFile, px, py - 0.030f, h, 0f, colour);
-                }
-                else
-                {
-                    Draw.Sprite(item.IconDict, item.IconTexture, px, py - 0.030f,
-                                Draw.ToX(w), h, 0f, colour);
-                }
-            }
-            else if (!string.IsNullOrEmpty(item.Symbol))
-            {
-                Draw.Text(item.Symbol, px, py - 0.042f, 0.62f, colour, Draw.FontLabel);
-            }
-
-            Draw.Text(item.Label.ToUpperInvariant(), px, py + 0.010f, 0.34f, colour, Draw.FontLabel);
-        }
-
-        private void DrawHub(float cx, float cy, float rInner, WheelPage page, float t)
-        {
-            if (_wedgeMode)
-            {
-                Draw.Disc(cx, cy, rInner * 0.96f, Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t)));
-            }
-            else
-            {
-                Draw.RectUniform(cx, cy, rInner * 1.7f, rInner * 1.7f,
-                                    Palette.Alpha(Palette.Hub, (int)(Palette.Hub.A * t)));
-            }
-
-            if (t < 0.75f) return;
-
-            // Only the breadcrumb stays in the middle. Everything else moved to the readout at
-            // the top of the screen: the hub is a small disc with a wheel drawn tight around it,
-            // and a name, a price and a sentence of description will not fit inside one without
-            // running out over the wedges, which is exactly what it was doing.
-            var title = _stack.Count > 1 ? "< " + page.Title : page.Title;
-            Draw.Text(title.ToUpperInvariant(), cx, cy - 0.012f, 0.34f, Palette.Accent, Draw.FontLabel);
-        }
-
-        /// <summary>
-        /// What you are pointing at, read across the top of the screen.
-        ///
-        /// Out here it has the whole screen width to use, so nothing has to be shortened to fit
-        /// a disc, and it sits where the game puts its own mission text rather than on top of
-        /// the thing you are trying to look at.
-        /// </summary>
-        private void DrawReadout(WheelPage page, float t)
-        {
-            if (t < 0.75f) return;
-
-            const float cx = 0.5f;
-            const float top = 0.085f;
-
-            var item = HoveredItem;
-
-            if (item == null)
-            {
-                if (string.IsNullOrEmpty(page.Subtitle)) return;
-
-                Draw.Text(page.Subtitle, cx, top + 0.044f, 0.32f, Palette.TextDim,
-                          Draw.FontChaletLondon);
-                return;
-            }
-
-            var detail = !item.Enabled && !string.IsNullOrEmpty(item.DisabledReason)
-                ? item.DisabledReason
-                : item.Detail;
-
-            // The house script face, which is the closest thing the game ships to the old
-            // English lettering this wants. There is no blackletter in GTA's HUD fonts, and a
-            // shipped one would mean asset files, which this mod does not have.
-            Draw.Text(item.Label.ToUpperInvariant(), cx, top - 0.006f, 0.90f, Palette.Text,
-                      Draw.FontCursive);
-
-            // Everything under the title is Chalet London, at two sizes.
-            //
-            // The name is the sign-painter script and everything below it is the plain face --
-            // one display face and one reading face, which is the same pair the tweet cards and
-            // every full screen in the mod use. Three faces in four centimetres of screen is
-            // what makes a HUD look assembled rather than designed.
-            var y = top + 0.058f;
-
-            if (!string.IsNullOrEmpty(item.Value))
-            {
-                Draw.Text(item.Value, cx, y, 0.38f,
-                          item.Enabled ? Palette.Cash : Palette.TextDisabled, Draw.FontChaletLondon);
-                y += 0.030f;
-            }
-
-            if (!string.IsNullOrEmpty(detail))
-            {
-                Draw.Text(detail, cx, y, 0.30f,
-                          item.Enabled ? Palette.TextDim : Palette.Warn, Draw.FontChaletLondon);
-            }
         }
 
         /// <summary>Ease-out cubic, clamped to 0..1.</summary>

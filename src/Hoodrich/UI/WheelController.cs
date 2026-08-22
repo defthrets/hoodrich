@@ -405,7 +405,10 @@ namespace Hoodrich.UI
                 ? select + " SELECT     " + back + " BACK"
                 : select + " SELECT     " + back + " CLOSE";
 
-            Draw.Text(hint, 0.5f, 0.5f + _cfg.OuterRadius + 0.045f, 0.30f, Palette.TextDim, Draw.FontLabel);
+            // Below whatever the wheel actually drew, which is not a fixed distance any more:
+            // a page with stat rows is taller than one without, and the ring is deeper than
+            // the ini's OuterRadius that this used to read.
+            Draw.Text(hint, 0.5f, _menu.BottomEdge + 0.022f, 0.30f, Palette.TextDim, Draw.FontLabel);
         }
     }
 }
