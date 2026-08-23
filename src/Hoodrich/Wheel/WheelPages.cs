@@ -1115,18 +1115,25 @@ namespace Hoodrich.Wheel
             // This is a phone number that does something.
             if (Crew != null && Crew.Available)
             {
-                var out_ = Crew.AnyOut;
+                // "On the way" is a third state and it needs to read as one. They are not with
+                // you and they are not on call -- there is a cab out there with three men in
+                // it, and pressing the row again while it is driving should call it off rather
+                // than send for another one.
+                var coming = Crew.Inbound;
+                var out_ = Crew.AnyOut || coming;
 
                 page.Add(out_ ? "Send the homies home" : "Text the homies",
                          out_ ? "x" : ">",
                          () => { var no = out_ ? Crew.Dismiss() : Crew.Call();
                                  if (no != null) Notify.Problem(no);
                                  else Notify.Ticker(out_ ? "~g~They headed off.~s~"
-                                                         : "~g~They're rollin' with you.~s~"); },
-                    detail: out_
+                                                         : "~g~They comin'. Sit tight.~s~"); },
+                    detail: coming
+                        ? "They're in a cab on the way over. Stay put and it'll find you"
+                        : out_
                         ? "Tell them you're good and let them get on"
-                        : "Two of yours come out and roll with you until you say otherwise",
-                    value: out_ ? Crew.Standing + " with you" : "on call");
+                        : "Three of yours get a cab over and roll with you until you say otherwise",
+                    value: coming ? "on the way" : out_ ? Crew.Standing + " with you" : "on call");
 
                 page.WithIcon(Icons.FromFile("people.png"));
             }
@@ -1168,7 +1175,7 @@ namespace Hoodrich.Wheel
             return page;
         }
 
-        /// <summary>Set by Main. The two who come out when you ask.</summary>
+        /// <summary>Set by Main. The three who come out when you ask.</summary>
         public Gangs.Homies Crew;
 
         /// <summary>How many of them are actually answering.</summary>
@@ -1185,11 +1192,16 @@ namespace Hoodrich.Wheel
                 if (_dealers.RefusalReason(def, _state, _crew) == null) open++;
             }
 
-            if (all == 0) return Crew != null && Crew.AnyOut ? "the homies are with you" : "nobody yet";
+            if (all == 0)
+            {
+                if (Crew != null && Crew.Inbound) return "the homies are on their way";
+                return Crew != null && Crew.AnyOut ? "the homies are with you" : "nobody yet";
+            }
 
             var line = open + " of " + all + " plugs answering";
 
-            if (Crew != null && Crew.AnyOut) line += "  ·  " + Crew.Standing + " with you";
+            if (Crew != null && Crew.Inbound) line += "  ·  homies on the way";
+            else if (Crew != null && Crew.AnyOut) line += "  ·  " + Crew.Standing + " with you";
 
             return line;
         }

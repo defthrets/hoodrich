@@ -210,18 +210,6 @@ namespace Hoodrich.Gangs
 
         // ---- the living --------------------------------------------------------
 
-        /// <summary>What you say in passing, and what he says back.</summary>
-        private static readonly string[] Greetings =
-        {
-            "What's happening.",
-            "Aye.",
-            "You good?",
-            "Hold it down out here.",
-            "Everything straight?",
-            "Cool, cool.",
-            "Stay up.",
-        };
-
         private static readonly string[] GreetSpeech = { "GENERIC_HI", "GENERIC_HOWS_IT_GOING" };
 
         private static readonly Random Rng = new Random();
@@ -241,16 +229,21 @@ namespace Hoodrich.Gangs
         {
             var yours = !_theirs.Contains(ped.Handle);
 
+            // No subtitle. The ped's own voice line is the whole exchange.
+            //
+            // There used to be one, and it was worse than nothing: the audio said "hey" in
+            // Franklin's voice while the caption underneath said something else entirely,
+            // because a written line and an ambient speech cue are two different things that
+            // were never going to agree. Reading a man's words while hearing him say others
+            // is uncanny in a way that silence is not.
             if (yours)
             {
                 Say(player, GreetSpeech);
-                Dialogue.Say("Franklin", Pick(Greetings));
                 _theirs.Add(ped.Handle);
             }
             else
             {
                 Say(ped, GreetSpeech);
-                Dialogue.Say("", Pick(Answers));
                 _theirs.Remove(ped.Handle);
             }
 
@@ -271,43 +264,7 @@ namespace Hoodrich.Gangs
         /// <summary>Handles whose next line is theirs rather than yours.</summary>
         private readonly HashSet<int> _theirs = new HashSet<int>();
 
-        /// <summary>What he says back.</summary>
-        private static readonly string[] Answers =
-        {
-            "Same old. Holdin' it down.",
-            "Aye. Ain't nothin'.",
-            "We good over here.",
-            "Been out here all day, boy.",
-            "You know how it go.",
-            "Straight. You?",
-            "Everything quiet. For now.",
-            "Man, don't even ask.",
-            "All day, every day.",
-            "Cool. Stay up out here.",
-        };
-
         // ---- the dead ----------------------------------------------------------
-
-        /// <summary>One of ours, on the pavement. There is only one thing to say.</summary>
-        private static readonly string[] OverOurs =
-        {
-            "Fam down! We got fam down out here!",
-            "Fam down. Somebody call somebody.",
-            "Nah. Nah, not him. Fam down.",
-            "Fam down! Get somebody over here!",
-        };
-
-        /// <summary>Anybody else.</summary>
-        private static readonly string[] OverTheirs =
-        {
-            "That's one less.",
-            "Should've stayed on his own block.",
-            "Somebody's gonna come looking for him.",
-            "That's how it goes out here.",
-            "He knew what this was.",
-            "One for the block.",
-            "Leave him. Somebody'll come.",
-        };
 
         private static readonly string[] GriefSpeech =
         {
@@ -323,8 +280,9 @@ namespace Hoodrich.Gangs
         {
             var ours = IsOneOfOurs(ped);
 
+            // Same as the greeting -- his voice, no caption. Standing over a body is a beat
+            // that is carried by the shocked line and the look, not by text along the bottom.
             Say(player, ours ? GriefSpeech : ColdSpeech);
-            Dialogue.Say("Franklin", Pick(ours ? OverOurs : OverTheirs));
 
             try
             {

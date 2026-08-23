@@ -10,7 +10,7 @@ using Hoodrich.UI;
 namespace Hoodrich.Gangs
 {
     /// <summary>
-    /// Two of yours, on call.
+    /// Three of yours, on call.
     ///
     /// You spend the first three jobs riding with homies who are handed to you by whoever set
     /// the job, and then every hour after that on your own -- which is the wrong way round for
@@ -23,38 +23,124 @@ namespace Hoodrich.Gangs
     /// they get into the passenger seats of whatever you get into, and they find their own way
     /// back when they lose you. Anything hand-rolled out of TASK_FOLLOW would do the first of
     /// those and none of the rest.
+    ///
+    /// The three are deliberately NOT interchangeable. Each carries a different gun, one of
+    /// them is permanently drunk and one of them is permanently smoking, so that after a
+    /// minute of walking around with them you know which one is which without being told.
+    /// Three identical men in a formation are furniture; three you can tell apart are a crew.
     /// </summary>
     internal sealed class Homies
     {
-        /// <summary>How many turn up. Two, because three is a convoy and one is a shadow.</summary>
-        private const int Crew = 2;
+        /// <summary>How many turn up. A cab holds three and three is a car full.</summary>
+        private const int Crew = 3;
 
-        /// <summary>Where they appear, behind you and off to the side.</summary>
-        private const float BehindBy = 3.4f;
-        private const float SideBy = 1.5f;
+        /// <summary>
+        /// How far off they set out from -- round a corner, not behind a bin.
+        ///
+        /// Far enough that you cannot see the cab appear and near enough that you are not
+        /// stood waiting. It is snapped to a road node from here, so the real distance is
+        /// whatever the nearest street happens to be.
+        /// </summary>
+        private const float ComeFrom = 110f;
+
+        /// <summary>Close enough to you for the cab to stop and let them out.</summary>
+        private const float DropRange = 18f;
+
+        /// <summary>And how long it gets to find you before they just get out and walk.</summary>
+        private const int InboundGiveUpMs = 60000;
+
+        /// <summary>How long the cab gets to actually stop before they climb out regardless.</summary>
+        private const int HaltGiveUpMs = 6000;
+
+        /// <summary>What they turn up in.</summary>
+        private static readonly string[] CabModels = { "taxi", "cavalcade", "premier" };
+        private static readonly string[] CabbieModels =
+        {
+            "s_m_m_hairdress_01", "a_m_m_indian_01", "a_m_m_eastsa_01", "a_m_y_business_01"
+        };
 
         /// <summary>How far they may drift before the group hauls them back.</summary>
         private const float LeashRange = 55f;
 
+        /// <summary>
+        /// How close the formation holds them.
+        ///
+        /// The group's default spacing is built for story buddies crossing open ground and it
+        /// leaves them strung out over ten metres, which on a pavement means one of them is
+        /// permanently in the road. A metre and a bit puts them at your shoulder.
+        /// </summary>
+        private const float FormationSpacing = 1.1f;
+        private const float FormationMin = 0.4f;
+        private const float FormationMax = 2.4f;
+
         private const int TickMs = 900;
 
         /// <summary>
-        /// What they carry.
+        /// What they carry, one each, in this order.
         ///
-        /// A pistol each and nothing heavier. Two men following you round Los Santos with
-        /// rifles is an event rather than an escort, and they draw the kind of attention this
-        /// mod spends its time helping you avoid.
+        /// Not a random draw out of a pool -- three fixed guns, so the man on your left is
+        /// always the rifle and you learn to place them by silhouette. A compact rifle, a
+        /// micro SMG and a machine pistol is also a believable spread for people who bought
+        /// what was going rather than what they wanted.
         /// </summary>
         private static readonly string[] Guns =
         {
-            "WEAPON_PISTOL", "WEAPON_SNSPISTOL", "WEAPON_MICROSMG"
+            "WEAPON_COMPACTRIFLE", "WEAPON_MICROSMG", "WEAPON_MACHINEPISTOL"
         };
+
+        /// <summary>
+        /// The one who is always drunk.
+        ///
+        /// A movement clipset, not an animation -- it replaces his entire walk cycle, so he
+        /// sways the whole time he is following you rather than doing a stumble on a timer.
+        /// Verified against the game's own movement clipset list; "moderate" rather than
+        /// "very", because verydrunk cannot keep up with a walking player and he would spend
+        /// the day being teleported back by the group's leash.
+        /// </summary>
+        private const string DrunkWalk = "move_m@drunk@moderatedrunk";
+
+        /// <summary>The one who is always smoking, and what he smokes.</summary>
+        private const string CiggyProp = "prop_cs_ciggy_01";
+
+        /// <summary>PH_R_Hand. The prop helper, so the cigarette sits where a hand holds it.</summary>
+        private const int RightHandBone = 28422;
+
+        /// <summary>
+        /// Standing-around idles, for the one who is neither drunk nor smoking.
+        ///
+        /// Played UPPER BODY and SECONDARY (flag 48), which is the whole trick: his legs stay
+        /// under the group's control, so he can be mid-gesture when you walk off and simply
+        /// walks while finishing it. A full-body idle would win the argument with the
+        /// formation and leave him standing in the street doing an animation at you.
+        ///
+        /// Every dict and clip below is out of the game's own animation dump rather than off
+        /// a wiki. A misspelt clip name does not throw -- it silently plays nothing.
+        /// </summary>
+        private static readonly string[][] LoiterIdles =
+        {
+            new[] { "amb@world_human_hang_out_street@male_a@idle_a", "idle_a", "idle_b", "idle_c", "idle_d", "idle_e" },
+            new[] { "amb@world_human_hang_out_street@male_b@idle_a", "idle_a", "idle_b", "idle_c", "idle_d" },
+            new[] { "amb@world_human_hang_out_street@male_c@idle_a", "idle_a", "idle_b", "idle_c" },
+            new[] { "amb@world_human_stand_impatient@male@no_sign@idle_a", "idle_a", "idle_b", "idle_c" },
+            new[] { "amb@world_human_stand_mobile@male@text@idle_a", "idle_a", "idle_b", "idle_c" },
+        };
+
+        /// <summary>His, and only his. Looped, because he never finishes it.</summary>
+        private const string SmokeDict = "amb@world_human_smoking@male@male_a@idle_a";
+        private static readonly string[] SmokeClips = { "idle_a", "idle_b", "idle_c" };
+
+        /// <summary>How long a gesture holds before another is picked.</summary>
+        private const int IdleHoldMin = 6000;
+        private const int IdleHoldMax = 13000;
+
+        /// <summary>Below this they count as standing still and start fidgeting.</summary>
+        private const float StillSpeed = 0.6f;
 
         private readonly GangRegistry _gangs;
         private readonly Affiliation _crew;
         private readonly PlayerState _state;
 
-        private readonly List<Ped> _out = new List<Ped>();
+        private readonly List<Homie> _men = new List<Homie>();
         private readonly Random _rng = new Random();
 
         private int _next;
@@ -64,6 +150,33 @@ namespace Hoodrich.Gangs
             _gangs = gangs;
             _crew = crew;
             _state = state;
+        }
+
+        /// <summary>
+        /// One of them, and the things that make him himself.
+        ///
+        /// The traits live here rather than in a lookup keyed on handle because a handle is
+        /// reused the moment a ped is released, and a recycled handle inheriting somebody
+        /// else's drunkenness is the kind of bug that takes an evening to find.
+        /// </summary>
+        private sealed class Homie
+        {
+            public Ped Ped;
+
+            /// <summary>He sways. Set once, at the kerb.</summary>
+            public bool Drunk;
+
+            /// <summary>He smokes whenever he is not walking or shooting.</summary>
+            public bool Smoker;
+
+            /// <summary>The cigarette itself, which only exists while he is stood still.</summary>
+            public Prop Ciggy;
+
+            /// <summary>When the current gesture is allowed to be replaced.</summary>
+            public int IdleUntil;
+
+            /// <summary>Whether he is mid-gesture, so it is only cleared once.</summary>
+            public bool Idling;
         }
 
         /// <summary>
@@ -81,9 +194,9 @@ namespace Hoodrich.Gangs
             {
                 var n = 0;
 
-                foreach (var ped in _out)
+                foreach (var man in _men)
                 {
-                    if (ped != null && ped.Exists() && ped.IsAlive) n++;
+                    if (man.Ped != null && man.Ped.Exists() && man.Ped.IsAlive) n++;
                 }
 
                 return n;
@@ -104,11 +217,21 @@ namespace Hoodrich.Gangs
 
         // ---- calling them ------------------------------------------------------
 
-        /// <summary>Brings them out. Returns what to tell the player.</summary>
+        /// <summary>
+        /// Sends for them. They arrive; they do not appear.
+        ///
+        /// Three men fading into existence behind your shoulder is the cheapest thing a mod
+        /// can do and it reads as exactly what it is. They come in a cab from round the
+        /// corner instead: it drives to you, it stops, they get out, it leaves. The whole
+        /// thing costs about twenty seconds and it is the difference between summoning
+        /// somebody and phoning them.
+        ///
+        /// Returns what to tell the player, or null if it worked.
+        /// </summary>
         public string Call()
         {
             if (!Available) return "you ain't got nobody to call yet.";
-            if (AnyOut) return "they already with you.";
+            if (AnyOut || _inbound) return "they already on the way.";
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return "not right now.";
@@ -116,53 +239,208 @@ namespace Hoodrich.Gangs
             var gang = _crew.Current;
             if (gang == null || gang.MemberModels.Count == 0) return "nobody picked up.";
 
-            var group = Function.Call<int>(Hash.GET_PLAYER_GROUP, Game.Player.Handle);
+            // Asked for now so it is resident by the time the cab pulls up. The clipset cannot
+            // be applied until it has loaded, and the drive over is free time to load it in.
+            try { Function.Call(Hash.REQUEST_ANIM_SET, DrunkWalk); } catch { /* he walks straight */ }
+
+            // A road, out of sight, in whatever direction happens to have one.
+            var away = (float)(_rng.NextDouble() * Math.PI * 2d);
+            var guess = player.Position
+                        + new Vector3((float)Math.Cos(away), (float)Math.Sin(away), 0f) * ComeFrom;
+
+            var start = World.GetNextPositionOnStreet(guess);
+            if (start == Vector3.Zero) start = guess;
+
+            if (!MakeCab(start, player.Position)) return "couldn't get nobody out here.";
 
             for (var i = 0; i < Crew; i++)
             {
-                var side = i % 2 == 0 ? 1f : -1f;
-
-                var at = player.Position
-                         - player.ForwardVector * BehindBy
-                         + player.RightVector * (SideBy * side);
-
-                var ped = Make(gang, at, player.Heading, group);
-                if (ped != null) _out.Add(ped);
+                // Seat 0 is beside the driver, then the back. CREATE_PED_INSIDE_VEHICLE puts
+                // them straight in rather than walking them to a door that is moving.
+                var man = Make(gang, i, i == 0 ? 0 : i);
+                if (man != null) _men.Add(man);
             }
 
-            if (_out.Count == 0) return "nobody picked up.";
-
-            // Formation 0 is the loose one that walks abreast rather than in single file,
-            // which is what two men walking with you looks like.
-            try
+            if (_men.Count == 0)
             {
-                Function.Call(Hash.SET_GROUP_FORMATION, group, 0);
-                Function.Call(Hash.SET_GROUP_SEPARATION_RANGE, group, LeashRange);
+                ScrapCab();
+                return "nobody picked up.";
             }
-            catch { /* they will keep up anyway */ }
 
-            Log.Info("Homies out: " + _out.Count + " with the player.");
+            _inbound = true;
+            _dropping = false;
+            _calledAt = Game.GameTime;
+
+            Log.Info("Homies inbound: " + _men.Count + " in a cab from " + start.ToString() + ".");
 
             if (Feed != null) Feed.On(Hoodrich.Social.SocialEvent.HomiesOut);
 
             return null;
         }
 
-        /// <summary>Sends them home. They walk off rather than vanishing.</summary>
-        public string Dismiss()
-        {
-            if (!AnyOut) return "ain't nobody with you.";
+        private bool _inbound;
+        private bool _dropping;
+        private int _calledAt;
+        private int _haltedAt;
+        private Vehicle _cab;
+        private Ped _cabbie;
 
-            foreach (var ped in _out)
+        /// <summary>True while the cab is still on its way.</summary>
+        public bool Inbound => _inbound;
+
+        private bool MakeCab(Vector3 start, Vector3 to)
+        {
+            foreach (var name in CabModels)
             {
                 try
                 {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    _cab = World.CreateVehicle(model, start);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_cab == null || !_cab.Exists()) continue;
+
+                    _cab.IsPersistent = true;
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _cab.Handle, true, true);
+                    Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, _cab.Handle);
+
+                    _cabbie = MakeCabbie();
+
+                    if (_cabbie == null)
+                    {
+                        try { _cab.Delete(); } catch { /* gone */ }
+                        _cab = null;
+                        continue;
+                    }
+
+                    // Longrange, because it may be several streets away and the short version
+                    // gives up at a junction it does not like.
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD_LONGRANGE,
+                                  _cabbie.Handle, _cab.Handle, to.X, to.Y, to.Z,
+                                  20f, 786603, DropRange * 0.5f);
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("No cab for the homies: " + ex.Message);
+                }
+            }
+
+            return false;
+        }
+
+        private Ped MakeCabbie()
+        {
+            foreach (var name in CabbieModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+
+                    var h = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
+                                               _cab.Handle, 4, model.Hash, -1, true, false);
+                    model.MarkAsNoLongerNeeded();
+                    if (h == 0) continue;
+
+                    var ped = Entity.FromHandle(h) as Ped;
+                    if (ped == null || !ped.Exists()) continue;
+
+                    ped.IsPersistent = true;
+                    ped.BlockPermanentEvents = true;
+
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, h, false);
+                    Function.Call(Hash.SET_DRIVER_ABILITY, h, 1f);
+
+                    return ped;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("No cabbie: " + ex.Message);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Lets the cab go about its business once they are out of it.</summary>
+        private void ReleaseCab()
+        {
+            try
+            {
+                if (_cabbie != null && _cabbie.Exists() && _cabbie.IsAlive && _cab != null && _cab.Exists())
+                {
+                    _cabbie.Task.ClearAll();
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _cabbie.Handle, _cab.Handle,
+                                  18f, 786603);
+                }
+
+                if (_cabbie != null && _cabbie.Exists())
+                {
+                    _cabbie.IsPersistent = false;
+                    _cabbie.MarkAsNoLongerNeeded();
+                }
+
+                if (_cab != null && _cab.Exists())
+                {
+                    _cab.IsPersistent = false;
+                    _cab.MarkAsNoLongerNeeded();
+                }
+            }
+            catch { /* he knows the way */ }
+
+            _cab = null;
+            _cabbie = null;
+        }
+
+        /// <summary>And this one takes it away, for a cab nobody ever saw.</summary>
+        private void ScrapCab()
+        {
+            try { if (_cabbie != null && _cabbie.Exists()) _cabbie.Delete(); } catch { }
+            try { if (_cab != null && _cab.Exists()) _cab.Delete(); } catch { }
+
+            _cab = null;
+            _cabbie = null;
+        }
+
+        /// <summary>Sends them home. They walk off rather than vanishing.</summary>
+        public string Dismiss()
+        {
+            if (!AnyOut && !_inbound) return "ain't nobody with you.";
+
+            foreach (var man in _men)
+            {
+                try
+                {
+                    PutItOut(man);
+
+                    var ped = man.Ped;
                     if (ped == null || !ped.Exists()) continue;
 
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
 
                     if (ped.IsAlive)
                     {
+                        // His own walk back, not the one we gave him. A released ped keeps
+                        // whatever clipset he was left with, and a permanently drunk pedestrian
+                        // wandering Strawberry for the rest of the session is our litter.
+                        if (man.Drunk)
+                        {
+                            try
+                            {
+                                Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, ped.Handle, 0f);
+                                Function.Call(Hash.SET_PED_IS_DRUNK, ped.Handle, false);
+                            }
+                            catch { /* he sobers up eventually */ }
+                        }
+
+                        Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, ped.Handle);
+
                         ped.Task.ClearAll();
                         Function.Call(Hash.TASK_WANDER_STANDARD, ped.Handle, 10f, 10);
                     }
@@ -176,7 +454,14 @@ namespace Hoodrich.Gangs
                 catch { /* they know the way */ }
             }
 
-            _out.Clear();
+            _men.Clear();
+
+            // If they never got here, the cab goes with them.
+            if (_inbound) ScrapCab();
+
+            _inbound = false;
+            _dropping = false;
+
             Log.Info("Homies sent home.");
 
             return null;
@@ -186,21 +471,29 @@ namespace Hoodrich.Gangs
 
         public void Update()
         {
-            if (_out.Count == 0) return;
+            if (_men.Count == 0) return;
 
             if (Game.GameTime < _next) return;
             _next = Game.GameTime + TickMs;
 
+            if (_inbound)
+            {
+                Arriving();
+                return;
+            }
+
             // The dead are dropped from the list rather than cleaned up. A body is a thing
             // that happened and it should stay where it fell; what has to stop is this class
             // counting it as somebody who is still with you.
-            for (var i = _out.Count - 1; i >= 0; i--)
+            for (var i = _men.Count - 1; i >= 0; i--)
             {
-                var ped = _out[i];
+                var man = _men[i];
+                var ped = man.Ped;
 
                 if (ped == null || !ped.Exists())
                 {
-                    _out.RemoveAt(i);
+                    PutItOut(man);
+                    _men.RemoveAt(i);
                     continue;
                 }
 
@@ -208,23 +501,343 @@ namespace Hoodrich.Gangs
                 {
                     try
                     {
+                        // The cigarette goes with him. An unattached prop left hanging in the
+                        // air over a body is the sort of thing that outlives the session.
+                        PutItOut(man);
                         ped.IsPersistent = false;
                         ped.MarkAsNoLongerNeeded();
                     }
                     catch { /* he is past caring */ }
 
-                    _out.RemoveAt(i);
+                    _men.RemoveAt(i);
                     Log.Info("A homie went down.");
                 }
             }
 
-            // Walking away from the set does not leave you with two of their people.
-            if (_out.Count > 0 && (_crew == null || !_crew.IsAffiliated)) Dismiss();
+            // Walking away from the set does not leave you with three of their people.
+            if (_men.Count > 0 && (_crew == null || !_crew.IsAffiliated))
+            {
+                Dismiss();
+                return;
+            }
+
+            Loiter();
+        }
+
+        /// <summary>
+        /// Watches the cab in, gets them out of it, and hands them to the group.
+        ///
+        /// Two beats, not one, and the split is the whole point. The first stops the cab and
+        /// tells them to get out; the second waits until they are actually standing on the
+        /// road before adding them to the group and letting the cab drive off. Doing both at
+        /// once looked fine right up until the cab was still rolling, at which point three men
+        /// dive out of a moving car and the group formation drags them along the tarmac.
+        ///
+        /// Group membership also deliberately does not happen until they are out. A group
+        /// member sitting in a cab three streets away is a man the formation spends the whole
+        /// journey hauling toward you, fighting the cab's own driving task the entire way.
+        /// </summary>
+        private void Arriving()
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            var late = Game.GameTime - _calledAt > InboundGiveUpMs;
+            var gone = _cab == null || !_cab.Exists() || !_cab.IsDriveable;
+
+            if (!_dropping)
+            {
+                var near = !gone && _cab.Position.DistanceTo(player.Position) <= DropRange;
+                if (!near && !late && !gone) return;
+
+                if (late) Log.Info("The cab never made it; the homies got out where they were.");
+
+                // Brought to a stop over eight metres rather than tasked to park, because the
+                // driving task is still running and would pull away again the moment it was
+                // asked to do anything else.
+                if (!gone)
+                {
+                    try
+                    {
+                        Function.Call(Hash.BRING_VEHICLE_TO_HALT, _cab.Handle, 8f, 3000, false);
+                    }
+                    catch { /* it will roll to a stop on its own */ }
+                }
+
+                foreach (var man in _men)
+                {
+                    var ped = man.Ped;
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                    try
+                    {
+                        // Flag 0: normal exit, closes the door behind him. Checked against the
+                        // decompiled-script flag list rather than guessed, because the values
+                        // near it do very different things -- 16 teleports him to the kerb and
+                        // 4160 is the throw-yourself-out roll, which is precisely the thing
+                        // stopping the cab first was meant to avoid.
+                        if (ped.IsInVehicle())
+                        {
+                            Function.Call(Hash.TASK_LEAVE_VEHICLE, ped.Handle,
+                                          gone ? 0 : _cab.Handle, 0);
+                        }
+                    }
+                    catch { /* he will find his own way out */ }
+                }
+
+                _dropping = true;
+                _haltedAt = Game.GameTime;
+                return;
+            }
+
+            // Second beat: are they actually out yet?
+            var stillIn = 0;
+
+            foreach (var man in _men)
+            {
+                var ped = man.Ped;
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                if (ped.IsInVehicle()) stillIn++;
+            }
+
+            var waited = Game.GameTime - _haltedAt > HaltGiveUpMs;
+            if (stillIn > 0 && !waited) return;
+
+            if (stillIn > 0) Log.Info("Gave up waiting; " + stillIn + " still in the cab.");
+
+            var group = Function.Call<int>(Hash.GET_PLAYER_GROUP, Game.Player.Handle);
+
+            foreach (var man in _men)
+            {
+                var ped = man.Ped;
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.SET_PED_AS_GROUP_MEMBER, ped.Handle, group);
+                    Function.Call(Hash.SET_PED_NEVER_LEAVES_GROUP, ped.Handle, true);
+                }
+                catch { /* he will find you */ }
+
+                if (man.Drunk) MakeHimDrunk(ped);
+            }
+
+            try
+            {
+                // Formation 0 is the loose one that walks abreast rather than in single file.
+                // The spacing after it is what actually brings them in close -- the formation
+                // only decides the shape, not how big it is.
+                Function.Call(Hash.SET_GROUP_FORMATION, group, 0);
+                Function.Call(Hash.SET_GROUP_FORMATION_SPACING, group,
+                              FormationSpacing, FormationMin, FormationMax);
+                Function.Call(Hash.SET_GROUP_SEPARATION_RANGE, group, LeashRange);
+            }
+            catch { /* they will keep up anyway */ }
+
+            ReleaseCab();
+
+            _inbound = false;
+            _dropping = false;
+
+            Notify.Ticker("~g~They're here.~s~");
+            Log.Info("Homies arrived: " + Standing + " with the player.");
+        }
+
+        // ---- standing around ----------------------------------------------------
+
+        /// <summary>
+        /// What they do with their hands when nothing is happening.
+        ///
+        /// Three men stood in a perfect triangle staring at the middle distance is the tell
+        /// that they are spawned props rather than people, and it is the state they are in for
+        /// most of the time you have them. So: while everybody is stationary and nobody is
+        /// shooting, each one is given something to do with his upper body -- a gesture, a
+        /// phone, a cigarette -- re-rolled every several seconds so it never settles into a
+        /// loop you can count.
+        ///
+        /// The moment anyone moves it is all cleared. A secondary task does not stop on its
+        /// own; it has to be taken off him, and a man walking down the street still doing a
+        /// leaning-against-a-wall gesture looks worse than a man doing nothing at all.
+        /// </summary>
+        private void Loiter()
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            // Nothing while you are driving, fighting, or otherwise busy -- the group has
+            // better things for them to be doing and a gesture would sit on top of it.
+            var busy = player.IsInVehicle() ||
+                       player.IsInCombat ||
+                       player.IsShooting ||
+                       player.IsRagdoll ||
+                       Game.Player.WantedLevel > 0 ||
+                       player.Velocity.Length() > StillSpeed;
+
+            foreach (var man in _men)
+            {
+                var ped = man.Ped;
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                var his = busy ||
+                          ped.IsInVehicle() ||
+                          ped.IsInCombat ||
+                          ped.IsRagdoll ||
+                          ped.Velocity.Length() > StillSpeed;
+
+                if (his)
+                {
+                    StopIdling(man);
+                    continue;
+                }
+
+                if (man.Idling && Game.GameTime < man.IdleUntil) continue;
+
+                StartIdling(man);
+            }
+        }
+
+        private void StartIdling(Homie man)
+        {
+            var ped = man.Ped;
+
+            try
+            {
+                string dict;
+                string clip;
+                int flag;
+
+                if (man.Smoker)
+                {
+                    dict = SmokeDict;
+                    clip = SmokeClips[_rng.Next(SmokeClips.Length)];
+
+                    // 49 is loop | upper body | secondary. He is never finished smoking, so
+                    // unlike the others his gesture loops until something takes it off him.
+                    flag = 49;
+                }
+                else
+                {
+                    var set = LoiterIdles[_rng.Next(LoiterIdles.Length)];
+                    dict = set[0];
+                    clip = set[1 + _rng.Next(set.Length - 1)];
+
+                    // 48 is upper body | secondary, played once. Letting it end and picking
+                    // another is what stops him metronoming the same gesture at you.
+                    flag = 48;
+                }
+
+                // Asked for and then dropped for a tick. A dict that is not resident makes
+                // TASK_PLAY_ANIM a silent no-op rather than an error, so the man would simply
+                // stand there and nothing would ever say why.
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+                    return;
+                }
+
+                if (man.Smoker && man.Ciggy == null) LightOne(man);
+
+                // The last three are bPhaseControlled, IkFlags and bAllowOverrideCloneUpdate.
+                // They are NOT position locks, whatever their place in the signature suggests,
+                // and passing true for them freezes the clip on its first frame.
+                Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, dict, clip,
+                              4f, -4f, -1, flag, 0f, false, 0, false);
+
+                man.Idling = true;
+                man.IdleUntil = Game.GameTime + IdleHoldMin + _rng.Next(IdleHoldMax - IdleHoldMin);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Idle failed: " + ex.Message);
+                man.IdleUntil = Game.GameTime + IdleHoldMax;
+            }
+        }
+
+        private void StopIdling(Homie man)
+        {
+            if (!man.Idling) return;
+
+            man.Idling = false;
+            man.IdleUntil = 0;
+
+            try
+            {
+                // A secondary task is not cleared by tasking something else over it, which is
+                // exactly why it is useful here and exactly why it has to be taken off by hand.
+                Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, man.Ped.Handle);
+            }
+            catch { /* it will run out */ }
+
+            PutItOut(man);
+        }
+
+        /// <summary>Gives the smoker something to actually be holding.</summary>
+        private void LightOne(Homie man)
+        {
+            try
+            {
+                var model = new Model(CiggyProp);
+                if (!model.IsValid || !model.IsInCdImage || !model.Request(500)) return;
+
+                var prop = World.CreateProp(model, man.Ped.Position, false, false);
+                model.MarkAsNoLongerNeeded();
+
+                if (prop == null || !prop.Exists()) return;
+
+                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, man.Ped.Handle, RightHandBone);
+
+                // PH_R_Hand is a prop helper, so it already sits where a held object goes --
+                // no offset, no rotation. Every fiddled-in offset here has historically been a
+                // sign of using SKEL_R_Hand instead, which is the wrist joint and half a hand
+                // out from where the fingers actually close.
+                Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, prop.Handle, man.Ped.Handle, bone,
+                              0f, 0f, 0f, 0f, 0f, 0f, true, true, false, true, 1, true);
+
+                man.Ciggy = prop;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("No cigarette: " + ex.Message);
+            }
+        }
+
+        /// <summary>And takes it off him again whenever he stops standing about.</summary>
+        private static void PutItOut(Homie man)
+        {
+            if (man.Ciggy == null) return;
+
+            try { if (man.Ciggy.Exists()) man.Ciggy.Delete(); } catch { /* gone already */ }
+
+            man.Ciggy = null;
+        }
+
+        private void MakeHimDrunk(Ped ped)
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_SET_LOADED, DrunkWalk))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_SET, DrunkWalk);
+                }
+
+                // Applied whether or not it has finished loading. The clipset is asked for the
+                // moment you make the call, so by the time the cab has crossed a suburb it is
+                // resident; if it somehow is not, this is a no-op and he walks straight, which
+                // is a far better failure than blocking the arrival on a load.
+                Function.Call(Hash.SET_PED_MOVEMENT_CLIPSET, ped.Handle, DrunkWalk, 1f);
+
+                // And the balance to go with the walk, so a kerb or a shove puts him down.
+                Function.Call(Hash.SET_PED_IS_DRUNK, ped.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not get him drunk: " + ex.Message);
+            }
         }
 
         // ---- who they are -------------------------------------------------------
 
-        private Ped Make(GangDef gang, Vector3 at, float heading, int group)
+        private Homie Make(GangDef gang, int index, int seat)
         {
             var name = gang.MemberModels[_rng.Next(gang.MemberModels.Count)];
 
@@ -233,9 +846,12 @@ namespace Hoodrich.Gangs
                 var model = new Model(name);
                 if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) return null;
 
-                var ped = World.CreatePed(model, at, heading);
+                var made = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
+                                              _cab.Handle, 4, model.Hash, seat, true, false);
                 model.MarkAsNoLongerNeeded();
+                if (made == 0) return null;
 
+                var ped = Entity.FromHandle(made) as Ped;
                 if (ped == null || !ped.Exists()) return null;
 
                 var h = ped.Handle;
@@ -247,8 +863,9 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, h,
                               Game.GenerateHash(gang.RelationshipGroup));
 
+                // One gun each, by position, so they stay tellable apart.
                 Function.Call(Hash.GIVE_WEAPON_TO_PED, h,
-                              Game.GenerateHash(Guns[_rng.Next(Guns.Length)]), 200, false, true);
+                              Game.GenerateHash(Guns[index % Guns.Length]), 200, false, true);
 
                 Function.Call(Hash.SET_PED_ACCURACY, h, 35);
 
@@ -265,14 +882,22 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, h, 2);
 
                 // Yours, and not shootable by you by accident. Friendly fire from the player
-                // turning two bodyguards into two enemies is the worst possible failure here.
+                // turning three bodyguards into three enemies is the worst possible failure.
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED_BY_PLAYER, h, Game.Player.Handle, false);
                 Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, h, false, false);
 
-                Function.Call(Hash.SET_PED_AS_GROUP_MEMBER, h, group);
-                Function.Call(Hash.SET_PED_NEVER_LEAVES_GROUP, h, true);
+                // They are NOT put in the group here. That happens when they are stood on the
+                // pavement next to you -- a group member still sitting in a cab three streets
+                // away is a man the formation is dragging toward you through traffic.
+                return new Homie
+                {
+                    Ped = ped,
 
-                return ped;
+                    // The rifle drinks and the SMG smokes. Fixed rather than rolled, so the
+                    // crew is the same crew every time you call it rather than a lucky dip.
+                    Drunk = index == 0,
+                    Smoker = index == 1,
+                };
             }
             catch (Exception ex)
             {
@@ -283,10 +908,18 @@ namespace Hoodrich.Gangs
 
         public void RestoreWorld()
         {
-            foreach (var ped in _out)
+            ScrapCab();
+
+            _inbound = false;
+            _dropping = false;
+
+            foreach (var man in _men)
             {
                 try
                 {
+                    PutItOut(man);
+
+                    var ped = man.Ped;
                     if (ped == null || !ped.Exists()) continue;
 
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
@@ -296,7 +929,7 @@ namespace Hoodrich.Gangs
                 catch { /* teardown */ }
             }
 
-            _out.Clear();
+            _men.Clear();
         }
     }
 }
