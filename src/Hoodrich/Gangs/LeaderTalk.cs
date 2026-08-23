@@ -87,22 +87,64 @@ namespace Hoodrich.Gangs
                      "Ask what they move");
             node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
 
-            // Every gang sells to you whether or not they will have you. That is the point of
-            // keeping the other six around.
-            node.Say("I'm buying.", () => BuyList(def, gang),
-                     "Buy weight off him");
-            node.WithIcon(Icons.Money);
+            // The sets that will never have you sell to anybody. The one that WOULD have you
+            // does not sell to strangers -- he fronts them work and watches what they do with
+            // it, which is the entire opening of this mod and is also simply how it goes: a man
+            // does not take your money the first time he meets you, he gives you something and
+            // sees whether you come back.
+            var mine = _crew.IsAffiliated && _crew.Current.Id == gang.Id;
+
+            if (!gang.Joinable || mine)
+            {
+                node.Say("I'm buying.", () => BuyList(def, gang),
+                         "Buy weight off him");
+                node.WithIcon(Icons.Money);
+            }
 
             if (gang.Joinable)
             {
+                var settled = !_state.HasFrontedWork;
+                var done = _state.FrontedWorkDone;
+
+                // Three states, one after the other, and only one of them is ever on screen:
+                // nothing yet, holding his, or holding nothing and owed a conversation.
+                if (!_crew.IsAffiliated && FrontsWork(def))
+                {
+                    if (settled)
+                    {
+                        node.Say("Put me on somethin'.", () => OfferWork(def, gang),
+                                 "Take a package off him and move it");
+                        node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
+                    }
+                    else if (!done)
+                    {
+                        node.Say("About that package.", () => WorkProgress(def, gang),
+                                 "You are still holding his");
+                        node.WithIcon(Icons.Locked);
+                    }
+                    else
+                    {
+                        node.Say("It's all gone.", () => Squared(def, gang),
+                                 "Square up with him");
+                        node.WithIcon(Icons.Tick);
+                    }
+                }
+
                 var short_ = _state.Respect < gang.JoinRespect;
 
-                node.SayIf(!_crew.IsAffiliated, "You already run with " +
-                           (_crew.IsAffiliated ? _crew.Current.Name : "somebody"),
+                // And the door only opens once his product is somebody else's problem.
+                var owed = FrontsWork(def) && _state.HasFrontedWork;
+
+                var no = _crew.IsAffiliated
+                    ? "You already run with " + _crew.Current.Name
+                    : owed ? "Move his work first"
+                    : short_ ? "He might not rate you yet" : "";
+
+                node.SayIf(!_crew.IsAffiliated && !owed, no,
                            "Put me on.", () => AskToJoin(def, gang),
-                           short_ ? "He might not rate you yet"
-                                  : "Sign on with " + gang.Name);
-                node.WithIcon(short_ ? Icons.Locked : Icons.Tick);
+                           "Sign on with " + gang.Name);
+
+                node.WithIcon(owed || short_ ? Icons.Locked : Icons.Tick);
             }
             else
             {
@@ -523,6 +565,36 @@ namespace Hoodrich.Gangs
             node.Leave();
             return node;
         }
+
+        /// <summary>
+        /// His product is gone and he knows it. The moment the door opens.
+        ///
+        /// Nothing changes hands here -- you already have the money from selling it, which is
+        /// the point of fronting rather than lending. What you get is the reputation and the
+        /// offer, and the front is cleared so the ledger is empty before you sign anything.
+        /// </summary>
+        private DialogueNode Squared(LeaderDef def, GangDef gang)
+        {
+            _state.ClearFronted();
+            _state.Touch();
+
+            _crew.AddRep(SquaredRep, "for moving " + def.Name + "'s work");
+
+            var node = Node(def, gang,
+                "Aight. You took it, you moved it, you came back. That's three things most " +
+                "people don't do. So we can talk about you bein' one of us now.");
+
+            node.Say("Put me on.", () => AskToJoin(def, gang), "Sign on with " + gang.Name);
+            node.WithIcon(Icons.Tick);
+
+            node.Say("Not yet.", () => Root(def), "Think about it");
+
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>What squaring up is worth. Enough on its own to be asked in.</summary>
+        private const float SquaredRep = 25f;
 
         private DialogueNode LostWork(LeaderDef def, GangDef gang)
         {

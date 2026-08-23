@@ -138,6 +138,15 @@ namespace Hoodrich.Locations
 
         private readonly GangRegistry _gangs;
 
+        /// <summary>
+        /// Set by Main. Whether the player is in with a set yet.
+        ///
+        /// A predicate rather than a reference to the crew, because this file has never needed
+        /// to know what a gang IS and should not start now -- it needs one bit, and one bit is
+        /// what it is handed.
+        /// </summary>
+        public System.Func<bool> Working;
+
         private Ped _ped;
         private Blip _blip;
         private int _lastUpdate;
@@ -297,6 +306,21 @@ namespace Hoodrich.Locations
 
         private void EnsureBlip()
         {
+            // Not until you are one of them.
+            //
+            // He is a Families man selling out of a Families courtyard, and to somebody who has
+            // not met the set yet he is not a shop -- he is a stranger with a table. Lamar is
+            // already behind this same door; this puts the man with the guns behind it too, so
+            // the first session opens with one marker on the map and one thing to do.
+            if (Working != null && !Working())
+            {
+                try { if (_blip != null && _blip.Exists()) _blip.Delete(); }
+                catch { /* gone either way */ }
+
+                _blip = null;
+                return;
+            }
+
             if (_blip != null && _blip.Exists()) return;
 
             try

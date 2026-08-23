@@ -345,6 +345,15 @@ namespace Hoodrich.State
         public bool SeenWelcome;
 
         /// <summary>
+        /// Whether the man who runs the set has sent for you yet.
+        ///
+        /// The first thing that happens in this mod. Saved rather than worked out, because
+        /// "have you been told" is a fact about a conversation and there is nothing else in the
+        /// state that could stand in for it -- no affiliation, no work, no sales, nothing.
+        /// </summary>
+        public bool SentForYou;
+
+        /// <summary>
         /// Jobs Lamar has already texted about.
         ///
         /// Separate from the finished list, because "he told you it existed" and "you did it"
@@ -368,6 +377,7 @@ namespace Hoodrich.State
         {
             return Json.Object()
                 .Set("seenWelcome", SeenWelcome)
+                .Set("sentForYou", SentForYou)
                 .Set("respect", Math.Round(Respect, 2))
                 .Set("notoriety", Math.Round(Notoriety, 2))
                 .Set("totalDeals", TotalDealsMade)
@@ -408,6 +418,7 @@ namespace Hoodrich.State
                 // and then never again. That is the right way round: somebody who has been
                 // playing already loses nothing by being told, and somebody new needs it.
                 SeenWelcome = doc["seenWelcome"].AsBool(false);
+                SentForYou = doc["sentForYou"].AsBool(false);
                 Followers = Math.Max(0, doc["followers"].AsInt(0));
 
                 FrontedDrug = doc["frontedDrug"].AsString("");

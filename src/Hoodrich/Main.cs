@@ -413,7 +413,7 @@ namespace Hoodrich
                 // How long he wants to himself between jobs, read live so the settings screen
                 // can change it without a reload.
                 _jobs.RestMinutes = () => _cfg.LamarRestMinutes;
-                _bigj = new Armourer(_gangs);
+                _bigj = new Armourer(_gangs) { Working = () => _crew != null && _crew.IsAffiliated };
 
                 _social = SocialFeed.Load();
                 _socialScreen = new SocialScreen(_social);

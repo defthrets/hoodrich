@@ -907,6 +907,55 @@ namespace Hoodrich.Gangs
         /// Joining is not a handshake -- it is being handed work. The crew fronts you a bag on
         /// the spot, which is both the tutorial and the debt that starts the relationship.
         /// </summary>
+        /// <summary>
+        /// The first thing that happens: he hears there is somebody new and sends for them.
+        ///
+        /// Once ever, and saved, because "have you been told" is a fact about a conversation.
+        /// Held back until the mod is actually running rather than fired on load -- a text
+        /// arriving over the loading screen is a text nobody reads.
+        ///
+        /// It is also the only thing on the map at that point, which is deliberate: a first
+        /// session that opens with nine icons and no idea which one matters is a mod nobody
+        /// finishes the first evening of.
+        /// </summary>
+        public void SendForThem()
+        {
+            if (_state == null || _state.SentForYou) return;
+            if (_crew != null && _crew.IsAffiliated) return;
+
+            var def = Get("families");
+            if (def == null) return;
+
+            _state.SentForYou = true;
+            _state.Touch();
+
+            try
+            {
+                UI.Notify.Text(Portrait(def), def.Name, "Chamberlain Hills",
+                               "heard theres somebody new on the block movin little bits. " +
+                               "come see me before you go makin that my problem");
+            }
+            catch (System.Exception ex)
+            {
+                Log.Debug("Could not send for the player: " + ex.Message);
+            }
+
+            Log.Info(def.Name + " has sent for the player.");
+        }
+
+        /// <summary>The contact picture for a leader, or the plain one.</summary>
+        private static string Portrait(LeaderDef def)
+        {
+            switch ((def == null ? "" : def.Name).Trim().ToUpperInvariant())
+            {
+                case "GERALD": return "CHAR_MP_GERALD";
+                case "STRETCH": return "CHAR_MP_STRETCH";
+                case "LAMAR": return "CHAR_LAMAR";
+
+                default: return "CHAR_DEFAULT";
+            }
+        }
+
         public string Join(LeaderDef def, Drugs catalogue)
         {
             if (def == null) return "Nobody here.";
@@ -935,7 +984,15 @@ namespace Hoodrich.Gangs
             }
 
             Dialogue.Say(def.Name, def.Accept);
-            FrontProduct(gang, catalogue);
+
+            // Only if he has not already put you to work.
+            //
+            // The order changed: his package now comes BEFORE you are asked in rather than
+            // with the handshake, so a leader who has already fronted you one and been squared
+            // up with would otherwise hand over a second the moment you signed. The starter bag
+            // still exists for any set that takes somebody on without that conversation.
+            if (!_state.HasFrontedWork) FrontProduct(gang, catalogue);
+
             return null;
         }
 
