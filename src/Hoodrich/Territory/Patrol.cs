@@ -123,8 +123,14 @@ namespace Hoodrich.Territory
         /// <summary>Close enough to be searched.</summary>
         private const float SearchRange = 3.2f;
 
-        /// <summary>How long the search itself takes once he is stood over you.</summary>
-        private const int SearchMs = 2600;
+        /// <summary>
+        /// How long the search itself takes once he is stood over you.
+        ///
+        /// Up from 2.6 seconds, which was long enough for a timer and too short for a scene.
+        /// There is an animation to watch now and a decision to make while it runs -- you can
+        /// still walk off mid-search -- and neither of those fits in under three seconds.
+        /// </summary>
+        private const int SearchMs = 4500;
 
         /// <summary>He gives up coming after this long. You outran him, or he cannot get to you.</summary>
         private const int ChasePatienceMs = 30000;
@@ -360,6 +366,9 @@ namespace Hoodrich.Territory
 
             if (away <= SearchRange)
             {
+                // Asked for on approach rather than on arrival, so they have the walk to load.
+                StopSearch.Want();
+
                 car.Phase = PatrolPhase.Searching;
                 car.SearchDone = now + SearchMs;
 
@@ -369,6 +378,12 @@ namespace Hoodrich.Territory
                     Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, who.Handle, player.Handle, 2000);
                 }
                 catch { /* he can search you sideways */ }
+
+                // The same scene the corner stop plays, because it is the same event: your
+                // hands go up and he goes through your pockets. Walking off during it is still
+                // allowed -- the check above sends him back to the car if you do.
+                StopSearch.HandsUp(player, SearchMs);
+                StopSearch.Frisk(who);
 
                 Bark(who);
                 Notify.Important("~o~Hands where he can see them.~s~");

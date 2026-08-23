@@ -1718,6 +1718,10 @@ namespace Hoodrich.Dealing
             State = PostState.Investigated;
             _investigateAt = Game.GameTime;
 
+            // Asked for while he is still walking over. A dictionary requested and checked in
+            // the same frame has not loaded; the walk is the streaming budget.
+            Territory.StopSearch.Want();
+
             try
             {
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, cop.Handle, true);
@@ -1923,12 +1927,18 @@ namespace Hoodrich.Dealing
             State = PostState.Questioned;
             _questionStartedAt = Game.GameTime;
 
+            var takes = (int)(_cfg.PostUpSearchSeconds * 1000f);
+
             try
             {
-                Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _cop.Handle, player.Handle,
-                              (int)(_cfg.PostUpSearchSeconds * 1000f));
+                Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _cop.Handle, player.Handle, takes);
             }
             catch { }
+
+            // Hands up, and him going through them. Both are tasks rather than a lock: walking
+            // off is still available for the whole of it, and it still costs you the stop.
+            Territory.StopSearch.HandsUp(player, takes);
+            Territory.StopSearch.Frisk(_cop);
 
             Dialogue.Say("Officer", "You been standing here a while. Mind if I check your pockets?");
         }
@@ -1988,7 +1998,12 @@ namespace Hoodrich.Dealing
             _state.AddNotoriety(20f);
             _state.Touch();
 
-            ReleaseCop();
+            // He is finished, so he leaves -- back to his car if he came in one, on foot if
+            // not. The task has to survive the release, or the last thing you see is a
+            // policeman rooted to the pavement where he searched you.
+            Territory.StopSearch.SendOff(_cop);
+
+            ReleaseCop(true);
             Stop(null);
 
             Notify.Failure("searched. They took " + taken.ToString("0.#") + "g" +
@@ -2290,7 +2305,7 @@ namespace Hoodrich.Dealing
             _animRequested = false;
         }
 
-        private void ReleaseCop()
+        private void ReleaseCop(bool keepTask = false)
         {
             // However the stop ended -- searched, walked away from, or the man himself gone.
             // A hold that outlives the thing holding it is a city with no police in it.
@@ -2302,13 +2317,16 @@ namespace Hoodrich.Dealing
                 try
                 {
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _cop.Handle, false);
-                    _cop.Task.ClearAll();
+
+                    // Unless he has just been told to drive away, in which case clearing his
+                    // tasks is cancelling the only instruction that matters.
+                    if (!keepTask) _cop.Task.ClearAll();
                     // One we put there is one we take away. A cop conjured up to walk over and
                     // search you has no life outside this pitch, and leaving him to wander the
                     // neighbourhood afterwards slowly fills the block with officers who arrived
                     // for a corner that no longer exists. Anybody who was already on the street
                     // is simply let go.
-                    if (_copSpawned && !_cop.IsOnScreen) _cop.Delete();
+                    if (_copSpawned && !keepTask && !_cop.IsOnScreen) _cop.Delete();
                     else _cop.MarkAsNoLongerNeeded();
                 }
                 catch { }

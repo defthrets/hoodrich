@@ -143,27 +143,28 @@ namespace Hoodrich.Gangs
         private static readonly string[] SpareCars = { "buccaneer2", "voodoo", "manana", "primo2" };
 
         /// <summary>
-        /// What they ride, which is no longer only bicycles.
+        /// What they ride round the back streets: Street Blazers, Sanchezes, push bikes.
         ///
-        /// Two pushbikes, two quads, a trike and a dirt bike. They all take the same treatment
-        /// -- pavement to aim at and the short way to it -- because the thing that makes this
-        /// read is a rider cutting between the yards rather than what he is sat on, and a quad
-        /// up on the footpath is more of that, not less.
-        ///
-        /// Names read off the spawn menu's own hash. Note sanchez is the one WITH the livery
-        /// and sanchez2 is the plain one, which is the wrong way round from what you would
-        /// guess; the paint goes over it either way.
+        /// Cut back to those three families, which is what was asked for twice. The list had
+        /// grown a scooter, two cheap sports bikes, a chopper and a couple of customs -- and a
+        /// man on a Bagger is somebody riding through the neighbourhood rather than somebody
+        /// from it. These three are what is actually parked in these yards.
         /// </summary>
         private static readonly string[] Bikes =
         {
-            // pushbikes and quads
-            "inductor", "inductor2", "stryder", "blazer", "blazer4",
+            // The Street Blazer first, then the plain one behind it.
+            "blazer4", "blazer",
 
-            // and everything with an engine that somebody round here would actually own:
-            // dirt bikes, a scooter, a couple of cheap street bikes and two customs.
-            "sanchez", "sanchez2", "manchez", "esskey", "faggio2", "faggio3",
-            "ruffian", "pcj", "vader", "nemesis", "daemon", "bagger", "hexer"
+            // Dirt bikes, which is the same answer at a different price.
+            "sanchez", "sanchez2", "manchez",
+
+            // And what you pedal. The Inductor and the Stryder sit here rather than with the
+            // engines: both are bicycle-shaped, both were asked for by name, and on a footpath
+            // they read as push bikes with a motor rather than as motorbikes.
+            "inductor", "inductor2", "stryder",
+            "bmx", "cruiser", "scorcher", "fixter", "tribike"
         };
+
         private static readonly string[] SpareBikes = { "bmx", "scorcher" };
 
         /// <summary>Dark green, out of the game's own paint table.</summary>
