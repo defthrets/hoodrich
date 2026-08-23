@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 
 namespace Hoodrich.UI
@@ -73,6 +74,49 @@ namespace Hoodrich.UI
         public static readonly Color Standing = Color.FromArgb(255, 116, 202, 232);
 
         /// <summary>Same colour at a different alpha.</summary>
+        /// <summary>
+        /// Red through to green, by where a nought-to-one figure sits.
+        ///
+        /// A hue sweep rather than a set of bands, because the thing being shown is continuous
+        /// and bands would put a step in it -- a reputation one point either side of a boundary
+        /// is not a different KIND of reputation. Zero is red, a half is yellow, and one is
+        /// green, which passes through orange and through the yellow-green on the way without
+        /// any of those being written down anywhere.
+        ///
+        /// Saturation and value are held constant so the whole sweep reads at the same weight.
+        /// Left to itself, a hue ramp dims in the yellows and the middle of the bar looks like
+        /// a fault rather than like the middle.
+        /// </summary>
+        public static Color Spectrum(float t)
+        {
+            if (t < 0f) t = 0f;
+            if (t > 1f) t = 1f;
+
+            return FromHue(t * 120f, 0.74f, 0.88f);
+        }
+
+        /// <summary>Hue in degrees, saturation and value nought to one, out to a colour.</summary>
+        private static Color FromHue(float h, float s, float v)
+        {
+            var c = v * s;
+            var x = c * (1f - Math.Abs((h / 60f) % 2f - 1f));
+            var m = v - c;
+
+            float r = 0f, g = 0f, b = 0f;
+
+            if (h < 60f) { r = c; g = x; }
+            else if (h < 120f) { r = x; g = c; }
+            else if (h < 180f) { g = c; b = x; }
+            else if (h < 240f) { g = x; b = c; }
+            else if (h < 300f) { r = x; b = c; }
+            else { r = c; b = x; }
+
+            return Color.FromArgb(255,
+                                  (int)((r + m) * 255f),
+                                  (int)((g + m) * 255f),
+                                  (int)((b + m) * 255f));
+        }
+
         public static Color Alpha(Color c, int alpha) => Color.FromArgb(alpha, c.R, c.G, c.B);
 
         /// <summary>

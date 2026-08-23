@@ -2434,6 +2434,18 @@ namespace Hoodrich.Dealing
             // colour made a fourth thing that looked like the other three, and the sentence
             // under the bar is the one line on this HUD that is a verdict on you rather than a
             // number. It gets to look like nothing else.
+            // The BAR runs the whole sweep -- red, orange, yellow, yellow-green, green -- so
+            // its colour is the reading rather than a verdict on the reading. Two states could
+            // only ever say better-or-worse-than-average; a sweep says how much.
+            var repBar = Palette.Spectrum(rep);
+
+            // The sentence keeps its own colour and does not follow the bar.
+            //
+            // It is a different job. The bar is a quantity and the line under it is a verdict,
+            // and a verdict that changes colour by degrees is a verdict hedging. It also stays
+            // out of the greens on purpose: this HUD already has money, the set and the
+            // wordmark in green, and the one line that is somebody's opinion of you is the last
+            // thing that should look like all of them.
             var repColour = rep >= PlayerState.Neutral ? Palette.Standing : Palette.Danger;
 
             // Tall enough to hold its own name. The label is drawn inside the bar, so the bar
@@ -2446,7 +2458,7 @@ namespace Hoodrich.Dealing
             Hud.Rect(x, repY, w, repH, Color.FromArgb(170, 26, 28, 30));
 
             var repFilled = w * Math.Max(0f, Math.Min(1f, rep));
-            Hud.Rect(x - (w - repFilled) * 0.5f, repY, repFilled, repH, repColour);
+            Hud.Rect(x - (w - repFilled) * 0.5f, repY, repFilled, repH, repBar);
 
             // The same treatment as the heat bar above it. radar_community_series is 835.
             BarLabel(RepBlip, "REPUTATION", x, repY);
