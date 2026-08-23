@@ -56,8 +56,20 @@ namespace Hoodrich.State
         /// <summary>How fast one sale moves the block's opinion.</summary>
         private const float RepDriftPerSale = 0.06f;
 
-        /// <summary>And how fast a refusal does, which is faster. Bad news travels.</summary>
-        private const float RepDriftPerRefusal = 0.11f;
+        /// <summary>
+        /// And how fast a refusal does, which is a great deal faster. Bad news travels.
+        ///
+        /// Nearly double what it was. A refusal used to cost about two sales at the middle of
+        /// the scale, which is not what being caught selling somebody stepped-on product is --
+        /// he does not simply not buy, he tells people, and the people he tells were the ones
+        /// walking over to you next.
+        ///
+        /// The asymmetry at the top of the scale is deliberate rather than a side effect. A
+        /// drift saturates, so once the block trusts you a good sale barely moves the number
+        /// while a refusal still moves the whole distance: a reputation is slow to build and
+        /// quick to lose, and that is the correct shape for one.
+        /// </summary>
+        private const float RepDriftPerRefusal = 0.20f;
 
         /// <summary>
         /// Records a sale that landed, at the purity it went out at.
@@ -71,11 +83,21 @@ namespace Hoodrich.State
         /// Records somebody handing it back.
         ///
         /// Worse than a quiet sale at the same purity, because a refusal is a person who now
-        /// tells other people. Half the purity, drifted harder.
+        /// tells other people.
+        ///
+        /// SQUARED, and that is the part that makes a bad cut hurt properly. Half the purity
+        /// was a straight line: getting caught at a third was only half again as bad as getting
+        /// caught at three quarters, when in fact one of those is weak product and the other is
+        /// barely product. Squaring bends it -- three quarters drags you toward 0.28, a half
+        /// toward 0.13, a third toward 0.05 -- so the further you stepped on it, the further
+        /// the opinion falls, rather than everything below the line costing roughly the same.
         /// </summary>
         public void RefusedAt(float purity)
         {
-            Drift(purity * 0.5f, RepDriftPerRefusal);
+            if (purity < 0f) purity = 0f;
+            if (purity > 1f) purity = 1f;
+
+            Drift(purity * purity * 0.5f, RepDriftPerRefusal);
         }
 
         private void Drift(float towards, float rate)
