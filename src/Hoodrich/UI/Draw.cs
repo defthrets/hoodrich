@@ -226,6 +226,45 @@ namespace Hoodrich.UI
         /// built left to right and a centre-anchored mark would have to be positioned by
         /// working backwards from its own width at every call site.
         /// </summary>
+        /// <summary>
+        /// The border round a panel: a hairline box, and the mode colour at the corners.
+        ///
+        /// Thickness is one number taken two ways. Sideways it goes through ToX, which divides
+        /// by the aspect, so the frame is the same number of PIXELS thick all the way round on
+        /// any monitor -- a plain fraction used for both draws a hairline top and bottom and a
+        /// fat post down either side of an ultrawide.
+        ///
+        /// Corner ticks rather than a full accent frame. A coloured box round the outside of
+        /// everything is the loudest thing on the screen and leaves the bar across the top with
+        /// nothing left to say; the corners carry the same signal in a tenth of the ink.
+        ///
+        /// Drawn LAST, always. Everything a panel puts inside it paints over the border
+        /// otherwise, and a border with a card sitting on top of it is not a border.
+        /// </summary>
+        public static void Frame(float left, float top, float width, float height,
+                                 Color ink, Color edge, float rule, float tick)
+        {
+            var lip = ToX(rule);
+
+            var bottom = top + height;
+            var right = left + width;
+
+            RectFrom(left, bottom - rule, width, rule, ink);
+            RectFrom(left, top, lip, height, ink);
+            RectFrom(right - lip, top, lip, height, ink);
+
+            var reach = ToX(tick);
+
+            RectFrom(left, top, lip, tick, edge);
+            RectFrom(right - lip, top, lip, tick, edge);
+
+            RectFrom(left, bottom - tick, lip, tick, edge);
+            RectFrom(right - lip, bottom - tick, lip, tick, edge);
+
+            RectFrom(left, bottom - rule, reach, rule, edge);
+            RectFrom(right - reach, bottom - rule, reach, rule, edge);
+        }
+
         public static void Brand(float left, float middle, float height, Color c)
         {
             var wide = ToX(height) * WordmarkAspect;

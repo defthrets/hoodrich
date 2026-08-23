@@ -880,28 +880,8 @@ namespace Hoodrich.UI
         /// </summary>
         private static void Frame(float left, Color edge)
         {
-            var ink = Color.FromArgb(64, 205, 212, 205);
-            var lip = Hud.ToX(Rule);
-
-            var bottom = PanelTop + PanelHeight;
-            var right = left + PanelWidth;
-
-            Hud.RectFrom(left, bottom - Rule, PanelWidth, Rule, ink);
-            Hud.RectFrom(left, PanelTop, lip, PanelHeight, ink);
-            Hud.RectFrom(right - lip, PanelTop, lip, PanelHeight, ink);
-
-            // The ticks. Equal lengths on both axes, so a corner is a corner and not a long
-            // arm and a short one.
-            var reach = Hud.ToX(Tick);
-
-            Hud.RectFrom(left, PanelTop, lip, Tick, edge);
-            Hud.RectFrom(right - lip, PanelTop, lip, Tick, edge);
-
-            Hud.RectFrom(left, bottom - Tick, lip, Tick, edge);
-            Hud.RectFrom(right - lip, bottom - Tick, lip, Tick, edge);
-
-            Hud.RectFrom(left, bottom - Rule, reach, Rule, edge);
-            Hud.RectFrom(right - reach, bottom - Rule, reach, Rule, edge);
+            Hud.Frame(left, PanelTop, PanelWidth, PanelHeight,
+                      Color.FromArgb(64, 205, 212, 205), edge, Rule, Tick);
         }
 
         /// <summary>
@@ -1037,6 +1017,55 @@ namespace Hoodrich.UI
             }
 
             NoteStrip(x, right, FirstRow + Math.Max(1, draw) * RowPitch + NoteGap, t);
+
+            if (_tab == TabPost) Yours(left, x, FirstRow + Math.Max(1, draw) * RowPitch + YoursGap);
+        }
+
+        /// <summary>How far under the composer your own posts begin.</summary>
+        private const float YoursGap = 0.052f;
+
+        /// <summary>
+        /// Everything you have said, under the box you say it in.
+        ///
+        /// The page used to be a button and a word. You pressed post, it said "Posted.", and
+        /// the thing you had just written went into a feed on another tab -- so the one screen
+        /// in the mod where you are the author was the one screen that never showed you what
+        /// you wrote. Now it does, newest first, which means the post you just made is the top
+        /// line before the confirmation has faded.
+        ///
+        /// Drawn with the feed's own card, deliberately. A second, simpler layout for the same
+        /// object would be two things to keep in step, and your posts are not a different kind
+        /// of post -- they are the same post with your name on it.
+        /// </summary>
+        private void Yours(float left, float x, float top)
+        {
+            if (_feed == null) return;
+
+            Hud.Text("WHAT YOU'VE SAID", x, top, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+            Hud.RectFrom(x, top + 0.022f, PanelWidth - Pad * 2f, 0.0010f, Hairline);
+
+            var y = top + 0.034f;
+            var floor = PanelTop + PanelHeight - 0.034f;
+            var shown = 0;
+
+            foreach (var post in _feed.Timeline)
+            {
+                if (post == null || post.By == null) continue;
+                if (!string.Equals(post.By.Handle, _feed.Handle, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var height = PostHeight(post);
+                if (y + height > floor) break;
+
+                DrawPost(left, y, post);
+
+                y += height;
+                shown++;
+            }
+
+            if (shown > 0) return;
+
+            Hud.Text("Nothing yet. Say something.", x + 0.006f, y + 0.004f, 0.30f,
+                     Palette.Alpha(Palette.TextDim, 110), Hud.FontChaletLondon, centre: false);
         }
 
         private static void Row(float left, float x, float right, float top, bool here, bool dead,

@@ -122,7 +122,14 @@ namespace Hoodrich.Gangs
             {
                 { "Grimes",  new Vector3(-134.105f, -1472.521f, 36.192f) },
                 { "Stretch", new Vector3(-161.651f, -1637.566f, 37.246f) },
-                { "Lamar",   new Vector3(-99.960f,  -1632.762f, 32.106f) },
+                // The lot, with everybody else. Lamar moved four streets and this did not
+                // move with him, so a raid on him mustered our people on the corner he used to
+                // stand on -- close enough to the old spot to look deliberate and far enough
+                // from the new one that the fight was over before anybody walked it.
+                //
+                // This is the same coordinate the foot jobs muster on, which is a point already
+                // known to be on the ground in that yard rather than a fresh guess near it.
+                { "Lamar",   new Vector3(-196.639f, -1727.089f, 32.664f) },
             };
 
         private const int PerCar = 4;
