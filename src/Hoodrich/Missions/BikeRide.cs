@@ -184,7 +184,6 @@ namespace Hoodrich.Missions
         private int _nextChatter;
         private int _nextRetask;
         private bool _wentInside;
-        private bool _talkHeld;
         /// <summary>
         /// How far through the exchange at the courts we are, and when the next line is due.
         ///
@@ -585,7 +584,7 @@ namespace Hoodrich.Missions
                 // and ask him what for -- which is the same thing every other conversation in
                 // the mod asks of you, and it stops a screen appearing over the handlebars
                 // while you are still rolling.
-                if (_shouted && range <= ShopRange && Stopped(player)) OfferWhenAsked(player);
+                if (_shouted && range <= ShopRange) OfferAtTheSpot(player);
 
                 return;
             }
@@ -614,19 +613,64 @@ namespace Hoodrich.Missions
         /// and the screen opens. He is the one who has something to say, so he is the one you
         /// go to -- and it means a menu never lands on top of you unasked.
         /// </summary>
-        private void OfferWhenAsked(Ped player)
+        private void OfferAtTheSpot(Ped player)
         {
             if (Talk == null || Talk.IsOpen || _robOffered) return;
-            if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive) return;
 
-            if (Flat(player.Position, _lamar.Position) > TalkRange) return;
-
-            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to see what he wants.");
-
-            if (!Pressed()) return;
+            // Walk onto the mark and he says it. No prompt.
+            //
+            // It used to be "get near Lamar, press the button" -- the same shape as every other
+            // conversation in the mod, which is right for a man stood on a corner you might
+            // walk past and wrong for this. He has already shouted at you to pull in; making
+            // you then find him and ask is asking you to start a conversation he started.
+            //
+            // A place rather than a person, because the place is the point: round the back, out
+            // of the doorway, where two men talking about a shop are not stood in front of it.
+            if (player.Position.DistanceTo(RobSpot) > RobSpotRange) return;
 
             _robOffered = true;
             Talk.Open(TheOffer(), this);
+        }
+
+        /// <summary>
+        /// Round the back of the 24/7, where he says what he actually stopped for.
+        ///
+        /// Read off the HUD stood on it. Far enough round the corner that the conversation is
+        /// not happening in the shop doorway, close enough that walking there is one decision
+        /// rather than a second objective.
+        /// </summary>
+        private static readonly Vector3 RobSpot = new Vector3(12.583f, -1352.833f, 29.330f);
+
+        private const float RobSpotRange = 3.2f;
+
+        /// <summary>
+        /// The ring on the ground at that mark.
+        ///
+        /// Drawn rather than blipped: a blip says "somewhere over there" and this is a spot you
+        /// have to actually stand on, which is a thing the world has to show you rather than the
+        /// map. It stops the moment he has said his piece.
+        /// </summary>
+        public void Draw()
+        {
+            if (!IsRunning || Phase != BikePhase.Rob || _robOffered) return;
+            if (!_shouted) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+            if (player.Position.DistanceTo(RobSpot) > 60f) return;
+
+            try
+            {
+                World.DrawMarker(MarkerType.Cylinder,
+                                 RobSpot - new Vector3(0f, 0f, 0.95f),
+                                 Vector3.Zero, Vector3.Zero,
+                                 new Vector3(1.4f, 1.4f, 0.8f),
+                                 System.Drawing.Color.FromArgb(120, 232, 177, 44));
+            }
+            catch
+            {
+                // No marker this frame; the shout still told you to pull in.
+            }
         }
 
         /// <summary>
@@ -2156,28 +2200,6 @@ namespace Hoodrich.Missions
             }
 
             return best;
-        }
-
-        private bool Pressed()
-        {
-            var down = false;
-
-            try
-            {
-                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
-                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
-                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context)
-                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Right)
-                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E);
-            }
-            catch
-            {
-                // Unreadable control is simply not pressed.
-            }
-
-            var pressed = down && !_talkHeld;
-            _talkHeld = down;
-            return pressed;
         }
 
         private Vehicle SpawnBike(Vector3 where, float heading)

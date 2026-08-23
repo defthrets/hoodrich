@@ -2141,6 +2141,7 @@ namespace Hoodrich.Missions
             if (!IsRunning || _def == null) return;
 
             _tags.Draw();
+            _bike.Draw();
 
             // Centred at the top: it belongs to the job, not to the corner of the screen.
             var left = 0.5f - CardWidth * 0.5f;
