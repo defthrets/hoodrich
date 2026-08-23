@@ -77,11 +77,11 @@ namespace Hoodrich.Locations
         /// </summary>
         private static readonly string[] Models =
         {
-            "ig_stretch", "csb_stretch",
+            "ig_stretch", "cs_stretch",
 
             // And the heavies behind him, for an install without the story model. He is a
             // Families man in a Families courtyard either way.
-            "g_m_y_famca_01", "a_m_m_famdd_01", "g_m_y_famfor_01",
+            "g_m_y_famca_01", "mp_m_famdd_01", "g_m_y_famfor_01",
             "a_m_m_soucent_01", "a_m_m_soucent_02", "g_m_y_famdnf_01"
         };
 

@@ -57,7 +57,7 @@ namespace Hoodrich.Gangs
         /// <summary>Cars a set would actually turn up in.</summary>
         private static readonly string[] Cars =
         {
-            "baller", "buccaneer", "manana", "peyton", "primo", "tornado", "voodoo",
+            "baller", "buccaneer", "manana", "peyote", "primo", "tornado", "voodoo",
         };
 
         /// <summary>

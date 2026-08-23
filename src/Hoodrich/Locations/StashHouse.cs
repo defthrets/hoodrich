@@ -46,7 +46,7 @@ namespace Hoodrich.Locations
         /// <summary>Who actually lives here. Nobody else gets touched.</summary>
         private static readonly string[] HouseholdModels =
         {
-            "ig_denise", "csb_denise", "cs_denise",
+            "ig_denise", "cs_denise", "cs_denise",
         };
 
 

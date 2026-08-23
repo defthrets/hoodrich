@@ -99,7 +99,7 @@ namespace Hoodrich.Missions
         /// a drive-by you did in a stranger car -- the point of a set car is that it becomes
         /// the car, and you learn to leave it somewhere afterwards.
         /// </summary>
-        private static readonly string[] DriveByCars = { "vorschlafhammer", "vorschlaghammer", "buccaneer2", "faction" };
+        private static readonly string[] DriveByCars = { "vorschlaghammer", "vorschlaghammer", "buccaneer2", "faction" };
 
         private readonly PlayerState _state;
         private readonly Affiliation _crew;

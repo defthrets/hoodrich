@@ -220,8 +220,8 @@ namespace Hoodrich
         {
             "anim@amb@nightclub@mini@dance@dance_solo@female@var_a@", "high_center",
             "anim@amb@nightclub@mini@dance@dance_solo@female@var_b@", "high_center",
-            "anim@amb@nightclub@dancers@crowddance_facedj_11_amy@", "hi_dance_facedj_11_v2_amy",
-            "mini@strip_club@idle_dance@idle_a", "idle_a_song_a"
+            "anim@amb@nightclub@dancers@crowddance_facedj@hi_intensity", "hi_dance_facedj_09_v1_female^1",
+            "mini@strip_club@idles@stripper", "stripper_idle_01"
         };
 
         /// <summary>
@@ -235,8 +235,8 @@ namespace Hoodrich
         {
             "anim@amb@nightclub@mini@dance@dance_solo@male@var_a@", "high_center",
             "anim@amb@nightclub@mini@dance@dance_solo@male@var_b@", "high_center",
-            "anim@amb@nightclub@dancers@crowddance_groups@hi_intensity@", "hi_dance_crowd_15_v1_male^1",
-            "anim@amb@nightclub@dancers@crowddance_facedj_11_amy@", "hi_dance_facedj_11_v2_amy"
+            "anim@amb@nightclub@dancers@crowddance_groups@hi_intensity", "hi_dance_crowd_15_v1_male^1",
+            "anim@amb@nightclub@dancers@crowddance_facedj@hi_intensity", "hi_dance_facedj_09_v1_female^1"
         };
 
         private static readonly string[] Deejaying =
@@ -253,8 +253,8 @@ namespace Hoodrich
             // base-game clip so there is something here for an install with no DLC at all.
             "anim@amb@nightclub@mini@dance@dance_solo@female@var_a@", "high_center",
             "anim@amb@nightclub@mini@dance@dance_solo@female@var_b@", "high_center",
-            "anim@amb@nightclub@dancers@crowddance_facedj_11_amy@", "hi_dance_facedj_11_v2_amy",
-            "mini@strip_club@idle_dance@idle_a", "idle_a_song_a"
+            "anim@amb@nightclub@dancers@crowddance_facedj@hi_intensity", "hi_dance_facedj_09_v1_female^1",
+            "mini@strip_club@idles@stripper", "stripper_idle_01"
         };
 
         /// <summary>
@@ -293,7 +293,7 @@ namespace Hoodrich
             "mini@strip_club@private_dance@part1", "priv_dance_p1",
             "mini@strip_club@private_dance@part2", "priv_dance_p2",
             "mini@strip_club@private_dance@part3", "priv_dance_p3",
-            "mini@strip_club@idle_dance@idle_a", "idle_a_song_a",
+            "mini@strip_club@idles@stripper", "stripper_idle_01",
             "anim@amb@nightclub@mini@dance@dance_solo@female@var_a@", "high_center"
         };
 
@@ -309,10 +309,10 @@ namespace Hoodrich
         /// </summary>
         private static readonly string[] DancingAlt =
         {
-            "mini@strip_club@idle_dance@idle_a", "idle_a_song_a",
+            "mini@strip_club@idles@stripper", "stripper_idle_01",
             "mini@strip_club@private_dance@part1", "priv_dance_p1",
             "anim@amb@nightclub@mini@dance@dance_solo@female@var_b@", "high_center",
-            "anim@amb@nightclub@dancers@crowddance_facedj_11_amy@", "hi_dance_facedj_11_v2_amy"
+            "anim@amb@nightclub@dancers@crowddance_facedj@hi_intensity", "hi_dance_facedj_09_v1_female^1"
         };
 
         private static string[] Fam(int which)

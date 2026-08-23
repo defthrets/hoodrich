@@ -47,7 +47,7 @@ namespace Hoodrich.Missions
 
         private static readonly string[] Models =
         {
-            "ig_lamardavis", "csb_lamardavis", "ig_lamardavis_02", "g_m_y_famca_01"
+            "ig_lamardavis", "cs_lamardavis", "ig_lamardavis_02", "g_m_y_famca_01"
         };
 
         private readonly Affiliation _crew;
