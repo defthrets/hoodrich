@@ -56,7 +56,7 @@ namespace Hoodrich.UI
         /// is laid out from what this method RETURNS rather than from a second constant, so the
         /// tab strip and the whole feed move down with it on their own.
         /// </summary>
-        private const float CardHeight = 0.121f;
+        private const float CardHeight = 0.128f;
 
         /// <summary>
         /// The masthead word, and where it sits.
@@ -73,7 +73,7 @@ namespace Hoodrich.UI
         /// optically would have walked the caps into that hairline for a gain nobody can see.
         /// </summary>
         private const float TitleScale = 0.42f;
-        private const float TitleTop = PanelTop + 0.0325f;
+        private const float TitleTop = PanelTop + 0.0395f;
 
         /// <summary>Your own face. Larger than a stranger's, and the best-rendered thing here.</summary>
         private const float HeadSize = 0.046f;
@@ -291,6 +291,8 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            // The button that got you out of here does not also swing at somebody.
+            if (IsOpen) Core.InputGuard.Swallow();
             IsOpen = false;
             _holdFrom = 0;
             ReleaseMugshot();
@@ -1393,7 +1395,7 @@ namespace Hoodrich.UI
 
             // The mark over the middle of the panel, the same letterhead every other screen in
             // the mod carries.
-            Hud.BrandCentre(middle, PanelTop + 0.016f, 0.024f,
+            Hud.BrandCentre(middle, PanelTop + 0.023f, 0.024f,
                             Palette.Alpha(Palette.TextDim, 175));
 
             // And the word under it, centred on the same axis, in the face the rest of the mod
@@ -1410,7 +1412,7 @@ namespace Hoodrich.UI
 
             // A hairline under the two of them, so the masthead is visibly a masthead and the
             // account below it is visibly the account.
-            Hud.RectFrom(left + Pad, PanelTop + 0.0565f, PanelWidth - Pad * 2f, 0.0012f,
+            Hud.RectFrom(left + Pad, PanelTop + 0.0635f, PanelWidth - Pad * 2f, 0.0012f,
                          Color.FromArgb(46, 255, 255, 255));
 
             // The card's own floor, full width rather than inset.
@@ -1422,7 +1424,7 @@ namespace Hoodrich.UI
                          Palette.Alpha(edge, 100));
 
             var cx = left + Pad + Hud.ToX(HeadSize) * 0.5f;
-            var cy = PanelTop + 0.0865f;
+            var cy = PanelTop + 0.0935f;
 
             if (MugshotReady())
             {
@@ -1445,7 +1447,7 @@ namespace Hoodrich.UI
             // The name where the title used to be, and the handle UNDER it rather than trailing
             // off the end of it. A name and a handle on one line is one long string that reads
             // as neither; stacked, the name is who and the handle is where.
-            Hud.Text(_feed.DisplayName, headX, PanelTop + 0.0625f, 0.42f, Palette.Text,
+            Hud.Text(_feed.DisplayName, headX, PanelTop + 0.0695f, 0.42f, Palette.Text,
                      Hud.FontChaletLondon, centre: false);
 
             var nw = 0.06f;
@@ -1457,11 +1459,11 @@ namespace Hoodrich.UI
             // this mod is made of.
             var badge = headX + nw + 0.008f;
 
-            Hud.Disc(badge, PanelTop + 0.0715f, 0.0062f, Palette.Alpha(Palette.Cash, 225));
-            Hud.File("tick.png", badge, PanelTop + 0.0715f, 0.0092f, 0f,
+            Hud.Disc(badge, PanelTop + 0.0785f, 0.0062f, Palette.Alpha(Palette.Cash, 225));
+            Hud.File("tick.png", badge, PanelTop + 0.0785f, 0.0092f, 0f,
                      Color.FromArgb(255, 18, 20, 22));
 
-            Hud.Text(_feed.Handle, headX, PanelTop + 0.0885f, 0.28f,
+            Hud.Text(_feed.Handle, headX, PanelTop + 0.0955f, 0.28f,
                      Palette.TextDim, Hud.FontLabel, centre: false);
 
             // The wheel panel's "owed a visit" row, in a slot that already existed and was
@@ -1478,7 +1480,7 @@ namespace Hoodrich.UI
             try { cw = Hud.MeasureText(count, 0.42f, Hud.FontChaletLondon); }
             catch { /* the estimate will do */ }
 
-            Hud.File("people.png", right - cw - 0.011f, PanelTop + 0.0715f, 0.0145f, 0f,
+            Hud.File("people.png", right - cw - 0.011f, PanelTop + 0.0785f, 0.0145f, 0f,
                      Palette.Alpha(Gained(), 200));
 
             var payback = PaybackDue != null && PaybackDue();

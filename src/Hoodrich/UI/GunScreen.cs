@@ -100,6 +100,8 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            // The button that got you out of here does not also swing at somebody.
+            if (IsOpen) Core.InputGuard.Swallow();
             if (!IsOpen) return;
 
             IsOpen = false;
@@ -133,8 +135,15 @@ namespace Hoodrich.UI
             else if (Pressed(Control.PhoneDown)) Move(1);
             else if (Pressed(Control.PhoneLeft)) Lot(-1);
             else if (Pressed(Control.PhoneRight)) Lot(1);
-            else if (Pressed(Control.Jump)) Shelf(1);
-            else if (Pressed(Control.Cover)) Shelf(-1);
+            // The shoulders, in the direction they point.
+            //
+            // Cover is RB on a pad, and it was the one moving the strip LEFT -- so the right
+            // shoulder went backwards through the racks, which is the sort of thing you never
+            // stop noticing. The frontend pair is named for what it is and maps to the shoulder
+            // buttons on a pad without borrowing a control that means something else, and Space
+            // is kept as the keyboard version because the key line already says so.
+            else if (Pressed(Control.FrontendRb) || Pressed(Control.Jump)) Shelf(1);
+            else if (Pressed(Control.FrontendLb) || Pressed(Control.Cover)) Shelf(-1);
             else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) Buy();
         }
 
@@ -156,7 +165,8 @@ namespace Hoodrich.UI
                      {
                          Control.PhoneUp, Control.PhoneDown, Control.PhoneLeft, Control.PhoneRight,
                          Control.PhoneSelect, Control.PhoneCancel, Control.Context,
-                         Control.Jump, Control.Cover, Control.LookLeftRight, Control.LookUpDown
+                         Control.Jump, Control.Cover, Control.LookLeftRight, Control.LookUpDown,
+                         Control.FrontendLb, Control.FrontendRb
                      })
             {
                 Function.Call(Hash.ENABLE_CONTROL_ACTION, 0, (int)control, true);
@@ -429,12 +439,15 @@ namespace Hoodrich.UI
                     if (Owns(piece)) got++;
                 }
 
-                Hud.Text(got + "/" + Racks[i].Stock.Length, at[i], y + 0.023f, 0.20f,
+                Hud.Text(got + "/" + Racks[i].Stock.Length, at[i], y + 0.021f, 0.20f,
                          Palette.Alpha(here ? Palette.Cash : Palette.TextDim, 190),
                          Hud.FontLabel, centre: false);
             }
 
-            y += 0.032f;
+            // Down from 0.032, because the strip grew a second line under it. The counts sat
+            // at 0.021 to 0.028 and the rule was landing at 0.032 -- which is a hairline drawn
+            // through the descenders of a number, and reads as the number being broken.
+            y += 0.038f;
 
             Hud.RectFrom(x, y, panelWidth - pad * 2f, 0.0022f, Palette.Accent);
             return y + 0.012f;

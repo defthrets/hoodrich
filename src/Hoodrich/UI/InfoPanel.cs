@@ -401,6 +401,8 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            // The button that got you out of here does not also swing at somebody.
+            if (IsOpen) Core.InputGuard.Swallow();
             _items = null;
             _scroll = 0;
         }
@@ -565,14 +567,14 @@ namespace Hoodrich.UI
             // The mark sits above the screen's own title: the mod saying who is talking,
             // then the screen saying what about. Dim, because it is a letterhead rather than
             // a heading -- it should be the second thing read, not the first.
-            Hud.BrandCentre(0.5f, top + 0.017f, BrandHeight, Palette.Alpha(Palette.TextDim, 165));
+            Hud.BrandCentre(0.5f, top + 0.024f, BrandHeight, Palette.Alpha(Palette.TextDim, 165));
 
-            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.034f, 0.74f, Palette.Text,
+            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.041f, 0.74f, Palette.Text,
                      Hud.FontCursive, centre: false);
 
             if (!string.IsNullOrEmpty(_subtitle))
             {
-                Hud.TextRight(_subtitle, right, top + 0.048f, 0.34f, Palette.Cash,
+                Hud.TextRight(_subtitle, right, top + 0.055f, 0.34f, Palette.Cash,
                               Hud.FontChaletLondon);
             }
 

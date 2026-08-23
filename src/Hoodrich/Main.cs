@@ -1319,6 +1319,10 @@ namespace Hoodrich
                 // on the phone and a corner you are stood on both run on wall time, and a
                 // countdown that stops because you opened a menu is a countdown you can beat by
                 // opening a menu.
+                // Before anything else reads a control. A screen that closed a moment ago is
+                // still holding the button that closed it.
+                InputGuard.Tick();
+
                 _bust.Update();
                 _postUp.Update();
 

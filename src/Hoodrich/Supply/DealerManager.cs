@@ -629,7 +629,13 @@ namespace Hoodrich.Supply
         {
             if (def == null) return "No such contact.";
 
-            if (def.Kind == DealerKind.Docks && !state.DocksUnlocked)
+            // The PORT's lock, and only the port's.
+            //
+            // Both entries are Docks-kind because both drive a box to your door -- that is what
+            // the kind means here, a delivery rather than a corner. So this was telling you that
+            // you do not know anybody at the port while you were looking at the man from your own
+            // block, who has never been near it. He is a gang dealer; the port is not.
+            if (def.Kind == DealerKind.Docks && !def.IsGangDealer && !state.DocksUnlocked)
             {
                 return "You don't know nobody at the port";
             }

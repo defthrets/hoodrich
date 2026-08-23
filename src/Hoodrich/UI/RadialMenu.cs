@@ -148,6 +148,8 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            // The button that got you out of here does not also swing at somebody.
+            if (IsOpen) Core.InputGuard.Swallow();
             if (!IsOpen) return;
             IsOpen = false;
             _stack.Clear();

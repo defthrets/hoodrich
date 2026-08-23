@@ -51,7 +51,7 @@ namespace Hoodrich.UI
         private const int RepeatMs = 140;
 
         /// <summary>Everything above the first row, and the rule and keys below the last.</summary>
-        private const float HeadHeight = 0.150f;
+        private const float HeadHeight = 0.160f;
         private const float FootHeight = 0.040f;
 
         private const float Rule = 0.0016f;
@@ -126,6 +126,8 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            // The button that got you out of here does not also swing at somebody.
+            if (IsOpen) Core.InputGuard.Swallow();
             if (!IsOpen) return;
 
             IsOpen = false;
@@ -314,14 +316,14 @@ namespace Hoodrich.UI
             var wide = right - x;
             var middle = left + panelWidth * 0.5f;
 
-            Hud.BrandCentre(middle, top + 0.014f, 0.022f, Palette.Alpha(Palette.TextDim, 180));
+            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.TextDim, 180));
 
-            Hud.Text(Blurb, middle, top + 0.042f, 0.29f,
+            Hud.Text(Blurb, middle, top + 0.052f, 0.29f,
                      Palette.Alpha(Palette.TextDim, 170), Hud.FontChaletLondon);
 
-            Hud.RectFrom(x, top + 0.068f, wide, 0.0012f, Color.FromArgb(46, 255, 255, 255));
+            Hud.RectFrom(x, top + 0.078f, wide, 0.0012f, Color.FromArgb(46, 255, 255, 255));
 
-            var y = top + 0.078f;
+            var y = top + 0.088f;
 
             Hud.Text("INVENTORY", x, y, 0.30f, Palette.Text, Hud.FontLabel, centre: false);
 

@@ -95,6 +95,8 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            // The button that got you out of here does not also swing at somebody.
+            if (IsOpen) Core.InputGuard.Swallow();
             IsOpen = false;
             _pockets = null;
             _house = null;
@@ -299,7 +301,7 @@ namespace Hoodrich.UI
         // ---- the panel's proportions -------------------------------------------
 
         /// <summary>Everything above the first row: mark, line, heading, columns, bars.</summary>
-        private const float HeadHeight = 0.156f;
+        private const float HeadHeight = 0.166f;
 
         /// <summary>And the rule and the key line under the last one.</summary>
         private const float FootHeight = 0.040f;
@@ -363,15 +365,15 @@ namespace Hoodrich.UI
 
             // The letterhead, the same one every other screen in the mod carries, and one line
             // under it saying what you are looking at.
-            Hud.BrandCentre(middle, top + 0.014f, 0.022f, Palette.Alpha(Palette.TextDim, 180));
+            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.TextDim, 180));
 
-            Hud.Text(Blurb, middle, top + 0.042f, 0.29f,
+            Hud.Text(Blurb, middle, top + 0.052f, 0.29f,
                      Palette.Alpha(Palette.TextDim, 170), Hud.FontChaletLondon);
 
-            Hud.RectFrom(leftCol, top + 0.068f, lineWidth, 0.0012f,
+            Hud.RectFrom(leftCol, top + 0.078f, lineWidth, 0.0012f,
                          Color.FromArgb(46, 255, 255, 255));
 
-            var y = top + 0.078f;
+            var y = top + 0.088f;
 
             Hud.Text("STASH HOUSE", leftCol, y, 0.30f, Palette.Text, Hud.FontLabel, centre: false);
 

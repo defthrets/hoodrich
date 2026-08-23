@@ -108,12 +108,22 @@ namespace Hoodrich.Gangs
 
                 // Three states, one after the other, and only one of them is ever on screen:
                 // nothing yet, holding his, or holding nothing and owed a conversation.
-                if (!_crew.IsAffiliated && FrontsWork(def))
+                //
+                // It runs BEFORE you are one of his and again afterwards, and the two are the
+                // same conversation for a reason: the first package is how he decides whether
+                // to have you, and the second is how he decides whether to put you on to the
+                // people he buys from. He does not have a different way of testing somebody.
+                var afterJoining = _crew.IsAffiliated && mine && !_state.DocksUnlocked;
+
+                if (FrontsWork(def) && (!_crew.IsAffiliated || afterJoining))
                 {
                     if (settled)
                     {
                         node.Say("Put me on somethin'.", () => OfferWork(def, gang),
-                                 "Take a package off him and move it");
+                                 _crew.IsAffiliated
+                                     ? "Move a package for him and he'll put you on"
+                                     : "Take a package off him and move it");
+
                         node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
                     }
                     else if (!done)
@@ -416,9 +426,12 @@ namespace Hoodrich.Gangs
                      "Ask how they rate you");
             node.WithIcon(Icons.Tick);
 
-            node.Say("I need a re-up.", () => BuyList(def, gang),
-                     "Buy weight off him");
-            node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
+            // No weight over the counter, ever. Not to a stranger and not to one of his own.
+            //
+            // He does not stand on a corner in Chamberlain with a kilo in a bag waiting for
+            // somebody to ask -- he drives it to a door, which is the whole reason he has a
+            // phone number and the whole reason the delivery exists. In person he has exactly
+            // two things: a package to move, and an opinion about how you are doing.
 
             // The one progression gate in the supply chain, and it belongs to him now that the
             // corner dealers are gone.
@@ -576,9 +589,10 @@ namespace Hoodrich.Gangs
         private DialogueNode Squared(LeaderDef def, GangDef gang)
         {
             _state.ClearFronted();
-            _state.Touch();
 
             _crew.AddRep(SquaredRep, "for moving " + def.Name + "'s work");
+
+            _state.Touch();
 
             var node = Node(def, gang,
                 "Aight. You took it, you moved it, you came back. That's three things most " +

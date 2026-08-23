@@ -491,6 +491,8 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            // The button that got you out of here does not also swing at somebody.
+            if (IsOpen) Core.InputGuard.Swallow();
             // Both of them, because a goodbye one man says on his own is not a goodbye.
             Speak(Game.Player.Character, PartingLines);
             Speak(Speaker, PartingLines);
@@ -689,7 +691,7 @@ namespace Hoodrich.UI
                 if (bodyHeight < room) bodyHeight = room;
             }
 
-            var total = 0.068f + bodyHeight + 0.012f + choiceHeight + 0.030f;
+            var total = 0.075f + bodyHeight + 0.012f + choiceHeight + 0.030f;
             if (!string.IsNullOrEmpty(Title)) total += 0.036f;
             var top = Math.Max(0.06f, 0.5f - total * 0.5f);
 
@@ -724,9 +726,9 @@ namespace Hoodrich.UI
             }
 
             // Same idea as the info panels: the mod first, quietly, then who is speaking.
-            Hud.BrandCentre(0.5f, top + 0.017f, 0.022f, Palette.Alpha(Palette.TextDim, 150));
+            Hud.BrandCentre(0.5f, top + 0.024f, 0.022f, Palette.Alpha(Palette.TextDim, 150));
 
-            var y = top + 0.032f;
+            var y = top + 0.039f;
 
             if (!string.IsNullOrEmpty(Title))
             {
@@ -910,6 +912,13 @@ namespace Hoodrich.UI
 
             Hud.Text("D-PAD / ARROWS  CHOOSE      ENTER  SAY IT      BACKSPACE  WALK OFF",
                          PanelX + 0.014f, y + 0.004f, 0.28f, Palette.TextDim, Hud.FontLabel, centre: false);
+
+            // The border, last, so nothing paints over it. Cyan like the feed's, with the
+            // corner ticks in the SPEAKER'S colour rather than the mod's accent -- on this
+            // panel the one thing worth signalling from the frame is who is talking.
+            Hud.Frame(PanelX, top, PanelWidth, total,
+                      Color.FromArgb((int)(150f * arrive), 90, 215, 235),
+                      Palette.Alpha(_node.SpeakerColour, (int)(255f * arrive)), 0.0016f, 0.024f);
         }
 
         /// <summary>Somewhere between two inks, for text the highlight is sliding under.</summary>

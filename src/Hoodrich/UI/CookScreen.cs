@@ -137,6 +137,8 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            // The button that got you out of here does not also swing at somebody.
+            if (IsOpen) Core.InputGuard.Swallow();
             IsOpen = false;
             _stash = null;
             _house = null;
@@ -342,10 +344,45 @@ namespace Hoodrich.UI
             return row.Output ?? row.Source;
         }
 
+        /// <summary>
+        /// Moves along the rungs, skipping the ones stronger than what is on the counter.
+        ///
+        /// Greying them out is half the job. A cursor that still stops on a dead rung is a
+        /// cursor that appears to be broken -- you press right, the number changes, and nothing
+        /// about the batch does, because the maths clamps it straight back down.
+        /// </summary>
         private void Step(int step)
         {
-            _purity = Math.Max(0, Math.Min(Purities.Length - 1, _purity + step));
+            var top = Strongest();
+
+            var next = _purity;
+
+            for (var tries = 0; tries < Purities.Length; tries++)
+            {
+                next = Math.Max(0, Math.Min(Purities.Length - 1, next + step));
+
+                if (Purities[next] <= top + 0.001f) break;
+
+                // Walked into the dead end at the top of the list and there is nowhere further
+                // to go in that direction.
+                if (next == 0 || next == Purities.Length - 1) break;
+            }
+
+            if (Purities[next] > top + 0.001f) return;
+
+            _purity = next;
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>The purity of what is actually on the counter, or full if there is none.</summary>
+        private float Strongest()
+        {
+            if (_rows.Count == 0 || _stash == null) return 1f;
+
+            var row = _rows[Math.Max(0, Math.Min(_selected, _rows.Count - 1))];
+            if (row == null || row.Source == null) return 1f;
+
+            return _stash.BulkPurityOf(row.Source.Id);
         }
 
         private void Begin()
@@ -422,7 +459,7 @@ namespace Hoodrich.UI
 
             // 0.286 rather than 0.268: the wordmark added a band above the title and the
             // panel has to own that height, or the last row hangs off the bottom of it.
-            var height = 0.293f + _rows.Count * RowHeight;
+            var height = 0.300f + _rows.Count * RowHeight;
 
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
@@ -464,12 +501,12 @@ namespace Hoodrich.UI
             var right = left + panelWidth - pad;
             // The title line, moved down to leave room for the mark above it. Everything
             // below steps off this, so shifting it here shifts the whole screen together.
-            var y = top + 0.038f;
+            var y = top + 0.045f;
 
             // The mark, then the room -- the same order as every other screen. Anchored to
             // the panel TOP rather than to the title, because measuring it off the title put
             // it half a centimetre above the panel and outside its own ground.
-            Hud.BrandCentre(left + panelWidth * 0.5f, top + 0.018f, 0.024f,
+            Hud.BrandCentre(left + panelWidth * 0.5f, top + 0.025f, 0.024f,
                             Palette.Alpha(Palette.TextDim, 165));
 
             // The house script, the same face every other screen in the mod is titled in --
@@ -608,6 +645,15 @@ namespace Hoodrich.UI
                 var label = (Purities[i] * 100f).ToString("0") + "%";
                 var on = i == _purity;
 
+                // Above what is already on the counter, so it is not a choice.
+                //
+                // No amount of filler makes a gram stronger, and half-strength weight simply has
+                // fewer rungs left than untouched weight does. The maths has always refused this
+                // -- the target is clamped to the source -- but the rung still looked pickable,
+                // so choosing it appeared to do nothing. It is shown and greyed instead: what he
+                // has and what he cannot get to, in one row.
+                var tooStrong = Purities[i] > from + 0.001f;
+
                 // The mark this step would leave on the bag, beside the number that makes it.
                 // The same discs the stash shows afterwards, so what you pick here and what you
                 // read on the shelf later are visibly one thing rather than two ways of saying
@@ -618,18 +664,20 @@ namespace Hoodrich.UI
                 var width = markW + 0.004f +
                             Hud.MeasureText(label, 0.30f, Hud.FontBody) + 0.011f;
 
-                if (on)
+                if (on && !tooStrong)
                 {
                     Hud.RectFrom(cx - 0.004f, y - 0.002f, width, 0.026f,
                                  Color.FromArgb(210, 240, 242, 240));
                 }
 
-                var ink = on ? Palette.TextOnHover : Palette.TextDim;
+                var ink = tooStrong
+                    ? Palette.Alpha(Palette.TextDisabled, 120)
+                    : on ? Palette.TextOnHover : Palette.TextDim;
 
                 // Under the floor it is drawn in the danger colour whether the cursor is on it
                 // or not: "nobody will buy this" is a fact about the step, not about what you
                 // happen to be looking at.
-                if (Purities[i] < Stash.Unsellable)
+                if (!tooStrong && Purities[i] < Stash.Unsellable)
                 {
                     ink = on ? Palette.Danger : Palette.Alpha(Palette.Danger, 175);
                 }
