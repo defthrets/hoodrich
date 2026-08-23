@@ -964,7 +964,14 @@ namespace Hoodrich.Missions
         /// </summary>
         private void KeepThemSeated()
         {
-            if (!HoldingSeats) return;
+            // Every phase, not only the ones where getting out would be wrong.
+            //
+            // This used to sit behind HoldingSeats, which excludes the drive OUT -- so the one
+            // stretch of a job you spend doing nothing but driving was the one stretch with no
+            // lock on the doors. Locking is not the same question as warping somebody back into
+            // his seat: the warp still stays out of Travel, because that phase is three men
+            // walking to a car and getting into it properly.
+            if (!IsRunning) return;
             if (Game.GameTime < _nextSeatCheck) return;
             _nextSeatCheck = Game.GameTime + SeatCheckMs;
 
@@ -979,7 +986,16 @@ namespace Hoodrich.Missions
                 return;
             }
 
-            if (_ridingSince == 0) _ridingSince = Game.GameTime;
+            // The clock starts when the CAR does, not when you sit in it.
+            //
+            // "Five seconds after we start driving" is the ask, and it is also the safer of the
+            // two readings: sitting on the kerb waiting for a straggler does not run the clock
+            // down, and the moment you pull away anybody not in the car has been left behind
+            // rather than locked out.
+            if (ride.Speed > MovingSpeed)
+            {
+                if (_ridingSince == 0) _ridingSince = Game.GameTime;
+            }
 
             var waiting = 0;
 
@@ -1003,14 +1019,28 @@ namespace Hoodrich.Missions
             // The count is the real condition; the timer is the safety net for the man who
             // died on the way to the door or got stuck on a bin, because "wait for everybody"
             // with nobody left to wait for is a car that never locks at all.
-            if (waiting == 0 || Game.GameTime - _ridingSince > LockAfterMs) LockThemIn(ride);
+            if (waiting == 0 ||
+                (_ridingSince != 0 && Game.GameTime - _ridingSince > LockAfterMs))
+            {
+                LockThemIn(ride);
+            }
         }
 
-        /// <summary>When you got into the current ride, or 0 if you are not in one.</summary>
+        /// <summary>When the current ride started MOVING, or 0 if it has not yet.</summary>
         private int _ridingSince;
 
-        /// <summary>How long they get to catch up before the doors go anyway.</summary>
-        private const int LockAfterMs = 15000;
+        /// <summary>Above walking pace, which is what "we start driving" means.</summary>
+        private const float MovingSpeed = 2.5f;
+
+        /// <summary>
+        /// How long after pulling away the doors go, whoever is still outside.
+        ///
+        /// Five, down from fifteen. The long version was written when the clock started the
+        /// moment you sat down, and it had to be generous because it was counting a man's walk
+        /// across a yard. Counting from the car moving instead makes the same safety net much
+        /// shorter without ever being the thing that leaves somebody behind.
+        /// </summary>
+        private const int LockAfterMs = 5000;
 
         /// <summary>
         /// Locks the doors, which is the difference between preventing this and tidying it up.
