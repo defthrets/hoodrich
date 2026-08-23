@@ -56,21 +56,23 @@ namespace Hoodrich.Missions
         private const float VanHeading = 181.403f;
 
         /// <summary>
-        /// Vans to try, in order, until one of them comes out WITHOUT a wrap on it.
+        /// A pickup, which ends the argument about branding rather than continuing it.
         ///
-        /// The plain rumpo is first and it does not work: the log says it carries exactly two
-        /// liveries, SET_VEHICLE_LIVERY(-1) will not take on it, and index 0 is Weazel News --
-        /// so every option that model has is somebody's branding. That is not a bug to fix
-        /// with a better call, it is a property of the model.
+        /// Three vans were tried and all three came with somebody's advertising. The rumpo
+        /// carries exactly two liveries and index 0 is Weazel News, with no way to say "none".
+        /// rumpo2 has no livery table at all -- and turned out to have DELUDAMOL painted into
+        /// the model itself, which no livery call can touch. That is not a bug to keep fixing;
+        /// vans in this game are advertising with wheels.
         ///
-        /// rumpo2 is the SAME VAN with a default modkit and no livery table, which is the
-        /// shape that was asked for without the newsroom painted on it. It leads now, and the
-        /// branded one is kept behind it so an install missing rumpo2 still gets a van.
+        /// A Yosemite has no livery table, no extras and nothing written on it. And a pickup
+        /// bed is better for this anyway: the load sits in the open where you can see it,
+        /// instead of being a box you have to take on trust behind a closed door.
         ///
-        /// Hashes checked against the spawner rather than typed off a menu: rumpo 0x4543B74D,
-        /// rumpo2 0x961AFEF7, speedo 0xCFB3870C.
+        /// Hash checked against the spawner rather than typed off a menu -- yosemite1500 is
+        /// 0x8EF5E388, which is the truck that was picked. The plain yosemite behind it is the
+        /// same shape for an install without the newer one.
         /// </summary>
-        private static readonly string[] VanModels = { "rumpo2", "speedo", "youga", "rumpo" };
+        private static readonly string[] VanModels = { "yosemite1500", "yosemite", "yosemite2", "rumpo2" };
 
         /// <summary>Metallic dark green -- the index, not an RGB, so it takes the flake.</summary>
         private const int VanGreen = 49;
@@ -113,8 +115,8 @@ namespace Hoodrich.Missions
         // ---- bay one, round the back ------------------------------------------
 
         /// <summary>Where the van has to end up, and which way round.</summary>
-        private static readonly Vector3 BaySpot = new Vector3(1243.292f, -3155.241f, 5.562f);
-        private const float BayHeading = 271.000f;
+        private static readonly Vector3 BaySpot = new Vector3(1245.656f, -3165.266f, 5.645f);
+        private const float BayHeading = 270.509f;
 
         /// <summary>How close, how square, and how stopped it has to be.</summary>
         private const float BayRange = 4.2f;
@@ -126,8 +128,8 @@ namespace Hoodrich.Missions
         private const float LoaderFromHeading = 355.469f;
 
         /// <summary>And where they end up, which is the back of the van.</summary>
-        private static readonly Vector3 LoaderTo = new Vector3(1239.853f, -3155.884f, 5.528f);
-        private const float LoaderToHeading = 344.224f;
+        private static readonly Vector3 LoaderTo = new Vector3(1242.067f, -3165.410f, 5.528f);
+        private const float LoaderToHeading = 276.086f;
 
         private const int LoaderCount = 2;
 
@@ -155,23 +157,29 @@ namespace Hoodrich.Missions
             "g_m_y_korean_01", "g_m_y_korean_02", "g_m_y_korlieut_01", "s_m_y_dockwork_01"
         };
 
-        /// <summary>What ends up in the back. Already proven elsewhere in the mod.</summary>
+        /// <summary>
+        /// What ends up in the back. ONE box, not a stack.
+        ///
+        /// prop_boxpile_07d is a pile about a metre and a half tall whose origin sits at its
+        /// base, so dropped into a van it came out through the roof and read as two crates
+        /// riding on top of the vehicle. A single box, in the middle of the bed, is both what
+        /// was asked for and what a quarter kilo actually looks like.
+        /// </summary>
         private static readonly string[] CrateModels =
         {
-            "prop_boxpile_07d", "prop_paper_box_01", "prop_boxpile_06a"
+            "prop_paper_box_01", "prop_boxpile_06a", "prop_boxpile_07d"
         };
 
         /// <summary>
-        /// Where the pile sits in the van, in the van's own space.
+        /// Where the box sits in the bed, in the truck's own space.
         ///
-        /// The Rumpo measures -2.87 to +2.60 along Y and -1.04 to +1.08 up, out of the game's
-        /// vehicle dump, so this is the middle of the load space just behind the seats and a
-        /// touch above the floor. High rather than low on purpose: a box hovering two
-        /// centimetres is invisible through a van's back window, and one sunk two centimetres
-        /// is a box through the floor.
+        /// A Yosemite measures -2.60 to +2.34 along Y and -0.37 to +1.13 up, so the bed floor
+        /// sits a little above the origin and the middle of it is about a metre and a half
+        /// back. High rather than low on purpose: a box hovering two centimetres reads as a
+        /// box, and one sunk two centimetres reads as a bug.
         /// </summary>
-        private const float CrateY = -1.35f;
-        private const float CrateZ = -0.12f;
+        private const float CrateY = -1.50f;
+        private const float CrateZ = 0.30f;
 
         // ---- and the ride home is not quiet ------------------------------------
 
@@ -334,7 +342,7 @@ namespace Hoodrich.Missions
 
             MakeVan();
 
-            Notify.Important("~g~Take his van.~s~ Elysian Island, ask for the dock worker.");
+            Notify.Important("~g~Take his truck.~s~ Elysian Island, ask for the dock worker.");
             Log.Info("Port run started after " + _state.GramsSold.ToString("0.#") + "g sold.");
 
             return true;
@@ -425,8 +433,8 @@ namespace Hoodrich.Missions
             if (!VanIsNear(man))
             {
                 Help.ShowThisFrame(Stage == StageDeliver
-                    ? "Bring Gerald's van -- it's still in it."
-                    : "Bring Gerald's van. It ain't going in your pockets.");
+                    ? "Bring Gerald's truck -- it's still in the back."
+                    : "Bring Gerald's truck. It ain't going in your pockets.");
 
                 return;
             }
@@ -453,45 +461,48 @@ namespace Hoodrich.Missions
         /// <summary>
         /// The port, in two beats: who he is, then how fast he wants to be somewhere else.
         ///
-        /// He says almost nothing about the actual business, which is the point. A man who
-        /// really does control what comes off the boats does not explain the system to a
-        /// stranger in a car park -- he tells you the one fact you need, which is that it goes
-        /// through him, and then makes it clear the conversation is a chore.
+        /// He is a Cheng. That means family money, a position he did not earn, and a register
+        /// he is borrowing from people who did -- so the slang is a size too big on him and he
+        /// keeps checking whether it landed. The joke is entirely on Tao: a rich kid playing
+        /// at a thing the man he is talking to actually does, in a car park, at five o'clock,
+        /// while the only genuine urgency he has all day is a bottle at home.
         ///
-        /// And he is a Cheng, which in this city means money, a title he did not earn and a
-        /// drinking problem everybody is too polite to name. He is not being rude because you
-        /// are new. He is being rude because it is nearly evening.
+        /// He still says almost nothing about the business, and that part is real. The one
+        /// fact you need is that it goes through him. Everything else is performance.
         /// </summary>
         private DialogueNode Meeting()
         {
             var node = new DialogueNode("Tao Cheng",
-                "So you're Gerald's guy. Okay. Here's the whole thing, and then we're done: " +
-                "nothing comes off a boat in this yard unless I say it comes off. That's it. " +
-                "That's the arrangement. Don't ask me whose, don't ask me how often -- you'll " +
-                "enjoy this a lot more not knowing, and I'll like you a lot more not asking.")
+                "Ayy. You Gerald guy. Okay okay, I see you, I see you. So peep game, my dude: " +
+                "NOTHING come off a boat in this yard unless I say it come off. Nothing. My " +
+                "family own this -- like, the actual paperwork, bro, not some little " +
+                "handshake thing. So don't be askin' me whose it is, don't ask me how often, " +
+                "'cause that's not a question you ask a man in my position. You feel me? " +
+                "Say you feel me.")
             {
                 SpeakerColour = Palette.Cash
             };
 
-            node.Say("So where do I come in?", Hurry, "Let him finish");
+            node.Say("I feel you.", Hurry, "Let him have it");
             node.WithIcon(Icons.FromFile("reply.png"));
 
-            node.Say("Ain't my business anyway.", Hurry, "Don't push it");
+            node.Say("...Sure.", Hurry, "Don't encourage him");
             node.WithIcon(Icons.Tick);
 
             return node;
         }
 
-        /// <summary>And the half where he is already thinking about the bottle.</summary>
+        /// <summary>And the half where the act stops holding and he just wants the bottle.</summary>
         private DialogueNode Hurry()
         {
             var node = new DialogueNode("Tao Cheng",
-                "You get a number. You call the number, a thing arrives, you pay for the thing. " +
-                "Congratulations, you're in shipping. Now -- round the back of the sheds, bay " +
-                "one, and back it in. Nose out. My guys aren't carrying anything further than " +
-                "they have to and they are not going to ask you to move. It's gone five and " +
-                "there's a bottle at my house older than you are with my name on the label, so " +
-                "park it properly and don't make this my evening.")
+                "BET. Okay so -- you get a number, you call the number, thing show up, you pay " +
+                "for the thing. Congratulations, you in the import business, my guy. Now go " +
+                "round the back of the sheds, bay one, back it in, nose out. My guys ain't " +
+                "carryin' nothin' further than they gotta and they ain't gonna ASK you to " +
+                "move, they just gonna stand there and hate you. And listen -- it's gone five. " +
+                "I got a bottle at the crib older than you with my actual name on the label. " +
+                "So park it correct and don't make this my whole evening. Please.")
             {
                 SpeakerColour = Palette.Cash
             };
@@ -550,7 +561,7 @@ namespace Hoodrich.Missions
                 SpeakerColour = Palette.Cash
             };
 
-            node.Say("I got you.", Drop, "Hand over the van");
+            node.Say("I got you.", Drop, "Hand over the truck");
             node.WithIcon(Icons.FromFile("box.png"));
 
             return node;
@@ -787,7 +798,7 @@ namespace Hoodrich.Missions
                      Hud.FontLabel, centre: false);
 
             Hud.Text(Stage == StageDeliver
-                        ? "Get his van back to the yard in Chamberlain"
+                        ? "Get his truck back to the yard in Chamberlain"
                      : Stage == StageBay
                         ? "Back into bay one behind the sheds, then sound the horn"
                         : "Meet the dock worker at Elysian Island",
@@ -1203,7 +1214,7 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_BLIP_SPRITE, _vanBlip.Handle, 225);
                 _vanBlip.Color = BlipColor.Green;
                 _vanBlip.Scale = 0.8f;
-                _vanBlip.Name = "Gerald's van";
+                _vanBlip.Name = "Gerald's truck";
             }
             catch (Exception ex)
             {
@@ -1353,7 +1364,7 @@ namespace Hoodrich.Missions
 
             MarkHunters();
 
-            Notify.Important("~r~Yellow on your tail.~s~ Get that van home.");
+            Notify.Important("~r~Yellow on your tail.~s~ Get that truck home.");
 
             if (Social != null) Social.On(SocialEvent.RideThrough, "Los Santos Vagos");
         }
@@ -1610,10 +1621,10 @@ namespace Hoodrich.Missions
         /// </summary>
         private string WhyNot()
         {
-            if (_van == null || !_van.Exists()) return "where's the van?";
+            if (_van == null || !_van.Exists()) return "where's the truck?";
 
             if (_van.Position.DistanceTo(BaySpot) > BayRange) return "you ain't in the bay.";
-            if (_van.Speed > BayStopped) return "stop the van first.";
+            if (_van.Speed > BayStopped) return "stop the truck first.";
 
             return "turn it round -- back in, nose out.";
         }
