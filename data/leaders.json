@@ -38,43 +38,43 @@
       "gang": "ballas",
       "name": "OG Reese",
       "zone": "DAVIS",
-      "x": 110.0,
-      "y": -1944.0,
-      "heading": 180,
+      "x": 85.361,
+      "y": -1958.88,
+      "heading": 336.333,
       "models": [
         "g_m_y_ballaorig_01",
         "g_m_y_ballaeast_01",
         "a_m_m_soucent_02"
       ],
-      "z": 0.0
+      "z": 21.122
     },
     {
       "gang": "vagos",
       "name": "El Tio",
       "zone": "RANCHO",
-      "x": 352.0,
-      "y": -1800.0,
-      "heading": 100,
+      "x": 373.088,
+      "y": -1788.42,
+      "heading": 121.407,
       "models": [
         "g_m_y_mexgoon_02",
         "g_m_y_mexgoon_01",
         "a_m_y_mexthug_01"
       ],
-      "z": 0.0
+      "z": 29.095
     },
     {
       "gang": "marabunta",
       "name": "Chavo",
       "zone": "CYPRE",
-      "x": 0.0,
-      "y": 0.0,
-      "heading": 270,
+      "x": 1288.383,
+      "y": -1713.385,
+      "heading": 227.852,
       "models": [
         "g_m_y_salvagoon_01",
         "g_m_y_salvaboss_01",
         "a_m_y_mexthug_01"
       ],
-      "z": 0.0
+      "z": 55.059
     },
     {
       "gang": "lost",

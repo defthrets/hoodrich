@@ -412,7 +412,20 @@ namespace Hoodrich.UI
 
         private static readonly string[] YourLines =
         {
-            "GENERIC_YES", "GENERIC_HOWS_IT_GOING", "CHAT_STATE", "GENERIC_HI"
+            "GENERIC_YES", "GENERIC_HOWS_IT_GOING", "CHAT_STATE", "GENERIC_HI",
+            "GENERIC_THANKS", "GENERIC_SHOCKED_MED"
+        };
+
+        /// <summary>
+        /// What he says walking up, which is a different noise from agreeing with somebody.
+        ///
+        /// Kept separate from YourLines because a greeting is the one line in a conversation
+        /// whose timing is fixed and obvious -- getting "yeah" as the first thing out of his
+        /// mouth before anybody has said anything reads as the audio being on the wrong beat.
+        /// </summary>
+        private static readonly string[] GreetLines =
+        {
+            "GENERIC_HI", "GENERIC_HOWS_IT_GOING", "GENERIC_WHATS_UP"
         };
 
         /// <summary>Saved for the end, which is the one place it means something.</summary>
@@ -480,12 +493,19 @@ namespace Hoodrich.UI
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
-            // Only on the FIRST page. After that the answer comes from Commit, so that one pick
-            // produces one line rather than yours and theirs on top of each other.
+            // Only on the FIRST page. After that the answer comes from Commit, so that one
+            // pick produces one line rather than yours and theirs on top of each other.
+            //
+            // BOTH of them now. Walking up to somebody used to be silent on your side until
+            // you had picked an answer, which made the opening of every conversation in the
+            // mod a man talking at a mute -- so Franklin says something first, the way anybody
+            // walking up to a friend does, and the other man answers a beat later.
             if (_openedFresh)
             {
                 _openedFresh = false;
-                Speak(Speaker, Theirs);
+
+                Speak(Game.Player.Character, GreetLines);
+                _replyAt = Game.GameTime + ReplyDelayMs;
             }
         }
 

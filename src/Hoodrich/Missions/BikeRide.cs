@@ -741,6 +741,15 @@ namespace Hoodrich.Missions
             if (player.Position.DistanceTo(RobSpot) > RobSpotRange) return;
 
             _robOffered = true;
+
+            // Who is talking, which this never said.
+            //
+            // The panel speaks through Talk.Speaker, and the mission opened the conversation
+            // without setting it -- so every exchange on this job was silent on his side while
+            // the corner version of the same man, three streets away, talked. Same class, same
+            // panel, one missing assignment.
+            Talk.Speaker = _lamar;
+
             Talk.Open(TheOffer(), this);
         }
 

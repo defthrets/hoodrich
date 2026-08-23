@@ -49,40 +49,51 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Clip[] Counter =
         {
-            // The game's own drug-business animations, first, because this IS that job.
+            // EVERY PAIR IN HERE USED TO NAME A CLIP THAT DOES NOT EXIST.
             //
-            // The Biker businesses ship people cutting and packing product at a table, and
-            // they were sitting in the game unused while this played a mechanic at a bench.
-            // The mechanic reads as work; these read as THIS work, which is a man standing
-            // over a table with his hands in something.
+            // Twenty-five of them, checked against the game's own dump of every dictionary and
+            // every clip in the build. The dictionaries were mostly real; the clip names were
+            // not, so TASK_PLAY_ANIM was accepted and nothing moved -- for every drug, every
+            // time, silently, which is exactly the failure mode the comment above warns about
+            // and exactly the one nobody notices.
             //
-            // Several names per dictionary because a clip name that is not in a dictionary
-            // fails silently -- TryPlay checks and steps on, so a wrong guess costs a frame.
-            // This exact pairing is already in use further down this file for coke and
-            // heroin, which is the only evidence available offline that a clip name is real --
-            // so the one with a track record leads, and the guesses queue up behind it.
-            new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
-            new Clip("anim@amb@business@coc@coc_packing_lo@", "full_cycle_v1_packer"),
-            new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v2_packer"),
-            new Clip("anim@amb@business@weed@weed_sorting_standing@", "sorter_idle_a"),
-            new Clip("anim@amb@business@weed@weed_sorting_standing@", "sorter_a_idle"),
-            new Clip("anim@amb@business@meth@meth_bagging@", "bagging_idle_a"),
+            // The naming rule, once you can see the data: a clip in these ambient business
+            // dictionaries is <action>_<track>, and the TRACK is usually a prop. The human is
+            // one specific track name per dictionary, and it is never "packer":
+            //
+            //   coc_packing / coc_packing_hi     pressoperator
+            //   coc_unpack_cut                   cokecutter, cokepacker
+            //   meth_smash_weight_check          char01, char02
+            //   meth_monitoring_cooking@cooking  cooker
+            //   weed_sorting_seated              sorter01, sorter02
+            //   weed_inspecting_*                inspector
+            //
+            // Every pair below was verified against that dump before it was written here.
+            // Cutting product at a table. The most on-the-nose clip in the game for this.
+            new Clip("anim@amb@business@coc@coc_unpack_cut@", "fullcut_cycle_v1_cokecutter"),
+            new Clip("anim@amb@business@coc@coc_unpack_cut@", "fullcut_cycle_v2_cokecutter"),
 
-            // Then the bench work, which was what this used to open with.
-            new Clip("anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechanic"),
+            // Pressing and packing it once it is cut.
+            new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_pressoperator"),
+            new Clip("anim@amb@business@coc@coc_packing@", "base_pressoperator"),
+
+            // Breaking it up and weighing it out.
+            new Clip("anim@amb@business@meth@meth_smash_weight_check@", "break_weigh_char01"),
+
+            // Seated, hands in it. Lower down because the counter is a worktop you stand at.
+            new Clip("anim@amb@business@weed@weed_sorting_seated@", "base_sorter_left_sorter01"),
+
+            // Bench work, which is what this opened with before the business clips existed.
+            new Clip("anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer"),
             new Clip("amb@world_human_hammering@male@base", "base"),
-            new Clip("anim@amb@business@weed@weed_sorting_seated@", "sorter_idle_a"),
 
-            new Clip("timetable@maid@ig_2@", "base"),
-            new Clip("timetable@maid@ig_2@", "idle_a"),
-            new Clip("timetable@maid@ig_2@", "idle_b"),
-            new Clip("timetable@maid@ig_2@", "idle_c"),
+            // Somebody working at a kitchen surface. Every clip in this dict is prefixed ig_2_.
             new Clip("timetable@maid@ig_2@", "ig_2_base"),
-            new Clip("timetable@maid@ig_2@", "maid_base"),
+            new Clip("timetable@maid@ig_2@", "ig_2_idle_a"),
+            new Clip("timetable@maid@ig_2@", "ig_2_idle_b"),
+            new Clip("timetable@maid@ig_2@", "ig_2_idle_c"),
 
-            // Floyd cleaning his kitchen, which is the same shape of action in the same shape
-            // of room. Named as the one to use if the maid dict does not take, so it sits
-            // after those six and before anything drug-specific.
+            // Floyd cleaning his kitchen -- same shape of action, same shape of room.
             new Clip("timetable@floyd@clean_kitchen@base", "base")
         };
 
@@ -99,34 +110,37 @@ namespace Hoodrich.Economy
                 // nothing.
                 ["weed"] = new[]
                 {
-                    new Clip("anim@amb@business@weed@weed_sorting_hi@", "sorting_base_inspector"),
-                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
-                    new Clip("anim@amb@business@weed@weed_inspecting_lo_med_hi@", "weed_inspecting_hi_base_inspector")
+                    new Clip("anim@amb@business@weed@weed_inspecting_lo_med_hi@", "weed_stand_base_inspector"),
+                    new Clip("anim@amb@business@weed@weed_inspecting_high_dry@", "weed_inspecting_high_base_inspector"),
+                    new Clip("anim@amb@business@weed@weed_sorting_seated@", "base_sorter_left_sorter01")
                 },
                 ["coke"] = new[]
                 {
-                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
-                    new Clip("anim@amb@business@coc@coc_unpack_hi@", "full_cycle_v1_unpacker"),
+                    new Clip("anim@amb@business@coc@coc_unpack_cut@", "fullcut_cycle_v1_cokecutter"),
+                    new Clip("anim@amb@business@coc@coc_unpack_cut@", "fullcut_cycle_v1_cokepacker"),
+                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_pressoperator")
                 },
                 ["crack"] = new[]
                 {
-                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
-                    new Clip("anim@amb@business@meth@meth_monitoring_cooking@", "empty_bucket_base_cook"),
+                    new Clip("anim@amb@business@coc@coc_unpack_cut@", "fullcut_cycle_v2_cokecutter"),
+                    new Clip("anim@amb@business@meth@meth_monitoring_cooking@cooking@", "chemical_pour_long_cooker")
                 },
                 ["meth"] = new[]
                 {
-                    new Clip("anim@amb@business@meth@meth_monitoring_cooking@", "empty_bucket_base_cook"),
-                    new Clip("anim@amb@business@meth@meth_drying_area@", "dry_meth_base_cook"),
+                    new Clip("anim@amb@business@meth@meth_monitoring_cooking@cooking@", "base_idle_tank_cooker"),
+                    new Clip("anim@amb@business@meth@meth_smash_weight_check@", "break_weigh_char01"),
+                    new Clip("anim@amb@business@meth@meth_monitoring_cooking@monitoring@", "base_idle_guage_monitor")
                 },
                 ["heroin"] = new[]
                 {
-                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
+                    new Clip("anim@amb@business@coc@coc_unpack_cut@", "fullcut_cycle_v1_cokecutter"),
+                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_pressoperator")
                 },
                 ["ecstasy"] = new[]
                 {
-                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
-                    new Clip("anim@heists@prison_heiststation@cop_reactions", "cop_a_idle"),
-                },
+                    new Clip("anim@amb@business@meth@meth_smash_weight_check@", "break_weigh_char01"),
+                    new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_pressoperator")
+                }
             };
 
         /// <summary>
@@ -138,8 +152,8 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Clip[] Fallback =
         {
-            new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
-            new Clip("amb@prop_human_bum_shopping_cart@male@base", "base"),
+            new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_pressoperator"),
+            new Clip("timetable@floyd@clean_kitchen@base", "base"),
             new Clip("anim@heists@prison_heiststation@cop_reactions", "cop_a_idle")
         };
 
