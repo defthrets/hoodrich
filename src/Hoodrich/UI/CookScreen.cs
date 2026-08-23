@@ -117,6 +117,11 @@ namespace Hoodrich.UI
             _purity = 0;
             _openedAt = Game.GameTime;
             IsOpen = true;
+            _shownAt = Game.GameTime;
+
+            // Snapped on open. A bar sliding in from wherever it was last time is a bar
+            // arriving from a different screen.
+            _slide = _selected;
 
             Rebuild();
 
@@ -402,6 +407,15 @@ namespace Hoodrich.UI
 
         // ---- drawing -----------------------------------------------------------
 
+        /// <summary>Where the bar has got to, and when the screen went up.</summary>
+        private float _slide;
+        private int _shownAt;
+
+        private const float SlideRate = 0.30f;
+        private const int EnterMs = 170;
+        private const float EnterRise = 0.014f;
+        private const int SweepMs = 2600;
+
         public void Draw()
         {
             if (!IsOpen || _rows.Count == 0) return;
@@ -416,8 +430,35 @@ namespace Hoodrich.UI
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f;
 
-            Hud.RectFrom(left, top, panelWidth, height, Color.FromArgb(238, 12, 13, 15));
-            Hud.RectFrom(left, top, panelWidth, 0.0028f, Palette.Accent);
+            // Up and in, eased out so it slows as it lands -- the same arrival every other
+            // screen in the mod uses, so opening any of them feels like opening one thing.
+            var age = Game.GameTime - _shownAt;
+            var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
+            arrive = 1f - (1f - arrive) * (1f - arrive);
+
+            top += EnterRise * (1f - arrive);
+
+            Hud.RectFrom(left, top, panelWidth, height,
+                         Color.FromArgb((int)(238f * arrive), 12, 13, 15));
+
+            Hud.RectFrom(left, top, panelWidth, 0.0028f,
+                         Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
+
+            // A light running along the bar. On this screen it is doing a second job: the
+            // counter is where you stand and wait, and a panel with something moving on it is
+            // a panel that has not frozen.
+            var barT = (Game.GameTime % SweepMs) / (float)SweepMs;
+            var barW = panelWidth * 0.15f;
+            var barAt = left - barW + (panelWidth + barW) * barT;
+
+            var barLeft = Math.Max(left, barAt);
+            var barRight = Math.Min(left + panelWidth, barAt + barW);
+
+            if (barRight > barLeft)
+            {
+                Hud.RectFrom(barLeft, top, barRight - barLeft, 0.0028f,
+                             Color.FromArgb((int)(85f * arrive), 255, 255, 255));
+            }
 
             var x = left + pad;
             var right = left + panelWidth - pad;
@@ -431,8 +472,12 @@ namespace Hoodrich.UI
             Hud.BrandCentre(left + panelWidth * 0.5f, top + 0.018f, 0.024f,
                             Palette.Alpha(Palette.TextDim, 165));
 
-            // The house script, the same face every other screen in the mod is titled in.
-            Hud.Text("THE KITCHEN", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            // The house script, the same face every other screen in the mod is titled in --
+            // and in the case it is written in rather than shouted. A cursive face set in block
+            // capitals is two decisions fighting each other: handwriting is the informal one
+            // and capitals are the formal one, and a room in somebody's house is the informal
+            // thing.
+            Hud.Text("The Kitchen", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
 
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash, Hud.FontChaletLondon);
@@ -446,21 +491,38 @@ namespace Hoodrich.UI
             y += 0.026f;
 
 
+            // The bar is eased to wherever the cursor is and drawn ONCE, under all the rows,
+            // so moving down the list slides it instead of making you re-find it.
+            _slide += (_selected - _slide) * SlideRate;
+            if (Math.Abs(_selected - _slide) < 0.002f) _slide = _selected;
+
+            var barY = y - 0.005f + _slide * RowHeight;
+            var barWide = panelWidth - pad * 1.3f;
+
+            Hud.RectFrom(x - pad * 0.35f, barY, barWide, RowHeight,
+                         Color.FromArgb((int)(52f * arrive), 255, 255, 255));
+
+            // A rail on it, the way the readouts mark what is yours.
+            Hud.RectFrom(x - pad * 0.35f, barY, 0.0022f, RowHeight, Palette.Accent);
+
+            var sweepT = (Game.GameTime % SweepMs) / (float)SweepMs;
+            var sweepW = barWide * 0.16f;
+            var sweepAt = x - pad * 0.35f - sweepW + (barWide + sweepW) * sweepT;
+
+            var sweepLeft = Math.Max(x - pad * 0.35f, sweepAt);
+            var sweepRight = Math.Min(x - pad * 0.35f + barWide, sweepAt + sweepW);
+
+            if (sweepRight > sweepLeft)
+            {
+                Hud.RectFrom(sweepLeft, barY, sweepRight - sweepLeft, RowHeight,
+                             Color.FromArgb(20, 255, 255, 255));
+            }
+
             foreach (var row in _rows)
             {
                 var picked = _rows[_selected] == row;
                 var have = Held(row.Source);
                 var stored = _house == null ? 0f : _house.BulkOf(row.Source.Id);
-
-                if (picked)
-                {
-                    Hud.RectFrom(x - pad * 0.35f, y - 0.005f,
-                                 panelWidth - pad * 1.3f, RowHeight,
-                                 Color.FromArgb(52, 255, 255, 255));
-
-                    // A rail on the selected row, the way the readouts mark what is yours.
-                    Hud.RectFrom(x - pad * 0.35f, y - 0.005f, 0.0022f, RowHeight, Palette.Accent);
-                }
 
                 // The product's own art, in the gutter, the way every other screen in the mod
                 // marks a row. Drawn from the SOURCE rather than the output: this column is
