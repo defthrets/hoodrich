@@ -83,6 +83,13 @@ namespace Hoodrich.UI
         public void Open()
         {
             IsOpen = true;
+            _shownAt = Game.GameTime;
+
+            // Snapped on open. A bar travelling in from wherever it was last time is a bar
+            // arriving from another screen.
+            _slide = 0f;
+            _tabAt = 0f;
+            _tabWide = 0f;
             _openedAt = Game.GameTime;
             _rack = 0;
             _row = 0;
@@ -307,16 +314,39 @@ namespace Hoodrich.UI
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f;
 
-            Hud.RectFrom(left, top, panelWidth, height, Color.FromArgb(238, 12, 13, 15));
-            Hud.RectFrom(left, top, panelWidth, 0.0028f, Palette.Accent);
+            // Up and in, the same arrival every other screen in the mod uses.
+            var age = Game.GameTime - _shownAt;
+            var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
+            arrive = 1f - (1f - arrive) * (1f - arrive);
+
+            top += EnterRise * (1f - arrive);
+
+            Hud.RectFrom(left, top, panelWidth, height,
+                         Color.FromArgb((int)(238f * arrive), 12, 13, 15));
+
+            Hud.RectFrom(left, top, panelWidth, 0.0028f,
+                         Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
+
+            var barT = (Game.GameTime % SweepMs) / (float)SweepMs;
+            var barW = panelWidth * 0.15f;
+            var barAt = left - barW + (panelWidth + barW) * barT;
+
+            var barLeft = Math.Max(left, barAt);
+            var barRight = Math.Min(left + panelWidth, barAt + barW);
+
+            if (barRight > barLeft)
+            {
+                Hud.RectFrom(barLeft, top, barRight - barLeft, 0.0028f,
+                             Color.FromArgb((int)(85f * arrive), 255, 255, 255));
+            }
 
             var x = left + pad;
             var right = left + panelWidth - pad;
             var y = top + 0.013f;
 
-            // His name in the house script, and what is in your pocket, which is the only other
-            // number that decides anything on this screen.
-            Hud.Text("GRIMES", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            // The shop's name in the house script, and what is in your pocket, which is the only
+            // other number that decides anything on this screen.
+            Hud.Text("HOOD WEAPONRY", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash, Hud.FontChaletLondon);
 
@@ -342,26 +372,66 @@ namespace Hoodrich.UI
         {
             var cx = x;
 
+            // Measured first, so the underline knows where it is going before anything is
+            // drawn. A strip that slides has to know the whole strip.
+            var at = new float[Racks.Length];
+            var wide = new float[Racks.Length];
+
             for (var i = 0; i < Racks.Length; i++)
             {
-                var here = i == _rack;
                 var label = Racks[i].Name;
 
                 var width = 0.02f;
                 try { width = Hud.MeasureText(label, 0.26f, Hud.FontLabel); }
                 catch { /* the estimate will do */ }
 
-                if (here)
-                {
-                    Hud.RectFrom(cx - 0.004f, y - 0.004f, width + 0.008f, 0.024f,
-                                 Color.FromArgb(46, 255, 255, 255));
-                    Hud.RectFrom(cx - 0.004f, y + 0.019f, width + 0.008f, 0.0022f, Palette.Accent);
-                }
-
-                Hud.Text(label, cx, y, 0.26f, here ? Palette.Text : Palette.TextDim,
-                         Hud.FontLabel, centre: false);
+                at[i] = cx;
+                wide[i] = width;
 
                 cx += width + 0.022f;
+            }
+
+            // The underline eases between racks rather than jumping, which is the one thing
+            // that makes five words across the top read as a strip you are moving along
+            // instead of five words that keep changing colour.
+            // Nought means it has never been drawn. Snapped on the first frame rather than
+            // eased, or the underline flies in from the left edge of the screen on open.
+            if (_tabWide <= 0f)
+            {
+                _tabAt = at[_rack];
+                _tabWide = wide[_rack];
+            }
+
+            _tabAt += (at[_rack] - _tabAt) * TabRate;
+            _tabWide += (wide[_rack] - _tabWide) * TabRate;
+
+            if (Math.Abs(at[_rack] - _tabAt) < 0.0005f) _tabAt = at[_rack];
+            if (Math.Abs(wide[_rack] - _tabWide) < 0.0005f) _tabWide = wide[_rack];
+
+            Hud.RectFrom(_tabAt - 0.004f, y - 0.004f, _tabWide + 0.008f, 0.024f,
+                         Color.FromArgb(46, 255, 255, 255));
+
+            Hud.RectFrom(_tabAt - 0.004f, y + 0.019f, _tabWide + 0.008f, 0.0022f, Palette.Accent);
+
+            for (var i = 0; i < Racks.Length; i++)
+            {
+                var here = i == _rack;
+
+                Hud.Text(Racks[i].Name, at[i], y, 0.26f, here ? Palette.Text : Palette.TextDim,
+                         Hud.FontLabel, centre: false);
+
+                // How much of that rack is already yours, which is the question the strip was
+                // silently not answering: five words that tell you what he stocks and nothing
+                // about where your gaps are.
+                var got = 0;
+                foreach (var piece in Racks[i].Stock)
+                {
+                    if (Owns(piece)) got++;
+                }
+
+                Hud.Text(got + "/" + Racks[i].Stock.Length, at[i], y + 0.023f, 0.20f,
+                         Palette.Alpha(here ? Palette.Cash : Palette.TextDim, 190),
+                         Hud.FontLabel, centre: false);
             }
 
             y += 0.032f;
@@ -375,19 +445,35 @@ namespace Hoodrich.UI
             Hud.Text("WHAT HE'S GOT", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
             y += 0.026f;
 
+            // One bar, eased to wherever the cursor is, drawn before the rows go over it.
+            _slide += (_row - _slide) * SlideRate;
+            if (Math.Abs(_row - _slide) < 0.002f) _slide = _row;
+
+            var barY = y - 0.005f + _slide * RowHeight;
+            var barWide = panelWidth - pad * 1.3f;
+
+            Hud.RectFrom(x - pad * 0.35f, barY, barWide, RowHeight,
+                         Color.FromArgb(52, 255, 255, 255));
+
+            Hud.RectFrom(x - pad * 0.35f, barY, 0.0022f, RowHeight, Palette.Accent);
+
+            var sweepT = (Game.GameTime % SweepMs) / (float)SweepMs;
+            var sweepW = barWide * 0.16f;
+            var sweepAt = x - pad * 0.35f - sweepW + (barWide + sweepW) * sweepT;
+
+            var sweepLeft = Math.Max(x - pad * 0.35f, sweepAt);
+            var sweepRight = Math.Min(x - pad * 0.35f + barWide, sweepAt + sweepW);
+
+            if (sweepRight > sweepLeft)
+            {
+                Hud.RectFrom(sweepLeft, barY, sweepRight - sweepLeft, RowHeight,
+                             Color.FromArgb(20, 255, 255, 255));
+            }
+
             foreach (var piece in Current.Stock)
             {
                 var here = piece == Chosen;
                 var owned = Owns(piece);
-
-                if (here)
-                {
-                    Hud.RectFrom(x - pad * 0.35f, y - 0.005f,
-                                 panelWidth - pad * 1.3f, RowHeight,
-                                 Color.FromArgb(52, 255, 255, 255));
-
-                    Hud.RectFrom(x - pad * 0.35f, y - 0.005f, 0.0022f, RowHeight, Palette.Accent);
-                }
 
                 // The weapon's own art. Its dictionary is named after it, so the name is the
                 // whole lookup -- and a piece whose art this install has not got simply gets
@@ -431,6 +517,20 @@ namespace Hoodrich.UI
             Hud.RectFrom(x, y, panelWidth - pad * 2f, 0.0022f, Palette.Accent);
             return y + 0.012f;
         }
+
+        /// <summary>Where the row bar and the rack underline have got to.</summary>
+        private float _slide;
+        private float _tabAt;
+        private float _tabWide;
+
+        private const float SlideRate = 0.30f;
+        private const float TabRate = 0.28f;
+
+        /// <summary>The arrival, and the light that runs along the top bar.</summary>
+        private int _shownAt;
+        private const int EnterMs = 170;
+        private const float EnterRise = 0.014f;
+        private const int SweepMs = 2600;
 
         private const float IconW = 0.052f;
         private const float IconH = 0.026f;

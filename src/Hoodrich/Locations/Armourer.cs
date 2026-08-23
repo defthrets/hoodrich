@@ -94,9 +94,10 @@ namespace Hoodrich.Locations
         /// </summary>
         public static readonly Piece[] Handguns =
         {
-            // The WM 29 is its own weapon, not the stock Pistol -- WEAPON_PISTOL is the one
-            // everybody already has, which is why asking for a WM 29 handed over a normal one.
-            new Piece("WM 29 Pistol",         "WEAPON_GADGETPISTOL",  1400,  60, "Fancy piece"),
+            // Its own weapon, not the stock Pistol -- WEAPON_PISTOL is the one everybody
+            // already has, which is why asking for anything mapped to it hands over a normal
+            // one and takes your money for it.
+            new Piece("Combat Pistol",        "WEAPON_COMBATPISTOL",   500,  60, "Holds more"),
             new Piece("Pistol",               "WEAPON_PISTOL",         450,  60, "Does the job"),
             new Piece("SNS Pistol",           "WEAPON_SNSPISTOL",      300,  40, "Fits anywhere"),
             new Piece("Vintage Pistol",       "WEAPON_VINTAGEPISTOL",  650,  40, "Somebody's grandad's"),
