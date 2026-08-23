@@ -261,6 +261,38 @@ namespace Hoodrich
         };
 
         /// <summary>
+        /// Somebody from the Unicorn, at a yard party.
+        ///
+        /// The lite model is last rather than first on purpose: it is the same girl in street
+        /// clothes, which is the right fallback for an install missing the club models and the
+        /// wrong first choice for a woman who is visibly working.
+        /// </summary>
+        private static readonly string[] Strippers =
+        {
+            "s_f_y_stripper_01", "s_f_y_stripper_02", "s_f_y_stripperlite", "a_f_y_topless_01"
+        };
+
+        /// <summary>
+        /// Her own dance, which is not the one the other women are doing.
+        ///
+        /// The private-dance clips rather than the pole ones, and that is the whole decision
+        /// here: a pole routine is authored around a pole, so played in the middle of a
+        /// concrete yard it is a woman holding onto nothing and leaning off it. The private
+        /// dance is standing work with no prop in it and reads correctly anywhere.
+        ///
+        /// Ends on the club idle and then the plain solo dance, so an install without the strip
+        /// club dictionaries still gets somebody dancing rather than somebody stood still.
+        /// </summary>
+        private static readonly string[] Stripping =
+        {
+            "mini@strip_club@private_dance@part1", "priv_dance_p1",
+            "mini@strip_club@private_dance@part2", "priv_dance_p2",
+            "mini@strip_club@private_dance@part3", "priv_dance_p3",
+            "mini@strip_club@idle_dance@idle_a", "idle_a_song_a",
+            "anim@amb@nightclub@mini@dance@dance_solo@female@var_a@", "high_center"
+        };
+
+        /// <summary>
         /// A different dance from the one the other woman is doing.
         ///
         /// Same idea as Dancing and deliberately NOT the same order: two people a few metres
@@ -718,8 +750,12 @@ namespace Hoodrich
                     .Stand(new Vector3(-196.101f, -1729.308f, 32.664f), 20.826f,
                            "WORLD_HUMAN_PARTYING", Fam(1), armed: false, anim: DancingMen)
 
+                    // The one by the car. PARTYING underneath rather than SMOKING_POT: the
+                    // scenario is what shows if none of the clips load, and a dancer falling
+                    // back to a woman smoking on her own is the wrong picture in the one place
+                    // it matters.
                     .Stand(new Vector3(-198.543f, -1731.535f, 32.664f), 16.019f,
-                           "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false)
+                           "WORLD_HUMAN_PARTYING", Strippers, armed: false, anim: Stripping)
 
                     .Stand(new Vector3(-203.007f, -1729.627f, 32.664f), 251.512f,
                            "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
