@@ -204,40 +204,44 @@ namespace Hoodrich.Locations
 
             try
             {
-                var kept = false;
+                // Whether ours is already stood in there, asked ONCE before the sweep rather
+                // than discovered during it.
+                //
+                // This is the whole bug that put five of her in that front room. The old sweep
+                // set a local flag when it happened to meet our stand-in -- and GetNearbyPeds
+                // returns them in whatever order it likes, so meeting a fresh Denise FIRST made
+                // a second stand-in, which orphaned the first, which was then never recognised
+                // again because she is not wearing a household model. Four times a second, with
+                // the game repopulating its own Denise the whole time.
+                var have = _stand != null && _stand.Exists() && _stand.IsAlive;
+
+                // Where the one being replaced was, if we still need to make her.
+                var seat = Vector3.Zero;
+                var facing = 0f;
 
                 foreach (var ped in World.GetNearbyPeds(player, QuietRange))
                 {
                     if (ped == null || !ped.Exists() || ped.Handle == player.Handle) continue;
-
-                    // Ours, already stood in and already dressed. Skipped before the household
-                    // test, which she would not pass anyway -- she is not wearing that model.
-                    if (_stand != null && _stand.Exists() && ped.Handle == _stand.Handle)
-                    {
-                        kept = true;
-                        continue;
-                    }
+                    if (_stand != null && _stand.Exists() && ped.Handle == _stand.Handle) continue;
 
                     if (!IsHousehold(ped)) continue;
 
-                    // The FIRST one is stood in for and the rest are simply deleted.
-                    //
-                    // There are two of her in that room -- the game places one and the interior
-                    // mod places another -- and two identical women three feet apart is the kind
-                    // of thing you cannot stop seeing once you have seen it. The old sweep
-                    // settled both of them and kept a handle on whichever came last, so the
-                    // other stayed frozen forever with nothing left that knew about it.
-                    if (kept)
+                    // Her spot is worth having before she goes, and only from the first one.
+                    if (!have && seat == Vector3.Zero)
                     {
-                        try { ped.Delete(); }
-                        catch { /* somebody else's to delete */ }
-
-                        continue;
+                        seat = ped.Position;
+                        facing = ped.Heading;
                     }
 
-                    kept = true;
-                    StandIn(ped);
+                    // Every household ped goes, ours or the game's. There are two of her in
+                    // that room -- the game places one and the interior mod places another --
+                    // and the game will put more back, so this is a standing job rather than a
+                    // one-off.
+                    try { ped.Delete(); }
+                    catch { /* somebody else's to delete */ }
                 }
+
+                if (!have && seat != Vector3.Zero) StandIn(seat, facing);
             }
             catch (Exception ex)
             {
@@ -257,11 +261,8 @@ namespace Hoodrich.Locations
         /// nothing to make because she has not had a line in this house since the day she was
         /// muted.
         /// </summary>
-        private void StandIn(Ped hers)
+        private void StandIn(Vector3 at, float facing)
         {
-            var at = hers.Position;
-            var facing = hers.Heading;
-
             foreach (var name in StandInModels)
             {
                 try
@@ -278,14 +279,32 @@ namespace Hoodrich.Locations
                     var her = Entity.FromHandle(handle) as Ped;
                     if (her == null || !her.Exists()) continue;
 
-                    try { hers.Delete(); }
-                    catch { /* the game will tidy its own */ }
+                    // Claimed BEFORE anything else can run, so a sweep that fires while this
+                    // one is still finishing sees her rather than deciding the room is empty.
+                    _stand = her;
+                    _settled = her;
+
+                    // On the floor rather than wherever the ped we replaced happened to be. She
+                    // was sat on a couch, and a woman created at a seated ped's own coordinate
+                    // is a woman created a foot in the air -- which is most of the way to the
+                    // five of them stacked at the ceiling.
+                    try
+                    {
+                        Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, her.Handle,
+                                      at.X, at.Y, at.Z, false, false, false);
+
+                        if (World.GetGroundHeight(new Vector3(at.X, at.Y, at.Z + 1.5f),
+                                                  out var floor, GetGroundHeightMode.Normal) &&
+                            floor > 0f && Math.Abs(floor - at.Z) <= 2.5f)
+                        {
+                            Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, her.Handle,
+                                          at.X, at.Y, floor, false, false, false);
+                        }
+                    }
+                    catch { /* she is where she was put */ }
 
                     Beachwear(her);
                     Settle(her);
-
-                    _stand = her;
-                    _settled = her;
 
                     if (!_saidCouchIsFree)
                     {
@@ -301,9 +320,10 @@ namespace Hoodrich.Locations
                 }
             }
 
-            // Nobody to stand in with, so the original is settled the way she always was.
-            Settle(hers);
-            _settled = hers;
+            // Nobody to stand in with. Nothing to fall back to either, because the one she
+            // was replacing has already gone -- but that is the right way round: an empty room
+            // for a session is recoverable and two of her is what we were fixing.
+            Log.Warn("No stand-in model would load for the front room.");
         }
 
         /// <summary>

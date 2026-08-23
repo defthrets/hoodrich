@@ -36,15 +36,16 @@ namespace Hoodrich.UI
         /// <summary>
         /// How far it can be stretched, cleanest first.
         ///
-        /// The quarter is deliberately below what anybody will buy. Stretching has to have an
-        /// end, and an end you can walk into is worth more than one the game refuses to show
-        /// you -- the screen says plainly that nobody will take it, in the danger colour, and
-        /// then lets you do it anyway.
+        /// A third is the floor. There was a quarter under it, deliberately below what anybody
+        /// would buy, and it is gone -- so nothing the counter makes is unsellable any more.
+        /// The floor itself stays in the stash and the corner still refuses anything under it:
+        /// blending can arrive at a number no single cut here reaches, and a bag that weak
+        /// should still be a bag nobody takes.
         /// </summary>
-        private static readonly float[] Purities = { 1.0f, 0.75f, 0.5f, 0.33f, 0.25f };
+        private static readonly float[] Purities = { 1.0f, 0.75f, 0.5f, 0.33f };
 
         /// <summary>How big the disc beside a percentage draws. A suffix, not a picture.</summary>
-        private const float MarkSize = 0.0135f;
+        private const float MarkSize = 0.0115f;
 
         /// <summary>
         /// The bag size used to be chosen here, and is not any more.
@@ -552,8 +553,8 @@ namespace Hoodrich.UI
                 var mark = Stash.Mark(Purities[i]);
                 var markW = Hud.ToX(MarkSize);
 
-                var width = markW + 0.005f +
-                            Hud.MeasureText(label, 0.30f, Hud.FontBody) + 0.014f;
+                var width = markW + 0.004f +
+                            Hud.MeasureText(label, 0.30f, Hud.FontBody) + 0.011f;
 
                 if (on)
                 {
@@ -579,32 +580,52 @@ namespace Hoodrich.UI
                 cx += width + 0.006f;
             }
 
-            // What comes off the counter gets its art too, out on the right where the verb
-            // and the purity word already sit -- so the line that says how far you are
-            // stepping on it is next to a picture of the thing being stepped on.
             var outArt = Icons.ForDrug(made.Id);
             var words = (chosen.Rolling ? made.WorkVerb : product.WorkVerb) + "  ·  " + PurityWord(purity);
 
-            Hud.TextRight(words, right, y + 0.002f, 0.28f, Palette.Accent, Hud.FontLabel);
-
-            if (outArt.HasFile)
-            {
-                try
-                {
-                    var w = Hud.MeasureText(words, 0.28f, Hud.FontLabel);
-                    Hud.File(outArt.File, right - w - Hud.ToX(ArtSize) * 0.75f,
-                             y + 0.011f, ArtSize, 0f, Palette.Accent);
-                }
-                catch { /* the words carry it on their own */ }
-            }
-
             y += 0.032f;
 
-            Hud.Text(product.Amount(batch) + "  ->  " + made.Amount(yield), x, y, 0.30f,
-                     fits ? Palette.Cash : Palette.Danger, Hud.FontBody, centre: false);
+            var arrow = product.Amount(batch) + "  ->  " + made.Amount(yield);
 
-            Hud.TextRight("$" + worth.ToString("N0"), right, y, 0.30f,
-                          fits ? Palette.Cash : Palette.Danger, Hud.FontBody);
+            Hud.Text(arrow, x, y, 0.30f, fits ? Palette.Cash : Palette.Danger,
+                     Hud.FontBody, centre: false);
+
+            var money = "$" + worth.ToString("N0");
+
+            Hud.TextRight(money, right, y, 0.30f, fits ? Palette.Cash : Palette.Danger,
+                          Hud.FontBody);
+
+            // The verb and the purity word live on THIS line now, in the gap between what you
+            // put in and what it is worth.
+            //
+            // They used to sit right-aligned on the row of percentages, which fitted exactly
+            // until the percentages grew a disc each and then the two ran through one another.
+            // Fitted to the space that is actually left rather than trusted to be short enough,
+            // because that is the assumption that broke it the first time.
+            try
+            {
+                var used = Hud.MeasureText(arrow, 0.30f, Hud.FontBody);
+                var owed = Hud.MeasureText(money, 0.30f, Hud.FontBody);
+
+                var room = right - owed - 0.010f - (x + used + 0.010f);
+
+                if (room > 0.03f)
+                {
+                    var fitted = Hud.Fit(words, room, 0.28f, Hud.FontLabel);
+                    var wide = Hud.MeasureText(fitted, 0.28f, Hud.FontLabel);
+                    var wx = right - owed - 0.010f - wide;
+
+                    if (outArt.HasFile && room > wide + Hud.ToX(ArtSize) + 0.006f)
+                    {
+                        Hud.File(outArt.File, wx - Hud.ToX(ArtSize) * 0.65f, y + 0.010f,
+                                 ArtSize, 0f, Palette.Accent);
+                    }
+
+                    Hud.Text(fitted, wx, y + 0.001f, 0.28f, Palette.Accent, Hud.FontLabel,
+                             centre: false);
+                }
+            }
+            catch { /* the note underneath still says how far you are stepping on it */ }
 
             y += 0.028f;
 
