@@ -147,16 +147,31 @@ namespace Hoodrich.Gangs
                 // And the door only opens once his product is somebody else's problem.
                 var owed = FrontsWork(def) && _state.HasFrontedWork;
 
+                // And once you have actually moved some.
+                //
+                // You could walk up on the first evening having met nobody and sold nothing,
+                // ask to be put on, and he said yes -- which makes the package he fronts you
+                // decoration rather than a test, and is the opposite of the whole shape of the
+                // opening. He gives you something, he watches what you do with it, THEN he
+                // decides.
+                //
+                // Counted in grams sold rather than a new flag: it is already tracked, it
+                // survives a save, and it is the same number the package is measured in. Move
+                // his twenty and the door opens.
+                var proved = !FrontsWork(def) || _state.GramsSold >= FrontGrams;
+
                 var no = _crew.IsAffiliated
                     ? "You already run with " + _crew.Current.Name
                     : owed ? "Move his work first"
+                    : !proved ? "Move his work first -- " + _state.GramsSold.ToString("0") +
+                                "/" + FrontGrams.ToString("0") + "g"
                     : short_ ? "He might not rate you yet" : "";
 
-                node.SayIf(!_crew.IsAffiliated && !owed, no,
+                node.SayIf(!_crew.IsAffiliated && !owed && proved, no,
                            "Put me on.", () => AskToJoin(def, gang),
                            "Sign on with " + gang.Name);
 
-                node.WithIcon(owed || short_ ? Icons.Locked : Icons.Tick);
+                node.WithIcon(owed || short_ || !proved ? Icons.Locked : Icons.Tick);
             }
             else
             {
@@ -190,12 +205,42 @@ namespace Hoodrich.Gangs
             var product = gang.Drugs.Count == 0 ? null : _drugs.Get(gang.Drugs[0]);
             var what = product == null ? "product" : product.Name.ToLowerInvariant();
 
+            // He is not briefing you. He is answering a question he has been asked a hundred
+            // times by people who did not last the month, and the answer is short because most
+            // of it is things not to do.
             var node = Node(def, gang,
-                "We move " + what + ". You want in, you take a bag, you post up somewhere, " +
-                "and you bring back what it's worth. Simple as that. Don't get greedy, " +
-                "don't get caught, don't sell on nobody else's block.");
+                what + ". That's it, that's the whole business, ain't no second page. You get " +
+                "a bag, you go stand somewhere, you bring me back what it's worth. And listen " +
+                "-- don't smoke it, don't be frontin' it to your homies, and don't be out " +
+                "there on somebody else corner tryna look like a big man. Dudes done got shot " +
+                "over less than a corner, dawg.");
+
+            node.Say("What if it go wrong?", () => TheRules(def, gang),
+                     "Ask what happens then");
+            node.WithIcon(Icons.Warning);
 
             node.Say("Back up.", () => Root(def));
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>
+        /// What happens when it goes wrong, which is the half nobody asks about.
+        ///
+        /// He does not threaten you, and that is the point -- a man who has to say what he
+        /// will do to you is a man nobody tells stories about. He explains that it is your
+        /// problem, calmly, which is worse.
+        /// </summary>
+        private DialogueNode TheRules(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Man. Aight. It go wrong, it went wrong on YOU. Laws take it off you, that's " +
+                "your tab. Somebody take it off you, that's your tab AND everybody gon know " +
+                "somebody took somethin off you, which is worse. And I ain't comin to find " +
+                "you neither, I'm too old for all that. I'm just gon stop pickin up. Out here " +
+                "that's the same thing.");
+
+            node.Say("Aight.", () => Root(def));
             node.Leave();
             return node;
         }

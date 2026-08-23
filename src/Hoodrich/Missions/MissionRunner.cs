@@ -667,6 +667,14 @@ namespace Hoodrich.Missions
         {
             if (_state == null || Book == null || IsRunning) return;
 
+            // Not before you are one of theirs.
+            //
+            // The opening is supposed to be one man and one icon: Gerald texts, you go and see
+            // him, you move his package, you get asked in. Lamar texting a stranger "got
+            // somethin for you, cuz" in the same minute undoes all of it -- and he would not.
+            // He does not know you yet.
+            if (_crew == null || !_crew.IsAffiliated) return;
+
             // The rest ends here rather than in a tick of its own, because this is already the
             // one thing in the file that runs whether or not a job is on.
             if (_restUntil != 0 && Game.GameTime >= _restUntil)
@@ -720,7 +728,10 @@ namespace Hoodrich.Missions
             if (_state == null || Book == null) return null;
 
             // He texts you when he has work. He does not text you thirty seconds after you
-            // handed him the keys back.
+            // handed him the keys back, and he has nothing at all for somebody who is not in
+            // the set yet -- which is what the contacts page reads to decide whether to show
+            // him as having work.
+            if (_crew == null || !_crew.IsAffiliated) return null;
             if (_state.JobsAreCooling) return null;
 
             var reached = -1;

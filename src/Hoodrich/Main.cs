@@ -464,7 +464,14 @@ namespace Hoodrich
                     .Stand(new Vector3(-128.394f, -1458.440f, 33.823f), 225.844f,
                            "WORLD_HUMAN_GUARD_STAND");
 
-                foreach (var spec in _cfg.Doors) _doors.Add(new InteriorDoor(spec));
+                // The set's own places, and only once you are in the set. See InteriorDoor.
+                foreach (var spec in _cfg.Doors)
+                {
+                    _doors.Add(new InteriorDoor(spec)
+                    {
+                        Known = () => _crew != null && _crew.IsAffiliated
+                    });
+                }
 
                 // The lab has people on it.
                 _labCrew = new Entourage(_gangs, "families",
@@ -1130,6 +1137,10 @@ namespace Hoodrich
                 // The one thing that lets him be spoken to while a job still technically has
                 // him: the work is done and the only thing left is getting paid for it.
                 _fixer.Finished = () => _jobs != null && _jobs.ReadyToCollect;
+
+                // Not on the map until you are one of theirs. The opening is one man and one
+                // icon, and Lamar is a Families man who has never met you.
+                _fixer.Known = () => _crew != null && _crew.IsAffiliated;
                 _fixerTalk.BlockUnderAttack = () => _war != null && _war.IsRunning;
 
                 _bigjTalk = new ArmourerTalk(_bigj, _crew, _state);

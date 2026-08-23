@@ -83,6 +83,18 @@ namespace Hoodrich.Missions
         /// </summary>
         public Func<bool> Finished;
 
+        /// <summary>
+        /// Whether he is on the map at all yet.
+        ///
+        /// Set by Main and null-checked, so a caller that does not care gets the old
+        /// behaviour. He is a Families man and you are nobody until Gerald says otherwise --
+        /// a marker on his corner before that is an invitation to walk up to somebody who has
+        /// no idea who you are.
+        /// </summary>
+        public Func<bool> Known;
+
+        private bool IsKnown => Known == null || Known();
+
         private bool HandInDue
         {
             get
@@ -164,7 +176,7 @@ namespace Hoodrich.Missions
                 return;
             }
 
-            SyncBlip();
+            if (IsKnown) SyncBlip(); else DropBlip();
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;

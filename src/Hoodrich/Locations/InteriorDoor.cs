@@ -157,12 +157,30 @@ namespace Hoodrich.Locations
 
         public bool IsInside => _inside;
 
+        /// <summary>
+        /// Whether this door is yours yet.
+        ///
+        /// Set by Main. The grow room and the pill press are the set's places, not public
+        /// ones, and a fresh save that opens with both of them marked tells somebody who has
+        /// not met anybody yet that they own two buildings.
+        /// </summary>
+        public Func<bool> Known;
+
         public void Update()
         {
             if (_busy) return;
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            if (Known != null && !Known())
+            {
+                try { if (_blip != null && _blip.Exists()) _blip.Delete(); }
+                catch { /* it is gone */ }
+
+                _blip = null;
+                return;
+            }
 
             EnsureBlip();
 
