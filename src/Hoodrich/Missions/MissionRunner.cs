@@ -1055,6 +1055,55 @@ namespace Hoodrich.Missions
             {
                 LockThemIn(ride);
             }
+
+            // And held shut, every tick, for as long as you are in it.
+            HoldDoorsShut(ride);
+        }
+
+        /// <summary>
+        /// The doors stay shut, and this is what actually does it.
+        ///
+        /// Locking was not enough and could not have been. SET_VEHICLE_DOORS_LOCKED stops a
+        /// door being OPENED -- it does not weld it, and it is not the only thing in the game
+        /// that opens one. A ped whose exit task starts before the block stops it swings the
+        /// door on the way, gunfire pops them, and a hard enough knock breaks them. All three
+        /// happen constantly on a job that ends in a police chase, which is exactly where this
+        /// was reported.
+        ///
+        /// So the lock is re-asserted every tick rather than set once, and anything that has
+        /// come open is shut again. Not door 0. That is the driver's, it is yours, and holding
+        /// it shut every frame would fight your own exit animation on the one job that ends
+        /// with you stood next to the car setting fire to it.
+        /// </summary>
+        private void HoldDoorsShut(Vehicle ride)
+        {
+            if (ride == null || !ride.Exists()) return;
+            if (_lockedRide == null || !_lockedRide.Exists()) return;
+            if (_lockedRide.Handle != ride.Handle) return;
+
+            // Only while you are actually in it. "Until I get out of the car" is the ask, and
+            // the moment you are out the car is a car again.
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsInVehicle(ride)) return;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, ride.Handle, 2);
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER, ride.Handle,
+                              Game.Player.Handle, false);
+
+                // 1 front right, 2 rear left, 3 rear right. Shut instantly rather than swung,
+                // because a door easing closed over half a second is the same picture as a
+                // door easing open.
+                for (var door = 1; door <= 3; door++)
+                {
+                    Function.Call(Hash.SET_VEHICLE_DOOR_SHUT, ride.Handle, door, true);
+                }
+            }
+            catch
+            {
+                // The lock and the seat-warp are still doing their half.
+            }
         }
 
         /// <summary>When the current ride started MOVING, or 0 if it has not yet.</summary>
@@ -1097,6 +1146,26 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, ride.Handle, 2);
                 Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER, ride.Handle,
                               Game.Player.Handle, false);
+
+                // And each of them is told individually that he is staying put. The lock is
+                // about the DOOR; this is about the man, and a ped who never starts an exit
+                // task never reaches for the handle in the first place.
+                //
+                // 3 is CanLeaveVehicle. 292 is the config flag that stops a ped bailing out of
+                // a vehicle on his own account, which is the one that fires when the car is
+                // damaged or on fire -- and this job sets the car on fire.
+                foreach (var homie in _homies)
+                {
+                    if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+
+                    try
+                    {
+                        Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, false);
+                        Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 292, true);
+                        Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, false);
+                    }
+                    catch { /* the lock still holds him */ }
+                }
 
                 _lockedRide = ride;
                 Log.Debug("Doors locked on the ride for the length of the job.");
