@@ -219,6 +219,12 @@ namespace Hoodrich.Dealing
         /// <summary>Attention specific to this pitch. Separate from global notoriety.</summary>
         private float _cornerHeat;
 
+        /// <summary>When the last sale landed, for the mark's pulse. 0 for none.</summary>
+        private int _soldAt;
+
+        /// <summary>How long that pulse lasts. Long enough to see, short enough not to nag.</summary>
+        private const int SalePulseMs = 650;
+
         private int _sales;
         private int _earned;
 
@@ -1681,6 +1687,28 @@ namespace Hoodrich.Dealing
             try
             {
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, cop.Handle, true);
+
+                // He is here to search you, not to shoot you.
+                //
+                // Blocking his events stops him REACTING to things, and that was already here.
+                // What was not is turning his fighting off: an officer who walks up to a man
+                // stood on a corner is a stop, and a stop that becomes a firefight because his
+                // default combat attributes think a dealer is a threat is not the scene this
+                // is trying to play. 5 is always-fight and 46 is fight-armed-while-unarmed;
+                // both off, plus no shooting at all, and he will do the one thing he came for.
+                //
+                // Pull a gun on him yourself and none of this holds -- the game takes that over
+                // and it should.
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, cop.Handle, 5, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, cop.Handle, 46, false);
+                Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, cop.Handle, false);
+                Function.Call(Hash.SET_PED_ACCURACY, cop.Handle, 0);
+
+                // And the stars stay off for the length of it. A stop-and-search that hands you
+                // two stars while he is still walking over is an arrest, and the mod already
+                // has one of those.
+                LawHold.Hold(this);
+
                 Function.Call(Hash.TASK_GO_TO_ENTITY, cop.Handle, player.Handle, 30000, 1.5f, 1.6f, 0, 0);
             }
             catch (Exception ex)
@@ -1806,6 +1834,21 @@ namespace Hoodrich.Dealing
                 taken += Stash.RemovePackaged(id, Stash.PackagedOf(id));
             }
 
+            // And whatever you were carrying to protect it with.
+            //
+            // A search that empties your pockets of product and hands you back the pistol that
+            // was next to it is a search nobody would write. The flag takes the rounds with the
+            // guns -- without it they go and the ammunition stays in a pocket nothing can see,
+            // so the next one you pick up comes loaded.
+            var armed = false;
+
+            try
+            {
+                armed = Function.Call<bool>(Hash.IS_PED_ARMED, Game.Player.Character.Handle, 7);
+                Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, Game.Player.Character.Handle, true);
+            }
+            catch { /* he keeps them */ }
+
             var fine = Math.Min(Game.Player.Money, _cfg.PostUpFine);
             Game.Player.Money -= fine;
 
@@ -1816,9 +1859,12 @@ namespace Hoodrich.Dealing
             ReleaseCop();
             Stop(null);
 
-            Notify.Failure("searched. They took " + taken.ToString("0.#") + "g and fined you $" +
+            Notify.Failure("searched. They took " + taken.ToString("0.#") + "g" +
+                           (armed ? ", your piece" : "") + " and fined you $" +
                            fine.ToString("N0") + ".");
-            Log.Info("Post-up search: lost " + taken.ToString("0.#") + "g, fined $" + fine + ".");
+
+            Log.Info("Post-up search: lost " + taken.ToString("0.#") + "g, guns=" + armed +
+                     ", fined $" + fine + ".");
         }
 
         private List<string> HeldIds()
@@ -2102,6 +2148,11 @@ namespace Hoodrich.Dealing
 
         private void ReleaseCop()
         {
+            // However the stop ended -- searched, walked away from, or the man himself gone.
+            // A hold that outlives the thing holding it is a city with no police in it.
+            try { LawHold.Release(this); }
+            catch { /* it was not held */ }
+
             if (_cop != null && _cop.Exists())
             {
                 try
@@ -2263,6 +2314,9 @@ namespace Hoodrich.Dealing
             // and the state reads better in the house script face above the detail.
             // How tall the wordmark stands in for the words it replaced.
             const float StateMarkHeight = 0.024f;
+
+            // When the last sale landed, for the mark's pulse, and how long it lasts.
+            // Long enough to see, short enough not to nag.
 
             // Whether the LAW is interested, which is not the same as "not idle".
             //
