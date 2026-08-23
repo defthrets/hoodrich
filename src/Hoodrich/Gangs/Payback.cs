@@ -94,6 +94,9 @@ namespace Hoodrich.Gangs
 
         private enum Flavour { DriveBy, Hands, Guns }
 
+        /// <summary>The feed, so their arrival lands on it. Wired by the house script.</summary>
+        public Social.SocialFeed Social;
+
         private readonly GangRegistry _gangs;
         private readonly Random _rng = new Random();
 
@@ -242,14 +245,47 @@ namespace Hoodrich.Gangs
                 // lean out of.
                 var seats = _how == Flavour.DriveBy ? 2 : 3;
 
+                // On two wheels everybody rides his own.
+                //
+                // A bike has one seat and a pillion, so asking a Daemon for four men gets you
+                // one man and three silent failures -- which is how naming the Lost brought a
+                // single biker. They come as a pack or they do not come as the Lost.
+                var twoWheels = false;
+
+                try
+                {
+                    twoWheels = Function.Call<bool>(Hash.IS_THIS_MODEL_A_BIKE, _car.Model.Hash);
+                }
+                catch { /* treat it as a car */ }
+
                 for (var seat = -1; seat <= seats; seat++)
                 {
-                    var man = Spawn(_car, seat);
+                    // Past the pillion on a bike, the next man needs a bike of his own.
+                    var ride = _car;
+
+                    if (twoWheels && seat >= 1)
+                    {
+                        ride = AnotherBike(spawn, seat);
+                        if (ride == null) continue;
+                    }
+
+                    var man = Spawn(ride, twoWheels && seat >= 1 ? -1 : seat);
                     if (man == null) continue;
 
                     if (seat == -1) _driver = man;
                     else if (_how == Flavour.DriveBy) ArmForDriveBy(man, player);
                     else Arm(man);
+
+                    // A man on his own bike drives it, and follows the one in front.
+                    if (twoWheels && seat >= 1 && _driver != null)
+                    {
+                        try
+                        {
+                            Function.Call(Hash.TASK_VEHICLE_ESCORT, man.Handle, ride.Handle,
+                                          _car.Handle, -1, 25f, 786603, 12f, 0, 8f);
+                        }
+                        catch { /* he will be sent with the rest below */ }
+                    }
                 }
 
                 if (_driver == null)
@@ -263,6 +299,15 @@ namespace Hoodrich.Gangs
 
                 _startedAt = Game.GameTime;
                 _passedAt = 0;
+
+                // And they say so, at you, by name.
+                //
+                // The whole reason they are here is something you PUT ON THE INTERNET, so the
+                // internet is where they answer it. A ticker saying "the lost mc found you" is
+                // the mod telling you what happened; the same sentence in their own words with
+                // your handle in it is them telling you.
+                try { Social?.TheyFoundYou(_who.Id, _who.Name); }
+                catch (Exception ex) { Log.Debug("Could not post the arrival: " + ex.Message); }
 
                 Notify.Failure(Warning());
                 Log.Info("Payback: " + _who.Id + " came for the post, " + _how + ".");
@@ -408,6 +453,42 @@ namespace Hoodrich.Gangs
                 // He will find his own way to the fight.
             }
         }
+
+        /// <summary>
+        /// Another bike beside the first, for a man who has nowhere to sit on it.
+        ///
+        /// Same model as the one already made, spaced along the kerb so three of them read as a
+        /// pack pulling up rather than as one bike drawn three times in the same spot.
+        /// </summary>
+        private Vehicle AnotherBike(Vector3 near, int index)
+        {
+            try
+            {
+                var model = _car.Model;
+                if (!model.IsValid || !model.Request(1500)) return null;
+
+                var at = World.GetNextPositionOnStreet(near.Around(4f + index * 2.5f));
+                if (at == Vector3.Zero) at = near.Around(3f + index * 2f);
+
+                var bike = World.CreateVehicle(model, at);
+                if (bike == null || !bike.Exists()) return null;
+
+                bike.IsPersistent = true;
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, bike.Handle, true, true);
+                Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, bike.Handle);
+
+                _pack.Add(bike);
+                return bike;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put another bike out: " + ex.Message);
+                return null;
+            }
+        }
+
+        /// <summary>The extra bikes, so they go when the visit does.</summary>
+        private readonly List<Vehicle> _pack = new List<Vehicle>();
 
         private Ped Spawn(Vehicle car, int seat)
         {
@@ -581,6 +662,20 @@ namespace Hoodrich.Gangs
             }
 
             _blips.Clear();
+
+            foreach (var bike in _pack)
+            {
+                try
+                {
+                    if (bike == null || !bike.Exists()) continue;
+
+                    bike.IsPersistent = false;
+                    bike.MarkAsNoLongerNeeded();
+                }
+                catch { /* teardown */ }
+            }
+
+            _pack.Clear();
 
             foreach (var man in _crew)
             {

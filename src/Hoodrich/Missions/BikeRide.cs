@@ -701,7 +701,20 @@ namespace Hoodrich.Missions
             // changes to "keep it on him" once the gun is up.
             if (!_gotCash) Help.ShowThisFrame("Aim at the man behind the counter.");
 
-            if (_clerk == null || !_clerk.Exists() || !_clerk.IsAlive) _clerk = FindClerk(player);
+            // WHOEVER YOU ARE ACTUALLY POINTING IT AT is the clerk.
+            //
+            // This is the fix for "he emptied the till and it still says aim at him". The shop
+            // can now hold two men behind that counter -- the game staffs it and, on a night it
+            // does not, we stand one up ourselves -- and the mission had picked one of them and
+            // was waiting on that one. Aim at the other and you are holding a gun on a man the
+            // job is not watching, forever.
+            //
+            // Asking the game who you are aiming at settles it whoever is stood there, and it
+            // is also simply more honest: the man with his hands up is the man being robbed.
+            var pointed = AimedAt(player);
+
+            if (pointed != null) _clerk = pointed;
+            else if (_clerk == null || !_clerk.Exists() || !_clerk.IsAlive) _clerk = FindClerk(player);
 
             // Nobody there. The game staffs its own shops and mostly does, but "mostly" is not
             // a thing a mission can be built on: turn up on the wrong night and the robbery is
@@ -923,6 +936,43 @@ namespace Hoodrich.Missions
         /// Nearest ped in the shop who is not you and not one of ours. The 24/7 has exactly one
         /// person working in it, so nearest-inside is the right answer rather than a guess.
         /// </summary>
+        /// <summary>
+        /// The ped the player is free-aiming at, if it is somebody who could be the clerk.
+        ///
+        /// Ours and Lamar are excluded: pointing at your own crew should never start a robbery,
+        /// and on the way out of that shop they are the two nearest people to you.
+        /// </summary>
+        private Ped AimedAt(Ped player)
+        {
+            try
+            {
+                var got = new OutputArgument();
+
+                if (!Function.Call<bool>(Hash.GET_ENTITY_PLAYER_IS_FREE_AIMING_AT,
+                                         Game.Player.Handle, got))
+                {
+                    return null;
+                }
+
+                var ped = Entity.FromHandle(got.GetResult<int>()) as Ped;
+
+                if (ped == null || !ped.Exists() || !ped.IsAlive) return null;
+                if (ped.Handle == player.Handle) return null;
+                if (_lamar != null && _lamar.Exists() && ped.Handle == _lamar.Handle) return null;
+
+                foreach (var homie in _homies)
+                {
+                    if (homie != null && homie.Exists() && homie.Handle == ped.Handle) return null;
+                }
+
+                return ped;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private Ped FindClerk(Ped player)
         {
             try

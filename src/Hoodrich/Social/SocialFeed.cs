@@ -588,6 +588,33 @@ namespace Hoodrich.Social
         ///
         /// Per set, so being quiet about bodies does not also make him quiet about jobs.
         /// </summary>
+        /// <summary>
+        /// A set posting AT you, because they have just turned up.
+        ///
+        /// Forced to that gang's author pool the same way a reply to a diss is, because the
+        /// words and the face have to match: a Lost post signed by a Balla is the one mistake
+        /// this feed can make that nobody would forgive.
+        ///
+        /// Marked as about you, so it lands in the tab you would go looking for it in.
+        /// </summary>
+        public string TheyFoundYou(string gangId, string gangName)
+        {
+            _forceGang = gangId ?? "";
+
+            var post = Build("FoundYou" + Pretty(gangId), gangName) ?? Build("FoundYou", gangName);
+
+            _forceGang = "";
+
+            if (post == null) return null;
+
+            post.AboutYou = true;
+
+            Add(post);
+            Notify(post);
+
+            return post.Plain;
+        }
+
         public string PostAsYouSometimes(string set, string subject, int gapMs, int chancePercent)
         {
             if (string.IsNullOrEmpty(set)) return null;
@@ -1471,6 +1498,16 @@ namespace Hoodrich.Social
 
                     return "them boys";
                 }
+            }
+
+            // Your handle, so a post can be addressed AT you rather than about you.
+            //
+            // There was no way to write that before, which is why every set in this feed talks
+            // about the player in the third person even when the thing they are describing is
+            // happening to him at that moment.
+            if (string.Equals(key, "you", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.IsNullOrEmpty(Handle) ? "@franklin_c" : Handle;
             }
 
             if (string.Equals(key, "subject", StringComparison.OrdinalIgnoreCase))

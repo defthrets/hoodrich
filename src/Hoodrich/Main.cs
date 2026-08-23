@@ -838,6 +838,10 @@ namespace Hoodrich
                                      || (_payback != null && _payback.IsRunning)
                                      || Game.Player.Wanted.WantedLevel > 0;
                 _copWatch.Social = _social;
+
+                // So the set that turns up because of something you posted can answer it on
+                // the same feed you posted it to.
+                _payback.Social = _social;
                 _postUp.Social = _social;
                 _crew.Social = _social;
 

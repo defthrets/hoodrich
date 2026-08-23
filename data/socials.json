@@ -3484,6 +3484,70 @@
       "sat in the car a while before i turned the key",
       "ain't been out tonight. ask anybody",
       "door was open when i got there. that's all i know"
+    ],
+    "FoundYou": [
+      "{you} we outside. you know which house",
+      "found you. don't run, that's rude {you}",
+      "{you} thought we forgot. we don't forget",
+      "{you} that mouth got an address now",
+      "somebody pointed. we followed. {you}",
+      "you been easy to find all week {you}",
+      "we pulled up {you}. where you at",
+      "{you} keep typing. we'll wait outside",
+      "y'all seen {you}? we have",
+      "{you} you posted where you was. we can read",
+      "we ain't come to talk {you}",
+      "{you} come to the window. go on"
+    ],
+    "FoundYouLost": [
+      "{you} you hear that? that's us",
+      "rode two hours for this {you}. worth it",
+      "{you} we brought the whole chapter",
+      "{you} that's fourteen engines outside. count em",
+      "we don't do drive-bys {you}. we do arrivals",
+      "{you} you ever been woke up by pipes",
+      "{you} the club came to see you",
+      "long way from stab city {you}. still here"
+    ],
+    "FoundYouBallas": [
+      "{you} purple in your rear view #BK",
+      "we outside {you}. same block you post about",
+      "{you} you named the wrong set #BK",
+      "{you} we been parked here twenty minutes",
+      "chamberlain ain't far {you}. never was #BK",
+      "{you} come outside and say it again"
+    ],
+    "FoundYouVagos": [
+      "orale {you}. we found the green shirt",
+      "{you} rancho came to you",
+      "{you} you talk loud for somebody this easy to find",
+      "east side outside {you}",
+      "{you} we brought the yellow to your street"
+    ],
+    "FoundYouTriads": [
+      "{you} we are outside. this is not a negotiation",
+      "you were not difficult to locate {you}",
+      "{you} the appointment is now"
+    ],
+    "FoundYouArmenians": [
+      "{you} we have your address. we have had it a while",
+      "{you} this is the part where you stop typing",
+      "we are outside {you}. be reasonable"
+    ],
+    "FoundYouMarabunta": [
+      "{you} we came up from the canals for you",
+      "{you} you should not have said our name",
+      "el burro outside {you}"
+    ],
+    "FoundYouAztecas": [
+      "{you} two blocks was enough to find you",
+      "{you} we small. we still got here",
+      "outside {you}. come see"
+    ],
+    "FoundYouKoreans": [
+      "{you} we are outside your house",
+      "{you} you have made this simple for us",
+      "little seoul is outside {you}"
     ]
   },
   "voices": {
