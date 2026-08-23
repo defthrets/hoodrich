@@ -12,7 +12,7 @@ using Hud = Hoodrich.UI.Draw;
 namespace Hoodrich.UI
 {
     /// <summary>
-    /// Grimes's rack.
+    /// The armourer's rack.
     ///
     /// He used to sell through the dialogue panel, which is the right shape for a person and
     /// the wrong shape for a stock list: every rack was its own page, the rows were plain text
@@ -281,7 +281,7 @@ namespace Hoodrich.UI
                               (rounds ? piece.AmmoBox * LotsNow + " rounds, " + piece.Name : piece.Name));
 
                 Log.Info("Bought " + (rounds ? "rounds for " : "") + piece.Weapon +
-                         " off Grimes for $" + cost + ".");
+                         " off Stretch for $" + cost + ".");
 
                 OnBought?.Invoke(piece, rounds);
             }

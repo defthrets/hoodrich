@@ -10,7 +10,7 @@ using Hoodrich.UI;
 
 namespace Hoodrich.Locations
 {
-    /// <summary>One thing Grimes will sell you.</summary>
+    /// <summary>One thing Stretch will sell you.</summary>
     internal sealed class Piece
     {
         public readonly string Name;
@@ -45,7 +45,7 @@ namespace Hoodrich.Locations
     }
 
     /// <summary>
-    /// Grimes, who sells guns out of the courtyard on Forum Drive.
+    /// Stretch, who sells guns out of the courtyard on Forum Drive.
     ///
     /// Deliberately not a shop. Ammu-Nation exists, it is on the map, and it wants your licence
     /// and your name -- so a man in a courtyard who does not is a different thing to have, not a
@@ -77,6 +77,10 @@ namespace Hoodrich.Locations
         /// </summary>
         private static readonly string[] Models =
         {
+            "ig_stretch", "csb_stretch",
+
+            // And the heavies behind him, for an install without the story model. He is a
+            // Families man in a Families courtyard either way.
             "g_m_y_famca_01", "a_m_m_famdd_01", "g_m_y_famfor_01",
             "a_m_m_soucent_01", "a_m_m_soucent_02", "g_m_y_famdnf_01"
         };
@@ -144,7 +148,7 @@ namespace Hoodrich.Locations
             _gangs = gangs;
         }
 
-        public string Name => "Grimes";
+        public string Name => "Stretch";
 
         public Vector3 Position => Spot;
 
@@ -254,7 +258,7 @@ namespace Hoodrich.Locations
 
                     Settle();
 
-                    Log.Info("Grimes is out at " + spot + ".");
+                    Log.Info("Stretch is out at " + spot + ".");
                     return;
                 }
                 catch
@@ -263,7 +267,7 @@ namespace Hoodrich.Locations
                 }
             }
 
-            Log.Warn("No model would load for Grimes.");
+            Log.Warn("No model would load for the armourer.");
         }
 
         /// <summary>Puts him back on his spot, facing the right way.</summary>
@@ -304,7 +308,7 @@ namespace Hoodrich.Locations
                 _blip.Scale = 0.8f;
                 _blip.IsShortRange = true;
                 // Named the way the leaders are: who he is, then who he runs with. He was the
-                // odd one out reading "Grimes -- guns" on a map where everybody else on the set
+                // odd one out reading "the armourer -- guns" on a map where everybody else
                 // says The Families, which made him look like a shop rather than one of ours
                 // who happens to sell.
                 var gang = _gangs == null ? null : _gangs.Get("families");
@@ -313,7 +317,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not blip Grimes: " + ex.Message);
+                Log.Debug("Could not blip the armourer: " + ex.Message);
             }
         }
 
@@ -323,7 +327,7 @@ namespace Hoodrich.Locations
         {
             if (Talk == null || Talk.IsOpen || !InReach) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to see what Grimes is holding.");
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to see what Stretch is holding.");
 
             if (!WantsToTalk()) return;
 

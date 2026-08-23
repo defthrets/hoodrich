@@ -18,7 +18,7 @@
   "leaders": [
     {
       "gang": "families",
-      "name": "Stretch",
+      "name": "Gerald",
       "zone": "CHAMH",
       "x": -160.738,
       "y": -1637.779,
@@ -26,8 +26,8 @@
       "awayFromHour": 0,
       "awayToHour": 0,
       "models": [
-        "ig_stretch",
-        "csb_stretch",
+        "ig_g",
+        "csb_g",
         "g_m_y_famdnf_01",
         "a_m_m_soucent_01"
       ],

@@ -10,7 +10,7 @@ using Hoodrich.UI;
 namespace Hoodrich.Locations
 {
     /// <summary>
-    /// Buying off Grimes.
+    /// Buying off Stretch.
     ///
     /// A conversation rather than a shop screen, for the same reason Stretch is: you are not
     /// browsing a catalogue, you are asking a man what he has. He answers by kind -- handguns,
@@ -53,7 +53,7 @@ namespace Hoodrich.Locations
         ///
         /// Two lists, because handing somebody a weapon and handing them a box of rounds are
         /// not the same transaction and he does not talk about them the same way. Kept here
-        /// rather than in the screen: the screen is a stock list and Grimes is a person, and
+        /// rather than in the screen: the screen is a stock list and he is a person, and
         /// what he sounds like belongs with the rest of what he sounds like.
         /// </summary>
         public static readonly string[] OverTheCounter =

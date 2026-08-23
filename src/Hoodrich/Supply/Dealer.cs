@@ -78,7 +78,7 @@ namespace Hoodrich.Supply
         /// Data rather than code because they are VOICE, and every other line this man says is
         /// already in the same file next to them. They lived in Delivery as a ternary on his
         /// id -- drunk if he was Tao, flat if he was anybody else -- which is fine for two
-        /// couriers and means the third one ever added inherits Stretch's personality by
+        /// couriers and means the third one ever added inherits Gerald's personality by
         /// default. These are the neutral versions; the data overrides them per man.
         /// </summary>
         public string TextCalled = "on my way. give me a minute";
@@ -91,7 +91,7 @@ namespace Hoodrich.Supply
         ///
         /// This is the difference between a plug and a port. Tao moves bricks and says so --
         /// "nothing smaller, dont ask" -- so a lot off him is sixty thousand dollars of
-        /// something rounded to the nearest half kilo. Stretch says the opposite in his own
+        /// something rounded to the nearest half kilo. Gerald says the opposite in his own
         /// buy line, that he is not the port and not to ask him for bricks, and then offered
         /// twelve kilos of weed for fifty-five thousand dollars anyway.
         /// </summary>
@@ -143,7 +143,7 @@ namespace Hoodrich.Supply
         /// What he turns up ON, if it is not a car.
         ///
         /// Empty means the delivery picks its own, which is the sensible default for somebody
-        /// driving a load in from the port. Stretch is coming from four streets away with a
+        /// driving a load in from the port. Gerald is coming from four streets away with a
         /// bag, and a man who lives on the block arriving in a van reads as a stranger.
         /// </summary>
         public readonly List<string> Rides = new List<string>();

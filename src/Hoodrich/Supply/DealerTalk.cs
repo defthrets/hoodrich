@@ -28,7 +28,7 @@ namespace Hoodrich.Supply
     ///
     /// He does not do grams and he does not do ounces. Everything on this list is a brick or
     /// several, and nothing on it comes to less than fifty thousand dollars -- that is the whole
-    /// point of him. Stretch sells you enough to work a corner tonight; Tao Cheng sells you enough
+    /// point of him. Gerald sells you enough to work a corner tonight; Tao Cheng sells you enough
     /// that the corner stops being the interesting part.
     ///
     /// It all goes to the house, not your pockets. You cannot walk around with twelve kilos of

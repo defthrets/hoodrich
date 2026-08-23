@@ -282,7 +282,7 @@ namespace Hoodrich.Core
 
             // radar_production_crack, 497 -- the razor blade.
             //
-            // 51 was here and has gone to Stretch, who sells the pills this room presses. This
+            // 51 was here and has gone to the set's leader, who sells the pills this room
             // is the better half of that swap as well: the room is where product gets cut and
             // pressed, and a blade is what that is done with. There is no pill-press sprite in
             // the game, so the two closest pictures go to the two things they actually match.

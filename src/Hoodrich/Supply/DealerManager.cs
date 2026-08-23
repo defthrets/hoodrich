@@ -411,7 +411,7 @@ namespace Hoodrich.Supply
             switch (id)
             {
                 case "docks": return "CHAR_CHENG";
-                case "stretch_run": return "CHAR_STRETCH";
+                case "stretch_run": return "CHAR_MP_GERALD";
                 default: return "CHAR_DEFAULT";
             }
         }
@@ -430,7 +430,7 @@ namespace Hoodrich.Supply
         /// The man at the port, by NAME rather than by kind.
         ///
         /// This used to be the first dealer of kind Docks, which was unambiguous while there
-        /// was one of them. Stretch delivers now and is the same kind -- he phones, he rides
+        /// was one of them. Gerald delivers now and is the same kind -- he phones, he drives
         /// over, he hands a bag across, which is the same machinery -- so "the first one that
         /// looks like this" would have started answering with whoever happened to sort first
         /// in the file. The port is the port.

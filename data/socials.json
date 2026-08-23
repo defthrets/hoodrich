@@ -686,19 +686,10 @@
       "gang": "families"
     },
     {
-      "handle": "stretch_cgf",
+      "handle": "stretch_guns",
       "name": "Stretch",
       "gender": "male",
       "pic": "CHAR_MP_STRETCH",
-      "verified": false,
-      "voice": "stretch_cgf",
-      "gang": "families"
-    },
-    {
-      "handle": "grimes_ls",
-      "name": "Grimes",
-      "gender": "male",
-      "pic": "CHAR_MP_GERALD",
       "verified": false,
       "voice": "grimes_ls",
       "gang": "families"
@@ -909,7 +900,8 @@
       "gender": "male",
       "pic": "CHAR_MP_GERALD",
       "verified": false,
-      "voice": "gerald_ls"
+      "voice": "gerald_ls",
+      "gang": "families"
     },
     {
       "handle": "tao_cheng_ls",
@@ -3708,35 +3700,6 @@
         "Don't be telling people I sent you out there. I ain't sent nobody nowhere and I don't know them people"
       ]
     },
-    "stretch_cgf": {
-      "Ambient": [
-        "Everybody friendly til it's time to be friendly",
-        "I been home two years and this city still owe me",
-        "Loyalty a word people say when they want something",
-        "Somebody always watching. Remember that",
-        "Six years inside and what got me first out here was how loud a store is at night",
-        "Bus bench in Davis got a bar down the middle now so a man can't lay on it. That's on purpose",
-        "Everybody in this city walking around looking at a phone. Make it easy for whoever ain't",
-        "Barber moved shops and told nobody. Found him three blocks over charging more",
-        "I don't eat nothing I ain't watched get made",
-        "Rent went up again. Same door, same lock that don't lock, more money",
-        "Man asked me the time today. Nobody need the time. He wanted my hand out my pocket",
-        "Two years and the mail still coming for whoever had this place before me. All of it bills",
-        "Sit with your back to the door if you want. I'll take this seat",
-        "Power went out on the block an hour and I counted every car came through"
-      ],
-      "MissionDone": [
-        "Somebody did what needed doing in {here}. Good",
-        "Word gets to me before it gets to you. Always has",
-        "That's the work. Now do it again"
-      ],
-      "RivalKilled": [
-        "That's how it go. Ain't nothing new about it"
-      ],
-      "JoinedGang": [
-        "We put somebody on. We'll see what he made of"
-      ]
-    },
     "grimes_ls": {
       "Ambient": [
         "Stock came in. Ain't saying what. Ain't saying where",
@@ -4353,6 +4316,16 @@
       ],
       "MissionDone": [
         "Heard my people was busy in {here}. Good"
+      ],
+      "RivalKilled": [
+        "Somebody's people came up short in {here}. Not mine",
+        "That's how that goes. Nobody had to do nothin' about it and here we are",
+        "I don't celebrate that. I just note it"
+      ],
+      "JoinedGang": [
+        "New face round the block. We'll see what he's about",
+        "Somebody just signed on. Ask me in a month if it took",
+        "Aight. Another one workin'. Everybody works"
       ]
     },
     "tao_cheng_ls": {

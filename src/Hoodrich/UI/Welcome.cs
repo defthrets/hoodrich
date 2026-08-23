@@ -42,7 +42,7 @@ namespace Hoodrich.UI
             var loop = new InfoSection { Title = "The whole job, in order" };
 
             loop.Row("1. Buy weight", "Gangs > your leader", Palette.Cash,
-                     "Stretch fronts you a bag to start. Later, text the plug at the port",
+                     "Gerald fronts you a bag to start. Later, text the plug at the port",
                      r => r.ArtFile = "crate.png");
 
             loop.Row("2. Cut it in the kitchen", "Aunt Denise's", null,

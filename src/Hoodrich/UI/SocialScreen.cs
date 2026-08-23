@@ -885,7 +885,7 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
-        /// The tab strip, which is Grimes's shelf strip with the array swapped.
+        /// The tab strip, which is the armourer's shelf strip with the array swapped.
         ///
         /// The count is right-aligned to a FIXED edge rather than folded into a label. Labels
         /// are measured and laid out one after another, so "ALL 79" going to "ALL 80" would
@@ -1223,7 +1223,7 @@ namespace Hoodrich.UI
         /// <summary>
         /// Where you are in the feed, in the margin.
         ///
-        /// Grimes has no equivalent because Grimes shows everything at once, so this is
+        /// The rack has no equivalent because it shows everything at once, so this is
         /// invented -- but invented in the hub's own vocabulary: the hub says "you are here in
         /// a list" with a thin accent bar on a row's left edge, and this is the same sentence
         /// on the other axis.

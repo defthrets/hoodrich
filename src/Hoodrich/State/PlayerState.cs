@@ -163,7 +163,7 @@ namespace Hoodrich.State
         public Action<int> RankedUp;
 
         /// <summary>
-        /// A package Stretch has fronted you, and where your sales counter stood when he did.
+        /// A package Gerald has fronted you, and where your sales counter stood when he did.
         ///
         /// Held here rather than in the stash, because the stash cannot tell his grams from
         /// yours and should not have to -- once it is in the bag it is just product. What makes

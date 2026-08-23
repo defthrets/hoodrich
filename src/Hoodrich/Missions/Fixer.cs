@@ -13,7 +13,7 @@ namespace Hoodrich.Missions
     /// <summary>
     /// Lamar, who has work.
     ///
-    /// Deliberately a second man rather than another line on Stretch's list. Stretch is supply
+    /// Deliberately a second man rather than another line on Gerald's list. Gerald is supply
     /// and standing -- weight, prices, whether you are in. Lamar is jobs. Keeping them apart
     /// means each is somewhere you go for a reason, instead of one NPC being a menu with
     /// everything bolted to it.

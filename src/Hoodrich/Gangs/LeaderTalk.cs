@@ -76,7 +76,7 @@ namespace Hoodrich.Gangs
         {
             var node = Node(def, gang, def.Greeting);
 
-            // Icons on every row, the way the wheel and Grimes's rack have them. A list of
+            // Icons on every row, the way the wheel and the rack have them. A list of
             // plain sentences is a menu; the same list with the shape of each answer next to it
             // is a thing you can read at a glance without reading it.
             node.Say("Who runs round here?", () => WhoRuns(def, gang),
@@ -365,7 +365,7 @@ namespace Hoodrich.Gangs
         {
             var node = Node(def, gang, def.Already);
 
-            // Icons down the whole list, the way the wheel and Grimes's rack have them.
+            // Icons down the whole list, the way the wheel and the rack have them.
             node.Say("Where should I be working?", () => WhereToWork(def, gang),
                      "Ask which blocks are safe");
             node.WithIcon(Icons.Mask);
@@ -428,13 +428,17 @@ namespace Hoodrich.Gangs
         /// <summary>
         /// Whether this man will front you work.
         ///
-        /// Stretch, by name. It is a Stretch thing to do -- he is the one who put you on, he
+        /// Gerald, by name. It is a Gerald thing to do -- he is the one who put you on, he
         /// takes his cut off the top, and the arrangement is exactly as generous as he is.
+        ///
+        /// By NAME rather than by gang, deliberately. Every set has a leader and only one of
+        /// them fronts you work; if a second gang's leader should ever start doing it, that is
+        /// a decision somebody makes here rather than something that happens by itself.
         /// </summary>
         private static bool FrontsWork(LeaderDef def)
         {
             return def != null &&
-                   string.Equals(def.Name, "Stretch", StringComparison.OrdinalIgnoreCase);
+                   string.Equals(def.Name, "Gerald", StringComparison.OrdinalIgnoreCase);
         }
 
         private DialogueNode OfferWork(LeaderDef def, GangDef gang)
@@ -491,7 +495,7 @@ namespace Hoodrich.Gangs
             _state.Touch();
 
             Notify.Important("~g~" + took.ToString("0") + "g of " + product.Name.ToLowerInvariant() +
-                             "~s~ off Stretch. Move all of it and go back to him.");
+                             "~s~ off " + def.Name + ". Move all of it and go back to him.");
 
             if (Social != null) Social.On(Hoodrich.Social.SocialEvent.FrontedWork, def.Name);
 

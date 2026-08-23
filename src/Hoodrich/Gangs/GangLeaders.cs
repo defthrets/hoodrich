@@ -286,13 +286,20 @@ namespace Hoodrich.Gangs
 
         private void AddDefaults()
         {
-            Add("families", "Stretch", "CHAMH",
-                new[] { "ig_stretch", "csb_stretch", "g_m_y_famdnf_01", "a_m_m_soucent_01" },
-                "Who sent you? Nah, don't answer. What you want.",
-                "Alright. You can hang round the block, run a few things. But you ain't Family " +
-                "till the set says you are. Take this, move it, come back when it's gone.",
-                "Slow down. You ain't done nothin' for nobody yet. Go put some work in first.",
-                "You already ride with us. Go handle your business.");
+            // Gerald holds the corner and the supply. Stretch is four streets away selling
+            // guns out of a courtyard, which is a different man doing a different job -- see
+            // Armourer.
+            //
+            // The model list runs the two names the game might have him under and then the
+            // Families heavies. He is a man on a Chamberlain corner either way, and a wrong
+            // guess at a model costs a line in the log rather than an empty corner.
+            Add("families", "Gerald", "CHAMH",
+                new[] { "ig_g", "csb_g", "g_m_y_famdnf_01", "a_m_m_soucent_01" },
+                "You the one Lamar keeps bringin' up. Alright. Talk.",
+                "Aight. Far as anybody need to know, you run with us. Take this, move it, and " +
+                "come see me when it's gone. Not before it's gone.",
+                "Nah. You ain't done nothin' for nobody yet. Go be useful and come back.",
+                "You already with us. Go handle your business.");
 
             Add("ballas", "OG Reese", "RANCHO",
                 new[] { "g_m_y_ballaorig_01", "g_m_y_ballaeast_01", "a_m_m_soucent_02" },

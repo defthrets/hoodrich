@@ -120,8 +120,10 @@ namespace Hoodrich.Gangs
         private static readonly Dictionary<string, Vector3> Musters =
             new Dictionary<string, Vector3>(StringComparer.OrdinalIgnoreCase)
             {
-                { "Grimes",  new Vector3(-134.105f, -1472.521f, 36.192f) },
-                { "Stretch", new Vector3(-161.651f, -1637.566f, 37.246f) },
+                // The courtyard on Forum Drive, which is the armourer's -- Stretch's now.
+                { "Stretch", new Vector3(-134.105f, -1472.521f, 36.192f) },
+                // And the corner in Chamberlain, which is the set's leader -- Gerald's now.
+                { "Gerald",  new Vector3(-161.651f, -1637.566f, 37.246f) },
                 // The lot, with everybody else. Lamar moved four streets and this did not
                 // move with him, so a raid on him mustered our people on the corner he used to
                 // stand on -- close enough to the old spot to look deliberate and far enough
@@ -141,7 +143,7 @@ namespace Hoodrich.Gangs
         /// Whether a point is on the ground rather than on top of something.
         ///
         /// The approach point is built by pushing a hundred and fifty metres out from the
-        /// TARGET, keeping the target's own height. Grimes musters six metres above Forum
+        /// TARGET, keeping the target's own height. The armourer musters six metres above Forum
         /// Drive, so a bearing that lands over the houses arrives holding a Z from a different
         /// storey -- and the street lookup answers with the nearest node to THAT, which is how
         /// a carload of Ballas came to be stood on somebody's garage roof.

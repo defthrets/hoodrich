@@ -99,8 +99,8 @@ namespace Hoodrich
         /// their coordinates are the men's own, so the two sets never need keeping in step.
         /// </summary>
         private readonly Entourage _lamarCrew;
-        private readonly Entourage _stretchCrew;
-        private readonly Entourage _grimesCrew;
+        private readonly Entourage _leaderCrew;
+        private readonly Entourage _armourerCrew;
         private readonly Entourage _labCrew;
         private readonly Entourage _denCrew;
 
@@ -149,7 +149,7 @@ namespace Hoodrich
         private readonly ParkedCar _meetTwo;
         private readonly Fixture _partyBarrel;
         private readonly Fixture _partyCouch;
-        private readonly Fixture _stretchBox;
+        private readonly Fixture _leaderBox;
 
         /// <summary>
         /// Props we put somewhere and leave.
@@ -334,8 +334,8 @@ namespace Hoodrich
         /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
         private readonly Fixture _couch;
         private readonly Fixture _stove;
-        private readonly Fixture _grimesStockA;
-        private readonly Fixture _grimesStockB;
+        private readonly Fixture _armourerStockA;
+        private readonly Fixture _armourerStockB;
         private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
         private readonly BlockLife _block;
         private readonly Rollers _rollers;
@@ -432,7 +432,7 @@ namespace Hoodrich
                 _stove = new Fixture(new Vector3(-84.610f, -1611.480f, 31.470f), 40.880f,
                                      "gr_prop_gr_hobo_stove_01");
 
-                // Grimes sells ammunition, so he gets something to sell it off. One either
+                // The armourer sells ammunition, so he gets something to sell it off. One either
                 // side of where he stands and both facing the way he does, set out along the
                 // line he faces rather than dropped at arbitrary angles -- a man with stock
                 // laid out has arranged it; a man with two crates at odd angles has been
@@ -440,17 +440,17 @@ namespace Hoodrich
                 //
                 // Placed by eye off his own coordinate, since none was given. Send a HUD
                 // readout from where each should stand and they move.
-                _grimesStockA = new Fixture(new Vector3(-128.073f, -1462.524f, 33.823f), 225.844f,
+                _armourerStockA = new Fixture(new Vector3(-128.073f, -1462.524f, 33.823f), 225.844f,
                                             "ex_office_swag_guns04");
 
-                _grimesStockB = new Fixture(new Vector3(-130.301f, -1460.226f, 33.823f), 225.844f,
+                _armourerStockB = new Fixture(new Vector3(-130.301f, -1460.226f, 33.823f), 225.844f,
                                             "ex_office_swag_guns02");
 
-                // Grimes has people now. His corner is one of the three a raid comes for and
+                // He has people now. His corner is one of the three a raid comes for and
                 // he was stood on it alone, which is not how anybody holds anything.
-                _grimesCrew = new Entourage(_gangs, "families",
+                _armourerCrew = new Entourage(_gangs, "families",
                                             new Vector3(-129.187f, -1461.375f, 33.823f),
-                                            225.844f, "Grimes")
+                                            225.844f, "Stretch")
                     .Stand(new Vector3(-128.394f, -1458.440f, 33.823f), 225.844f,
                            "WORLD_HUMAN_GUARD_STAND");
 
@@ -813,7 +813,7 @@ namespace Hoodrich
                 // and the corner of the top box went through the render; twenty-odd degrees is
                 // enough to clear it and reads as boxes somebody put down rather than boxes
                 // somebody aligned.
-                _stretchBox = new Fixture(new Vector3(-162.562f, -1637.442f, 34.029f), 24.500f,
+                _leaderBox = new Fixture(new Vector3(-162.562f, -1637.442f, 34.029f), 24.500f,
                                           "m24_2_prop_m42_weedboxpile_01a",
                                           "bkr_prop_weed_bigbag_01a",
                                           "prop_boxpile_07d");
@@ -854,7 +854,7 @@ namespace Hoodrich
 
                 // Somebody outside the pill press, which is what a place like that has outside it.
                 //
-                // His own crew because there is nothing else within a leash of here -- Grimes
+                // His own crew because there is nothing else within a leash of here -- the yard
                 // is sixty metres off and Lamar is two hundred. He takes the set's relationship
                 // group like anything an Entourage spawns, which for a man sat on a kerb means
                 // only that our lot leave him alone.
@@ -936,7 +936,7 @@ namespace Hoodrich
 
                 _war = new GangWar(_gangs, _crew, _state)
                     .Defend("Lamar", Fixer.Spot)
-                    .Defend("Grimes", new Vector3(-129.187f, -1461.375f, 33.823f));
+                    .Defend("Stretch", new Vector3(-129.187f, -1461.375f, 33.823f));
 
                 // Lamar's own guard is gone with the move.
                 //
@@ -951,12 +951,12 @@ namespace Hoodrich
                 _lamarCrew = new Entourage(_gangs, "families", Fixer.Spot, 124.548f, "Lamar");
 
                 // One for Stretch, on the spot it was read off the HUD at.
-                var stretch = _leaders.Get("families");
-                _stretchCrew = stretch == null
+                var leader = _leaders.Get("families");
+                _leaderCrew = leader == null
                     ? null
                     : new Entourage(_gangs, "families",
-                                    new Vector3(stretch.SpotX, stretch.SpotY, stretch.SpotZ),
-                                    stretch.Heading, stretch.Name)
+                                    new Vector3(leader.SpotX, leader.SpotY, leader.SpotZ),
+                                    leader.Heading, leader.Name)
                         .Stand(new Vector3(-161.084f, -1635.432f, 34.029f), 70.469f, "WORLD_HUMAN_GUARD_STAND")
 
                         // Two of theirs round the side, not doing anything in particular.
@@ -985,9 +985,9 @@ namespace Hoodrich
                         .Stand(new Vector3(-150.441f, -1694.220f, 32.872f), 153.053f,
                                "WORLD_HUMAN_SMOKING_POT", armed: false);
 
-                if (stretch != null)
+                if (leader != null)
                 {
-                    _war.Defend(stretch.Name, new Vector3(stretch.SpotX, stretch.SpotY, stretch.SpotZ));
+                    _war.Defend(leader.Name, new Vector3(leader.SpotX, leader.SpotY, leader.SpotZ));
                 }
 
 
@@ -1108,7 +1108,7 @@ namespace Hoodrich
 
                 // Wired at last. GunScreen has declared this since the rack became a screen,
                 // documents it as "set by Main", and invokes it on every sale -- and Main has
-                // never assigned it, so Grimes took your money in total silence and the
+                // never assigned it, so the armourer took your money in total silence and the
                 // compiler said so on every build. Buying off him is the one moment on that
                 // screen where there is a man on the other side of it.
                 _gunScreen.OnBought = (piece, rounds) =>
@@ -1483,8 +1483,8 @@ namespace Hoodrich
                     _block.Update();
                     _couch.Update();
                     _stove.Update();
-                    _grimesStockA.Update();
-                    _grimesStockB.Update();
+                    _armourerStockA.Update();
+                    _armourerStockB.Update();
                     foreach (var door in _doors) door.Update();
                     _traffic.Update();
                     _payback.Update();
@@ -1493,8 +1493,8 @@ namespace Hoodrich
                     _war.Update();
 
                     _lamarCrew.Update();
-                    if (_stretchCrew != null) _stretchCrew.Update();
-                    _grimesCrew.Update();
+                    if (_leaderCrew != null) _leaderCrew.Update();
+                    _armourerCrew.Update();
                     _labCrew.Update();
                     _denCrew.Update();
                     foreach (var car in _cars) car.Update();
@@ -1502,7 +1502,7 @@ namespace Hoodrich
                     _meet.Update();
                     _partyBarrel.Update();
                     _partyCouch.Update();
-                    _stretchBox.Update();
+                    _leaderBox.Update();
                     foreach (var prop in _scenery) prop.Update();
                     _decks.Update();
                     _partyDecks.Update();
@@ -1984,8 +1984,8 @@ namespace Hoodrich
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
-            try { _grimesStockA?.RestoreWorld(); } catch { /* teardown */ }
-            try { _grimesStockB?.RestoreWorld(); } catch { /* teardown */ }
+            try { _armourerStockA?.RestoreWorld(); } catch { /* teardown */ }
+            try { _armourerStockB?.RestoreWorld(); } catch { /* teardown */ }
             foreach (var door in _doors)
             {
                 try { door.RestoreWorld(); } catch { /* teardown */ }
@@ -1995,8 +1995,8 @@ namespace Hoodrich
             try { _rollers?.RestoreWorld(); } catch { /* teardown */ }
             try { _patrol?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
-            try { _stretchCrew?.RestoreWorld(); } catch { /* teardown */ }
-            try { _grimesCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _leaderCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _armourerCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _labCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _denCrew?.RestoreWorld(); } catch { /* teardown */ }
             foreach (var car in _cars)
@@ -2007,7 +2007,7 @@ namespace Hoodrich
             try { _meet?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
-            try { _stretchBox?.RestoreWorld(); } catch { /* teardown */ }
+            try { _leaderBox?.RestoreWorld(); } catch { /* teardown */ }
 
             try { _decks?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyDecks?.RestoreWorld(); } catch { /* teardown */ }

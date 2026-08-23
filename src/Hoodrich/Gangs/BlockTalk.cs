@@ -74,7 +74,7 @@ namespace Hoodrich.Gangs
         /// Set by Main: true when something else already owns the context key.
         ///
         /// The block is full of people who are ALSO somebody -- Lamar has two men stood with
-        /// him, Stretch has two more -- so without this, walking up to Lamar offers you a nod
+        /// him, Gerald has two more -- so without this, walking up to Lamar offers you a nod
         /// at his hanger-on instead of the job he is holding.
         /// </summary>
         public Func<bool> Suppressed;

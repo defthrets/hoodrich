@@ -16,7 +16,7 @@ namespace Hoodrich.Gangs
     /// and they are not part of any system -- they are furniture that happens to be armed, and
     /// that is the entire job.
     ///
-    /// Shared rather than written twice, because Lamar and Stretch want exactly the same thing
+    /// Shared rather than written twice, because Lamar and Gerald want exactly the same thing
     /// and a second copy of this would be a second place to fix it.
     /// </summary>
     internal sealed class Entourage
