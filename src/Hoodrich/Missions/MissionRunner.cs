@@ -755,6 +755,11 @@ namespace Hoodrich.Missions
         {
             TellHimIfThereIsWork();
 
+            // Above everything, and outside IsRunning: paint on a wall is the one thing here
+            // that outlives the job that put it there, so it cannot hang off whether a job is
+            // running. It throttles itself and does nothing at all until something is painted.
+            _tags.Refresh();
+
             // Going down, or being taken in, ends whatever was running -- and it has to be
             // taken again from the start.
             //

@@ -743,34 +743,46 @@ namespace Hoodrich.Missions
             // half anybody is looking at.
             if (Game.GameTime - _sprayingSince < PaintDelayMs) return;
 
-            // Requested in BeginSpray, checked HERE. A named PTFX asset streams in like an
-            // anim dict does: the request returns immediately and the file lands some frames
-            // later, so asking whether it is loaded on the line after asking for it is a
-            // question that can only be answered no.
-            if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, PaintAsset))
-            {
-                Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PaintAsset);
-                return;
-            }
+            var patient = Game.GameTime - _sprayingSince < PaintDelayMs + JetGraceMs;
 
             try
             {
-                foreach (var effect in PaintEffects)
+                foreach (var jet in PaintJets)
                 {
+                    // Nothing to hang it off. The can is optional -- an install without the
+                    // prop still gets the job, it just gets it without a can in shot -- so a
+                    // jet that needs one steps aside rather than failing.
+                    if (jet.OnCan && (_can == null || !_can.Exists())) continue;
+
+                    // A named PTFX asset streams in like an anim dict does: the request
+                    // returns immediately and the file lands some frames later, so asking
+                    // whether it is loaded on the line after asking for it can only be
+                    // answered no.
+                    if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, jet.Asset))
+                    {
+                        Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, jet.Asset);
+
+                        // Hold the queue rather than letting the standby past. See JetGraceMs.
+                        if (patient) return;
+                        continue;
+                    }
+
                     // Has to be re-declared before every start, not once at load: the call sets
                     // which asset the NEXT start reads from and the game resets it constantly.
-                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PaintAsset);
+                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, jet.Asset);
 
-                    // On the PED, not on the hand bone. A bone's local axes are its own and
-                    // point wherever the skeleton happens to face, so aiming a jet off one is
-                    // guesswork; a ped's are not -- +Y is the way he is looking, which during
-                    // this clip is the wall. The offset puts it out at the end of his right
-                    // arm, at the height the can is held.
+                    // On the CAN for Rockstar's, which is where they hang it and what it is
+                    // authored around. Otherwise on the PED rather than on the hand bone: a
+                    // bone's local axes are its own and point wherever the skeleton happens to
+                    // face, so aiming a jet off one is guesswork, and a ped's are not -- +Y is
+                    // the way he is looking, which during this clip is the wall.
+                    var on = jet.OnCan ? _can.Handle : player.Handle;
+
                     var fx = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY,
-                                                effect, player.Handle,
-                                                PaintRight, PaintForward, PaintUp,
-                                                PaintPitch, 0f, 0f,
-                                                PaintScale, false, false, false);
+                                                jet.Effect, on,
+                                                jet.X, jet.Y, jet.Z,
+                                                jet.Pitch, 0f, 0f,
+                                                jet.Scale, false, false, false);
 
                     if (fx == 0 || !Function.Call<bool>(Hash.DOES_PARTICLE_FX_LOOPED_EXIST, fx))
                     {
@@ -786,9 +798,13 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PARTICLE_FX_LOOPED_COLOUR, fx, pr, pg, pb, false);
                     Function.Call(Hash.SET_PARTICLE_FX_LOOPED_ALPHA, fx, 0.85f);
 
-                    Log.Debug("Tag paint: " + effect + " started.");
+                    Log.Info("Tag paint: " + jet + " started.");
                     return;
                 }
+
+                // Still inside the grace with everything either unstreamed or unusable, so
+                // there is nothing to report yet -- come back next tick.
+                if (patient) return;
 
                 Log.Debug("Tag paint: none of the effects would start; painting stays silent.");
 
@@ -831,19 +847,88 @@ namespace Hoodrich.Missions
 
         private const float PaintScale = 0.55f;
 
+        /// <summary>One way of getting paint out of the can, with where to hang it.</summary>
+        private sealed class PaintJet
+        {
+            public string Asset = "";
+            public string Effect = "";
+
+            /// <summary>Attached to the can rather than to the man holding it.</summary>
+            public bool OnCan;
+
+            public float X, Y, Z;
+            public float Pitch;
+            public float Scale = 1f;
+
+            public override string ToString() => Asset + " / " + Effect;
+        }
+
         /// <summary>
         /// Candidates, tried in order, first one that actually starts wins.
         ///
-        /// All three are in "core", which is always resident, so this is not really about an
-        /// install missing them -- it is that a PTFX name that does not exist fails SILENTLY,
-        /// returning a handle for an effect that is not there. The handle is checked rather
-        /// than assumed, and the one that took is logged, which is the only way to find out
-        /// from outside the game which of these the build actually has.
+        /// The first is Rockstar's, and it is not a lookalike -- `scr_lamgraff_paint_spray`
+        /// out of `scr_playerlamgraff` is the effect from the Lamar graffiti scene, which is
+        /// the exact thing this job is. It is authored as paint coming out of a nozzle, and
+        /// Rockstar's own script colours it with SET_PARTICLE_FX_LOOPED_COLOUR, so the tint we
+        /// have always been applying is one it is known to accept.
+        ///
+        /// It hangs off the CAN at zero offset and zero rotation, which is how R* hangs it.
+        /// That works regardless of which bone our can is on or how it was rotated to get it
+        /// sitting right, because a particle effect attached to an entity inherits that
+        /// entity's world transform -- so if the can looks correctly held, an effect authored
+        /// for that can sprays correctly out of it.
+        ///
+        /// Everything under it is what the job shipped with: a colourless water or steam jet
+        /// out of "core", hung off the PED and tipped flat, tinted green to look like paint. It
+        /// is kept because "core" is always resident and cannot fail to stream, which makes it
+        /// the thing that is definitely there if the graffiti asset is not.
+        ///
+        /// A PTFX name that does not exist fails SILENTLY, returning a handle for an effect
+        /// that is not there -- so the handle is checked rather than assumed, and the one that
+        /// took is logged. That log line is the only way to find out from outside the game
+        /// which of these the build actually has.
         /// </summary>
-        private static readonly string[] PaintEffects =
+        private static readonly PaintJet[] PaintJets =
         {
-            PaintEffect, "ent_sht_water", "ent_sht_extinguisher"
+            new PaintJet
+            {
+                Asset = "scr_playerlamgraff", Effect = "scr_lamgraff_paint_spray",
+                OnCan = true, Scale = 1f
+            },
+
+            new PaintJet
+            {
+                Asset = PaintAsset, Effect = PaintEffect,
+                X = PaintRight, Y = PaintForward, Z = PaintUp,
+                Pitch = PaintPitch, Scale = PaintScale
+            },
+
+            new PaintJet
+            {
+                Asset = PaintAsset, Effect = "ent_sht_water",
+                X = PaintRight, Y = PaintForward, Z = PaintUp,
+                Pitch = PaintPitch, Scale = PaintScale
+            },
+
+            new PaintJet
+            {
+                Asset = PaintAsset, Effect = "ent_sht_extinguisher",
+                X = PaintRight, Y = PaintForward, Z = PaintUp,
+                Pitch = PaintPitch, Scale = PaintScale
+            }
         };
+
+        /// <summary>
+        /// How long to hold out for a jet whose asset is still streaming.
+        ///
+        /// Without this the standby wins every time and the good one never gets a look in:
+        /// "core" is always resident, so the moment the graffiti asset is a frame late the
+        /// loop falls straight past it to something that is ready now. Under the grace the
+        /// loop WAITS at the first thing that has not landed; after it, it takes whatever will
+        /// start. Preload asks for the asset from the moment the job begins, so in practice
+        /// this has already elapsed by the time anybody is stood at a wall.
+        /// </summary>
+        private const int JetGraceMs = 1400;
 
         /// <summary>Turns the paint off. Called from every path out of painting.</summary>
         private void StopPaint()
@@ -924,6 +1009,55 @@ namespace Hoodrich.Missions
 
         /// <summary>Seconds. -1 is no expiry clock -- the game's decal budget is the only limit.</summary>
         private const float StainForever = -1f;
+
+        /// <summary>One mark, and everything needed to put it back exactly where it was.</summary>
+        private sealed class PaintMark
+        {
+            public Vector3 At;
+            public Vector3 Into;
+            public Vector3 Side;
+            public float Size;
+            public float R, G, B;
+
+            /// <summary>The last handle the game gave it, so a stale one can be cleaned up.</summary>
+            public int Handle;
+
+            /// <summary>True once he has been far enough away for the game to have dropped it.</summary>
+            public bool Away;
+        }
+
+        /// <summary>
+        /// Every mark painted this session, so the wall stays yours.
+        ///
+        /// Decals do not survive a stream-out. Ride to the next wall and the first one's paint
+        /// is quietly gone by the time you come back past it -- which turns "that's ours now"
+        /// into something that was true for as long as you were stood in front of it. The mod
+        /// that does this for a living re-adds every one of its tags on a timer for exactly
+        /// this reason.
+        ///
+        /// Deliberately NOT cleared by Clear(). The job ending is the point at which the paint
+        /// starts mattering, not the point at which it stops.
+        /// </summary>
+        private readonly List<PaintMark> _marks = new List<PaintMark>();
+
+        /// <summary>
+        /// How many are kept. Six a wall, four walls, and room to go round again.
+        ///
+        /// The whole world shares a budget of five hundred and twelve decals with every bullet
+        /// hole and tyre mark in it, so this stays well clear of being the thing that fills it.
+        /// </summary>
+        private const int MarkCap = 48;
+
+        /// <summary>Far enough for the game to have dropped it.</summary>
+        private const float MarkGoneRange = 150f;
+
+        /// <summary>And near enough to want it back. Under Gone, so the two do not flap.</summary>
+        private const float MarkBackRange = 110f;
+
+        private const int MarkCheckMs = 2000;
+
+        /// <summary>When the last sweep ran, not when the next one is due.</summary>
+        private int _lastMarkCheck;
 
         private bool _wallFound;
         private Vector3 _wallAt;
@@ -1078,6 +1212,13 @@ namespace Hoodrich.Missions
 
                 _stains++;
                 _stainMisses = 0;
+
+                Remember(new PaintMark
+                {
+                    At = at, Into = _wallInto, Side = side, Size = size,
+                    R = r, G = g, B = b, Handle = handle
+                });
+
                 return;
             }
 
@@ -1091,6 +1232,101 @@ namespace Hoodrich.Missions
                 Log.Warn("No decal would place after " + StainGiveUpAfter +
                          " tries; the tag stays theirs on screen.");
             }
+        }
+
+        private void Remember(PaintMark mark)
+        {
+            _marks.Add(mark);
+
+            // Oldest out first, and taken off the wall rather than just forgotten -- a handle
+            // dropped from this list is one nothing can ever clean up again.
+            while (_marks.Count > MarkCap)
+            {
+                Wipe(_marks[0]);
+                _marks.RemoveAt(0);
+            }
+        }
+
+        private static void Wipe(PaintMark mark)
+        {
+            if (mark == null || mark.Handle == 0) return;
+
+            try { Function.Call(Hash.REMOVE_DECAL, mark.Handle); }
+            catch { /* it has already gone */ }
+
+            mark.Handle = 0;
+        }
+
+        /// <summary>
+        /// Puts the paint back on walls he is coming past again.
+        ///
+        /// Called every tick whether or not a job is running, because the whole point of the
+        /// paint is what the block looks like AFTER the job. Range re-entry rather than a
+        /// repeating timer: re-adding one that is still on the wall does not replace it, it
+        /// stacks a second one on top, and doing that every twenty seconds would empty the
+        /// world's decal budget into one garage door. The two ranges differ so a player stood
+        /// on the boundary does not flap across it.
+        /// </summary>
+        public void Refresh()
+        {
+            if (_marks.Count == 0) return;
+            if (_stainMisses >= StainGiveUpAfter) return;
+
+            var now = Game.GameTime;
+            if (now - _lastMarkCheck < MarkCheckMs) return;
+            _lastMarkCheck = now;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            var where = player.Position;
+
+            foreach (var mark in _marks)
+            {
+                var d = where.DistanceTo(mark.At);
+
+                if (d > MarkGoneRange)
+                {
+                    // The handle is deliberately KEPT rather than zeroed. Being out of range
+                    // is the reason to expect the game has dropped it, not proof that it has --
+                    // and if it did survive, the only thing that could ever remove it is this
+                    // handle. Throwing it away here is what would put a second mark on top of
+                    // the first when he came back.
+                    mark.Away = true;
+                    continue;
+                }
+
+                if (!mark.Away || d > MarkBackRange) continue;
+
+                // Belt and braces: if it somehow did survive, this stops a second going on
+                // top of it.
+                Wipe(mark);
+
+                try
+                {
+                    mark.Handle = Function.Call<int>(Hash.ADD_DECAL, _decalType,
+                                                     mark.At.X, mark.At.Y, mark.At.Z,
+                                                     mark.Into.X, mark.Into.Y, mark.Into.Z,
+                                                     mark.Side.X, mark.Side.Y, mark.Side.Z,
+                                                     mark.Size, mark.Size,
+                                                     mark.R, mark.G, mark.B, 0.92f,
+                                                     StainForever, true, false, false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not put a tag back: " + ex.Message);
+                    continue;
+                }
+
+                if (mark.Handle != 0) mark.Away = false;
+            }
+        }
+
+        /// <summary>Takes every mark off the walls. Only for the mod shutting down.</summary>
+        private void WipeAllMarks()
+        {
+            foreach (var mark in _marks) Wipe(mark);
+            _marks.Clear();
         }
 
         /// <summary>True when the player is trying to walk away, which cancels it.</summary>
@@ -1171,6 +1407,11 @@ namespace Hoodrich.Missions
                 foreach (var dict in LamarDicts) Function.Call(Hash.REQUEST_ANIM_DICT, dict);
 
                 Function.Call(Hash.REQUEST_ANIM_DICT, SprayDict);
+
+                // And the paint, for exactly the same reason. Asked for while he is still
+                // riding, so the graffiti asset is resident by the time he is stood at a wall
+                // and the grace period in Paint never has to be spent.
+                foreach (var jet in PaintJets) Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, jet.Asset);
             }
             catch
             {
@@ -1491,6 +1732,13 @@ namespace Hoodrich.Missions
             _blips.Clear();
         }
 
-        public void RestoreWorld() => Clear();
+        public void RestoreWorld()
+        {
+            // The marks go too, and ONLY here. A script reload loses the list but not the
+            // decals, so leaving them would put a second set on top of the first the next time
+            // somebody paints that wall.
+            WipeAllMarks();
+            Clear();
+        }
     }
 }
