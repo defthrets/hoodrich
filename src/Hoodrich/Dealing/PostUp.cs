@@ -2306,7 +2306,11 @@ namespace Hoodrich.Dealing
             // The house script, like every other title in the mod. It is a verdict on you
             // rather than a readout, so it reads as handwriting rather than as a label -- and
             // the scale goes up with it, because a script face at a label's size is a smudge.
-            Hud.Text(_state == null ? "" : _state.ProductRepWord.ToUpperInvariant(),
+            // Not shouted. A script face set in capitals is two decisions fighting each other:
+            // handwriting is the informal one and block capitals are the formal one, and a
+            // verdict somebody would say out loud should look like it was said rather than
+            // printed.
+            Hud.Text(_state == null ? "" : _state.ProductRepWord,
                      x, y + 0.054f, 0.38f, repColour, Hud.FontCursive);
 
             if (!string.IsNullOrEmpty(detail))

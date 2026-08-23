@@ -258,22 +258,25 @@ namespace Hoodrich.UI
             line += NameHeight;
 
             // The handle under it, quieter, in the plain face.
-            if (card.By.Verified)
+            // The same badge the feed draws, for the same people.
+            //
+            // It was a white tick and it was only for anybody FLAGGED, while the timeline had
+            // already moved to a blue disc and to anybody with a real photograph -- so the same
+            // account wore one badge on the right of the screen and a different one in the
+            // timeline, and a story character with a face got nothing here at all.
+            if (card.By.Verified || drew)
             {
-                // The same mark the feed uses. This was a bare disc while the timeline drew a
-                // tick, so the same verified account wore a badge in one place and a dot in
-                // the other -- and next to the handle a dot reads as punctuation rather than
-                // as a badge, which is exactly why the feed stopped using one.
-                //
-                // The disc stays as the fallback, for an install where the PNG will not load.
                 const float th = 0.012f;
                 var icx = textX + Hud.ToX(th) * 0.5f;
 
-                if (!Hud.File("tick.png", icx, line + 0.0068f, th, 0f,
-                              Alpha(Palette.Accent, solid)))
+                Hud.Disc(icx, line + 0.0068f, 0.0055f, Alpha(Palette.Verified, solid));
+
+                if (!Hud.File("tick.png", icx, line + 0.0068f, th * 0.72f, 0f,
+                              Alpha(Color.FromArgb(255, 18, 20, 22), solid)))
                 {
-                    Hud.Disc(textX + 0.0035f, line + 0.0068f, 0.0033f,
-                             Alpha(Palette.Accent, solid));
+                    // No tick art in this install, so the disc says it on its own.
+                    Hud.Disc(icx, line + 0.0068f, 0.0022f,
+                             Alpha(Color.FromArgb(255, 18, 20, 22), solid));
                 }
 
                 textX += Hud.ToX(th) + 0.003f;

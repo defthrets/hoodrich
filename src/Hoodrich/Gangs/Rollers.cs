@@ -79,8 +79,8 @@ namespace Hoodrich.Gangs
         /// <summary>Past this they are somebody else's problem, so they are handed back.</summary>
         private const float LetGoRange = 260f;
 
-        private const int GapMinMs = 11000;
-        private const int GapMaxMs = 34000;
+        private const int GapMinMs = 8000;
+        private const int GapMaxMs = 24000;
 
         /// <summary>How long they sit in an alley with the engine running.</summary>
         private const int SitMinMs = 12000;
@@ -346,9 +346,18 @@ namespace Hoodrich.Gangs
 
             var stop = !roll.OnFoot && _rng.Next(100) < StopChancePercent;
 
+            // A rider goes down the back streets about as often as he goes along the pavement.
+            //
+            // Pavement alone put every one of them out on the main road frontage, which is the
+            // one place a bike is least interesting -- the service roads and the cut-throughs
+            // behind the buildings are where anybody round here actually rides, and the road
+            // network already knows which ones those are.
             var where = roll.OnFoot
-                ? Pavement(roll.Car.Position)
+                ? (_rng.Next(100) < 55 ? Node(roll.Car.Position, true) : Pavement(roll.Car.Position))
                 : Node(roll.Car.Position, stop);
+
+            // Whichever it asked for, take the other rather than stand still.
+            if (where == Vector3.Zero && roll.OnFoot) where = Pavement(roll.Car.Position);
 
             // Nowhere to send them this tick -- the probes all landed off our turf, or off the
             // road network entirely. They wander instead of standing still, because a car

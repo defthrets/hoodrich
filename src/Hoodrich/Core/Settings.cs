@@ -222,7 +222,7 @@ namespace Hoodrich.Core
         public int RollerCars = 2;
 
         /// <summary>Riders on the footpaths at once.</summary>
-        public int RollerBikes = 3;
+        public int RollerBikes = 4;
 
         // ---- joining -----------------------------------------------------------
 
