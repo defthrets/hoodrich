@@ -1601,10 +1601,19 @@ namespace Hoodrich
                     _jobs.Update();
                 }
 
-                // Everything that writes across the top of the screen stands down while the
-                // wheel is up. The wheel is modal and puts its own readout there, so a raid
-                // banner and a mission objective underneath it is three things in one place --
-                // which is exactly what it looked like.
+                // The whole HUD stands down while the phone is up, and it has to be a whole
+                // -- nothing draws in front of it, because everything below this line runs
+                // AFTER the phone has rendered and would therefore land on top of it.
+                //
+                // That is a change in kind from the wheel, which sat in the middle of the
+                // screen and only ever clashed with the banners across the top. The phone
+                // stands on the RIGHT, which is where the posted-up readout, the deal prompts
+                // and the licence strip all live -- so half the HUD would have been drawn
+                // through the handset rather than merely near it.
+                //
+                // Help.Tick is the one exception and stays live: it is the bottom-centre
+                // prompt, it is how the player is told what a button does, and it is the only
+                // thing here that is not competing for the same corner.
                 if (!_phone.IsOpen)
                 {
                     _war.Draw();
@@ -1621,16 +1630,19 @@ namespace Hoodrich
                 // one frame in nine is a strobe.
                 _patrol.Draw();
 
-                _cutting.Draw();
-                _bust.Draw();
-                _postUp.Draw();
-                _stash.Draw();
-                _sleep.Draw();
-                _kitchen.Draw();
+                if (!_phone.IsOpen)
+                {
+                    _cutting.Draw();
+                    _bust.Draw();
+                    _postUp.Draw();
+                    _stash.Draw();
+                    _sleep.Draw();
+                    _kitchen.Draw();
+                }
 
                 // Last, deliberately. Everything above owns a specific spot and has first
                 // claim on the key; this is whoever happens to be stood there otherwise.
-                _blockTalk.Draw();
+                if (!_phone.IsOpen) _blockTalk.Draw();
 
                 SlowTick();
 

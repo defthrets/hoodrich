@@ -1,7 +1,7 @@
 # Hoodrich
 
-A drug-dealing and gang mod for GTA V, built from scratch, driven from a custom radial wheel
-that replaces the weapon wheel.
+A drug-dealing and gang mod for GTA V, built from scratch, driven from a custom phone that
+replaces the in-game one. Your weapon wheel is left alone.
 
 You run with the Families. You buy weight off a plug, you take it home and cut it, you post up
 on a corner and let the trade come to you, and you try to be gone before the police or somebody
@@ -21,37 +21,37 @@ live in `src/Hoodrich/Core`.
 
 1. **ScriptHookV** and **ScriptHookVDotNet 3** — the only prerequisites.
 2. Drop `Hoodrich.dll`, `Hoodrich.ini` and the `Hoodrich/` data folder into `scripts/`.
-3. Load a save. The wheel is on the weapon-wheel button.
+3. Load a save. Hoodrich is on the phone button.
 
 Works on both Legacy and Enhanced. `build.ps1 -Deploy -Target Both` puts it in both.
 
 ---
 
-## The wheel
+## The phone
 
-**Hold** the weapon-wheel button and Hoodrich opens instead. **Tap** it and you still holster
-your weapon, because that is what that button has always done and a mod should not fight muscle
-memory. **Weapons** hands the button back to the game for a few seconds so you get the real
-weapon wheel, selection and all.
+Press the **phone button**. Apps on the home screen, arrows to move, Enter to open one,
+Backspace to go back and to put it away.
 
-The wheel was redesigned from the ground up in `preview/` — five directions were rendered as
-real images before a line of it was written, and `preview/wheel_current.py` still renders the
-old one so the comparison is arguable rather than a matter of taste.
+It used to be a radial wheel on the weapon-wheel button, and that was the wrong button. A mod
+about dealing was charging the player the one control a GTA player uses most — every time you
+wanted a gun you got a business menu, and the menu's own first entry was a **Weapons** wedge
+whose only job was apologising for that. The phone costs nothing by comparison: the vanilla
+phone is a contacts list and an email client for missions that are over by the time this mod is
+interesting. `SelectWeapon` is now untouched — un-disabled, un-hidden, un-read.
 
-- **The ring is one thing.** Icons are big enough to be the wedge rather than decorate it, and
-  labels sit *outside* the rim on their own angle so they are not fighting the picture for
-  space.
-- **The hub is the only place words are read.** Breadcrumb, the hovered item's name, its value,
-  its detail. There is no top-of-screen readout and no side panel — both are gone.
-- **Hover has a keel**: an amber bar on the wedge's *inner* edge, pointing at the hub, which is
-  where the answer is written.
-- **Disabled is a silhouette, not a colour.** An outlined empty slot with a padlock and a
-  struck-through label. Colour alone measured four values out of 255 from an enabled wedge,
-  which is a rounding error rather than a state.
-- **Stat rows sit under the ring**, in two columns, so the composition stays symmetrical.
+- **Apps on the home screen, text menus inside them.** The top level is a grid you point at;
+  everything below it is a list with the icon, the name, what it does and its value on one line.
+- **The content layer did not change.** Every page is still built by `WheelPages`, still a
+  `WheelPage` of `WheelItem`s. That was always a list — it was only ever *drawn* as a ring — so
+  the phone is a second presentation of the same tree and no business rule moved.
+- **The HUD stands down while it is up.** The handset stands on the right, which is where the
+  posted-up readout and the licence strip live, and everything in this mod draws in call order.
+- **Two keys, one button.** `INPUT_PHONE` and `INPUT_CELLPHONE_UP` are the same key on PC by
+  default, so a plain toggle reads "scroll up" as "put the phone away". Closing on the phone
+  button is conditional on the up direction not also being down.
 
-Pages: **Weapons · Dealing · Gangs · Inventory · Socials**, and below those the supply,
-dealer, stock, sell, gang, turf and start-over pages.
+Apps: **Dealing · Contacts · Gangs · Inventory · Socials**, and below those the supply, dealer,
+stock, sell, gang, turf and start-over pages.
 
 ---
 
@@ -132,7 +132,7 @@ you on sight.
 
 ### Leaders
 
-Nine of them, each holding court on his own set's block: **Stretch** (Families, Chamberlain),
+Nine of them, each holding court on his own set's block: **Gerald** (Families, Chamberlain),
 **OG Reese** (Ballas, Davis), **El Tio** (Vagos, Rancho), **Chavo** (Marabunta, Cypress Flats),
 **Bull** (Lost, Stab City), **Uncle Wei** (Triads, Mirror Park), **Sarkis** (Armenians, Alta),
 **Chuy** (Aztecas, Banning), **Mr Kim** (Kkangpae, Little Seoul).
@@ -218,7 +218,7 @@ own house.
 
 ## The HUD
 
-Every surface is on the same art: the wheel, the dialogue panel, the info panels, the kitchen,
+Every surface is on the same art: the phone, the dialogue panel, the info panels, the kitchen,
 the stash, the feed and the toasts. **66 icons**, all drawn from scratch as white masks and
 tinted at draw time, so the same file is the set's colour on a gang row and the money colour on
 a price.
@@ -264,7 +264,7 @@ Compiles with a self-contained Roslyn in `tools/`, so it does not need a .NET SD
 | `SPRITES.md` | the usable in-game sprite dictionaries |
 | `TEXTFORMAT.md` | Rockstar's `~tag~` codes |
 | `NEXT.md` | what is agreed and not yet built |
-| `preview/` | the icon sheet, and every wheel redesign rendered as a real image |
+| `preview/` | the icon sheet, and every wheel redesign rendered as a real image (the wheel is gone; kept as the record of how it was designed) |
 
 ---
 

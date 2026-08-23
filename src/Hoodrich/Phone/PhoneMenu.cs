@@ -172,19 +172,71 @@ namespace Hoodrich.Phone
             Beep("NAV_UP_DOWN");
         }
 
-        /// <summary>Left/right on the home grid, which is a different move from up/down.</summary>
+        /// <summary>Left and right. One app along on the home grid; nothing in a list.</summary>
         public void MoveColumn(int by)
         {
             if (!AtHome) return;
             MoveBy(by);
         }
 
+        /// <summary>
+        /// Up and down. One line in a list, one ROW of apps on the home grid.
+        ///
+        /// The grid clamps where a list wraps, and that is the difference between the two.
+        /// Stepping a whole row with the same wrapping arithmetic a list uses lands you in a
+        /// different column every time it runs off the end -- pressing down on the third app
+        /// of a five-app grid took you to the first, which is neither where you were pointing
+        /// nor anywhere a phone would have put you.
+        /// </summary>
         public void MoveRow(int by)
         {
             var lvl = Top;
-            if (lvl == null) return;
+            if (lvl == null || lvl.Page.Items.Count == 0) return;
 
-            MoveBy(AtHome ? by * Columns : by);
+            if (!AtHome)
+            {
+                MoveBy(by);
+                return;
+            }
+
+            var n = lvl.Page.Items.Count;
+            var target = lvl.Index + by * Columns;
+
+            if (target < 0 || target >= n)
+            {
+                // Off the end of the grid. Going down from a part-filled last row lands on the
+                // final app rather than nowhere; going up from the top row stays put.
+                if (by <= 0) return;
+                if (lvl.Index == n - 1) return;
+                target = n - 1;
+            }
+
+            Land(target, by);
+        }
+
+        /// <summary>
+        /// Moves to an index, stepping past anything locked in the direction of travel.
+        ///
+        /// Clamped rather than wrapped, so a grid move that ends on a disabled app walks
+        /// onward and gives up at the edge instead of appearing on the other side of the
+        /// screen.
+        /// </summary>
+        private void Land(int target, int dir)
+        {
+            var lvl = Top;
+            var n = lvl.Page.Items.Count;
+
+            var step = dir >= 0 ? 1 : -1;
+
+            while (target >= 0 && target < n && !lvl.Page.Items[target].Enabled)
+            {
+                target += step;
+            }
+
+            if (target < 0 || target >= n || target == lvl.Index) return;
+
+            lvl.Index = target;
+            Beep("NAV_UP_DOWN");
         }
 
         /// <summary>Drills in. Returns the item to ACT on, or null if it only opened a page.</summary>
