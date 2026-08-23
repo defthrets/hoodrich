@@ -86,17 +86,18 @@ namespace Hoodrich.Missions
         // ---- and the yard it goes to -------------------------------------------
 
         /// <summary>
-        /// The drop. A yard off the alley, walled on one side and fenced on the other.
+        /// Where the van goes. The ring on the ground, and nothing else.
         ///
-        /// He stands ON the mark rather than beside it. Every other marker in the mod is a
-        /// place to put a car and this one is a place to put a box, and the box goes to a man:
-        /// the ring around him says he is the drop, which saves inventing a second mark two
-        /// metres away for him to stand in and hoping there is no wall there.
+        /// He used to stand ON this, which made one mark mean two things -- park here AND the
+        /// man is here. They are nine metres apart in reality: you pull the van into the yard
+        /// and he is up by the garage door watching you do it, which is where somebody waiting
+        /// on a delivery actually stands.
         /// </summary>
         private static readonly Vector3 DropSpot = new Vector3(-103.338f, -1417.405f, 29.170f);
 
-        /// <summary>Facing back down the alley, which is the way you come in.</summary>
-        private const float DropHeading = 236.125f;
+        /// <summary>And where he waits: up at the pill press roller door, watching the yard.</summary>
+        private static readonly Vector3 GeraldSpot = new Vector3(-106.059f, -1408.996f, 29.706f);
+        private const float DropHeading = 213.916f;
 
         // ---- bay one, round the back ------------------------------------------
 
@@ -317,6 +318,9 @@ namespace Hoodrich.Missions
 
             if (toDrop <= StreamRange && Stage == StageDeliver) Gerald(); else ClearDrop();
 
+            // He is nine metres off the mark now, so "you have arrived" is about the ring and
+            // "go and talk to him" is about him. Two different distances, said separately.
+
             // And only one of them is the man you owe something to.
             var man = Stage == StageDeliver
                 ? (toDrop <= StreamRange ? _gerald : null)
@@ -458,18 +462,28 @@ namespace Hoodrich.Missions
             return null;
         }
 
-        /// <summary>The yard. He counts nothing, which is the compliment.</summary>
+        /// <summary>
+        /// The yard. He counts nothing, which is the compliment.
+        ///
+        /// And he does not make a speech. "The man at the port is yours now, use him" is a
+        /// crime boss bestowing a territory in a film -- Gerald is a man in a yard in
+        /// Chamberlain who has people for this and would like to go inside. What he actually
+        /// did was vouch for somebody, which is a small thing that costs him if it goes wrong,
+        /// and that is the only part he mentions.
+        /// </summary>
         private DialogueNode HandOver()
         {
             var node = new DialogueNode("Gerald",
-                "There he is. Nah -- don't open it, don't tell me what's in it, I know what's " +
-                "in it. You drove it here and you drove it here on time, and that's the whole " +
-                "test, dawg. Man at the port's yours now. Use him.")
+                "Aight. Leave it where it is, I got people for that. And quit standin' there " +
+                "lookin' at me like I'm finna say somethin' -- it's done, that's the whole " +
+                "thing. You got his number now so you call him your damn self, I ain't sittin' " +
+                "in the middle of nobody's business. All I did was say you was solid. Don't " +
+                "make me look stupid for it.")
             {
                 SpeakerColour = Palette.Cash
             };
 
-            node.Say("Say less.", Drop, "Hand over the van");
+            node.Say("I got you.", Drop, "Hand over the van");
             node.WithIcon(Icons.FromFile("box.png"));
 
             return node;
@@ -551,7 +565,7 @@ namespace Hoodrich.Missions
 
             // Tighter at the yard than at the port, because one of them is a place to leave a
             // van and the other is a man stood in the middle of it.
-            var radius = Stage == StageDeliver ? 2.4f : Stage == StageBay ? 3.6f : 5f;
+            var radius = Stage == StageBay ? 3.6f : 5f;
 
             try
             {
@@ -764,7 +778,7 @@ namespace Hoodrich.Missions
         {
             if (_gerald != null && _gerald.Exists()) return _gerald;
 
-            _gerald = Stand(GeraldModels, DropSpot, DropHeading, "Gerald");
+            _gerald = Stand(GeraldModels, GeraldSpot, DropHeading, "Gerald");
             return _gerald;
         }
 
