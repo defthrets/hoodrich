@@ -162,6 +162,53 @@ namespace Hoodrich.Missions
         private const float CrateY = -1.35f;
         private const float CrateZ = -0.12f;
 
+        // ---- and the ride home is not quiet ------------------------------------
+
+        /// <summary>Where they are sat waiting, on the way back up out of the docks.</summary>
+        private static readonly Vector3 AmbushSpot = new Vector3(429.047f, -1945.180f, 24.288f);
+        private const float AmbushHeading = 113.385f;
+
+        /// <summary>Placed at this range, so they are parked before you can see them arrive.</summary>
+        private const float AmbushPlace = 130f;
+
+        /// <summary>And they pull out at this one, which is roughly level with them.</summary>
+        private const float AmbushWake = 42f;
+
+        /// <summary>
+        /// How close to the yard they will follow you.
+        ///
+        /// They break off a hundred and fifty metres out rather than chasing you onto the
+        /// block. Partly because two Vagos in a lowrider do not drive into Chamberlain and
+        /// park, and partly because the errand should not end with a firefight in the yard you
+        /// are supposed to be quietly dropping a van in.
+        /// </summary>
+        private const float AmbushLetGo = 150f;
+
+        /// <summary>
+        /// What they are in. A gang car, made to keep up with a van.
+        ///
+        /// Their own cars are lowriders and classics, which is what they should be seen in --
+        /// but a stock Tornado tops out below a Rumpo and would spend the whole chase in the
+        /// mirror getting smaller. So it is a gang car with the engine, brakes and gearbox
+        /// wound to the top, which is a Vagos car somebody has spent money on rather than a
+        /// police interceptor in yellow.
+        /// </summary>
+        private static readonly string[] AmbushCars =
+        {
+            "buccaneer2", "faction", "voodoo", "tornado", "chino"
+        };
+
+        /// <summary>Metallic yellow, out of the game's own table -- the same index gangs.json gives them.</summary>
+        private const int VagosPaint = 88;
+
+        private static readonly string[] VagosModels =
+        {
+            "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03", "a_m_y_mexthug_01"
+        };
+
+        private const string VagosGun = "WEAPON_MACHINEPISTOL";
+        private const int AmbushCrew = 2;
+
         /// <summary>Close enough to the marker to have arrived.</summary>
         private const float ParkRange = 9f;
 
@@ -211,6 +258,12 @@ namespace Hoodrich.Missions
         private bool _saidHere;
 
         // ---- the loading bay ---------------------------------------------------
+
+        /// <summary>0 nothing, 1 parked and waiting, 2 on you, 3 finished with.</summary>
+        private int _ambush;
+        private Vehicle _hunters;
+        private Blip _huntBlip;
+        private readonly List<Ped> _vagos = new List<Ped>();
 
         /// <summary>0 waiting on the van, 1 walking, 2 loading, 3 done and wandering.</summary>
         private int _bay;
@@ -310,6 +363,9 @@ namespace Hoodrich.Missions
                 Loading(player);
                 return;
             }
+
+            // Somebody has been sat waiting on the road up out of the docks.
+            if (Stage == StageDeliver) Ambush(player);
 
             var toPort = player.Position.DistanceTo(ParkSpot);
             var toDrop = player.Position.DistanceTo(DropSpot);
@@ -609,6 +665,9 @@ namespace Hoodrich.Missions
         /// <summary>The furthest away this leg has been, which is what the bar is measured against.</summary>
         private float _legFar;
 
+        /// <summary>And the highest the fill has reached, so it cannot slide back down.</summary>
+        private float _legBest;
+
         /// <summary>When the card first appeared, for the entrance.</summary>
         private int _cardAt;
 
@@ -634,6 +693,7 @@ namespace Hoodrich.Missions
             {
                 _barLeg = leg;
                 _legFar = 0f;
+                _legBest = 0f;
             }
 
             var d = player.Position.DistanceTo(Mark);
@@ -642,6 +702,17 @@ namespace Hoodrich.Missions
             var done = _legFar < 1f ? 1f : 1f - d / _legFar;
             if (done < 0f) done = 0f;
             if (done > 1f) done = 1f;
+
+            // Never backwards inside a leg.
+            //
+            // Dying is what exposed this. You come round outside a hospital four kilometres
+            // from where you were, the furthest-seen distance jumps, and every previous
+            // reading is suddenly worth less than it was -- so the bar slides back down the
+            // card while you are reading the same sentence it had before you died. Getting
+            // further from somewhere is not un-doing the drive you already made, so the fill
+            // holds its high-water mark and only ever climbs.
+            if (done > _legBest) _legBest = done;
+            done = _legBest;
 
             // Three legs, a third of the bar each: find him, get loaded, get it home.
             if (leg == StageDeliver) return 0.667f + done * 0.333f;
@@ -660,6 +731,16 @@ namespace Hoodrich.Missions
         private void Card()
         {
             if (Busy != null && Busy()) return;
+
+            // Not over a loading screen, a death, an arrest or a cutscene. The card is a thing
+            // the game draws on top of the world, and during any of those there is no world
+            // under it -- which is why it turned up sitting on a black screen on the way in and
+            // again on the way back from the hospital.
+            var who = Game.Player.Character;
+
+            if (who == null || !who.Exists() || !who.IsAlive || Game.Player.IsDead) return;
+            if (Game.IsLoading || Game.IsPaused) return;
+            if (Function.Call<bool>(Hash.IS_PLAYER_BEING_ARRESTED, Game.Player.Handle, false)) return;
 
             if (_cardAt == 0) _cardAt = Game.GameTime;
 
@@ -1135,6 +1216,332 @@ namespace Hoodrich.Missions
 
         // ---- taking it away ----------------------------------------------------
 
+        // ---- the ride home ------------------------------------------------------
+
+        /// <summary>
+        /// Two Vagos who know what is in the van.
+        ///
+        /// The delivery leg is a four-kilometre drive with nothing in it, and a quarter kilo
+        /// riding in the back is exactly the kind of thing somebody would try to take. So they
+        /// are sat on the road up out of the docks with the engine off, and they pull out
+        /// behind you as you go past.
+        ///
+        /// Deliberately survivable rather than scripted: they can be shot, rammed, lost or
+        /// simply outdriven, and none of those outcomes fails anything. The load cannot be
+        /// taken off you -- what they cost you is paint, time and a wanted level's worth of
+        /// noise on a job you were supposed to do quietly.
+        /// </summary>
+        private void Ambush(Ped player)
+        {
+            switch (_ambush)
+            {
+                case 0: PlaceAmbush(player); return;
+                case 1: WakeAmbush(player); return;
+                case 2: RunAmbush(); return;
+                default: return;
+            }
+        }
+
+        private void PlaceAmbush(Ped player)
+        {
+            if (player.Position.DistanceTo(AmbushSpot) > AmbushPlace) return;
+
+            if (!MakeHunters())
+            {
+                // Nothing would spawn, so the road home is quiet. Better than a half-built
+                // ambush that follows you with one man in it.
+                _ambush = 3;
+                return;
+            }
+
+            _ambush = 1;
+            Log.Info("Port run: the Vagos are sat waiting on the dock road.");
+        }
+
+        private void WakeAmbush(Ped player)
+        {
+            if (_hunters == null || !_hunters.Exists() || !_hunters.IsDriveable)
+            {
+                _ambush = 3;
+                return;
+            }
+
+            if (player.Position.DistanceTo(_hunters.Position) > AmbushWake) return;
+
+            _ambush = 2;
+
+            try
+            {
+                _hunters.IsEngineRunning = true;
+
+                for (var i = 0; i < _vagos.Count; i++)
+                {
+                    var ped = _vagos[i];
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                    Function.Call(Hash.SET_PED_AS_ENEMY, ped.Handle, true);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+
+                    // 2 is can-do-drivebys, 3 is can-leave-vehicle. They shoot from the car and
+                    // they stay in it -- the brief is running you off the road, not a shootout
+                    // on the hard shoulder.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 2, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 3, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);
+
+                    if (i == 0)
+                    {
+                        Function.Call(Hash.SET_DRIVER_ABILITY, ped.Handle, 1f);
+                        Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, ped.Handle, 1f);
+
+                        Function.Call(Hash.TASK_VEHICLE_CHASE, ped.Handle, player.Handle);
+
+                        // Right up on the back of the van. The default keeps a respectful
+                        // distance, which is a car following you rather than one trying to put
+                        // you into a wall.
+                        Function.Call(Hash.SET_TASK_VEHICLE_CHASE_IDEAL_PURSUIT_DISTANCE,
+                                      ped.Handle, 4f);
+                    }
+                    else
+                    {
+                        Function.Call(Hash.TASK_DRIVE_BY, ped.Handle, player.Handle, 0,
+                                      0f, 0f, 0f, 45f, 60, true, unchecked((int)0xC6EE6B4C));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("The Vagos could not get going: " + ex.Message);
+            }
+
+            MarkHunters();
+
+            Notify.Important("~r~Yellow on your tail.~s~ Get that van home.");
+
+            if (Social != null) Social.On(SocialEvent.RideThrough, "Los Santos Vagos");
+        }
+
+        private void RunAmbush()
+        {
+            // Nothing left of them, or nothing left driveable.
+            var alive = 0;
+
+            foreach (var ped in _vagos)
+            {
+                if (ped != null && ped.Exists() && ped.IsAlive) alive++;
+            }
+
+            var wrecked = _hunters == null || !_hunters.Exists() || !_hunters.IsDriveable;
+
+            if (alive == 0 || wrecked)
+            {
+                Log.Info("Port run: the Vagos are done.");
+                LetGo(false);
+                return;
+            }
+
+            // Close enough to the yard. They are not driving into Chamberlain.
+            if (_hunters.Position.DistanceTo(DropSpot) <= AmbushLetGo)
+            {
+                Log.Info("Port run: the Vagos broke off short of the yard.");
+                LetGo(true);
+            }
+        }
+
+        /// <summary>
+        /// Ends the chase.
+        ///
+        /// The car and the men are RELEASED rather than deleted. Deleting a car you are
+        /// currently looking at in the mirror is worse than any tidiness it buys, and a wreck
+        /// with two dead men in it is a thing that happened -- it should still be there if you
+        /// drive back past.
+        /// </summary>
+        private void LetGo(bool peeled)
+        {
+            _ambush = 3;
+
+            foreach (var ped in _vagos)
+            {
+                try
+                {
+                    if (ped == null || !ped.Exists()) continue;
+
+                    if (ped.IsAlive && peeled)
+                    {
+                        Function.Call(Hash.SET_PED_AS_ENEMY, ped.Handle, false);
+                        ped.Task.ClearAll();
+                    }
+
+                    ped.IsPersistent = false;
+                    ped.MarkAsNoLongerNeeded();
+                }
+                catch { /* they are somebody else's problem now */ }
+            }
+
+            _vagos.Clear();
+
+            try
+            {
+                if (_hunters != null && _hunters.Exists())
+                {
+                    _hunters.IsPersistent = false;
+                    _hunters.MarkAsNoLongerNeeded();
+                }
+            }
+            catch { /* teardown */ }
+
+            _hunters = null;
+
+            try { if (_huntBlip != null && _huntBlip.Exists()) _huntBlip.Delete(); }
+            catch { /* teardown */ }
+
+            _huntBlip = null;
+
+            if (peeled) Notify.Ticker("~g~They peeled off.~s~ Too close to the block for 'em.");
+        }
+
+        private bool MakeHunters()
+        {
+            foreach (var name in AmbushCars)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    _hunters = World.CreateVehicle(model, AmbushSpot, AmbushHeading);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_hunters == null || !_hunters.Exists()) continue;
+
+                    var h = _hunters.Handle;
+
+                    _hunters.IsPersistent = true;
+                    Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, h);
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+
+                    // Their colour, out of the game's own table so it takes the flake.
+                    Function.Call(Hash.SET_VEHICLE_MOD_KIT, h, 0);
+                    Function.Call(Hash.SET_VEHICLE_COLOURS, h, VagosPaint, VagosPaint);
+                    Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, h, 1);
+                    Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, h, 2f);
+
+                    // And the money they spent on it. Slots 11 engine, 12 brakes, 13 gearbox,
+                    // 18 turbo -- the difference between a lowrider and a lowrider that can
+                    // stay behind a van doing eighty.
+                    Tune(h, 11);
+                    Tune(h, 12);
+                    Tune(h, 13);
+
+                    Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 18, true);
+                    Function.Call(Hash.MODIFY_VEHICLE_TOP_SPEED, h, 1.25f);
+
+                    _hunters.IsEngineRunning = false;
+
+                    if (SeatThem()) return true;
+
+                    // A car with nobody in it is not an ambush.
+                    try { _hunters.Delete(); } catch { /* gone */ }
+                    _hunters = null;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not park the Vagos: " + ex.Message);
+                }
+            }
+
+            return false;
+        }
+
+        private static void Tune(int veh, int slot)
+        {
+            try
+            {
+                var top = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, veh, slot) - 1;
+                if (top >= 0) Function.Call(Hash.SET_VEHICLE_MOD, veh, slot, top, false);
+            }
+            catch
+            {
+                // It goes slower. It still goes.
+            }
+        }
+
+        private bool SeatThem()
+        {
+            for (var seat = 0; seat < AmbushCrew; seat++)
+            {
+                var ped = SeatOne(seat == 0 ? -1 : 0);
+                if (ped != null) _vagos.Add(ped);
+            }
+
+            return _vagos.Count > 0;
+        }
+
+        private Ped SeatOne(int seat)
+        {
+            foreach (var name in VagosModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    var ped = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
+                                                 _hunters.Handle, 4, model.Hash, seat, true, false);
+
+                    model.MarkAsNoLongerNeeded();
+                    if (ped == 0) continue;
+
+                    var who = Entity.FromHandle(ped) as Ped;
+                    if (who == null || !who.Exists()) continue;
+
+                    who.IsPersistent = true;
+                    who.BlockPermanentEvents = true;
+
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped, true, true);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped, true);
+                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped,
+                                  Game.GenerateHash("AMBIENT_GANG_MEXICAN"));
+
+                    Function.Call(Hash.GIVE_WEAPON_TO_PED, ped,
+                                  Game.GenerateHash(VagosGun), 400, false, true);
+
+                    Function.Call(Hash.SET_PED_ACCURACY, ped, 28);
+                    Function.Call(Hash.SET_PED_ARMOUR, ped, 25);
+
+                    return who;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not seat a Vago: " + ex.Message);
+                }
+            }
+
+            return null;
+        }
+
+        private void MarkHunters()
+        {
+            if (_huntBlip != null && _huntBlip.Exists()) return;
+            if (_hunters == null || !_hunters.Exists()) return;
+
+            try
+            {
+                _huntBlip = _hunters.AddBlip();
+                if (_huntBlip == null || !_huntBlip.Exists()) return;
+
+                // 225 is radar_gang_vehicle, which is what it is.
+                Function.Call(Hash.SET_BLIP_SPRITE, _huntBlip.Handle, 225);
+                _huntBlip.Color = BlipColor.Red;
+                _huntBlip.Scale = 0.9f;
+                _huntBlip.Name = "Vagos";
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not blip the Vagos: " + ex.Message);
+            }
+        }
+
         // ---- the loading bay ---------------------------------------------------
 
         /// <summary>
@@ -1503,6 +1910,9 @@ namespace Hoodrich.Missions
             _bay = 0;
             _bayAt = 0;
 
+            if (_ambush != 0) LetGo(false);
+            _ambush = 0;
+
             try { if (_blip != null && _blip.Exists()) _blip.Delete(); }
             catch { /* teardown */ }
 
@@ -1523,6 +1933,7 @@ namespace Hoodrich.Missions
             _barLeg = -1;
             _lastDrawnLeg = -1;
             _legFar = 0f;
+            _legBest = 0f;
         }
 
         public void RestoreWorld() => Pack();
