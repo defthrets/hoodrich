@@ -881,9 +881,23 @@ namespace Hoodrich.UI
         /// </summary>
         private static void Frame(float left, Color edge)
         {
-            Hud.Frame(left, PanelTop, PanelWidth, PanelHeight,
-                      Color.FromArgb(64, 205, 212, 205), edge, Rule, Tick);
+            // Cyan, and brighter than a hairline.
+            //
+            // The border carries the sweep and the corner ticks, and at sixty alpha in grey it
+            // was doing that where nobody could see it -- a moving thing you cannot make out is
+            // the same as a still one. Cyan because nothing else on this screen is: the sets
+            // own the warm colours and the greens, the mode bar owns the accent, and a frame
+            // that shares a colour with any of them stops being the frame.
+            //
+            // The corner ticks keep the MODE colour rather than going cyan with it. They are
+            // the one thing on the border that means something -- red on the tabs that start
+            // fights -- and a signal painted the same colour as the thing it sits on is not a
+            // signal any more.
+            Hud.Frame(left, PanelTop, PanelWidth, PanelHeight, FrameInk, edge, Rule, Tick);
         }
+
+        /// <summary>The border's own colour, which is nobody else's on this screen.</summary>
+        private static readonly Color FrameInk = Color.FromArgb(150, 90, 215, 235);
 
         /// <summary>
         /// The tab strip, which is the armourer's shelf strip with the array swapped.

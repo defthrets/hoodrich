@@ -535,7 +535,7 @@ namespace Hoodrich
                     // It is the reason there is a party in this yard.
                     Interior = MetallicDarkGreen,
                     Running = true,
-                    Radio = "RADIO_03_HIPHOP_NEW",
+                    Radio = "RADIO_09_HIPHOP_OLD",
 
                     // Key out at two, back in at six, with the yard.
                     QuietFrom = 2,
@@ -561,10 +561,13 @@ namespace Hoodrich
                 // the glow and nothing else, and the one project parked with its boot up is
                 // what makes it read as a project.
                 //
-                // The van's station, on the van's block. Asked for that way after hearing it
-                // both ways, which settles it -- the two are sixteen metres apart and near
-                // enough in step at that distance to read as one yard with the radio on rather
-                // than as two cars arguing about what to play.
+                // West Coast Classics, like everything else with a speaker in it.
+                //
+                // One station across the whole mod now, asked for by name after hearing it
+                // several ways: the van, this, the Journey, the two on the court, the boombox
+                // and the cars the set drives round the block. The yard sounds like one place
+                // with one radio on rather than four things that each happened to be tuned
+                // somewhere.
                 //
                 // Key out at two and back in at six, with the van and with the yard. It is one
                 // switch: somebody came out, turned everything off and went in.
@@ -575,7 +578,7 @@ namespace Hoodrich
                     Stock = true,
                     Lowered = true,
                     Running = true,
-                    Radio = "RADIO_03_HIPHOP_NEW",
+                    Radio = "RADIO_09_HIPHOP_OLD",
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
 
                     QuietFrom = 2,
@@ -598,7 +601,7 @@ namespace Hoodrich
                                         "journey", "camper", "rvcamper")
                 {
                     Running = true,
-                    Radio = "RADIO_03_HIPHOP_NEW",
+                    Radio = "RADIO_09_HIPHOP_OLD",
 
                     QuietFrom = 2,
                     QuietTo = 6
@@ -636,10 +639,7 @@ namespace Hoodrich
                     Running = true,
                     Lights = true,
 
-                    // Not the same station as the other one. Two cars four metres apart on the
-                    // same track is that track heard twice, slightly out of step with itself,
-                    // which sounds like a bug rather than like a car park.
-                    Radio = "RADIO_03_HIPHOP_NEW",
+                    Radio = "RADIO_09_HIPHOP_OLD",
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
                     QuietFrom = 6,
                     QuietTo = 20,

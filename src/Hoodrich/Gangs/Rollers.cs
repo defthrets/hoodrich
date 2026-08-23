@@ -682,7 +682,7 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, car.Handle, 1f);
 
                 Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, car.Handle, true);
-                Function.Call(Hash.SET_VEH_RADIO_STATION, car.Handle, "RADIO_03_HIPHOP_NEW");
+                Function.Call(Hash.SET_VEH_RADIO_STATION, car.Handle, "RADIO_09_HIPHOP_OLD");
                 Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, car.Handle, true);
             }
             catch (Exception ex)

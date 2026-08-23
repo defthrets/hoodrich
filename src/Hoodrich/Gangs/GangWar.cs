@@ -1637,6 +1637,17 @@ namespace Hoodrich.Gangs
 
             /// <summary>Theirs: when he first came under the straggler check.</summary>
             public int Since;
+
+            /// <summary>
+            /// Theirs, after arriving: where he was and when, for the standing-still check.
+            ///
+            /// Kept apart from Best and BestAt on purpose. Those measure a journey toward the
+            /// block and stop meaning anything once he is on it; this measures whether he is
+            /// doing ANYTHING, which is a different question with a different answer.
+            /// </summary>
+            public Vector3 IdleAt;
+            public int IdleSince;
+            public bool IdleNudged;
         }
 
         private readonly Dictionary<int, WarOrder> _orders = new Dictionary<int, WarOrder>();
@@ -1946,11 +1957,15 @@ namespace Hoodrich.Gangs
 
                 var away = ped.Position.DistanceTo(_target.Where);
 
-                // Inside the circle once is enough. He is on the block; what happens to him
-                // after that is the fight rather than the journey, and a man who gets pushed
-                // back out of it by gunfire has not failed to turn up.
+                // Inside the circle once is enough for the JOURNEY to be over. It is not
+                // enough to stop looking at him.
                 if (away <= DefendRange) order.Arrived = true;
-                if (order.Arrived) continue;
+
+                if (order.Arrived)
+                {
+                    Idle(ped, order, now, i, player);
+                    continue;
+                }
 
                 if (Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0) != 0)
                 {
@@ -2013,6 +2028,77 @@ namespace Hoodrich.Gangs
                 _rivals.RemoveAt(i);
             }
         }
+
+        /// <summary>
+        /// A man who got here and then stopped being in the fight.
+        ///
+        /// This is the half that was missing, and it is the whole of "some of them get stuck
+        /// and hold up the attack". Arriving once exempted a ped from every check for the rest
+        /// of the raid -- so anybody who reached the block and then wedged himself on a fence,
+        /// a stairwell or the wrong side of a wall sat there being counted as ON THE BLOCK
+        /// forever, and the wave could never end because the wave ends when the block is clear.
+        ///
+        /// Standing on a roof does it too, and that is not a bug in the pathfinding -- there is
+        /// genuinely no way up to you. The raid should not be able to deadlock because you found
+        /// somewhere they cannot follow.
+        ///
+        /// FIGHTING COUNTS AS FINE. A man in cover trading shots has a combat target and never
+        /// comes near this. Only somebody with nobody to fight, who has not moved, for twenty
+        /// seconds -- and he gets one shove before he is written off, the same as a straggler.
+        /// </summary>
+        private void Idle(Ped ped, WarOrder order, int now, int i, Ped player)
+        {
+            // Somebody to shoot at is the whole job. He is not stuck, he is busy.
+            if (Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0) != 0)
+            {
+                order.IdleSince = 0;
+                return;
+            }
+
+            var at = ped.Position;
+
+            if (order.IdleSince == 0 || at.DistanceTo(order.IdleAt) > IdleMoved)
+            {
+                order.IdleAt = at;
+                order.IdleSince = now;
+                return;
+            }
+
+            var still = now - order.IdleSince;
+
+            // One shove: told to walk at the block again, which unsticks a man wedged on
+            // scenery without moving anybody who is simply between things to do.
+            if (still >= IdleNudgeMs && !order.IdleNudged)
+            {
+                order.IdleNudged = true;
+
+                try
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                    Function.Call(Hash.TASK_GO_TO_COORD_ANY_MEANS, ped.Handle,
+                                  _target.Where.X, _target.Where.Y, _target.Where.Z,
+                                  2f, 0, false, 786603, 0f);
+                }
+                catch { /* then he is dropped below */ }
+
+                return;
+            }
+
+            if (still < IdleOutMs) return;
+
+            Log.Info("Gang war: dropping one of theirs who arrived and stopped -- " +
+                     (still / 1000) + "s without moving or fighting.");
+
+            Drop(ped, player);
+            _rivals.RemoveAt(i);
+        }
+
+        /// <summary>How far he has to shift for it to count as still being in it.</summary>
+        private const float IdleMoved = 2.5f;
+
+        /// <summary>How long before the shove, and how long before he is written off.</summary>
+        private const int IdleNudgeMs = 9000;
+        private const int IdleOutMs = 20000;
 
         /// <summary>
         /// Takes somebody out of the war, and out of the world if nobody would see it go.
