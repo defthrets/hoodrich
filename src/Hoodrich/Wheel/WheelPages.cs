@@ -68,6 +68,9 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main. Moving product between your pockets and the house.</summary>
         public StashScreen StashScreen;
 
+        /// <summary>Set by Main. What you are carrying, away from the house.</summary>
+        public PocketScreen PocketScreen;
+
         /// <summary>Set by Main: opens the feed, and reads the follower count for the wedge.</summary>
         public Action ShowSocials;
 
@@ -125,6 +128,14 @@ namespace Hoodrich.Wheel
             if (_stash.AtDoor && StashScreen != null)
             {
                 OpenStashScreen();
+                return;
+            }
+
+            // And anywhere else it is the same list with nowhere to push it. One container, and
+            // the only way out of it is the floor.
+            if (PocketScreen != null)
+            {
+                PocketScreen.Open(Stash, _drugs, Bags);
                 return;
             }
 
@@ -1195,6 +1206,9 @@ namespace Hoodrich.Wheel
         {
             StashScreen?.Open(Stash, _stash.Stash, _drugs, () => _state.Touch());
         }
+
+        /// <summary>Set by Main. Where anything you put down ends up.</summary>
+        public Economy.DroppedBags Bags;
         /// <summary>One-line state of a supply line, for the import board.</summary>
         private string ImportStatus(DealerDef def)
         {

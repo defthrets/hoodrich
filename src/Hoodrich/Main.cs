@@ -76,6 +76,7 @@ namespace Hoodrich
         private BlockTalk _blockTalk;
         private readonly InfoPanel _info;
         private readonly StashScreen _stashScreen;
+        private readonly PocketScreen _pocketScreen;
         private readonly SettingsScreen _settingsScreen = new SettingsScreen();
         private readonly StashHouse _stash;
         private readonly SleepSpot _sleep;
@@ -932,7 +933,8 @@ namespace Hoodrich
 
                     // Not over a full-screen UI. They keep queueing and keep ageing while it is
                     // up, so nothing is lost -- they are simply not drawn across a menu.
-                    Hidden = () => _wheel.IsOpen || _socialScreen.IsOpen || _stashScreen.IsOpen
+                    Hidden = () => _wheel.IsOpen || _socialScreen.IsOpen ||
+                                   _stashScreen.IsOpen || _pocketScreen.IsOpen
                                    || _settingsScreen.IsOpen
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
                                    || _gunScreen.IsOpen,
@@ -1089,6 +1091,7 @@ namespace Hoodrich
 
                 _info = new InfoPanel();
                 _stashScreen = new StashScreen();
+                _pocketScreen = new PocketScreen();
                 _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing, _cfg);
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
@@ -1174,6 +1177,8 @@ namespace Hoodrich
                 pages.Delivery = _delivery;
                 pages.WorkWaiting = () => _jobs == null ? null : _jobs.WorkWaiting;
                 pages.StashScreen = _stashScreen;
+                pages.PocketScreen = _pocketScreen;
+                pages.Bags = _bags;
                 pages.ShowSocials = () => _socialScreen.Open();
                 pages.ShowSettings = () => _settingsScreen.Open(_cfg, pages.ResetOptions());
 
@@ -1316,6 +1321,22 @@ namespace Hoodrich
                 // opening a menu.
                 _bust.Update();
                 _postUp.Update();
+
+                // What is on you owns the screen the same way moving it does. Closed if the
+                // mod goes unavailable underneath it, so a screen cannot outlive the thing it
+                // is a view of.
+                if (_pocketScreen.IsOpen)
+                {
+                    if (!available) _pocketScreen.Close();
+                    else
+                    {
+                        _pocketScreen.Update();
+                        _pocketScreen.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
 
                 // Moving product owns the screen outright, the same as any other full UI.
                 if (_stashScreen.IsOpen)
