@@ -55,8 +55,8 @@ namespace Hoodrich.Missions
         // ---- the route ---------------------------------------------------------
 
         /// <summary>Where the bike is left for you, round the corner from Lamar.</summary>
-        private static readonly Vector3 BikeSpot = new Vector3(-223.169f, -1723.002f, 32.629f);
-        private const float BikeHeading = 54.779f;
+        private static readonly Vector3 BikeSpot = new Vector3(-210.409f, -1720.489f, 32.664f);
+        private const float BikeHeading = 102.085f;
 
         /// <summary>The courts in Chamberlain Hills.</summary>
         private static readonly Vector3 Courts = new Vector3(-227.173f, -1541.756f, 31.607f);
@@ -1657,7 +1657,16 @@ namespace Hoodrich.Missions
             var ped = Boss.Lend();
             if (ped == null || !ped.Exists()) return;
 
-            var bike = SpawnBike(LamarBike, LamarBikeHeading);
+            // Under him rather than at a mark up the lot.
+            //
+            // He used to be borrowed off his corner and put on a bike parked twenty metres
+            // away, which is a man teleporting to a bicycle. The bike is made a stride in
+            // front of where he is actually stood and he is put straight on it, so the whole
+            // thing reads as him already being on it when the job starts -- and it needs no
+            // second coordinate to be kept in step with wherever he happens to be standing.
+            var infront = ped.Position + ped.ForwardVector * 1.4f;
+
+            var bike = SpawnBike(infront, ped.Heading) ?? SpawnBike(LamarBike, LamarBikeHeading);
             if (bike == null)
             {
                 // No bike, so no ride. Give him straight back rather than leaving him stood
@@ -1678,13 +1687,30 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle,
                               _usGroup != 0 ? _usGroup : gang.GroupHash);
 
-                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
-                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);
-                // 46 is BF_CanFightArmedPedsWhenNotArmed, NOT BF_AlwaysFight. That is 5.
+                // BOTH OFF, which is the change. 46 is BF_CanFightArmedPedsWhenNotArmed and 5
+                // is BF_AlwaysFight, and with the pair of them on he opened up on every rival
+                // he could see from the saddle -- which turns a ride across two neighbourhoods
+                // into a running battle and gets the fight at the courts started four streets
+                // early. He fights when the job says so and not before.
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, false);
 
-                // He keeps whatever he had. The others are stripped because a random gang
-                // member with a rifle on a bicycle reads as a spawn; the man who runs the set
-                // being armed reads as the man who runs the set.
+                // A bat and nothing else.
+                //
+                // Whatever he was carrying goes first, because "keep what he had" meant a man
+                // who had been handed a rifle at some point in the session still had it. The
+                // bat is the whole point of the trip: this is a message being delivered by
+                // hand, and a message delivered with a rifle is a different message.
+                try
+                {
+                    Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true);
+
+                    Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
+                                  Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_BAT"),
+                                  1, false, true);
+                }
+                catch { /* he goes with his hands */ }
+
                 Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
 
                 // Killable now, where he is normally not. A bodyguard who cannot be shot is
@@ -2039,6 +2065,9 @@ namespace Hoodrich.Missions
         private const int RelDislike = 4;
         private const int RelHate = 5;
 
+        /// <summary>Nought is companion, one respect, three neutral, five hate.</summary>
+        private const int RelNeutral = 3;
+
         /// <summary>
         /// Makes the two groups, once per run.
         ///
@@ -2081,6 +2110,28 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelHate, _themGroup, you);
                 Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelRespect, _usGroup, you);
                 Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelRespect, you, _usGroup);
+
+                // And everybody else on this block stays out of it, both ways round.
+                //
+                // Two separate problems with one cause. Lamar is in a group of his own for the
+                // length of this job, so to the Families standing on the corner he is not
+                // Families -- he is a stranger, and one of them takes a swing at him. And the
+                // Ballas at the courts are in a group of their own too, which the ambient
+                // Families DO hate on sight, so half the neighbourhood was arriving to a fight
+                // that is supposed to be four men and a bat.
+                //
+                // Named the group rather than found it: AMBIENT_GANG_FAMILY is what the game
+                // calls them and what every Families ped in the world is in.
+                var theirs = Function.Call<int>(Hash.GET_HASH_KEY, "AMBIENT_GANG_FAMILY");
+
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelRespect, _usGroup, theirs);
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelRespect, theirs, _usGroup);
+
+                // Neutral rather than friendly toward the other side. Our own people are not
+                // fond of Ballas and should not have to pretend otherwise -- they simply have
+                // no reason to cross the road about these particular ones.
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelNeutral, theirs, _themGroup);
+                Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelNeutral, _themGroup, theirs);
             }
             catch (Exception ex)
             {
