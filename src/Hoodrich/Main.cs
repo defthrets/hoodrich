@@ -1577,6 +1577,11 @@ namespace Hoodrich
                     if (_port != null) _port.Draw();
                 }
 
+                // The prompt, every frame rather than every tick, for exactly the reason the
+                // spotlight below is. Anything that asked for it this tick, or recently
+                // enough, gets re-issued now -- see Help.
+                UI.Help.Tick();
+
                 // The spotlight, every frame rather than every tick -- a beam that exists for
                 // one frame in nine is a strobe.
                 _patrol.Draw();

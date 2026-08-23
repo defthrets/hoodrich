@@ -116,24 +116,31 @@ namespace Hoodrich.Missions
             // exactly this, from the Cayo Perico poster tagging. A man steps up to a wall,
             // shakes the can, and paints.
             //
-            // Everything under it was a guess at which dictionary might contain something
-            // wall-shaped: an interaction-menu upper body, a janitor, a man hammering. They
-            // stay as a fallback for an install that does not have this, and for no other
-            // reason.
+            // What used to sit under it was a guess at which dictionary might contain
+            // something wall-shaped, and FIVE OF THE SIX GUESSES WERE NOT REAL DICTIONARIES.
+            // Checked against the game's own dump of every dict and clip in the build:
+            //
+            //   anim@mp_player_intupperspray_can       does not exist
+            //   anim@mp_player_intuppersmoke_cig       does not exist
+            //   mp_player_int_upper_spray_can          does not exist
+            //   anim@mp_tagging / @ / anim@mp_tagging@ does not exist, in any spelling
+            //   amb@world_human_window_shop_browse@..  misspelt; the dict has no _browse
+            //
+            // There is no spray-can interaction-menu animation in GTA V. The only spray
+            // dictionaries in the whole game are the poster-tagging pair and champagne. So a
+            // list that read as six careful fallbacks was one real animation and five names
+            // that fail SILENTLY -- REQUEST_ANIM_DICT on a dictionary that is not there simply
+            // never completes, which is why this needed a wait loop to paper over.
             SprayDict,
 
-            "anim@mp_player_intupperspray_can",
-            "anim@mp_player_intuppersmoke_cig",
+            // The same animation authored for the other rig. Same 31 clips under different
+            // suffixes, so if the male set were ever missing this is genuinely the same thing.
+            "anim@scripted@freemode@postertag@graffiti_spray@heeled@",
 
-            // Older name for the same action on some builds.
-            "mp_player_int_upper_spray_can",
-
-            // And the graffiti sets, if this install has them.
-            "anim@mp_tagging@", "mp_tagging", "anim@mp_tagging",
-
-            // Last resort: anybody working at something directly in front of them.
+            // Last resort: anybody working at something directly in front of them. Both of
+            // these are real, and the second is the corrected spelling of the old one.
             "amb@world_human_janitor@male@idle_a",
-            "amb@world_human_window_shop_browse@male@base"
+            "amb@world_human_window_shop@male@idle_a"
         };
 
         /// <summary>
@@ -362,7 +369,7 @@ namespace Hoodrich.Missions
                 return "Ain't no bike out there.";
             }
 
-            Mark(BikeSpot, "Your bike");
+            Mark(_playerBike, "Your bike");
 
             Log.Info("Tag run started with " + _spots.Count + " walls.");
             return null;
@@ -591,16 +598,46 @@ namespace Hoodrich.Missions
             try
             {
                 _marker = World.CreateBlip(where);
-                if (_marker == null || !_marker.Exists()) return;
-
-                _marker.Color = BlipColor.Yellow;
-                _marker.ShowRoute = true;
-                _marker.Name = name;
+                Dress(name);
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not mark the next leg: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// The same, on a thing that moves.
+        ///
+        /// A blip on a COORDINATE is right for a wall and wrong for a bike. It marked where the
+        /// bike was parked, so the moment you rode off, the arrow stayed behind in the lot
+        /// pointing at an empty kerb -- and if you dumped the bike somewhere on the way there
+        /// was nothing at all telling you where it went.
+        /// </summary>
+        private void Mark(Entity what, string name)
+        {
+            ClearMarker();
+
+            if (what == null || !what.Exists()) return;
+
+            try
+            {
+                _marker = what.AddBlip();
+                Dress(name);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not mark the bike: " + ex.Message);
+            }
+        }
+
+        private void Dress(string name)
+        {
+            if (_marker == null || !_marker.Exists()) return;
+
+            _marker.Color = BlipColor.Yellow;
+            _marker.ShowRoute = true;
+            _marker.Name = name;
         }
 
         private void ClearMarker()
@@ -997,15 +1034,35 @@ namespace Hoodrich.Missions
         /// <summary>Sat just off the surface, so the projection runs into it rather than past it.</summary>
         private const float WallLift = 0.05f;
 
-        /// <summary>A mark roughly this often, which spreads six across the spraying half.</summary>
-        private const int StainEveryMs = 620;
+        /// <summary>
+        /// A mark roughly this often.
+        ///
+        /// Under the 300ms tick this works out at one per tick, so the four spraying seconds
+        /// lay down a dozen or so rather than six. Paint should arrive faster than you can
+        /// count it.
+        /// </summary>
+        private const int StainEveryMs = 280;
 
         /// <summary>How far a mark strays from the middle, along the wall and up it.</summary>
-        private const float StainSpreadSide = 0.55f;
-        private const float StainSpreadUp = 0.38f;
+        private const float StainSpreadSide = 0.90f;
+        private const float StainSpreadUp = 0.50f;
 
-        private const float StainMinSize = 0.45f;
-        private const float StainMaxSize = 1.05f;
+        private const float StainMinSize = 0.50f;
+        private const float StainMaxSize = 1.20f;
+
+        /// <summary>
+        /// How high up the wall the paint goes, measured from the ground he is stood on.
+        ///
+        /// NOT from the raycast's own hit height, which is where the first attempt put it and
+        /// why the paint came out along the roofline instead of over the tag. The ray is fired
+        /// from chest height to find the wall, and the height it happens to strike at is a fact
+        /// about the ray rather than about where a tag is -- so the hit gives the wall its
+        /// PLANE and its horizontal position, and the height is decided here.
+        ///
+        /// A metre and a third up, spreading half a metre either way, covers roughly what a
+        /// person's arm covers standing at a wall, which is where anybody's tag is.
+        /// </summary>
+        private const float TagHeight = 1.35f;
 
         /// <summary>Seconds. -1 is no expiry clock -- the game's decal budget is the only limit.</summary>
         private const float StainForever = -1f;
@@ -1041,12 +1098,12 @@ namespace Hoodrich.Missions
         private readonly List<PaintMark> _marks = new List<PaintMark>();
 
         /// <summary>
-        /// How many are kept. Six a wall, four walls, and room to go round again.
+        /// How many are kept. A dozen a wall, four walls, and room to go round again.
         ///
         /// The whole world shares a budget of five hundred and twelve decals with every bullet
         /// hole and tyre mark in it, so this stays well clear of being the thing that fills it.
         /// </summary>
-        private const int MarkCap = 48;
+        private const int MarkCap = 96;
 
         /// <summary>Far enough for the game to have dropped it.</summary>
         private const float MarkGoneRange = 150f;
@@ -1118,7 +1175,14 @@ namespace Hoodrich.Missions
 
                 // The projection runs INTO the surface, so it is the normal reversed.
                 _wallInto = -n;
-                _wallAt = hit.HitPosition + n * WallLift;
+
+                var at = hit.HitPosition + n * WallLift;
+
+                // And the height is taken off the GROUND rather than off the ray. See TagHeight.
+                var ground = Ground(player.Position);
+                if (ground.Z > 0.01f) at.Z = ground.Z + TagHeight;
+
+                _wallAt = at;
 
                 _wallFound = true;
 
@@ -1359,10 +1423,23 @@ namespace Hoodrich.Missions
 
                     if (_can == null || !_can.Exists()) continue;
 
-                    // Right hand, turned so the nozzle points at the wall.
+                    // PH_R_Hand (28422), at zero offset and zero rotation.
+                    //
+                    // It was on SKEL_R_Hand (57005) with a hand-tuned offset and a -90 twist,
+                    // and that is the wrong bone for this. SKEL_R_Hand is the WRIST JOINT --
+                    // the thing the arm deforms around -- so a prop hung off it sits beside the
+                    // hand rather than in the grip, and every clip that changes the grip pose
+                    // moves it again. PH_R_Hand is a non-deforming helper bone the animators
+                    // put there specifically to hang props on, which is why props attached to
+                    // it need no offset at all.
+                    //
+                    // It also fixes the spray. Rockstar's graffiti jet is authored to come out
+                    // of a can sitting on THIS bone at THIS rotation, so with the can twisted
+                    // ninety degrees the paint came out sideways. Put the can where the
+                    // animation expects it and the jet points at the wall on its own.
                     Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _can.Handle, player.Handle,
-                                  Function.Call<int>(Hash.GET_PED_BONE_INDEX, player.Handle, 57005),
-                                  0.10f, 0.02f, -0.02f, -90f, 0f, 0f,
+                                  Function.Call<int>(Hash.GET_PED_BONE_INDEX, player.Handle, 28422),
+                                  0f, 0f, 0f, 0f, 0f, 0f,
                                   false, false, false, false, 2, true);
 
                     return;

@@ -262,8 +262,17 @@ namespace Hoodrich.Economy
                 // through the wall and down, which is exactly what it looked like.
                 //
                 // Locked on all three axes he plays the clip and stays where he is put.
+                // The last three are NOT position locks, whatever the community header says.
+                //
+                // They are bPhaseControlled, IkFlags and bAllowOverrideCloneUpdate -- confirmed
+                // against ScriptHookVDotNet's own source, which names them. So passing true,
+                // true, true was asking for a clip whose phase is driven externally by nobody
+                // (it sits on frame zero), with IkFlags coerced to 1, which is
+                // AIK_DISABLE_LEG_IK -- the feet stop planting to the floor.
+                //
+                // false, 0, false is what SHVDN, ox_lib and every shipped emote resource pass.
                 Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, clip.Dict, clip.Name,
-                              4f, -4f, -1, LoopFlag, 0f, true, true, true);
+                              4f, -4f, -1, LoopFlag, 0f, false, 0, false);
 
                 // A clip name that is not in the dictionary fails silently, so the only honest
                 // test is whether the ped is now visibly playing it.
