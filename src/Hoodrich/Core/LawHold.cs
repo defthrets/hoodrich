@@ -86,6 +86,36 @@ namespace Hoodrich.Core
             }
         }
 
+        /// <summary>
+        /// Puts a lid on how far it can go, without turning the police off.
+        ///
+        /// A hold is "none of this is a police matter". A cap is "this IS a police matter, and
+        /// it is worth exactly this much" -- a corner shop with a bike outside is one star, and
+        /// the game will happily make it three if it sees you ride away from it.
+        ///
+        /// Through here rather than a raw native call at the call site, because the level to go
+        /// back to is remembered in this file and nowhere else. Anything that caps has to be
+        /// able to uncap without guessing at five.
+        ///
+        /// A hold outranks a cap and simply wins: nothing is more capped than off.
+        /// </summary>
+        public static void Cap(int stars)
+        {
+            if (Held) return;
+
+            try { Function.Call(Hash.SET_MAX_WANTED_LEVEL, stars < 0 ? 0 : stars); }
+            catch (System.Exception ex) { Log.Debug("Could not cap the law: " + ex.Message); }
+        }
+
+        /// <summary>Back to whatever the ceiling was before anybody touched it.</summary>
+        public static void Uncap()
+        {
+            if (Held) return;
+
+            try { Function.Call(Hash.SET_MAX_WANTED_LEVEL, _wasMax); }
+            catch (System.Exception ex) { Log.Debug("Could not lift the cap: " + ex.Message); }
+        }
+
         public static void Release(object who)
         {
             if (who == null || !Holders.Remove(who)) return;

@@ -55,8 +55,8 @@ namespace Hoodrich.Missions
         /// The lot, with everybody else, rather than the old spot four streets away. A job that
         /// starts by walking somewhere else is a job that starts with a walk.
         /// </summary>
-        private static readonly Vector3 BikeSpot = new Vector3(-206.087f, -1721.033f, 32.664f);
-        private const float BikeHeading = 127.351f;
+        private static readonly Vector3 BikeSpot = new Vector3(-211.331f, -1720.275f, 31.995f);
+        private const float BikeHeading = 109.394f;
 
 
         /// <summary>
@@ -487,6 +487,9 @@ namespace Hoodrich.Missions
         }
 
         // ---- riding ------------------------------------------------------------
+        /// <summary>Metallic dark green, the same index every other car of theirs uses.</summary>
+        private const int BikeGreen = 49;
+
         private Vehicle SpawnBike(Vector3 where, float heading)
         {
             var spot = Ground(where);
@@ -506,6 +509,20 @@ namespace Hoodrich.Missions
 
                     bike.IsPersistent = true;
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, bike.Handle, true, true);
+
+                    // The set's green, out of the game's own paint table rather than an RGB --
+                    // the flake is in the table and a bicycle in flat green is a toy. Yours and
+                    // his match, because they came out of the same yard.
+                    try
+                    {
+                        Function.Call(Hash.SET_VEHICLE_MOD_KIT, bike.Handle, 0);
+                        Function.Call(Hash.SET_VEHICLE_LIVERY, bike.Handle, -1);
+                        Function.Call(Hash.SET_VEHICLE_MOD, bike.Handle, 48, -1, false);
+
+                        Function.Call(Hash.SET_VEHICLE_COLOURS, bike.Handle, BikeGreen, BikeGreen);
+                        Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, bike.Handle, BikeGreen, 0);
+                    }
+                    catch { /* it rides the same in whatever colour it came in */ }
 
                     return bike;
                 }

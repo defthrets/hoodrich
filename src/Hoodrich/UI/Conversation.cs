@@ -233,6 +233,77 @@ namespace Hoodrich.UI
         /// <summary>The speaker's photograph for this node, or empty for none.</summary>
         private string _face = "";
 
+        /// <summary>
+        /// A headshot of whoever is actually talking, which beats any name.
+        ///
+        /// REGISTER_PEDHEADSHOT renders the ped's own head to a texture -- the same machinery
+        /// the socials screen uses for you. It is the only way to be certain the picture is the
+        /// man: a contact texture is a guess at a string, and one of those guesses put a dog on
+        /// Lamar's dialogue for a fortnight.
+        ///
+        /// It is not instant. The render takes a moment, so the contact picture shows first and
+        /// is replaced the frame the real one is ready -- which on a conversation you are
+        /// reading is invisible, and on one you skip through costs nothing.
+        /// </summary>
+        private int _shot;
+        private string _shotOf = "";
+        private string _shotTxd = "";
+
+        private void Mugshot()
+        {
+            var who = Speaker;
+
+            if (who == null || !who.Exists() || !who.IsAlive)
+            {
+                DropMugshot();
+                return;
+            }
+
+            // A different man means a different photograph. Handles are reused, so the check is
+            // against the handle we took THIS one for.
+            var id = who.Handle.ToString();
+
+            if (_shotOf != id)
+            {
+                DropMugshot();
+                _shotOf = id;
+
+                try { _shot = Function.Call<int>(Hash.REGISTER_PEDHEADSHOT, who.Handle); }
+                catch (Exception ex) { Log.Debug("No headshot for the speaker: " + ex.Message); }
+            }
+
+            if (_shot == 0 || !string.IsNullOrEmpty(_shotTxd)) return;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.IS_PEDHEADSHOT_READY, _shot)) return;
+                if (!Function.Call<bool>(Hash.IS_PEDHEADSHOT_VALID, _shot)) return;
+
+                _shotTxd = Function.Call<string>(Hash.GET_PEDHEADSHOT_TXD_STRING, _shot);
+            }
+            catch
+            {
+                // The contact picture stands in.
+            }
+        }
+
+        /// <summary>
+        /// Hands the render back.
+        ///
+        /// There are a limited number of these and a leaked one is gone for the session, so
+        /// every path that stops needing it says so -- a new speaker, a closed conversation,
+        /// and the mod shutting down.
+        /// </summary>
+        private void DropMugshot()
+        {
+            try { if (_shot != 0) Function.Call(Hash.UNREGISTER_PEDHEADSHOT, _shot); }
+            catch { /* teardown */ }
+
+            _shot = 0;
+            _shotOf = "";
+            _shotTxd = "";
+        }
+
         /// <summary>How tall the photograph is, and how far it pushes the words across.</summary>
         private const float FaceSize = 0.062f;
         private static float TextInset => Hud.ToX(FaceSize) + 0.012f;
@@ -394,6 +465,15 @@ namespace Hoodrich.UI
             _selected = FirstEnabled(node);
             _openedAt = Game.GameTime;
             // The picture, and the width the words have left because of it.
+            //
+            // The contact texture is the FALLBACK now rather than the answer. CHAR_LAMAR draws
+            // Chop -- an actual photograph of the dog, on Lamar's dialogue -- and there is no
+            // way to tell that from a name, which is the problem with naming a face. So the
+            // face is taken off the man who is standing in front of you instead, and the
+            // contact picture is only used for somebody the mod is quoting rather than talking
+            // to.
+            Mugshot();
+
             _face = string.IsNullOrEmpty(node.Portrait) ? FaceFor(node.Speaker) : node.Portrait;
 
             _wrapped = Wrap(node.Line, PanelWidth - 0.03f - TextInset, BodyScale);
@@ -418,6 +498,10 @@ namespace Hoodrich.UI
             _node = null;
             _closedAt = Game.GameTime;
             Subject = null;
+
+            // The render goes back the moment the conversation does. There are a limited
+            // number of these and one leaked is gone for the session.
+            DropMugshot();
             Speaker = null;
             TheirVoice = null;
             Title = "";
@@ -599,7 +683,7 @@ namespace Hoodrich.UI
             // The body has to be at least as tall as the photograph, or a one-line answer
             // leaves his face hanging over the first thing you can say back. The name row above
             // it counts toward that, since the picture starts level with the name.
-            if (!string.IsNullOrEmpty(_face))
+            if (!string.IsNullOrEmpty(_face) || !string.IsNullOrEmpty(_shotTxd))
             {
                 var room = FaceSize - 0.034f + 0.004f;
                 if (bodyHeight < room) bodyHeight = room;
@@ -659,7 +743,12 @@ namespace Hoodrich.UI
             // three-line answer and a one-line one both put his face in the same place --
             // a portrait that slides up and down the panel as the sentence changes length
             // reads as part of the sentence rather than as the man saying it.
-            if (!string.IsNullOrEmpty(_face) && Hud.EnsureTextureDict(_face))
+            // His own head if it has finished rendering, the contact picture until then.
+            Mugshot();
+
+            var face = string.IsNullOrEmpty(_shotTxd) ? _face : _shotTxd;
+
+            if (!string.IsNullOrEmpty(face) && Hud.EnsureTextureDict(face))
             {
                 var wide = Hud.ToX(FaceSize);
 
@@ -668,7 +757,7 @@ namespace Hoodrich.UI
                 Hud.RectFrom(said, y - 0.002f, wide, FaceSize,
                              Color.FromArgb((int)(30f * arrive), 255, 255, 255));
 
-                Hud.Sprite(_face, _face, said + wide * 0.5f, y - 0.002f + FaceSize * 0.5f,
+                Hud.Sprite(face, face, said + wide * 0.5f, y - 0.002f + FaceSize * 0.5f,
                            wide, FaceSize, 0f,
                            Color.FromArgb((int)(255f * arrive), 255, 255, 255));
 

@@ -31,7 +31,7 @@ namespace Hoodrich.Missions
         /// <summary>Outside the 24/7, deciding whether to do it.</summary>
         Rob,
 
-        /// <summary>Done it. Lose them.</summary>
+        /// <summary>Done it. Lose the cops.</summary>
         Escape,
 
         /// <summary>Drink got. Ride back to the spot.</summary>
@@ -318,7 +318,7 @@ namespace Hoodrich.Missions
                             ? (_gotCash ? "Get out and get on the bike" : "Aim at the clerk until he empties the till")
                             : "Pull up outside the 24/7";
 
-                    case BikePhase.Escape: return "Lose them";
+                    case BikePhase.Escape: return "Lose the cops";
                     case BikePhase.Home: return "Ride back to the spot";
                     default: return "";
                 }
@@ -392,7 +392,14 @@ namespace Hoodrich.Missions
             // undid it a quarter of a second later: Hold does not merely cap the wanted level,
             // it CLEARS it, so the star was set and then wiped on the very next tick, every
             // time. The re-assert has to stop when the reason for it stops.
+            // Held off entirely until the shop, and capped at one star afterwards.
+            //
+            // Setting the star was never the hard part. Keeping it AT one is: from the game's
+            // point of view an armed robbery with a man riding away from it is worth three or
+            // four, and it will keep adding them while anybody can see you. One star is what
+            // this job is meant to be worth, so one star is the ceiling until it is over.
             if (!_lawLoose) HoldTheLaw(true);
+            else LawHold.Cap(RobberyStars);
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive)
@@ -959,6 +966,8 @@ namespace Hoodrich.Missions
             HoldTheLaw(false);
             _lawLoose = true;
 
+            LawHold.Cap(RobberyStars);
+
             try
             {
                 Game.Player.Wanted.SetWantedLevel(RobberyStars, false);
@@ -1220,7 +1229,7 @@ namespace Hoodrich.Missions
 
             if (Game.Player.Wanted.WantedLevel > 0)
             {
-                Help.ShowThisFrame("Lose them, then get back to the spot.");
+                Help.ShowThisFrame("Lose the cops, then get back to the spot.");
                 return;
             }
 
@@ -2402,6 +2411,9 @@ namespace Hoodrich.Missions
             return best;
         }
 
+        /// <summary>Metallic dark green, the same index every other car of theirs uses.</summary>
+        private const int BikeGreen = 49;
+
         private Vehicle SpawnBike(Vector3 where, float heading)
         {
             var spot = Ground(where);
@@ -2421,6 +2433,20 @@ namespace Hoodrich.Missions
 
                     bike.IsPersistent = true;
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, bike.Handle, true, true);
+
+                    // The set's green, out of the game's own paint table rather than an RGB --
+                    // the flake is in the table and a bicycle in flat green is a toy. Yours and
+                    // his match, because they came out of the same yard.
+                    try
+                    {
+                        Function.Call(Hash.SET_VEHICLE_MOD_KIT, bike.Handle, 0);
+                        Function.Call(Hash.SET_VEHICLE_LIVERY, bike.Handle, -1);
+                        Function.Call(Hash.SET_VEHICLE_MOD, bike.Handle, 48, -1, false);
+
+                        Function.Call(Hash.SET_VEHICLE_COLOURS, bike.Handle, BikeGreen, BikeGreen);
+                        Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, bike.Handle, BikeGreen, 0);
+                    }
+                    catch { /* it rides the same in whatever colour it came in */ }
 
                     return bike;
                 }
@@ -2633,6 +2659,12 @@ namespace Hoodrich.Missions
             // to attract police for the rest of the session because a cleanup threw is far
             // worse than any of the litter below.
             if (IsRunning) HoldTheLaw(false);
+
+            // And the ceiling goes back up, whoever ended the job and however. A cap left on is
+            // a player who can never be wanted for anything again this session, which is a far
+            // worse thing to leave behind than any amount of litter.
+            try { LawHold.Uncap(); }
+            catch { /* teardown */ }
 
             ClearMarker();
 
