@@ -1543,15 +1543,23 @@ namespace Hoodrich.Missions
 
                     Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, homie.Handle, 2);
 
-                    // Locked in, on a job done out of a window.
+                    // Events blocked on EVERY job now, not only the ones done from a car.
                     //
-                    // Attribute 3 alone was not enough and they kept piling out. Two other
-                    // things were letting them: non-temporary events were left UNBLOCKED, so
-                    // being shot at is an event they answer by bailing out and taking cover,
-                    // and nothing stopped them being pulled out by anybody who fancied it.
-                    // On foot jobs none of this applies -- getting out is the job.
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS,
-                                  homie.Handle, FromTheCar);
+                    // It was conditional because blocking them is what keeps a man in his seat,
+                    // and on foot jobs getting out is the job -- so foot crews were left to
+                    // answer whatever the world threw at them. Which is the other half of the
+                    // same problem: an unblocked ped picks his own fights. He hears a siren and
+                    // goes to it, he sees a hated ped two streets away and leaves, and the
+                    // moment you are wanted the nearest enemy is a police officer.
+                    //
+                    // Blocked, the only thing they act on is what this file tasks them with,
+                    // and this file only ever names the targets. They still take cover, still
+                    // move, still finish the man in front of them -- a blocked event is not a
+                    // frozen ped, it is one that stops volunteering.
+                    //
+                    // Getting OUT is separately controlled by attribute 3 above, so the foot
+                    // jobs lose nothing by this.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
                     Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, !FromTheCar);
 
                     // Named targets rather than "everybody hated within a hundred and twenty
