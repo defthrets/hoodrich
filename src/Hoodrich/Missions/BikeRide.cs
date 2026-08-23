@@ -110,7 +110,15 @@ namespace Hoodrich.Missions
         private const float ArriveRange = 45f;
         private const float TalkRange = 6f;
         private const float ShopRange = 30f;
-        private const float HomeRange = 25f;
+        /// <summary>
+        /// How close to the spot counts as home, for you and for him.
+        ///
+        /// Both were tighter and both were the wrong kind of tight. Yours was 25 and his was
+        /// 14, and HIS is the one that decides -- so you would pull up on the mark, stop, and
+        /// wait while a man on a bicycle picked his way round the last fence. A finishing line
+        /// you have to help somebody find is not a finishing line.
+        /// </summary>
+        private const float HomeRange = 38f;
 
         /// <summary>Further behind than this and they are put back on your wheel.</summary>
         private const float CatchUpRange = 90f;
@@ -224,6 +232,73 @@ namespace Hoodrich.Missions
         public bool IsRunning => Phase != BikePhase.None;
 
         public bool ReadyToCollect { get; private set; }
+
+        /// <summary>
+        /// How far through the ride you are, 0 to 1, for the bar on the objective card.
+        ///
+        /// Reported from HERE rather than worked out by the runner, because everything it
+        /// depends on lives here -- where the bike is, how many of them are still up, whether
+        /// the till is open. The runner has the card; this has the facts.
+        /// </summary>
+        public float Advance
+        {
+            get
+            {
+                try
+                {
+                    var player = Game.Player.Character;
+                    if (player == null || !player.Exists()) return 0f;
+
+                    switch (Phase)
+                    {
+                        case BikePhase.ToBike:
+                            return Bar(player.Position.DistanceTo(BikeSpot), 40f);
+
+                        case BikePhase.Riding:
+                            return Bar(player.Position.DistanceTo(Courts), 900f);
+
+                        case BikePhase.Words:
+                            return _wordsStep / 3f;
+
+                        case BikePhase.Fight:
+                        {
+                            var up = 0;
+                            foreach (var ped in _rivals)
+                            {
+                                if (ped != null && ped.Exists() && ped.IsAlive) up++;
+                            }
+
+                            var all = Math.Max(1, _rivals.Count);
+                            return (all - up) / (float)all;
+                        }
+
+                        case BikePhase.Rob:
+                            return _gotCash ? 1f : _robAccepted ? 0.6f : 0.3f;
+
+                        case BikePhase.Escape:
+                            return 1f - Game.Player.Wanted.WantedLevel / 5f;
+
+                        case BikePhase.Home:
+                            return Bar(player.Position.DistanceTo(RideHome), 700f);
+                    }
+                }
+                catch
+                {
+                    // An empty bar is better than a thrown one.
+                }
+
+                return 0f;
+            }
+        }
+
+        /// <summary>Distance turned into a bar that fills as you close on something.</summary>
+        private static float Bar(float away, float from)
+        {
+            if (from <= 0f) return 0f;
+
+            var f = 1f - away / from;
+            return f < 0f ? 0f : f > 1f ? 1f : f;
+        }
 
         /// <summary>Set when the player pulls a gun. Read and cleared by the runner.</summary>
         public string Failure { get; private set; }
@@ -1317,7 +1392,7 @@ namespace Hoodrich.Missions
         /// How close he has to be. Wider than his own mark, because he arrives on a bicycle
         /// and parks it wherever the nav mesh lets him rather than on a spot.
         /// </summary>
-        private const float LamarHomeRange = 14f;
+        private const float LamarHomeRange = 32f;
 
         // ---- the people --------------------------------------------------------
 

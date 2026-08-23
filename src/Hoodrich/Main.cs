@@ -155,6 +155,7 @@ namespace Hoodrich
 
         /// <summary>The decks on the lot, and the music coming out of them.</summary>
         private readonly Boombox _decks;
+        private readonly Boombox _partyDecks;
 
         /// <summary>
         /// Women from round here.
@@ -610,6 +611,22 @@ namespace Hoodrich
                 _partyCouch = new Fixture(new Vector3(-202.400f, -1727.000f, 32.664f), 118.000f,
                                           "prop_couch_03", "prop_old_couch_01", "prop_rub_couch01");
 
+                // Somebody's bag, open, on the table by the couch. Height read off the HUD stood
+                // ON the table rather than beside it, so it sits on the top rather than through
+                // it -- the yard is at 32.664 and the table is most of a metre above that.
+                _scenery.Add(new Fixture(new Vector3(-203.944f, -1726.461f, 33.396f), 133.896f,
+                                         "bkr_prop_weed_bag_01a", "bkr_prop_weed_bigbag_01a",
+                                         "prop_drug_package_02", "prop_drug_package"));
+
+                // A second speaker, the other end of the yard.
+                //
+                // One was never going to be a party. The decks are by the shutters and the
+                // couch is thirty feet away with nothing playing at it, so half the yard was
+                // people standing in silence next to somebody else's music.
+                _partyDecks = new Boombox(new Vector3(-202.900f, -1729.900f, 32.664f), 20f,
+                                          "ba_prop_battle_speaker_01a",
+                                          "prop_boombox_01", "prop_ld_ferris_wheel");
+
                 // Weight sitting by Stretch's door, which is the whole reason anybody goes to
                 // that door. Fallbacks behind it: the Bikers bag and then a plain crate, so an
                 // install without the newer DLC gets something rather than nothing.
@@ -706,6 +723,7 @@ namespace Hoodrich
                                   || (_payback != null && _payback.Owns(car))
                                   || OurParkedCar(car)
                                   || (_decks != null && _decks.Owns(car))
+                                  || (_partyDecks != null && _partyDecks.Owns(car))
                 };
 
                 _payback = new Payback(_gangs);
@@ -1301,6 +1319,7 @@ namespace Hoodrich
                     _stretchBox.Update();
                     foreach (var prop in _scenery) prop.Update();
                     _decks.Update();
+                    _partyDecks.Update();
                     _jobs.Update();
                 }
 
@@ -1804,6 +1823,7 @@ namespace Hoodrich
             try { _stretchBox?.RestoreWorld(); } catch { /* teardown */ }
 
             try { _decks?.RestoreWorld(); } catch { /* teardown */ }
+            try { _partyDecks?.RestoreWorld(); } catch { /* teardown */ }
 
             foreach (var prop in _scenery)
             {

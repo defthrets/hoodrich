@@ -542,6 +542,16 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
 
+                // And he cannot die. A leader is a shop, a conversation and a chain of jobs;
+                // losing him to a stray round from a fight two streets away takes all three off
+                // the map with nothing to say why. Not-targetable already stopped anybody aiming
+                // AT him -- this is the rest of it: the stray, the car, the fire.
+                Function.Call(Hash.SET_ENTITY_INVINCIBLE, h, true);
+                Function.Call(Hash.SET_PED_DIES_WHEN_INJURED, h, false);
+                Function.Call(Hash.SET_PED_SUFFERS_CRITICAL_HITS, h, false);
+                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, h, false);
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL, h, false);
+
                 StandAtSpot();
 
                 var gang = _gangs.Get(def.GangId);

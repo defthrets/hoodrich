@@ -228,6 +228,10 @@ namespace Hoodrich.Missions
 
         public bool ReadyToCollect { get; private set; }
 
+        /// <summary>Walls crossed out over walls to cross out, for the card's bar.</summary>
+        public float Advance =>
+            _spots.Count == 0 ? 0f : Math.Min(1f, _done.Count / (float)_spots.Count);
+
         public string Objective
         {
             get

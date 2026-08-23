@@ -234,6 +234,16 @@ namespace Hoodrich.Locations
 
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _ped.Handle, true, true);
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _ped.Handle, false);
+
+                    // And he cannot die either. He is a shop that stands on a corner in the
+                    // middle of a war -- his own corner is one of the three a raid comes for --
+                    // so "shot by somebody who was not aiming at him" is not an edge case here,
+                    // it is a Tuesday.
+                    Function.Call(Hash.SET_ENTITY_INVINCIBLE, _ped.Handle, true);
+                    Function.Call(Hash.SET_PED_DIES_WHEN_INJURED, _ped.Handle, false);
+                    Function.Call(Hash.SET_PED_SUFFERS_CRITICAL_HITS, _ped.Handle, false);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, _ped.Handle, false);
+                    Function.Call(Hash.SET_PED_CAN_RAGDOLL, _ped.Handle, false);
                     Function.Call(Hash.SET_AMBIENT_VOICE_NAME, _ped.Handle, "SHOP_CLOTHES_LS");
 
                     var gang = _gangs.Get("families");

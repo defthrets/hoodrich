@@ -44,6 +44,26 @@ namespace Hoodrich.Locations
         /// becomes their car -- fighting a player over his own radio every second and a half is
         /// worse than a van that goes quiet when it is driven away.
         /// </summary>
+        /// <summary>Holds the station on for this frame, which is the only way a parked car
+        /// keeps playing one.</summary>
+        private void ForceRadio()
+        {
+            if (string.IsNullOrEmpty(Radio) || Quiet) return;
+            if (_car == null || !_car.Exists()) return;
+
+            try
+            {
+                var driver = _car.Driver;
+                if (driver != null && driver.Exists()) return;
+
+                Function.Call(Hash.SET_VEH_FORCED_RADIO_THIS_FRAME, _car.Handle);
+            }
+            catch
+            {
+                // Silent for a frame.
+            }
+        }
+
         private void Keep()
         {
             if (!Running && Neon == null && string.IsNullOrEmpty(Radio)) return;
@@ -182,6 +202,18 @@ namespace Hoodrich.Locations
 
         public void Update()
         {
+            // EVERY FRAME, before the throttle, and this is why the van was silent.
+            //
+            // The decks learnt this and wrote it down: an UNOCCUPIED vehicle does not keep its
+            // radio on by being told to once. SET_VEH_FORCED_RADIO_THIS_FRAME is the native for
+            // that case and its name is the contract -- one frame, then the game decides again,
+            // and for a parked car with nobody in it the game decides off.
+            //
+            // Everything else in here is on a 1.8 second throttle, so the van had its station
+            // set and its radio enabled and loud sixty times a minute and was forced to actually
+            // play it never.
+            ForceRadio();
+
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;

@@ -587,7 +587,10 @@ namespace Hoodrich.Gangs
                 {
                     if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
                     if (ped.Handle == player.Handle) continue;
-                    if (IsAlly(ped)) _lastAllyCount++;
+                    if (!IsAlly(ped)) continue;
+
+                    _lastAllyCount++;
+                    Friendly(ped);
                 }
             }
             catch (Exception ex)
@@ -595,6 +598,64 @@ namespace Hoodrich.Gangs
                 Log.Debug("Ally scan failed: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// One of ours, told plainly that Franklin is one of ours.
+        ///
+        /// The relationship between the two GROUPS is already set to companion, and it is not
+        /// enough on its own: the game resets group relationships on an area reload, a
+        /// cutscene and the end of a story mission, and a ped that was spawned angry stays
+        /// angry whatever the group table says afterwards. So each man is told once, and the
+        /// set means it is once per man rather than once a second forever.
+        ///
+        /// Combat attribute 46 is fight-armed-while-unarmed and 5 is always-fight. Both off,
+        /// and not able to consider the player a threat at all -- because "he shot near me" is
+        /// a thing that happens constantly on a block you are working, and a set that turns on
+        /// you every time a round goes off is not a set you run with.
+        /// </summary>
+        private void Friendly(Ped ped)
+        {
+            if (ped == null || !ped.Exists()) return;
+            if (_madeFriendly.Contains(ped.Handle)) return;
+
+            _madeFriendly.Add(ped.Handle);
+
+            try
+            {
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, false);
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED_BY_PLAYER, ped.Handle,
+                              Game.Player.Handle, false);
+
+                // And they speak to him rather than at him. One in six, so walking down a
+                // street is people saying hello and not a receiving line.
+                if (_rng.Next(6) == 0)
+                {
+                    Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
+                                  Greetings[_rng.Next(Greetings.Length)], "SPEECH_PARAMS_FORCE");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not settle one of ours: " + ex.Message);
+            }
+
+            // The set is a cache, not a record. Left to grow it would hold every handle the
+            // game has ever reused.
+            if (_madeFriendly.Count > 300) _madeFriendly.Clear();
+        }
+
+        private static readonly Random _rng = new Random();
+
+        /// <summary>Who has already been told. Handles, so it costs nothing to ask.</summary>
+        private readonly HashSet<int> _madeFriendly = new HashSet<int>();
+
+        /// <summary>What one of ours says to him in passing.</summary>
+        private static readonly string[] Greetings =
+        {
+            "GENERIC_HI", "GENERIC_HOWS_IT_GOING", "GENERIC_THANKS",
+            "CHAT_STATE", "GENERIC_YES"
+        };
 
         /// <summary>
         /// Credits kills of rival gang members. Polls nearby corpses rather than hooking a

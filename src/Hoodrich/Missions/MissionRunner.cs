@@ -2213,7 +2213,27 @@ namespace Hoodrich.Missions
         /// </summary>
         private Color PhaseColour()
         {
-            if (OnBike || OnTags) return Palette.Accent;
+            // The bike ride and the tag run have phases of their own and they were both
+            // getting the same flat white, so the one card in the mod that is supposed to say
+            // which part of a job you are in said nothing at all for two of the five jobs.
+            if (OnBike)
+            {
+                switch (_bike.Phase)
+                {
+                    case BikePhase.Fight:
+                    case BikePhase.Escape: return Palette.Danger;
+
+                    case BikePhase.ToBike:
+                    case BikePhase.Riding:
+                    case BikePhase.Rob: return Palette.Warn;
+
+                    case BikePhase.Home: return Palette.Cash;
+
+                    default: return Palette.Accent;
+                }
+            }
+
+            if (OnTags) return Palette.Warn;
 
             switch (State)
             {
@@ -2252,7 +2272,10 @@ namespace Hoodrich.Missions
         {
             try
             {
-                if (OnBike || OnTags) return 0f;
+                // Both of them know how far through they are; neither was ever asked, so the
+                // bar sat empty for the whole of two jobs.
+                if (OnBike) return Clamp01(_bike.Advance);
+                if (OnTags) return Clamp01(_tags.Advance);
 
                 var player = Game.Player.Character;
 
