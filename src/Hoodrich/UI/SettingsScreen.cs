@@ -360,6 +360,9 @@ namespace Hoodrich.UI
                  () => c.TweetsOnTheRight, v => c.TweetsOnTheRight = v);
 
             Head("Posting up");
+            Tick("Show the corner readout", "PostUp", "ShowDealHud",
+                 () => c.ShowDealHud, v => c.ShowDealHud = v,
+                 "Off hides the wordmark and the bars. The corner still works");
             Slide("Chance each passer-by buys", "PostUp", "PostUpApproachChance",
                   () => c.PostUpApproachChance, v => c.PostUpApproachChance = v,
                   0f, 100f, 1f, "0", "%", note: "A busy pavement compounds this");

@@ -89,6 +89,17 @@ namespace Hoodrich.Core
         public bool BlipsInBars = false;
 
         /// <summary>
+        /// Whether the corner readout is drawn at all while you are posted up.
+        ///
+        /// The wordmark, the heat and reputation bars, the sentence under them and the line of
+        /// figures. Off leaves the corner working exactly as it did -- sales, heat, patrols,
+        /// reputation, the lot -- with nothing on the screen about it, for anybody who would
+        /// rather watch the street than a readout. The notifications stay either way, because
+        /// with the panel gone they are the only thing that says a sale happened.
+        /// </summary>
+        public bool ShowDealHud = true;
+
+        /// <summary>
         /// Where the bag sits on Franklin's back while he is dealing, and which way up.
         ///
         /// In the ini because they can only be judged by looking at them. X is across his
@@ -265,6 +276,7 @@ namespace Hoodrich.Core
             s.MouseSensitivity = Clamp(ini.GetFloat("Wheel", "MouseSensitivity", s.MouseSensitivity), 0.1f, 5f);
             s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
             s.BlipsInBars = ini.GetBool("Wheel", "BlipsInBars", s.BlipsInBars);
+            s.ShowDealHud = ini.GetBool("PostUp", "ShowDealHud", s.ShowDealHud);
 
             s.BagX = ini.GetFloat("Dealing", "BagX", s.BagX);
             s.BagY = ini.GetFloat("Dealing", "BagY", s.BagY);

@@ -2393,6 +2393,11 @@ namespace Hoodrich.Dealing
         {
             if (!IsPosted) return;
 
+            // Turned off in the settings. Only the drawing stops -- everything the panel was
+            // reporting on carries on happening, which is the whole point of being able to
+            // switch it off rather than switch the corner off.
+            if (_cfg != null && !_cfg.ShowDealHud) return;
+
             const float x = 0.5f;
 
             // Lifted again, because both bars now carry their own label and the block of text
