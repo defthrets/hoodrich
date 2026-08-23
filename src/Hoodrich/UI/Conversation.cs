@@ -76,6 +76,16 @@ namespace Hoodrich.UI
         public string Line = "";
         public Color SpeakerColour = Palette.Text;
 
+        /// <summary>
+        /// The texture dictionary of the speaker's photograph, or empty to work it out.
+        ///
+        /// An override rather than the usual way. Almost every node in the mod already says
+        /// who is talking, and a name is enough to find a face -- so this exists for the case
+        /// where two people share a name, or somebody wants a different picture for one line,
+        /// rather than as a field every builder has to remember to fill in.
+        /// </summary>
+        public string Portrait = "";
+
         public readonly List<DialogueChoice> Choices = new List<DialogueChoice>();
 
         public DialogueNode(string speaker, string line)
@@ -220,6 +230,47 @@ namespace Hoodrich.UI
         private int _selected;
         private int _openedAt;
 
+        /// <summary>The speaker's photograph for this node, or empty for none.</summary>
+        private string _face = "";
+
+        /// <summary>How tall the photograph is, and how far it pushes the words across.</summary>
+        private const float FaceSize = 0.062f;
+        private static float TextInset => Hud.ToX(FaceSize) + 0.012f;
+
+        /// <summary>
+        /// Whose face goes with a name.
+        ///
+        /// Looked up from the speaker rather than carried on every node, which is the only way
+        /// this reaches all of them: there are dozens of nodes across Lamar, Gerald, Stretch,
+        /// Tao and the rest, they are built in half a dozen files, and none of them would ever
+        /// be revisited to add a field. A name they all already set is the one thing they have
+        /// in common.
+        ///
+        /// These are the game's own contact pictures, which is why they are named CHAR_ and not
+        /// after a file: the same textures the phone uses. A name that is not on this list gets
+        /// no picture and the panel lays out exactly as it did before, which is what a
+        /// character added later should do until somebody puts him here.
+        /// </summary>
+        private static string FaceFor(string speaker)
+        {
+            if (string.IsNullOrEmpty(speaker)) return "";
+
+            switch (speaker.Trim().ToUpperInvariant())
+            {
+                case "LAMAR": return "CHAR_LAMAR";
+                case "GERALD": return "CHAR_MP_GERALD";
+                case "STRETCH": return "CHAR_MP_STRETCH";
+                case "TAO CHENG": return "CHAR_CHENG";
+                case "DENISE": return "CHAR_DENISE";
+                case "FRANKLIN": return "CHAR_FRANKLIN";
+                case "TANISHA": return "CHAR_TANISHA";
+                case "MICHAEL": return "CHAR_MICHAEL";
+                case "TREVOR": return "CHAR_TREVOR";
+
+                default: return "";
+            }
+        }
+
         /// <summary>
         /// Where the highlight actually is, which is not always where the cursor is.
         ///
@@ -342,7 +393,10 @@ namespace Hoodrich.UI
             Subject = subject;
             _selected = FirstEnabled(node);
             _openedAt = Game.GameTime;
-            _wrapped = Wrap(node.Line, PanelWidth - 0.03f, BodyScale);
+            // The picture, and the width the words have left because of it.
+            _face = string.IsNullOrEmpty(node.Portrait) ? FaceFor(node.Speaker) : node.Portrait;
+
+            _wrapped = Wrap(node.Line, PanelWidth - 0.03f - TextInset, BodyScale);
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
@@ -542,6 +596,15 @@ namespace Hoodrich.UI
             // 0.062 rather than 0.048: the wordmark went in above the speaker's name and the
             // panel has to be that much taller, or the last line of choices runs off the bottom
             // of its own ground.
+            // The body has to be at least as tall as the photograph, or a one-line answer
+            // leaves his face hanging over the first thing you can say back. The name row above
+            // it counts toward that, since the picture starts level with the name.
+            if (!string.IsNullOrEmpty(_face))
+            {
+                var room = FaceSize - 0.034f + 0.004f;
+                if (bodyHeight < room) bodyHeight = room;
+            }
+
             var total = 0.068f + bodyHeight + 0.012f + choiceHeight + 0.030f;
             if (!string.IsNullOrEmpty(Title)) total += 0.036f;
             var top = Math.Max(0.06f, 0.5f - total * 0.5f);
@@ -588,13 +651,42 @@ namespace Hoodrich.UI
                 y += 0.036f;
             }
 
-            Hud.Text(_node.Speaker.ToUpperInvariant(), PanelX + 0.014f, y, 0.36f,
+            var said = PanelX + 0.014f;
+
+            // His photograph, beside what he is saying.
+            //
+            // Drawn from the top of the NAME rather than centred on the block of text, so a
+            // three-line answer and a one-line one both put his face in the same place --
+            // a portrait that slides up and down the panel as the sentence changes length
+            // reads as part of the sentence rather than as the man saying it.
+            if (!string.IsNullOrEmpty(_face) && Hud.EnsureTextureDict(_face))
+            {
+                var wide = Hud.ToX(FaceSize);
+
+                // A well behind it, the same one the objective card puts its icon in, so the
+                // picture has an edge on a panel that is otherwise flat.
+                Hud.RectFrom(said, y - 0.002f, wide, FaceSize,
+                             Color.FromArgb((int)(30f * arrive), 255, 255, 255));
+
+                Hud.Sprite(_face, _face, said + wide * 0.5f, y - 0.002f + FaceSize * 0.5f,
+                           wide, FaceSize, 0f,
+                           Color.FromArgb((int)(255f * arrive), 255, 255, 255));
+
+                // And his own colour down the near edge of it, so the picture belongs to the
+                // name above the words rather than floating next to them.
+                Hud.RectFrom(said, y - 0.002f, 0.0022f, FaceSize,
+                             Palette.Alpha(_node.SpeakerColour, (int)(255f * arrive)));
+
+                said += TextInset;
+            }
+
+            Hud.Text(_node.Speaker.ToUpperInvariant(), said, y, 0.36f,
                          _node.SpeakerColour, Hud.FontLabel, centre: false);
             y += 0.034f;
 
             foreach (var line in _wrapped)
             {
-                Hud.Text(line, PanelX + 0.014f, y, BodyScale, Palette.Text, Hud.FontBody, centre: false);
+                Hud.Text(line, said, y, BodyScale, Palette.Text, Hud.FontBody, centre: false);
                 y += LineHeight;
             }
 

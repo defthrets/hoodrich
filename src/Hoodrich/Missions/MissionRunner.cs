@@ -2624,8 +2624,50 @@ namespace Hoodrich.Missions
 
             Hud.RectFrom(x, barY, barWide, BarHeight, Color.FromArgb(40, 255, 255, 255));
 
+            // Eased toward the figure rather than set to it.
+            //
+            // This is the difference between a bar and a readout. Progress on most of these
+            // phases is a DISTANCE, which changes in steps as you ride -- so the fill jumped a
+            // centimetre at a time and looked like a thing being redrawn rather than a thing
+            // filling up. Sliding toward the target makes the same numbers read as movement,
+            // which is the whole point of showing them as a bar instead of as a percentage.
+            //
+            // Snapped rather than eased when a phase CHANGES. The new phase's progress starts
+            // at zero and easing across that boundary is a bar running backwards down the card
+            // while you read the sentence that replaced it.
             var done = Progress();
-            if (done > 0f) Hud.RectFrom(x, barY, barWide * done, BarHeight, ink);
+            var phase = Phasing();
+
+            if (phase != _barPhase)
+            {
+                _barPhase = phase;
+                _bar = done;
+            }
+
+            _bar += (done - _bar) * BarRate;
+            if (Math.Abs(done - _bar) < 0.002f) _bar = done;
+
+            if (_bar > 0f)
+            {
+                Hud.RectFrom(x, barY, barWide * _bar, BarHeight, ink);
+
+                // A light travelling up the filled part, so a bar that is not moving is still
+                // visibly live. It stays INSIDE the fill -- a sheen running along the empty
+                // track would be the card promising progress it has not made.
+                var t = (Game.GameTime % BarSweepMs) / (float)BarSweepMs;
+                var lit = barWide * _bar;
+                var band = Math.Min(lit, barWide * 0.10f);
+                var at = x - band + (lit + band) * t;
+
+                var lo = Math.Max(x, at);
+                var hi = Math.Min(x + lit, at + band);
+
+                if (hi > lo)
+                {
+                    Hud.RectFrom(lo, barY, hi - lo, BarHeight,
+                                 Color.FromArgb(120, 255, 255, 255));
+                }
+            }
         }
 
         private const float CardWidth = 0.300f;
@@ -2635,6 +2677,32 @@ namespace Hoodrich.Missions
         private const float CardRail = 0.0022f;
         private const float IconSize = 0.034f;
         private const float BarHeight = 0.0045f;
+
+        /// <summary>How fast the fill catches the figure, and how fast the light travels it.</summary>
+        private const float BarRate = 0.12f;
+        private const int BarSweepMs = 1600;
+
+        /// <summary>Where the fill has got to, and which phase it belongs to.</summary>
+        private float _bar;
+        private string _barPhase = "";
+
+        /// <summary>
+        /// A name for the part of the job the bar is currently measuring.
+        ///
+        /// The state alone is not enough: the bike ride and the tag run both spend their whole
+        /// length inside one MissionState while running through phases of their own, and each
+        /// of those restarts the count from nothing. Anything that resets progress has to
+        /// change this string, or the bar eases backwards across the boundary.
+        /// </summary>
+        private string Phasing()
+        {
+            if (OnBike) return "bike:" + _bike.Phase;
+            // The tag run has no phase of its own to ask for; its progress is the count of
+            // spots done, which only ever goes up, so the whole run is one band.
+            if (OnTags) return "tags";
+
+            return "job:" + State;
+        }
 
         private static readonly Color CardBack = Color.FromArgb(232, 12, 13, 15);
 
