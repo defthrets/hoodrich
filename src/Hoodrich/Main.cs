@@ -150,6 +150,9 @@ namespace Hoodrich
 
         /// <summary>The drive down to Elysian and the van coming back.</summary>
         private readonly Missions.PortRun _port;
+
+        /// <summary>And the two who come out when you text them.</summary>
+        private readonly Gangs.Homies _homies;
         private readonly ParkedCar _meetOne;
         private readonly ParkedCar _meetTwo;
         private readonly Fixture _partyBarrel;
@@ -399,6 +402,10 @@ namespace Hoodrich
                 // because a bag on a pavement is not storage -- it is somewhere you left
                 // something in a hurry.
                 _bags = new DroppedBags { Pockets = _state.Stash };
+
+                // Two of yours, on call once you have ridden a job out with them.
+                _homies = new Gangs.Homies(_gangs, _crew, _state);
+                _homies.Feed = _social;
                 _cook = new CookScreen();
                 _kitchen = new Kitchen(OpenKitchen, () => _cutting.IsBusy);
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
@@ -1215,6 +1222,7 @@ namespace Hoodrich
                 pages.StashScreen = _stashScreen;
                 pages.PocketScreen = _pocketScreen;
                 pages.Bags = _bags;
+                pages.Crew = _homies;
                 pages.ShowSocials = () => _socialScreen.Open();
                 pages.ShowSettings = () => _settingsScreen.Open(_cfg, pages.ResetOptions());
 
@@ -1548,6 +1556,8 @@ namespace Hoodrich
 
                     // And anything you have put down, waiting to be picked back up.
                     if (_bags != null) _bags.Update();
+
+                    if (_homies != null) _homies.Update();
 
                     // The van, the port, and the man waiting on the other end of it.
                     if (_port != null) _port.Update();
@@ -2065,6 +2075,7 @@ namespace Hoodrich
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
             try { _bags?.RestoreWorld(); } catch { /* teardown */ }
             try { _port?.RestoreWorld(); } catch { /* teardown */ }
+            try { _homies?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockA?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockB?.RestoreWorld(); } catch { /* teardown */ }
             foreach (var door in _doors)

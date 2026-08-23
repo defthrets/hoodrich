@@ -2246,6 +2246,15 @@
       "Prices about to make sense round here for once",
       "Somebody got put on today. You can tell by how they walking"
     ],
+    "HomiesOut": [
+      "Two of 'em walking with dude on {here} {timeofday}. He ain't shopping",
+      "{source} {hearsay} somebody on {here} don't go nowhere by hisself no more",
+      "You know it's serious when a man start travelling with company",
+      "Three deep on {here} and none of them looking at nothing in particular",
+      "Whoever that is on {here}, he expecting somebody. Look at the shoulders",
+      "Man got a whole entourage now. On {here}. Walking to the store",
+      "{reaction}. They ain't out here for no reason"
+    ],
     "YouDidThePort": [
       "Long drive. Worth it",
       "Elysian and back. Didn't open it, didn't ask",

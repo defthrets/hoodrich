@@ -71,7 +71,10 @@ namespace Hoodrich.Social
         PortRun,
 
         /// <summary>And got where it was going. This is the one that changes what you are.</summary>
-        PortRunDone
+        PortRunDone,
+
+        /// <summary>You came out with two of yours behind you.</summary>
+        HomiesOut
     }
 
     /// <summary>
@@ -1259,6 +1262,10 @@ namespace Hoodrich.Social
                     follow = "Ambient";
                     break;
 
+                case SocialEvent.HomiesOut:
+                    follow = _rng.NextDouble() < 0.5 ? "OursGloats" : "BallasTaunt";
+                    break;
+
                 case SocialEvent.PortRun:
                     // Somebody clocked the van at the docks, and the docks are not round here.
                     follow = _rng.NextDouble() < 0.5 ? "Ambient" : "BallasTaunt";
@@ -1378,6 +1385,10 @@ namespace Hoodrich.Social
 
                 // Neither of these is a secret worth keeping. Half a street watched a van they
                 // know leave and come back, and the other half heard about it by teatime.
+                // Not every time. Two men walking with you is a thing the block notices
+                // occasionally, not a press release.
+                case SocialEvent.HomiesOut: return 0.30f;
+
                 case SocialEvent.PortRun: return 0.65f;
                 case SocialEvent.PortRunDone: return 1f;
                 case SocialEvent.Busted: return 0.7f;
@@ -1422,6 +1433,8 @@ namespace Hoodrich.Social
 
                 // Getting put on to somebody's supply is the biggest single step in the mod
                 // and it should read like one -- more than a job, less than a rank.
+                case SocialEvent.HomiesOut: return 1 + _rng.Next(4);
+
                 case SocialEvent.PortRun: return 4 + _rng.Next(8);
                 case SocialEvent.PortRunDone: return 30 + _rng.Next(40);
 

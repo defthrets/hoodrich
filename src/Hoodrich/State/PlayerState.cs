@@ -162,6 +162,15 @@ namespace Hoodrich.State
         public int FrontsDone;
 
         /// <summary>
+        /// Whether you can call for backup.
+        ///
+        /// Earned on the first job you actually ride WITH them, which is the torch run. Before
+        /// that they are people somebody else hands you for an afternoon; after it they are
+        /// two men who have been in a car with you and will come out again if you ask.
+        /// </summary>
+        public bool HomiesUnlocked;
+
+        /// <summary>
         /// True when the last thing you did was sleep at the stash house.
         ///
         /// The game puts Franklin back at whichever house it thinks is his, which after the
@@ -476,6 +485,7 @@ namespace Hoodrich.State
                 .Set("docksUnlocked", DocksUnlocked)
                 .Set("portRunStage", PortRunStage)
                 .Set("frontsDone", FrontsDone)
+                .Set("homiesUnlocked", HomiesUnlocked)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("followers", Followers)
                 .Set("frontedDrug", FrontedDrug)
@@ -506,6 +516,7 @@ namespace Hoodrich.State
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
                 PortRunStage = Math.Max(0, Math.Min(3, doc["portRunStage"].AsInt(0)));
                 FrontsDone = Math.Max(0, doc["frontsDone"].AsInt(0));
+                HomiesUnlocked = doc["homiesUnlocked"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
 
                 // Defaults to FALSE, so a save from before this existed shows the guide once

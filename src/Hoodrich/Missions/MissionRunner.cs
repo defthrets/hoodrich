@@ -2340,6 +2340,41 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>
+        /// The one job that changes what you can do afterwards.
+        ///
+        /// The torch run is the first time you are in a car with them for the length of a job
+        /// rather than stood next to them in a yard, so it is the one that ends with them
+        /// being people you can phone. Checked by ID rather than by kind: the later jobs also
+        /// carry homies and unlocking on any of them would mean the message arrives at
+        /// whichever one you happened to do first.
+        /// </summary>
+        private const string HomiesJob = "torch_rancho";
+
+        private void MaybeUnlockHomies(MissionDef def)
+        {
+            if (_state == null || def == null) return;
+            if (_state.HomiesUnlocked) return;
+
+            if (!string.Equals(def.Id, HomiesJob, StringComparison.OrdinalIgnoreCase)) return;
+
+            _state.HomiesUnlocked = true;
+            _state.Touch();
+
+            try
+            {
+                Notify.Text("CHAR_LAMAR", "Lamar", "Los Santos",
+                            "aye you can text the homies for backup now dawg. dont be callin em " +
+                            "for nothin though", true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not text about the homies: " + ex.Message);
+            }
+
+            Log.Info("Homies unlocked after " + def.Id + ".");
+        }
+
         /// <summary>Raises the wanted level, never lowers it.</summary>
         private static void Wanted(int stars)
         {
@@ -2393,6 +2428,9 @@ namespace Hoodrich.Missions
             _crew.AddRep(rep, "for the work");
             _state.AddRespect(rep * 0.5f);
             _state.MarkDone(def.Id);
+
+            // And the one job that leaves you with a phone number afterwards.
+            MaybeUnlockHomies(def);
             _state.Touch();
 
             Notify.Important("~g~+$" + pay.ToString("N0") + "~s~ and " + rep.ToString("0") + " rep.");

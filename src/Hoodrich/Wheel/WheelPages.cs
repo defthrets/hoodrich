@@ -1105,17 +1105,44 @@ namespace Hoodrich.Wheel
             var page = new WheelPage("Contacts", ContactsSummary());
             page.PanelTitle = "Who you can reach";
 
-            // Him first. He is the only one on here who calls YOU.
-            var job = WorkWaiting == null ? null : WorkWaiting();
+            // The homies, where Lamar used to sit.
+            //
+            // He was a row that could never be pressed -- it existed to tell you whether he
+            // had work, which the text message and his own blip both already do. A contacts
+            // page whose first entry is permanently greyed out teaches you that the page is
+            // decoration.
+            //
+            // This is a phone number that does something.
+            if (Crew != null && Crew.Available)
+            {
+                var out_ = Crew.AnyOut;
 
-            page.Add("Lamar", "L", null,
-                detail: job != null
-                    ? "He's got something. Go and see him on Forum Drive"
-                    : "Nothing on right now. He'll text when there is",
-                value: job != null ? job.Name : "quiet",
-                enabled: false,
-                disabledReason: job != null ? "Go and see him" : "Nothing on");
-            page.WithIcon(Icons.FromFile("people.png"));
+                page.Add(out_ ? "Send the homies home" : "Text the homies",
+                         out_ ? "x" : ">",
+                         () => { var no = out_ ? Crew.Dismiss() : Crew.Call();
+                                 if (no != null) Notify.Problem(no);
+                                 else Notify.Ticker(out_ ? "~g~They headed off.~s~"
+                                                         : "~g~They're rollin' with you.~s~"); },
+                    detail: out_
+                        ? "Tell them you're good and let them get on"
+                        : "Two of yours come out and roll with you until you say otherwise",
+                    value: out_ ? Crew.Standing + " with you" : "on call");
+
+                page.WithIcon(Icons.FromFile("people.png"));
+            }
+            else
+            {
+                var job = WorkWaiting == null ? null : WorkWaiting();
+
+                page.Add("Lamar", "L", null,
+                    detail: job != null
+                        ? "He's got something. Go and see him on Forum Drive"
+                        : "Ride a job out with the homies and they'll pick up for you",
+                    value: job != null ? job.Name : "quiet",
+                    enabled: false,
+                    disabledReason: job != null ? "Go and see him" : "Not yet");
+                page.WithIcon(Icons.FromFile("people.png"));
+            }
 
             // Then the plugs, in the order the data lists them.
             foreach (var def in _dealers.All)
@@ -1141,6 +1168,9 @@ namespace Hoodrich.Wheel
             return page;
         }
 
+        /// <summary>Set by Main. The two who come out when you ask.</summary>
+        public Gangs.Homies Crew;
+
         /// <summary>How many of them are actually answering.</summary>
         private string ContactsSummary()
         {
@@ -1155,9 +1185,13 @@ namespace Hoodrich.Wheel
                 if (_dealers.RefusalReason(def, _state, _crew) == null) open++;
             }
 
-            if (all == 0) return "nobody yet";
+            if (all == 0) return Crew != null && Crew.AnyOut ? "the homies are with you" : "nobody yet";
 
-            return open + " of " + all + " plugs answering";
+            var line = open + " of " + all + " plugs answering";
+
+            if (Crew != null && Crew.AnyOut) line += "  ·  " + Crew.Standing + " with you";
+
+            return line;
         }
 
         private WheelPage BuildDrugsPage()
