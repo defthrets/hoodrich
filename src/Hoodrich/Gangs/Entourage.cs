@@ -341,21 +341,17 @@ namespace Hoodrich.Gangs
 
             _marks.Clear();
 
-            // Quiet hours: only the ones with a reason to be out here are placed at all. The
-            // rest are not hidden, they are simply not made -- an invisible ped is still a ped
-            // the game is paying for, and there is nothing to see either way.
             var quiet = Quiet;
 
-            if (quiet && _stations.Count > 0)
-            {
-                for (var i = 0; i < _stations.Count; i++)
-                {
-                    if (i < _allNight.Count && _allNight[i]) _marks.Add(_stations[i]);
-                }
-
-                if (_marks.Count == 0) return;
-            }
-            else if (_stations.Count > 0)
+            // Every station, always, whatever the hour.
+            //
+            // Filtering the MARKS was the first attempt and it is a trap: everything about a
+            // man -- his facing, his models, his weapon, his scenario, his animation and its two
+            // timers -- is a per-station list read by the same index, so a shortened mark list
+            // hands the second man the fourteenth man's face and the fourteenth man's gun. Who
+            // is actually stood up is decided in the placement loop below, which keeps a slot
+            // for everybody and puts a null in the ones nobody is at.
+            if (_stations.Count > 0)
             {
                 _marks.AddRange(_stations);
             }

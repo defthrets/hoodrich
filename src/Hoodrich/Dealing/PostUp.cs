@@ -849,6 +849,9 @@ namespace Hoodrich.Dealing
             _state.AddNotoriety(heat * 0.5f);
             Turf?.MarkExposed();
 
+            // The mark answers every sale, which is the only thing on that corner that moves.
+            _soldAt = Game.GameTime;
+
             if (Crew != null && Crew.IsAffiliated)
             {
                 var standing = Crew.CurrentStanding;
@@ -2353,7 +2356,45 @@ namespace Hoodrich.Dealing
             // The warning itself moves to the line underneath, where the product name sits the
             // rest of the time. Nothing is lost: the mark turning red is the alarm and the word
             // below it says which alarm.
-            Hud.BrandCentre(x, y - 0.077f, StateMarkHeight, tint);
+            // And it MOVES when somebody buys.
+            //
+            // The mark going red is now correctly rare -- it means the law is interested rather
+            // than "you are busy", which is what it had drifted into meaning. That left a
+            // corner where nothing on screen acknowledged the thing you are stood there to do.
+            //
+            // So a sale swells it for two thirds of a second and warms it toward the money
+            // colour on the way. Sine rather than a linear ramp, so it comes back down as
+            // smoothly as it went up -- a mark that snaps back to normal reads as a glitch.
+            // Heat still wins the colour: an alarm is not something to be cheerful over.
+            var mark = StateMarkHeight;
+            var pop = tint;
+
+            if (_soldAt != 0)
+            {
+                var since = Game.GameTime - _soldAt;
+
+                if (since > SalePulseMs)
+                {
+                    _soldAt = 0;
+                }
+                else
+                {
+                    var k = (float)Math.Sin(Math.PI * (since / (double)SalePulseMs));
+
+                    mark = StateMarkHeight * (1f + 0.22f * k);
+
+                    if (!lawOnYou)
+                    {
+                        pop = Color.FromArgb(255,
+                            (int)(Palette.Text.R + (Palette.Cash.R - Palette.Text.R) * k),
+                            (int)(Palette.Text.G + (Palette.Cash.G - Palette.Text.G) * k),
+                            (int)(Palette.Text.B + (Palette.Cash.B - Palette.Text.B) * k));
+                    }
+                }
+            }
+
+            // Grown from the middle, so it swells rather than drops.
+            Hud.BrandCentre(x, y - 0.077f - (mark - StateMarkHeight) * 0.5f, mark, pop);
 
             // Where you stand, directly under the bar it belongs to, and without a prefix --
             // the bar says REPUTATION, so repeating it here said the word twice in two inches.
