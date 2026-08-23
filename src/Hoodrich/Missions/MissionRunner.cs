@@ -956,7 +956,7 @@ namespace Hoodrich.Missions
         /// </summary>
         private void KeepThemSeated()
         {
-            if (!FromTheCar) return;
+            if (!HoldingSeats) return;
             if (Game.GameTime < _nextSeatCheck) return;
             _nextSeatCheck = Game.GameTime + SeatCheckMs;
 
@@ -1097,11 +1097,7 @@ namespace Hoodrich.Missions
         /// </summary>
         private void HoldTheSeats()
         {
-            if (!FromTheCar) return;
-
-            if (State != MissionState.Work &&
-                State != MissionState.Escape &&
-                State != MissionState.Dump) return;
+            if (!HoldingSeats) return;
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
@@ -1134,12 +1130,56 @@ namespace Hoodrich.Missions
 
                     Function.Call(Hash.SET_PED_INTO_VEHICLE, homie.Handle, ride.Handle, seat);
 
-                    // And straight back on the trigger. The warp takes his task with it, and a
-                    // man sitting there doing nothing is the next frame's reason to get out.
+                    // And straight back on the trigger -- but ONLY while there is still shooting
+                    // to do from the car. The warp takes his task with it, and a man sitting
+                    // there with nothing to do is the next frame's reason to get out.
+                    //
+                    // Not on the way home. Shoot falls back to foot combat for a man the game
+                    // does not consider mounted, and a foot-combat order is a request to get
+                    // out of the car -- which would make this the thing causing what it is
+                    // here to stop.
+                    if (!FromTheCar || State != MissionState.Work) continue;
+
                     var foe = NearestLiveTarget(homie);
                     if (foe != null) Shoot(homie, foe);
                 }
                 catch { /* he sits this one out */ }
+            }
+        }
+
+        /// <summary>
+        /// Whether right now is a moment when nobody should be getting out.
+        ///
+        /// It was FromTheCar, and FromTheCar is only half the question -- it says whether the
+        /// JOB is done out of a window, and the answer for a hit is no, because walking up on a
+        /// cut house is the job. What it does not say is that the job ENDS and the drive home
+        /// starts, and the drive home is the same drive home on every kind of work: get in,
+        /// lose them, get back to Lamar. Piling out at a red light on the way is not any more
+        /// correct after a hit than after a drive-by.
+        ///
+        /// So the rule is by phase, not by kind. During the work it depends on the work.
+        /// Afterwards it never does.
+        ///
+        /// Travel is deliberately not in here. That is three men walking to a car and getting
+        /// into it properly, and nothing has gone wrong yet.
+        /// </summary>
+        private bool HoldingSeats
+        {
+            get
+            {
+                switch (State)
+                {
+                    case MissionState.Work:
+                        return FromTheCar;
+
+                    case MissionState.Escape:
+                    case MissionState.Dump:
+                    case MissionState.Collect:
+                        return true;
+
+                    default:
+                        return false;
+                }
             }
         }
 
@@ -1507,6 +1547,14 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, false);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, false);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
+
+                    // 3 is BF_CanLeaveVehicle, and from here to Lamar's the answer is no on
+                    // every kind of job. StandDown already told them to stop fighting and get
+                    // back in the car; it never told them to stay in it, so the first thing
+                    // that happened after they got in was the game letting them straight back
+                    // out -- which is the same complaint as the drive-by, one phase later.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, false);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, false);
 
                     Function.Call(Hash.CLEAR_PED_TASKS, homie.Handle);
 
