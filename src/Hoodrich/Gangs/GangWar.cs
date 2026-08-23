@@ -2456,48 +2456,151 @@ namespace Hoodrich.Gangs
 
         // ---- hud ---------------------------------------------------------------
 
-        /// <summary>Who is on the block, and how it is going. No clock.</summary>
+        // ---- the banner --------------------------------------------------------
+
+        private const float WarWidth = 0.330f;
+        private const float WarTop = 0.048f;
+        private const float WarHeight = 0.110f;
+        private const float WarPad = 0.009f;
+        private const float WarRail = 0.0026f;
+        private const float WarIcon = 0.040f;
+        private const float WarBarHeight = 0.0075f;
+
+        private const int WarEnterMs = 220;
+        private const float WarEnterRise = 0.018f;
+
+        private const float WarBarRate = 0.10f;
+        private const int WarSweepMs = 1400;
+
+        /// <summary>How long the card flares when a fresh carload turns up.</summary>
+        private const int WarFlashMs = 900;
+
+        private const float WarTickLong = 0.024f;
+        private const float WarTickThick = 0.0026f;
+
+        private static readonly System.Drawing.Color WarBack =
+            System.Drawing.Color.FromArgb(236, 10, 11, 13);
+
+        private int _warShownAt;
+        private float _warBar;
+        private int _warSeenReserve = -1;
+        private int _warFlashAt;
+
+        /// <summary>
+        /// Who is on the block, and how it is going. Still no clock.
+        ///
+        /// A countdown is deliberately not here and never will be. A draining clock turns a
+        /// raid into a timed objective -- you watch the bar instead of the street, and the
+        /// moment it empties you know it is over before it is over. Nobody standing in that
+        /// yard knows how long this lasts.
+        ///
+        /// What it shows instead is all things you could see from where you are standing: how
+        /// many of them are still up, how many you have put down, and whether more are coming.
+        /// A fresh carload pushes the bar BACK, which is the one thing a clock could never do
+        /// and the reason this reads as a fight rather than a progress bar.
+        /// </summary>
         public void Draw()
         {
-            if (!IsRunning || _target == null) return;
+            if (!IsRunning || _target == null)
+            {
+                _warShownAt = 0;
+                _warBar = 0f;
+                _warSeenReserve = -1;
+                return;
+            }
 
-            // A countdown is deliberately not here. A draining clock makes a raid into a timed
-            // objective -- you watch the bar instead of the street, and the moment it empties
-            // you know it is over before it is over. Nobody standing in that yard knows how long
-            // this lasts.
+            if (_warShownAt == 0)
+            {
+                _warShownAt = Game.GameTime;
+                _warSeenReserve = _reserve;
+            }
+
+            // Rises in and fades up, eased out. Slower than the other panels on purpose: this
+            // one is an interruption, and something that shoves itself onto the screen at the
+            // same speed as an inventory readout reads as a menu rather than as trouble.
+            var age = Game.GameTime - _warShownAt;
+            var enter = age >= WarEnterMs ? 1f : age / (float)WarEnterMs;
+            var eased = 1f - (1f - enter) * (1f - enter);
+
+            var top = WarTop + WarEnterRise * (1f - eased);
+            var left = 0.5f - WarWidth * 0.5f;
+            var right = left + WarWidth;
+
+            // Theirs, not a blanket red. Every raid used to look identical; the Vagos coming
+            // and the Ballas coming are different problems and the card should say which
+            // before you have read a word of it.
+            var theirs = _attacker == null ? Palette.Danger : _attacker.Colour;
+
+            // And a flare when the reserve drops, which is a car arriving. The bar going
+            // backwards is easy to miss when you are being shot at.
+            if (_reserve < _warSeenReserve)
+            {
+                _warFlashAt = Game.GameTime;
+                _warSeenReserve = _reserve;
+            }
+            else if (_reserve > _warSeenReserve)
+            {
+                _warSeenReserve = _reserve;
+            }
+
+            var flash = 0f;
+            var sinceFlash = Game.GameTime - _warFlashAt;
+
+            if (_warFlashAt != 0 && sinceFlash < WarFlashMs)
+            {
+                flash = 1f - sinceFlash / (float)WarFlashMs;
+            }
+
+            var ink = Wash(theirs, eased);
+            var back = Wash(WarBack, eased);
+
+            Hud.RectFrom(left, top, WarWidth, WarHeight, back);
+            Hud.RectFrom(left, top, WarRail, WarHeight, ink);
+            Hud.RectFrom(left, top, WarWidth, 0.0026f, ink);
+
+            if (flash > 0f)
+            {
+                Hud.RectFrom(left, top, WarWidth, WarHeight,
+                             System.Drawing.Color.FromArgb((int)(70 * flash * eased),
+                                                           theirs.R, theirs.G, theirs.B));
+            }
+
+            WarCorners(left, top, right, top + WarHeight, ink);
+
+            // ---- their colours, as a badge ----
+            var iconLeft = left + WarRail + WarPad;
+            var iconWide = Hud.ToX(WarIcon);
+            // Centred in the card rather than pinned to the top, so it reads as a badge on
+            // the panel instead of a thing balanced on its edge.
+            var iconTop = top + (WarHeight - WarIcon) * 0.5f;
+
+            Hud.RectFrom(iconLeft, iconTop, iconWide, WarIcon,
+                         System.Drawing.Color.FromArgb((int)(26 * eased), 255, 255, 255));
+
+            // Icon is a struct, so there is no null to check -- an unset one simply has no
+            // file and draws nothing, which is the right answer for a gang without art.
+            var badge = _attacker == null ? default(Icon) : Icons.ForGang(_attacker.Id);
+
+            if (badge.HasFile)
+            {
+                Hud.File(badge.File, iconLeft + iconWide * 0.5f, iconTop + WarIcon * 0.5f,
+                         WarIcon * 0.68f, 0f, ink);
+            }
+
+            var x = iconLeft + iconWide + WarPad;
+
+            // ---- who, and who by ----
             //
-            // The bar is still worth having, so it shows something you could actually see from
-            // where you are standing: how many of them are still up. It fills as you put them
-            // down, so it reads as progress without ever telling you how long is left -- and a
-            // fresh carload pulling in pushes it back, which a clock could never do.
-            const float x = 0.5f;
-            const float y = 0.115f;
-            const float w = 0.22f;
-            const float h = 0.014f;
-
-            // Three things stacked upward from the top of the bar, each one placed off the
-            // thing below it rather than off a number picked by eye.
-            //
-            // Both previous attempts at this were eyeballed and both collided. Hud.Text places
-            // text by its TOP edge, so an offset that looks right for one font size is wrong
-            // for another -- the gang name first landed across the bar, and once it was lifted
-            // clear it landed across the title instead, because the sign-painter face at 0.60
-            // is half as tall again as the number I had assumed for it.
-            const float labelHeight = 0.018f;   // the gang name, at 0.28
-            const float titleHeight = 0.032f;   // the cursive title, at 0.60
-            const float gap = 0.006f;
-
-            var barTop = y - h * 0.5f;
-            var labelTop = barTop - gap - labelHeight;
-            var titleTop = labelTop - gap - titleHeight;
-
-            Hud.Text(_target.Who.ToUpperInvariant() + " UNDER ATTACK", x, titleTop, 0.60f,
-                     Palette.Danger, Hud.FontCursive);
+            // The sign-painter face for the shout and the label face for the fact, which is
+            // the split the rest of the mod uses: cursive is a voice, the label face is data.
+            Hud.Text(_target.Who.ToUpperInvariant() + " UNDER ATTACK",
+                     x, top + WarPad, 0.54f, Wash(Palette.Danger, eased),
+                     Hud.FontCursive, centre: false);
 
             Hud.Text(_attacker == null ? "" : _attacker.Name.ToUpperInvariant(),
-                     x, labelTop, 0.28f,
-                     Palette.TextDim, Hud.FontLabel);
+                     x, top + 0.044f, 0.26f, ink, Hud.FontLabel, centre: false);
 
+            // ---- how it is going ----
             var standing = 0;
 
             for (var i = 0; i < _rivals.Count; i++)
@@ -2509,15 +2612,86 @@ namespace Hoodrich.Gangs
             var sent = standing + _downed;
             var done = sent <= 0 ? 0f : _downed / (float)sent;
 
-            Hud.Rect(x, y, w + 0.004f, h + 0.004f, System.Drawing.Color.FromArgb(190, 8, 8, 10));
-            Hud.Rect(x, y, w, h, System.Drawing.Color.FromArgb(160, 30, 32, 34));
+            var barLeft = x;
+            var barWide = right - WarPad - barLeft;
+            var barY = top + 0.070f;
 
-            var filled = w * done;
-            if (filled > 0f) Hud.Rect(x - (w - filled) * 0.5f, y, filled, h, Palette.Danger);
+            Hud.RectFrom(barLeft, barY, barWide, WarBarHeight,
+                         System.Drawing.Color.FromArgb((int)(50 * eased), 255, 255, 255));
 
-            Hud.Text(standing + " on the block   ·   " + _downed + " down   ·   " +
-                     Math.Max(0, _reserve) + " more coming", x, y + 0.016f, 0.26f,
-                     Palette.TextDim, Hud.FontBody);
+            // Eased, so a carload arriving reads as the bar being PUSHED back rather than as
+            // a number being redrawn smaller.
+            _warBar += (done - _warBar) * WarBarRate;
+            if (Math.Abs(done - _warBar) < 0.002f) _warBar = done;
+
+            if (_warBar > 0f)
+            {
+                var lit = barWide * _warBar;
+                Hud.RectFrom(barLeft, barY, lit, WarBarHeight, Wash(Palette.Danger, eased));
+
+                var t = (Game.GameTime % WarSweepMs) / (float)WarSweepMs;
+                var band = Math.Min(lit, barWide * 0.12f);
+                var at = barLeft - band + (lit + band) * t;
+
+                var lo = Math.Max(barLeft, at);
+                var hi = Math.Min(barLeft + lit, at + band);
+
+                if (hi > lo)
+                {
+                    Hud.RectFrom(lo, barY, hi - lo, WarBarHeight,
+                                 System.Drawing.Color.FromArgb((int)(120 * eased), 255, 255, 255));
+                }
+            }
+
+            // ---- the count ----
+            var coming = Math.Max(0, _reserve);
+
+            Hud.Text(standing + " on the block", x, top + 0.086f, 0.25f,
+                     Wash(Palette.TextDim, eased), Hud.FontBody, centre: false);
+
+            Hud.TextRight(_downed + " down", barLeft + barWide * 0.62f, top + 0.086f, 0.25f,
+                          Wash(Palette.Text, eased), Hud.FontBody);
+
+            // The one that changes what you do next, so it is the one in their colour, and it
+            // is the only part of the card that says nothing at all when there is nothing left
+            // to come. An empty "0 more coming" is a sentence you have to read to learn that
+            // it does not apply.
+            if (coming > 0)
+            {
+                Hud.TextRight(coming + " more coming", right - WarPad, top + 0.086f, 0.25f,
+                              flash > 0f ? Wash(Palette.Text, eased) : ink, Hud.FontLabel);
+            }
+            else
+            {
+                Hud.TextRight("that's all of 'em", right - WarPad, top + 0.086f, 0.25f,
+                              Wash(Palette.Cash, eased), Hud.FontLabel);
+            }
+        }
+
+        /// <summary>Four corner ticks rather than a box, the same frame the other panels wear.</summary>
+        private static void WarCorners(float left, float top, float right, float bottom,
+                                       System.Drawing.Color ink)
+        {
+            var wide = Hud.ToX(WarTickThick);
+            var run = Hud.ToX(WarTickLong);
+
+            Hud.RectFrom(left, top, run, WarTickThick, ink);
+            Hud.RectFrom(left, top, wide, WarTickLong, ink);
+
+            Hud.RectFrom(right - run, top, run, WarTickThick, ink);
+            Hud.RectFrom(right - wide, top, wide, WarTickLong, ink);
+
+            Hud.RectFrom(left, bottom - WarTickThick, run, WarTickThick, ink);
+            Hud.RectFrom(left, bottom - WarTickLong, wide, WarTickLong, ink);
+
+            Hud.RectFrom(right - run, bottom - WarTickThick, run, WarTickThick, ink);
+            Hud.RectFrom(right - wide, bottom - WarTickLong, wide, WarTickLong, ink);
+        }
+
+        private static System.Drawing.Color Wash(System.Drawing.Color c, float by)
+        {
+            if (by >= 0.999f) return c;
+            return System.Drawing.Color.FromArgb((int)(c.A * by), c.R, c.G, c.B);
         }
     }
 }
