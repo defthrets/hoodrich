@@ -1,0 +1,152 @@
+{
+  "seenWelcome": true,
+  "sentForYou": false,
+  "respect": 175.5,
+  "notoriety": 0,
+  "totalDeals": 23,
+  "totalEarned": 960,
+  "gramsSold": 60,
+  "productRep": 0.451,
+  "docksUnlocked": true,
+  "portRunStage": 2,
+  "sleptAtStashHouse": false,
+  "followers": 449,
+  "frontedDrug": "",
+  "frontedGrams": 0,
+  "frontedAtGrams": 0,
+  "lastJobAt": 6.3923074993334426E+17,
+  "missionsDone": [
+    "bikeride_courts",
+    "torch_rancho",
+    "tags_run"
+  ],
+  "missionsOffered": [
+    "bikeride_courts",
+    "torch_rancho",
+    "tags_run",
+    "hit_rancho"
+  ],
+  "stash": {
+    "bulk": {},
+    "packaged": {}
+  },
+  "version": "0.2.0",
+  "affiliation": {
+    "current": "families",
+    "standings": [
+      {
+        "gang": "families",
+        "rep": 44.12,
+        "kills": 3,
+        "moneyEarned": 320,
+        "deals": 9,
+        "timeMs": 0,
+        "theirDead": 0,
+        "attacks": 0,
+        "tweets": 57
+      },
+      {
+        "gang": "koreans",
+        "rep": 0,
+        "kills": 0,
+        "moneyEarned": 0,
+        "deals": 0,
+        "timeMs": 0,
+        "theirDead": 0,
+        "attacks": 0,
+        "tweets": 7
+      },
+      {
+        "gang": "ballas",
+        "rep": -65,
+        "kills": 0,
+        "moneyEarned": 0,
+        "deals": 0,
+        "timeMs": 0,
+        "theirDead": 3,
+        "attacks": 1,
+        "tweets": 55
+      },
+      {
+        "gang": "vagos",
+        "rep": -50,
+        "kills": 0,
+        "moneyEarned": 0,
+        "deals": 0,
+        "timeMs": 0,
+        "theirDead": 0,
+        "attacks": 0,
+        "tweets": 18
+      },
+      {
+        "gang": "lost",
+        "rep": 0,
+        "kills": 0,
+        "moneyEarned": 0,
+        "deals": 0,
+        "timeMs": 0,
+        "theirDead": 0,
+        "attacks": 0,
+        "tweets": 9
+      },
+      {
+        "gang": "aztecas",
+        "rep": 0,
+        "kills": 0,
+        "moneyEarned": 0,
+        "deals": 0,
+        "timeMs": 0,
+        "theirDead": 0,
+        "attacks": 0,
+        "tweets": 8
+      },
+      {
+        "gang": "marabunta",
+        "rep": 0,
+        "kills": 0,
+        "moneyEarned": 0,
+        "deals": 0,
+        "timeMs": 0,
+        "theirDead": 0,
+        "attacks": 0,
+        "tweets": 15
+      },
+      {
+        "gang": "triads",
+        "rep": 0,
+        "kills": 0,
+        "moneyEarned": 0,
+        "deals": 0,
+        "timeMs": 0,
+        "theirDead": 0,
+        "attacks": 0,
+        "tweets": 8
+      },
+      {
+        "gang": "armenians",
+        "rep": 0,
+        "kills": 0,
+        "moneyEarned": 0,
+        "deals": 0,
+        "timeMs": 0,
+        "theirDead": 0,
+        "attacks": 0,
+        "tweets": 7
+      }
+    ],
+    "beefSeeded": true
+  },
+  "market": {
+    "weed": 0.8871,
+    "crack": 1.0858,
+    "ecstasy": 1.3181,
+    "meth": 1.3943,
+    "heroin": 0.9525,
+    "coke": 0.9833,
+    "xanax": 0.971
+  },
+  "stashHouse": {
+    "bulk": {},
+    "packaged": {}
+  }
+}

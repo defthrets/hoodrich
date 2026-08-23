@@ -491,23 +491,175 @@ namespace Hoodrich.Missions
                                  System.Drawing.Color.FromArgb(120, colour.R, colour.G, colour.B));
             }
 
-            if (_spraying == null) return;
+            if (_spraying == null) { _cardAt = 0; _bar = 0f; return; }
 
-            // A bar for the one thing in this job that asks you to stand still.
+            SprayCard();
+        }
+
+        // ---- the can panel -----------------------------------------------------
+
+        private const float SprayCardWidth = 0.250f;
+        private const float SprayCardTop = 0.782f;
+        private const float SprayCardHeight = 0.062f;
+        private const float SprayCardPad = 0.008f;
+        private const float SprayCardRail = 0.0022f;
+        private const float SprayIconSize = 0.030f;
+        private const float SprayBarHeight = 0.0050f;
+
+        /// <summary>How long the panel takes to arrive, and how far it rises on the way.</summary>
+        private const int SprayEnterMs = 180;
+        private const float SprayEnterRise = 0.014f;
+
+        /// <summary>How fast the fill catches the figure, and how fast the light travels it.</summary>
+        private const float SprayBarRate = 0.16f;
+        private const int SprayBarSweepMs = 1500;
+
+        /// <summary>The corner ticks, which are the frame without drawing a whole box.</summary>
+        private const float TickLong = 0.020f;
+        private const float TickThick = 0.0022f;
+
+        private static readonly System.Drawing.Color SprayBack =
+            System.Drawing.Color.FromArgb(232, 12, 13, 15);
+
+        private int _cardAt;
+        private float _bar;
+
+        /// <summary>
+        /// The one thing in this job that asks you to stand still, drawn like it matters.
+        ///
+        /// It was a bare grey trough with the word PAINTING over it -- which told you the
+        /// truth and nothing else. This is the same information wearing the panel every other
+        /// readout in the mod wears: it rises in, it is framed, it fills smoothly, and it is
+        /// painted in YOUR set's colour rather than a hardcoded green, because the whole point
+        /// of the eight seconds is whose colour ends up on the wall.
+        ///
+        /// It also says which half of those eight seconds you are in. The clip opens with him
+        /// shaking the can and only starts laying down paint four seconds later, and a bar that
+        /// calls all of it "painting" is describing something that has not started yet.
+        /// </summary>
+        private void SprayCard()
+        {
+            if (_cardAt == 0) _cardAt = Game.GameTime;
+
+            var age = Game.GameTime - _cardAt;
+            var enter = age >= SprayEnterMs ? 1f : age / (float)SprayEnterMs;
+            var eased = 1f - (1f - enter) * (1f - enter);
+
+            var top = SprayCardTop + SprayEnterRise * (1f - eased);
+            var left = 0.5f - SprayCardWidth * 0.5f;
+            var right = left + SprayCardWidth;
+
+            OurColour(out var r, out var g, out var b);
+
+            var ink = Tint(System.Drawing.Color.FromArgb(255, (int)(r * 255f), (int)(g * 255f),
+                                                         (int)(b * 255f)), eased);
+
+            // ---- the panel ----
+            Hud.RectFrom(left, top, SprayCardWidth, SprayCardHeight, Tint(SprayBack, eased));
+            Hud.RectFrom(left, top, SprayCardRail, SprayCardHeight, ink);
+            Hud.RectFrom(left, top, SprayCardWidth, 0.0022f, ink);
+
+            Corners(left, top, right, top + SprayCardHeight, ink);
+
+            // ---- the can ----
+            var iconLeft = left + SprayCardRail + SprayCardPad;
+            var iconWide = Hud.ToX(SprayIconSize);
+
+            Hud.RectFrom(iconLeft, top + (SprayCardHeight - SprayIconSize) * 0.5f - 0.006f,
+                         iconWide, SprayIconSize,
+                         System.Drawing.Color.FromArgb((int)(20 * eased), 255, 255, 255));
+
+            // The can jitters while he is shaking it and holds still once he is painting,
+            // which is the cheapest possible way to say which half you are in.
+            var shaking = Game.GameTime - _sprayingSince < PaintDelayMs;
+            var jitter = shaking ? (float)Math.Sin(Game.GameTime * 0.045d) * 0.0018f : 0f;
+
+            Hud.File("spray.png", iconLeft + iconWide * 0.5f + jitter,
+                     top + SprayCardHeight * 0.5f - 0.006f, SprayIconSize * 0.66f, 0f, ink);
+
+            var x = iconLeft + iconWide + SprayCardPad;
+
+            Hud.Text(shaking ? "SHAKING THE CAN" : "GOING OVER IT",
+                     x, top + 0.008f, 0.29f, Tint(Palette.Text, eased),
+                     Hud.FontLabel, centre: false);
+
+            var whose = _gangs == null ? null : _gangs.Get(_spraying.Gang);
+
+            Hud.Text(whose == null ? "their tag" : whose.Name.ToUpperInvariant(),
+                     x, top + 0.027f, 0.24f, Tint(Palette.TextDim, eased),
+                     Hud.FontBody, centre: false);
+
+            Hud.TextRight((_done.Count + 1) + " OF " + _spots.Count,
+                          right - SprayCardPad, top + 0.010f, 0.23f, ink, Hud.FontLabel);
+
+            // ---- the bar ----
+            var barLeft = x;
+            var barWide = right - SprayCardPad - barLeft;
+            var barY = top + SprayCardHeight - 0.011f;
+
+            Hud.RectFrom(barLeft, barY, barWide, SprayBarHeight,
+                         System.Drawing.Color.FromArgb((int)(46 * eased), 255, 255, 255));
+
             var done = Math.Min(1f, (Game.GameTime - _sprayingSince) / (float)SprayMs);
 
-            const float x = 0.5f;
-            const float y = 0.80f;
-            const float w = 0.20f;
-            const float h = 0.016f;
+            _bar += (done - _bar) * SprayBarRate;
+            if (Math.Abs(done - _bar) < 0.002f) _bar = done;
 
-            Hud.Rect(x, y, w + 0.004f, h + 0.004f, System.Drawing.Color.FromArgb(190, 8, 8, 10));
-            Hud.Rect(x, y, w, h, System.Drawing.Color.FromArgb(160, 30, 32, 34));
+            if (_bar <= 0f) return;
 
-            var filled = w * done;
-            Hud.Rect(x - (w - filled) * 0.5f, y, filled, h, Palette.Cash);
+            var lit = barWide * _bar;
+            Hud.RectFrom(barLeft, barY, lit, SprayBarHeight, ink);
 
-            Hud.Text("PAINTING", x, y - 0.040f, 0.34f, Palette.Cash, Hud.FontLabel);
+            // A light travelling up the filled part only. On the empty track it would be the
+            // panel promising progress it has not made.
+            var t = (Game.GameTime % SprayBarSweepMs) / (float)SprayBarSweepMs;
+            var band = Math.Min(lit, barWide * 0.12f);
+            var at = barLeft - band + (lit + band) * t;
+
+            var lo = Math.Max(barLeft, at);
+            var hi = Math.Min(barLeft + lit, at + band);
+
+            if (hi > lo)
+            {
+                Hud.RectFrom(lo, barY, hi - lo, SprayBarHeight,
+                             System.Drawing.Color.FromArgb((int)(130 * eased), 255, 255, 255));
+            }
+        }
+
+        /// <summary>
+        /// Four corner ticks instead of a box.
+        ///
+        /// A full outline round a small panel reads as a dialog and fights the backing; the
+        /// ticks give it the same framed, deliberate look for a fraction of the ink. Same idea
+        /// the wheel and the socials panel use, so it belongs to the same set of screens.
+        /// </summary>
+        private static void Corners(float left, float top, float right, float bottom,
+                                    System.Drawing.Color ink)
+        {
+            var wide = Hud.ToX(TickThick);
+            var run = Hud.ToX(TickLong);
+
+            // top left
+            Hud.RectFrom(left, top, run, TickThick, ink);
+            Hud.RectFrom(left, top, wide, TickLong, ink);
+
+            // top right
+            Hud.RectFrom(right - run, top, run, TickThick, ink);
+            Hud.RectFrom(right - wide, top, wide, TickLong, ink);
+
+            // bottom left
+            Hud.RectFrom(left, bottom - TickThick, run, TickThick, ink);
+            Hud.RectFrom(left, bottom - TickLong, wide, TickLong, ink);
+
+            // bottom right
+            Hud.RectFrom(right - run, bottom - TickThick, run, TickThick, ink);
+            Hud.RectFrom(right - wide, bottom - TickLong, wide, TickLong, ink);
+        }
+
+        private static System.Drawing.Color Tint(System.Drawing.Color c, float by)
+        {
+            if (by >= 0.999f) return c;
+            return System.Drawing.Color.FromArgb((int)(c.A * by), c.R, c.G, c.B);
         }
 
         private TagSpot Nearest(Ped player)
@@ -668,6 +820,10 @@ namespace Hoodrich.Missions
             // A different wall, so the last one's surface is forgotten rather than painted on
             // from four streets away.
             ForgetWall();
+
+            // And the panel arrives rather than being already there.
+            _cardAt = 0;
+            _bar = 0f;
 
             try
             {
