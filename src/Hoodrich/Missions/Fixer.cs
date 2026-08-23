@@ -178,6 +178,220 @@ namespace Hoodrich.Missions
             }
 
             if (_ped == null && distance <= SpawnRange) Spawn();
+
+            Guard();
+        }
+
+        /// <summary>The compact rifle he keeps for the days somebody comes down the block.</summary>
+        private const string Rifle = "WEAPON_COMPACTRIFLE";
+
+        /// <summary>How far out he will notice somebody who has come for this block.</summary>
+        private const float DangerRange = 34f;
+
+        /// <summary>
+        /// How close an armed rival has to be before he is a problem rather than a passer-by.
+        ///
+        /// Two ranges on purpose. Anybody already SHOOTING at him or at you is a problem from
+        /// wherever they are doing it; somebody who merely hates the set and happens to be
+        /// carrying is a problem when they are on top of us. Without the second, tighter number
+        /// he opens up on every Balla who drives past the end of the road, which is not a man
+        /// defending his corner, it is a man with a rifle and no judgement.
+        /// </summary>
+        private const float ComingRange = 20f;
+
+        /// <summary>Close enough to his mark to stand back on it rather than keep walking.</summary>
+        private const float BackRange = 1.6f;
+
+        private bool _fighting;
+        private bool _walkingHome;
+
+        /// <summary>
+        /// Fights back when it comes to him, and goes back to his corner when it stops.
+        ///
+        /// He was standing through raids with his phone out. That is not stoicism, it is the
+        /// scenario: a ped on a looping scenario with non-temporary events blocked has been
+        /// told in as many words to ignore gunfire, and he did exactly that while the yard was
+        /// being shot up around him.
+        ///
+        /// So the block comes OFF when there is somebody to fight and goes back ON when there
+        /// is not, which is the whole trick -- blocked is what keeps him on his mark the other
+        /// ninety-nine per cent of the time, and permanently unblocking him to fix this would
+        /// have him wandering off after ambient events for the rest of the session.
+        /// </summary>
+        private void Guard()
+        {
+            if (_lent) return;
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive) return;
+
+            var threat = Threat();
+
+            if (threat != null)
+            {
+                // Already on him. Re-issuing over a running combat task restarts the aim every
+                // time and he never gets a round off.
+                if (_fighting &&
+                    Function.Call<bool>(Hash.IS_PED_IN_COMBAT, _ped.Handle, threat.Handle)) return;
+
+                _fighting = true;
+                _walkingHome = false;
+
+                try
+                {
+                    // Whatever else happens on this block, it does not happen to him.
+                    Protect(true);
+
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _ped.Handle, false);
+                    _ped.BlockPermanentEvents = false;
+
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _ped.Handle, 46, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _ped.Handle, 5, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _ped.Handle, 0, true);
+
+                    // 1 is CanUseVehicles, and the answer is no. He is defending a corner, not
+                    // starting a pursuit -- a fixer who drives off after a carload is a fixer
+                    // who is not on his corner when you come back for work.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _ped.Handle, 1, false);
+
+                    Function.Call(Hash.SET_PED_COMBAT_ABILITY, _ped.Handle, 2);
+                    Function.Call(Hash.SET_PED_COMBAT_RANGE, _ped.Handle, 1);
+                    Function.Call(Hash.SET_PED_ACCURACY, _ped.Handle, 55);
+
+                    Function.Call(Hash.SET_CURRENT_PED_WEAPON, _ped.Handle,
+                                  Function.Call<uint>(Hash.GET_HASH_KEY, Rifle), true);
+
+                    _ped.Task.ClearAll();
+                    Function.Call(Hash.TASK_COMBAT_PED, _ped.Handle, threat.Handle, 0, 16);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Lamar could not get into it: " + ex.Message);
+                }
+
+                return;
+            }
+
+            if (_fighting)
+            {
+                _fighting = false;
+                GoHome();
+                return;
+            }
+
+            // Still walking back. Put him on the mark once he is on it, so he ends up facing
+            // the way he is supposed to rather than whichever way the last shot came from.
+            if (_walkingHome && _ped.Position.DistanceTo(Spot) <= BackRange)
+            {
+                _walkingHome = false;
+                Stand();
+            }
+        }
+
+        /// <summary>
+        /// The nearest person who has actually come for somebody, or null.
+        ///
+        /// Two different tests, because "enemy" and "threat" are not the same word. Somebody
+        /// shooting at him, or at you, is a threat at any range this can see. Somebody who
+        /// merely belongs to a set that hates ours is a threat when he is armed AND close.
+        /// </summary>
+        private Ped Threat()
+        {
+            Ped worst = null;
+            var nearest = float.MaxValue;
+
+            try
+            {
+                var you = Game.Player.Character;
+
+                foreach (var ped in World.GetNearbyPeds(_ped.Position, DangerRange))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (ped.Handle == _ped.Handle) continue;
+                    if (you != null && ped.Handle == you.Handle) continue;
+
+                    var atUs = Function.Call<bool>(Hash.IS_PED_IN_COMBAT, ped.Handle, _ped.Handle) ||
+                               (you != null &&
+                                Function.Call<bool>(Hash.IS_PED_IN_COMBAT, ped.Handle, you.Handle));
+
+                    var gap = _ped.Position.DistanceTo(ped.Position);
+
+                    if (!atUs)
+                    {
+                        // 4 is dislike and 5 is hate. Anything below that is somebody who lives
+                        // here.
+                        var feeling = Function.Call<int>(Hash.GET_RELATIONSHIP_BETWEEN_PEDS,
+                                                         _ped.Handle, ped.Handle);
+
+                        if (feeling < 4 || feeling > 5) continue;
+                        if (gap > ComingRange) continue;
+
+                        // 7 is every weapon type there is.
+                        if (!Function.Call<bool>(Hash.IS_PED_ARMED, ped.Handle, 7)) continue;
+                    }
+
+                    if (gap >= nearest) continue;
+
+                    nearest = gap;
+                    worst = ped;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Lamar could not see who was there: " + ex.Message);
+            }
+
+            return worst;
+        }
+
+        /// <summary>
+        /// Back to the corner once it is quiet, on his feet rather than by teleport.
+        /// </summary>
+        private void GoHome()
+        {
+            try
+            {
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _ped.Handle, 46, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _ped.Handle, 5, false);
+
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _ped.Handle, true);
+                _ped.BlockPermanentEvents = true;
+
+                _ped.Task.ClearAll();
+
+                // Gun away. He is about to stand on a corner talking on his phone.
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, _ped.Handle,
+                              Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_UNARMED"), true);
+
+                if (_ped.Position.DistanceTo(Spot) > BackRange)
+                {
+                    _walkingHome = true;
+
+                    Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _ped.Handle,
+                                  Spot.X, Spot.Y, Spot.Z, 1.2f, 20000, BackRange, 0, Heading);
+
+                    return;
+                }
+
+                Stand();
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Lamar could not get back to his corner: " + ex.Message);
+
+                _walkingHome = false;
+            }
+        }
+
+        /// <summary>Him, on his mark, facing the right way, doing what he was doing.</summary>
+        private void Stand()
+        {
+            try
+            {
+                _ped.Task.ClearAll();
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _ped.Handle,
+                              "WORLD_HUMAN_STAND_MOBILE", 0, true);
+                _ped.Heading = Heading;
+            }
+            catch { /* he is stood there either way */ }
         }
 
         private void SyncBlip()
@@ -256,6 +470,12 @@ namespace Hoodrich.Missions
 
                     _ped.IsPersistent = true;
                     _ped.BlockPermanentEvents = true;
+
+                    // Under the jacket, not in his hands. He is stood on a corner talking on
+                    // his phone; the rifle is what comes out when somebody turns up, and a man
+                    // holding one while he offers you work is a different scene entirely.
+                    Function.Call(Hash.GIVE_WEAPON_TO_PED, _ped.Handle,
+                                  Function.Call<uint>(Hash.GET_HASH_KEY, Rifle), 250, false, false);
 
                     GiveVoice(_ped);
 
@@ -343,6 +563,8 @@ namespace Hoodrich.Missions
             if (!_lent) return;
 
             _lent = false;
+            _fighting = false;
+            _walkingHome = false;
             Protect(false);
 
             if (_ped == null || !_ped.Exists() || !_ped.IsAlive)
@@ -396,6 +618,8 @@ namespace Hoodrich.Missions
             }
 
             _ped = null;
+            _fighting = false;
+            _walkingHome = false;
             _held = false;
             _lent = false;
         }
