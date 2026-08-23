@@ -216,11 +216,87 @@ namespace Hoodrich.Gangs
                 "there on somebody else corner tryna look like a big man. Dudes done got shot " +
                 "over less than a corner, dawg.");
 
+            node.Say("How the bread work?", () => TheBread(def, gang),
+                     "Ask how you actually make money");
+            node.WithIcon(Icons.Cash);
+
+            node.Say("And where this go?", () => TheComeUp(def, gang),
+                     "Ask how you move up");
+            node.WithIcon(Icons.FromFile("rank.png"));
+
             node.Say("What if it go wrong?", () => TheRules(def, gang),
                      "Ask what happens then");
             node.WithIcon(Icons.Warning);
 
             node.Say("Back up.", () => Root(def));
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>
+        /// How dealing actually works, said by the only man who would bother telling you.
+        ///
+        /// This is the mod's tutorial and it has to be, because nothing else explains posting
+        /// up or what a name is worth -- but a tutorial that reads like a tutorial is a
+        /// tooltip with a face on it. So it is one man explaining a job to somebody who is
+        /// about to go and do it badly, which is the same information in the only shape he
+        /// would ever say it.
+        /// </summary>
+        private DialogueNode TheBread(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Aight, listen. You take the pack and you go post up somewhere people already " +
+                "walk past. A corner, a lot, outside a store, I don't care -- long as it's " +
+                "busy and it ain't nobody else's. And you don't chase nobody, that's for " +
+                "amateurs. You stand there and they come to YOU. Serve 'em, pocket it, keep " +
+                "it movin'. Do that all day and you got somethin'.");
+
+            node.Say("What about cuttin' it?", () => TheCut(def, gang),
+                     "Ask about stretching the product");
+            node.WithIcon(Icons.FromFile("cut_50.png"));
+
+            node.Say("Aight.", () => TheWork(def, gang));
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>The one real decision in the whole economy, put as a warning.</summary>
+        private DialogueNode TheCut(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Course you can step on it. Cut it, stretch it, twenty turn into thirty and " +
+                "you just made a extra ten out of nothin'. Everybody do it, I done it. But " +
+                "they can TASTE it, dawg. Fiend ain't stupid, he broke -- that's different. He " +
+                "get home with some weak pack and next week he walk PAST your corner to " +
+                "somebody else's. That's how you lose a spot without nobody shootin' at you. " +
+                "So that's your whole decision out here: how greedy you is, against how good " +
+                "your name is. Get that wrong enough times and you ain't got one.");
+
+            node.Say("I hear you.", () => TheWork(def, gang));
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>
+        /// The ladder, said out loud once, in the order it actually happens.
+        ///
+        /// He does not sell the ending. He mentions the boat and then tells you it is a long
+        /// way off, which is true and is also exactly how somebody fifteen years into this
+        /// would say it to somebody who turned up yesterday.
+        /// </summary>
+        private DialogueNode TheComeUp(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Long as you movin' MY pack, you a errand boy. No disrespect -- everybody " +
+                "start there, I started there. Move it, bring my bread back, and then we can " +
+                "talk about you bein' one of us for real. After that it's yours: somewhere to " +
+                "keep your work, people to call when you run dry instead of standin' in my " +
+                "yard, and when you moved enough that I ain't gotta worry about you no more, " +
+                "I'll put you on to where it actually come from. And I don't mean no corner " +
+                "boy. I mean the boat. But that's a long way from where you standin' right " +
+                "now, so do the first thing first.");
+
+            node.Say("Say less.", () => TheWork(def, gang));
             node.Leave();
             return node;
         }
