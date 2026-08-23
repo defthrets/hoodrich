@@ -212,7 +212,10 @@ namespace Hoodrich.Territory
                     Notify.Ticker("~g~" + ZoneName + "~s~ -- your block");
                     break;
                 case TurfStatus.Hostile:
-                    Notify.Important("~r~" + ZoneName + "~s~ -- " + _owner.Name + " turf");
+                    // Their colour, not a blanket red. Driving into Davis and driving into
+                    // Rancho are two different facts and the notice should look like it: the
+                    // purple one means Ballas before you have read the word.
+                    Notify.Important(_owner.TextTag + ZoneName + "~s~ -- " + _owner.Name + " turf");
                     break;
             }
         }

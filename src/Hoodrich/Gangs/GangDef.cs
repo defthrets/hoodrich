@@ -34,6 +34,77 @@ namespace Hoodrich.Gangs
         /// <summary>Colour used for blips, wheel tinting and the gang panel.</summary>
         public Color Colour = Color.Gray;
 
+        /// <summary>
+        /// This gang's colour as a Rockstar ~tag~, for text the game draws rather than we do.
+        ///
+        /// The game's text system takes tags, not RGB, so a set's colour cannot simply be
+        /// handed to it -- and hardcoding one per gang is a second list to keep in step with
+        /// gangs.json, which is the sort of thing that quietly drifts. So it is DERIVED: the
+        /// nearest tag to whatever colour the data gives the gang, by plain squared distance.
+        ///
+        /// It lands where you would want it to. Ballas purple, Vagos yellow, Families green,
+        /// Aztecas and Marabunta blue, the Lost grey, and the three red sets red -- without
+        /// anybody writing that down anywhere.
+        /// </summary>
+        public string TextTag
+        {
+            get
+            {
+                var best = "~w~";
+                var bestGap = int.MaxValue;
+
+                foreach (var t in Tags)
+                {
+                    var dr = Colour.R - t.R;
+                    var dg = Colour.G - t.G;
+                    var db = Colour.B - t.B;
+
+                    var gap = dr * dr + dg * dg + db * db;
+                    if (gap >= bestGap) continue;
+
+                    bestGap = gap;
+                    best = t.Tag;
+                }
+
+                return best;
+            }
+        }
+
+        private struct TagColour
+        {
+            public string Tag;
+            public int R, G, B;
+
+            public TagColour(string tag, int r, int g, int b)
+            {
+                Tag = tag; R = r; G = g; B = b;
+            }
+        }
+
+        /// <summary>
+        /// The tags worth choosing between, with roughly what each draws as.
+        ///
+        /// Deliberately not the whole list from TEXTFORMAT.md. Black and the two menu greys
+        /// are unreadable on a notification, and the script-variable ones are whatever
+        /// somebody last set them to.
+        /// </summary>
+        private static readonly TagColour[] Tags =
+        {
+            new TagColour("~r~", 194, 80, 80),
+            new TagColour("~g~", 114, 204, 114),
+            new TagColour("~b~", 93, 182, 229),
+            new TagColour("~y~", 240, 200, 80),
+            new TagColour("~o~", 255, 133, 85),
+            new TagColour("~p~", 182, 130, 206),
+            new TagColour("~q~", 255, 128, 168),
+            // 190 rather than 155. At the darker figure the Lost, who are (200,200,200),
+            // came out nearer to PURPLE than to grey -- which on a turf notice reads as
+            // Ballas, and getting the wrong gang's colour is worse than a dull one. ~m~ is
+            // described as silver and it draws lighter than a mid grey.
+            new TagColour("~m~", 190, 190, 190),
+            new TagColour("~w~", 255, 255, 255)
+        };
+
         /// <summary>Game blip colour index, for turf blips.</summary>
         public int BlipColour = 0;
 

@@ -317,7 +317,15 @@ namespace Hoodrich.Missions
         /// is on its way to him he is NOT on the corner at all -- which is not a workaround, it
         /// is the truth: he is stood in the yard waiting for it.
         /// </summary>
-        public bool WaitingAtTheDrop => Stage == StageDeliver;
+        /// <summary>
+        /// Whether he is off his corner.
+        ///
+        /// True while he is lingering as well as while the errand is on, because there is a
+        /// window after the hand-off where he is still stood in the yard -- and the corner is
+        /// only two hundred metres away, well inside the range the leader system would spawn
+        /// the other one at. Two Geralds is worse than a slightly late one.
+        /// </summary>
+        public bool WaitingAtTheDrop => Stage == StageDeliver || _lingering;
 
         /// <summary>Where the mark is, whichever leg of the run you are in.</summary>
         private Vector3 Mark =>
@@ -354,6 +362,19 @@ namespace Hoodrich.Missions
         {
             if (!Running)
             {
+                // He does not vanish while you are stood in front of him.
+                //
+                // Everything else can go the moment the errand ends -- the blips, the mark,
+                // the men at the port -- but deleting the man you have just finished talking
+                // to, two feet away, in daylight, is the single most obviously scripted thing
+                // this mod could do. So the tidy-up runs and he is left standing there, and he
+                // is cleared when you are far enough away that nobody sees it happen.
+                if (_lingering)
+                {
+                    Linger();
+                    return;
+                }
+
                 if (_tao != null || _gerald != null || _car != null || _van != null || _blip != null) Pack();
                 return;
             }
@@ -587,8 +608,51 @@ namespace Hoodrich.Missions
                 Social.PostAsYouSometimes("YouDidThePort", "", 4200, 70);
             }
 
+            // Everything except him.
+            _lingering = true;
             Pack();
+
             return null;
+        }
+
+        /// <summary>True while he is still stood in the yard after the errand has ended.</summary>
+        private bool _lingering;
+
+        /// <summary>
+        /// Holds him there until you are out of sight, then lets him go.
+        ///
+        /// Released rather than deleted at the end of it -- MarkAsNoLongerNeeded hands him to
+        /// the population manager, which reclaims him in its own time exactly as it does every
+        /// other ped. Nothing pops.
+        /// </summary>
+        private void Linger()
+        {
+            if (_gerald == null || !_gerald.Exists())
+            {
+                _lingering = false;
+                _gerald = null;
+                return;
+            }
+
+            if (Game.GameTime < _next) return;
+            _next = Game.GameTime + TickMs;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            if (player.Position.DistanceTo(_gerald.Position) <= StreamRange) return;
+
+            try
+            {
+                _gerald.IsPersistent = false;
+                _gerald.MarkAsNoLongerNeeded();
+            }
+            catch { /* he is somebody else's problem now */ }
+
+            _gerald = null;
+            _lingering = false;
+
+            Log.Info("Port run: Gerald released once out of sight.");
         }
 
         // ---- the mark on the map -----------------------------------------------
@@ -1964,6 +2028,10 @@ namespace Hoodrich.Missions
         private void ClearDrop()
         {
             if (_gerald == null) return;
+
+            // Not while he is being left to walk off on his own. See Linger.
+            if (_lingering) return;
+
             Sweep(ref _gerald);
         }
 
@@ -2028,6 +2096,13 @@ namespace Hoodrich.Missions
             _legBest = 0f;
         }
 
-        public void RestoreWorld() => Pack();
+        public void RestoreWorld()
+        {
+            // The linger is dropped FIRST, because ClearDrop deliberately refuses to touch him
+            // while it is set -- which is right every tick of the game and wrong exactly once,
+            // when the mod is being torn down and there will be no next tick to release him.
+            _lingering = false;
+            Pack();
+        }
     }
 }
