@@ -280,15 +280,18 @@ namespace Hoodrich.Core
                                  -201.384f, -1707.909f, 32.664f, 313.362f,
                                  1039.000f, -3098.000f, -39.000f, 180f));
 
-            // radar_crim_drugs, 51. The generic one, and the right one: it is the meth lab
-            // interior working as a pill press, so a cocaine leaf named the wrong product and
-            // there is no pill-press sprite to name the right one.
+            // radar_production_crack, 497 -- the razor blade.
+            //
+            // 51 was here and has gone to Stretch, who sells the pills this room presses. This
+            // is the better half of that swap as well: the room is where product gets cut and
+            // pressed, and a blade is what that is done with. There is no pill-press sprite in
+            // the game, so the two closest pictures go to the two things they actually match.
             //
             // The ini section keeps its old name so an existing Hoodrich.ini with a [CrackDen]
             // block in it still overrides the right door. What it is CALLED on screen comes
             // from the default below, which the ini can override on its own.
             s.Doors.Add(ReadDoor(ini, "CrackDen", "pill press garage", "tr_tuner_methlab_1",
-                                 (BlipSprite)51,
+                                 (BlipSprite)497,
                                  -105.053f, -1408.631f, 29.673f, 226.934f,
                                  1000.000f, -3200.000f, -38.000f, 180f));
             s.PlaySounds = ini.GetBool("Wheel", "PlaySounds", s.PlaySounds);

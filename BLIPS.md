@@ -22,10 +22,10 @@ what it is and `496` does not.
 | 774 | `radar_sub_periscope` | inside the heat bar -- `PostUp.cs` |
 | 835 | `radar_community_series` | inside the reputation bar |
 | 855 | `radar_ped_gang_leader` | gang leaders by default -- `GangLeaders.cs` |
-| 310 | `radar_deathmatch` | Stretch, per-leader override in `leaders.json` |
+| 51 | `radar_crim_drugs` | Stretch, per-leader override in `leaders.json` |
 | 58 | `radar_crim_wanted` | Oxycodone, everywhere it is drawn -- `Icons.cs` |
 | -- | `BlipSprite.Weed` | drug markers |
-| 51 | `radar_crim_drugs` | the crack den door -- `Settings.cs` |
+| 497 | `radar_production_crack` | the pill press garage -- `Settings.cs` |
 | -- | `BlipSprite.Package` | the plug's drop |
 | -- | `BlipSprite.Safehouse` | the stash house |
 | -- | `BlipSprite.Friend` | homies |
