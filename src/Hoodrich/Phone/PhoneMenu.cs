@@ -1,0 +1,641 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using GTA;
+using GTA.Native;
+using Hoodrich.Core;
+using Hoodrich.UI;
+using Hud = Hoodrich.UI.Draw;
+
+namespace Hoodrich.Phone
+{
+    /// <summary>
+    /// Hoodrich's phone: the whole mod, as a handset.
+    ///
+    /// This replaces the radial wheel, and the reason is the button it was costing. The wheel
+    /// hung off the weapon-wheel control, so every time you wanted a gun you got a business
+    /// menu -- a mod about dealing was charging you the one control a GTA player uses most.
+    /// The phone button costs nothing: the vanilla phone is a contacts list and an email client
+    /// for missions that are already over by the time this mod is interesting.
+    ///
+    /// What it deliberately does NOT do is rewrite the menus. Everything on here is still built
+    /// by WheelPages, still a WheelPage of WheelItems, and every item still carries a label, an
+    /// icon, a detail line, a right-hand value, an enabled flag and either an action or a
+    /// submenu. That was always a list; it was only ever DRAWN as a ring. So the content layer
+    /// is untouched and this is a second presentation of it -- which is why a change of this
+    /// size does not put a single business rule at risk.
+    ///
+    /// Two modes:
+    ///   HOME  -- the root page, as a grid of app tiles
+    ///   LIST  -- everything below it, as a scrolling text menu
+    /// </summary>
+    internal sealed class PhoneMenu
+    {
+        // ---- the handset --------------------------------------------------------
+
+        /// <summary>Height of the whole device, as a fraction of screen height.</summary>
+        private const float BodyH = 0.760f;
+
+        /// <summary>Width over height. A tall modern handset, not a 2013 one.</summary>
+        private const float BodyRatio = 0.472f;
+
+        /// <summary>Where its right edge sits. The vanilla phone lives on this side.</summary>
+        private const float BodyRight = 0.972f;
+
+        private const float BodyTop = 0.118f;
+
+        /// <summary>Bezel between the body edge and the screen.</summary>
+        private const float Bezel = 0.009f;
+
+        private const float StatusH = 0.030f;
+        private const float HeaderH = 0.058f;
+        private const float FooterH = 0.038f;
+
+        // ---- the grid -----------------------------------------------------------
+
+        private const int Columns = 3;
+        private const float TilePad = 0.011f;
+        private const float TileH = 0.112f;
+
+        // ---- the list -----------------------------------------------------------
+
+        private const float RowH = 0.054f;
+
+        /// <summary>How long the open animation runs.</summary>
+        private const int RiseMs = 190;
+
+        /// <summary>And how far it rises through, in screen heights.</summary>
+        private const float RiseBy = 0.055f;
+
+        // ---- state --------------------------------------------------------------
+
+        /// <summary>One level of the menu, and where the player was on it.</summary>
+        private sealed class Level
+        {
+            public WheelPage Page;
+            public int Index;
+            public int Scroll;
+        }
+
+        private readonly Settings _cfg;
+
+        private readonly List<Level> _stack = new List<Level>();
+
+        public PhoneMenu(Settings cfg)
+        {
+            _cfg = cfg;
+        }
+
+        /// <summary>Every click goes through here, so one setting can silence the lot.</summary>
+        private void Beep(string sound)
+        {
+            if (_cfg != null && !_cfg.PlaySounds) return;
+            Hud.PlaySound(sound, "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        private int _openedAt;
+
+        public bool IsOpen { get; private set; }
+
+        /// <summary>True while the home grid is showing rather than a list.</summary>
+        public bool AtHome => _stack.Count == 1;
+
+        private WheelPage Current => _stack.Count == 0 ? null : _stack[_stack.Count - 1].Page;
+
+        private Level Top => _stack.Count == 0 ? null : _stack[_stack.Count - 1];
+
+        /// <summary>The item under the cursor, or null.</summary>
+        private WheelItem Selected
+        {
+            get
+            {
+                var lvl = Top;
+                if (lvl == null || lvl.Page.Items.Count == 0) return null;
+                if (lvl.Index < 0 || lvl.Index >= lvl.Page.Items.Count) return null;
+                return lvl.Page.Items[lvl.Index];
+            }
+        }
+
+        // ---- opening and closing ------------------------------------------------
+
+        public void Open(WheelPage root)
+        {
+            if (root == null) return;
+
+            _stack.Clear();
+            _stack.Add(new Level { Page = root, Index = FirstPickable(root) });
+
+            IsOpen = true;
+            _openedAt = Game.GameTime;
+
+            Beep("SELECT");
+        }
+
+        public void Close()
+        {
+            if (!IsOpen) return;
+
+            IsOpen = false;
+            _stack.Clear();
+        }
+
+        private static int FirstPickable(WheelPage page)
+        {
+            for (var i = 0; i < page.Items.Count; i++)
+            {
+                if (page.Items[i].Enabled) return i;
+            }
+            return 0;
+        }
+
+        // ---- navigation ---------------------------------------------------------
+
+        private void MoveBy(int by)
+        {
+            var lvl = Top;
+            if (lvl == null || lvl.Page.Items.Count == 0) return;
+
+            var n = lvl.Page.Items.Count;
+            var i = lvl.Index;
+
+            // Steps over disabled rows rather than landing on them, but gives up after a full
+            // lap so a page where everything is locked cannot spin forever.
+            for (var tried = 0; tried < n; tried++)
+            {
+                i = ((i + by) % n + n) % n;
+                if (lvl.Page.Items[i].Enabled) break;
+            }
+
+            if (i == lvl.Index) return;
+
+            lvl.Index = i;
+            Beep("NAV_UP_DOWN");
+        }
+
+        /// <summary>Left/right on the home grid, which is a different move from up/down.</summary>
+        public void MoveColumn(int by)
+        {
+            if (!AtHome) return;
+            MoveBy(by);
+        }
+
+        public void MoveRow(int by)
+        {
+            var lvl = Top;
+            if (lvl == null) return;
+
+            MoveBy(AtHome ? by * Columns : by);
+        }
+
+        /// <summary>Drills in. Returns the item to ACT on, or null if it only opened a page.</summary>
+        public WheelItem Pick()
+        {
+            var item = Selected;
+            if (item == null) return null;
+
+            if (!item.Enabled)
+            {
+                Beep("ERROR");
+                return null;
+            }
+
+            if (item.IsSubmenu)
+            {
+                WheelPage next;
+                try
+                {
+                    next = item.Submenu();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("A phone page failed to build.", ex);
+                    Beep("ERROR");
+                    return null;
+                }
+
+                if (next == null || next.Items.Count == 0)
+                {
+                    Beep("ERROR");
+                    return null;
+                }
+
+                _stack.Add(new Level { Page = next, Index = FirstPickable(next) });
+                Beep("SELECT");
+                return null;
+            }
+
+            Beep("SELECT");
+            return item;
+        }
+
+        /// <summary>Back one level. Returns false when there is nowhere left to go.</summary>
+        public bool Back()
+        {
+            if (_stack.Count <= 1) return false;
+
+            _stack.RemoveAt(_stack.Count - 1);
+            Beep("BACK");
+            return true;
+        }
+
+        /// <summary>Straight to the home screen, the way a home button works.</summary>
+        public void Home()
+        {
+            if (_stack.Count <= 1) return;
+
+            while (_stack.Count > 1) _stack.RemoveAt(_stack.Count - 1);
+            Beep("BACK");
+        }
+
+        // ---- drawing ------------------------------------------------------------
+
+        public void Render()
+        {
+            if (!IsOpen || _stack.Count == 0) return;
+
+            var t = Ease();
+
+            var bodyW = Hud.ToX(BodyH * BodyRatio);
+            var left = BodyRight - bodyW;
+            var top = BodyTop + (1f - t) * RiseBy;
+
+            var fade = (int)(255 * t);
+
+            Body(left, top, bodyW, BodyH, fade);
+
+            var bezX = Hud.ToX(Bezel);
+            var scrLeft = left + bezX;
+            var scrTop = top + Bezel;
+            var scrW = bodyW - bezX * 2f;
+            var scrH = BodyH - Bezel * 2f;
+
+            StatusBar(scrLeft, scrTop, scrW, fade);
+
+            var headTop = scrTop + StatusH;
+            Header(scrLeft, headTop, scrW, fade);
+
+            var bodyTop = headTop + HeaderH;
+            var bodyHeight = scrH - StatusH - HeaderH - FooterH;
+
+            if (AtHome) Grid(scrLeft, bodyTop, scrW, bodyHeight, fade);
+            else List(scrLeft, bodyTop, scrW, bodyHeight, fade);
+
+            Footer(scrLeft, scrTop + scrH - FooterH, scrW, fade);
+        }
+
+        /// <summary>Eased-out rise, the same curve every other panel in the mod opens on.</summary>
+        private float Ease()
+        {
+            var age = Game.GameTime - _openedAt;
+            if (age >= RiseMs) return 1f;
+
+            var x = Math.Max(0f, Math.Min(1f, age / (float)RiseMs));
+            return 1f - (1f - x) * (1f - x) * (1f - x);
+        }
+
+        private static Color Fade(Color c, int fade)
+        {
+            return Color.FromArgb(c.A * fade / 255, c.R, c.G, c.B);
+        }
+
+        private void Body(float left, float top, float w, float h, int fade)
+        {
+            // The handset itself: a near-black slab with a hairline edge. Angular rather than
+            // rounded, because every other panel in this mod is angular and a lone glossy
+            // rounded rectangle would read as somebody else's UI dropped into it.
+            Hud.RectFrom(left, top, w, h, Fade(Color.FromArgb(248, 6, 7, 8), fade));
+
+            var line = Fade(Color.FromArgb(70, 190, 195, 200), fade);
+            var thin = 0.0016f;
+            var thinX = Hud.ToX(thin);
+
+            Hud.RectFrom(left, top, w, thin, line);
+            Hud.RectFrom(left, top + h - thin, w, thin, line);
+            Hud.RectFrom(left, top, thinX, h, line);
+            Hud.RectFrom(left + w - thinX, top, thinX, h, line);
+
+            // Corner ticks, the mod's own signature instead of a full box.
+            Ticks(left, top, w, h, fade);
+
+            // The screen it houses.
+            var bezX = Hud.ToX(Bezel);
+            Hud.RectFrom(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
+                         Fade(Color.FromArgb(252, 12, 14, 16), fade));
+        }
+
+        private static void Ticks(float left, float top, float w, float h, int fade)
+        {
+            var c = Fade(Palette.Accent, fade);
+            var len = 0.020f;
+            var lenX = Hud.ToX(len);
+            var t = 0.0022f;
+            var tX = Hud.ToX(t);
+
+            Hud.RectFrom(left, top, lenX, t, c);
+            Hud.RectFrom(left, top, tX, len, c);
+
+            Hud.RectFrom(left + w - lenX, top, lenX, t, c);
+            Hud.RectFrom(left + w - tX, top, tX, len, c);
+
+            Hud.RectFrom(left, top + h - t, lenX, t, c);
+            Hud.RectFrom(left, top + h - len, tX, len, c);
+
+            Hud.RectFrom(left + w - lenX, top + h - t, lenX, t, c);
+            Hud.RectFrom(left + w - tX, top + h - len, tX, len, c);
+        }
+
+        private void StatusBar(float left, float top, float w, int fade)
+        {
+            var pad = Hud.ToX(0.012f);
+
+            Hud.Text("HOODRICH", left + pad, top + 0.007f, 0.24f,
+                     Fade(Palette.TextDim, fade), Hud.FontLabel, centre: false);
+
+            // The game's clock, because a phone that says the wrong time is a prop.
+            var hh = Function.Call<int>(Hash.GET_CLOCK_HOURS);
+            var mm = Function.Call<int>(Hash.GET_CLOCK_MINUTES);
+
+            Hud.Text(hh.ToString("00") + ":" + mm.ToString("00"),
+                     left + w * 0.5f, top + 0.006f, 0.26f,
+                     Fade(Palette.Text, fade), Hud.FontLabel, centre: true);
+
+            // Signal and battery as text marks. Never emoji.
+            Hud.TextRight("▮▮▮  ●", left + w - pad, top + 0.007f, 0.22f,
+                          Fade(Palette.TextDim, fade), Hud.FontLabel);
+
+            Hud.RectFrom(left, top + StatusH - 0.0014f, w, 0.0014f,
+                         Fade(Color.FromArgb(46, 255, 255, 255), fade));
+        }
+
+        private void Header(float left, float top, float w, int fade)
+        {
+            var page = Current;
+            if (page == null) return;
+
+            var pad = Hud.ToX(0.013f);
+
+            Hud.RectFrom(left, top, w, HeaderH, Fade(Palette.PanelHeader, fade));
+
+            var title = string.IsNullOrEmpty(page.Title) ? "Posted Up" : page.Title;
+
+            Hud.Text(Hud.Fit(title.ToUpperInvariant(), w - pad * 2f, 0.44f, Hud.FontLabel),
+                     left + pad, top + 0.007f, 0.44f,
+                     Fade(Palette.Text, fade), Hud.FontLabel, centre: false);
+
+            if (!string.IsNullOrEmpty(page.Subtitle))
+            {
+                Hud.Text(Hud.Fit(page.Subtitle, w - pad * 2f, 0.25f, Hud.FontBody),
+                         left + pad, top + 0.032f, 0.25f,
+                         Fade(Palette.TextDim, fade), Hud.FontBody, centre: false);
+            }
+
+            Hud.RectFrom(left, top + HeaderH - 0.0018f, w, 0.0018f, Fade(Palette.Accent, fade));
+        }
+
+        // ---- home ---------------------------------------------------------------
+
+        private void Grid(float left, float top, float w, float h, int fade)
+        {
+            var page = Current;
+            if (page == null) return;
+
+            var padX = Hud.ToX(TilePad);
+            var tileW = (w - padX * (Columns + 1)) / Columns;
+
+            var x0 = left + padX;
+            var y = top + TilePad;
+
+            for (var i = 0; i < page.Items.Count; i++)
+            {
+                var col = i % Columns;
+                var row = i / Columns;
+
+                var tx = x0 + col * (tileW + padX);
+                var ty = y + row * (TileH + TilePad);
+
+                if (ty + TileH > top + h) break;
+
+                Tile(page.Items[i], tx, ty, tileW, TileH, i == Top.Index, fade);
+            }
+        }
+
+        private void Tile(WheelItem item, float x, float y, float w, float h, bool here, int fade)
+        {
+            var on = here && item.Enabled;
+
+            var back = !item.Enabled ? Palette.SegmentDisabled
+                     : on ? Palette.SegmentHover
+                     : Palette.Segment;
+
+            Hud.RectFrom(x, y, w, h, Fade(back, fade));
+
+            var ink = !item.Enabled ? Palette.TextDisabled
+                    : on ? Palette.TextOnHover
+                    : Palette.Text;
+
+            if (item.Tint.HasValue && !on && item.Enabled) ink = item.Tint.Value;
+
+            // The icon, at the top of the tile.
+            var iconY = y + h * 0.34f;
+            Art(item, x + w * 0.5f, iconY, 0.044f, Fade(ink, fade));
+
+            Hud.Text(Hud.Fit(item.Label, w * 0.94f, 0.26f, Hud.FontLabel),
+                     x + w * 0.5f, y + h - 0.026f, 0.26f,
+                     Fade(ink, fade), Hud.FontLabel, centre: true);
+
+            // A badge in the corner when the tile has something to say -- a count, a price, a
+            // "3 waiting". The wheel put this in its hub; a grid has no hub, so it goes here.
+            if (!string.IsNullOrEmpty(item.Value) && item.Value.Length <= 12)
+            {
+                Hud.Text(Hud.Fit(item.Value, w * 0.94f, 0.20f, Hud.FontBody),
+                         x + w * 0.5f, y + 0.006f, 0.20f,
+                         Fade(on ? Palette.TextOnHover : Palette.TextDim, fade),
+                         Hud.FontBody, centre: true);
+            }
+        }
+
+        // ---- lists --------------------------------------------------------------
+
+        private void List(float left, float top, float w, float h, int fade)
+        {
+            var lvl = Top;
+            var page = lvl.Page;
+
+            var visible = Math.Max(1, (int)(h / RowH));
+
+            // Keep the cursor on screen without ever letting the window run off the end.
+            if (lvl.Index < lvl.Scroll) lvl.Scroll = lvl.Index;
+            if (lvl.Index >= lvl.Scroll + visible) lvl.Scroll = lvl.Index - visible + 1;
+
+            var maxScroll = Math.Max(0, page.Items.Count - visible);
+            if (lvl.Scroll > maxScroll) lvl.Scroll = maxScroll;
+            if (lvl.Scroll < 0) lvl.Scroll = 0;
+
+            var padX = Hud.ToX(0.012f);
+
+            for (var n = 0; n < visible; n++)
+            {
+                var i = lvl.Scroll + n;
+                if (i >= page.Items.Count) break;
+
+                Row(page.Items[i], left, top + n * RowH, w, i == lvl.Index, i % 2 == 1, padX, fade);
+            }
+
+            if (page.Items.Count > visible) ScrollBar(left, top, w, h, lvl, visible, fade);
+
+            if (page.Items.Count == 0)
+            {
+                Hud.Text("Nothing here.", left + w * 0.5f, top + 0.030f, 0.30f,
+                         Fade(Palette.TextDim, fade), Hud.FontBody, centre: true);
+            }
+        }
+
+        private void Row(WheelItem item, float left, float top, float w, bool here, bool alt,
+                         float padX, int fade)
+        {
+            var on = here && item.Enabled;
+
+            if (on)
+            {
+                Hud.RectFrom(left, top, w, RowH, Fade(Palette.SegmentHover, fade));
+                Hud.RectFrom(left, top, Hud.ToX(0.0035f), RowH, Fade(Palette.Accent, fade));
+            }
+            else if (alt)
+            {
+                Hud.RectFrom(left, top, w, RowH, Fade(Palette.PanelRowAlt, fade));
+            }
+
+            var ink = !item.Enabled ? Palette.TextDisabled
+                    : on ? Palette.TextOnHover
+                    : Palette.Text;
+
+            var sub = !item.Enabled ? Palette.TextDisabled
+                    : on ? Color.FromArgb(200, 40, 42, 44)
+                    : Palette.TextDim;
+
+            if (item.Tint.HasValue && !on && item.Enabled) ink = item.Tint.Value;
+
+            var x = left + padX;
+
+            // Art in the gutter, where every other list in the mod puts it.
+            var gutter = 0.030f;
+            if (HasArt(item))
+            {
+                Art(item, x + Hud.ToX(gutter) * 0.5f, top + RowH * 0.5f, gutter, Fade(ink, fade));
+                x += Hud.ToX(gutter) + Hud.ToX(0.008f);
+            }
+
+            var right = left + w - padX;
+
+            // The value first, so the label can be trimmed to whatever is left rather than
+            // drawn over the top of it.
+            var valueWide = 0f;
+            if (!string.IsNullOrEmpty(item.Value))
+            {
+                var vs = 0.27f;
+                valueWide = Hud.MeasureText(item.Value, vs, Hud.FontBody) + Hud.ToX(0.010f);
+
+                Hud.TextRight(item.Value, right, top + 0.010f, vs,
+                              Fade(on ? Palette.TextOnHover : Palette.TextDim, fade),
+                              Hud.FontBody);
+            }
+
+            var room = Math.Max(Hud.ToX(0.04f), right - valueWide - x);
+
+            var detail = item.Enabled ? item.Detail : item.DisabledReason;
+            var tall = !string.IsNullOrEmpty(detail);
+
+            Hud.Text(Hud.Fit(item.Label, room, 0.31f, Hud.FontBody),
+                     x, top + (tall ? 0.006f : 0.014f), 0.31f,
+                     Fade(ink, fade), Hud.FontBody, centre: false);
+
+            if (tall)
+            {
+                Hud.Text(Hud.Fit(detail, room, 0.23f, Hud.FontBody),
+                         x, top + 0.029f, 0.23f,
+                         Fade(sub, fade), Hud.FontBody, centre: false);
+            }
+
+            // A submenu says so, the way every list on a phone says so.
+            if (item.IsSubmenu && string.IsNullOrEmpty(item.Value))
+            {
+                Hud.TextRight(">", right, top + 0.011f, 0.30f,
+                              Fade(on ? Palette.TextOnHover : Palette.TextDim, fade),
+                              Hud.FontBody);
+            }
+        }
+
+        private static void ScrollBar(float left, float top, float w, float h, Level lvl,
+                                      int visible, int fade)
+        {
+            var trackX = left + w - Hud.ToX(0.0045f);
+            var trackW = Hud.ToX(0.0022f);
+
+            Hud.RectFrom(trackX, top, trackW, h, Fade(Color.FromArgb(40, 255, 255, 255), fade));
+
+            var n = lvl.Page.Items.Count;
+            var frac = visible / (float)n;
+            var barH = Math.Max(0.018f, h * frac);
+            var span = h - barH;
+            var at = n - visible <= 0 ? 0f : lvl.Scroll / (float)(n - visible);
+
+            Hud.RectFrom(trackX, top + span * at, trackW, barH, Fade(Palette.Accent, fade));
+        }
+
+        // ---- bits ---------------------------------------------------------------
+
+        private static bool HasArt(WheelItem item)
+        {
+            return !string.IsNullOrEmpty(item.IconFile)
+                || !string.IsNullOrEmpty(item.IconBlip)
+                || item.HasIcon
+                || !string.IsNullOrEmpty(item.Symbol);
+        }
+
+        /// <summary>
+        /// Whatever art this item has, in the order the mod already resolves it.
+        ///
+        /// Ours first: a PNG needs nothing streamed and cannot fail halfway. Then the game's
+        /// own texture if it has finished streaming, then a blip drawn as TEXT because blip
+        /// sprites address the map and cannot be handed to DRAW_SPRITE, then the plain glyph.
+        /// </summary>
+        private static void Art(WheelItem item, float cx, float cy, float size, Color c)
+        {
+            if (!string.IsNullOrEmpty(item.IconFile))
+            {
+                if (Hud.File(item.IconFile, cx, cy, size, 0f, c)) return;
+            }
+
+            if (item.HasIcon)
+            {
+                var w = Hud.ToX(size) * (item.IconAspect <= 0f ? 1f : item.IconAspect);
+                Hud.Sprite(item.IconDict, item.IconTexture, cx, cy, w, size, 0f, c);
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(item.IconBlip))
+            {
+                Hud.Text(item.IconBlip, cx, cy - 0.013f, 0.36f, c, Hud.FontBody, centre: true);
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(item.Symbol))
+            {
+                Hud.Text(item.Symbol, cx, cy - 0.012f, 0.34f, c, Hud.FontLabel, centre: true);
+            }
+        }
+
+        private void Footer(float left, float top, float w, int fade)
+        {
+            Hud.RectFrom(left, top, w, FooterH, Fade(Color.FromArgb(220, 16, 18, 20), fade));
+            Hud.RectFrom(left, top, w, 0.0014f, Fade(Color.FromArgb(46, 255, 255, 255), fade));
+
+            var hint = AtHome ? "ARROWS  MOVE      ENTER  OPEN      BACKSPACE  PUT IT AWAY"
+                              : "ARROWS  MOVE      ENTER  PICK      BACKSPACE  BACK";
+
+            Hud.Text(Hud.Fit(hint, w * 0.96f, 0.20f, Hud.FontLabel),
+                     left + w * 0.5f, top + 0.012f, 0.20f,
+                     Fade(Palette.TextDim, fade), Hud.FontLabel, centre: true);
+        }
+    }
+}

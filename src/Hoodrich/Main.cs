@@ -355,8 +355,8 @@ namespace Hoodrich
         private readonly FixerTalk _fixerTalk;
         private readonly MissionRunner _jobs;
         private readonly CookScreen _cook;
-        private readonly RadialMenu _menu;
-        private readonly WheelController _wheel;
+        private readonly Phone.PhoneMenu _menu;
+        private readonly Phone.PhoneController _phone;
 
         private int _lastSlowTick;
         private int _lastSave;
@@ -955,7 +955,7 @@ namespace Hoodrich
 
                     // Not over a full-screen UI. They keep queueing and keep ageing while it is
                     // up, so nothing is lost -- they are simply not drawn across a menu.
-                    Hidden = () => _wheel.IsOpen || _socialScreen.IsOpen ||
+                    Hidden = () => _phone.IsOpen || _socialScreen.IsOpen ||
                                    _stashScreen.IsOpen || _pocketScreen.IsOpen
                                    || _settingsScreen.IsOpen
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
@@ -1220,7 +1220,6 @@ namespace Hoodrich
                                            _gangs, _crew, _turf, _dealers, _weapons,
                                            _stash, _postUp, _leaders);
 
-                pages.ShowVanillaWheel = () => _wheel.ShowVanillaWheel();
                 pages.Info = _info;
                 pages.Delivery = _delivery;
                 pages.WorkWaiting = () => _jobs == null ? null : _jobs.WorkWaiting;
@@ -1324,8 +1323,12 @@ namespace Hoodrich
 
 
 
-                _menu = new RadialMenu(_cfg);
-                _wheel = new WheelController(_cfg, _menu, pages.BuildRoot);
+                _menu = new Phone.PhoneMenu(_cfg);
+                _phone = new Phone.PhoneController(_cfg, _menu, pages.BuildRoot);
+
+                // A conversation is not a "screen" as far as the frame chain is concerned, so
+                // it would otherwise be talked over by a handset appearing in front of it.
+                _phone.Busy = () => _talk.IsOpen;
 
                 Interval = 0;
                 Tick += OnTick;
@@ -1333,10 +1336,11 @@ namespace Hoodrich
 
                 Log.Info("Paths: data=" + Paths.Data + "  writable=" + Paths.Writable);
 
-                Log.Info("Hoodrich " + Build.Version + " loaded. Wheel: " +
-                         (_cfg.WheelMode == WheelMode.Replace
-                             ? "weapon-wheel button"
-                             : _cfg.WheelKey.ToString()) + ".");
+                Log.Info("Hoodrich " + Build.Version + " loaded. Phone: phone button" +
+                         (_cfg.PhoneKey == System.Windows.Forms.Keys.None
+                             ? ""
+                             : " or " + _cfg.PhoneKey) +
+                         ". The weapon wheel is the game's again.");
             }
             catch (Exception ex)
             {
@@ -1528,7 +1532,7 @@ namespace Hoodrich
                     }
                 }
 
-                _wheel.Update(available);
+                _phone.Update(available);
 
                 if (available)
                 {
@@ -1601,7 +1605,7 @@ namespace Hoodrich
                 // wheel is up. The wheel is modal and puts its own readout there, so a raid
                 // banner and a mission objective underneath it is three things in one place --
                 // which is exactly what it looked like.
-                if (!_wheel.IsOpen)
+                if (!_phone.IsOpen)
                 {
                     _war.Draw();
                     _jobs.Draw();
@@ -2062,7 +2066,7 @@ namespace Hoodrich
             // because the script unloaded while somebody was holding the switch.
             try { LawHold.ReleaseAll(); } catch { /* teardown */ }
 
-            try { _wheel?.RestoreWorld(); }
+            try { _phone?.RestoreWorld(); }
             catch { try { Game.TimeScale = 1f; } catch { /* nothing more we can do */ } }
 
             try { _crew?.RestoreWorld(); } catch { /* teardown */ }

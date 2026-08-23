@@ -6,32 +6,6 @@ using System.Windows.Forms;
 
 namespace Hoodrich.Core
 {
-    /// <summary>How the Hoodrich wheel is opened.</summary>
-    internal enum WheelMode
-    {
-        /// <summary>Take over the vanilla weapon-wheel control. Holding it opens Hoodrich instead.</summary>
-        Replace,
-
-        /// <summary>Leave the vanilla wheel alone; open Hoodrich from its own key.</summary>
-        Separate
-    }
-
-    /// <summary>
-    /// How wheel segments are filled. Wedge is the real weapon-wheel look and needs a
-    /// streamed texture dict; Node needs nothing but DRAW_RECT and always works.
-    /// </summary>
-    internal enum WheelRenderMode
-    {
-        /// <summary>True arc wedges, built from rotated sprites.</summary>
-        Wedge,
-
-        /// <summary>Rectangular cards arranged in a ring. Dependency-free fallback.</summary>
-        Node,
-
-        /// <summary>Wedge, falling back to Node if the texture dict will not stream.</summary>
-        Auto
-    }
-
     /// <summary>
     /// Typed view over Hoodrich.ini. Every value has a working code default, so the mod
     /// runs correctly with no ini present at all.
@@ -44,27 +18,24 @@ namespace Hoodrich.Core
         public int SaveIntervalSeconds = 120;
         public bool PauseDuringMission = true;
 
-        // ---- wheel -------------------------------------------------------------
-        public WheelMode WheelMode = WheelMode.Replace;
-        public Keys WheelKey = Keys.B;
-        public Keys WheelModifier = Keys.None;
-        public bool HoldToOpen = true;
-        public WheelRenderMode RenderMode = WheelRenderMode.Auto;
+        // ---- phone -------------------------------------------------------------
 
-        /// <summary>Time scale while the wheel is open. 1.0 disables the slowdown.</summary>
+        /// <summary>
+        /// An extra key that opens the phone, for anybody who would rather keep the real one.
+        ///
+        /// None by default, because the phone button IS the phone button -- the mod takes it
+        /// over the way it used to take over the weapon wheel, except this time it is giving
+        /// something back rather than only taking.
+        /// </summary>
+        public Keys PhoneKey = Keys.None;
+        public Keys PhoneModifier = Keys.None;
+
+        /// <summary>Time scale while the phone is open. 1.0 disables the slowdown.</summary>
         public float WheelTimeScale = 0.25f;
 
         public bool BlurBackground = true;
         public string TimecycleModifier = "hud_def_blur";
 
-        /// <summary>Ring geometry as a fraction of screen height.</summary>
-        public float InnerRadius = 0.085f;
-        public float OuterRadius = 0.20f;
-
-        /// <summary>Stick/mouse magnitude below which nothing is highlighted.</summary>
-        public float DeadZone = 0.25f;
-
-        public float MouseSensitivity = 1.0f;
         public bool PlaySounds = true;
 
         /// <summary>
@@ -122,9 +93,6 @@ namespace Hoodrich.Core
         /// which is a matter of taste and a metre either way.
         /// </summary>
         public readonly List<DoorSpec> Doors = new List<DoorSpec>();
-
-        /// <summary>Seconds the game's own weapon wheel is held open after picking Weapons.</summary>
-        public int VanillaWheelSeconds = 5;
 
         // ---- economy -----------------------------------------------------------
         public float BulkPurchaseDiscountPercent = 50f;
@@ -262,18 +230,18 @@ namespace Hoodrich.Core
             s.SaveIntervalSeconds = ini.GetInt("General", "SaveIntervalSeconds", s.SaveIntervalSeconds);
             s.PauseDuringMission = ini.GetBool("General", "PauseDuringMission", s.PauseDuringMission);
 
-            s.WheelMode = ini.GetEnum("Wheel", "Mode", s.WheelMode);
-            s.WheelKey = ini.GetKey("Wheel", "Key", s.WheelKey);
-            s.WheelModifier = ini.GetKey("Wheel", "Modifier", s.WheelModifier);
-            s.HoldToOpen = ini.GetBool("Wheel", "HoldToOpen", s.HoldToOpen);
-            s.RenderMode = ini.GetEnum("Wheel", "RenderMode", s.RenderMode);
-            s.WheelTimeScale = Clamp(ini.GetFloat("Wheel", "TimeScale", s.WheelTimeScale), 0.05f, 1f);
-            s.BlurBackground = ini.GetBool("Wheel", "BlurBackground", s.BlurBackground);
-            s.TimecycleModifier = ini.GetString("Wheel", "TimecycleModifier", s.TimecycleModifier);
-            s.InnerRadius = Clamp(ini.GetFloat("Wheel", "InnerRadius", s.InnerRadius), 0.02f, 0.35f);
-            s.OuterRadius = Clamp(ini.GetFloat("Wheel", "OuterRadius", s.OuterRadius), 0.05f, 0.48f);
-            s.DeadZone = Clamp(ini.GetFloat("Wheel", "DeadZone", s.DeadZone), 0f, 0.9f);
-            s.MouseSensitivity = Clamp(ini.GetFloat("Wheel", "MouseSensitivity", s.MouseSensitivity), 0.1f, 5f);
+            // [Phone] first, then the old [Wheel] key as a fallback, so an existing
+            // Hoodrich.ini keeps working rather than silently reverting to defaults.
+            s.PhoneKey = ini.GetKey("Phone", "Key", ini.GetKey("Wheel", "Key", s.PhoneKey));
+            s.PhoneModifier = ini.GetKey("Phone", "Modifier",
+                                         ini.GetKey("Wheel", "Modifier", s.PhoneModifier));
+
+            s.WheelTimeScale = Clamp(ini.GetFloat("Phone", "TimeScale",
+                                     ini.GetFloat("Wheel", "TimeScale", s.WheelTimeScale)), 0.05f, 1f);
+            s.BlurBackground = ini.GetBool("Phone", "BlurBackground",
+                                           ini.GetBool("Wheel", "BlurBackground", s.BlurBackground));
+            s.TimecycleModifier = ini.GetString("Phone", "TimecycleModifier",
+                                                ini.GetString("Wheel", "TimecycleModifier", s.TimecycleModifier));
             s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
             s.BlipsInBars = ini.GetBool("Wheel", "BlipsInBars", s.BlipsInBars);
             s.ShowDealHud = ini.GetBool("PostUp", "ShowDealHud", s.ShowDealHud);
@@ -306,8 +274,8 @@ namespace Hoodrich.Core
                                  (BlipSprite)497,
                                  -105.053f, -1408.631f, 29.673f, 226.934f,
                                  1000.000f, -3200.000f, -38.000f, 180f));
-            s.PlaySounds = ini.GetBool("Wheel", "PlaySounds", s.PlaySounds);
-            s.VanillaWheelSeconds = (int)Clamp(ini.GetInt("Wheel", "VanillaWheelSeconds", s.VanillaWheelSeconds), 1f, 30f);
+            s.PlaySounds = ini.GetBool("Phone", "PlaySounds",
+                                        ini.GetBool("Wheel", "PlaySounds", s.PlaySounds));
 
             s.BulkPurchaseDiscountPercent =
                 Clamp(ini.GetFloat("Economy", "BulkPurchaseDiscountPercent", s.BulkPurchaseDiscountPercent), 0f, 90f);
@@ -364,17 +332,9 @@ namespace Hoodrich.Core
             s.RollerCars = (int)Clamp(ini.GetInt("Block", "RollerCars", s.RollerCars), 0f, 6f);
             s.RollerBikes = (int)Clamp(ini.GetInt("Block", "RollerBikes", s.RollerBikes), 0f, 6f);
 
-            // An inner radius at or past the outer one would render nothing at all.
-            if (s.InnerRadius >= s.OuterRadius - 0.02f)
-            {
-                Log.Warn("Wheel InnerRadius >= OuterRadius; falling back to defaults for both.");
-                s.InnerRadius = 0.085f;
-                s.OuterRadius = 0.20f;
-            }
-
             Log.Level = s.LogLevel;
-            Log.Info("Settings loaded: mode=" + s.WheelMode + " render=" + s.RenderMode +
-                     " key=" + s.WheelKey + " timescale=" + s.WheelTimeScale);
+            Log.Info("Settings loaded: phone key=" + s.PhoneKey +
+                     " timescale=" + s.WheelTimeScale + " blur=" + s.BlurBackground);
             return s;
         }
 

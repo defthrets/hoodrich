@@ -28,12 +28,12 @@ namespace Hoodrich.UI
                      "Buy weight, cut it at home, sell it on a corner, try to be gone first",
                      r => r.ArtFile = "gang_families.png");
 
-            what.Row("Everything is on one button", "The weapon wheel", null,
-                     "HOLD it for Posted Up. TAP it and you still holster, same as always",
-                     r => r.ArtFile = "mask.png");
+            what.Row("Everything is on your phone", "The phone button", null,
+                     "Apps on the home screen, arrows to move, Enter to open, Backspace to back out",
+                     r => r.ArtFile = "phone.png");
 
-            what.Row("Weapons hands it back", "Hold, pick Weapons", null,
-                     "You get the real weapon wheel for a few seconds, selection and all",
+            what.Row("Your weapon wheel is untouched", "It works as it always did", null,
+                     "Hoodrich takes the phone instead, so getting a gun out costs you nothing",
                      r => r.ArtFile = "guns.png");
 
             sections.Add(what);
@@ -93,7 +93,7 @@ namespace Hoodrich.UI
                      r => r.ArtFile = "reply.png");
 
             more.Row("Everything reads somewhere", "The numbers", null,
-                     "Prices, heat, what a block pays. The wheel never shows you a statistic",
+                     "Prices, heat, what a block pays. No screen here shows you a bare statistic",
                      r => r.ArtFile = "cash.png");
 
             sections.Add(more);
@@ -105,7 +105,7 @@ namespace Hoodrich.UI
                      "Buy it, take it to the kitchen, then go and stand somewhere",
                      r => r.ArtFile = "warning.png");
 
-            last.Row("This screen will not come back", "Everything is in the wheel", null,
+            last.Row("This screen will not come back", "Everything is on the phone", null,
                      "Backspace or the back button closes it",
                      r => r.ArtFile = "tick.png");
 

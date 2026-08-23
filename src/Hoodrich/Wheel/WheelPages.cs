@@ -41,9 +41,6 @@ namespace Hoodrich.Wheel
         private readonly GangLeaders _leaders;
         private readonly WeaponRegistry _weapons;
 
-        /// <summary>Set by Main. Hands the player back the game's own weapon wheel.</summary>
-        public Action ShowVanillaWheel;
-
         /// <summary>
         /// Set by Main. Where the numbers live.
         ///
@@ -920,27 +917,23 @@ namespace Hoodrich.Wheel
 
         // ---- root --------------------------------------------------------------
 
+        /// <summary>
+        /// The home screen: every app, as a grid.
+        ///
+        /// There is no Weapons entry any more and that is the point of the whole change. It
+        /// existed because the mod had taken the weapon-wheel button and owed the player a way
+        /// to get a gun back -- a menu entry whose only job was apologising for the menu. The
+        /// phone costs nothing, so SelectWeapon is the game's again and the apology is gone
+        /// with it.
+        /// </summary>
         public WheelPage BuildRoot()
         {
-            // Opening the wheel is the cue to start streaming weapon art, so it is resident by
-            // the time the player flicks into the weapons page rather than popping in under them.
-            _weapons.PrewarmCarried();
-
             var page = new WheelPage("Posted Up",
                 _crew.IsAffiliated ? _crew.Current.Name : "Unaffiliated");
 
-            // Four wedges at 90 degrees each. Every top-level tab owns its own sub-tabs rather
-            // than spilling onto the root: product and its paperwork under Drugs, everything
-            // territorial under Gangs, and your own standing under Reputation.
-            //
-            // Weapons sits at index 0 -- straight up, the easiest flick on the wheel. Hoodrich
-            // took the weapon-wheel button, so getting a gun back has to be the fastest thing
-            // on here, not something buried behind the business menu.
-            page.Add("Weapons", "^", () => ShowVanillaWheel?.Invoke(),
-                detail: "Opens the game's own weapon wheel",
-                value: CurrentWeaponName());
-            page.WithIcon(Icons.Guns);
-
+            // Every top-level app owns its own sub-pages rather than spilling onto the home
+            // screen: product and its paperwork under Dealing, everything territorial under
+            // Gangs, your own standing inside that.
             page.AddSub("Dealing", "$", BuildDrugsPage,
                 detail: "Re-up, bag up, go to work",
                 value: DrugsSummary(),
@@ -1302,11 +1295,6 @@ namespace Hoodrich.Wheel
 
         // ---- weapons -----------------------------------------------------------
 
-        private string CurrentWeaponName()
-        {
-            var def = _weapons.Get(WeaponRegistry.CurrentWeaponHash());
-            return def == null ? "Unarmed" : def.Name;
-        }
         // ---- sell --------------------------------------------------------------
 
         private WheelPage BuildSellPage()

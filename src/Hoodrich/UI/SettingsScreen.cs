@@ -297,40 +297,23 @@ namespace Hoodrich.UI
                  () => (int)c.LogLevel, v => c.LogLevel = (LogLevel)v,
                  "Debug writes a lot. Useful when something is wrong");
 
-            Head("The wheel");
-            Pick("Opens with", "Wheel", "Mode", new[] { "Replace", "Separate" },
-                 () => (int)c.WheelMode, v => c.WheelMode = (WheelMode)v,
-                 "Replace takes over the weapon wheel; Separate uses its own key");
-            Bind("Key", "Wheel", "Key", () => c.WheelKey, v => c.WheelKey = v,
-                 "Select, then press the key you want");
-            Bind("Modifier", "Wheel", "Modifier", () => c.WheelModifier, v => c.WheelModifier = v,
+            Head("The phone");
+            Readout("Opens with", () => "the phone button",
+                    "Hoodrich takes the phone. The weapon wheel is the game's own again");
+            Bind("Extra key", "Phone", "Key", () => c.PhoneKey, v => c.PhoneKey = v,
+                 "Optional. Select, then press the key you want");
+            Bind("Modifier", "Phone", "Modifier", () => c.PhoneModifier, v => c.PhoneModifier = v,
                  "None for no modifier");
-            Tick("Hold to open", "Wheel", "HoldToOpen", () => c.HoldToOpen, v => c.HoldToOpen = v,
-                 "Hold for Posted Up, tap to holster");
-            Tick("Sounds", "Wheel", "PlaySounds", () => c.PlaySounds, v => c.PlaySounds = v,
+            Tick("Sounds", "Phone", "PlaySounds", () => c.PlaySounds, v => c.PlaySounds = v,
                  "Clicks and confirmations");
-            Tick("Blur behind it", "Wheel", "BlurBackground",
+            Tick("Blur behind it", "Phone", "BlurBackground",
                  () => c.BlurBackground, v => c.BlurBackground = v);
             Tick("Blips in the bars", "Wheel", "BlipsInBars",
                  () => c.BlipsInBars, v => c.BlipsInBars = v,
                  "Map art at the ends of the reputation and heat bars");
-            Pick("Drawn as", "Wheel", "RenderMode", new[] { "Wedge", "Node", "Auto" },
-                 () => (int)c.RenderMode, v => c.RenderMode = (WheelRenderMode)v,
-                 "Auto falls back to Node if the wedge texture will not stream");
-            Slide("Time slows to", "Wheel", "TimeScale",
+            Slide("Time slows to", "Phone", "TimeScale",
                   () => c.WheelTimeScale, v => c.WheelTimeScale = v, 0.05f, 1f, 0.05f, "0.00",
                   note: "1.00 turns the slowdown off");
-            Slide("Inner radius", "Wheel", "InnerRadius",
-                  () => c.InnerRadius, v => c.InnerRadius = v, 0.02f, 0.34f, 0.005f, "0.000");
-            Slide("Outer radius", "Wheel", "OuterRadius",
-                  () => c.OuterRadius, v => c.OuterRadius = v, 0.05f, 0.48f, 0.005f, "0.000");
-            Slide("Dead zone", "Wheel", "DeadZone",
-                  () => c.DeadZone, v => c.DeadZone = v, 0f, 0.9f, 0.05f, "0.00");
-            Slide("Mouse sensitivity", "Wheel", "MouseSensitivity",
-                  () => c.MouseSensitivity, v => c.MouseSensitivity = v, 0.1f, 5f, 0.1f, "0.0");
-            Slide("Vanilla wheel hold", "Wheel", "VanillaWheelSeconds",
-                  () => c.VanillaWheelSeconds, v => c.VanillaWheelSeconds = (int)v,
-                  1f, 30f, 1f, "0", "s");
             Readout("Blur effect", () => string.IsNullOrEmpty(c.TimecycleModifier)
                         ? "none" : c.TimecycleModifier,
                     "A timecycle name. Ini only -- there is no list to pick from");
