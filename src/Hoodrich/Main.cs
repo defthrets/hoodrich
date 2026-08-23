@@ -523,8 +523,14 @@ namespace Hoodrich
                 _meetOne = new ParkedCar(new Vector3(-227.440f, -1697.994f, 33.300f), 214.105f,
                                          MetallicDarkGreen, "gauntlet4", "gauntlet", "dominator")
                 {
-                    Built = true,
+                    // Stock. Not a build -- no rims, no drop, no tint, nothing but the paint
+                    // and what is glowing under it, which is what was asked for and is also
+                    // the more convincing of the two: one car at a meet is somebody's project
+                    // and the rest are cars people drove there.
+                    Stock = true,
                     Running = true,
+                    Lights = true,
+                    Radio = "RADIO_09_HIPHOP_OLD",
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
                     QuietFrom = 6,
                     QuietTo = 20,
@@ -536,6 +542,12 @@ namespace Hoodrich
                 {
                     Built = true,
                     Running = true,
+                    Lights = true,
+
+                    // Not the same station as the other one. Two cars four metres apart on the
+                    // same track is that track heard twice, slightly out of step with itself,
+                    // which sounds like a bug rather than like a car park.
+                    Radio = "RADIO_03_HIPHOP_NEW",
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
                     QuietFrom = 6,
                     QuietTo = 20,

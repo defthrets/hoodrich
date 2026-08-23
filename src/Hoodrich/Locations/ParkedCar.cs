@@ -66,7 +66,7 @@ namespace Hoodrich.Locations
 
         private void Keep()
         {
-            if (!Running && Neon == null && string.IsNullOrEmpty(Radio)) return;
+            if (!Running && Neon == null && !Lights && string.IsNullOrEmpty(Radio)) return;
 
             try
             {
@@ -81,6 +81,10 @@ namespace Hoodrich.Locations
                 {
                     Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, false, true, false);
                     Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _car.Handle, false);
+
+                    // One is forced off. Nought would hand them back to the game, which would
+                    // switch them on again the moment it decided it was dark.
+                    if (Lights) Function.Call(Hash.SET_VEHICLE_LIGHTS, _car.Handle, 1);
 
                     if (Neon.HasValue)
                     {
@@ -97,6 +101,10 @@ namespace Hoodrich.Locations
                 {
                     Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, true, true, false);
                 }
+
+                // Two is forced on. The engine above is what makes them light anything --
+                // headlights on a car with the key out are a texture rather than a lamp.
+                if (Lights) Function.Call(Hash.SET_VEHICLE_LIGHTS, _car.Handle, 2);
 
                 if (!string.IsNullOrEmpty(Radio))
                 {
@@ -120,6 +128,30 @@ namespace Hoodrich.Locations
         /// what a parked car looks like. On for the one that is somebody's PROJECT.
         /// </summary>
         public bool Built;
+
+        /// <summary>
+        /// Nothing on it but the paint.
+        ///
+        /// Not the same as leaving Built off. Every car that comes through here gets Benny's
+        /// rims, lowered springs and tinted glass whether it is a build or not, because that is
+        /// what the cars in this lot are -- Built only adds the engine and the body kit on top
+        /// of those. A car somebody drove to a meet and parked is stock: factory wheels,
+        /// factory ride height, factory glass, and the only things on it are the paint and
+        /// whatever is glowing underneath it.
+        ///
+        /// Wins over Built where both are set, because stock is a statement about the whole car.
+        /// </summary>
+        public bool Stock;
+
+        /// <summary>
+        /// Whether the headlights are on.
+        ///
+        /// Electrics, like the radio and the underglow, so it needs the engine and it needs
+        /// putting back every so often -- an unoccupied car has its lights taken off it along
+        /// with the rest. Forced rather than left to the game, which decides by time of day and
+        /// decides wrong for a car that has been sat there since before it got dark.
+        /// </summary>
+        public bool Lights;
 
         /// <summary>Underglow, if it has any. Null for a car nobody has lit.</summary>
         public Color? Neon;
@@ -323,7 +355,9 @@ namespace Hoodrich.Locations
                 // tinted glass mean nothing on two wheels or four small ones. Asked rather than
                 // assumed, so a bike parked here later does not quietly get a suspension kit it
                 // has no springs for.
-                var onWheels = !Function.Call<bool>(Hash.IS_THIS_MODEL_A_BIKE, _car.Model.Hash)
+                // Stock asks for none of it, and two wheels could not use it anyway.
+                var onWheels = !Stock
+                               && !Function.Call<bool>(Hash.IS_THIS_MODEL_A_BIKE, _car.Model.Hash)
                                && !Function.Call<bool>(Hash.IS_THIS_MODEL_A_QUADBIKE, _car.Model.Hash);
 
                 if (onWheels)
@@ -337,9 +371,9 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
                 }
 
-                Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, Built ? 0.4f : 1.5f);
+                Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, Built || Stock ? 0.4f : 1.5f);
 
-                if (Built) BuildIt();
+                if (Built && !Stock) BuildIt();
 
                 // Five is the interior, six is the dash. Both, because a green interior with a
                 // black dashboard is half a job you can see from the door.

@@ -22,7 +22,7 @@ what it is and `496` does not.
 | 774 | `radar_sub_periscope` | inside the heat bar -- `PostUp.cs` |
 | 835 | `radar_community_series` | inside the reputation bar |
 | 855 | `radar_ped_gang_leader` | gang leaders by default -- `GangLeaders.cs` |
-| 274 | `radar_dead` | Stretch, per-leader override in `leaders.json` |
+| 310 | `radar_deathmatch` | Stretch, per-leader override in `leaders.json` |
 | 58 | `radar_crim_wanted` | Oxycodone, everywhere it is drawn -- `Icons.cs` |
 | -- | `BlipSprite.Weed` | drug markers |
 | 51 | `radar_crim_drugs` | the crack den door -- `Settings.cs` |
@@ -129,6 +129,9 @@ raiding carload of anybody.
 | 115 | `radar_random_male` |
 | 148 | `radar_mp_friend` |
 | 274 | `radar_dead` |
+| 310 | `radar_deathmatch` |
+| 378 | `radar_team_deathmatch` |
+| 380 | `radar_vehicle_deathmatch` |
 | 280 | `radar_friend` |
 | 855 | `radar_ped_gang_leader` |
 | 143 | `radar_objective_blue` |
@@ -138,6 +141,11 @@ raiding carload of anybody.
 
 274 is the one for a body -- worth having on a homie who went down, and on the
 spot a rival dropped you.
+
+274 and 310 are both filed under death and they are not the same picture. `radar_dead`
+draws a small X, which is a place where something happened; the skull everybody means
+when they say "the skull blip" is `radar_deathmatch`, 310. Stretch is on 310 for that
+reason -- 274 was tried first and reads as a map cross rather than as a man.
 
 ## Vehicles
 

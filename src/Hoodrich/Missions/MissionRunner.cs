@@ -791,6 +791,15 @@ namespace Hoodrich.Missions
 
             if (!IsRunning) return;
 
+            // Above the throttle, because half a second is long enough to see.
+            //
+            // Everything else about keeping them seated is on a 500ms tick and then a 900ms
+            // check on top of that, so a man who opened a door was noticed up to a second and
+            // a half later and then told to WALK back to it. That is the whole complaint: not
+            // that nothing puts them back, but that you watch them get out, fight on foot and
+            // stroll back while the car you are driving pulls away.
+            HoldTheSeats();
+
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;
@@ -1056,6 +1065,158 @@ namespace Hoodrich.Missions
 
         /// <summary>The one car we locked, so exactly one gets unlocked again.</summary>
         private Vehicle _lockedRide;
+
+        /// <summary>Which seat each man rode out in, so he goes back to his own one.</summary>
+        private readonly Dictionary<int, int> _seats = new Dictionary<int, int>();
+
+        /// <summary>A man this close to the car has just got out of it.</summary>
+        private const float HoldRange = 12f;
+
+        /// <summary>Not a seat. Real ones start at -1, so -1 cannot mean "none".</summary>
+        private const int NoSeat = -99;
+
+        /// <summary>
+        /// Puts anybody out of his seat straight back into it, every tick, in place.
+        ///
+        /// The difference between this and everything above it is the word straight. The flags
+        /// are all set -- attribute 3 off, non-temporary events blocked, no dragging out, doors
+        /// locked -- and they are the right flags, and they are still not the whole answer,
+        /// because none of them covers a man in your GROUP being repositioned by the group.
+        /// He does not decide to get out; he is put out, and no combat flag has an opinion
+        /// about it.
+        ///
+        /// So this stops arguing about why and answers where it lands. If he is out and the
+        /// car is right there, he is in the seat again this frame. SET_PED_INTO_VEHICLE ignores
+        /// the door lock, which is the point -- the lock is what stops him opening it, and the
+        /// warp is what undoes it when something opens it for him.
+        ///
+        /// Not during Travel. The drive out is three men walking to a car and getting into it
+        /// properly, and snapping them through the doors while you stand watching is a worse
+        /// picture than the one being fixed. From the roll-up onwards the car is moving and
+        /// there is shooting, and nobody is looking at the back seat.
+        /// </summary>
+        private void HoldTheSeats()
+        {
+            if (!FromTheCar) return;
+
+            if (State != MissionState.Work &&
+                State != MissionState.Escape &&
+                State != MissionState.Dump) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            var ride = player.CurrentVehicle;
+            if (ride == null || !ride.Exists()) return;
+
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+
+                try
+                {
+                    // Where he is sitting is where he sits. Recorded while it is true rather
+                    // than assumed at spawn, because they get in wherever they get in.
+                    if (homie.IsSittingInVehicle(ride))
+                    {
+                        var his = SeatOf(ride, homie);
+                        if (his != NoSeat) _seats[homie.Handle] = his;
+
+                        continue;
+                    }
+
+                    // Left behind rather than just got out. Warping a man across a street is
+                    // worse than the walk, and KeepThemSeated still has him on the slow path.
+                    if (homie.Position.DistanceTo(ride.Position) > HoldRange) continue;
+
+                    var seat = SeatFor(ride, homie);
+                    if (seat == NoSeat) continue;
+
+                    Function.Call(Hash.SET_PED_INTO_VEHICLE, homie.Handle, ride.Handle, seat);
+
+                    // And straight back on the trigger. The warp takes his task with it, and a
+                    // man sitting there doing nothing is the next frame's reason to get out.
+                    var foe = NearestLiveTarget(homie);
+                    if (foe != null) Shoot(homie, foe);
+                }
+                catch { /* he sits this one out */ }
+            }
+        }
+
+        /// <summary>Which seat he is in, or NoSeat. Driver is -1, so the scan starts there.</summary>
+        private static int SeatOf(Vehicle ride, Ped man)
+        {
+            var many = Function.Call<int>(Hash.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS, ride.Handle);
+
+            for (var seat = -1; seat < many; seat++)
+            {
+                if (Function.Call<int>(Hash.GET_PED_IN_VEHICLE_SEAT, ride.Handle, seat) == man.Handle)
+                {
+                    return seat;
+                }
+            }
+
+            return NoSeat;
+        }
+
+        /// <summary>
+        /// His own seat if it is still empty, otherwise any passenger seat that is.
+        ///
+        /// Never -1. That is the driver, and the driver is you -- a homie warped into the seat
+        /// you are sitting in is you thrown out of your own car in the middle of a job.
+        /// </summary>
+        private int SeatFor(Vehicle ride, Ped man)
+        {
+            int his;
+            if (_seats.TryGetValue(man.Handle, out his) && his >= 0 &&
+                Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, his))
+            {
+                return his;
+            }
+
+            var many = Function.Call<int>(Hash.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS, ride.Handle);
+
+            for (var seat = 0; seat < many; seat++)
+            {
+                if (Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, seat)) return seat;
+            }
+
+            return NoSeat;
+        }
+
+        /// <summary>
+        /// Lets them out before you set fire to it.
+        ///
+        /// The other half of holding them in. Everything above keeps three men in a car for the
+        /// whole job, and the job ends with that car burning -- so without this the last thing
+        /// the fix does is hold the crew in place while you pour petrol over them.
+        ///
+        /// Unlocked first, because the doors are locked and a locked door is a door they cannot
+        /// open either. Then the flags they were given for the ride are handed back: they can
+        /// leave a vehicle again, and they can react to things again, which is what walking
+        /// away from a car fire is.
+        /// </summary>
+        private void ClearTheCar()
+        {
+            Unlock();
+
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, true);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, true);
+
+                    if (!homie.IsInVehicle()) continue;
+
+                    Function.Call(Hash.TASK_LEAVE_ANY_VEHICLE, homie.Handle, 0, 0);
+                }
+                catch { /* he can climb out on his own */ }
+            }
+        }
 
         private int _nextSeatCheck;
         private const int SeatCheckMs = 900;
@@ -1528,6 +1689,9 @@ namespace Hoodrich.Missions
             }
 
             HandTheCan(player);
+
+            // Out of the car before the petrol goes on it.
+            ClearTheCar();
 
             State = MissionState.Torch;
             _poured = false;
@@ -2089,6 +2253,7 @@ namespace Hoodrich.Missions
                 catch { /* teardown */ }
             }
             _homies.Clear();
+            _seats.Clear();
 
             // Let go rather than deleted. A car you drove to a job and back should still be
             // sitting outside afterwards, the same as the bikes.
