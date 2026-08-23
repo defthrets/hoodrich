@@ -512,6 +512,32 @@ namespace Hoodrich
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80)
                 });
 
+                // Somebody's FR36 on the pad at the bottom of the lot.
+                //
+                // Stock, on purpose. The van is the build in this yard and one yard does not
+                // need two of them -- a set's cars are cars people drive, with the paint and
+                // the glow and nothing else, and the one project parked with its boot up is
+                // what makes it read as a project.
+                //
+                // WEST COAST CLASSICS, not the van's station. They are sixteen metres apart,
+                // which is inside earshot of both, and two speakers on one track at that range
+                // is that track heard twice and slightly out of step with itself.
+                //
+                // Key out at two and back in at six, with the van and with the yard. It is one
+                // switch: somebody came out, turned everything off and went in.
+                _cars.Add(new ParkedCar(new Vector3(-198.2f, -1734.7f, 32.2f), 318.897f,
+                                        MetallicDarkGreen,
+                                        "fr36", "elegy2", "sultan")
+                {
+                    Stock = true,
+                    Running = true,
+                    Radio = "RADIO_09_HIPHOP_OLD",
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
+
+                    QuietFrom = 2,
+                    QuietTo = 6
+                });
+
                 // ---- the meet on the court, after dark -----------------------------
                 //
                 // Two cars and the people stood round them, and that is the whole thing. No
