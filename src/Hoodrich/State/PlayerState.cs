@@ -493,7 +493,7 @@ namespace Hoodrich.State
                 // earn -- or at one, which would be a good one they never earned either.
                 ProductRep = Math.Min(1f, Math.Max(0.1f, doc["productRep"].AsFloat(Neutral)));
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
-                PortRunStage = Math.Max(0, Math.Min(2, doc["portRunStage"].AsInt(0)));
+                PortRunStage = Math.Max(0, Math.Min(3, doc["portRunStage"].AsInt(0)));
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
 
                 // Defaults to FALSE, so a save from before this existed shows the guide once

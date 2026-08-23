@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using GTA;
 using GTA.Math;
@@ -37,11 +38,14 @@ namespace Hoodrich.Missions
     {
         public const int StageNone = 0;
 
-        /// <summary>Told where to go, box not collected.</summary>
+        /// <summary>Told where to go, not yet spoken to him.</summary>
         public const int StageFetch = 1;
 
-        /// <summary>Holding his quarter kilo, owing him a yard in Chamberlain.</summary>
-        public const int StageDeliver = 2;
+        /// <summary>Spoken to, and owed a reverse park round the back of the sheds.</summary>
+        public const int StageBay = 2;
+
+        /// <summary>Loaded, and owing him a yard in Chamberlain.</summary>
+        public const int StageDeliver = 3;
 
         // ---- his van -----------------------------------------------------------
 
@@ -94,6 +98,69 @@ namespace Hoodrich.Missions
         /// <summary>Facing back down the alley, which is the way you come in.</summary>
         private const float DropHeading = 236.125f;
 
+        // ---- bay one, round the back ------------------------------------------
+
+        /// <summary>Where the van has to end up, and which way round.</summary>
+        private static readonly Vector3 BaySpot = new Vector3(1243.292f, -3155.241f, 5.562f);
+        private const float BayHeading = 271.000f;
+
+        /// <summary>How close, how square, and how stopped it has to be.</summary>
+        private const float BayRange = 4.2f;
+        private const float BaySquare = 38f;
+        private const float BayStopped = 1.6f;
+
+        /// <summary>Where his men come from. Under a roof, so the ground probe is guarded.</summary>
+        private static readonly Vector3 LoaderFrom = new Vector3(1242.045f, -3173.763f, 5.528f);
+        private const float LoaderFromHeading = 355.469f;
+
+        /// <summary>And where they end up, which is the back of the van.</summary>
+        private static readonly Vector3 LoaderTo = new Vector3(1239.853f, -3155.884f, 5.528f);
+        private const float LoaderToHeading = 344.224f;
+
+        private const int LoaderCount = 2;
+
+        /// <summary>How far apart they stand, so two men are not one man.</summary>
+        private const float LoaderGap = 0.95f;
+
+        /// <summary>Close enough to the back of the van to be loading it.</summary>
+        private const float LoaderArrive = 2.6f;
+
+        /// <summary>How long they take over it before anybody says anything.</summary>
+        private const int LoaderSettleMs = 3000;
+
+        /// <summary>And how long before the job stops waiting on a man stuck on a pallet.</summary>
+        private const int LoaderGiveUpMs = 40000;
+
+        /// <summary>
+        /// Kkangpae, so the voice that says it is genuinely Korean.
+        ///
+        /// Ambient speech is spoken in the ped's own voice, and a Korean gang model has a
+        /// Korean one -- so this is the difference between a subtitle claiming a language and
+        /// a man actually speaking it. All three verified against the game's ped dump.
+        /// </summary>
+        private static readonly string[] LoaderModels =
+        {
+            "g_m_y_korean_01", "g_m_y_korean_02", "g_m_y_korlieut_01", "s_m_y_dockwork_01"
+        };
+
+        /// <summary>What ends up in the back. Already proven elsewhere in the mod.</summary>
+        private static readonly string[] CrateModels =
+        {
+            "prop_boxpile_07d", "prop_paper_box_01", "prop_boxpile_06a"
+        };
+
+        /// <summary>
+        /// Where the pile sits in the van, in the van's own space.
+        ///
+        /// The Rumpo measures -2.87 to +2.60 along Y and -1.04 to +1.08 up, out of the game's
+        /// vehicle dump, so this is the middle of the load space just behind the seats and a
+        /// touch above the floor. High rather than low on purpose: a box hovering two
+        /// centimetres is invisible through a van's back window, and one sunk two centimetres
+        /// is a box through the floor.
+        /// </summary>
+        private const float CrateY = -1.35f;
+        private const float CrateZ = -0.12f;
+
         /// <summary>Close enough to the marker to have arrived.</summary>
         private const float ParkRange = 9f;
 
@@ -141,6 +208,14 @@ namespace Hoodrich.Missions
 
         private int _next;
         private bool _saidHere;
+
+        // ---- the loading bay ---------------------------------------------------
+
+        /// <summary>0 waiting on the van, 1 walking, 2 loading, 3 done and wandering.</summary>
+        private int _bay;
+        private int _bayAt;
+        private readonly List<Ped> _loaders = new List<Ped>();
+        private Prop _crate;
         private readonly Random _rng = new Random();
 
         public PortRun(PlayerState state)
@@ -171,8 +246,11 @@ namespace Hoodrich.Missions
         /// </summary>
         public bool WaitingAtTheDrop => Stage == StageDeliver;
 
-        /// <summary>Where the mark is, whichever half of the run you are in.</summary>
-        private Vector3 Mark => Stage == StageDeliver ? DropSpot : ParkSpot;
+        /// <summary>Where the mark is, whichever leg of the run you are in.</summary>
+        private Vector3 Mark =>
+            Stage == StageDeliver ? DropSpot :
+            Stage == StageBay ? BaySpot :
+            ParkSpot;
 
         // ---- starting it -------------------------------------------------------
 
@@ -224,6 +302,14 @@ namespace Hoodrich.Missions
             // kilometres across the map, and the man you were stood next to was suddenly too
             // far away to exist. He stays until you actually drive off, which is what leaving
             // somewhere looks like.
+            // The loading bay is a leg of its own and it is not about walking up to a man,
+            // so it runs before the rest and returns.
+            if (Stage == StageBay)
+            {
+                Loading(player);
+                return;
+            }
+
             var toPort = player.Position.DistanceTo(ParkSpot);
             var toDrop = player.Position.DistanceTo(DropSpot);
 
@@ -330,15 +416,16 @@ namespace Hoodrich.Missions
         {
             var node = new DialogueNode("Tao Cheng",
                 "You get a number. You call the number, a thing arrives, you pay for the thing. " +
-                "Congratulations, you're in shipping. It's already in the van -- no, don't open " +
-                "it, don't count it, I am not standing in a car park watching a grown man count. " +
-                "It's gone five and there is a bottle at my house older than you are with my " +
-                "name on the label, and I fully intend to be unconscious by nine. Go on.")
+                "Congratulations, you're in shipping. Now -- round the back of the sheds, bay " +
+                "one, and back it in. Nose out. My guys aren't carrying anything further than " +
+                "they have to and they are not going to ask you to move. It's gone five and " +
+                "there's a bottle at my house older than you are with my name on the label, so " +
+                "park it properly and don't make this my evening.")
             {
                 SpeakerColour = Palette.Cash
             };
 
-            node.Say("Appreciate it.", Take, "Load the van and take his number");
+            node.Say("Bay one. Got it.", Take, "Reverse into bay one round the back");
             node.WithIcon(Icons.FromFile("box.png"));
 
             return node;
@@ -355,14 +442,16 @@ namespace Hoodrich.Missions
         private DialogueNode Take()
         {
             _state.DocksUnlocked = true;
-            _state.PortRunStage = StageDeliver;
+            _state.PortRunStage = StageBay;
             _state.AddRespect(8f);
             _state.Touch();
 
             _saidHere = false;
+            _bay = 0;
+            _bayAt = 0;
 
-            Notify.Important("~g~You've got his number.~s~ Now get that van back to Gerald.");
-            Log.Info("Port run: van loaded, docks unlocked.");
+            Notify.Important("~g~Round the back.~s~ Reverse into bay one and wait.");
+            Log.Info("Port run: docks unlocked, sent to the loading bay.");
 
             if (Social != null) Social.On(SocialEvent.PortRun, "Tao Cheng");
 
@@ -435,7 +524,9 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, 596);
                 Function.Call(Hash.SET_BLIP_COLOUR, _blip.Handle, 2);
 
-                _blip.Name = Stage == StageDeliver ? "Drop it to Gerald" : "Meet the plug";
+                _blip.Name = Stage == StageDeliver ? "Drop it to Gerald"
+                           : Stage == StageBay ? "Bay one"
+                           : "Meet the plug";
                 _blip.ShowRoute = true;
                 _blip.IsShortRange = false;
             }
@@ -460,7 +551,7 @@ namespace Hoodrich.Missions
 
             // Tighter at the yard than at the port, because one of them is a place to leave a
             // van and the other is a man stood in the middle of it.
-            var radius = Stage == StageDeliver ? 2.4f : 5f;
+            var radius = Stage == StageDeliver ? 2.4f : Stage == StageBay ? 3.6f : 5f;
 
             try
             {
@@ -538,7 +629,11 @@ namespace Hoodrich.Missions
             if (done < 0f) done = 0f;
             if (done > 1f) done = 1f;
 
-            return leg == StageDeliver ? 0.5f + done * 0.5f : done * 0.5f;
+            // Three legs, a third of the bar each: find him, get loaded, get it home.
+            if (leg == StageDeliver) return 0.667f + done * 0.333f;
+            if (leg == StageBay) return 0.333f + done * 0.334f;
+
+            return done * 0.333f;
         }
 
         /// <summary>
@@ -564,7 +659,7 @@ namespace Hoodrich.Missions
             var fade = eased;
 
             var left = 0.5f - CardWidth * 0.5f;
-            var ink = Fade(Stage == StageDeliver ? Palette.Cash : Palette.Standing, fade);
+            var ink = Fade(Stage == StageFetch ? Palette.Standing : Palette.Cash, fade);
 
             Hud.RectFrom(left, top, CardWidth, CardHeight, Fade(CardBack, fade));
             Hud.RectFrom(left, top, CardRail, CardHeight, ink);
@@ -576,7 +671,7 @@ namespace Hoodrich.Missions
             Hud.RectFrom(iconLeft, top + (CardHeight - IconSize) * 0.5f,
                          iconWide, IconSize, Color.FromArgb((int)(20 * fade), 255, 255, 255));
 
-            Hud.File(Stage == StageDeliver ? "box.png" : "crate.png",
+            Hud.File(Stage == StageFetch ? "crate.png" : "box.png",
                      iconLeft + iconWide * 0.5f, top + CardHeight * 0.5f,
                      IconSize * 0.62f, 0f, ink);
 
@@ -587,11 +682,14 @@ namespace Hoodrich.Missions
 
             Hud.Text(Stage == StageDeliver
                         ? "Get his van back to the yard in Chamberlain"
+                     : Stage == StageBay
+                        ? "Back into bay one behind the sheds and wait"
                         : "Meet the dock worker at Elysian Island",
                      x, top + 0.030f, 0.26f, Fade(Palette.TextDim, fade),
                      Hud.FontBody, centre: false);
 
-            Hud.TextRight(Stage == StageDeliver ? Package.ToString("0") + "g" : "TAO",
+            Hud.TextRight(Stage == StageDeliver ? Package.ToString("0") + "g"
+                          : Stage == StageBay ? "BAY 1" : "TAO",
                           left + CardWidth - CardPad, top + 0.031f, 0.23f,
                           ink, Hud.FontLabel);
 
@@ -1023,6 +1121,313 @@ namespace Hoodrich.Missions
 
         // ---- taking it away ----------------------------------------------------
 
+        // ---- the loading bay ---------------------------------------------------
+
+        /// <summary>
+        /// Backing into bay one and being loaded.
+        ///
+        /// The one part of the errand you can get WRONG, and deliberately the mildest kind of
+        /// wrong: nothing fails, nothing is lost, the men simply do not come out until the van
+        /// is where it is supposed to be. Position and heading both, because "reverse in" is
+        /// the instruction and a van nosed into the bay is not reversed into it -- and stopped,
+        /// because being dragged past the mark at forty is not parking.
+        /// </summary>
+        private void Loading(Ped player)
+        {
+            switch (_bay)
+            {
+                case 0: WaitingForTheVan(player); return;
+                case 1: Walking(); return;
+                case 2: Settling(); return;
+                default: return;
+            }
+        }
+
+        /// <summary>Is the van in the bay, square to it, and stood still.</summary>
+        private bool Parked()
+        {
+            if (_van == null || !_van.Exists()) return false;
+            if (_van.Position.DistanceTo(BaySpot) > BayRange) return false;
+            if (_van.Speed > BayStopped) return false;
+
+            // Wrapped, so 359 and 1 are two degrees apart rather than three hundred and fifty.
+            var off = Math.Abs(_van.Heading - BayHeading) % 360f;
+            if (off > 180f) off = 360f - off;
+
+            return off <= BaySquare;
+        }
+
+        private void WaitingForTheVan(Ped player)
+        {
+            if (player.Position.DistanceTo(BaySpot) > StreamRange) return;
+
+            if (!Parked())
+            {
+                if (_van != null && _van.Exists() &&
+                    _van.Position.DistanceTo(BaySpot) <= BayRange && _van.Speed <= BayStopped)
+                {
+                    // Near enough to be trying, so say WHY it is not counting rather than
+                    // leaving somebody parked on the mark wondering what else it wants.
+                    Help.ShowThisFrame("Back it in -- nose out, square to the bay.");
+                }
+
+                return;
+            }
+
+            _bay = 1;
+            _bayAt = Game.GameTime;
+
+            Notify.Text("CHAR_DEFAULT", "Tao Cheng", "Elysian Island",
+                        "guys are coming out to you now. dont get out, dont help, dont talk to them");
+
+            Log.Info("Port run: van parked in bay one, loaders sent.");
+
+            MakeLoaders();
+        }
+
+        private void Walking()
+        {
+            var arrived = 0;
+            var alive = 0;
+
+            foreach (var ped in _loaders)
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                alive++;
+                if (ped.Position.DistanceTo(LoaderTo) <= LoaderArrive) arrived++;
+            }
+
+            // Nobody left to wait for, or they have taken long enough that something has them
+            // stuck on a pallet. Either way the job does not hang on it.
+            var late = Game.GameTime - _bayAt > LoaderGiveUpMs;
+
+            if (alive == 0 || late || arrived >= alive)
+            {
+                if (late) Log.Warn("Port run: loaders never arrived; loading anyway.");
+
+                _bay = 2;
+                _bayAt = Game.GameTime;
+
+                LoadTheVan();
+
+                foreach (var ped in _loaders) Face(ped, LoaderToHeading);
+            }
+        }
+
+        private void Settling()
+        {
+            if (Game.GameTime - _bayAt < LoaderSettleMs) return;
+
+            // Said in Korean, by men whose own voice is Korean. The English underneath is what
+            // a subtitle is for -- and it is the half that still works if this install's font
+            // has no Hangul in it.
+            GTA.UI.Screen.ShowSubtitle("~s~\uAC00\uB3C4 \uB429\uB2C8\uB2E4.~n~~c~(You can go now.)", 4000);
+
+            foreach (var ped in _loaders)
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
+                                  "GENERIC_BYE", "SPEECH_PARAMS_FORCE");
+                }
+                catch { /* the subtitle carries it */ }
+
+                // The boxes are in the van, so they are not still holding boxes. Clearing the
+                // anim before the wander matters: a secondary upper-body loop survives a
+                // movement task by design, so without this they walk off down the dock still
+                // carrying something that is already in the back of the van.
+                try
+                {
+                    Function.Call(Hash.STOP_ANIM_TASK, ped.Handle, CarryDict, CarryClip, -4f);
+                    Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, ped.Handle);
+                    ped.Task.ClearAll();
+                }
+                catch { /* he will drop it eventually */ }
+
+                try
+                {
+                    ped.BlockPermanentEvents = false;
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                    Function.Call(Hash.TASK_WANDER_STANDARD, ped.Handle, 10f, 10);
+                    ped.MarkAsNoLongerNeeded();
+                }
+                catch { /* he will stand there */ }
+            }
+
+            _loaders.Clear();
+
+            _bay = 3;
+            _state.PortRunStage = StageDeliver;
+            _state.Touch();
+
+            _saidHere = false;
+
+            Notify.Important("~g~Loaded.~s~ Get it back to Gerald.");
+            Log.Info("Port run: van loaded, heading for the yard.");
+        }
+
+        /// <summary>The box-carry set. Three clips, and all three are real.</summary>
+        private const string CarryDict = "anim@heists@box_carry@";
+        private const string CarryClip = "idle";
+
+        /// <summary>
+        /// Loop, hold, upper body, secondary.
+        ///
+        /// The secondary bit is the one that matters: it puts the clip in the secondary task
+        /// slot so the walk task in the primary slot keeps running underneath. Without it the
+        /// animation replaces the walk and two men stand in a shed holding boxes forever.
+        /// </summary>
+        private const int CarryFlags = 51;
+
+        private void MakeLoaders()
+        {
+            var from = Standing(LoaderFrom);
+            var to = Standing(LoaderTo);
+
+            // Side by side rather than inside each other, along the line they are walking.
+            var side = new Vector3((float)Math.Cos(LoaderToHeading * Math.PI / 180d),
+                                   (float)Math.Sin(LoaderToHeading * Math.PI / 180d), 0f);
+
+            for (var i = 0; i < LoaderCount; i++)
+            {
+                var shift = (i - (LoaderCount - 1) * 0.5f) * LoaderGap;
+
+                var start = from + side * shift;
+                var end = to + side * shift;
+
+                var ped = MakeLoader(start, end);
+                if (ped != null) _loaders.Add(ped);
+            }
+
+            if (_loaders.Count == 0) Log.Warn("Port run: no loader model would spawn.");
+        }
+
+        private Ped MakeLoader(Vector3 from, Vector3 to)
+        {
+            foreach (var name in LoaderModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    var ped = World.CreatePed(model, from, LoaderFromHeading);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (ped == null || !ped.Exists()) continue;
+
+                    var h = ped.Handle;
+
+                    ped.IsPersistent = true;
+                    ped.BlockPermanentEvents = true;
+
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+                    Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
+                    Function.Call(Hash.SET_PED_CAN_RAGDOLL, h, false);
+
+                    // The walk goes in FIRST and the box goes on top of it. The other way round
+                    // and the walk task replaces the animation instead of running under it.
+                    Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, h,
+                                  to.X, to.Y, to.Z, 1f, LoaderGiveUpMs, 0.5f, false, 0f);
+
+                    Carry(ped);
+
+                    return ped;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not put a loader on the dock: " + ex.Message);
+                }
+            }
+
+            return null;
+        }
+
+        private static void Carry(Ped ped)
+        {
+            if (ped == null || !ped.Exists()) return;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, CarryDict))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, CarryDict);
+                }
+
+                // The last three are bPhaseControlled, IkFlags and a multiplayer flag -- NOT
+                // position locks, whatever the community header says.
+                Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, CarryDict, CarryClip,
+                              4f, -4f, -1, CarryFlags, 0f, false, 0, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("No box for the loader: " + ex.Message);
+            }
+        }
+
+        private static void Face(Ped ped, float heading)
+        {
+            if (ped == null || !ped.Exists() || !ped.IsAlive) return;
+
+            try { ped.Heading = heading; }
+            catch { /* he can stand how he likes */ }
+        }
+
+        /// <summary>
+        /// Puts the load in the back of the van, so the errand has a physical object in it.
+        ///
+        /// Attached rather than placed, so it rides with the van across the city instead of
+        /// being left standing in the bay the moment you pull away. Collision off: a crate that
+        /// can be shoved about inside a moving van will find its way through a door.
+        /// </summary>
+        private void LoadTheVan()
+        {
+            if (_crate != null && _crate.Exists()) return;
+            if (_van == null || !_van.Exists()) return;
+
+            foreach (var name in CrateModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+
+                    _crate = World.CreateProp(model, _van.Position, false, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_crate == null || !_crate.Exists()) continue;
+
+                    _crate.IsPersistent = true;
+
+                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _crate.Handle, _van.Handle, -1,
+                                  0f, CrateY, CrateZ, 0f, 0f, 0f,
+                                  false, false, false, false, 2, true);
+
+                    Log.Info("Port run: " + name + " loaded into the van.");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not load the van: " + ex.Message);
+                }
+            }
+        }
+
+        private void ClearBay()
+        {
+            foreach (var ped in _loaders)
+            {
+                try { if (ped != null && ped.Exists()) ped.Delete(); }
+                catch { /* gone */ }
+            }
+
+            _loaders.Clear();
+        }
+
         /// <summary>Takes the port away but leaves the run, and the van, alone.</summary>
         private void ClearPort()
         {
@@ -1075,6 +1480,14 @@ namespace Hoodrich.Missions
         public void Pack()
         {
             Clear();
+            ClearBay();
+
+            try { if (_crate != null && _crate.Exists()) _crate.Delete(); }
+            catch { /* teardown */ }
+
+            _crate = null;
+            _bay = 0;
+            _bayAt = 0;
 
             try { if (_blip != null && _blip.Exists()) _blip.Delete(); }
             catch { /* teardown */ }
