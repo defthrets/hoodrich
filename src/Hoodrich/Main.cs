@@ -140,6 +140,9 @@ namespace Hoodrich
         private const int ShopGreen = 53;
 
         private readonly Entourage _party;
+        private readonly Entourage _meet;
+        private readonly ParkedCar _meetOne;
+        private readonly ParkedCar _meetTwo;
         private readonly Fixture _partyBarrel;
         private readonly Fixture _partyCouch;
         private readonly Fixture _stretchBox;
@@ -508,6 +511,80 @@ namespace Hoodrich
                 {
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80)
                 });
+
+                // ---- the meet on the court, after dark -----------------------------
+                //
+                // Two cars and the people stood round them, and that is the whole thing. No
+                // race, no timer, nothing to press: it is a place that is busy at midnight and
+                // empty at midday, which is the only feature it needs.
+                //
+                // Quiet hours run six till twenty, which is the daytime -- so "quiet" here
+                // means gone, and the hours it is NOT quiet are the hours there is a meet.
+                _meetOne = new ParkedCar(new Vector3(-227.440f, -1697.994f, 33.300f), 214.105f,
+                                         MetallicDarkGreen, "gauntlet4", "gauntlet", "dominator")
+                {
+                    Built = true,
+                    Running = true,
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
+                    QuietFrom = 6,
+                    QuietTo = 20,
+                    GoneWhenQuiet = true
+                };
+
+                _meetTwo = new ParkedCar(new Vector3(-223.179f, -1696.639f, 33.294f), 180.686f,
+                                         MetallicDarkGreen, "hermes", "tornado", "buccaneer2")
+                {
+                    Built = true,
+                    Running = true,
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
+                    QuietFrom = 6,
+                    QuietTo = 20,
+                    GoneWhenQuiet = true
+                };
+
+                _cars.Add(_meetOne);
+                _cars.Add(_meetTwo);
+
+                // And the people. A ring worked out from the midpoint of the two cars rather
+                // than ten marks typed one at a time -- people at a meet stand round the cars
+                // and face them, and five metres out clears both without anybody standing in a
+                // door. Nobody is flagged for the night watch, so at six in the morning the
+                // whole set simply is not made.
+                _meet = new Entourage(_gangs, "families",
+                                      new Vector3(-225.310f, -1697.316f, 33.297f), 270f, "the meet")
+
+                    .Stand(new Vector3(-220.310f, -1697.316f, 33.297f), 270.000f,
+                           "WORLD_HUMAN_STAND_MOBILE", Fam(0), armed: false)
+
+                    .Stand(new Vector3(-221.264f, -1694.378f, 33.297f), 234.000f,
+                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false)
+
+                    .Stand(new Vector3(-223.764f, -1692.561f, 33.297f), 198.000f,
+                           "WORLD_HUMAN_DRINKING", Women, armed: false)
+
+                    .Stand(new Vector3(-226.855f, -1692.561f, 33.297f), 162.000f,
+                           "WORLD_HUMAN_STAND_IMPATIENT", Fam(2), armed: false)
+
+                    .Stand(new Vector3(-229.355f, -1694.378f, 33.297f), 126.000f,
+                           "WORLD_HUMAN_SMOKING_POT", Fam(0), armed: false)
+
+                    .Stand(new Vector3(-230.310f, -1697.316f, 33.297f), 90.000f,
+                           "WORLD_HUMAN_LEANING", Fam(1), armed: false)
+
+                    .Stand(new Vector3(-229.355f, -1700.255f, 33.297f), 54.000f,
+                           "WORLD_HUMAN_DRINKING", Fam(2), armed: false)
+
+                    .Stand(new Vector3(-226.855f, -1702.072f, 33.297f), 18.000f,
+                           "WORLD_HUMAN_PARTYING", Women, armed: false, anim: DancingAlt)
+
+                    .Stand(new Vector3(-223.764f, -1702.072f, 33.297f), 342.000f,
+                           "WORLD_HUMAN_STAND_MOBILE", Fam(1), armed: false)
+
+                    .Stand(new Vector3(-221.264f, -1700.255f, 33.297f), 306.000f,
+                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false);
+
+                _meet.QuietFrom = 6;
+                _meet.QuietTo = 20;
 
                 // The shop's van, up on the road above the lot.
                 _cars.Add(new ParkedCar(new Vector3(-214.160f, -1739.805f, 31.709f), 52.137f,
@@ -1314,6 +1391,7 @@ namespace Hoodrich
                     _denCrew.Update();
                     foreach (var car in _cars) car.Update();
                     _party.Update();
+                    _meet.Update();
                     _partyBarrel.Update();
                     _partyCouch.Update();
                     _stretchBox.Update();
@@ -1818,6 +1896,7 @@ namespace Hoodrich
                 try { car.RestoreWorld(); } catch { /* teardown */ }
             }
             try { _party?.RestoreWorld(); } catch { /* teardown */ }
+            try { _meet?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stretchBox?.RestoreWorld(); } catch { /* teardown */ }

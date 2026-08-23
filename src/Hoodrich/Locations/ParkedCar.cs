@@ -161,6 +161,15 @@ namespace Hoodrich.Locations
         public int QuietFrom = -1;
         public int QuietTo = -1;
 
+        /// <summary>
+        /// Whether the quiet hours take the car away entirely rather than just switching it off.
+        ///
+        /// Two different ideas sharing one window. The van in the lot is somebody's van and it
+        /// is there at four in the morning with the key out -- quiet is a state it is in. A car
+        /// that turned up for a meet is not there at four; quiet is the hours it does not exist.
+        /// </summary>
+        public bool GoneWhenQuiet;
+
         private bool Quiet
         {
             get
@@ -226,6 +235,22 @@ namespace Hoodrich.Locations
             // Once it is out there it is left alone. Not put back on its mark, not re-parked --
             // if somebody has taken it for a drive then it is a car that got taken, which is a
             // better thing to happen on a block than a car that cannot be moved.
+            // Off hours for a car that only turns up sometimes: it goes, and stays gone until
+            // the hour comes round. Deleted rather than hidden -- an invisible car still has
+            // collision, and a meet you can walk into but not see is worse than no meet.
+            if (GoneWhenQuiet && Quiet)
+            {
+                if (_car != null)
+                {
+                    try { if (_car.Exists()) _car.Delete(); }
+                    catch { /* it is already gone */ }
+
+                    _car = null;
+                }
+
+                return;
+            }
+
             if (_car != null)
             {
                 Keep();
