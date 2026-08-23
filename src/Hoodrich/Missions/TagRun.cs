@@ -215,6 +215,34 @@ namespace Hoodrich.Missions
         /// <summary>Set by the runner. Null-checked, so the feed is never load-bearing.</summary>
         public SocialFeed Social;
 
+        /// <summary>
+        /// Whose colour goes on the wall.
+        ///
+        /// Set by the runner and null-checked. The jet was a hardcoded green because the job is
+        /// Lamar's and Lamar is Families -- which is true and still leaves the one number that
+        /// says WHOSE wall this now is sitting in a source file rather than in gangs.json with
+        /// every other gang colour in the mod.
+        /// </summary>
+        public Affiliation Crew;
+
+        /// <summary>
+        /// The set's colour as particle and decal coefficients, 0-1.
+        ///
+        /// Falls back to the Families green the jet always used, so an unaffiliated player
+        /// painting a wall on Lamar's say-so gets exactly what they got before.
+        /// </summary>
+        private void OurColour(out float r, out float g, out float b)
+        {
+            r = 0.24f; g = 0.86f; b = 0.32f;
+
+            var gang = Crew == null ? null : Crew.Current;
+            if (gang == null) return;
+
+            r = gang.Colour.R / 255f;
+            g = gang.Colour.G / 255f;
+            b = gang.Colour.B / 255f;
+        }
+
         private Prop _can;
 
         // No homie. The brief says go by yourself and it means it -- two men on bikes with
@@ -600,6 +628,10 @@ namespace Hoodrich.Missions
             _spraying = spot;
             _sprayingSince = Game.GameTime;
 
+            // A different wall, so the last one's surface is forgotten rather than painted on
+            // from four streets away.
+            ForgetWall();
+
             try
             {
                 player.Task.ClearAll();
@@ -640,6 +672,7 @@ namespace Hoodrich.Missions
             }
 
             Paint(player);
+            Stain(player);
 
             if (now - _sprayingSince < SprayMs) return;
 
@@ -685,17 +718,16 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// Nothing. The animation is the effect.
+        /// The jet coming out of the can.
         ///
-        /// There was a green particle plume on the hand bone here, added back when the
-        /// animation was wrong and there was nothing else on screen to say what he was doing.
-        /// The real spray-can clip does that job now, and a cloud of green fog coming off his
-        /// wrist on top of it is two things saying the same thing, the louder of which is not
-        /// the one that looks like paint.
+        /// This doc used to say the opposite -- that the method was deliberately empty and the
+        /// animation was the whole effect. That was true for about a day. The plume came back
+        /// once it was aimed off the PED rather than off the hand bone, which is the change
+        /// that made it look like paint instead of like fog coming off his wrist, and nobody
+        /// came back to the comment above it.
         ///
-        /// Kept as an empty call rather than deleted at the call sites: this is the hook to
-        /// hang an effect on if one is ever wanted again, and the streaming request and the
-        /// stop path either side of it are already correct.
+        /// It starts four seconds in and it is a colourless jet tinted by us -- see the colour
+        /// call below.
         /// </summary>
         private void Paint(Ped player)
         {
@@ -747,10 +779,11 @@ namespace Hoodrich.Missions
 
                     _paintFx = fx;
 
-                    // Green, because that is what a Families tag is sprayed in. The effect
-                    // itself is a colourless jet -- steam or water -- so the colour is entirely
-                    // this call, and without it the can appears to spray nothing at all.
-                    Function.Call(Hash.SET_PARTICLE_FX_LOOPED_COLOUR, fx, 0.24f, 0.86f, 0.32f, false);
+                    // The effect itself is a colourless jet -- steam or water -- so the colour
+                    // is entirely this call, and without it the can appears to spray nothing at
+                    // all. Green for the Families, and whatever the set is if it is ever another.
+                    OurColour(out var pr, out var pg, out var pb);
+                    Function.Call(Hash.SET_PARTICLE_FX_LOOPED_COLOUR, fx, pr, pg, pb, false);
                     Function.Call(Hash.SET_PARTICLE_FX_LOOPED_ALPHA, fx, 0.85f);
 
                     Log.Debug("Tag paint: " + effect + " started.");
@@ -832,6 +865,232 @@ namespace Hoodrich.Missions
             catch { /* it will time out on its own */ }
 
             _paintFx = -1;
+        }
+
+        // ---- and the mark it leaves --------------------------------------------
+
+        /// <summary>
+        /// Decal render settings, tried in order, first one the game accepts wins.
+        ///
+        /// 1030 is splatters_paint and it is the right answer: a paint splatter, authored pale
+        /// enough to take a colour, and the one a paint-gun menu reaches for when it wants an
+        /// arbitrary RGB on a wall.
+        ///
+        /// The two behind it are blood, and they are a WORSE fallback than they look. The
+        /// colour arguments are MULTIPLIERS over the source texture rather than a replacement
+        /// -- Rockstar's own scripts pass 0.196, 0, 0 to splatters_blood2 to darken it -- so
+        /// green over red comes out near black. A dark splat on a garage door still reads as
+        /// somebody having done something to it, which beats a wall that did not change at
+        /// all, but it is not the picture and it says so in the log when it happens.
+        ///
+        /// ADD_DECAL returns 0 when it will not place, so which of these the install actually
+        /// has is a question the game answers rather than one this file assumes.
+        /// </summary>
+        private static readonly int[] PaintDecals = { 1030, 1110, 1010 };
+
+        /// <summary>Which of them took, so every mark after the first costs no failed calls.</summary>
+        private int _decalType;
+
+        /// <summary>
+        /// How many times in a row nothing would place before this stops asking.
+        ///
+        /// Not one. The decal budget is five hundred and twelve for the WHOLE world and every
+        /// bullet hole and tyre mark competes for it, so a single refusal in the middle of a
+        /// firefight says nothing about whether the type works -- it says the budget was full
+        /// for a moment. Three in a row on three different frames is a real answer.
+        /// </summary>
+        private const int StainGiveUpAfter = 3;
+
+        private int _stainMisses;
+
+        /// <summary>How far in front of him to look for the wall.</summary>
+        private const float WallReach = 2.6f;
+
+        /// <summary>Chest height, which is where the can is and where the tag is.</summary>
+        private const float WallEye = 1.1f;
+
+        /// <summary>Sat just off the surface, so the projection runs into it rather than past it.</summary>
+        private const float WallLift = 0.05f;
+
+        /// <summary>A mark roughly this often, which spreads six across the spraying half.</summary>
+        private const int StainEveryMs = 620;
+
+        /// <summary>How far a mark strays from the middle, along the wall and up it.</summary>
+        private const float StainSpreadSide = 0.55f;
+        private const float StainSpreadUp = 0.38f;
+
+        private const float StainMinSize = 0.45f;
+        private const float StainMaxSize = 1.05f;
+
+        /// <summary>Seconds. -1 is no expiry clock -- the game's decal budget is the only limit.</summary>
+        private const float StainForever = -1f;
+
+        private bool _wallFound;
+        private Vector3 _wallAt;
+        private Vector3 _wallInto;
+        private Vector3 _wallSide;
+        private Vector3 _wallUp;
+        private int _nextStain;
+        private int _stains;
+
+        /// <summary>Forgets the wall, so the next spot is found fresh rather than painted over.</summary>
+        private void ForgetWall()
+        {
+            _wallFound = false;
+            _nextStain = 0;
+            _stains = 0;
+        }
+
+        /// <summary>
+        /// Finds the surface he is stood in front of, once per wall.
+        ///
+        /// A raycast rather than a coordinate in tags.json, because a decal has to lie FLAT and
+        /// nothing in that file knows which way the wall faces -- only which way the player
+        /// does. The ray hands back the exact point and the surface normal, which is the whole
+        /// of what placing a decal needs, and it is right whether the surface is a garage door,
+        /// a billboard or a fence.
+        /// </summary>
+        private bool FindWall(Ped player)
+        {
+            if (_wallFound) return true;
+
+            try
+            {
+                var from = player.Position + Vector3.WorldUp * WallEye;
+
+                var hit = World.Raycast(from, player.ForwardVector, WallReach,
+                                        IntersectFlags.Map | IntersectFlags.Objects, player);
+
+                if (!hit.DidHit) return false;
+
+                var n = hit.SurfaceNormal;
+                if (n.Length() < 0.5f) return false;
+
+                n = n.Normalized;
+
+                // Two axes lying IN the wall. Both come out of a cross product with the normal,
+                // so both are square to it by construction -- which is the one thing that has to
+                // be true, because a decal whose side vector is not perpendicular to its
+                // direction renders flipped, rotated, or not at all.
+                var side = Vector3.Cross(Vector3.WorldUp, n);
+
+                // Unless the surface is a floor or a ceiling, where "up along the wall" means
+                // nothing and that cross product collapses to zero.
+                if (side.Length() < 0.05f) side = Vector3.Cross(player.RightVector, n);
+                if (side.Length() < 0.05f) return false;
+
+                _wallSide = side.Normalized;
+                _wallUp = Vector3.Cross(n, _wallSide).Normalized;
+
+                // The projection runs INTO the surface, so it is the normal reversed.
+                _wallInto = -n;
+                _wallAt = hit.HitPosition + n * WallLift;
+
+                _wallFound = true;
+
+                Log.Debug("Tag wall found, normal " + n.ToString() + ".");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not find the tag wall: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Puts the paint on the wall, a bit at a time.
+        ///
+        /// This class used to say a script cannot change a wall, and for ARTWORK that is true:
+        /// a picture is a texture asset and this mod is a DLL and some JSON. A decal is not
+        /// artwork though. It is a mark the engine projects onto whatever is behind it, in a
+        /// colour we hand it -- and going over somebody else's tag is a great deal closer to
+        /// leaving a mark than it is to painting a picture.
+        ///
+        /// Several small ones rather than one big one, laid down as the bar fills. A single
+        /// splat appearing the instant the job completes is something that happened TO the wall
+        /// after you finished; a patch that grows while the can is hissing is the thing you are
+        /// doing. It costs six decals out of a budget of five hundred and twelve.
+        /// </summary>
+        private void Stain(Ped player)
+        {
+            if (_spraying == null) return;
+            if (_stainMisses >= StainGiveUpAfter) return;
+
+            // The same four seconds the jet waits for. Paint arriving before the can is up
+            // against the wall reads as a leak.
+            var now = Game.GameTime;
+            if (now - _sprayingSince < PaintDelayMs) return;
+            if (now < _nextStain) return;
+
+            if (!FindWall(player)) return;
+
+            _nextStain = now + StainEveryMs;
+
+            OurColour(out var r, out var g, out var b);
+
+            // Somewhere in a patch about the size of a tag, at its own angle and its own size,
+            // so six of them read as paint rather than as six copies of one sticker.
+            var du = ((float)_rng.NextDouble() * 2f - 1f) * StainSpreadSide;
+            var dv = ((float)_rng.NextDouble() * 2f - 1f) * StainSpreadUp;
+
+            var at = _wallAt + _wallSide * du + _wallUp * dv;
+
+            var roll = (float)(_rng.NextDouble() * Math.PI * 2d);
+            var side = _wallSide * (float)Math.Cos(roll) + _wallUp * (float)Math.Sin(roll);
+
+            var size = StainMinSize + (float)_rng.NextDouble() * (StainMaxSize - StainMinSize);
+
+            foreach (var type in PaintDecals)
+            {
+                // Once one of them has taken, it is the only one worth asking again.
+                if (_decalType > 0 && type != _decalType) continue;
+
+                int handle;
+
+                try
+                {
+                    handle = Function.Call<int>(Hash.ADD_DECAL, type,
+                                                at.X, at.Y, at.Z,
+                                                _wallInto.X, _wallInto.Y, _wallInto.Z,
+                                                side.X, side.Y, side.Z,
+                                                size, size,
+                                                r, g, b, 0.92f,
+                                                StainForever, true, false, false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Decal type " + type + " threw: " + ex.Message);
+                    continue;
+                }
+
+                if (handle == 0) continue;
+
+                if (_decalType != type)
+                {
+                    _decalType = type;
+
+                    Log.Info("Tag paint lands as decal type " + type +
+                             (type == PaintDecals[0]
+                                 ? " (splatters_paint -- takes the colour properly)."
+                                 : " (a blood splatter -- the tint multiplies, so it reads dark)."));
+                }
+
+                _stains++;
+                _stainMisses = 0;
+                return;
+            }
+
+            // Nothing placed this time. Saying so is worth a great deal more than a wall that
+            // quietly does not change, and the job itself is untouched by it: the animation,
+            // the jet and the objective all still work.
+            _stainMisses++;
+
+            if (_stainMisses >= StainGiveUpAfter)
+            {
+                Log.Warn("No decal would place after " + StainGiveUpAfter +
+                         " tries; the tag stays theirs on screen.");
+            }
         }
 
         /// <summary>True when the player is trying to walk away, which cancels it.</summary>

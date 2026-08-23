@@ -170,7 +170,7 @@ namespace Hoodrich.Missions
             _gangs = gangs;
             _zones = zones;
             _bike = new BikeRide(crew, gangs);
-            _tags = new TagRun(gangs);
+            _tags = new TagRun(gangs) { Crew = crew };
             _walls = TagRun.Load();
         }
 
