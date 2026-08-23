@@ -230,6 +230,16 @@ namespace Hoodrich.Supply
         private string _owedDrug = "";
         private float _owedGrams;
 
+        /// <summary>
+        /// How strong the order was, stamped when it is placed rather than read when it lands.
+        ///
+        /// The hand-to-hand path has always taken the dealer's purity; this one dropped it on
+        /// the floor and every delivery in the game landed at a hundred per cent, whoever sold
+        /// it. It only ever looked right because the port sells pure -- call anybody who steps
+        /// on his weight out to the house and the drive turned it back into pure product.
+        /// </summary>
+        private float _owedPurity = 1f;
+
         /// <summary>Set by Main: the house, its door, and what is kept there.</summary>
         public Func<bool> AtHome;
         public Vector3 HouseDoor;
@@ -1213,6 +1223,7 @@ namespace Hoodrich.Supply
 
             _owedDrug = drugId;
             _owedGrams = grams;
+            _owedPurity = _def == null ? 1f : _def.Purity;
 
             _dropSpot = HouseDoor;
             _wentIn = false;
@@ -1498,15 +1509,19 @@ namespace Hoodrich.Supply
         {
             if (string.IsNullOrEmpty(_owedDrug) || _owedGrams <= 0f) return;
 
-            var taken = House == null ? 0f : House.AddBulk(_owedDrug, _owedGrams);
+            var taken = House == null ? 0f : House.AddBulk(_owedDrug, _owedGrams, _owedPurity);
 
             Notify.Important("~g~Delivered.~s~ " + (taken / 1000f).ToString("0.#") +
-                             " kilos in the house.");
+                             " kilos in the house" +
+                             (_owedPurity < 0.999f
+                                 ? ", ~y~" + Economy.Stash.Percent(_owedPurity) + "%~s~."
+                                 : "."));
 
             Log.Info("Delivery landed: " + taken.ToString("0") + "g " + _owedDrug + ".");
 
             _owedDrug = "";
             _owedGrams = 0f;
+            _owedPurity = 1f;
         }
 
         private void GiveBox()

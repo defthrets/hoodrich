@@ -49,12 +49,24 @@ namespace Hoodrich.Missions
     /// </summary>
     internal sealed class TagRun
     {
-        /// <summary>Where the bike is left, and where the homie comes from -- Lamar's block.</summary>
-        private static readonly Vector3 BikeSpot = new Vector3(-97.042f, -1610.761f, 32.313f);
-        private const float BikeHeading = 56.429f;
+        /// <summary>
+        /// Where the bike is left, and where the homie comes from.
+        ///
+        /// The lot, with everybody else, rather than the old spot four streets away. A job that
+        /// starts by walking somewhere else is a job that starts with a walk.
+        /// </summary>
+        private static readonly Vector3 BikeSpot = new Vector3(-206.087f, -1721.033f, 32.664f);
+        private const float BikeHeading = 127.351f;
 
 
-        private const float HomeRange = 25f;
+        /// <summary>
+        /// How close to Lamar counts as back.
+        ///
+        /// The same figure the bike ride uses. Two jobs that hand in on the same square of
+        /// concrete were reading that square as two different sizes, so one of them took the
+        /// job off you where you stood and the other had you circling the lot.
+        /// </summary>
+        private const float HomeRange = 38f;
 
         private static readonly string[] BikeModels = { "bmx", "cruiser", "scorcher", "tribike" };
 

@@ -16,6 +16,24 @@ namespace Hoodrich.Gangs
     /// </summary>
     internal sealed class LeaderTalk
     {
+        /// <summary>
+        /// Set by Main. Where a leader's product strength comes from.
+        ///
+        /// Not a number typed in here. Stretch on his corner and Stretch's runner are the same
+        /// man, and two menus disagreeing about what he sells is two answers to one question --
+        /// so the leader is asked to look up his own gang's dealer and sell what that dealer
+        /// sells. Null-safe: without one, a corner falls back to StreetDefault.
+        /// </summary>
+        public Supply.DealerManager Dealers;
+
+        /// <summary>
+        /// What a corner sells at when nothing else has said otherwise.
+        ///
+        /// Not pure. Nothing bought off a man stood on a street is, and a leader who has not
+        /// been given a dealer should still not be a better plug than the port.
+        /// </summary>
+        private const float StreetDefault = 0.75f;
+
         private readonly GangLeaders _leaders;
         private readonly GangRegistry _gangs;
         private readonly Affiliation _crew;
@@ -278,6 +296,7 @@ namespace Hoodrich.Gangs
                            "$" + cost.ToString("N0"));
 
                 node.WithIcon(Icons.ForDrug(product.Id));
+                node.WithMark(Stash.Mark(StreetPurity(gang)));
             }
 
             node.Say("Something else.", () => BuyList(def, gang));
@@ -300,9 +319,19 @@ namespace Hoodrich.Gangs
             return "An eighth.  (" + grams.ToString("0.#") + "g)";
         }
 
+        /// <summary>How strong what this man sells actually is.</summary>
+        private float StreetPurity(GangDef gang)
+        {
+            if (Dealers == null || gang == null || string.IsNullOrEmpty(gang.Id)) return StreetDefault;
+
+            var his = Dealers.ForGang(gang.Id);
+            return his == null ? StreetDefault : his.Purity;
+        }
+
         private DialogueNode Buy(LeaderDef def, GangDef gang, DrugDef product, float lotGrams, int cost)
         {
-            var taken = _state.Stash.AddBulk(product.Id, lotGrams);
+            var strength = StreetPurity(gang);
+            var taken = _state.Stash.AddBulk(product.Id, lotGrams, strength);
             if (taken <= 0.005f)
             {
                 return Node(def, gang, "You got nowhere to put it. Come back with empty pockets.");
@@ -316,7 +345,8 @@ namespace Hoodrich.Gangs
             _crew.CreditPurchase();
 
             Notify.Ticker("~y~-$" + charged.ToString("N0") + "~s~  " + taken.ToString("0.#") +
-                          "g of " + product.Name.ToLowerInvariant());
+                          "g of " + product.Name.ToLowerInvariant() +
+                          (strength < 0.999f ? "  ~y~" + Stash.Percent(strength) + "%" : ""));
             Log.Info("Bought " + taken.ToString("0.#") + "g " + product.Id + " off " + def.Name +
                      " for $" + charged + ".");
 
@@ -444,7 +474,8 @@ namespace Hoodrich.Gangs
 
         private DialogueNode TakeWork(LeaderDef def, GangDef gang, DrugDef product)
         {
-            var took = _state.Stash.AddBulk(product.Id, FrontGrams);
+            // Fronted weight is the same weight he sells, not a favour in purer product.
+            var took = _state.Stash.AddBulk(product.Id, FrontGrams, StreetPurity(gang));
 
             if (took <= 0f)
             {

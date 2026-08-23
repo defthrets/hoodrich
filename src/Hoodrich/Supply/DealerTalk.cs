@@ -154,7 +154,17 @@ namespace Hoodrich.Supply
         {
             if (House == null) return Node("Come back when you got somewhere to put it.");
 
-            var node = Node("Ain't got time to stand here. What you taking?");
+            // He says it before you ask, because it is the thing that decides everything you
+            // can do with the weight afterwards. Pure cuts three ways and gets you three times
+            // the bags; half-strength cuts once and the second cut is powder nobody will buy.
+            // Standing in a menu working out why the same money bought half as much product is
+            // a fact the game had and did not mention.
+            var strength = Def == null ? 1f : Def.Purity;
+
+            var node = Node(strength >= 0.999f
+                ? "Ain't got time to stand here. What you taking? Nothing here's been touched."
+                : "Ain't got time to stand here. What you taking? It's all stepped on already, " +
+                  Stash.Percent(strength) + " per cent.");
 
             foreach (var brick in StockToday())
             {
@@ -168,9 +178,13 @@ namespace Hoodrich.Supply
                 // a kilo count. Kilos are true of the port and nonsense off a bicycle, where
                 // the same routine was rendering an ounce as "0.1 of a kilo".
                 node.Say(product.Name + ".", () => Amounts(pick, product),
-                         product.Amount(brick.Grams) + " from $" + cost.ToString("N0"));
+                         product.Amount(brick.Grams) + " at " + Stash.Percent(strength) +
+                         "%   from $" + cost.ToString("N0"));
 
                 node.WithIcon(Icons.ForDrug(product.Id));
+
+                // The same mark the stash and the cook screen use, on the row you buy it from.
+                node.WithMark(Stash.Mark(strength));
             }
 
             node.Leave("Not today.");
@@ -199,6 +213,8 @@ namespace Hoodrich.Supply
         /// <summary>How many bricks, once you have said what.</summary>
         private DialogueNode Amounts(Brick brick, DrugDef product)
         {
+            var strength = Def == null ? 1f : Def.Purity;
+
             var node = Node("How many? And don't say one if you mean four.");
 
             foreach (var lot in Lots)
@@ -218,6 +234,8 @@ namespace Hoodrich.Supply
                            Weight(product, brick, count),
                            () => Buy(product, grams, cost),
                            "$" + cost.ToString("N0"));
+
+                node.WithMark(Stash.Mark(strength));
 
                 node.WithIcon(Icons.ForDrug(product.Id));
             }

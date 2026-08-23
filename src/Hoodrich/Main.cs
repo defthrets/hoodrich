@@ -997,6 +997,7 @@ namespace Hoodrich
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
                 _leaderTalk.Social = _social;
+                _leaderTalk.Dealers = _dealers;
 
                 _fixerTalk = new FixerTalk(_fixer, _missions, _jobs, _crew, _state);
                 _fixer.Talk = _talk;

@@ -58,6 +58,23 @@ namespace Hoodrich.UI
         /// </summary>
         private const float CardHeight = 0.121f;
 
+        /// <summary>
+        /// The masthead word, and where it sits.
+        ///
+        /// Down from a half. At a half it competed with the mark above it rather than sitting
+        /// under it, and a title the same weight as the logo is two logos.
+        ///
+        /// Not smaller than that. The account name below is 0.42, and a masthead that loses to
+        /// the name under it has stopped being a masthead -- this is the floor, not a target.
+        ///
+        /// The top edge stays where it was, near enough. Text places by its TOP, so a smaller
+        /// line at the same top can only free space BELOW it, which is where the hairline is
+        /// and where a collision would actually show. Moving the top down to re-centre it
+        /// optically would have walked the caps into that hairline for a gain nobody can see.
+        /// </summary>
+        private const float TitleScale = 0.42f;
+        private const float TitleTop = PanelTop + 0.0325f;
+
         /// <summary>Your own face. Larger than a stranger's, and the best-rendered thing here.</summary>
         private const float HeadSize = 0.046f;
 
@@ -131,6 +148,12 @@ namespace Hoodrich.UI
         private static readonly Color RowWash = Color.FromArgb(46, 255, 255, 255);
         private static readonly Color DeadWash = Color.FromArgb(22, 255, 255, 255);
         private static readonly Color Hairline = Color.FromArgb(40, 200, 205, 200);
+
+        /// <summary>Border thickness, as a height fraction. Sideways it goes through ToX.</summary>
+        private const float Rule = 0.0016f;
+
+        /// <summary>How far a corner tick runs along each edge.</summary>
+        private const float Tick = 0.026f;
         private static readonly Color SplitInk = Color.FromArgb(70, 200, 205, 200);
 
         /// <summary>One line you can put out that costs nothing.</summary>
@@ -800,6 +823,7 @@ namespace Hoodrich.UI
             {
                 Action(left, x, right);
                 Keys(x, right);
+                Frame(left, edge);
                 return;
             }
 
@@ -834,6 +858,50 @@ namespace Hoodrich.UI
             else Rail(left, feedTop, bottom, count, shown);
 
             Keys(x, right);
+            Frame(left, edge);
+        }
+
+        /// <summary>
+        /// The border, drawn last so nothing paints over it.
+        ///
+        /// The panel had a bar across the top and three open sides, which is not a window --
+        /// it is a dark rectangle that happens to end. On a bright street at midday the bottom
+        /// edge genuinely disappears into whatever is behind it and the feed reads as text
+        /// floating over the road.
+        ///
+        /// Thickness is one number taken two ways. Sideways it goes through ToX, which divides
+        /// by the aspect, so the frame is the same number of PIXELS thick all the way round on
+        /// any monitor -- a plain fraction used for both would draw a hairline top and bottom
+        /// and a fat post down either side of an ultrawide.
+        ///
+        /// The corners are the mode colour and the rest is grey. A full accent frame would put
+        /// the loudest colour on the screen around the outside of everything and leave the top
+        /// bar with nothing to say; corner ticks carry the same signal in a tenth of the ink.
+        /// </summary>
+        private static void Frame(float left, Color edge)
+        {
+            var ink = Color.FromArgb(64, 205, 212, 205);
+            var lip = Hud.ToX(Rule);
+
+            var bottom = PanelTop + PanelHeight;
+            var right = left + PanelWidth;
+
+            Hud.RectFrom(left, bottom - Rule, PanelWidth, Rule, ink);
+            Hud.RectFrom(left, PanelTop, lip, PanelHeight, ink);
+            Hud.RectFrom(right - lip, PanelTop, lip, PanelHeight, ink);
+
+            // The ticks. Equal lengths on both axes, so a corner is a corner and not a long
+            // arm and a short one.
+            var reach = Hud.ToX(Tick);
+
+            Hud.RectFrom(left, PanelTop, lip, Tick, edge);
+            Hud.RectFrom(right - lip, PanelTop, lip, Tick, edge);
+
+            Hud.RectFrom(left, bottom - Tick, lip, Tick, edge);
+            Hud.RectFrom(right - lip, bottom - Tick, lip, Tick, edge);
+
+            Hud.RectFrom(left, bottom - Rule, reach, Rule, edge);
+            Hud.RectFrom(right - reach, bottom - Rule, reach, Rule, edge);
         }
 
         /// <summary>
@@ -1246,15 +1314,23 @@ namespace Hoodrich.UI
             // different things -- a logo, a title and a name -- on three different alignments
             // in one header. Logo and title share a centreline now and the account owns the
             // left, which is two rules instead of none.
-            Hud.Text("SOCIALS", middle, PanelTop + 0.0315f, 0.50f, Palette.Text,
+            Hud.Text("SOCIALS", middle, TitleTop, TitleScale, Palette.Text,
                      Hud.FontChaletLondon);
 
-            Live(middle, PanelTop + 0.0405f);
+            Live(middle, TitleTop + 0.0080f);
 
             // A hairline under the two of them, so the masthead is visibly a masthead and the
             // account below it is visibly the account.
             Hud.RectFrom(left + Pad, PanelTop + 0.0565f, PanelWidth - Pad * 2f, 0.0012f,
                          Color.FromArgb(46, 255, 255, 255));
+
+            // The card's own floor, full width rather than inset.
+            //
+            // The hairline above it separates the title from the account INSIDE the card; this
+            // is where the card stops and the feed starts, and the two jobs were being done by
+            // one line eight thousandths from the wrong place.
+            Hud.RectFrom(left, PanelTop + CardHeight - 0.0012f, PanelWidth, 0.0012f,
+                         Palette.Alpha(edge, 100));
 
             var cx = left + Pad + Hud.ToX(HeadSize) * 0.5f;
             var cy = PanelTop + 0.0865f;
@@ -1374,8 +1450,8 @@ namespace Hoodrich.UI
 
             var alpha = (int)(90 + 130 * glow);
 
-            var wide = 0.06f;
-            try { wide = Hud.MeasureText("SOCIALS", 0.50f, Hud.FontChaletLondon); }
+            var wide = 0.05f;
+            try { wide = Hud.MeasureText("SOCIALS", TitleScale, Hud.FontChaletLondon); }
             catch { /* the estimate will do */ }
 
             Hud.Disc(middle - wide * 0.5f - 0.010f, y, 0.0038f,
@@ -1472,6 +1548,17 @@ namespace Hoodrich.UI
                              Color.FromArgb(28, 255, 255, 255));
 
                 Hud.RectFrom(left + 0.002f, top, 0.0022f, h, Palette.Accent);
+
+                // Closed on the other three sides as well. A wash with a rail down one edge is
+                // a highlight; a wash with a line all the way round it is a card, and the whole
+                // point of the thing is that it is a separate object from the post above it.
+                var trim = Palette.Alpha(Palette.Accent, 90);
+
+                Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.012f, 0.0010f, trim);
+                Hud.RectFrom(left + 0.002f, top + h - 0.0010f, PanelWidth - 0.012f, 0.0010f, trim);
+
+                Hud.RectFrom(left + PanelWidth - 0.010f - Hud.ToX(0.0010f), top,
+                             Hud.ToX(0.0010f), h, trim);
             }
 
             var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;

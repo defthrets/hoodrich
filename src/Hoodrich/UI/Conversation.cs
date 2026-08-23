@@ -49,6 +49,17 @@ namespace Hoodrich.UI
         /// </summary>
         public string IconFile = "";
 
+        /// <summary>
+        /// A small mark after the label, for a fact about the row rather than a picture of it.
+        ///
+        /// The art on the left says WHAT the row is. This says how strong it is, and they are
+        /// different questions -- a bag of weed and a bag of weed somebody has cut in half
+        /// share an icon and are not the same thing to buy. It goes after the words because
+        /// that is where the stash and the cook screen put it, and one mark should mean one
+        /// thing wherever it turns up.
+        /// </summary>
+        public string MarkFile = "";
+
         /// <summary>Texture names to try, for icons that are not named after their dictionary.</summary>
         public string[] Candidates;
 
@@ -143,6 +154,15 @@ namespace Hoodrich.UI
 
             choice.IconDict = icon.Dict;
             choice.Candidates = icon.Textures;
+            return this;
+        }
+
+        /// <summary>Puts a mark after the label of the choice just added.</summary>
+        public DialogueNode WithMark(string markFile)
+        {
+            if (Choices.Count == 0 || string.IsNullOrEmpty(markFile)) return this;
+
+            Choices[Choices.Count - 1].MarkFile = markFile;
             return this;
         }
 
@@ -569,8 +589,22 @@ namespace Hoodrich.UI
                     textX += Hud.ToX(iw) + 0.006f;
                 }
 
-                Hud.Text(picked ? "> " + choice.Label : "  " + choice.Label,
-                             textX, y, ChoiceScale, colour, Hud.FontBody, centre: false);
+                var labelled = picked ? "> " + choice.Label : "  " + choice.Label;
+
+                Hud.Text(labelled, textX, y, ChoiceScale, colour, Hud.FontBody, centre: false);
+
+                // How strong it is, straight after what it is.
+                //
+                // Measured rather than parked at a fixed offset: "Marijuana." and "Oxycodone."
+                // are different widths, and one constant x sits inside the end of one word and
+                // out in the middle of nothing after the other.
+                if (!string.IsNullOrEmpty(choice.MarkFile))
+                {
+                    var wide = Hud.MeasureText(labelled, ChoiceScale, Hud.FontBody);
+
+                    Hud.File(choice.MarkFile, textX + wide + 0.005f + Hud.ToX(MarkSize) * 0.5f,
+                             y + 0.0115f, MarkSize, 0f, colour);
+                }
 
                 var note = !choice.Enabled ? choice.DisabledReason : picked ? choice.Detail : "";
                 if (!string.IsNullOrEmpty(note))
@@ -587,6 +621,10 @@ namespace Hoodrich.UI
             Hud.Text("D-PAD / ARROWS  CHOOSE      ENTER  SAY IT      BACKSPACE  WALK OFF",
                          PanelX + 0.014f, y + 0.004f, 0.28f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
+
+        /// <summary>Smaller than the row's own art -- a footnote to the label rather than a
+        /// second picture competing with the first.</summary>
+        private const float MarkSize = 0.0135f;
 
         /// <summary>
         /// Finds the weapon's own model art, once, and remembers the answer either way.
