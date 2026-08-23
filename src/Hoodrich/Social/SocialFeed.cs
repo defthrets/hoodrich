@@ -135,6 +135,31 @@ namespace Hoodrich.Social
         /// <summary>How hard to try for something nobody has said yet.</summary>
         private const int UniqueTries = 24;
 
+        /// <summary>How many candidates are weighed once every one of them is a repeat.</summary>
+        private const int StaleTries = 6;
+
+        /// <summary>
+        /// How long ago a line was last said, as a position in the recent queue.
+        ///
+        /// Lower is older, because the queue is drained from the front. Minus one means it is
+        /// not in there at all, which beats any of them.
+        /// </summary>
+        private int LastSeen(string plain)
+        {
+            if (string.IsNullOrEmpty(plain)) return -1;
+            if (!_recentSet.Contains(plain)) return -1;
+
+            var i = 0;
+
+            foreach (var said in _recent)
+            {
+                if (string.Equals(said, plain, StringComparison.OrdinalIgnoreCase)) return i;
+                i++;
+            }
+
+            return -1;
+        }
+
         /// <summary>
         /// How often a post comes from somebody with a name.
         ///
@@ -1389,8 +1414,32 @@ namespace Hoodrich.Social
                 if (!_recentSet.Contains(post.Plain)) return post;
             }
 
-            // The pool for this set is genuinely exhausted, so a repeat is better than silence.
-            return BuildOnce(set, subject, amount);
+            // The pool for this set is genuinely exhausted, so a repeat is better than silence
+            // -- but WHICH repeat matters, and it used to be whichever the dice landed on.
+            //
+            // That is how the same sentence came round three times in forty seconds. Small
+            // sets, a burst of several posts, and every attempt free to pick the line that
+            // went out ten seconds ago. Now a handful of candidates are drawn and the one
+            // used LONGEST ago wins, so an exhausted set cycles instead of stuttering.
+            Post oldest = null;
+            var oldestSeen = int.MaxValue;
+
+            for (var attempt = 0; attempt < StaleTries; attempt++)
+            {
+                var post = BuildOnce(set, subject, amount);
+                if (post == null) break;
+
+                var seen = LastSeen(post.Plain);
+                if (seen >= oldestSeen) continue;
+
+                oldestSeen = seen;
+                oldest = post;
+
+                // Nothing is older than never said.
+                if (seen < 0) break;
+            }
+
+            return oldest;
         }
 
         private Post BuildOnce(string set, string subject, int amount = 0)

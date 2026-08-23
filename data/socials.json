@@ -2130,7 +2130,11 @@
       "car came through spraying and kept going. cowards",
       "that's how you know they scared. they ain't even stop",
       "whole street on the floor. on gang",
-      "they hit a window and called that a message"
+      "they hit a window and called that a message",
+      "they came, they let off, they left. same as always",
+      "somebody's on the floor down {street} and somebody's driving",
+      "that corner's been asking for a while now",
+      "nobody saw the car. nobody ever sees the car"
     ],
     "Busted": [
       "LSPD got somebody on {here} {timeofday}",
@@ -2274,7 +2278,15 @@
       "Whatever is going on out there, we just sell chicken",
       "BREAKING: shots reported near {hood}. Avoid the area",
       "Emergency services responding on {hood}. More when we have it",
-      "Scanner traffic heavy around {hood} in the last hour"
+      "Scanner traffic heavy around {hood} in the last hour",
+      "We are shutting early tonight. Staff first, always",
+      "Deliveries are cancelled for today. We are sorry",
+      "We have nothing to add to what everybody already saw",
+      "Our windows are fine, thank you for asking",
+      "We are open. We are always open. That is the entire point of the name",
+      "The kitchen is closed until further notice",
+      "Anybody who left a bag with us can collect it tomorrow",
+      "We are cooperating fully with everybody who has asked"
     ],
     "BallasTaunt": [
       "these Chamberlain fam is pussies. big scary green shirts til you see one alone.",
@@ -2910,7 +2922,16 @@
       "no plates, no vin, no nothing. that was on purpose",
       "lspd already been and gone. they didn't even get out the car",
       "whoever that was knew exactly what they was doing",
-      "somebody had a very specific problem this afternoon"
+      "somebody had a very specific problem this afternoon",
+      "somebody torched a car in {here} and walked off like it was bin day",
+      "that's not an accident. accidents don't start at the seats",
+      "third one this month nobody's reporting",
+      "car's gone. plates went before the car did",
+      "fire crew stood there watching it. nothing else to do by then",
+      "you can smell that two blocks off",
+      "whatever was in that car isn't evidence any more",
+      "kids out there filming it. of course they are",
+      "somebody solved a problem this afternoon and that's the receipt"
     ],
     "Shots": [
       "shiiit somebody letting em fly down {street}",
@@ -2930,7 +2951,11 @@
       "whoever that was on {street} emptied the whole thing",
       "not on {street}. people got kids on {street}",
       "shots on {street} and then nothing. that's worse somehow",
-      "somebody's cousin about to be on the news over {street}"
+      "somebody's cousin about to be on the news over {street}",
+      "that was four, maybe five. i stopped counting",
+      "whole street went quiet after. that's the part people don't tell you",
+      "somebody's alarm is still going off down {street}",
+      "you learn to tell them from fireworks and i wish you didn't"
     ],
     "WarHeld": [
       "they came and they left with less than they brought. block held",
@@ -2989,9 +3014,23 @@
       "somebody just rode through jamestown letting off. everybody down",
       "that was quick. in and out and gone before anybody moved",
       "rancho ain't been that loud in a minute",
-      "nobody hit. all that noise and nobody hit -- that was the point",
       "old car. rusty. didn't recognise it and that's how you know",
-      "they wanted us to hear it, not to catch nobody"
+      "they came through {here} letting off and kept going. that was the message",
+      "somebody got hit out there. ain't nobody saying who",
+      "car came down {street} and was gone in about ten seconds",
+      "whoever that was wasn't stopping to check who was stood there",
+      "heard about nine of them. could have been more",
+      "ambulance came out to {here}. that's all anybody will say",
+      "they didn't slow down. not once, not even at the end",
+      "everybody who was on that corner is somewhere else now",
+      "that was for somebody specific and the rest was just stood near him",
+      "car came round twice. second time is when it went off",
+      "people came out that store like the store did something",
+      "one of them's at the hospital. the rest of it is talk",
+      "block's empty now. wasn't twenty minutes ago",
+      "you could hear that from the freeway",
+      "wasn't no warning. wasn't meant to be one",
+      "somebody's cousin was stood out there. that's how these things carry on"
     ],
     "YouDiss": [
       "{rival} been loud on here and quiet on the street",

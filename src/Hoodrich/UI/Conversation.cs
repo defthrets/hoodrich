@@ -219,6 +219,32 @@ namespace Hoodrich.UI
         private DialogueNode _node;
         private int _selected;
         private int _openedAt;
+
+        /// <summary>
+        /// Where the highlight actually is, which is not always where the cursor is.
+        ///
+        /// Kept as a float and eased toward the selected row, so moving down the list slides
+        /// the bar instead of teleporting it. That is the whole trick with a list: a bar that
+        /// moves shows you WHICH WAY you went, and a bar that jumps makes you re-find it.
+        /// </summary>
+        private float _slide;
+
+        /// <summary>When this node went up, for the panel's own entrance.</summary>
+        private int _nodeAt;
+
+        /// <summary>How fast the highlight catches the cursor. Per frame, eased.</summary>
+        private const float SlideRate = 0.30f;
+
+        /// <summary>How long the panel takes to arrive, and how far it rises on the way.</summary>
+        private const int EnterMs = 180;
+        private const float EnterRise = 0.016f;
+
+        /// <summary>The travelling highlight along the picked row, and along the top bar.</summary>
+        private const int SweepMs = 2200;
+        private const int BarSweepMs = 3400;
+
+        /// <summary>The caret's breathing, which is the one thing that never stops.</summary>
+        private const int CaretMs = 1300;
         private List<string> _wrapped = new List<string>();
 
         public bool IsOpen => _node != null;
@@ -307,6 +333,12 @@ namespace Hoodrich.UI
             if (node == null) return;
 
             _node = node;
+            _nodeAt = Game.GameTime;
+
+            // Snapped rather than eased on a change of node. Sliding the bar from where it was
+            // on the LAST question to where it starts on this one is a bar travelling across a
+            // panel that has just been replaced under it.
+            _slide = FirstEnabled(node);
             Subject = subject;
             _selected = FirstEnabled(node);
             _openedAt = Game.GameTime;
@@ -514,8 +546,35 @@ namespace Hoodrich.UI
             if (!string.IsNullOrEmpty(Title)) total += 0.036f;
             var top = Math.Max(0.06f, 0.5f - total * 0.5f);
 
-            Hud.RectFrom(PanelX, top, PanelWidth, total, Color.FromArgb(228, 12, 13, 15));
-            Hud.RectFrom(PanelX, top, PanelWidth, 0.0035f, _node.SpeakerColour);
+            // The entrance. Up and in over about a fifth of a second, eased out so it slows
+            // as it lands -- a panel that arrives at constant speed reads as a jump cut.
+            var age = Game.GameTime - _nodeAt;
+            var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
+
+            arrive = 1f - (1f - arrive) * (1f - arrive);
+
+            top += EnterRise * (1f - arrive);
+
+            var fade = (int)(228f * arrive);
+
+            Hud.RectFrom(PanelX, top, PanelWidth, total, Color.FromArgb(fade, 12, 13, 15));
+            Hud.RectFrom(PanelX, top, PanelWidth, 0.0035f,
+                         Palette.Alpha(_node.SpeakerColour, (int)(255f * arrive)));
+
+            // A light running along the speaker's bar. Slow, and only a sixth of the width, so
+            // it reads as the panel being live rather than as something demanding attention.
+            var barT = (Game.GameTime % BarSweepMs) / (float)BarSweepMs;
+            var barW = PanelWidth * 0.16f;
+            var barAt = PanelX - barW + (PanelWidth + barW) * barT;
+
+            var barLeft = Math.Max(PanelX, barAt);
+            var barRight = Math.Min(PanelX + PanelWidth, barAt + barW);
+
+            if (barRight > barLeft)
+            {
+                Hud.RectFrom(barLeft, top, barRight - barLeft, 0.0035f,
+                             Color.FromArgb((int)(90f * arrive), 255, 255, 255));
+            }
 
             // Same idea as the info panels: the mod first, quietly, then who is speaking.
             Hud.BrandCentre(0.5f, top + 0.017f, 0.022f, Palette.Alpha(Palette.TextDim, 150));
@@ -541,19 +600,56 @@ namespace Hoodrich.UI
 
             y += 0.012f;
 
+            // The highlight is drawn ONCE, where the easing has got to, rather than on the row
+            // that happens to be selected. Two rows can be lit at the edges of a slide and that
+            // is correct: the bar is between them.
+            _slide += (_selected - _slide) * SlideRate;
+            if (Math.Abs(_selected - _slide) < 0.002f) _slide = _selected;
+
+            var barY = y - 0.004f + _slide * ChoiceHeight;
+
+            Hud.RectFrom(PanelX, barY, PanelWidth, ChoiceHeight,
+                         Color.FromArgb((int)(235f * arrive), 240, 242, 240));
+
+            // And a sweep along it, the same one the stash list uses. It is the only moving
+            // thing on the panel once the entrance has finished, and it is always the row you
+            // are about to pick.
+            var sweepT = (Game.GameTime % SweepMs) / (float)SweepMs;
+            var sweepW = PanelWidth * 0.14f;
+            var sweepAt = PanelX - sweepW + (PanelWidth + sweepW) * sweepT;
+
+            var sweepLeft = Math.Max(PanelX, sweepAt);
+            var sweepRight = Math.Min(PanelX + PanelWidth, sweepAt + sweepW);
+
+            if (sweepRight > sweepLeft)
+            {
+                Hud.RectFrom(sweepLeft, barY, sweepRight - sweepLeft, ChoiceHeight,
+                             Color.FromArgb((int)(26f * arrive), 0, 0, 0));
+            }
+
+            // The near edge, in the speaker's own colour, so the bar belongs to whoever is
+            // talking rather than being a grey slab.
+            Hud.RectFrom(PanelX, barY, 0.0026f, ChoiceHeight,
+                         Palette.Alpha(_node.SpeakerColour, (int)(255f * arrive)));
+
             for (var i = 0; i < _node.Choices.Count; i++)
             {
                 var choice = _node.Choices[i];
                 var picked = i == _selected;
 
-                if (picked)
-                {
-                    Hud.RectFrom(PanelX, y - 0.004f, PanelWidth, ChoiceHeight, Color.FromArgb(235, 240, 242, 240));
-                }
+                // Inked by how much of the BAR is under this row, not by which row is
+                // selected.
+                //
+                // Those are the same thing when nothing is moving and different for the tenth
+                // of a second the bar is sliding -- and getting it wrong is visible: the text
+                // flips to its on-white colour the instant you press down, which is dark ink on
+                // a dark panel until the bar catches up. So the text crosses over exactly as
+                // fast as the thing it has to stay readable against.
+                var under = 1f - Math.Min(1f, Math.Abs(i - _slide));
 
-                var colour = !choice.Enabled ? Palette.TextDisabled
-                           : picked ? Palette.TextOnHover
-                           : Palette.TextDim;
+                var colour = !choice.Enabled
+                    ? Palette.TextDisabled
+                    : Blend(Palette.TextDim, Palette.TextOnHover, under);
 
                 var textX = PanelX + 0.014f;
 
@@ -593,6 +689,19 @@ namespace Hoodrich.UI
 
                 Hud.Text(labelled, textX, y, ChoiceScale, colour, Hud.FontBody, centre: false);
 
+                // The caret breathes on the row you are on. Drawn over the top of the one in
+                // the label rather than instead of it, so the width of the line never changes
+                // and nothing under it shifts as it pulses.
+                if (picked && choice.Enabled)
+                {
+                    var beat = (Game.GameTime % CaretMs) / (float)CaretMs;
+                    var lit = 0.5f + 0.5f * (float)Math.Sin(beat * Math.PI * 2.0);
+
+                    Hud.Text(">", textX, y, ChoiceScale,
+                             Color.FromArgb((int)(70f + 185f * lit), 16, 18, 20),
+                             Hud.FontBody, centre: false);
+                }
+
                 // How strong it is, straight after what it is.
                 //
                 // Measured rather than parked at a fixed offset: "Marijuana." and "Oxycodone."
@@ -620,6 +729,19 @@ namespace Hoodrich.UI
 
             Hud.Text("D-PAD / ARROWS  CHOOSE      ENTER  SAY IT      BACKSPACE  WALK OFF",
                          PanelX + 0.014f, y + 0.004f, 0.28f, Palette.TextDim, Hud.FontLabel, centre: false);
+        }
+
+        /// <summary>Somewhere between two inks, for text the highlight is sliding under.</summary>
+        private static Color Blend(Color from, Color to, float k)
+        {
+            if (k <= 0f) return from;
+            if (k >= 1f) return to;
+
+            return Color.FromArgb(
+                (int)(from.A + (to.A - from.A) * k),
+                (int)(from.R + (to.R - from.R) * k),
+                (int)(from.G + (to.G - from.G) * k),
+                (int)(from.B + (to.B - from.B) * k));
         }
 
         /// <summary>Smaller than the row's own art -- a footnote to the label rather than a

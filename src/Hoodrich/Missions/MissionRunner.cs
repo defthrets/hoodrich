@@ -1687,7 +1687,14 @@ namespace Hoodrich.Missions
             // It is a message, not a body count -- and grinding four kills from a car seat is
             // the least interesting version of every mission in this mod. Anybody dead counts
             // as noticed, obviously, for the case where the first thing they notice is that.
-            if (_def.Kind == MissionKind.TorchJob)
+            // A drive-by ends the same way a torch job does: when they know you were there.
+            //
+            // It used to wait for every one of them to be down, which quietly made it a
+            // clearing job done through a car window -- the slowest and least interesting
+            // version of the mission. You are not there for a body count. Hitting somebody is
+            // absolutely allowed and some of them will die; it is simply not the thing being
+            // asked for, and the job should not sit there waiting for it.
+            if (_def.Kind == MissionKind.TorchJob || _def.Kind == MissionKind.DriveBy)
             {
                 if (standing == _targets.Count && !AnyoneNoticed(player)) return;
 
