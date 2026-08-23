@@ -152,6 +152,16 @@ namespace Hoodrich.State
         public int PortRunStage;
 
         /// <summary>
+        /// How many of his packages you have taken out and squared up.
+        ///
+        /// Not a bool, because "the first one" and "every one after" are different
+        /// conversations and a counter says which without a second flag. The first is bars and
+        /// nothing else -- he is not asking a stranger what they would like -- and after that
+        /// he lets you choose what you carry.
+        /// </summary>
+        public int FrontsDone;
+
+        /// <summary>
         /// True when the last thing you did was sleep at the stash house.
         ///
         /// The game puts Franklin back at whichever house it thinks is his, which after the
@@ -465,6 +475,7 @@ namespace Hoodrich.State
                 .Set("productRep", Math.Round(ProductRep, 3))
                 .Set("docksUnlocked", DocksUnlocked)
                 .Set("portRunStage", PortRunStage)
+                .Set("frontsDone", FrontsDone)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("followers", Followers)
                 .Set("frontedDrug", FrontedDrug)
@@ -494,6 +505,7 @@ namespace Hoodrich.State
                 ProductRep = Math.Min(1f, Math.Max(0.1f, doc["productRep"].AsFloat(Neutral)));
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
                 PortRunStage = Math.Max(0, Math.Min(3, doc["portRunStage"].AsInt(0)));
+                FrontsDone = Math.Max(0, doc["frontsDone"].AsInt(0));
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
 
                 // Defaults to FALSE, so a save from before this existed shows the guide once

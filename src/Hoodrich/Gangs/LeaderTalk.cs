@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using GTA;
 using Hoodrich.Core;
 using Hoodrich.Economy;
@@ -588,38 +589,86 @@ namespace Hoodrich.Gangs
                    string.Equals(def.Name, "Gerald", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// What he will put in your hand, and in what order he offers it.
+        ///
+        /// Bars first and only bars. A man who has just met you does not ask what you would
+        /// like to sell -- he hands you the thing that is easiest to move, needs no
+        /// explaining, and that he can afford to lose if you turn out to be nobody. Once
+        /// you have taken one out and brought the money back, he lets you pick.
+        /// </summary>
+        private static readonly string[] FirstFront = { "xanax" };
+        private static readonly string[] LaterFronts = { "weed", "ecstasy", "xanax" };
+
         private DialogueNode OfferWork(LeaderDef def, GangDef gang)
         {
-            var product = gang.Drugs.Count == 0 ? null : _drugs.Get(gang.Drugs[0]);
-
-            if (product == null)
-            {
-                var nothing = Node(def, gang, "Ain't got nothing spare right now.");
-                nothing.Say("Back up.", () => Root(def));
-                nothing.Leave();
-                return nothing;
-            }
-
             if (_state.Stash.FreeSpace < FrontGrams)
             {
                 var full = Node(def, gang,
-                    "Nigga, your bag is already full. What you asking me for?");
+                    "Man, your bag already full. What you askin me for?");
 
                 full.Say("Back up.", () => Root(def));
                 full.Leave();
                 return full;
             }
 
+            var first = _state.FrontsDone <= 0;
+            var ids = first ? FirstFront : LaterFronts;
+
+            // Anything the catalogue does not have simply is not offered, so a trimmed
+            // drugs.json cannot leave him standing there with an empty list.
+            var stock = new List<DrugDef>();
+
+            foreach (var id in ids)
+            {
+                var d = _drugs.Get(id);
+                if (d != null) stock.Add(d);
+            }
+
+            if (stock.Count == 0)
+            {
+                var nothing = Node(def, gang, "Ain't got nothin spare right now.");
+                nothing.Say("Back up.", () => Root(def));
+                nothing.Leave();
+                return nothing;
+            }
+
+            if (first)
+            {
+                var bars = stock[0];
+
+                var one = Node(def, gang,
+                    "Look at you. Broke, standin' in my yard askin' for somethin'. Aight -- " +
+                    FrontGrams.ToString("0") + " of bars. Don't ask me for nothin' else, this " +
+                    "is what you get, 'cause bars sell theyself and I ain't gotta teach you " +
+                    "nothin'. Move all of it, come back, I break you off a lil somethin'. You " +
+                    "eat 'em or you run off with my money, we gon have a whole different " +
+                    "conversation.");
+
+                one.Say("Give it here.", () => TakeWork(def, gang, bars), "Take his bars");
+                one.WithIcon(Icons.ForDrug(bars.Id));
+
+                one.Say("Nah.", () => Root(def));
+                return one;
+            }
+
             var node = Node(def, gang,
-                "Look at you. Aight, check it -- " + FrontGrams.ToString("0") + " of my " +
-                product.Name.ToLowerInvariant() + ". You go stand on a corner and move all of " +
-                "it, then you come back and I break you off a lil something. That's it. " +
-                "You smoke it, you sell it and run off with my money, we gon have a whole " +
-                "different conversation.");
+                "Aight, you been out there once and you came back, so you get to pick this " +
+                "time. Same deal -- " + FrontGrams.ToString("0") + " of whatever you take, all " +
+                "of it moved, then you see me.");
 
-            node.Say("Give it here.", () => TakeWork(def, gang, product), "Take his package");
-            node.Say("Nah.", () => Root(def));
+            foreach (var d in stock)
+            {
+                var pick = d;
 
+                node.Say(pick.Name, () => TakeWork(def, gang, pick),
+                         FrontGrams.ToString("0") + "g  ·  about $" +
+                         pick.BasePrice.ToString("0") + " a gram out there");
+
+                node.WithIcon(Icons.ForDrug(pick.Id));
+            }
+
+            node.Say("Not right now.", () => Root(def));
             return node;
         }
 
@@ -681,6 +730,9 @@ namespace Hoodrich.Gangs
         private DialogueNode Squared(LeaderDef def, GangDef gang)
         {
             _state.ClearFronted();
+
+            // The one that decides whether he ever asks you what you want to carry.
+            _state.FrontsDone++;
 
             _crew.AddRep(SquaredRep, "for moving " + def.Name + "'s work");
 

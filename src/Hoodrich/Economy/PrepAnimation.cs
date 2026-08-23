@@ -266,36 +266,31 @@ namespace Hoodrich.Economy
                 // retries every frame and a batch lasts seconds, so it gets there.
                 if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, clip.Dict)) return false;
 
-                // The last three arguments are the position locks, and they are the whole
-                // reason this used to throw him off a roof.
-                //
-                // These clips were authored inside a scene -- a kitchen somewhere, at a
-                // coordinate that is not where you are standing. Played with the locks off, the
-                // root motion in them is applied to the ped, so he is dragged toward wherever
-                // the animation thinks the floor is. In a first-floor kitchen that is out
-                // through the wall and down, which is exactly what it looked like.
-                //
-                // Locked on all three axes he plays the clip and stays where he is put.
                 // The last three are NOT position locks, whatever the community header says.
-                //
-                // They are bPhaseControlled, IkFlags and bAllowOverrideCloneUpdate -- confirmed
-                // against ScriptHookVDotNet's own source, which names them. So passing true,
-                // true, true was asking for a clip whose phase is driven externally by nobody
-                // (it sits on frame zero), with IkFlags coerced to 1, which is
-                // AIK_DISABLE_LEG_IK -- the feet stop planting to the floor.
-                //
-                // false, 0, false is what SHVDN, ox_lib and every shipped emote resource pass.
+                // They are bPhaseControlled, IkFlags and bAllowOverrideCloneUpdate, confirmed
+                // against ScriptHookVDotNet's own source. Passing true, true, true asked for a
+                // clip whose phase is driven externally by nobody -- it sits on frame zero --
+                // with IkFlags coerced to 1, which is AIK_DISABLE_LEG_IK and stops the feet
+                // planting to the floor. false, 0, false is what every shipped resource uses.
                 Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, clip.Dict, clip.Name,
                               4f, -4f, -1, LoopFlag, 0f, false, 0, false);
 
-                // A clip name that is not in the dictionary fails silently, so the only honest
-                // test is whether the ped is now visibly playing it.
-                if (!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, player.Handle,
-                                         clip.Dict, clip.Name, 3))
-                {
-                    return false;
-                }
-
+                // AND THAT IS THE END OF IT. It used to ask, on this very line, whether the ped
+                // was now playing the clip -- and take a "no" as proof the name was wrong.
+                //
+                // IS_ENTITY_PLAYING_ANIM IS ALWAYS FALSE ON THE FRAME YOU TASK IT. The task
+                // takes at least a frame to start and longer with a blend-in, so every
+                // candidate "failed", the loop walked the entire list re-tasking the ped on
+                // each one, and what you actually saw was whichever clip happened to be LAST
+                // -- the final fallback -- being re-issued several times a second, forever.
+                //
+                // Which is why the cutting animation was a man standing about: not a wrong
+                // name, a test that could not pass.
+                //
+                // The test is gone rather than deferred, because it was only ever standing in
+                // for "does this clip exist", and every pair in this file is now checked
+                // against the game's own dictionary dump before it is written. That check
+                // belongs at build time, not thirty times a second at runtime.
                 _playingDict = clip.Dict;
                 _playingClip = clip.Name;
 
