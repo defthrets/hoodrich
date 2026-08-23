@@ -56,10 +56,21 @@ namespace Hoodrich.Missions
         private const float VanHeading = 181.403f;
 
         /// <summary>
-        /// Hash checked against the spawner rather than typed off a menu: rumpo is 0x4543B74D.
-        /// The two behind it are the same van, for an install that has not got the first.
+        /// Vans to try, in order, until one of them comes out WITHOUT a wrap on it.
+        ///
+        /// The plain rumpo is first and it does not work: the log says it carries exactly two
+        /// liveries, SET_VEHICLE_LIVERY(-1) will not take on it, and index 0 is Weazel News --
+        /// so every option that model has is somebody's branding. That is not a bug to fix
+        /// with a better call, it is a property of the model.
+        ///
+        /// rumpo2 is the SAME VAN with a default modkit and no livery table, which is the
+        /// shape that was asked for without the newsroom painted on it. It leads now, and the
+        /// branded one is kept behind it so an install missing rumpo2 still gets a van.
+        ///
+        /// Hashes checked against the spawner rather than typed off a menu: rumpo 0x4543B74D,
+        /// rumpo2 0x961AFEF7, speedo 0xCFB3870C.
         /// </summary>
-        private static readonly string[] VanModels = { "rumpo", "burrito3", "youga" };
+        private static readonly string[] VanModels = { "rumpo2", "speedo", "youga", "rumpo" };
 
         /// <summary>Metallic dark green -- the index, not an RGB, so it takes the flake.</summary>
         private const int VanGreen = 49;
@@ -778,7 +789,7 @@ namespace Hoodrich.Missions
             Hud.Text(Stage == StageDeliver
                         ? "Get his van back to the yard in Chamberlain"
                      : Stage == StageBay
-                        ? "Back into bay one behind the sheds and wait"
+                        ? "Back into bay one behind the sheds, then sound the horn"
                         : "Meet the dock worker at Elysian Island",
                      x, top + 0.030f, 0.26f, Fade(Palette.TextDim, fade),
                      Hud.FontBody, centre: false);
@@ -1021,8 +1032,20 @@ namespace Hoodrich.Missions
                     // kit is on.
                     Function.Call(Hash.SET_VEHICLE_MOD_KIT, h, 0);
 
-                    // Strip the branding before the paint goes on, and check that it took.
-                    Blank(h);
+                    // Strip the branding before the paint goes on, and find out whether it
+                    // actually came off. A model whose every livery is a wrap gets put back
+                    // and the next one tried -- unless it is the last one, in which case a
+                    // branded van beats no van.
+                    var clean = Blank(h, name);
+
+                    if (!clean && name != VanModels[VanModels.Length - 1])
+                    {
+                        Log.Info("Van " + name + " has no unbranded livery; trying the next one.");
+
+                        try { _van.Delete(); } catch { /* gone */ }
+                        _van = null;
+                        continue;
+                    }
 
                     // The index into the game's own paint table, not an RGB. The RGB call gives
                     // a flat poster green; the index gives the metallic flake, which is the
@@ -1071,9 +1094,10 @@ namespace Hoodrich.Missions
         /// the log, because the only way to find out from outside the game which one was
         /// holding the branding is to have written the numbers down.
         /// </summary>
-        private static void Blank(int h)
+        private static bool Blank(int h, string what)
         {
             var told = "";
+            var clean = true;
 
             try
             {
@@ -1085,13 +1109,23 @@ namespace Hoodrich.Missions
 
                     if (Function.Call<int>(Hash.GET_VEHICLE_LIVERY, h) >= 0)
                     {
-                        Function.Call(Hash.SET_VEHICLE_LIVERY, h, 0);
+                        // -1 will not take, so this model has no "none" -- every index it
+                        // owns is somebody's branding, and forcing 0 is how the van ended up
+                        // in full Weazel white. Nothing here can save it; say so and let the
+                        // caller try a different van.
+                        clean = false;
+
+                        for (var i = 0; i < count; i++)
+                        {
+                            told += " [" + i + "=" +
+                                    Function.Call<string>(Hash.GET_LIVERY_NAME, h, i) + "]";
+                        }
                     }
                 }
 
-                told += "livery " + count + "->" + Function.Call<int>(Hash.GET_VEHICLE_LIVERY, h);
+                told += " livery " + count + "->" + Function.Call<int>(Hash.GET_VEHICLE_LIVERY, h);
             }
-            catch { told += "livery n/a"; }
+            catch { told += " livery n/a"; }
 
             try
             {
@@ -1149,7 +1183,10 @@ namespace Hoodrich.Missions
                 }
             }
 
-            Log.Info("Van stripped: " + told + ", " + off + " extras off.");
+            Log.Info("Van " + what + " stripped:" + told + ", " + off + " extras off, " +
+                     (clean ? "clean." : "STILL BRANDED."));
+
+            return clean;
         }
 
         private void MarkVan()
@@ -1564,6 +1601,23 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>
+        /// What is wrong with the park, in the order somebody would notice it.
+        ///
+        /// One reason at a time. "It is not right" is a hint; "you are facing the wrong way"
+        /// is an instruction, and there is no version of this where telling somebody all three
+        /// possible faults at once helps them fix the one they have.
+        /// </summary>
+        private string WhyNot()
+        {
+            if (_van == null || !_van.Exists()) return "where's the van?";
+
+            if (_van.Position.DistanceTo(BaySpot) > BayRange) return "you ain't in the bay.";
+            if (_van.Speed > BayStopped) return "stop the van first.";
+
+            return "turn it round -- back in, nose out.";
+        }
+
         /// <summary>Is the van in the bay, square to it, and stood still.</summary>
         private bool Parked()
         {
@@ -1578,20 +1632,46 @@ namespace Hoodrich.Missions
             return off <= BaySquare;
         }
 
+        /// <summary>Was the horn down last time we looked, so one press is one press.</summary>
+        private bool _hornWasDown;
+
+        /// <summary>
+        /// Backing in, and telling them you are in.
+        ///
+        /// It used to fire the moment the van happened to be square, which meant the sequence
+        /// started while you were still shuffling back and forth and you never knew what the
+        /// deciding moment was. A horn is the deciding moment: you park it, you beep, and it
+        /// tells you either that they are coming or exactly what is wrong. It is also what
+        /// anybody reversing into a loading bay actually does.
+        /// </summary>
         private void WaitingForTheVan(Ped player)
         {
             if (player.Position.DistanceTo(BaySpot) > StreamRange) return;
+            if (_van == null || !_van.Exists()) return;
+
+            var driving = player.IsInVehicle(_van);
+
+            if (driving)
+            {
+                Help.ShowThisFrame(Parked()
+                    ? "Press ~INPUT_VEH_HORN~ to let them know you're in."
+                    : "Back into bay one -- nose out. Then sound the horn.");
+            }
+
+            // Edge, not level. A horn held down is one beep, not forty.
+            var down = false;
+
+            try { down = Function.Call<bool>(Hash.IS_HORN_ACTIVE, _van.Handle); }
+            catch { /* no horn, no answer */ }
+
+            var beeped = down && !_hornWasDown;
+            _hornWasDown = down;
+
+            if (!beeped || !driving) return;
 
             if (!Parked())
             {
-                if (_van != null && _van.Exists() &&
-                    _van.Position.DistanceTo(BaySpot) <= BayRange && _van.Speed <= BayStopped)
-                {
-                    // Near enough to be trying, so say WHY it is not counting rather than
-                    // leaving somebody parked on the mark wondering what else it wants.
-                    Help.ShowThisFrame("Back it in -- nose out, square to the bay.");
-                }
-
+                Notify.Problem(WhyNot());
                 return;
             }
 
@@ -1909,6 +1989,7 @@ namespace Hoodrich.Missions
             _crate = null;
             _bay = 0;
             _bayAt = 0;
+            _hornWasDown = false;
 
             if (_ambush != 0) LetGo(false);
             _ambush = 0;

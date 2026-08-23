@@ -32,12 +32,8 @@
         "u_m_y_ushi"
       ],
       "drugs": [],
-      "zones": [
-        "ELYSIAN",
-        "ZP_ORT",
-        "TERMINA",
-        "BANNING"
-      ],
+      "_zones": "Tao stood on a different corner of the docks every time you drove in. He has a fixed spot now (the port meeting) and a phone number, so the roaming marker is gone. An empty zone list is the switch: he stays defined, nothing that refers to him by id breaks, and he never matches a zone again.",
+      "zones": [],
       "priceMultiplier": 0.75,
       "minRank": 0,
       "maxOrderGrams": 500,

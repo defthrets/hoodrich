@@ -492,8 +492,18 @@ namespace Hoodrich.Gangs
                     Function.Call(Hash.SET_BLIP_COLOUR, blip.Handle, gang.BlipColour);
 
                     blip.Name = def.Name + " -- " + gang.Name;
-                    blip.IsShortRange = false;
                     blip.Scale = 0.85f;
+
+                    // Short range for everybody who is not yours.
+                    //
+                    // Short range does NOT mean the mark disappears -- it stays on the pause
+                    // map exactly as before, so you can still find any of them from the
+                    // planning screen. What it stops is eight rival bosses sitting on the
+                    // minimap at all times from across the city, which turns the corner of the
+                    // screen into a list. Near their block, they come back.
+                    //
+                    // Your own leader stays long range. He is the one you are sent to.
+                    blip.IsShortRange = !mine;
 
                     _blips[def.GangId] = blip;
                 }
