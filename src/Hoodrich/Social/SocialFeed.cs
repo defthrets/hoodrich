@@ -399,7 +399,20 @@ namespace Hoodrich.Social
             foreach (var c in handle) hash = hash * 31 + c;
 
             var hue = Math.Abs(hash) % 360;
-            return FromHue(hue, 0.42f, 0.52f);
+
+            // Nearly grey, and that is the fix rather than a preference.
+            //
+            // At full saturation this fallback was handing out the sets' own colours by
+            // coincidence: a hash lands where it lands, and sixty-four of the accounts with no
+            // set at all were wearing one -- Lamar in Ballas purple, the man who sells you guns
+            // in Ballas purple, a bail bondsman, a barber, the FIB. Once a rail can be purple
+            // for no reason, a rail being purple stops meaning anything.
+            //
+            // Carving the gang hues out of the wheel would leave the same problem one degree
+            // either side of each cut. Dropping the saturation instead splits the feed into two
+            // classes you can read at a glance: colour is a set, and no colour is nobody's. The
+            // hue is kept so accounts still differ from each other, it just no longer shouts.
+            return FromHue(hue, 0.15f, 0.62f);
         }
 
         private static Color FromHue(float h, float s, float v)

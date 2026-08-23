@@ -682,7 +682,8 @@
       "gender": "male",
       "pic": "CHAR_LAMAR",
       "verified": false,
-      "voice": "lamar_d_ls"
+      "voice": "lamar_d_ls",
+      "gang": "families"
     },
     {
       "handle": "stretch_cgf",
@@ -690,7 +691,8 @@
       "gender": "male",
       "pic": "CHAR_MP_STRETCH",
       "verified": false,
-      "voice": "stretch_cgf"
+      "voice": "stretch_cgf",
+      "gang": "families"
     },
     {
       "handle": "grimes_ls",
@@ -698,7 +700,8 @@
       "gender": "male",
       "pic": "CHAR_MP_GERALD",
       "verified": false,
-      "voice": "grimes_ls"
+      "voice": "grimes_ls",
+      "gang": "families"
     },
     {
       "handle": "auntie_denise",

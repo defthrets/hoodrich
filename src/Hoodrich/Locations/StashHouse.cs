@@ -100,6 +100,7 @@ namespace Hoodrich.Locations
 
                 Hush();
                 ClearHousehold();
+                KeepRoaming();
             }
 
             var here = AtDoor;
@@ -303,7 +304,6 @@ namespace Hoodrich.Locations
                     }
                     catch { /* she is where she was put */ }
 
-                    Beachwear(her);
                     Settle(her);
 
                     if (!_saidCouchIsFree)
@@ -326,49 +326,10 @@ namespace Hoodrich.Locations
             Log.Warn("No stand-in model would load for the front room.");
         }
 
-        /// <summary>
-        /// What she is wearing.
-        ///
-        /// Component 3 is the torso and arms, 4 the legs, 8 the undershirt, 11 the top layer.
-        /// The indices below are a first pass at her beach set and the log says what was
-        /// applied, so a wrong one is a number to change rather than a thing to go hunting for.
-        /// Anything the model has not got is refused by the game and simply leaves that slot
-        /// alone, which is why this is safe to try.
-        /// </summary>
-        private static void Beachwear(Ped her)
-        {
-            try
-            {
-                Function.Call(Hash.SET_PED_DEFAULT_COMPONENT_VARIATION, her.Handle);
-
-                foreach (var set in Beach)
-                {
-                    Function.Call(Hash.SET_PED_COMPONENT_VARIATION, her.Handle,
-                                  set[0], set[1], set[2], 0);
-                }
-
-                Log.Info("Beachwear applied: torso " + Beach[0][1] + ", legs " + Beach[1][1] +
-                         ", top " + Beach[2][1] + ".");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not dress her: " + ex.Message);
-            }
-        }
-
-        /// <summary>component, drawable, texture.</summary>
-        private static readonly int[][] Beach =
-        {
-            new[] { 3, 5, 0 },     // torso and arms -- bare
-            new[] { 4, 5, 0 },     // legs
-            new[] { 8, 3, 0 },     // undershirt, which is the bikini top on her
-            new[] { 11, 0, 0 },    // no jacket over it
-        };
-
         /// <summary>Who stands in for her. First that this copy of the game has.</summary>
         private static readonly string[] StandInModels =
         {
-            "ig_tracydisanto", "csb_tracydisanto", "a_f_y_beach_01"
+            "ig_denise", "csb_denise", "cs_denise", "a_f_m_soucent_02"
         };
 
         /// <summary>The one we made, so she goes when the script does.</summary>
@@ -391,7 +352,7 @@ namespace Hoodrich.Locations
         /// Every call here is a set rather than a toggle, so re-running it costs nothing and
         /// changes nothing.
         /// </summary>
-        private static void Settle(Ped ped)
+        private void Settle(Ped ped)
         {
             try
             {
@@ -402,9 +363,13 @@ namespace Hoodrich.Locations
                 ped.IsVisible = true;
                 Function.Call(Hash.SET_ENTITY_COLLISION, ped.Handle, true, true);
 
-                // Still. The freeze is what stops her walking into the kitchen while you are
-                // stood at the counter, which is the whole reason she was removed.
-                Function.Call(Hash.FREEZE_ENTITY_POSITION, ped.Handle, true);
+                // NOT frozen any more, and that is the point of this pass.
+                //
+                // The freeze was here because she walked into the kitchen while you were stood
+                // at the counter -- but that is what she DOES, it is her house, and a woman
+                // nailed to one square foot of her own front room is a prop. What actually
+                // needed fixing was the shouting, which is the block below and stays.
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, ped.Handle, false);
 
                 // And quiet. Blocking non-temporary events stops her reacting to gunfire, to
                 // the player, to anything -- which is most of what makes an ambient ped talk.
@@ -415,6 +380,11 @@ namespace Hoodrich.Locations
 
                 // Not a target. She is in a house you fire a lot of rounds near.
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped.Handle, false);
+
+                // And she is not in anybody's way while she does it.
+                Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 17, true);
+
+                Roam(ped);
             }
             catch (Exception ex)
             {
@@ -431,6 +401,111 @@ namespace Hoodrich.Locations
         /// replaced.
         /// </summary>
         private Ped _settled;
+
+        /// <summary>
+        /// The middle of the rooms she uses, which is not the doorstep.
+        ///
+        /// House is the address -- the point on the porch that everything else in here measures
+        /// from -- and wandering round THAT would take her down the path and into Forum Drive.
+        /// This is the inside: worked out from the two interior coordinates the mod already
+        /// knows for certain, the kitchen counter at the north end and the front room at the
+        /// south, and it sits between them.
+        /// </summary>
+        private static readonly Vector3 Rooms = new Vector3(-12.5f, -1434.0f, 31.1f);
+
+        /// <summary>
+        /// How far she goes. Six metres reaches the counter and the couch and no further.
+        ///
+        /// The leash is wider than the wander on purpose: a ped who clips a doorway and ends up
+        /// a metre outside the circle has not escaped, and dragging her back for it would be a
+        /// woman twitching in her own hallway.
+        /// </summary>
+        private const float RoamRange = 6f;
+        private const float LeashRange = 11f;
+
+        /// <summary>How often the roam is checked on, and how long still counts as stuck.</summary>
+        private const int RoamCheckMs = 4000;
+        private const int StuckMs = 30000;
+
+        private int _roamCheck;
+        private int _movedAt;
+        private Vector3 _wasAt;
+
+        /// <summary>
+        /// Sets her walking round her own house.
+        ///
+        /// TASK_WANDER_IN_AREA rather than a list of marks to walk between. A route is a woman
+        /// on a patrol; a wander is somebody who lives here -- she picks her own destinations,
+        /// stops for a while when she gets there, and the pauses are as much of it as the
+        /// walking. The three arguments after the circle are the shortest walk she will bother
+        /// with and how long she waits between them.
+        /// </summary>
+        private void Roam(Ped ped)
+        {
+            try
+            {
+                Function.Call(Hash.TASK_WANDER_IN_AREA, ped.Handle,
+                              Rooms.X, Rooms.Y, Rooms.Z, RoamRange, 1.5f, 9f);
+
+                _movedAt = Game.GameTime;
+                _wasAt = ped.Position;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Denise would not start walking: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Keeps her in the house and keeps her moving.
+        ///
+        /// Two things go wrong with a wander and neither announces itself. She finds a doorway
+        /// she cannot path back through and ends up in the yard, or the task quietly ends and
+        /// she stands in the middle of the carpet for the rest of the session. Both are checked
+        /// for rather than prevented, because the alternative is re-issuing the task on a timer
+        /// and a wander that restarts every few seconds is a woman who cannot decide.
+        /// </summary>
+        private void KeepRoaming()
+        {
+            if (_stand == null || !_stand.Exists() || !_stand.IsAlive) return;
+
+            if (Game.GameTime < _roamCheck) return;
+            _roamCheck = Game.GameTime + RoamCheckMs;
+
+            try
+            {
+                var at = _stand.Position;
+
+                // Out of the house. Put back rather than walked back -- the nav mesh is the
+                // reason she is out there, so asking it to bring her home is asking the thing
+                // that failed to try again.
+                if (at.DistanceTo(Rooms) > LeashRange)
+                {
+                    Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, _stand.Handle,
+                                  Rooms.X, Rooms.Y, Rooms.Z, false, false, false);
+
+                    Roam(_stand);
+                    return;
+                }
+
+                if (at.DistanceTo(_wasAt) > 0.6f)
+                {
+                    _wasAt = at;
+                    _movedAt = Game.GameTime;
+                    return;
+                }
+
+                // Standing still is normal -- that is half of what a wander is. Standing still
+                // for half a minute is a task that has ended.
+                if (Game.GameTime - _movedAt < StuckMs) return;
+
+                Roam(_stand);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not keep Denise walking: " + ex.Message);
+            }
+        }
 
         private bool _saidCouchIsFree;
 
