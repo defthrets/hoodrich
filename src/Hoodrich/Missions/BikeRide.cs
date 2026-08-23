@@ -594,6 +594,7 @@ namespace Hoodrich.Missions
             _robAccepted = false;
             _gotCash = false;
             _clerk = null;
+            _doorAt = 0;
 
             Cheer();
 
@@ -611,6 +612,19 @@ namespace Hoodrich.Missions
         /// </summary>
         private void TickRob(Ped player)
         {
+            // Keep trying the door for as long as the robbery is on.
+            //
+            // Once rather than repeatedly would be the obvious way and would never work: the
+            // phase starts at the courts, half a mile from the shop, and a door that has not
+            // streamed in yet cannot be told anything. So it is asked again every second and a
+            // half until the till is empty, which costs a props-within-nine-metres sweep and
+            // catches the door the moment the block loads in.
+            if (Game.GameTime >= _doorAt)
+            {
+                _doorAt = Game.GameTime + DoorCheckMs;
+                OpenTheShop();
+            }
+
             // The two lines that follow the fight, spaced so they do not stack. The laugh is
             // audible and the thirst is written, which is on purpose: one of them is a noise a
             // man makes and the other is a sentence he needs you to hear.
@@ -959,6 +973,55 @@ namespace Hoodrich.Missions
         /// back depends on the prop, and guessing wrong puts the man on your side of the
         /// counter looking at the crisps.
         /// </summary>
+        /// <summary>
+        /// Unlocks whatever is standing in that doorway, whatever it happens to be called.
+        ///
+        /// The job used to only exist while the shop was open. It exists at four in the morning
+        /// now, which means it can put a man on a bike outside a door that is bolted -- and a
+        /// robbery you cannot walk into is worse than one that was greyed out in the menu.
+        ///
+        /// A door in this game is a model hash and a position, and there is no native that
+        /// asks a room what its door is called. So it asks the world what is standing near the
+        /// doorway and tells every one of them to be unlocked. Anything in that list that is
+        /// not a door is told nothing at all -- the native looks for a door of that model near
+        /// that point and finds none, which is a no-op rather than a mistake.
+        ///
+        /// Both natives, because they answer different questions: one is for a door that is
+        /// loaded and one is for a door that is not, and the whole reason this runs on a timer
+        /// is that it starts out being the second.
+        /// </summary>
+        private void OpenTheShop()
+        {
+            try
+            {
+                foreach (var prop in World.GetNearbyProps(Shop, DoorReach))
+                {
+                    if (prop == null || !prop.Exists()) continue;
+
+                    var hash = prop.Model.Hash;
+                    var at = prop.Position;
+
+                    Function.Call(Hash.SET_STATE_OF_CLOSEST_DOOR_OF_TYPE, hash,
+                                  at.X, at.Y, at.Z, false, 0f, false);
+
+                    Function.Call(Hash.SET_LOCKED_UNSTREAMED_IN_DOOR_OF_TYPE, hash,
+                                  at.X, at.Y, at.Z, false, 0f, 0f, 0f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not unlock the shop: " + ex.Message);
+            }
+        }
+
+        /// <summary>How far out of the shop's middle a door could be standing.</summary>
+        private const float DoorReach = 9f;
+
+        /// <summary>How often the door is tried while the robbery is on.</summary>
+        private const int DoorCheckMs = 1500;
+
+        private int _doorAt;
+
         private Ped MakeClerk(Ped player)
         {
             var where = player.Position;

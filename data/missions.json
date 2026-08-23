@@ -53,9 +53,7 @@
         "Now I could send somebody down there to get busy. I could. Straight up. But then it's laws all over this block by dinner over a damn basketball court, and everybody out here eatin' it for nothin'. Not over no hoop. We ain't spendin' a body on a rim. That's the difference between me and them fools.",
         "So it's me and you. Just us, don't need nobody else for this -- two of us rollin' up on bikes says more than ten of us in cars anyway, that's psychology, dawg. Grab a bike and it's HANDS. Thought of that in the shower this mornin'. No straps, don't even have one on you. You pull somethin' out there and I ain't never met you. Who is that? Don't know him.",
         "And after? We ride back, we sit down, and I'm tellin' you about this grow I been settin' up. I got ideas, cuz. I always got ideas."
-      ],
-      "opensHour": 6,
-      "closesHour": 2
+      ]
     },
     {
       "id": "torch_rancho",
@@ -69,7 +67,7 @@
       "y": -2064.671,
       "z": 17.476,
       "targets": 4,
-      "homies": 2,
+      "homies": 3,
       "escapeHeat": true,
       "heatStars": 1,
       "payMin": 900,
@@ -124,7 +122,7 @@
       "y": -1804.54,
       "z": 28.905,
       "targets": 5,
-      "homies": 2,
+      "homies": 3,
       "escapeHeat": true,
       "heatStars": 2,
       "payMin": 1400,
@@ -152,7 +150,7 @@
       "y": -1949.503,
       "z": 20.698,
       "targets": 2,
-      "homies": 2,
+      "homies": 3,
       "escapeHeat": true,
       "heatStars": 2,
       "payMin": 1700,
@@ -180,7 +178,7 @@
       "y": 0,
       "z": 0,
       "targets": 4,
-      "homies": 2,
+      "homies": 3,
       "escapeHeat": true,
       "heatStars": 2,
       "payMin": 2000,

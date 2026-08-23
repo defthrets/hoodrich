@@ -68,9 +68,17 @@ namespace Hoodrich.Missions
         /// <summary>Rep lost for each of your own you get killed out there.</summary>
         private const float HomieLostRep = 8f;
 
+        /// <summary>
+        /// What they carry on everything that is not a hit. Micro SMGs and machine pistols.
+        ///
+        /// The pistol and the pump shotgun are gone, and both for the same reason: this work is
+        /// done out of a car window. A pump gives you one loud noise every two seconds from a
+        /// moving car and a pistol is a man plinking at a street -- the job is that a whole
+        /// block hears it, which is volume.
+        /// </summary>
         private static readonly string[] HomieWeapons =
         {
-            "WEAPON_PISTOL", "WEAPON_MICROSMG", "WEAPON_PUMPSHOTGUN"
+            "WEAPON_MICROSMG", "WEAPON_MACHINEPISTOL"
         };
 
         /// <summary>

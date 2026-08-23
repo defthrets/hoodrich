@@ -531,6 +531,7 @@ namespace Hoodrich
                                         "fr36", "elegy2", "sultan")
                 {
                     Stock = true,
+                    Lowered = true,
                     Running = true,
                     Radio = "RADIO_03_HIPHOP_NEW",
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),

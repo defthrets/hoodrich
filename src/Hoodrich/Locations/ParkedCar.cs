@@ -144,6 +144,15 @@ namespace Hoodrich.Locations
         public bool Stock;
 
         /// <summary>
+        /// Dropped on its springs, and nothing else.
+        ///
+        /// Separate from both of the others on purpose. Built is the whole shop and Stock is
+        /// none of it, and the thing people actually do to a car on this block is neither: they
+        /// drop it. It composes with Stock -- stock wheels, stock glass, on the floor.
+        /// </summary>
+        public bool Lowered;
+
+        /// <summary>
         /// Whether the headlights are on.
         ///
         /// Electrics, like the radio and the underglow, so it needs the engine and it needs
@@ -312,6 +321,9 @@ namespace Hoodrich.Locations
                     _car.Position = _where;
                     _car.Heading = _heading;
 
+                    // A different car is a different question about neon mounts.
+                    _neonAsked = false;
+
                     // Engine off and on the ground properly, so it reads as parked rather than
                     // as something that has just been put there.
                     Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, Running, true, false);
@@ -349,6 +361,16 @@ namespace Hoodrich.Locations
             {
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, _car.Handle, 0);
 
+                // Whatever pattern the game rolled for it, taken straight back off.
+                //
+                // This is why an FR36 painted metallic green came out navy with a red stripe
+                // down it. Newer cars spawn with a random LIVERY, and a livery is a texture
+                // over the panels -- the paint underneath was set correctly and could not be
+                // seen. Both natives, because the old cars carry liveries in their own slot
+                // and the DLC ones carry them as mod 48, and a car has one or the other.
+                Function.Call(Hash.SET_VEHICLE_LIVERY, _car.Handle, -1);
+                Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 48, -1, false);
+
                 Function.Call(Hash.SET_VEHICLE_COLOURS, _car.Handle, _paint, _paint);
 
                 // Everything below the paint is car-shaped: lowrider rims, lowered springs and
@@ -369,6 +391,24 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 15, 3, false);
 
                     Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
+                }
+
+                // Lowered on its own, for a car that is otherwise stock. Somebody dropping
+                // his car is not the same as somebody building one, and it is much the more
+                // common of the two -- the ride height IS the statement, and the engine and
+                // the body kit are a different and more expensive one.
+                //
+                // Asked for rather than assumed. The shop's suspension list runs stock, then
+                // lowered, then lower again, so the last index is the lowest it goes -- and
+                // hardcoding 3 fits some cars and quietly does nothing on the rest.
+                if (Lowered)
+                {
+                    try
+                    {
+                        var drops = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, 15);
+                        if (drops > 0) Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 15, drops - 1, false);
+                    }
+                    catch { /* it sits at factory height */ }
                 }
 
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, Built || Stock ? 0.4f : 1.5f);
@@ -443,18 +483,48 @@ namespace Hoodrich.Locations
         {
             try
             {
+                // Colour first, then the switch. Setting the colour of a tube that is not on
+                // yet is fine; turning one on and colouring it a frame later is where a green
+                // car gets one frame of factory blue every time the throttle comes round.
+                Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, _car.Handle, (int)c.R, (int)c.G, (int)c.B);
+
+                // Nothing is holding them off. There is a native whose whole job is to suppress
+                // neons on a vehicle, and a parked car nobody is sitting in is exactly the sort
+                // of thing something else in the game might have used it on.
+                Function.Call(Hash.SUPPRESS_NEONS_ON_VEHICLE, _car.Handle, false);
+
                 for (var side = 0; side < 4; side++)
                 {
                     Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, _car.Handle, side, true);
                 }
 
-                Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, _car.Handle, (int)c.R, (int)c.G, (int)c.B);
+                // Asked back, once, and written down.
+                //
+                // Underglow is a Los Santos Customs slot and not every model has one. Told to
+                // light up, a car without the mounts says nothing and simply does not glow,
+                // which from the pavement is indistinguishable from a bug in this file. One
+                // line in the log settles which of the two it is without another playthrough.
+                if (!_neonAsked)
+                {
+                    _neonAsked = true;
+
+                    var lit = Function.Call<bool>(Hash.GET_VEHICLE_NEON_ENABLED, _car.Handle, 0);
+
+                    if (!lit)
+                    {
+                        Log.Info("No underglow on " + _car.Model.Hash.ToString("X") +
+                                 " at " + _where + " -- the model has not got the mounts.");
+                    }
+                }
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not light the parked car: " + ex.Message);
             }
         }
+
+        /// <summary>Whether the neon has been checked once for this car.</summary>
+        private bool _neonAsked;
 
         /// <summary>Wheel type 7 is the Benny's Original family.</summary>
         private const int BennysWheels = 7;
