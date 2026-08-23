@@ -188,8 +188,16 @@ namespace Hoodrich.Gangs
         /// <summary>Ours, spawned to match. Four a car, same as theirs.</summary>
         private const int DefendersPerCar = 4;
 
-        /// <summary>Where they come in from, and where they aim for.</summary>
-        private const float ApproachDistance = 150f;
+        /// <summary>
+        /// Where they come in from, and where they aim for.
+        ///
+        /// Ninety-five rather than a hundred and fifty. The far number was chosen so a carload
+        /// arrives rather than appears, which is right and is still true at this range -- ninety
+        /// metres is four or five streets and well past anything you can see from the block.
+        /// What it was also doing was putting them a forty-second drive away through traffic
+        /// they did not ask for, so a raid spent its first half being a raid somewhere else.
+        /// </summary>
+        private const float ApproachDistance = 95f;
         /// <summary>
         /// How far off the target the car is allowed to aim.
         ///
@@ -1242,8 +1250,17 @@ namespace Hoodrich.Gangs
                         // They are given somebody to fight by Order(), the moment one of theirs
                         // comes within sight of them. Until then this is a block, not a firing
                         // line, and it should look like one.
+                        //
+                        // Round the CIRCLE rather than round the doorway they came out of. The
+                        // muster is one corner of the fight and wandering about it left eight
+                        // men milling in the same yard; the target is the middle of the thing
+                        // being defended, which is where defending it happens. Short pauses and
+                        // a decent minimum walk, so they set off at once and actually go
+                        // somewhere rather than shuffling on the spot.
+                        var spread = _target == null ? muster : _target.Where;
+
                         Function.Call(Hash.TASK_WANDER_IN_AREA, ped.Handle,
-                                      muster.X, muster.Y, muster.Z, 45f, 3f, 10f);
+                                      spread.X, spread.Y, spread.Z, DefendRange * 0.75f, 5f, 3f);
 
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
                                       Function.Call<uint>(Hash.GET_HASH_KEY,

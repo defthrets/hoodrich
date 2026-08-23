@@ -1339,7 +1339,32 @@ namespace Hoodrich.Missions
                     if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, homie.Handle, DriveByTask)) continue;
 
                     var foe = NearestLiveTarget(homie);
-                    if (foe != null) Shoot(homie, foe);
+
+                    if (foe != null)
+                    {
+                        Shoot(homie, foe);
+                        continue;
+                    }
+
+                    // NOBODY TO SHOOT AT IS THE MOMENT HE REACHES FOR THE DOOR.
+                    //
+                    // The locks hold and the warp puts him back, but neither stops him TRYING:
+                    // he swings the door open, gets a foot out, and is pulled back in, which is
+                    // the half-played animation you can see from the driver's seat. All of that
+                    // is a man with no task deciding what to do next.
+                    //
+                    // So he is never given the chance to decide. A drive-by at a point off the
+                    // side of the car is a task he cannot finish and will not end, which keeps
+                    // him leaning out of the window looking for somebody instead of climbing
+                    // out to find one. It is aimed AWAY from the road ahead so a stray round
+                    // does not go through whatever you are driving toward.
+                    if (ride == null || !ride.Exists()) continue;
+
+                    var aim = ride.Position + ride.RightVector * 12f + ride.ForwardVector * 4f;
+
+                    Function.Call(Hash.TASK_DRIVE_BY, homie.Handle, 0, 0,
+                                  aim.X, aim.Y, aim.Z, DriveByRange, DriveByAccuracy,
+                                  true, FullAuto);
                 }
                 catch { /* he will sit this one out */ }
             }
