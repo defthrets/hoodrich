@@ -293,13 +293,47 @@ namespace Hoodrich.Missions
 
         // ---- what they say -----------------------------------------------------
 
-        /// <summary>The port. Short, because it is an introduction rather than a deal.</summary>
+        /// <summary>
+        /// The port, in two beats: who he is, then how fast he wants to be somewhere else.
+        ///
+        /// He says almost nothing about the actual business, which is the point. A man who
+        /// really does control what comes off the boats does not explain the system to a
+        /// stranger in a car park -- he tells you the one fact you need, which is that it goes
+        /// through him, and then makes it clear the conversation is a chore.
+        ///
+        /// And he is a Cheng, which in this city means money, a title he did not earn and a
+        /// drinking problem everybody is too polite to name. He is not being rude because you
+        /// are new. He is being rude because it is nearly evening.
+        /// </summary>
         private DialogueNode Meeting()
         {
             var node = new DialogueNode("Tao Cheng",
-                "You're the one Gerald called about. Yeah, yeah -- back the van up, it goes in " +
-                "the van, don't stand here counting it. And put my number in that phone, 'cause " +
-                "next time you ain't driving all the way down here for a box.")
+                "So you're Gerald's guy. Okay. Here's the whole thing, and then we're done: " +
+                "nothing comes off a boat in this yard unless I say it comes off. That's it. " +
+                "That's the arrangement. Don't ask me whose, don't ask me how often -- you'll " +
+                "enjoy this a lot more not knowing, and I'll like you a lot more not asking.")
+            {
+                SpeakerColour = Palette.Cash
+            };
+
+            node.Say("So where do I come in?", Hurry, "Let him finish");
+            node.WithIcon(Icons.FromFile("reply.png"));
+
+            node.Say("Ain't my business anyway.", Hurry, "Don't push it");
+            node.WithIcon(Icons.Tick);
+
+            return node;
+        }
+
+        /// <summary>And the half where he is already thinking about the bottle.</summary>
+        private DialogueNode Hurry()
+        {
+            var node = new DialogueNode("Tao Cheng",
+                "You get a number. You call the number, a thing arrives, you pay for the thing. " +
+                "Congratulations, you're in shipping. It's already in the van -- no, don't open " +
+                "it, don't count it, I am not standing in a car park watching a grown man count. " +
+                "It's gone five and there is a bottle at my house older than you are with my " +
+                "name on the label, and I fully intend to be unconscious by nine. Go on.")
             {
                 SpeakerColour = Palette.Cash
             };
