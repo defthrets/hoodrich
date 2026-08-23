@@ -450,6 +450,10 @@ namespace Hoodrich.Missions
                 RivalSays("You been talking a lot of smack online. We here right now, boy. " +
                           "Whatchu wanna do?", 4200);
 
+                // Out loud as well as on screen. A subtitle with nothing behind it is a caption
+                // on a silent film -- you can see two men arguing and hear a basketball court.
+                Mouth(nearest, Angry[_rng.Next(Angry.Length)]);
+
                 _wordsAt = Game.GameTime + 3600;
                 _wordsStep = 1;
                 return;
@@ -460,6 +464,9 @@ namespace Hoodrich.Missions
             if (_wordsStep == 1)
             {
                 Says("~g~FRANKLIN", "Say that again.", 1800);
+
+                // And Franklin answers in his own voice rather than only in text.
+                Mouth(player, Angry[_rng.Next(Angry.Length)]);
 
                 _wordsAt = Game.GameTime + 1400;
                 _wordsStep = 2;
@@ -1166,7 +1173,32 @@ namespace Hoodrich.Missions
 
             try { GTA.UI.Screen.ShowSubtitle("~y~LAMAR:~s~ " + line, 3500); }
             catch { /* the objective still says what to do */ }
+
+            // And a noise out of him at the same time. The words are written and the sound is
+            // not -- there is no recording of these lines and there never will be -- but a man
+            // whose mouth moves while his subtitle is up is a man talking, and one whose does
+            // not is a caption floating over a silent bloke.
+            Mouth(_lamar, Talking[_rng.Next(Talking.Length)]);
         }
+
+        /// <summary>
+        /// Angry noises, for the two men squaring up at the courts.
+        ///
+        /// Names rather than recordings of the written lines, which do not exist. Every one is
+        /// wrapped and none is checked: a speech a particular voice has not got simply does not
+        /// play, and one silent exchange is not worth code to prevent.
+        /// </summary>
+        private static readonly string[] Angry =
+        {
+            "GENERIC_INSULT_HIGH", "CHALLENGE_THREATEN", "GENERIC_CURSE_HIGH",
+            "PROVOKE_GENERIC", "GENERIC_INSULT_MED"
+        };
+
+        /// <summary>And the ordinary sort, for Lamar going on about something.</summary>
+        private static readonly string[] Talking =
+        {
+            "CHAT_STATE", "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "CHAT_RESP"
+        };
 
         /// <summary>Stopped enough to be pulling in rather than riding past.</summary>
         private static bool Stopped(Ped player)
