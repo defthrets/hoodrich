@@ -59,6 +59,19 @@ namespace Hoodrich.UI
         /// </summary>
         public static readonly Color Verified = Color.FromArgb(255, 72, 158, 240);
 
+        /// <summary>
+        /// What the block reckons of your product.
+        ///
+        /// Its own colour, and specifically NOT Cash. Money is green, the set is green, the
+        /// wordmark is green and the bar was green as well -- four different facts in one
+        /// colour, on one screen, is a screen with nothing to look at. Standing is a separate
+        /// question from money and now looks like one.
+        ///
+        /// Cool rather than warm, because the two warm colours on this HUD already mean things:
+        /// amber is running out and red is going wrong.
+        /// </summary>
+        public static readonly Color Standing = Color.FromArgb(255, 116, 202, 232);
+
         /// <summary>Same colour at a different alpha.</summary>
         public static Color Alpha(Color c, int alpha) => Color.FromArgb(alpha, c.R, c.G, c.B);
 

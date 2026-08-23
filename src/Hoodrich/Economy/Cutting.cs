@@ -217,6 +217,9 @@ namespace Hoodrich.Economy
         /// <summary>Close enough to the worktop that being put on the mark is a nudge.</summary>
         private const float CounterSnapRange = 3f;
 
+        /// <summary>And on the same floor as it, which the flat distance cannot tell you.</summary>
+        private const float CounterFloorRange = 1.4f;
+
         private static void StandAtTheCounter()
         {
             var player = Game.Player.Character;
@@ -226,7 +229,23 @@ namespace Hoodrich.Economy
             {
                 if (player.Position.DistanceTo(CounterSpot) > CounterSnapRange) return;
 
-                player.Position = CounterSpot;
+                // Flat distance is not the whole question, and this is the roof.
+                //
+                // Three metres of it is up. A man stood on the roof directly above the worktop
+                // is three metres from it and passes the range test, and the counter is in a
+                // room -- so he was being placed under a ceiling from above it, which the game
+                // resolves by putting him back on top of the house and letting go.
+                //
+                // Height is asked separately now: same floor, or he works where he stands.
+                if (Math.Abs(player.Position.Z - CounterSpot.Z) > CounterFloorRange) return;
+
+                // NO_OFFSET, deliberately. The ordinary coordinate setter finds somewhere it
+                // considers reasonable near the point you asked for, and inside a house the
+                // nearest reasonable place to a kitchen worktop is frequently the roof above
+                // it. This one puts him exactly where the number says and nowhere else.
+                Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, player.Handle,
+                              CounterSpot.X, CounterSpot.Y, CounterSpot.Z, false, false, false);
+
                 player.Heading = CounterHeading;
             }
             catch

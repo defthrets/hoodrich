@@ -690,6 +690,82 @@ namespace Hoodrich.Social
         /// </summary>
         private string _forceGang = "";
 
+        /// <summary>
+        /// The accounts that report rather than gossip.
+        ///
+        /// A city desk, two neighbourhood papers, a block feed and two scanner accounts. All of
+        /// them already existed and already had their own written voices -- what they had not
+        /// got was anything to report, because nothing in the mod ever told them a thing had
+        /// happened. They talked about potholes while a gunfight ran down the road.
+        /// </summary>
+        private static readonly string[] Press =
+        {
+            "weazelnews", "weazelnewsla", "elrancho_news",
+            "davisdaily", "chamblocktalk", "ls_scanner_feed", "lspd_watch_ls"
+        };
+
+        /// <summary>Voices the post being built must come from, or empty for anybody.</summary>
+        private readonly HashSet<string> _forceVoices =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// A report, from one of the accounts whose job it is.
+        ///
+        /// Forced rather than hoped for. The ordinary path gives a written account first
+        /// refusal on a set and then falls back to the shared pool, which for a news set would
+        /// have the chicken shop reporting a shooting -- so with voices forced there IS no
+        /// fallback: the press says it or nothing does.
+        /// </summary>
+        public string Report(string set, string subject)
+        {
+            if (string.IsNullOrEmpty(set)) return null;
+
+            foreach (var voice in Press) _forceVoices.Add(voice);
+
+            Post post;
+            try { post = Build(set, subject); }
+            finally { _forceVoices.Clear(); }
+
+            if (post == null) return null;
+
+            Add(post);
+            Notify(post);
+
+            _newsLast = Game.GameTime;
+
+            return post.Plain;
+        }
+
+        /// <summary>
+        /// Whether the desk has room for another one yet.
+        ///
+        /// A newsroom that reports every shot fired in South Los Santos is a newsroom nobody
+        /// reads. One story a minute at the very most, whoever is asking and whatever for.
+        /// </summary>
+        public bool NewsReady => Game.GameTime - _newsLast >= NewsGapMs;
+
+        private int _newsLast = -NewsGapMs;
+        private const int NewsGapMs = 60000;
+
+        /// <summary>What the desk is going to run, and when. News is always a beat late.</summary>
+        private string _newsSet = "";
+        private string _newsSubject = "";
+        private int _newsAt;
+
+        private const int NewsDelayMinMs = 6000;
+        private const int NewsDelayMaxMs = 15000;
+
+        /// <summary>Queues a report for a few seconds' time.</summary>
+        private void Desk(string set, string subject)
+        {
+            if (string.IsNullOrEmpty(set)) return;
+            if (_newsAt != 0) return;
+
+            _newsSet = set;
+            _newsSubject = subject ?? "";
+            _newsAt = Game.GameTime + NewsDelayMinMs + _rng.Next(NewsDelayMaxMs - NewsDelayMinMs);
+        }
+
         private int _warUntil;
         private int _warNext;
         private string _warRival = "";
@@ -730,6 +806,27 @@ namespace Hoodrich.Social
 
                 _nextAmbient = Game.GameTime + AmbientGapMinMs;
                 return;
+            }
+
+            // The desk files, late and once.
+            //
+            // Ahead of the ambient clock and behind the diss reply, which is the order these
+            // things happen in: somebody answers you immediately, the block talks over the top
+            // of it, and the paper gets round to it in its own time.
+            if (_newsAt != 0 && Game.GameTime >= _newsAt)
+            {
+                var set = _newsSet;
+                var subject = _newsSubject;
+
+                _newsAt = 0;
+                _newsSet = "";
+                _newsSubject = "";
+
+                if (NewsReady && Report(set, subject) != null)
+                {
+                    _nextAmbient = Game.GameTime + AmbientGapMinMs;
+                    return;
+                }
             }
 
             // It is happening right now, so this goes first.
@@ -1122,6 +1219,13 @@ namespace Hoodrich.Social
                     return;
             }
 
+            // And the papers get told at the same time as the block does.
+            //
+            // This is the whole hook for missions and wars: everything that already reaches
+            // this switch is a thing that happened, and the desk now hears all of it rather
+            // than needing a second set of calls threaded through every mission in the mod.
+            Desk(NewsFor(kind), subject);
+
             _burstSet = follow;
             _burstSubject = subject;
             _burstLeft = Math.Min(BurstMax, Math.Max(1, count));
@@ -1133,6 +1237,43 @@ namespace Hoodrich.Social
                 : BurstGapMs;
 
             _burstNext = Game.GameTime + _burstGap;
+        }
+
+        /// <summary>
+        /// Which story a thing that happened is, to a newsroom.
+        ///
+        /// Deliberately not one set per event. A paper does not have a different template for a
+        /// drive-by and a torched car; it has "shots fired", "explosion", "gang violence" and
+        /// "police", and the words that come out are the words for that kind of story. Anything
+        /// that is nobody's business but yours -- fronted work, a bag paid off -- returns empty
+        /// and never reaches the desk.
+        /// </summary>
+        private static string NewsFor(SocialEvent kind)
+        {
+            switch (kind)
+            {
+                case SocialEvent.Shots:
+                case SocialEvent.DriveBy:
+                case SocialEvent.RideThrough:
+                    return "NewsShots";
+
+                case SocialEvent.CarBurned:
+                    return "NewsBlast";
+
+                case SocialEvent.WarStarted:
+                case SocialEvent.WarHeld:
+                case SocialEvent.WarLost:
+                case SocialEvent.RivalKilled:
+                case SocialEvent.Brawl:
+                    return "NewsWar";
+
+                case SocialEvent.CopKilled:
+                case SocialEvent.Busted:
+                    return "NewsLaw";
+
+                default:
+                    return "";
+            }
         }
 
         /// <summary>
@@ -1253,13 +1394,17 @@ namespace Hoodrich.Social
                 ? VoicedAmbientChance
                 : VoicedEventChance;
 
-            if (_rng.NextDouble() < voicedChance)
+            // Forced means forced, not "more likely".
+            var forced = _forceVoices.Count > 0;
+
+            if (forced || _rng.NextDouble() < voicedChance)
             {
                 var candidates = new List<Author>();
 
                 foreach (var author in _authors)
                 {
                     if (!author.HasVoice) continue;
+                    if (forced && !_forceVoices.Contains(author.Voice)) continue;
 
                     // Same rule as the shared pool below. A written account with its own lines
                     // for one of these sets still has to be somebody who would say it.
@@ -1305,6 +1450,11 @@ namespace Hoodrich.Social
                     templates = _voices[by.Voice][set];
                 }
             }
+
+            // Nobody on the desk had anything to say, so nothing runs. The shared pool below
+            // is every account in the city, and a corner shop reporting a shooting is exactly
+            // the thing forcing the voices was for.
+            if (by == null && forced) return null;
 
             if (by == null)
             {

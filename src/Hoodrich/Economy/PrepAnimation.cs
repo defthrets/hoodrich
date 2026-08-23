@@ -49,10 +49,26 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Clip[] Counter =
         {
-            // Somebody bent over a surface with his hands busy, which is the actual picture.
-            // The clubhouse mechanic loop is a man working at a bench and reads as work in a
-            // way a maid wiping a counter never quite did; the hammering idle is the same
-            // shape from a different dictionary, in case the first is not in this install.
+            // The game's own drug-business animations, first, because this IS that job.
+            //
+            // The Biker businesses ship people cutting and packing product at a table, and
+            // they were sitting in the game unused while this played a mechanic at a bench.
+            // The mechanic reads as work; these read as THIS work, which is a man standing
+            // over a table with his hands in something.
+            //
+            // Several names per dictionary because a clip name that is not in a dictionary
+            // fails silently -- TryPlay checks and steps on, so a wrong guess costs a frame.
+            // This exact pairing is already in use further down this file for coke and
+            // heroin, which is the only evidence available offline that a clip name is real --
+            // so the one with a track record leads, and the guesses queue up behind it.
+            new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v1_packer"),
+            new Clip("anim@amb@business@coc@coc_packing_lo@", "full_cycle_v1_packer"),
+            new Clip("anim@amb@business@coc@coc_packing_hi@", "full_cycle_v2_packer"),
+            new Clip("anim@amb@business@weed@weed_sorting_standing@", "sorter_idle_a"),
+            new Clip("anim@amb@business@weed@weed_sorting_standing@", "sorter_a_idle"),
+            new Clip("anim@amb@business@meth@meth_bagging@", "bagging_idle_a"),
+
+            // Then the bench work, which was what this used to open with.
             new Clip("anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechanic"),
             new Clip("amb@world_human_hammering@male@base", "base"),
             new Clip("anim@amb@business@weed@weed_sorting_seated@", "sorter_idle_a"),

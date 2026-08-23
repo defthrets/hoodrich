@@ -222,8 +222,32 @@ namespace Hoodrich.Dealing
         /// <summary>When the last sale landed, for the mark's pulse. 0 for none.</summary>
         private int _soldAt;
 
+        /// <summary>
+        /// When one walked away, for the mark's other pulse.
+        ///
+        /// Two things count as walking away and they are the same event as far as this corner
+        /// is concerned: somebody who looks at what you handed him and hands it back, and
+        /// somebody who takes it and gets on the phone about you. Both are a sale that did not
+        /// happen, both are your fault, and both deserve the same acknowledgement the good ones
+        /// get -- a corner where only the wins move is a corner that never tells you off.
+        /// </summary>
+        private int _spookedAt;
+
         /// <summary>How long that pulse lasts. Long enough to see, short enough not to nag.</summary>
         private const int SalePulseMs = 650;
+
+        /// <summary>Marks the wordmark for the red version of the sale pulse.</summary>
+        private void Spooked()
+        {
+            _spookedAt = Game.GameTime;
+
+            // The bad one wins outright rather than blending with the good one. Half a green
+            // swell finishing under a red one is a mark that cannot make its mind up.
+            _soldAt = 0;
+        }
+
+        /// <summary>How long the mark breathes for while somebody is walking over.</summary>
+        private const int WalkUpPulseMs = 1100;
 
         private int _sales;
         private int _earned;
@@ -806,6 +830,7 @@ namespace Hoodrich.Dealing
 
                 Notify.Problem("they clocked the cut.");
 
+                Spooked();
                 Refused(player, customer);
                 return;
             }
@@ -899,7 +924,9 @@ namespace Hoodrich.Dealing
             {
                 // Only reached when nobody saw it and the corner is still quiet. Stacking a
                 // countdown on top of stars you already have is a pile-on, not a decision.
-                Bust.OnSale(customer, product);
+                // A call going out is a sale that cost you more than it made. The mark says
+                // so, over the top of the green one the sale itself just started.
+                if (Bust.OnSale(customer, product)) Spooked();
             }
 
             if (Stash.PackagedOf(product.Id) < 0.05f) Stop("That was the last of it.");
@@ -2113,6 +2140,18 @@ namespace Hoodrich.Dealing
         /// <summary>A scuffle outside your pitch is its own kind of attention.</summary>
         private const float RefusedFightHeat = 6f;
 
+        /// <summary>Somewhere between two colours, for a mark that is changing its mind.</summary>
+        private static Color Mix(Color from, Color to, float k)
+        {
+            if (k < 0f) k = 0f;
+            if (k > 1f) k = 1f;
+
+            return Color.FromArgb(255,
+                (int)(from.R + (to.R - from.R) * k),
+                (int)(from.G + (to.G - from.G) * k),
+                (int)(from.B + (to.B - from.B) * k));
+        }
+
         /// <summary>
         /// Whether this one is a man.
         ///
@@ -2284,10 +2323,16 @@ namespace Hoodrich.Dealing
             // quieter of the two at a glance.
             var rep = _state == null ? 1f : _state.ProductRep;
 
-            // Green above the middle, red below it. The middle is where you start, so the two
+            // Blue above the middle, red below it. The middle is where you start, so the two
             // colours are the two things that can happen to you rather than a scale from good
             // to bad.
-            var repColour = rep >= PlayerState.Neutral ? Palette.Cash : Palette.Danger;
+            //
+            // Blue rather than green, which it used to be. Money is green, the set is green and
+            // the wordmark over the top of this is green -- reputation reading in the same
+            // colour made a fourth thing that looked like the other three, and the sentence
+            // under the bar is the one line on this HUD that is a verdict on you rather than a
+            // number. It gets to look like nothing else.
+            var repColour = rep >= PlayerState.Neutral ? Palette.Standing : Palette.Danger;
 
             // Tall enough to hold its own name. The label is drawn inside the bar, so the bar
             // has to be taller than the text or the letters sit on its edges -- which is the
@@ -2369,13 +2414,23 @@ namespace Hoodrich.Dealing
             var mark = StateMarkHeight;
             var pop = tint;
 
-            if (_soldAt != 0)
+            // One movement, three colours, and which one you get is what just happened.
+            //
+            // A swell that goes up and comes back down is what a thing FINISHING looks like, so
+            // both endings share it: green for a sale, red for one that walked. The third state
+            // is not an ending at all -- somebody is on their way over and has not decided yet
+            // -- so it does not swell, it breathes, and it does that in amber because amber is
+            // the colour of a thing that has not gone either way.
+            var flashAt = _spookedAt != 0 ? _spookedAt : _soldAt;
+
+            if (flashAt != 0)
             {
-                var since = Game.GameTime - _soldAt;
+                var since = Game.GameTime - flashAt;
 
                 if (since > SalePulseMs)
                 {
                     _soldAt = 0;
+                    _spookedAt = 0;
                 }
                 else
                 {
@@ -2385,12 +2440,20 @@ namespace Hoodrich.Dealing
 
                     if (!lawOnYou)
                     {
-                        pop = Color.FromArgb(255,
-                            (int)(Palette.Text.R + (Palette.Cash.R - Palette.Text.R) * k),
-                            (int)(Palette.Text.G + (Palette.Cash.G - Palette.Text.G) * k),
-                            (int)(Palette.Text.B + (Palette.Cash.B - Palette.Text.B) * k));
+                        pop = Mix(Palette.Text, _spookedAt != 0 ? Palette.Danger : Palette.Cash, k);
                     }
                 }
+            }
+            else if (State == PostState.Approaching && !lawOnYou)
+            {
+                // Somebody is walking over. A full sine on a loop rather than a one-shot, and
+                // it never reaches white -- the mark is doing something for as long as they are
+                // still coming, which is the entire information here.
+                var t = (Game.GameTime % WalkUpPulseMs) / (float)WalkUpPulseMs;
+                var k = 0.5f + 0.5f * (float)Math.Sin(t * Math.PI * 2.0);
+
+                mark = StateMarkHeight * (1f + 0.09f * k);
+                pop = Mix(Palette.Text, Palette.Warn, 0.45f + 0.55f * k);
             }
 
             // Grown from the middle, so it swells rather than drops.
