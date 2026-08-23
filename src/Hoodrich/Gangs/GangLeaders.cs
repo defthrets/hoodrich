@@ -232,7 +232,19 @@ namespace Hoodrich.Gangs
             }
             else
             {
-                spot = _zones.GroundedCentre(def.HomeZone);
+                // No authored coordinate, so this man has no home -- and until now that meant
+                // the nearest pavement to his zone centre, which is a NAVMESH query and comes
+                // back differently depending on what was streamed when it was first asked. He
+                // stood somewhere new every session and looked stable within one, because the
+                // answer is cached.
+                //
+                // Deterministic now: the same coordinate for the same gang, forever. It is
+                // still a guess and it is still worth replacing with a real spot, which is why
+                // it says so out loud rather than quietly carrying on.
+                spot = _zones.FixedCentre(def.HomeZone);
+
+                Log.Warn(def.Name + " (" + def.GangId + ") has no spot in leaders.json and is " +
+                         "standing at the middle of " + def.HomeZone + ". Give him a real one.");
             }
 
             _spots[def.GangId] = spot;
@@ -411,7 +423,21 @@ namespace Hoodrich.Gangs
 
                 // A marker on an empty corner is worse than no marker: you drive across town
                 // and find nobody, with nothing telling you why.
-                var worthMarking = gang != null && gang.Joinable && !def.IsAwayAt(Pricing.ClockHour)
+                //
+                // Everybody's boss is marked now, not only the one who might take you on.
+                // Blipping joinable gangs alone meant eight of the nine leaders existed and
+                // were invisible -- you could walk past OG Reese on his own block and never
+                // know he was a person. A rival boss standing somewhere fixed is a landmark:
+                // it says whose side of the street this is, and it gives you a door to knock
+                // on when you want to start something.
+                //
+                // Rivals appear once you are somebody's, though. At the very start Gerald is
+                // deliberately the only mark on the map -- that is the whole shape of the
+                // opening -- and nine gang bosses before you have moved a gram undoes it.
+                var mine = gang != null && gang.Joinable;
+                var known = mine || (_crew != null && _crew.IsAffiliated);
+
+                var worthMarking = gang != null && known && !def.IsAwayAt(Pricing.ClockHour)
                                    && (StandDown == null || !StandDown(def.GangId));
 
                 _blips.TryGetValue(def.GangId, out var existing);

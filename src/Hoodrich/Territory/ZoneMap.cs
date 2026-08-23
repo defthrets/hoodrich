@@ -73,8 +73,51 @@ namespace Hoodrich.Territory
         }
 
         /// <summary>
+        /// The zone's centre, ground-probed and NOTHING ELSE.
+        ///
+        /// The difference between this and GroundedCentre is the whole point of it existing.
+        /// GroundedCentre snaps to the nearest pavement, and the native that does that asks
+        /// the NAVMESH -- which only knows about what is streamed in right now. So the answer
+        /// depends on where the player happened to be standing the first time it was asked,
+        /// and it is a different answer on a different run.
+        ///
+        /// That is fine for a one-off ambient spawn and completely wrong for anything that is
+        /// supposed to BE somewhere. A gang leader who turns up on a different corner every
+        /// session is not a landmark, he is a rumour.
+        ///
+        /// This is the raw centre with a ground probe. It may well be an awkward spot -- it is
+        /// the middle of a neighbourhood, so it can be a road -- but it is the SAME awkward
+        /// spot forever, which is the property being bought. Anything using it should be
+        /// treated as missing a real coordinate rather than as finished.
+        /// </summary>
+        public Vector3 FixedCentre(string code)
+        {
+            var zone = Get(code);
+            if (zone == null) return Vector3.Zero;
+
+            var spot = zone.Centre;
+
+            try
+            {
+                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, 1000f), out var groundZ,
+                                          GetGroundHeightMode.Normal) && groundZ > 0f)
+                {
+                    spot.Z = groundZ;
+                }
+            }
+            catch
+            {
+                // Unstreamed. The caller re-probes when the player gets close.
+            }
+
+            return spot;
+        }
+
+        /// <summary>
         /// A usable spot near a zone's centre: on a pavement, on the ground.
         /// Falls back to the raw centre so a caller always gets something.
+        ///
+        /// NOT for anything that has to stay put -- see FixedCentre above.
         /// </summary>
         public Vector3 GroundedCentre(string code)
         {
