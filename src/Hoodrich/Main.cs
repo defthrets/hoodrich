@@ -136,6 +136,9 @@ namespace Hoodrich
         /// <summary>The game's own metallic dark green, which is what a lowrider is painted.</summary>
         private const int MetallicDarkGreen = 49;
 
+        /// <summary>Not a colour. Tells the parked car to leave the paint alone.</summary>
+        private const int LeaveThePaint = -1;
+
         /// <summary>Brighter, for a van that belongs to a shop rather than to somebody.</summary>
         private const int ShopGreen = 53;
 
@@ -535,6 +538,28 @@ namespace Hoodrich
                     Running = true,
                     Radio = "RADIO_03_HIPHOP_NEW",
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
+
+                    QuietFrom = 2,
+                    QuietTo = 6
+                });
+
+                // The Journey at the top of the yard, with its own music going.
+                //
+                // Left the colour it came in. Everything else in this lot is the set's green
+                // because everything else in this lot belongs to the set; a camper somebody has
+                // been living in for fifteen years is scenery, and painting it would say "the
+                // mod put this here" out loud. Its paint index is below zero, which the parked
+                // car reads as no instruction rather than as a colour.
+                //
+                // Same station as the other van, which is what was asked for and is also right
+                // -- these two are thirty metres apart at opposite ends of one yard, and one
+                // yard with one thing playing is a party rather than two speakers.
+                _cars.Add(new ParkedCar(new Vector3(-192.162f, -1738.344f, 32.146f), 321.334f,
+                                        LeaveThePaint,
+                                        "journey", "camper", "rvcamper")
+                {
+                    Running = true,
+                    Radio = "RADIO_03_HIPHOP_NEW",
 
                     QuietFrom = 2,
                     QuietTo = 6

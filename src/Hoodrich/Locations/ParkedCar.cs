@@ -29,6 +29,7 @@ namespace Hoodrich.Locations
         private readonly Vector3 _where;
         private readonly float _heading;
         private readonly string[] _models;
+        /// <summary>A game paint index, or below zero to leave it whatever it came in.</summary>
         private readonly int _paint;
 
         /// <summary>
@@ -371,7 +372,16 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_LIVERY, _car.Handle, -1);
                 Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 48, -1, false);
 
-                Function.Call(Hash.SET_VEHICLE_COLOURS, _car.Handle, _paint, _paint);
+                // Below zero is not a colour, it is the absence of an instruction.
+                //
+                // Every car through here used to be painted whether it wanted to be or not,
+                // and most of them do -- they belong to a set and the set has a colour. A
+                // beat-up camper somebody has lived in does not: its whole look IS the look,
+                // and metallic dark green on it would say "the mod painted this" out loud.
+                if (_paint >= 0)
+                {
+                    Function.Call(Hash.SET_VEHICLE_COLOURS, _car.Handle, _paint, _paint);
+                }
 
                 // Everything below the paint is car-shaped: lowrider rims, lowered springs and
                 // tinted glass mean nothing on two wheels or four small ones. Asked rather than
