@@ -519,9 +519,10 @@ namespace Hoodrich
                 // the glow and nothing else, and the one project parked with its boot up is
                 // what makes it read as a project.
                 //
-                // WEST COAST CLASSICS, not the van's station. They are sixteen metres apart,
-                // which is inside earshot of both, and two speakers on one track at that range
-                // is that track heard twice and slightly out of step with itself.
+                // The van's station, on the van's block. Asked for that way after hearing it
+                // both ways, which settles it -- the two are sixteen metres apart and near
+                // enough in step at that distance to read as one yard with the radio on rather
+                // than as two cars arguing about what to play.
                 //
                 // Key out at two and back in at six, with the van and with the yard. It is one
                 // switch: somebody came out, turned everything off and went in.
@@ -531,7 +532,7 @@ namespace Hoodrich
                 {
                     Stock = true,
                     Running = true,
-                    Radio = "RADIO_09_HIPHOP_OLD",
+                    Radio = "RADIO_03_HIPHOP_NEW",
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
 
                     QuietFrom = 2,
