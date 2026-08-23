@@ -1638,6 +1638,7 @@ namespace Hoodrich.Missions
                     MakeSides();
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle,
                                   _usGroup != 0 ? _usGroup : gang.GroupHash);
+                    Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
 
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);
@@ -1715,6 +1716,7 @@ namespace Hoodrich.Missions
                 MakeSides();
                 Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle,
                               _usGroup != 0 ? _usGroup : gang.GroupHash);
+                Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
 
                 // BOTH OFF, which is the change. 46 is BF_CanFightArmedPedsWhenNotArmed and 5
                 // is BF_AlwaysFight, and with the pair of them on he opened up on every rival
@@ -2217,6 +2219,7 @@ namespace Hoodrich.Missions
                     // them onto this court.
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle,
                                   _themGroup != 0 ? _themGroup : gang.GroupHash);
+                    Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
 
                     // Hands, and nothing they can change their mind about halfway through.
                     Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true);

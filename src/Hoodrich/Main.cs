@@ -403,6 +403,11 @@ namespace Hoodrich
                 // something in a hurry.
                 _bags = new DroppedBags { Pockets = _state.Stash };
 
+                // Nobody's set turns on itself over a stray round. Once, at startup, because
+                // relationships between groups are global and survive until something changes
+                // them -- there is nothing to re-apply per spawn.
+                _crew.MakeGangsWholeToThemselves();
+
                 // Two of yours, on call once you have ridden a job out with them.
                 _homies = new Gangs.Homies(_gangs, _crew, _state);
                 _homies.Feed = _social;

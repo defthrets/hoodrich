@@ -485,6 +485,35 @@ namespace Hoodrich.Gangs
             Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, intensity, b, a);
         }
 
+        /// <summary>
+        /// Every gang is a companion to ITSELF.
+        ///
+        /// The relationship a group has with its own hash is not something the game sets for
+        /// you, and without it a set is merely neutral toward its own members -- which is fine
+        /// until somebody clips one of them and the damage event has nothing standing in its
+        /// way. Companion is the strongest tie there is and it costs one call per gang.
+        ///
+        /// Belt to SET_CAN_ATTACK_FRIENDLY's braces. That flag is per ped and has to be set on
+        /// every one the mod spawns; this is per group and covers the ones it does not.
+        /// </summary>
+        public void MakeGangsWholeToThemselves()
+        {
+            foreach (var gang in _gangs.All)
+            {
+                if (gang == null) continue;
+
+                try
+                {
+                    Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS,
+                                  RelCompanion, gang.GroupHash, gang.GroupHash);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not make " + gang.Id + " whole: " + ex.Message);
+                }
+            }
+        }
+
         /// <summary>Removes the relationship we set, in both directions.</summary>
         private void ClearBoth(int intensity, int hash)
         {

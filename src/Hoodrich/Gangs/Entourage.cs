@@ -482,6 +482,7 @@ namespace Hoodrich.Gangs
                     if (armed)
                     {
                         Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
+                        Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
 
                         var gun = string.IsNullOrEmpty(carrying) ? Weapon : carrying;
 

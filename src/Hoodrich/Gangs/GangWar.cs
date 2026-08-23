@@ -1124,6 +1124,7 @@ namespace Hoodrich.Gangs
                     ped.IsPersistent = true;
 
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, _attacker.GroupHash);
+                    Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
                     Function.Call(Hash.SET_PED_ACCURACY, ped.Handle, 22);
 
                     // The combat attributes that make somebody fight rather than stand in a
@@ -1228,6 +1229,12 @@ namespace Hoodrich.Gangs
                         ped.IsPersistent = true;
 
                         Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, mine.GroupHash);
+
+                        // Ours do not turn on each other, and a stray round from the player
+                        // does not make them turn on him. Both halves matter: the first stops
+                        // one of them answering a friendly bullet, the second stops the man who
+                        // fired it becoming a target for the rest of the yard.
+                        Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
                         Function.Call(Hash.SET_PED_ACCURACY, ped.Handle, 25);
 
                         Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
