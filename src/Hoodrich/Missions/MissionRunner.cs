@@ -822,6 +822,10 @@ namespace Hoodrich.Missions
             switch (State)
             {
                 case MissionState.Travel:
+                    // Talk on the way out. Rarely, and about nothing -- three men in a car on a
+                    // ten-minute drive who say nothing at all are three props being delivered.
+                    Chat(Riding, RidingWords, ChatRideMs);
+
                     // Put them in place well before you can see them. Spawning at the arrival
                     // radius is what had them appearing in mid-air and falling in as you pulled
                     // up: a ped created on unstreamed ground has nothing to stand on yet.
@@ -838,6 +842,13 @@ namespace Hoodrich.Missions
                     return;
 
                 case MissionState.Escape:
+                {
+                    var shot = AnyoneHit();
+
+                    Chat(shot ? TakingIt : Riding,
+                         shot ? TakingItWords : RidingWords, ChatRideMs / 2);
+                }
+
                     TickEscape();
                     return;
 
@@ -1546,6 +1557,153 @@ namespace Hoodrich.Missions
         /// <summary>Roughly this apart, doubled at random, while a job is being done.</summary>
         private const int WorkPostGapMs = 7000;
 
+        // ---- what they say ------------------------------------------------------
+
+        /// <summary>
+        /// Going in. Names rather than recordings -- there is no audio of the written lines and
+        /// there never will be, so a gang voice's own shouting plays under a subtitle of ours.
+        /// Every one is wrapped and none is checked: a speech a particular voice has not got
+        /// simply does not play, which costs a line rather than a crash.
+        /// </summary>
+        private static readonly string[] GoingIn =
+        {
+            "GENERIC_INSULT_HIGH", "CHALLENGE_THREATEN", "GENERIC_CURSE_HIGH",
+            "PROVOKE_GENERIC", "GENERIC_WAR_CRY"
+        };
+
+        /// <summary>Taking it, which is a different noise from giving it.</summary>
+        private static readonly string[] TakingIt =
+        {
+            "GENERIC_CURSE_HIGH", "GENERIC_SHOCKED_HIGH", "GENERIC_FRIGHTENED_MED",
+            "GENERIC_CURSE_MED"
+        };
+
+        /// <summary>And the ordinary sort, for a long drive with nothing happening.</summary>
+        private static readonly string[] Riding =
+        {
+            "CHAT_STATE", "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "CHAT_RESP"
+        };
+
+        private static readonly string[] GoingInWords =
+        {
+            "Let 'em know we was here!",
+            "Roll it down, roll it down!",
+            "This they block? Not tonight it ain't.",
+            "Hang out the window, cuz. Hang out.",
+            "Everybody on that corner, everybody!",
+            "Say somethin' now. Say somethin' NOW."
+        };
+
+        private static readonly string[] TakingItWords =
+        {
+            "They shootin' back! They shootin' back!",
+            "Drive, boy, DRIVE.",
+            "That one came through the door!",
+            "Get us off this street.",
+            "I'm hit -- nah, I'm good. Go.",
+            "Somebody's aimin' proper. Move."
+        };
+
+        private static readonly string[] RidingWords =
+        {
+            "Long way round for a two-minute job.",
+            "Turn that up.",
+            "My cousin lives down here. Used to.",
+            "You gon' fix them mirrors or is that the look.",
+            "Whole block's watchin' us do thirty.",
+            "Tell me again why it's me in the back.",
+            "Aye. Don't be takin' the freeway.",
+            "This the third time we come down this street."
+        };
+
+        private static readonly string[] BurningWords =
+        {
+            "Whole thing's goin' up!",
+            "That's it. That's the car.",
+            "Back up, back up, it's gon' blow.",
+            "Nothin' left in there for nobody.",
+            "Somebody's gon' see that from the freeway."
+        };
+
+        /// <summary>
+        /// One of them says something, out loud and on screen, and then nobody does for a bit.
+        ///
+        /// Picked at random from whoever is alive rather than always the first man in the list,
+        /// because three homies where the same one talks every time is one homie and two
+        /// passengers.
+        ///
+        /// The gap is the whole design. Chatter is atmosphere and atmosphere that never stops
+        /// is noise -- a line every few seconds during a firefight and every half a minute on
+        /// a drive is somebody talking; anything faster is a radio play.
+        /// </summary>
+        private void Chat(string[] speech, string[] words, int gapMs)
+        {
+            if (Game.GameTime < _nextChat) return;
+
+            var live = new List<Ped>();
+
+            foreach (var homie in _homies)
+            {
+                if (homie != null && homie.Exists() && homie.IsAlive) live.Add(homie);
+            }
+
+            if (live.Count == 0) return;
+
+            _nextChat = Game.GameTime + gapMs + _rng.Next(gapMs / 2);
+
+            var who = live[_rng.Next(live.Count)];
+
+            try
+            {
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, who.Handle,
+                              speech[_rng.Next(speech.Length)], "SPEECH_PARAMS_FORCE_SHOUTED");
+            }
+            catch { /* his voice has not got that one */ }
+
+            if (words == null || words.Length == 0) return;
+
+            try
+            {
+                GTA.UI.Screen.ShowSubtitle("~g~HOMIE:~s~ " + words[_rng.Next(words.Length)], 3000);
+            }
+            catch { /* the noise is the half that matters */ }
+        }
+
+        private int _nextChat;
+
+        /// <summary>
+        /// Whether anybody has put a round into one of ours since the last time this was asked.
+        ///
+        /// Asked of the game rather than tracked, and CLEARED after asking -- the flag stays set
+        /// once it is set, so a homie shot in the first street would otherwise read as being
+        /// shot for the rest of the job and they would spend the drive home shouting about it.
+        /// </summary>
+        private bool AnyoneHit()
+        {
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+
+                try
+                {
+                    if (!Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ANY_PED, homie.Handle))
+                    {
+                        continue;
+                    }
+
+                    Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, homie.Handle);
+                    return true;
+                }
+                catch { /* he will mention it next time */ }
+            }
+
+            return false;
+        }
+
+        /// <summary>How long between lines, by what is going on.</summary>
+        private const int ChatFightMs = 4000;
+        private const int ChatRideMs = 26000;
+
         /// <summary>The closest of the people we actually came for, or null when they are down.</summary>
         private Ped NearestLiveTarget(Ped from)
         {
@@ -1673,6 +1831,18 @@ namespace Hoodrich.Missions
             // back on his own judgement, which is to get out and go after somebody. Re-issuing
             // is what keeps him in his seat for the length of the street.
             if (FromTheCar) KeepShooting();
+
+            // Somebody is always saying something while it is going off. Being shot at wins
+            // over shooting, because it is the more urgent of the two and the one you would
+            // actually hear over the other.
+            //
+            // Asked ONCE into a local, and that is not tidiness. AnyoneHit clears the flag it
+            // reads -- it has to, or a man shot in the first street reads as being shot for the
+            // rest of the job -- so calling it twice in one expression answers true and then
+            // false, and they shout about being hit while the subtitle says otherwise.
+            var hit = AnyoneHit();
+
+            Chat(hit ? TakingIt : GoingIn, hit ? TakingItWords : GoingInWords, ChatFightMs);
 
             KeepThemSeated();
 
@@ -1917,6 +2087,11 @@ namespace Hoodrich.Missions
             // A witness reporting a car going up does not do it the same frame, so the clamp
             // carries on for a few seconds after the flames rather than stopping with them.
             _fireQuietUntil = Game.GameTime + FireGraceMs;
+
+            // And somebody says something about it. Forced past the gap, because this is the
+            // one moment of the job everybody is looking at the same thing.
+            _nextChat = 0;
+            Chat(GoingIn, BurningWords, ChatFightMs);
 
             // A car going up in a field is not quiet. If anybody is still looking for you --
             // and setting fire to a vehicle is its own good reason for them to start -- that
