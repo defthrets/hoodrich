@@ -142,6 +142,16 @@ namespace Hoodrich.State
         public bool DocksUnlocked;
 
         /// <summary>
+        /// Where the trip to the port has got to. 0 nothing, 1 fetch it, 2 deliver it.
+        ///
+        /// Saved, because it is a drive across the whole map in two halves and quitting
+        /// halfway through it is the most ordinary thing a player does. Kept as a stage rather
+        /// than a pair of bools so there is exactly one thing to read and no state where both
+        /// halves are somehow true at once.
+        /// </summary>
+        public int PortRunStage;
+
+        /// <summary>
         /// True when the last thing you did was sleep at the stash house.
         ///
         /// The game puts Franklin back at whichever house it thinks is his, which after the
@@ -244,10 +254,79 @@ namespace Hoodrich.State
 
         public void MarkDone(string missionId)
         {
-            if (string.IsNullOrEmpty(missionId) || HasDone(missionId)) return;
+            // The clock starts whether or not this one was new, because it is a breather
+            // between jobs rather than a reward for finishing a fresh one -- doing the same
+            // torch job four times back to back should pace exactly like doing four different
+            // ones.
+            LastJobAtUtc = DateTime.UtcNow.Ticks;
+
+            if (string.IsNullOrEmpty(missionId) || HasDone(missionId))
+            {
+                Touch();
+                return;
+            }
 
             MissionsDone.Add(missionId);
             Touch();
+        }
+
+        /// <summary>
+        /// How long Lamar has nothing, after you have just done something for him.
+        ///
+        /// This replaced the rank wall. Ranks gated his list on a number that only went up if
+        /// you stood on corners, so a player who wanted to do the JOBS found the jobs locked
+        /// behind not doing the jobs. The chain already says which one is next; all that was
+        /// missing was a reason not to run the whole list in one afternoon, and a man saying
+        /// "gimme a minute" is that reason.
+        ///
+        /// Real minutes rather than the game clock, and stored as a wall-clock stamp rather
+        /// than as a countdown: quit for the night, come back tomorrow, and the wait is over
+        /// because it genuinely is.
+        /// </summary>
+        public const int JobCooldownMinutes = 10;
+
+        public long LastJobAtUtc;
+
+        /// <summary>Seconds still to wait, or zero.</summary>
+        public int JobWaitSeconds
+        {
+            get
+            {
+                if (LastJobAtUtc <= 0L) return 0;
+
+                try
+                {
+                    var since = DateTime.UtcNow - new DateTime(LastJobAtUtc, DateTimeKind.Utc);
+                    var left = TimeSpan.FromMinutes(JobCooldownMinutes) - since;
+
+                    // A stamp from the future means somebody moved the system clock. Treat it
+                    // as expired rather than locking the list for a decade.
+                    if (left.TotalSeconds <= 0d || left.TotalMinutes > JobCooldownMinutes) return 0;
+
+                    return (int)Math.Ceiling(left.TotalSeconds);
+                }
+                catch
+                {
+                    return 0;
+                }
+            }
+        }
+
+        public bool JobsAreCooling => JobWaitSeconds > 0;
+
+        /// <summary>The wait as something to put on a row: "8m 20s".</summary>
+        public string JobWaitWord
+        {
+            get
+            {
+                var left = JobWaitSeconds;
+                if (left <= 0) return "";
+
+                var m = left / 60;
+                var s = left % 60;
+
+                return m > 0 ? m + "m " + s.ToString("00") + "s" : s + "s";
+            }
         }
 
         private bool _dirty;
@@ -385,11 +464,13 @@ namespace Hoodrich.State
                 .Set("gramsSold", Math.Round(GramsSold, 2))
                 .Set("productRep", Math.Round(ProductRep, 3))
                 .Set("docksUnlocked", DocksUnlocked)
+                .Set("portRunStage", PortRunStage)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("followers", Followers)
                 .Set("frontedDrug", FrontedDrug)
                 .Set("frontedGrams", FrontedGrams)
                 .Set("frontedAtGrams", FrontedAtGrams)
+                .Set("lastJobAt", LastJobAtUtc)
                 .Set("missionsDone", MissionsJson())
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson());
@@ -412,6 +493,7 @@ namespace Hoodrich.State
                 // earn -- or at one, which would be a good one they never earned either.
                 ProductRep = Math.Min(1f, Math.Max(0.1f, doc["productRep"].AsFloat(Neutral)));
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
+                PortRunStage = Math.Max(0, Math.Min(2, doc["portRunStage"].AsInt(0)));
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
 
                 // Defaults to FALSE, so a save from before this existed shows the guide once
@@ -424,6 +506,8 @@ namespace Hoodrich.State
                 FrontedDrug = doc["frontedDrug"].AsString("");
                 FrontedGrams = doc["frontedGrams"].AsFloat(0f);
                 FrontedAtGrams = doc["frontedAtGrams"].AsFloat(0f);
+
+                LastJobAtUtc = Math.Max(0L, doc["lastJobAt"].AsLong(0L));
 
                 MissionsDone.Clear();
                 foreach (var node in doc["missionsDone"].Items)

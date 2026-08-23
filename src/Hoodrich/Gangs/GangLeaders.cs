@@ -93,6 +93,13 @@ namespace Hoodrich.Gangs
     /// </summary>
     internal sealed class GangLeaders
     {
+        /// <summary>
+        /// Asked, per gang, whether that leader is off his corner right now.
+        ///
+        /// Set by Main and answered by whatever has him. Nothing here needs to know why.
+        /// </summary>
+        public Func<string, bool> StandDown;
+
         private const float SpawnRange = 120f;
         private const float DespawnRange = 200f;
         private const float TalkRange = 3.0f;
@@ -404,7 +411,8 @@ namespace Hoodrich.Gangs
 
                 // A marker on an empty corner is worse than no marker: you drive across town
                 // and find nobody, with nothing telling you why.
-                var worthMarking = gang != null && gang.Joinable && !def.IsAwayAt(Pricing.ClockHour);
+                var worthMarking = gang != null && gang.Joinable && !def.IsAwayAt(Pricing.ClockHour)
+                                   && (StandDown == null || !StandDown(def.GangId));
 
                 _blips.TryGetValue(def.GangId, out var existing);
 
@@ -513,6 +521,18 @@ namespace Hoodrich.Gangs
             // He keeps hours. Off the corner in the small hours, and if the clock rolls round
             // while you are stood there, he goes.
             if (nearest.IsAwayAt(Pricing.ClockHour))
+            {
+                if (_liveDef != null && _liveDef.GangId == nearest.GangId) Despawn();
+                return;
+            }
+
+            // And he is not on his corner while he is stood somewhere else waiting for you.
+            //
+            // Exactly one leader is ever alive in the world, so a mission that needs one of
+            // them somewhere cannot simply spawn its own -- there would be two of the same man
+            // two hundred metres apart. This is how the mission says he has gone out: it is
+            // not a workaround, it is the truth about where he is.
+            if (StandDown != null && StandDown(nearest.GangId))
             {
                 if (_liveDef != null && _liveDef.GangId == nearest.GangId) Despawn();
                 return;

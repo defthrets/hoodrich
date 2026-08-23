@@ -2227,6 +2227,34 @@
       "Package gone off {here} by {timeofday}. Somebody put the hours in",
       "Small money, honest count. That gets you the next one"
     ],
+    "PortRun": [
+      "Green van been sat outside {here} for weeks and today it moved. Where's it going",
+      "{source} {hearsay} somebody took that old van down the docks. Nobody takes that van nowhere",
+      "Whoever's driving that filthy Rumpo, wash it. That's all",
+      "Seen the green van heading south on the freeway {timeofday}. Wild",
+      "{source} {hearsay} somebody off {here} got sent down Elysian for somethin'",
+      "That van passed me doing 40 in a 60. Whatever's in it, they ain't in a rush to get pulled",
+      "Docks ain't our end of town. Something's changing"
+    ],
+    "PortRunDone": [
+      "Green van back on {here} {timeofday} and it's sitting lower than it left",
+      "{source} {hearsay} whoever runs {here} now got somebody on the boats",
+      "That yard was empty this morning and it ain't now. Draw your own conclusions",
+      "Somebody came through {here} today and everybody stood up straighter",
+      "So we ain't buying off the corner no more? Aight then",
+      "{source} {hearsay} the connect on {here} changed and the quality went UP not down",
+      "Prices about to make sense round here for once",
+      "Somebody got put on today. You can tell by how they walking"
+    ],
+    "YouDidThePort": [
+      "Long drive. Worth it",
+      "Elysian and back. Didn't open it, didn't ask",
+      "Drove across the whole city today and never touched 80. That's the job",
+      "Some doors you don't knock on twice",
+      "Got the number. That's all I'm saying",
+      "Kept my word and kept my mouth shut. Watch what happens next",
+      "Whole city between me and that yard and I still got there"
+    ],
     "AmbientOrg": [
       "Two for one on wings all weekend. No, we will not explain the meat",
       "Open til 2am all week. Your life choices are your own",

@@ -147,6 +147,9 @@ namespace Hoodrich
         private readonly Entourage _meet;
         private readonly Social.Newsroom _newsroom;
         private readonly DroppedBags _bags;
+
+        /// <summary>The drive down to Elysian and the van coming back.</summary>
+        private readonly Missions.PortRun _port;
         private readonly ParkedCar _meetOne;
         private readonly ParkedCar _meetTwo;
         private readonly Fixture _partyBarrel;
@@ -1092,7 +1095,24 @@ namespace Hoodrich
                 _info = new InfoPanel();
                 _stashScreen = new StashScreen();
                 _pocketScreen = new PocketScreen();
+                _port = new Missions.PortRun(_state)
+                {
+                    Talk = _talk,
+                    Social = _social,
+                    Busy = () => _jobs != null && _jobs.IsRunning
+                };
+
+                // He cannot be on his corner and stood in the yard at the same time, and the
+                // leader system only ever holds one of them alive -- so this is how it is told
+                // he has gone out.
+                _leaders.StandDown = gangId =>
+                    _port.WaitingAtTheDrop &&
+                    string.Equals(gangId, "families", StringComparison.OrdinalIgnoreCase);
+
+                _dealers.SendToThePort = () => _port.Send();
+
                 _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing, _cfg);
+                _leaderTalk.SendToThePort = () => _port.Send();
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
                 _leaderTalk.Social = _social;
@@ -1513,6 +1533,9 @@ namespace Hoodrich
                     // And anything you have put down, waiting to be picked back up.
                     if (_bags != null) _bags.Update();
 
+                    // The van, the port, and the man waiting on the other end of it.
+                    if (_port != null) _port.Update();
+
                     _copWatch.Update();
                     _block.Update();
                     _couch.Update();
@@ -1551,6 +1574,7 @@ namespace Hoodrich
                 {
                     _war.Draw();
                     _jobs.Draw();
+                    if (_port != null) _port.Draw();
                 }
 
                 // The spotlight, every frame rather than every tick -- a beam that exists for
@@ -2019,6 +2043,7 @@ namespace Hoodrich
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
             try { _bags?.RestoreWorld(); } catch { /* teardown */ }
+            try { _port?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockA?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockB?.RestoreWorld(); } catch { /* teardown */ }
             foreach (var door in _doors)

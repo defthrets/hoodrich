@@ -114,27 +114,30 @@ namespace Hoodrich.Missions
                 var pick = def;
                 var done = _state.HasDone(def.Id);
 
-                // Rank first, because it is the one you can do something about tonight, and it
-                // outranks the chain: a job you have not earned stays locked whether or not it
-                // is next.
-                if (_state.Rank < def.MinRank)
+                // Further down the chain than you have got. He works his list in order.
+                //
+                // The rank wall used to sit above this and it is gone. It gated his list on a
+                // number that only moves if you stand on corners, which meant somebody who
+                // wanted to do the JOBS found the jobs locked behind not doing the jobs -- and
+                // it said so four rows at a time, in red, which is a list that mostly tells you
+                // no. The chain already says which one is next; that is the whole gate now.
+                if (i > reached + 1)
                 {
-                    var need = PlayerState.RankNames[
-                        Math.Min(def.MinRank, PlayerState.RankNames.Length - 1)];
-
-                    node.Say(def.Name, () => null, "needs " + need, false,
-                             "You have to be " + need + " for this one. You're " + _state.RankName);
+                    node.Say(def.Name, () => null, "locked", false,
+                             "He'll get to this one. Finish what's above it first");
 
                     node.WithIcon(IconFor(def));
                     offered++;
                     continue;
                 }
 
-                // Further down the chain than you have got. He works his list in order.
-                if (i > reached + 1)
+                // Just did one. He is not lining up the next before you have got out of the
+                // car, and a row counting down is a great deal friendlier than a row that has
+                // vanished.
+                if (_state.JobsAreCooling)
                 {
-                    node.Say(def.Name, () => null, "locked", false,
-                             "He'll get to this one. Finish what's above it first");
+                    node.Say(def.Name, () => null, "wait  ·  " + _state.JobWaitWord, false,
+                             "Give it a minute, cuz. Come back in " + _state.JobWaitWord);
 
                     node.WithIcon(IconFor(def));
                     offered++;

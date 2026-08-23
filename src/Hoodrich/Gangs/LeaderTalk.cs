@@ -2,6 +2,7 @@ using System;
 using GTA;
 using Hoodrich.Core;
 using Hoodrich.Economy;
+using Hoodrich.Missions;
 using Hoodrich.State;
 using Hoodrich.UI;
 
@@ -113,7 +114,8 @@ namespace Hoodrich.Gangs
                 // same conversation for a reason: the first package is how he decides whether
                 // to have you, and the second is how he decides whether to put you on to the
                 // people he buys from. He does not have a different way of testing somebody.
-                var afterJoining = _crew.IsAffiliated && mine && !_state.DocksUnlocked;
+                var afterJoining = _crew.IsAffiliated && mine && !_state.DocksUnlocked
+                                   && _state.PortRunStage == PortRun.StageNone;
 
                 if (FrontsWork(def) && (!_crew.IsAffiliated || afterJoining))
                 {
@@ -239,17 +241,44 @@ namespace Hoodrich.Gangs
         /// Where the weight really comes from.
         ///
         /// He will not tell a stranger and he will not tell somebody who has not moved
-        /// anything. Once you have, the port exists for you and the whole catalogue with it --
-        /// which is the single step-up in the supply chain, so it is worth making you earn.
+        /// anything. Once you have, he does not simply say a word and hand you a phone number:
+        /// he sends you down there to be looked at, and he sends you with an errand, because
+        /// that is the only introduction anybody at the port would accept.
+        ///
+        /// So this question no longer unlocks the docks. It starts a drive, and the drive
+        /// unlocks the docks -- see PortRun.
         /// </summary>
         private DialogueNode AskSource(LeaderDef def, GangDef gang)
         {
-            if (_state.DocksUnlocked)
+            // Already been, already delivered, and the number is in the phone.
+            if (_state.DocksUnlocked && _state.PortRunStage == PortRun.StageNone)
             {
                 var known = Node(def, gang, "I already told you. The port. Go see the man.");
                 known.Say("Back up.", () => Root(def));
                 known.Leave();
                 return known;
+            }
+
+            // Sent, and still out there somewhere.
+            if (_state.PortRunStage == PortRun.StageFetch)
+            {
+                var going = Node(def, gang,
+                    "You still standing here? Elysian Island. Dock boy. Go.");
+
+                going.Say("On my way.", () => null, "Get down to the port");
+                going.Leave();
+                return going;
+            }
+
+            if (_state.PortRunStage == PortRun.StageDeliver)
+            {
+                var owed = Node(def, gang,
+                    "You got it? Good. Don't bring it to me on no corner, dawg -- the yard. " +
+                    "You know the one. I'll be stood in it.");
+
+                owed.Say("I'm going.", () => null, "Take it to the yard");
+                owed.Leave();
+                return owed;
             }
 
             if (_state.GramsSold < _cfg.DocksUnlockGrams)
@@ -263,21 +292,34 @@ namespace Hoodrich.Gangs
                 return soon;
             }
 
-            _state.DocksUnlocked = true;
-            _state.AddRespect(15f);
+            if (SendToThePort == null || !SendToThePort())
+            {
+                var stuck = Node(def, gang, "Ask me again in a minute.");
+                stuck.Leave();
+                return stuck;
+            }
+
+            _state.AddRespect(5f);
             _state.Touch();
 
-            Notify.Important("~g~The port's open to you.~s~ Go find the dock worker down there.");
-            Log.Info("Docks unlocked after " + _state.GramsSold.ToString("0.#") + "g sold.");
-
             var node = Node(def, gang,
-                "Alright. You've earned the answer. It's the boat -- down the port, Elysian. " +
-                "Dock boy pulls it off the containers before anybody counts them. Tell him I sent you, " +
-                "and don't waste his time.");
+                "Alright. You earned the answer, so here go the answer: it's a boat. Elysian " +
+                "Island, down the port. Man down there pulls it off the containers before " +
+                "anybody counts 'em. Go see him, tell him I sent you -- he'll put somethin' in " +
+                "your hands. Bring that straight back to the yard and don't open it on the way.");
 
-            node.Say("I'm on it.", () => null, "The docks are open");
+            node.Say("Say less.", () => null, "Drive to the port");
+            node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
             return node;
         }
+
+        /// <summary>
+        /// Set by Main. Starts the run, and says whether it actually started.
+        ///
+        /// A callback rather than a reference to the mission, because this file builds
+        /// sentences and should not know how a blip gets on a map.
+        /// </summary>
+        public Func<bool> SendToThePort;
 
         // ---- buying off him ----------------------------------------------------
 
@@ -436,8 +478,13 @@ namespace Hoodrich.Gangs
             // The one progression gate in the supply chain, and it belongs to him now that the
             // corner dealers are gone.
             node.Say("Where's it all coming from?", () => AskSource(def, gang),
-                     _state.DocksUnlocked ? "You already know" : "Ask about his supply");
-            node.WithIcon(_state.DocksUnlocked ? Icons.Tick : Icons.Locked);
+                     _state.PortRunStage == PortRun.StageFetch ? "He's sent you to the port"
+                     : _state.PortRunStage == PortRun.StageDeliver ? "He wants his package"
+                     : _state.DocksUnlocked ? "You already know"
+                     : "Ask about his supply");
+
+            node.WithIcon(_state.PortRunStage != PortRun.StageNone ? Icons.Warning
+                          : _state.DocksUnlocked ? Icons.Tick : Icons.Locked);
 
             // Stretch, and only Stretch. He is the one who put you on in the first place, so
             // he is the one you can go back to with nothing in your pockets.

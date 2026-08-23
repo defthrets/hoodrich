@@ -709,14 +709,19 @@ namespace Hoodrich.Missions
         /// The next job he would offer you, or null.
         ///
         /// The same window FixerTalk offers from: everything up to one past the last one
-        /// finished, gated on rank. Written once and asked twice -- the text he sends wants
-        /// only jobs he has not mentioned yet, and the contacts page wants to know whether
-        /// there is anything at all, including the one he already texted about.
+        /// finished, and nothing at all for a few minutes after you have just done one.
+        /// Written once and asked twice -- the text he sends wants only jobs he has not
+        /// mentioned yet, and the contacts page wants to know whether there is anything at
+        /// all, including the one he already texted about.
         /// </summary>
         /// <param name="unmentionedOnly">Skip anything he has already texted about.</param>
         public MissionDef NextInTheWindow(bool unmentionedOnly)
         {
             if (_state == null || Book == null) return null;
+
+            // He texts you when he has work. He does not text you thirty seconds after you
+            // handed him the keys back.
+            if (_state.JobsAreCooling) return null;
 
             var reached = -1;
 
@@ -729,7 +734,6 @@ namespace Hoodrich.Missions
             {
                 var def = Book.All[i];
 
-                if (_state.Rank < def.MinRank) continue;
                 if (_state.HasDone(def.Id)) continue;
                 if (unmentionedOnly && _state.HasBeenOffered(def.Id)) continue;
 
@@ -744,7 +748,7 @@ namespace Hoodrich.Missions
 
         private int _nextWorkCheck;
 
-        /// <summary>Rank and progress do not change fast. Every ten seconds is plenty.</summary>
+        /// <summary>Progress does not change fast. Every ten seconds is plenty.</summary>
         private const int WorkCheckMs = 10000;
 
         public void Update()

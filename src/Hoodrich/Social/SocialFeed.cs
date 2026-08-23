@@ -65,7 +65,13 @@ namespace Hoodrich.Social
         FrontedWork,
 
         /// <summary>Moved it and got paid the few hundred for it.</summary>
-        FrontedPaid
+        FrontedPaid,
+
+        /// <summary>A van went down the port and came back sitting lower than it left.</summary>
+        PortRun,
+
+        /// <summary>And got where it was going. This is the one that changes what you are.</summary>
+        PortRunDone
     }
 
     /// <summary>
@@ -1253,6 +1259,16 @@ namespace Hoodrich.Social
                     follow = "Ambient";
                     break;
 
+                case SocialEvent.PortRun:
+                    // Somebody clocked the van at the docks, and the docks are not round here.
+                    follow = _rng.NextDouble() < 0.5 ? "Ambient" : "BallasTaunt";
+                    break;
+
+                case SocialEvent.PortRunDone:
+                    follow = _rng.NextDouble() < 0.55 ? "OursGloats" : "BallasTaunt";
+                    count = 2 + _rng.Next(BurstMax - 1);
+                    break;
+
                 default:
                     return;
             }
@@ -1359,6 +1375,11 @@ namespace Hoodrich.Social
                 case SocialEvent.RivalKilled: return 0.45f;
                 case SocialEvent.FrontedWork: return 0.55f;
                 case SocialEvent.FrontedPaid: return 0.40f;
+
+                // Neither of these is a secret worth keeping. Half a street watched a van they
+                // know leave and come back, and the other half heard about it by teatime.
+                case SocialEvent.PortRun: return 0.65f;
+                case SocialEvent.PortRunDone: return 1f;
                 case SocialEvent.Busted: return 0.7f;
                 case SocialEvent.Tagged: return 0.5f;
                 case SocialEvent.BigSale: return 0.35f;
@@ -1398,6 +1419,12 @@ namespace Hoodrich.Social
                 case SocialEvent.LeftGang: return -(10 + _rng.Next(20));
                 case SocialEvent.Busted: return -(2 + _rng.Next(6));
                 case SocialEvent.BigSale: return 1 + _rng.Next(4);
+
+                // Getting put on to somebody's supply is the biggest single step in the mod
+                // and it should read like one -- more than a job, less than a rank.
+                case SocialEvent.PortRun: return 4 + _rng.Next(8);
+                case SocialEvent.PortRunDone: return 30 + _rng.Next(40);
+
                 default: return 0;
             }
         }

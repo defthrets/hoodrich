@@ -111,6 +111,13 @@ namespace Hoodrich.Missions
         public int PayMin = 600;
         public int PayMax = 1200;
         public float Rep = 40f;
+        /// <summary>
+        /// Kept so missions.json still parses, and read by nothing.
+        ///
+        /// Lamar's list is gated by the chain and by a few minutes between jobs now. The rank
+        /// wall locked his work behind respect that only came from standing on corners, which
+        /// put the jobs behind not doing the jobs.
+        /// </summary>
         public int MinRank;
 
         /// <summary>

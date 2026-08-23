@@ -962,15 +962,28 @@ namespace Hoodrich.Supply
         // ---- the conversation that opens the game up ----------------------------
 
         /// <summary>
+        /// Starts the run to the port. Set by Main, so this file never has to know how.
+        /// </summary>
+        public Func<bool> SendToThePort;
+
+        /// <summary>
         /// The player asks their crew's dealer where the product actually comes from.
         ///
-        /// This is the one progression gate in the supply chain: until a corner dealer names
-        /// the port, the docks are not a place the player can go. He will only say it once
-        /// you have moved enough weight to be worth telling.
+        /// This is the one progression gate in the supply chain: until somebody names the
+        /// port, the docks are not a place the player can go. He will only say it once you
+        /// have moved enough weight to be worth telling -- and even then the answer is a drive
+        /// rather than a phone number, which is PortRun's job.
         /// </summary>
         public void AskSource(DealerDef def, PlayerState state, float requiredGrams)
         {
             if (def == null) return;
+
+            if (state.PortRunStage != 0)
+            {
+                Bark(NoLines);
+                Notify.Ticker("~y~He already sent you. Go and do it.~s~");
+                return;
+            }
 
             if (state.DocksUnlocked)
             {
@@ -991,13 +1004,12 @@ namespace Hoodrich.Supply
                 return;
             }
 
-            state.DocksUnlocked = true;
-            state.AddRespect(15f);
+            if (SendToThePort == null || !SendToThePort()) return;
+
+            state.AddRespect(5f);
             state.Touch();
 
             Bark(AgreeLines);
-            Notify.Important("~g~The docks are open to you.~s~ Find the dock worker at the port.");
-            Log.Info("Docks unlocked after " + state.GramsSold.ToString("0.#") + "g sold.");
         }
 
         /// <summary>How much more the player has to move before the question will be answered.</summary>
