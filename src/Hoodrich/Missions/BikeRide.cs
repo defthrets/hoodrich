@@ -355,6 +355,15 @@ namespace Hoodrich.Missions
             if (_playerBike == null) return "Ain't no bike out there.";
 
             Phase = BikePhase.ToBike;
+
+            // BEFORE anything spawns, and that is the fix for our own people wading in.
+            //
+            // The sides used to be made when Lamar was brought, which is after the rivals are
+            // placed on some runs -- and a rival placed before the group exists falls back to
+            // AMBIENT_GANG_BALLAS, which the Families on that block genuinely do hate. Half the
+            // neighbourhood then arrived at a fight that is supposed to be four men.
+            MakeSides();
+
             HoldTheLaw(true);
             Mark(BikeSpot, "Your bike", BlipColor.Yellow);
 
@@ -377,7 +386,13 @@ namespace Hoodrich.Missions
             // and the game hands the police back on its own -- a cutscene, an area reload, a
             // mission ending. The straightener on the courts is not a police matter and should
             // not become one halfway through.
-            HoldTheLaw(true);
+            //
+            // UNLESS THE TILL HAS BEEN EMPTIED, and this is why there was never a star after
+            // the shop. Releasing the hold at the robbery was correct and this line quietly
+            // undid it a quarter of a second later: Hold does not merely cap the wanted level,
+            // it CLEARS it, so the star was set and then wiped on the very next tick, every
+            // time. The re-assert has to stop when the reason for it stops.
+            if (!_lawLoose) HoldTheLaw(true);
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive)
@@ -593,6 +608,7 @@ namespace Hoodrich.Missions
             _robOffered = false;
             _robAccepted = false;
             _gotCash = false;
+            _lawLoose = false;
             _clerk = null;
             _doorAt = 0;
 
@@ -941,6 +957,7 @@ namespace Hoodrich.Missions
             // Robbing a shop is exactly the moment that reasoning stops applying. Somebody
             // presses the button under the counter, and from here it is meant to be a chase.
             HoldTheLaw(false);
+            _lawLoose = true;
 
             try
             {
@@ -1301,15 +1318,17 @@ namespace Hoodrich.Missions
         /// <summary>
         /// Lamar, stood over it, enjoying himself.
         ///
-        /// A scenario rather than an animation, which matters here: an anim dictionary is not
-        /// loaded in the frame it is asked for, so playing a clip the moment the last man goes
-        /// down means playing nothing at all. WORLD_HUMAN_CHEERING is already in the game and
-        /// starts on the frame it is given.
+        /// A LINE AND A NOISE, and no animation at all any more.
         ///
-        /// He is not held there. If you get straight on the bike, RemountHomies puts him on
-        /// his -- somebody choosing to ride off IS the end of the moment, and freezing the
-        /// mission for three seconds to make sure a celebration is seen would be worse than
-        /// missing it.
+        /// WORLD_HUMAN_CHEERING was the obvious way to show it and it is a trap: the scenario
+        /// loops, nothing in the phase that follows clears it, and re-tasking him to ride only
+        /// works if he is asked -- so he stood on that court applauding until something else
+        /// happened to him. A man clapping on a loop is worse than a man who simply said the
+        /// thing and got back on his bike.
+        ///
+        /// He is not held here either way. If you ride off immediately, that IS the end of the
+        /// moment -- freezing the mission to make sure a celebration is seen would be worse
+        /// than missing it.
         /// </summary>
         private void Cheer()
         {
@@ -1317,19 +1336,6 @@ namespace Hoodrich.Missions
             _thirstyAt = Game.GameTime + 3400;
 
             Says("~y~LAMAR", "AYYY! You seen that?! That's what I'm talkin' 'bout!", 3000);
-
-            if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive) return;
-
-            try
-            {
-                Function.Call(Hash.CLEAR_PED_TASKS, _lamar.Handle);
-                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _lamar.Handle,
-                              "WORLD_HUMAN_CHEERING", 0, true);
-            }
-            catch
-            {
-                // He will stand there pleased with himself instead.
-            }
 
             Mouth(_lamar, "GENERIC_INSULT_HIGH");
         }
@@ -1409,6 +1415,9 @@ namespace Hoodrich.Missions
 
         /// <summary>Somebody presses the button under the counter. One, and you are on a bike.</summary>
         private const int RobberyStars = 1;
+
+        /// <summary>True once the shop has been done and the police are somebody's problem.</summary>
+        private bool _lawLoose;
 
         /// <summary>When his second line is due, so it does not land on top of the shout.</summary>
         private int _weaselAt;
@@ -2542,36 +2551,43 @@ namespace Hoodrich.Missions
                 var many = Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS,
                                               player.Handle, MaskSlot);
 
-                // The one from the picture first, then a couple either side of it, and then
-                // every other drawable this model has -- backwards, because masks sit at the
-                // end of a component list and a plain forward scan finds a scarf.
-                var order = new System.Collections.Generic.List<int> { 54, 53, 52, 55 };
+                // FROM THE END, and no freemode numbers anywhere near it.
+                //
+                // Component 1 is "berd", and on a freemode ped that is the mask slot while on a
+                // story ped it is the BEARD slot with the heist masks appended after the facial
+                // hair. Asking for 54 because a wiki page about freemode masks says 54 is
+                // exactly how Franklin ended up in a goatee.
+                //
+                // Nothing here can tell a beard from a balaclava, so it takes the last valid
+                // drawable in the list, which is where the masks were added. If that is still
+                // wrong it is one number, and the line below says what the choices were.
+                var found = -1;
 
-                for (var i = many - 1; i >= 1; i--)
+                for (var drawable = many - 1; drawable >= 1; drawable--)
                 {
-                    if (!order.Contains(i)) order.Add(i);
-                }
-
-                foreach (var drawable in order)
-                {
-                    if (drawable < 0 || drawable >= many) continue;
-
                     if (!Function.Call<bool>(Hash.IS_PED_COMPONENT_VARIATION_VALID,
                                              player.Handle, MaskSlot, drawable, 0))
                     {
                         continue;
                     }
 
-                    Function.Call(Hash.SET_PED_COMPONENT_VARIATION,
-                                  player.Handle, MaskSlot, drawable, 0, 0);
+                    found = drawable;
+                    break;
+                }
 
-                    _masked = true;
-
-                    Log.Info("Mask on for the store: component 1, drawable " + drawable + ".");
+                if (found < 0)
+                {
+                    Log.Warn("Nothing usable in component 1 on this model; going in bare-faced.");
                     return;
                 }
 
-                Log.Warn("This model has no mask in component 1; going in bare-faced.");
+                Function.Call(Hash.SET_PED_COMPONENT_VARIATION,
+                              player.Handle, MaskSlot, found, 0, 0);
+
+                _masked = true;
+
+                Log.Info("Mask on for the store: component 1, drawable " + found + " of " +
+                         many + " (0.." + (many - 1) + " to choose from).");
             }
             catch (Exception ex)
             {

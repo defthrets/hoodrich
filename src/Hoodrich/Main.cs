@@ -145,6 +145,7 @@ namespace Hoodrich
         private readonly Entourage _party;
         private readonly Entourage _meet;
         private readonly Social.Newsroom _newsroom;
+        private readonly DroppedBags _bags;
         private readonly ParkedCar _meetOne;
         private readonly ParkedCar _meetTwo;
         private readonly Fixture _partyBarrel;
@@ -389,6 +390,11 @@ namespace Hoodrich
 
                 _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market };
                 _cutting = new Cutting(_state.Stash, _state);
+
+                // Product you have put down. Its own thing rather than a corner of the stash,
+                // because a bag on a pavement is not storage -- it is somewhere you left
+                // something in a hurry.
+                _bags = new DroppedBags { Pockets = _state.Stash };
                 _cook = new CookScreen();
                 _kitchen = new Kitchen(OpenKitchen, () => _cutting.IsBusy);
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
@@ -1479,6 +1485,9 @@ namespace Hoodrich
                     // The desk, watching the street for the two things nothing else reports.
                     if (_newsroom != null) _newsroom.Update();
 
+                    // And anything you have put down, waiting to be picked back up.
+                    if (_bags != null) _bags.Update();
+
                     _copWatch.Update();
                     _block.Update();
                     _couch.Update();
@@ -1984,6 +1993,7 @@ namespace Hoodrich
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
+            try { _bags?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockA?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockB?.RestoreWorld(); } catch { /* teardown */ }
             foreach (var door in _doors)

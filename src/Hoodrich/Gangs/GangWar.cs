@@ -124,14 +124,14 @@ namespace Hoodrich.Gangs
                 { "Stretch", new Vector3(-134.105f, -1472.521f, 36.192f) },
                 // And the corner in Chamberlain, which is the set's leader -- Gerald's now.
                 { "Gerald",  new Vector3(-161.651f, -1637.566f, 37.246f) },
-                // The lot, with everybody else. Lamar moved four streets and this did not
-                // move with him, so a raid on him mustered our people on the corner he used to
-                // stand on -- close enough to the old spot to look deliberate and far enough
-                // from the new one that the fight was over before anybody walked it.
+                // Under the carport at the top of the lot, which is why the Z on this one
+                // matters more than on any of the others.
                 //
-                // This is the same coordinate the foot jobs muster on, which is a point already
-                // known to be on the ground in that yard rather than a fresh guess near it.
-                { "Lamar",   new Vector3(-196.639f, -1727.089f, 32.664f) },
+                // The whole table is used VERBATIM for exactly this reason: there is a roof
+                // over this spot, and a ground probe run from above it finds that roof and puts
+                // four men on it. Nothing in this file probes, and this entry is the reason not
+                // to start.
+                { "Lamar",   new Vector3(-202.399f, -1710.296f, 32.664f) },
             };
 
         private const int PerCar = 4;
@@ -1059,11 +1059,34 @@ namespace Hoodrich.Gangs
         {
             try
             {
-                var c = gang.Colour;
-
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, car.Handle, 0);
-                Function.Call(Hash.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR, car.Handle, (int)c.R, (int)c.G, (int)c.B);
-                Function.Call(Hash.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR, car.Handle, (int)c.R, (int)c.G, (int)c.B);
+
+                // Whatever pattern the game rolled for it comes off first, or the paint is
+                // under a livery and nobody can see any of this.
+                Function.Call(Hash.SET_VEHICLE_LIVERY, car.Handle, -1);
+                Function.Call(Hash.SET_VEHICLE_MOD, car.Handle, 48, -1, false);
+
+                // The game's own table if the set has an index, and the flat RGB only if it
+                // has not.
+                //
+                // This is the lot's lesson applied to everybody else's cars: a custom colour
+                // from three numbers is a poster, and the table has the metallic flake baked
+                // in. A Balla car in RGB purple is a purple car; a Balla car in 145 is a purple
+                // car that has been painted.
+                if (gang.Paint >= 0)
+                {
+                    Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, gang.Paint, gang.Paint);
+                }
+                else
+                {
+                    var c = gang.Colour;
+
+                    Function.Call(Hash.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR, car.Handle,
+                                  (int)c.R, (int)c.G, (int)c.B);
+                    Function.Call(Hash.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR, car.Handle,
+                                  (int)c.R, (int)c.G, (int)c.B);
+                }
+
                 Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, car.Handle, 1);
             }
             catch

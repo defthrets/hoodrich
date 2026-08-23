@@ -663,8 +663,18 @@ namespace Hoodrich.Gangs
             try
             {
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, car.Handle, 0);
-                Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, DarkGreen, DarkGreen);
-                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, DarkGreen, 0);
+
+                // Nothing over the top of it.
+                Function.Call(Hash.SET_VEHICLE_LIVERY, car.Handle, -1);
+                Function.Call(Hash.SET_VEHICLE_MOD, car.Handle, 48, -1, false);
+
+                // The set's own index rather than a second copy of the number. This file and
+                // gangs.json both said 49 and only one of them could be the place to change it.
+                var gang = _gangs == null ? null : _gangs.Get(_gangId);
+                var paint = gang != null && gang.Paint >= 0 ? gang.Paint : DarkGreen;
+
+                Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, paint, paint);
+                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, paint, 0);
 
                 if (bike) return;
 

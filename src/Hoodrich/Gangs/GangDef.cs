@@ -37,6 +37,16 @@ namespace Hoodrich.Gangs
         /// <summary>Game blip colour index, for turf blips.</summary>
         public int BlipColour = 0;
 
+        /// <summary>
+        /// Index into the game's own vehicle colour table, or below zero for none.
+        ///
+        /// Not the same thing as Colour above, and the difference is the whole point. Colour is
+        /// an RGB triple for tinting a wheel wedge and a panel; a car painted from one comes out
+        /// flat, like a poster, because the metallic flake lives in the game's paint table and
+        /// there is no way to reach it through three numbers.
+        /// </summary>
+        public int Paint = -1;
+
         /// <summary>Products this gang moves. Affiliating unlocks better prices on these.</summary>
         public readonly List<string> Drugs = new List<string>();
 

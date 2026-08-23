@@ -239,6 +239,25 @@ namespace Hoodrich.Gangs
 
                 _car.IsPersistent = true;
 
+                // In their colours. This is the one carload in the mod that turns up because
+                // of something you SAID, and arriving in whatever the game handed out made it
+                // read as traffic that happened to stop.
+                try
+                {
+                    var them = _who;
+
+                    if (them != null && them.Paint >= 0)
+                    {
+                        Function.Call(Hash.SET_VEHICLE_MOD_KIT, _car.Handle, 0);
+                        Function.Call(Hash.SET_VEHICLE_LIVERY, _car.Handle, -1);
+                        Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 48, -1, false);
+
+                        Function.Call(Hash.SET_VEHICLE_COLOURS, _car.Handle, them.Paint, them.Paint);
+                        Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
+                    }
+                }
+                catch { /* a car in the wrong colour is still a car */ }
+
                 MakeGroup();
 
                 // Four of them for a fight, three for a drive-by -- the fourth has nowhere to

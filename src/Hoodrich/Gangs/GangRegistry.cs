@@ -83,6 +83,7 @@ namespace Hoodrich.Gangs
                 g.Tag = node["tag"].AsString(g.Tag.Length > 0 ? g.Tag : id.Substring(0, Math.Min(4, id.Length)).ToUpperInvariant());
                 g.RelationshipGroup = node["relationshipGroup"].AsString(g.RelationshipGroup);
                 g.BlipColour = node["blipColour"].AsInt(g.BlipColour);
+                g.Paint = node["paint"].AsInt(g.Paint);
                 g.TurfHint = node["turfHint"].AsString(g.TurfHint);
                 g.JoinRespect = Math.Max(0f, node["joinRespect"].AsFloat(g.JoinRespect));
                 g.Joinable = node["joinable"].AsBool(g.Joinable);
