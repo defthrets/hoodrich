@@ -629,17 +629,19 @@ namespace Hoodrich.Missions
                     _van.Heading = VanHeading;
 
                     Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, h);
+
+                    // Has to come first: nothing in the mod system answers honestly until the
+                    // kit is on.
                     Function.Call(Hash.SET_VEHICLE_MOD_KIT, h, 0);
 
-                    // A livery beats paint, so it is cleared before the colour goes on rather
-                    // than after -- otherwise the van comes out in whatever the wrap says.
-                    Function.Call(Hash.SET_VEHICLE_LIVERY, h, -1);
-                    Function.Call(Hash.SET_VEHICLE_MOD, h, 48, -1, false);
+                    // Strip the branding before the paint goes on, and check that it took.
+                    Blank(h);
 
                     // The index into the game's own paint table, not an RGB. The RGB call gives
                     // a flat poster green; the index gives the metallic flake, which is the
                     // difference between a painted van and a coloured shape.
                     Function.Call(Hash.SET_VEHICLE_COLOURS, h, VanGreen, VanGreen);
+                    Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, h, VanGreen, 0);
 
                     // Filthy. It has been up that kerb a long time.
                     Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, h, VanDirt);
@@ -658,6 +660,109 @@ namespace Hoodrich.Missions
                     Log.Debug("Could not park Gerald's van: " + ex.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// Takes every wrap, decal and bolt-on off a vehicle.
+        ///
+        /// The van turned up as a WEAZEL NEWS van, in our green, with the branding still on
+        /// top of it -- so the paint was landing and the livery was surviving. The reason is
+        /// that GTA has THREE separate systems for putting artwork on a vehicle and this only
+        /// cleared one and a half of them:
+        ///
+        ///   SET_VEHICLE_LIVERY     the old per-model livery
+        ///   SET_VEHICLE_LIVERY2    a second layer some vehicles carry on top of the first
+        ///   SET_VEHICLE_MOD(48)    the mod-kit livery slot, which is where anything with a
+        ///                          modkit actually keeps its wraps -- and rumpo has one,
+        ///                          "81_rumpo_modkit", confirmed in the game's vehicle dump
+        ///
+        /// plus EXTRAS, which are physical bolt-on parts rather than textures and are how
+        /// several vans carry signage. The rumpo has none, but the fallback vans do.
+        ///
+        /// Every one is cleared, and -1 is not trusted to mean "none": the value is read back,
+        /// and anything still showing is forced to index 0. What each system reported goes in
+        /// the log, because the only way to find out from outside the game which one was
+        /// holding the branding is to have written the numbers down.
+        /// </summary>
+        private static void Blank(int h)
+        {
+            var told = "";
+
+            try
+            {
+                var count = Function.Call<int>(Hash.GET_VEHICLE_LIVERY_COUNT, h);
+
+                if (count > 0)
+                {
+                    Function.Call(Hash.SET_VEHICLE_LIVERY, h, -1);
+
+                    if (Function.Call<int>(Hash.GET_VEHICLE_LIVERY, h) >= 0)
+                    {
+                        Function.Call(Hash.SET_VEHICLE_LIVERY, h, 0);
+                    }
+                }
+
+                told += "livery " + count + "->" + Function.Call<int>(Hash.GET_VEHICLE_LIVERY, h);
+            }
+            catch { told += "livery n/a"; }
+
+            try
+            {
+                var count = Function.Call<int>(Hash.GET_VEHICLE_LIVERY2_COUNT, h);
+
+                if (count > 0)
+                {
+                    Function.Call(Hash.SET_VEHICLE_LIVERY2, h, -1);
+
+                    if (Function.Call<int>(Hash.GET_VEHICLE_LIVERY2, h) >= 0)
+                    {
+                        Function.Call(Hash.SET_VEHICLE_LIVERY2, h, 0);
+                    }
+                }
+
+                told += ", livery2 " + count + "->" + Function.Call<int>(Hash.GET_VEHICLE_LIVERY2, h);
+            }
+            catch { told += ", livery2 n/a"; }
+
+            try
+            {
+                // 48 is the mod-kit livery slot.
+                var mods = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, h, 48);
+
+                if (mods > 0)
+                {
+                    Function.Call(Hash.SET_VEHICLE_MOD, h, 48, -1, false);
+
+                    if (Function.Call<int>(Hash.GET_VEHICLE_MOD, h, 48) >= 0)
+                    {
+                        Function.Call(Hash.SET_VEHICLE_MOD, h, 48, 0, false);
+                    }
+                }
+
+                told += ", mod48 " + mods + "->" + Function.Call<int>(Hash.GET_VEHICLE_MOD, h, 48);
+            }
+            catch { told += ", mod48 n/a"; }
+
+            // And the bolt-ons. Toggle 1 turns an extra OFF, which reads backwards and is
+            // genuinely how the native works.
+            var off = 0;
+
+            for (var extra = 1; extra <= 14; extra++)
+            {
+                try
+                {
+                    if (!Function.Call<bool>(Hash.DOES_EXTRA_EXIST, h, extra)) continue;
+
+                    Function.Call(Hash.SET_VEHICLE_EXTRA, h, extra, 1);
+                    off++;
+                }
+                catch
+                {
+                    // Next one.
+                }
+            }
+
+            Log.Info("Van stripped: " + told + ", " + off + " extras off.");
         }
 
         private void MarkVan()
