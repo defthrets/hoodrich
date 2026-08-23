@@ -213,30 +213,43 @@ namespace Hoodrich.Gangs
         /// <summary>
         /// How often the war is even considered, and how likely it is when it is.
         ///
-        /// Tuned for about one an hour of play. A raid on your own block is only an event while
-        /// it is rare -- three of them in twenty minutes and it stops being a raid and becomes
-        /// the weather.
+        /// A raid on your own block is only an event while it is rare -- three of them in
+        /// twenty minutes and it stops being a raid and becomes the weather, which is exactly
+        /// what these numbers used to produce.
+        ///
+        /// The problem was never the base rate; it was the heat scaling on top of it. Anybody
+        /// actually playing the mod is killing rivals, so the worst standing is where you
+        /// spend your time, and at the old numbers that end of the curve worked out at a raid
+        /// every half hour with an eight-minute floor between them. The base is now somewhat
+        /// slower and the hated end is roughly three times slower, so being at war with
+        /// somebody makes raids likely rather than constant.
         /// </summary>
-        private const int RollIntervalMs = 600000;
+        private const int RollIntervalMs = 900000;
 
         /// <summary>How long before it looks again, if you were on a job when it did.</summary>
         private const int BusyRetryMs = 90000;
-        private const float WarChance = 0.08f;
+        private const float WarChance = 0.06f;
 
         /// <summary>
         /// Added to the odds when the worst of them hates you outright.
         ///
         /// Somebody you have not crossed is a once-in-a-session event. Somebody whose people you
         /// have been putting down all week is coming, and coming soon, and the difference
-        /// between those two is the entire point of keeping standings at all.
+        /// between those two is the entire point of keeping standings at all. That difference
+        /// survives at a quarter chance a roll -- it is still four times the base rate.
         /// </summary>
-        private const float WarChanceAtWorst = 0.42f;
+        private const float WarChanceAtWorst = 0.18f;
 
         /// <summary>Nothing starts within this of the last one ending.</summary>
-        private const int CalmMs = 1800000;
+        private const int CalmMs = 2700000;
 
-        /// <summary>How little quiet you get when they hate you. Half an hour becomes eight minutes.</summary>
-        private const int CalmAtWorstMs = 480000;
+        /// <summary>
+        /// How little quiet you get when they hate you.
+        ///
+        /// This is the floor that actually decides whether raids feel like weather, because at
+        /// high heat it is what you hit rather than the roll. Eight minutes was not a lull.
+        /// </summary>
+        private const int CalmAtWorstMs = 1500000;
 
         /// <summary>
         /// How far standing has to fall before it counts as all the way bad.

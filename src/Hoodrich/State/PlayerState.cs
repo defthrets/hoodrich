@@ -227,6 +227,42 @@ namespace Hoodrich.State
         /// </summary>
         public readonly List<string> MissionsDone = new List<string>();
 
+        /// <summary>
+        /// Which gang bosses you have actually stood in front of.
+        ///
+        /// Their map markers are hidden until you have met them, so the other eight sets are
+        /// something you find rather than something you are handed. A fresh save shows one
+        /// icon; the rest of the map fills in as you go, which is the difference between a
+        /// city you are exploring and a menu of destinations you have not visited yet.
+        ///
+        /// Stored by gang id rather than by leader name so renaming a man in leaders.json does
+        /// not wipe the fact that you know him.
+        /// </summary>
+        public readonly List<string> LeadersMet = new List<string>();
+
+        public bool HasMet(string gangId)
+        {
+            if (string.IsNullOrEmpty(gangId)) return false;
+
+            foreach (var id in LeadersMet)
+            {
+                if (string.Equals(id, gangId, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Returns true only the first time, so the caller can say something.</summary>
+        public bool MarkMet(string gangId)
+        {
+            if (string.IsNullOrEmpty(gangId) || HasMet(gangId)) return false;
+
+            LeadersMet.Add(gangId);
+            Touch();
+
+            return true;
+        }
+
         public bool HasDone(string missionId)
         {
             if (string.IsNullOrEmpty(missionId)) return false;
@@ -426,6 +462,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json LeadersJson()
+        {
+            var arr = Json.Array();
+            foreach (var id in LeadersMet) arr.Add(Json.Str(id));
+            return arr;
+        }
+
         private Json OfferedJson()
         {
             var arr = Json.Array();
@@ -493,6 +536,7 @@ namespace Hoodrich.State
                 .Set("frontedAtGrams", FrontedAtGrams)
                 .Set("lastJobAt", LastJobAtUtc)
                 .Set("missionsDone", MissionsJson())
+                .Set("leadersMet", LeadersJson())
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson());
         }
@@ -537,6 +581,13 @@ namespace Hoodrich.State
                 {
                     var id = node.AsString("");
                     if (!string.IsNullOrEmpty(id) && !HasDone(id)) MissionsDone.Add(id);
+                }
+
+                LeadersMet.Clear();
+                foreach (var node in doc["leadersMet"].Items)
+                {
+                    var id = node.AsString("");
+                    if (!string.IsNullOrEmpty(id) && !HasMet(id)) LeadersMet.Add(id);
                 }
 
                 // Read back, or Lamar texts about the same job every time you load.

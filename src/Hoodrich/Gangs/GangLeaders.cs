@@ -431,11 +431,37 @@ namespace Hoodrich.Gangs
                 // it says whose side of the street this is, and it gives you a door to knock
                 // on when you want to start something.
                 //
-                // Rivals appear once you are somebody's, though. At the very start Gerald is
-                // deliberately the only mark on the map -- that is the whole shape of the
-                // opening -- and nine gang bosses before you have moved a gram undoes it.
+                // Rivals used to be gated on having joined a set, for the same reason: at the
+                // very start Gerald is deliberately the only mark on the map, and nine gang
+                // bosses before you have moved a gram undoes the opening.
+                //
+                // That gate is gone because the one below does the job better. You now cannot
+                // see a rival until you have stood in front of him, which means a fresh save
+                // still opens with exactly one icon -- but a player who goes looking is
+                // rewarded for it instead of being told to come back later.
                 var mine = gang != null && gang.Joinable;
-                var known = mine || (_crew != null && _crew.IsAffiliated);
+
+                // A boss is not on your map until you have stood in front of him.
+                //
+                // Everything above is still true -- a rival boss standing somewhere fixed is a
+                // landmark, and the map should say whose side of the street this is. What it
+                // should NOT do is say it before you have been down that street. Nine markers
+                // handed to a player who has never left Strawberry turns the whole city into a
+                // list of errands; nine markers that appear one at a time as you find the men
+                // is a map you drew yourself.
+                //
+                // The one exception is your own boss, who is never hidden.
+                //
+                // Before you join he is the opening -- Gerald texts, you go and see him, you
+                // move his package, you get asked in -- and hiding the only icon on a fresh
+                // save leaves a new player with a text message and no idea where to go. After
+                // you join he is your boss, and a man you take orders from is not somebody you
+                // have to keep rediscovering.
+                //
+                // Stating it as "mine" rather than as "mine and not yet joined" also means a
+                // save made before any of this existed keeps its Families marker instead of
+                // losing it to an empty list.
+                var known = mine || (_state != null && _state.HasMet(def.GangId));
 
                 var worthMarking = gang != null && known && !def.IsAwayAt(Pricing.ClockHour)
                                    && (StandDown == null || !StandDown(def.GangId));
@@ -516,6 +542,37 @@ namespace Hoodrich.Gangs
 
         /// <summary>Handle of the blip currently attached to a ped, so it is not rebuilt.</summary>
         private int _pedBlipHandle;
+
+        /// <summary>
+        /// Writes down that you have met whoever you are stood in front of.
+        ///
+        /// Said out loud the first time, because a marker quietly appearing behind you on a map
+        /// you are not looking at is a thing the player never learns is happening -- and the
+        /// whole point of hiding them is that finding one should feel like progress.
+        /// </summary>
+        private void MarkFound()
+        {
+            if (_state == null || _liveDef == null) return;
+            if (!_state.MarkMet(_liveDef.GangId)) return;
+
+            var gang = _gangs.Get(_liveDef.GangId);
+
+            try
+            {
+                Notify.Ticker("~y~" + _liveDef.Name + "~s~ is on your map now.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not say who was found: " + ex.Message);
+            }
+
+            Log.Info("Met " + _liveDef.Name + " of " +
+                     (gang != null ? gang.Name : _liveDef.GangId) + "; his blip is on.");
+
+            // Straight away rather than on the next sweep, so it is on the map by the time the
+            // dialogue closes and you look.
+            SyncBlips();
+        }
 
         // ---- per-tick ----------------------------------------------------------
 
@@ -780,6 +837,12 @@ namespace Hoodrich.Gangs
 
             _held = true;
             Say(_livePed, HelloLines);
+
+            // Standing in front of him is what puts him on your map, and this is the one place
+            // in the file that knows you are doing it. Not proximity -- walking past a man on
+            // the far pavement is not meeting him, and a marker that appears because you drove
+            // near it is a marker you still have not earned.
+            MarkFound();
 
             try
             {
