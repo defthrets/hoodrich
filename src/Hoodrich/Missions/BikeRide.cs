@@ -790,6 +790,8 @@ namespace Hoodrich.Missions
             {
                 _robAccepted = true;
 
+                MaskUp();
+
                 Notify.Important("~r~In you go.~s~ Aim at the man behind the counter and hold " +
                                  "it on him until he empties the till.");
 
@@ -2003,7 +2005,7 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>Past this he is behind rather than beside you, and the clock starts.</summary>
-        private const float LamarLeash = 20f;
+        private const float LamarLeash = 30f;
 
         /// <summary>How long he gets to close it before he is simply moved.</summary>
         private const int LamarStuckMs = 4000;
@@ -2511,8 +2513,106 @@ namespace Hoodrich.Missions
 
         // ---- finishing ---------------------------------------------------------
 
+        /// <summary>
+        /// A balaclava, for as long as the robbery lasts.
+        ///
+        /// Component 1 is the mask slot on every ped in the game, and what is IN it depends
+        /// entirely on the model -- the numbers everybody quotes are the freemode list, and
+        /// Franklin is not a freemode ped. So the wanted one is asked for first and the rest of
+        /// the slot is searched only if the game says no.
+        ///
+        /// IS_PED_COMPONENT_VARIATION_VALID is the whole reason this is safe. Setting a
+        /// component to a drawable a model has not got does not fail, it produces a hole where
+        /// the head was, and that is not a thing to find out about in a screenshot.
+        ///
+        /// What he was wearing is remembered before anything is changed, because the mask has
+        /// to come off again and "put it back to zero" is not the same as putting it back.
+        /// </summary>
+        private void MaskUp()
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            try
+            {
+                _woreDrawable = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, player.Handle, MaskSlot);
+                _woreTexture = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, player.Handle, MaskSlot);
+                _masked = false;
+
+                var many = Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS,
+                                              player.Handle, MaskSlot);
+
+                // The one from the picture first, then a couple either side of it, and then
+                // every other drawable this model has -- backwards, because masks sit at the
+                // end of a component list and a plain forward scan finds a scarf.
+                var order = new System.Collections.Generic.List<int> { 54, 53, 52, 55 };
+
+                for (var i = many - 1; i >= 1; i--)
+                {
+                    if (!order.Contains(i)) order.Add(i);
+                }
+
+                foreach (var drawable in order)
+                {
+                    if (drawable < 0 || drawable >= many) continue;
+
+                    if (!Function.Call<bool>(Hash.IS_PED_COMPONENT_VARIATION_VALID,
+                                             player.Handle, MaskSlot, drawable, 0))
+                    {
+                        continue;
+                    }
+
+                    Function.Call(Hash.SET_PED_COMPONENT_VARIATION,
+                                  player.Handle, MaskSlot, drawable, 0, 0);
+
+                    _masked = true;
+
+                    Log.Info("Mask on for the store: component 1, drawable " + drawable + ".");
+                    return;
+                }
+
+                Log.Warn("This model has no mask in component 1; going in bare-faced.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not mask up: " + ex.Message);
+            }
+        }
+
+        /// <summary>Puts his own face back, however the job ended.</summary>
+        private void MaskOff()
+        {
+            if (!_masked) return;
+
+            _masked = false;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.SET_PED_COMPONENT_VARIATION, player.Handle, MaskSlot,
+                              _woreDrawable, _woreTexture, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not take the mask off: " + ex.Message);
+            }
+        }
+
+        /// <summary>Component 1 is the mask on every model the game ships.</summary>
+        private const int MaskSlot = 1;
+
+        private bool _masked;
+        private int _woreDrawable;
+        private int _woreTexture;
+
         public void Clear()
         {
+            // Whatever else happens in teardown, he does not keep the balaclava. This runs on
+            // the job finishing, on failing it, and on the mod being switched off.
+            MaskOff();
+
             // First, before anything else can go wrong in teardown. Leaving the player unable
             // to attract police for the rest of the session because a cleanup threw is far
             // worse than any of the litter below.
