@@ -148,6 +148,17 @@ namespace Hoodrich.Supply
         /// </summary>
         public readonly List<string> Rides = new List<string>();
 
+        /// <summary>
+        /// What colour his ride is painted, as a GTA paint index. -1 leaves it black.
+        ///
+        /// Every delivery car in the mod was blacked out on the reasoning that a man driving
+        /// product wants to be unremarkable. That is true of a stranger coming in from the
+        /// port and wrong about somebody from the block: Gerald turning up in the same anonymous
+        /// black saloon as the docks contact makes the two men read as one supplier with two
+        /// phone numbers. A colour he chose is a fact about him.
+        /// </summary>
+        public int RidePaint = -1;
+
         public float PriceMultiplier = 1f;
         public int MinRank;
         public float MaxOrderGrams = 100f;

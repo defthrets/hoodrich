@@ -754,7 +754,7 @@ namespace Hoodrich.Supply
                 }
 
                 _car.IsPersistent = true;
-                BlackOut(_car);
+                BlackOut(_car, _def != null ? _def.RidePaint : -1);
 
                 var pedModel = ResolveDriverModel();
                 if (pedModel == null)
@@ -815,19 +815,25 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>
-        /// Blacked out and tinted, every panel, every time.
+        /// Painted and tinted, every panel, every time.
         ///
         /// A mod kit has to be set before any modification takes, which is the usual reason
         /// wheels and trim stay factory while the paint changes.
+        ///
+        /// The colour is the dealer's if he has one and black otherwise, so the default is
+        /// still the anonymous car this always spawned and only a man who has been given a
+        /// colour deviates from it.
         /// </summary>
-        private static void BlackOut(Vehicle car)
+        private static void BlackOut(Vehicle car, int paint)
         {
             try
             {
+                var colour = paint >= 0 ? paint : BlackPaint;
+
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, car.Handle, 0);
 
-                Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, BlackPaint, BlackPaint);
-                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, BlackPaint, BlackPaint);
+                Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, colour, colour);
+                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, colour, colour);
                 Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, car.Handle, LimoTint);
 
                 // Black wheels and trim, so nothing on it catches the light.
@@ -842,7 +848,7 @@ namespace Hoodrich.Supply
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not black out the delivery car: " + ex.Message);
+                Log.Debug("Could not paint the delivery car: " + ex.Message);
             }
         }
 

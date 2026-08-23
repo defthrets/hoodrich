@@ -715,7 +715,7 @@ namespace Hoodrich.Gangs
 
                 var one = Node(def, gang,
                     "Look at you. Broke, standin' in my yard askin' for somethin'. Aight -- " +
-                    FrontGrams.ToString("0") + " of bars. Don't ask me for nothin' else, this " +
+                    bars.Amount(FrontGrams) + ". Don't ask me for nothin' else, this " +
                     "is what you get, 'cause bars sell theyself and I ain't gotta teach you " +
                     "nothin'. Move all of it, come back, I break you off a lil somethin'. You " +
                     "eat 'em or you run off with my money, we gon have a whole different " +
@@ -737,9 +737,16 @@ namespace Hoodrich.Gangs
             {
                 var pick = d;
 
+                // Amount() and Singular, not "g" and "a gram".
+                //
+                // Xanax is counted in bars and oxy in pills, so the old line offered the
+                // player "20g of Alprazolam ... about $40 a gram out there" for a product the
+                // entire rest of the mod calls twenty bars at forty dollars a bar. Amount()
+                // exists for exactly this and says so in its own summary; this node was the
+                // one place that went round it.
                 node.Say(pick.Name, () => TakeWork(def, gang, pick),
-                         FrontGrams.ToString("0") + "g  ·  about $" +
-                         pick.BasePrice.ToString("0") + " a gram out there");
+                         pick.Amount(FrontGrams) + "  ·  about $" +
+                         pick.BasePrice.ToString("0") + " a " + pick.Singular + " out there");
 
                 node.WithIcon(Icons.ForDrug(pick.Id));
             }

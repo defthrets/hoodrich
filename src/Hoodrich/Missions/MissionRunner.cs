@@ -2676,10 +2676,36 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, ped.Handle, true);
 
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
+
+                    // And then they actually leave.
+                    //
+                    // Releasing them was only half of it. A released homie keeps whatever he
+                    // was last told to do, and what he was last told to do was sit in that
+                    // seat -- so the job ended, the pay landed, and three men stayed parked
+                    // outside your house for the rest of the session. The job is over; they go
+                    // home.
+                    //
+                    // Flag 0 is the ordinary exit that closes the door behind him, then he
+                    // wanders off on his own. Not deleted: you just drove across the city with
+                    // him and watching him blink out is worse than watching him walk.
+                    if (ped.IsAlive)
+                    {
+                        if (ped.IsInVehicle())
+                        {
+                            Function.Call(Hash.TASK_LEAVE_VEHICLE, ped.Handle,
+                                          ped.CurrentVehicle == null ? 0 : ped.CurrentVehicle.Handle, 0);
+                        }
+
+                        Function.Call(Hash.TASK_WANDER_STANDARD, ped.Handle, 10f, 10);
+                    }
+
                     ped.MarkAsNoLongerNeeded();
                 }
                 catch { /* teardown */ }
             }
+
+            if (_homies.Count > 0) Log.Info("Job over; " + _homies.Count + " homies sent on their way.");
+
             _homies.Clear();
             _seats.Clear();
 

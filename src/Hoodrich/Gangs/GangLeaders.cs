@@ -149,11 +149,42 @@ namespace Hoodrich.Gangs
 
             foreach (var node in doc["leaders"].Items)
             {
-                var def = Get(node["gang"].AsString(""));
-                if (def == null) continue;
+                var gangId = node["gang"].AsString("");
+                if (string.IsNullOrEmpty(gangId)) continue;
+
+                var def = Get(gangId);
+
+                // An unknown gang id used to be skipped in silence, and that is how two
+                // leaders came to exist entirely on paper.
+                //
+                // Chuy of the Aztecas and Mr Kim of the Kkangpae had names, coordinates,
+                // headings, models and blip sprites in leaders.json and no entry in
+                // AddDefaults, so every one of those fields was read and thrown away by this
+                // "continue". They never spawned, never blipped and could never be spoken to,
+                // and nothing anywhere said so -- the file looked complete and two ninths of
+                // the cast did not exist. It only became obvious when leader markers turned
+                // into something the player goes hunting for.
+                //
+                // DealerManager has always let dealers.json add a dealer it has never heard
+                // of. This is the same behaviour, for the same reason: the data file is the
+                // cast list, not a set of corrections to a cast list held somewhere else.
+                if (def == null)
+                {
+                    def = new LeaderDef { GangId = gangId };
+                    _defs.Add(def);
+                    Log.Info("leaders.json introduced a leader the code did not have: " + gangId + ".");
+                }
 
                 var name = node["name"].AsString("");
                 if (!string.IsNullOrEmpty(name)) def.Name = name;
+
+                // Voice lines are data now. They were only ever in AddDefaults because that is
+                // where they were first written, and a man's dialogue is the last thing that
+                // should need a compiler to change.
+                def.Greeting = node["greeting"].AsString(def.Greeting);
+                def.Accept = node["accept"].AsString(def.Accept);
+                def.Refuse = node["refuse"].AsString(def.Refuse);
+                def.Already = node["already"].AsString(def.Already);
 
                 var zone = node["zone"].AsString("");
                 if (!string.IsNullOrEmpty(zone)) def.HomeZone = zone;
@@ -177,6 +208,17 @@ namespace Hoodrich.Gangs
             }
 
             Log.Info("Leader placements loaded: " + placed + ".");
+
+            // Said once, loudly, at load, rather than discovered by a player who drove across
+            // the city to meet somebody who cannot speak.
+            foreach (var def in _defs)
+            {
+                if (string.IsNullOrEmpty(def.Greeting))
+                {
+                    Log.Warn(def.Name + " (" + def.GangId + ") has NO greeting and cannot be " +
+                             "talked to. Give him greeting/accept/refuse/already in leaders.json.");
+                }
+            }
         }
 
         public IReadOnlyList<LeaderDef> All => _defs;

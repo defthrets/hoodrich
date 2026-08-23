@@ -152,6 +152,7 @@ namespace Hoodrich.Supply
                 ReplaceList(def.Models, node["models"]);
                 ReplaceList(def.Drugs, node["drugs"]);
                 ReplaceList(def.Rides, node["rides"]);
+                def.RidePaint = node["ridePaint"].AsInt(def.RidePaint);
                 def.OpeningText = node["openingText"].AsString(def.OpeningText);
                 def.Portrait = node["portrait"].AsString(FaceFor(def.Id));
                 def.TextCalled = node["textCalled"].AsString(def.TextCalled);

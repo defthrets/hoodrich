@@ -277,6 +277,8 @@ namespace Hoodrich.UI
                 return;
             }
 
+            var fitted = false;
+
             try
             {
                 if (rounds)
@@ -288,6 +290,15 @@ namespace Hoodrich.UI
                 {
                     Function.Call(Hash.GIVE_WEAPON_TO_PED, player.Handle, piece.Hash,
                                   piece.StarterAmmo, false, false);
+
+                    // It comes with the big mag in it.
+                    //
+                    // He is not a gun counter with an accessories aisle -- he is a man in a
+                    // yard handing you something that works, and a piece you have to reload
+                    // every six rounds is not something that works. Anything the game has no
+                    // extended magazine for (the Double Action, the sawn-offs, everything
+                    // melee) is a no-op rather than a failure.
+                    fitted = Weapons.ExtendedClips.GiveTo(player, piece.Weapon);
                 }
 
                 Game.Player.Money -= cost;
@@ -295,10 +306,12 @@ namespace Hoodrich.UI
 
                 Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 Notify.Ticker("~y~-$" + cost.ToString("N0") + "~s~  " +
-                              (rounds ? piece.AmmoBox * LotsNow + " rounds, " + piece.Name : piece.Name));
+                              (rounds ? piece.AmmoBox * LotsNow + " rounds, " + piece.Name
+                                      : piece.Name + (fitted ? "  ~g~+ extended mag~s~" : "")));
 
                 Log.Info("Bought " + (rounds ? "rounds for " : "") + piece.Weapon +
-                         " off Stretch for $" + cost + ".");
+                         " off Stretch for $" + cost +
+                         (fitted ? " (extended mag fitted)." : "."));
 
                 OnBought?.Invoke(piece, rounds);
             }
