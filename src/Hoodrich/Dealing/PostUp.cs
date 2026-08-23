@@ -249,6 +249,9 @@ namespace Hoodrich.Dealing
         /// <summary>How long the mark breathes for while somebody is walking over.</summary>
         private const int WalkUpPulseMs = 1100;
 
+        /// <summary>And the faster beat it throbs at while the law is on its way.</summary>
+        private const int LawPulseMs = 620;
+
         private int _sales;
         private int _earned;
 
@@ -1713,6 +1716,7 @@ namespace Hoodrich.Dealing
 
             _cop = cop;
             State = PostState.Investigated;
+            _investigateAt = Game.GameTime;
 
             try
             {
@@ -1782,11 +1786,7 @@ namespace Hoodrich.Dealing
                     if (!model.IsValid || !model.IsInCdImage) continue;
                     if (!model.Request(1200)) continue;
 
-                    var angle = _rng.NextDouble() * Math.PI * 2.0;
-                    var spot = player.Position + new Vector3(
-                        (float)Math.Cos(angle) * 70f, (float)Math.Sin(angle) * 70f, 0f);
-
-                    try { spot = World.GetNextPositionOnSidewalk(spot); } catch { }
+                    var spot = RoundTheCorner(player);
                     if (spot == Vector3.Zero) continue;
 
                     var cop = World.CreatePed(model, spot);
@@ -1807,12 +1807,114 @@ namespace Hoodrich.Dealing
             return null;
         }
 
+        /// <summary>
+        /// Where a patrol comes from.
+        ///
+        /// It used to be a point on a seventy-metre circle at a random bearing, snapped to
+        /// whatever pavement the game found nearest. On a corner in Davis that is regularly the
+        /// far side of a six-lane road, or a yard behind a fence, and the officer then spent his
+        /// thirty-second walk task failing to get to you -- so the patrol arrived, on the HUD,
+        /// and never actually turned up.
+        ///
+        /// Round the corner instead. Several bearings are tried and scored rather than the first
+        /// one taken: near enough to walk, far enough not to appear at your elbow, and the
+        /// pavement it lands on has to be near the bearing that was asked for -- a snap that
+        /// drags the point eighty metres has not found a pavement round this corner, it has
+        /// found a different corner.
+        ///
+        /// Behind you wins where there is a choice. A policeman fading into existence up the
+        /// road in full view is worse than one who was apparently always there, and the camera
+        /// direction is the only honest test of what you can actually see.
+        /// </summary>
+        private Vector3 RoundTheCorner(Ped player)
+        {
+            var at = player.Position;
+
+            Vector3 look;
+            try { look = GameplayCamera.Direction; }
+            catch { look = player.ForwardVector; }
+
+            var best = Vector3.Zero;
+            var bestScore = float.MaxValue;
+
+            for (var tries = 0; tries < CopSpawnTries; tries++)
+            {
+                var angle = _rng.NextDouble() * Math.PI * 2.0;
+                var reach = CopSpawnNear + (float)_rng.NextDouble() * (CopSpawnFar - CopSpawnNear);
+
+                var want = at + new Vector3((float)Math.Cos(angle) * reach,
+                                            (float)Math.Sin(angle) * reach, 0f);
+
+                var walk = Vector3.Zero;
+                try { walk = World.GetNextPositionOnSidewalk(want); }
+                catch { continue; }
+
+                if (walk == Vector3.Zero) continue;
+                if (walk.DistanceTo(want) > CopSpawnDrift) continue;
+
+                var gap = walk.DistanceTo(at);
+                if (gap < CopSpawnNear * 0.6f) continue;
+
+                // Dot of the direction to him against where the camera is pointed. Above zero
+                // is in front of you, which costs him the length of the street in scoring.
+                var towards = walk - at;
+                towards.Z = 0f;
+                towards.Normalize();
+
+                var facing = towards.X * look.X + towards.Y * look.Y;
+                var score = gap + (facing > 0.25f ? CopSpawnSeenPenalty : 0f);
+
+                if (score >= bestScore) continue;
+
+                bestScore = score;
+                best = walk;
+            }
+
+            return best;
+        }
+
+        /// <summary>Close enough to walk it, far enough that he was not stood there.</summary>
+        private const float CopSpawnNear = 34f;
+        private const float CopSpawnFar = 58f;
+
+        /// <summary>How far the pavement snap may drag the point before it is a different
+        /// street rather than this one.</summary>
+        private const float CopSpawnDrift = 16f;
+
+        /// <summary>Bearings tried before taking the best of them.</summary>
+        private const int CopSpawnTries = 10;
+
+        /// <summary>What appearing in plain sight costs a candidate, in metres of scoring.</summary>
+        private const float CopSpawnSeenPenalty = 45f;
+
+        /// <summary>
+        /// How long he gets to make it over before the whole thing is called off.
+        ///
+        /// His walk task carries thirty seconds and then simply stops, which left him stood in
+        /// the road with the HUD still saying PATROL INCOMING and no way out of that state
+        /// except walking away yourself. If he cannot get to you in this, he was never going to.
+        /// </summary>
+        private const int CopWalkTimeoutMs = 40000;
+
+        private int _investigateAt;
+
         private void TickInvestigation(Ped player)
         {
             if (_cop == null || !_cop.Exists() || !_cop.IsAlive)
             {
                 ReleaseCop();
                 State = PostState.Posted;
+                return;
+            }
+
+            // He could not get here. Called off rather than left hanging.
+            if (Game.GameTime - _investigateAt > CopWalkTimeoutMs)
+            {
+                ReleaseCop();
+                _cornerHeat *= 0.6f;
+                State = PostState.Posted;
+
+                Log.Debug("A patrol never reached the corner; called off.");
                 return;
             }
 
@@ -2423,7 +2525,27 @@ namespace Hoodrich.Dealing
             // the colour of a thing that has not gone either way.
             var flashAt = _spookedAt != 0 ? _spookedAt : _soldAt;
 
-            if (flashAt != 0)
+            if (lawOnYou)
+            {
+                // An alarm, and alarms move. Red on its own is a colour you stop seeing after
+                // the second time; red that throbs is the same information you cannot ignore.
+                //
+                // Faster than the walk-up breathe and harder at the top, because the two are
+                // opposite instructions. One says somebody is coming to buy and the other says
+                // somebody is coming to search you, and they should not read as the same tempo.
+                var beat = (Game.GameTime % LawPulseMs) / (float)LawPulseMs;
+                var hot = 0.5f + 0.5f * (float)Math.Sin(beat * Math.PI * 2.0);
+
+                mark = StateMarkHeight * (1f + 0.13f * hot);
+                pop = Mix(Palette.Danger, Color.FromArgb(255, 255, 196, 186), hot);
+
+                // Whatever the corner was doing before the patrol turned up, it is not the
+                // headline any more. Cleared rather than paused, so a sale that landed a moment
+                // before the alarm cannot come back and pulse green after it clears.
+                _soldAt = 0;
+                _spookedAt = 0;
+            }
+            else if (flashAt != 0)
             {
                 var since = Game.GameTime - flashAt;
 

@@ -4378,6 +4378,30 @@
         "Developing in {hood}. Police on scene, details thin",
         "Our crew is heading to {hood} now. Stay with us",
         "SOURCES: multiple down in {hood}. Unconfirmed"
+      ],
+      "NewsShots": [
+        "BREAKING: gunfire reported in {here}. Weazel News is on the scene and refuses to leave",
+        "Shots fired on {street}. Officials describe the situation as a situation",
+        "DEVELOPING: witnesses in {here} report loud noises consistent with the loud noises",
+        "Our reporter counted the shots. Our reporter is not good at counting",
+        "{here} residents asked to avoid the area they live in"
+      ],
+      "NewsBlast": [
+        "BREAKING: vehicle fire in {here}. Cause unknown. Cause obvious",
+        "EXPLOSION reported near {street}. Weazel News was almost there first",
+        "A car is burning in {here} and nobody will say whose it was",
+        "DEVELOPING: fire crews en route to {here}. Traffic will be worse than the fire"
+      ],
+      "NewsWar": [
+        "BREAKING: renewed gang activity in {here}. Experts blame everything except the obvious",
+        "{subject} named in ongoing South Los Santos violence. {subject} could not be reached",
+        "City officials say the {here} situation is under control. City officials are in Vinewood",
+        "DEVELOPING: two sets, one block, and a council that has been consulting since 2011"
+      ],
+      "NewsLaw": [
+        "BREAKING: officer down in {here}. The department has released a statement about statements",
+        "Heavy police presence in {here} tonight. Weazel News is embedded, behind a bin",
+        "DEVELOPING: LSPD confirms an incident in {here}. LSPD confirms nothing else"
       ]
     },
     "weazelnewsla": {
@@ -4392,6 +4416,26 @@
         "LOCAL: gunfire in {hood} this evening. Residents told to stay inside",
         "We have a reporter on the corner in {hood}. More at the top of the hour",
         "Police have not confirmed numbers in {hood}"
+      ],
+      "NewsShots": [
+        "LOCAL: gunfire on {street}. Residents describe it as loud",
+        "Shots in {here}. We asked a man what happened. He asked us for a dollar",
+        "LOCAL: police responding to {here}. Our van is stuck behind the police",
+        "Neighbours in {here} say this is the third time. Neighbours have said that every time"
+      ],
+      "NewsBlast": [
+        "LOCAL: a car has gone up in {here}. It is going up very well",
+        "Fire on {street}. Our cameraman is closer than the fire brigade and less useful",
+        "LOCAL: explosion in {here}. Nobody hurt, which will disappoint our editor"
+      ],
+      "NewsWar": [
+        "LOCAL: trouble between sets in {here} again. Community leaders are unavailable, again",
+        "{subject} activity reported in {here}. Nobody on that block wanted to be on camera",
+        "LOCAL: {here} has had a difficult night. {here} has difficult nights"
+      ],
+      "NewsLaw": [
+        "LOCAL: police everywhere in {here} tonight and no statement yet",
+        "LSPD units all over {street}. We asked. They told us to move the van"
       ]
     },
     "lifeinvader": {
@@ -4441,6 +4485,24 @@
         "Gunfire reported in {hood}. We will run the council response nobody reads",
         "Third incident in {hood} this month. We are counting even if nobody else is",
         "Statement expected from the councilman about {hood}. It will say very little"
+      ],
+      "NewsShots": [
+        "Gunfire reported {street}. Council response: a working group",
+        "Shots in {here} this evening. This is the fourth item in this column this month",
+        "Davis: shots fired, no arrests, no comment, no surprise"
+      ],
+      "NewsBlast": [
+        "Vehicle fire on {street}. The insurance industry will call this a total loss and a mystery",
+        "A car burned out in {here} tonight. The city will bill somebody for removing it"
+      ],
+      "NewsWar": [
+        "Gang violence in {here}. The mayor's office has issued its thoughts, which it keeps in a drawer",
+        "{subject} named in tonight's trouble. Davis has heard the name before",
+        "Two sets, one block, and a regeneration budget that went to a plaza nobody sits in"
+      ],
+      "NewsLaw": [
+        "Heavy LSPD presence in {here}. The department will review itself and find itself satisfactory",
+        "Officers all over {street} tonight. The report will be available in six months"
       ]
     },
     "chamblocktalk": {
@@ -4454,6 +4516,26 @@
         "Was that shots on {hood}? Everybody check in on here please",
         "Kids are inside, doors are locked. Somebody say what happened in {hood}",
         "Please stop posting videos of {hood} and go check on your neighbours"
+      ],
+      "NewsShots": [
+        "anybody else hear that on {street}. that was not fireworks",
+        "shots on the block. everybody in the group check in",
+        "that was close. {here}, keep your kids off the porch tonight",
+        "who is going to tell me what that was on {street} because the news will not"
+      ],
+      "NewsBlast": [
+        "something just went up over on {street}. you can see it from my window",
+        "car on fire in {here}. do not go and look, let them work",
+        "whole sky orange over {here} for a minute there"
+      ],
+      "NewsWar": [
+        "it is going off again in {here}. keep the youngins inside",
+        "the {subject} thing has come back round to us. it always comes back round to us",
+        "block is not safe tonight. that is not gossip, that is just what it is"
+      ],
+      "NewsLaw": [
+        "police everywhere on {street}. do not come home the usual way",
+        "helicopter over {here} for the last twenty minutes. nobody sleeping tonight"
       ]
     },
     "straw_neighbours": {
@@ -4476,6 +4558,24 @@
       "OrgEvent": [
         "Shots in {hood}. The same block, the same story, the same silence after",
         "We will cover {hood} properly. Nobody else will"
+      ],
+      "NewsShots": [
+        "Shots on {street} again. Same corner as March. Same silence after",
+        "Gunfire in {here} tonight. We are running the same photograph we ran last year",
+        "Rancho: another round of it, and the paper is out of ways to say so"
+      ],
+      "NewsBlast": [
+        "Vehicle burning near {street}. Fire crews took eleven minutes. It is always eleven minutes",
+        "A car went up in {here} tonight and the whole block came out to watch it"
+      ],
+      "NewsWar": [
+        "It is between sets again in {here}. The people who live there did not choose this",
+        "{subject} and ours, same streets, same result. The council has scheduled a listening session",
+        "Rancho residents spent tonight indoors. That is the whole story and it should not be"
+      ],
+      "NewsLaw": [
+        "Police all over {here} tonight. Ask anybody on that street how that usually ends",
+        "LSPD in numbers on {street}. The paper will request the report and be told it is pending"
       ]
     },
     "ls_scanner_feed": {
@@ -4490,6 +4590,27 @@
         "Multiple shots-fired calls, {hood}. Units en route",
         "{hood}: officers requesting a second unit and an ambulance",
         "Scanner going constant on {hood} right now"
+      ],
+      "NewsShots": [
+        "SHOTS FIRED -- {street}. Multiple callers. Units responding",
+        "245 in progress, {here}. Two units en route",
+        "Reports of automatic fire, {here}. Air support requested",
+        "SHOTS FIRED {street}. Caller reports a vehicle leaving at speed"
+      ],
+      "NewsBlast": [
+        "VEHICLE FIRE -- {street}. Engine company dispatched",
+        "Explosion reported {here}. Fire and EMS rolling",
+        "Structure check requested, {here}. Heavy smoke visible from the freeway"
+      ],
+      "NewsWar": [
+        "Multiple 245 calls, {here}. Units advised to stage",
+        "Gang activity flash, {here}. All units aware",
+        "{here} -- repeat calls, same block, twenty minutes"
+      ],
+      "NewsLaw": [
+        "OFFICER NEEDS ASSISTANCE -- {here}. All available units",
+        "Code 3 traffic, {here}. Channel is busy",
+        "Perimeter requested, {street}. Air unit overhead"
       ]
     },
     "lspd_watch_ls": {
@@ -4503,6 +4624,24 @@
         "Logging the response time to {hood}. We will publish it",
         "If you filmed anything in {hood}, keep it. Do not post it. Keep it",
         "{hood} again. Watch how this gets written up"
+      ],
+      "NewsShots": [
+        "Shots reported {street}. Watch the response time on this one, we are",
+        "Gunfire in {here}. Twenty-two minutes to the first unit. Filed",
+        "{here} again. Same corner, same nothing, same press release coming"
+      ],
+      "NewsBlast": [
+        "Vehicle fire {street}. Six units for a burning car. Six",
+        "Explosion in {here} and a helicopter within four minutes. Remember that number"
+      ],
+      "NewsWar": [
+        "Gang violence in {here}. The response will be aggressive at the wrong people",
+        "{subject} named tonight. Note who gets named and who gets stopped tomorrow",
+        "Whole block in {here} treated as suspects again. Know your rights"
+      ],
+      "NewsLaw": [
+        "Everything on the radio going to {here}. Film from the sidewalk. It is legal",
+        "Heavy presence in {here}. Badge numbers, people. Badge numbers"
       ]
     },
     "southsidesports": {

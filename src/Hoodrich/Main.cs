@@ -144,6 +144,7 @@ namespace Hoodrich
 
         private readonly Entourage _party;
         private readonly Entourage _meet;
+        private readonly Social.Newsroom _newsroom;
         private readonly ParkedCar _meetOne;
         private readonly ParkedCar _meetTwo;
         private readonly Fixture _partyBarrel;
@@ -1201,6 +1202,7 @@ namespace Hoodrich
                 // each other is the city carrying on without him, which is the whole point.
                 // What the block reckons of the product, for the posts that talk about it.
                 _social.ProductRep = () => _state == null ? 0.5f : _state.ProductRep;
+                _newsroom = new Social.Newsroom(_social);
 
                 _social.BickerPair = () =>
                 {
@@ -1437,6 +1439,10 @@ namespace Hoodrich
                     _bigj.UpdatePrompt();
 
                     _social.Update();
+
+                    // The desk, watching the street for the two things nothing else reports.
+                    if (_newsroom != null) _newsroom.Update();
+
                     _copWatch.Update();
                     _block.Update();
                     _couch.Update();
