@@ -1099,7 +1099,12 @@ namespace Hoodrich
                 {
                     Talk = _talk,
                     Social = _social,
-                    Busy = () => _jobs != null && _jobs.IsRunning
+                    // A raid banner and this card are both centred at the top of the screen
+                    // and both drew at once -- GERALD UNDER ATTACK printed straight across
+                    // "meet the dock worker". A raid is the more urgent of the two and it is
+                    // over in a minute, so the errand stands down and comes back.
+                    Busy = () => (_jobs != null && _jobs.IsRunning)
+                                 || (_war != null && _war.IsRunning)
                 };
 
                 // He cannot be on his corner and stood in the yard at the same time, and the

@@ -451,8 +451,61 @@ namespace Hoodrich.Missions
         private const float CardPad = 0.008f;
         private const float CardRail = 0.0022f;
         private const float IconSize = 0.034f;
+        private const float BarHeight = 0.0045f;
+
+        /// <summary>How fast the fill catches the figure, and how fast the light travels it.</summary>
+        private const float BarRate = 0.12f;
+        private const int BarSweepMs = 1600;
+
+        /// <summary>How long the card takes to arrive, and how far it rises on the way.</summary>
+        private const int EnterMs = 180;
+        private const float EnterRise = 0.014f;
 
         private static readonly Color CardBack = Color.FromArgb(232, 12, 13, 15);
+
+        /// <summary>Where the fill has got to, and which leg it belongs to.</summary>
+        private float _bar;
+        private int _barLeg = -1;
+
+        /// <summary>The furthest away this leg has been, which is what the bar is measured against.</summary>
+        private float _legFar;
+
+        /// <summary>When the card first appeared, for the entrance.</summary>
+        private int _cardAt;
+
+        /// <summary>
+        /// How far through the whole errand you are.
+        ///
+        /// Self-normalising rather than measured against a distance decided up front: the bar
+        /// remembers the furthest this leg has been and reads the current distance against
+        /// that. Starting the run stood next to the van and starting it from the other side of
+        /// the map both fill the bar honestly, and nothing has to know how far the port is.
+        ///
+        /// Two legs, half the bar each, so collecting the package is visibly the middle of the
+        /// job rather than the end of it.
+        /// </summary>
+        private float Progress()
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return 0f;
+
+            var leg = Stage;
+
+            if (leg != _barLeg)
+            {
+                _barLeg = leg;
+                _legFar = 0f;
+            }
+
+            var d = player.Position.DistanceTo(Mark);
+            if (d > _legFar) _legFar = d;
+
+            var done = _legFar < 1f ? 1f : 1f - d / _legFar;
+            if (done < 0f) done = 0f;
+            if (done > 1f) done = 1f;
+
+            return leg == StageDeliver ? 0.5f + done * 0.5f : done * 0.5f;
+        }
 
         /// <summary>
         /// The same card a job draws, in the same place, because it is the same kind of thing.
@@ -465,37 +518,102 @@ namespace Hoodrich.Missions
         {
             if (Busy != null && Busy()) return;
 
-            var left = 0.5f - CardWidth * 0.5f;
-            var ink = Stage == StageDeliver ? Palette.Cash : Palette.Standing;
+            if (_cardAt == 0) _cardAt = Game.GameTime;
 
-            Hud.RectFrom(left, CardTop, CardWidth, CardHeight, CardBack);
-            Hud.RectFrom(left, CardTop, CardRail, CardHeight, ink);
-            Hud.RectFrom(left, CardTop, CardWidth, 0.0022f, ink);
+            // Rises into place and fades up, eased out so it arrives rather than snaps. The
+            // same entrance every other panel in the mod uses.
+            var age = Game.GameTime - _cardAt;
+            var enter = age >= EnterMs ? 1f : age / (float)EnterMs;
+            var eased = 1f - (1f - enter) * (1f - enter);
+
+            var top = CardTop + EnterRise * (1f - eased);
+            var fade = eased;
+
+            var left = 0.5f - CardWidth * 0.5f;
+            var ink = Fade(Stage == StageDeliver ? Palette.Cash : Palette.Standing, fade);
+
+            Hud.RectFrom(left, top, CardWidth, CardHeight, Fade(CardBack, fade));
+            Hud.RectFrom(left, top, CardRail, CardHeight, ink);
+            Hud.RectFrom(left, top, CardWidth, 0.0022f, ink);
 
             var iconLeft = left + CardRail + CardPad;
             var iconWide = Hud.ToX(IconSize);
 
-            Hud.RectFrom(iconLeft, CardTop + (CardHeight - IconSize) * 0.5f,
-                         iconWide, IconSize, Color.FromArgb(20, 255, 255, 255));
+            Hud.RectFrom(iconLeft, top + (CardHeight - IconSize) * 0.5f,
+                         iconWide, IconSize, Color.FromArgb((int)(20 * fade), 255, 255, 255));
 
             Hud.File(Stage == StageDeliver ? "box.png" : "crate.png",
-                     iconLeft + iconWide * 0.5f, CardTop + CardHeight * 0.5f,
+                     iconLeft + iconWide * 0.5f, top + CardHeight * 0.5f,
                      IconSize * 0.62f, 0f, ink);
 
             var x = iconLeft + iconWide + CardPad;
 
-            Hud.Text("THE PORT RUN", x, CardTop + 0.009f, 0.30f, Palette.Text,
+            Hud.Text("THE PORT RUN", x, top + 0.009f, 0.30f, Fade(Palette.Text, fade),
                      Hud.FontLabel, centre: false);
 
             Hud.Text(Stage == StageDeliver
                         ? "Get his van back to the yard in Chamberlain"
                         : "Meet the dock worker at Elysian Island",
-                     x, CardTop + 0.030f, 0.26f, Palette.TextDim,
+                     x, top + 0.030f, 0.26f, Fade(Palette.TextDim, fade),
                      Hud.FontBody, centre: false);
 
             Hud.TextRight(Stage == StageDeliver ? Package.ToString("0") + "g" : "TAO",
-                          left + CardWidth - CardPad, CardTop + 0.031f, 0.23f,
+                          left + CardWidth - CardPad, top + 0.031f, 0.23f,
                           ink, Hud.FontLabel);
+
+            // ---- the bar ------------------------------------------------------
+            //
+            // Drawn even at zero so the card does not change height between legs. A readout
+            // that reflows while you are reading it is worse than one showing an empty track.
+            var barWide = CardWidth - (x - left) - CardPad;
+            var barY = top + CardHeight - 0.010f;
+
+            Hud.RectFrom(x, barY, barWide, BarHeight, Color.FromArgb((int)(40 * fade), 255, 255, 255));
+
+            var done = Progress();
+
+            // Snapped when the LEG changes, eased within one. Progress here is a distance, so
+            // it arrives in steps as you drive and a bar set straight to it reads as something
+            // being redrawn rather than something filling up. Easing across the leg boundary
+            // would instead be a bar running backwards while you read the new sentence.
+            if (_barLeg != _lastDrawnLeg)
+            {
+                _lastDrawnLeg = _barLeg;
+                _bar = done;
+            }
+
+            _bar += (done - _bar) * BarRate;
+            if (Math.Abs(done - _bar) < 0.002f) _bar = done;
+
+            if (_bar <= 0f) return;
+
+            Hud.RectFrom(x, barY, barWide * _bar, BarHeight, ink);
+
+            // A light travelling up the FILLED part, so a bar that is not moving is still
+            // visibly live. It stays inside the fill: a sheen running along the empty track
+            // would be the card promising progress it has not made.
+            var t = (Game.GameTime % BarSweepMs) / (float)BarSweepMs;
+            var lit = barWide * _bar;
+            var band = Math.Min(lit, barWide * 0.10f);
+            var at = x - band + (lit + band) * t;
+
+            var lo = Math.Max(x, at);
+            var hi = Math.Min(x + lit, at + band);
+
+            if (hi > lo)
+            {
+                Hud.RectFrom(lo, barY, hi - lo, BarHeight,
+                             Color.FromArgb((int)(120 * fade), 255, 255, 255));
+            }
+        }
+
+        /// <summary>Which leg the bar was last drawn for, so a change can snap it.</summary>
+        private int _lastDrawnLeg = -1;
+
+        private static Color Fade(Color c, float by)
+        {
+            if (by >= 0.999f) return c;
+            return Color.FromArgb((int)(c.A * by), c.R, c.G, c.B);
         }
 
         // ---- who is stood there ------------------------------------------------
@@ -518,6 +636,38 @@ namespace Hoodrich.Missions
             return _gerald;
         }
 
+        /// <summary>
+        /// The same spot, but on the floor.
+        ///
+        /// Tao was spawning in the sky and dropping a couple of metres. The coordinates are
+        /// read off a player standing there, and a ped's position is not measured at the soles
+        /// of their shoes -- so a height that is exactly right for a man standing on the dock
+        /// is a height that puts a NEW man that far above it, and he falls the difference.
+        ///
+        /// The probe is trusted only when it AGREES with the authored height to within a
+        /// couple of metres. That guard matters: a probe fired next to a container or under
+        /// the overpass can come back with the roof of something, and silently relocating a
+        /// man onto a shipping container is a worse bug than the one being fixed.
+        /// </summary>
+        private static Vector3 Standing(Vector3 where)
+        {
+            try
+            {
+                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 2f),
+                                          out var floor, GetGroundHeightMode.Normal)
+                    && floor > 0f && Math.Abs(floor - where.Z) <= 2.5f)
+                {
+                    return new Vector3(where.X, where.Y, floor);
+                }
+            }
+            catch
+            {
+                // Unstreamed ground. The authored height is the better guess.
+            }
+
+            return where;
+        }
+
         private Ped Stand(string[] models, Vector3 where, float heading, string name)
         {
             foreach (var modelName in models)
@@ -527,7 +677,7 @@ namespace Hoodrich.Missions
                     var model = new Model(modelName);
                     if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
 
-                    var ped = World.CreatePed(model, where, heading);
+                    var ped = World.CreatePed(model, Standing(where), heading);
                     model.MarkAsNoLongerNeeded();
 
                     if (ped == null || !ped.Exists()) continue;
@@ -554,6 +704,16 @@ namespace Hoodrich.Missions
                                   "WORLD_HUMAN_STAND_MOBILE", 0, true);
 
                     ped.Heading = heading;
+
+                    // Belt and braces on the drop: the ped is put on the floor a second time
+                    // once he exists, because the ground probe is more reliable against a
+                    // streamed-in world than against one that is still arriving.
+                    try
+                    {
+                        var settled = Standing(ped.Position);
+                        if (Math.Abs(settled.Z - ped.Position.Z) > 0.05f) ped.Position = settled;
+                    }
+                    catch { /* he will fall the last few inches */ }
 
                     // Attached to him, so deleting him takes it with him -- there is no
                     // handle to hold on to and no way to leave one behind on an empty pavement.
@@ -895,6 +1055,13 @@ namespace Hoodrich.Missions
             _vanBlip = null;
             _van = null;
             _saidHere = false;
+
+            // So the card arrives properly rather than being already there next time.
+            _cardAt = 0;
+            _bar = 0f;
+            _barLeg = -1;
+            _lastDrawnLeg = -1;
+            _legFar = 0f;
         }
 
         public void RestoreWorld() => Pack();
