@@ -136,13 +136,14 @@ namespace Hoodrich.UI
         private const int NoteMs = 2600;
         private const int NudgeMs = 1200;
 
-        private const float BodyTop = 0.208f;
-        private const float FirstRow = 0.242f;
         private const float RowPitch = 0.034f;
         private const float RowHeight = 0.030f;
         private const float NoteGap = 0.014f;
 
         private const float TabGap = 0.022f;
+
+        /// <summary>The picture on a composer or diss row.</summary>
+        private const float RowArt = 0.017f;
         private const float SplitGap = 0.034f;
 
         private static readonly Color RowWash = Color.FromArgb(46, 255, 255, 255);
@@ -821,7 +822,7 @@ namespace Hoodrich.UI
 
             if (!IsFeedTab)
             {
-                Action(left, x, right);
+                Action(left, x, right, y);
                 Keys(x, right);
                 Frame(left, edge);
                 return;
@@ -948,24 +949,37 @@ namespace Hoodrich.UI
         }
 
         /// <summary>The list of things you can put out, and what each one costs you.</summary>
-        private void Action(float left, float x, float right)
+        /// <summary>
+        /// The composer and the diss list, laid out from wherever the tabs actually finished.
+        ///
+        /// It used to start at a fixed height and so did its rows -- two numbers typed in when
+        /// the header was a different size. The header has been rebuilt twice since, the tab
+        /// strip moved down with it, and this page stayed where it was: the section label ended
+        /// up printed through the tab labels, which is what "ALL" written over "SAY SOMETHING"
+        /// in a screenshot actually is.
+        ///
+        /// Everything on the page is measured from the top it is handed now, so it cannot come
+        /// apart again the next time anything above it changes height.
+        /// </summary>
+        private void Action(float left, float x, float right, float top)
         {
             var rows = Rows();
             var head = _tab == TabPost ? "SAY SOMETHING" : "WHO";
 
-            Hud.Text(head, x, BodyTop, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
-            Hud.RectFrom(x, BodyTop + 0.022f, PanelWidth - Pad * 2f, 0.0010f, Hairline);
+            Hud.Text(head, x, top, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+            Hud.RectFrom(x, top + 0.022f, PanelWidth - Pad * 2f, 0.0010f, Hairline);
 
+            var first = top + 0.034f;
             var t = Progress();
 
-            // Nine rows never reach the floor today. Computed anyway, so a tenth gang added
-            // later clips cleanly instead of drawing off the bottom of the panel.
-            var maxRows = (int)((0.760f - FirstRow) / RowPitch);
-            var draw = Math.Min(rows, maxRows);
+            // Whatever fits between here and the floor, rather than a count that was true when
+            // the page began higher up.
+            var maxRows = (int)((PanelTop + PanelHeight - 0.120f - first) / RowPitch);
+            var draw = Math.Min(rows, Math.Max(1, maxRows));
 
             for (var i = 0; i < draw; i++)
             {
-                var top = FirstRow + i * RowPitch;
+                var rowY = first + i * RowPitch;
                 var here = i == _pick;
 
                 string label;
@@ -1003,8 +1017,8 @@ namespace Hoodrich.UI
                     valueInk = beefing ? Palette.Warn : Palette.TextDim;
                 }
 
-                Row(left, x, right, top, here, !_live, tick, label, value, valueInk,
-                    here && t > 0f ? t : 0f);
+                Row(left, x, right, rowY, here, !_live, tick, label, value, valueInk,
+                    here && t > 0f ? t : 0f, Art(i));
             }
 
             if (rows == 0)
@@ -1012,17 +1026,39 @@ namespace Hoodrich.UI
                 Hud.Text(_tab == TabDiss
                              ? "Nobody worth the trouble"
                              : "There's nobody you're not already with",
-                         x + 0.006f, FirstRow + 0.006f, 0.30f,
+                         x + 0.006f, first + 0.006f, 0.30f,
                          Palette.Alpha(Palette.TextDim, 110), Hud.FontChaletLondon, centre: false);
             }
 
-            NoteStrip(x, right, FirstRow + Math.Max(1, draw) * RowPitch + NoteGap, t);
+            var after = first + Math.Max(1, draw) * RowPitch;
 
-            if (_tab == TabPost) Yours(left, x, FirstRow + Math.Max(1, draw) * RowPitch + YoursGap);
+            NoteStrip(x, right, after + NoteGap, t);
+
+            // Under the whole note strip rather than through the middle of it. The strip is a
+            // rule, a heading and three lines -- about a tenth of the panel -- and the gap that
+            // used to be here was half of that, which put "WHAT YOU'VE SAID" across the line
+            // explaining what the thing above it costs.
+            if (_tab == TabPost) Yours(left, x, after + NoteGap + NoteStripH);
         }
 
-        /// <summary>How far under the composer your own posts begin.</summary>
-        private const float YoursGap = 0.052f;
+        /// <summary>How tall the note strip is: its rule, its heading and its three lines.</summary>
+        private const float NoteStripH = 0.100f;
+
+        /// <summary>
+        /// The picture for one row of whichever list is up.
+        ///
+        /// The sets have their own art already -- it is on the wheel and in the war readouts --
+        /// and this was the one list of gangs in the mod that showed a coloured tick instead.
+        /// </summary>
+        private string Art(int i)
+        {
+            if (_tab == TabPost) return "mobile.png";
+
+            if (i < 0 || i >= _dissList.Count) return "";
+
+            var id = _dissList[i].Id;
+            return string.IsNullOrEmpty(id) ? "" : "gang_" + id.ToLowerInvariant() + ".png";
+        }
 
         /// <summary>
         /// Everything you have said, under the box you say it in.
@@ -1069,7 +1105,8 @@ namespace Hoodrich.UI
         }
 
         private static void Row(float left, float x, float right, float top, bool here, bool dead,
-                                Color tick, string label, string value, Color valueInk, float fill)
+                                Color tick, string label, string value, Color valueInk, float fill,
+                                string art = "")
         {
             if (here)
             {
@@ -1091,6 +1128,15 @@ namespace Hoodrich.UI
                              dead ? Palette.Alpha(tick, 90) : tick);
 
                 textX = x + 0.010f;
+            }
+
+            // And their own art after it, if this install has the file. A row with no picture
+            // simply keeps its words where they were.
+            if (!string.IsNullOrEmpty(art) &&
+                Hud.File(art, textX + Hud.ToX(RowArt) * 0.5f, top + 0.015f, RowArt, 0f,
+                         dead ? Palette.Alpha(Palette.TextDim, 110) : Palette.Text))
+            {
+                textX += Hud.ToX(RowArt) + 0.006f;
             }
 
             var ink = dead ? Palette.Alpha(Palette.TextDim, 110)
