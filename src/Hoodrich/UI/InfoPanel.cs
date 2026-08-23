@@ -314,7 +314,49 @@ namespace Hoodrich.UI
         private int _openedAt;
         private int _scroll;
 
+        /// <summary>
+        /// Re-stamped when the list scrolls, so the new lines fill in rather than snap.
+        ///
+        /// The stagger is measured from the top of the WINDOW, not the top of the list, so
+        /// re-stamping it on a scroll runs the same fill down the rows that have just moved
+        /// into view. Without it, scrolling is the one thing on this screen that happens
+        /// instantly, which makes it the one thing that looks broken.
+        /// </summary>
+        private void Refill() => _openedAt = Game.GameTime;
+
         public bool IsOpen => _items != null;
+
+        /// <summary>How far a line drops in from as it arrives.</summary>
+        private const float RowRise = 0.006f;
+
+        /// <summary>How the panel arrives, and the light that runs along its bar.</summary>
+        private const int EnterMs = 170;
+        private const float EnterRise = 0.014f;
+        private const int SweepMs = 2600;
+
+        /// <summary>
+        /// How long each row waits its turn on the way in, and how long it takes once it does.
+        ///
+        /// The stagger is the whole effect: fifteen rows arriving together is the panel
+        /// appearing, and fifteen rows arriving a frame apart down the page is the panel being
+        /// FILLED IN, which is what a readout of numbers should look like. Small enough that
+        /// the last row is up in about a third of a second -- any slower and it stops being an
+        /// entrance and starts being something to wait for.
+        /// </summary>
+        private const int RowStaggerMs = 22;
+        private const int RowFadeMs = 130;
+
+        /// <summary>How far into its own arrival a given line is, nought to one.</summary>
+        private float RowIn(int index)
+        {
+            var age = Game.GameTime - _openedAt - index * RowStaggerMs;
+
+            if (age <= 0) return 0f;
+            if (age >= RowFadeMs) return 1f;
+
+            var t = age / (float)RowFadeMs;
+            return 1f - (1f - t) * (1f - t);
+        }
 
         public void Open(string title, string subtitle, List<InfoSection> sections)
         {
@@ -384,8 +426,16 @@ namespace Hoodrich.UI
             if (_scroll > maxScroll) _scroll = maxScroll;
             if (maxScroll == 0) return;
 
-            if (Pressed(Control.PhoneUp) && _scroll > 0) _scroll--;
-            else if (Pressed(Control.PhoneDown) && _scroll < maxScroll) _scroll++;
+            if (Pressed(Control.PhoneUp) && _scroll > 0)
+            {
+                _scroll--;
+                Refill();
+            }
+            else if (Pressed(Control.PhoneDown) && _scroll < maxScroll)
+            {
+                _scroll++;
+                Refill();
+            }
         }
 
         private static bool Pressed(Control control)
@@ -481,8 +531,36 @@ namespace Hoodrich.UI
             // The house frame: one ground, one bar. There used to be three framing devices on
             // this panel -- an outlined border, a filled header strip and a rule under it --
             // where the gun hub and the feed both prove that one works.
-            Hud.RectFrom(x, top, PanelWidth, height, Ground);
-            Hud.RectFrom(x, top, PanelWidth, 0.0028f, Palette.Accent);
+            // The entrance. Up and in over a sixth of a second, eased out so it slows as it
+            // lands -- the same arrival the dialogue panels and the settings screen use, so
+            // opening any screen in the mod feels like opening the same kind of thing.
+            var age = Game.GameTime - _openedAt;
+            var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
+            arrive = 1f - (1f - arrive) * (1f - arrive);
+
+            top += EnterRise * (1f - arrive);
+
+            Hud.RectFrom(x, top, PanelWidth, height,
+                         Color.FromArgb((int)(Ground.A * arrive), Ground.R, Ground.G, Ground.B));
+
+            Hud.RectFrom(x, top, PanelWidth, 0.0028f,
+                         Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
+
+            // And a light running along the bar. This screen has no cursor on it -- there is
+            // nothing to select, it is a readout -- so this is the only thing telling you it is
+            // live rather than a photograph of itself.
+            var barT = (Game.GameTime % SweepMs) / (float)SweepMs;
+            var barW = PanelWidth * 0.15f;
+            var barAt = x - barW + (PanelWidth + barW) * barT;
+
+            var barLeft = Math.Max(x, barAt);
+            var barRight = Math.Min(x + PanelWidth, barAt + barW);
+
+            if (barRight > barLeft)
+            {
+                Hud.RectFrom(barLeft, top, barRight - barLeft, 0.0028f,
+                             Color.FromArgb((int)(85f * arrive), 255, 255, 255));
+            }
 
             // The mark sits above the screen's own title: the mod saying who is talking,
             // then the screen saying what about. Dim, because it is a letterhead rather than
@@ -506,6 +584,11 @@ namespace Hoodrich.UI
             {
                 var it = _items[i];
 
+                // Each line arrives a moment after the one above it, and slides the last few
+                // thousandths of its own height into place. Off the bottom of its own stagger
+                // it is simply not drawn, which is cheaper than drawing it invisible.
+                var lands = RowIn(i - _scroll);
+
                 switch (it.Kind)
                 {
                     case ItemKind.Spacer:
@@ -513,11 +596,14 @@ namespace Hoodrich.UI
 
                     case ItemKind.Heading:
                         gutter = GutterFor(it.Section);
-                        DrawHeading(it.Section, x, y, right, first);
+                        if (lands > 0f) DrawHeading(it.Section, x, y + (1f - lands) * RowRise, right, first);
                         break;
 
                     case ItemKind.Row:
-                        if (!it.Row.IsSpacer) DrawRow(it.Row, x, y, right, gutter);
+                        if (!it.Row.IsSpacer && lands > 0f)
+                        {
+                            DrawRow(it.Row, x, y + (1f - lands) * RowRise, right, gutter);
+                        }
                         break;
                 }
 

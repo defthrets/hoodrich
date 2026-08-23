@@ -29,7 +29,7 @@ namespace Hoodrich.UI
                      r => r.ArtFile = "gang_families.png");
 
             what.Row("Everything is on one button", "The weapon wheel", null,
-                     "HOLD it for Hoodrich. TAP it and you still holster, same as always",
+                     "HOLD it for Posted Up. TAP it and you still holster, same as always",
                      r => r.ArtFile = "mask.png");
 
             what.Row("Weapons hands it back", "Hold, pick Weapons", null,

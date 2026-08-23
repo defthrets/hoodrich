@@ -163,6 +163,11 @@ namespace Hoodrich.UI
             _holdingSince = 0;
             _openedAt = Game.GameTime;
             IsOpen = true;
+            _shownAt = Game.GameTime;
+
+            // Snapped rather than eased on open, so the bar is already on the first row
+            // instead of travelling to it from wherever it was last time.
+            _slide = Math.Max(0, _selected - _top);
 
             if (!_rows[_selected].Selectable) Move(1);
 
@@ -277,7 +282,7 @@ namespace Hoodrich.UI
             var c = _cfg;
 
             Head("The mod");
-            Tick("Hoodrich on", "General", "Enabled", () => c.Enabled, v => c.Enabled = v,
+            Tick("Posted Up on", "General", "Enabled", () => c.Enabled, v => c.Enabled = v,
                  "Off leaves the game exactly as it was");
             Tick("Pause during story missions", "General", "PauseDuringMission",
                  () => c.PauseDuringMission, v => c.PauseDuringMission = v,
@@ -299,7 +304,7 @@ namespace Hoodrich.UI
             Bind("Modifier", "Wheel", "Modifier", () => c.WheelModifier, v => c.WheelModifier = v,
                  "None for no modifier");
             Tick("Hold to open", "Wheel", "HoldToOpen", () => c.HoldToOpen, v => c.HoldToOpen = v,
-                 "Hold for Hoodrich, tap to holster");
+                 "Hold for Posted Up, tap to holster");
             Tick("Sounds", "Wheel", "PlaySounds", () => c.PlaySounds, v => c.PlaySounds = v,
                  "Clicks and confirmations");
             Tick("Blur behind it", "Wheel", "BlurBackground",
@@ -712,6 +717,45 @@ namespace Hoodrich.UI
 
         // ---- drawing -----------------------------------------------------------
 
+        /// <summary>Where the highlight has got to, in rows from the top of the window.</summary>
+        private float _slide;
+
+        /// <summary>When the screen went up, for its entrance.</summary>
+        private int _shownAt;
+
+        private const float SlideRate = 0.30f;
+        private const int EnterMs = 170;
+        private const float EnterRise = 0.014f;
+        private const int SweepMs = 2600;
+
+        /// <summary>
+        /// A picture for each section, by the words in its heading.
+        ///
+        /// Looked up rather than stored on the row, because the headings are written where the
+        /// settings are declared and threading an icon through every one of them would put art
+        /// decisions in the middle of a list of ini keys. Anything not named here simply has no
+        /// icon, which is the correct behaviour for a section added later by somebody who has
+        /// not read this.
+        /// </summary>
+        private static string IconFor(string heading)
+        {
+            switch ((heading ?? "").ToLowerInvariant())
+            {
+                case "the mod": return "logo.png";
+                case "the wheel": return "wheel_hub.png";
+                case "lamar's list": return "phone.png";
+                case "the block": return "pin.png";
+                case "the law": return "police.png";
+                case "socials": return "mobile.png";
+                case "posting up": return "deal.png";
+                case "risk": return "warning.png";
+                case "money": return "cash.png";
+                case "supply": return "crate.png";
+                case "the bag on his back": return "box.png";
+                default: return "";
+            }
+        }
+
         public void Draw()
         {
             if (!IsOpen || _rows.Count == 0) return;
@@ -725,8 +769,32 @@ namespace Hoodrich.UI
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f;
 
-            Hud.RectFrom(left, top, panelWidth, height, Color.FromArgb(238, 12, 13, 15));
-            Hud.RectFrom(left, top, panelWidth, 0.0028f, Palette.Accent);
+            // Up and in, eased out so it slows as it lands.
+            var age = Game.GameTime - _shownAt;
+            var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
+            arrive = 1f - (1f - arrive) * (1f - arrive);
+
+            top += EnterRise * (1f - arrive);
+
+            Hud.RectFrom(left, top, panelWidth, height,
+                         Color.FromArgb((int)(238f * arrive), 12, 13, 15));
+
+            Hud.RectFrom(left, top, panelWidth, 0.0028f,
+                         Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
+
+            // A light travelling along the bar, the same one the dialogue panels carry.
+            var barT = (Game.GameTime % SweepMs) / (float)SweepMs;
+            var barW = panelWidth * 0.15f;
+            var barAt = left - barW + (panelWidth + barW) * barT;
+
+            var barLeft = Math.Max(left, barAt);
+            var barRight = Math.Min(left + panelWidth, barAt + barW);
+
+            if (barRight > barLeft)
+            {
+                Hud.RectFrom(barLeft, top, barRight - barLeft, 0.0028f,
+                             Color.FromArgb((int)(85f * arrive), 255, 255, 255));
+            }
 
             var x = left + pad;
             var right = left + panelWidth - pad;
@@ -734,8 +802,11 @@ namespace Hoodrich.UI
 
             Hud.Text("SETTINGS", x, y, 0.34f, Palette.Text, Hud.FontLabel, centre: false);
 
-            Hud.TextRight(_rows.Count + " settings  ·  scripts\\Hoodrich.ini", right, y + 0.003f,
-                          0.24f, Palette.TextDim, Hud.FontLabel);
+            // The file name is gone rather than renamed. It is the last place the old name
+            // was showing, and what it was telling you -- that there is a file and where it
+            // lives -- is worth less than not seeing that word on the settings screen.
+            Hud.TextRight(_rows.Count + " settings  ·  saved as you change them",
+                          right, y + 0.003f, 0.24f, Palette.TextDim, Hud.FontLabel);
 
             y += 0.034f;
 
@@ -743,6 +814,37 @@ namespace Hoodrich.UI
             y += 0.008f;
 
             var listTop = y;
+
+            // The bar is eased toward the selected row and drawn ONCE, so moving through the
+            // list slides it. Measured in rows from the top of the WINDOW rather than of the
+            // list, or it would fly the length of the panel every time the window scrolls.
+            var want = _selected - _top;
+            if (want < 0) want = 0;
+            if (want > shown - 1) want = shown - 1;
+
+            _slide += (want - _slide) * SlideRate;
+            if (Math.Abs(want - _slide) < 0.002f) _slide = want;
+
+            var barY = listTop - 0.003f + _slide * RowHeight;
+
+            Hud.RectFrom(x - 0.006f, barY, right - x + 0.012f, RowHeight,
+                         Color.FromArgb((int)(45f * arrive), 255, 255, 255));
+
+            Hud.RectFrom(x - 0.006f, barY, 0.0022f, RowHeight,
+                         Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
+
+            var sweepT = (Game.GameTime % SweepMs) / (float)SweepMs;
+            var sweepW = (right - x) * 0.16f;
+            var sweepAt = x - 0.006f - sweepW + (right - x + 0.012f + sweepW) * sweepT;
+
+            var sweepLeft = Math.Max(x - 0.006f, sweepAt);
+            var sweepRight = Math.Min(right + 0.006f, sweepAt + sweepW);
+
+            if (sweepRight > sweepLeft)
+            {
+                Hud.RectFrom(sweepLeft, barY, sweepRight - sweepLeft, RowHeight,
+                             Color.FromArgb((int)(20f * arrive), 255, 255, 255));
+            }
 
             for (var i = _top; i < _top + shown && i < _rows.Count; i++)
             {
@@ -757,11 +859,11 @@ namespace Hoodrich.UI
             {
                 var trackH = shown * RowHeight;
                 var barH = Math.Max(0.012f, trackH * shown / (float)_rows.Count);
-                var barY = listTop + (trackH - barH) * _top / (float)Math.Max(1, _rows.Count - shown);
+                var thumbY = listTop + (trackH - barH) * _top / (float)Math.Max(1, _rows.Count - shown);
 
                 Hud.RectFrom(right + 0.004f, listTop, 0.0018f, trackH,
                              Color.FromArgb(50, 255, 255, 255));
-                Hud.RectFrom(right + 0.004f, barY, 0.0018f, barH, Palette.Accent);
+                Hud.RectFrom(right + 0.004f, thumbY, 0.0018f, barH, Palette.Accent);
             }
 
             var note = Current == null ? "" : Current.Note;
@@ -782,22 +884,29 @@ namespace Hoodrich.UI
                      centre: false);
         }
 
+        /// <summary>The picture beside a section's name.</summary>
+        private const float HeadIcon = 0.015f;
+
         private void DrawRow(Opt row, bool picked, float x, float right, float y)
         {
             if (row.Kind == OptKind.Heading)
             {
-                Hud.Text(row.Label.ToUpperInvariant(), x, y + 0.004f, 0.26f,
+                var tx = x;
+                var art = IconFor(row.Label);
+
+                if (!string.IsNullOrEmpty(art) &&
+                    Hud.File(art, x + Hud.ToX(HeadIcon) * 0.5f, y + 0.011f, HeadIcon, 0f,
+                             Palette.Alpha(Palette.Accent, 215)))
+                {
+                    tx = x + Hud.ToX(HeadIcon) + 0.006f;
+                }
+
+                Hud.Text(row.Label.ToUpperInvariant(), tx, y + 0.004f, 0.26f,
                          Palette.Alpha(Palette.Accent, 215), Hud.FontLabel, centre: false);
 
                 Hud.RectFrom(x, y + RowHeight - 0.007f, right - x, 0.0015f,
                              Color.FromArgb(55, 255, 255, 255));
                 return;
-            }
-
-            if (picked)
-            {
-                Hud.RectFrom(x - 0.006f, y - 0.003f, right - x + 0.012f, RowHeight,
-                             Color.FromArgb(45, 255, 255, 255));
             }
 
             var live = row.Selectable;

@@ -219,7 +219,7 @@ namespace Hoodrich.UI
             catch (Exception ex)
             {
                 Log.Error("Wheel action '" + item.Label + "' threw.", ex);
-                Notify.Failure("~r~Hoodrich:~s~ that action failed. See Hoodrich.log.");
+                Notify.Failure("~r~Posted Up:~s~ that action failed. There is a line in the log.");
             }
 
             return true;
