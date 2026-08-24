@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -54,11 +54,20 @@ namespace Hoodrich.Dealing
         private const float ApproachRange = 22f;
 
         /// <summary>
-        /// How far you can drift from the pitch before you stop working it. Generous on purpose:
-        /// being frozen to one tile made the whole thing feel like a menu, and left the player
-        /// stuck in the scenario when stock ran out.
+        /// How far you can drift from the pitch before you stop working it.
+        ///
+        /// Forty, which is double what it was. Twenty metres is about four car lengths, and a
+        /// corner is bigger than that -- you cannot cross the road, walk to the far end of the
+        /// block or step round the back of a building without the pitch letting go of you. The
+        /// whole point of standing somewhere is that you are standing on a BLOCK, not on a
+        /// paving slab, and the original number was already there because being frozen to one
+        /// tile made it feel like a menu. It was just not generous enough.
+        ///
+        /// It is deliberately well inside CornerHeat's sixty-metre radius, so drifting to the
+        /// end of your own leash never lands you on ground the mod considers a different
+        /// corner -- the heat you are carrying comes with you.
         /// </summary>
-        private const float LeashDistance = 20f;
+        private const float LeashDistance = 40f;
         private const int DealDurationMs = 2600;
         private const float CopArriveRange = 3.5f;
         private const float CopScanRange = 160f;

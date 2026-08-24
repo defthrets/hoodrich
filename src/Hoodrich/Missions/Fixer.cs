@@ -151,6 +151,14 @@ namespace Hoodrich.Missions
             // He is your gang's fixer, so he only exists once you are in with them.
             if (_crew == null || !_crew.IsAffiliated)
             {
+                // The MARKER too, and that is the half this was missing.
+                //
+                // Despawn takes the man and nothing else, and this returns before the line
+                // further down that decides whether there should be a blip -- so the mark on
+                // his corner survived him. It never showed on a save that had never joined,
+                // which is why it looked fine; it showed on every save that had ever joined
+                // and then stopped being in, and stayed there pointing at an empty pavement.
+                DropBlip();
                 Despawn();
                 return;
             }

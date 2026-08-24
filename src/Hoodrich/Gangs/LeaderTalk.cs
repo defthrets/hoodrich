@@ -753,29 +753,24 @@ namespace Hoodrich.Gangs
             node.WithIcon(_state.PortRunStage != PortRun.StageNone ? Icons.Warning
                           : _state.DocksUnlocked ? Icons.Tick : Icons.Locked);
 
-            // Stretch, and only Stretch. He is the one who put you on in the first place, so
-            // he is the one you can go back to with nothing in your pockets.
-            // The trial rows above own the finished-package conversation whenever they are
-            // showing. This block is the same man saying the same thing a second time, and two
-            // rows for one event is how the count got lost in the first place.
-            // Word for word the condition the trial rows above are drawn under, INCLUDING the
-            // check that he is your set. It was missing that, which is a hole rather than an
-            // untidiness: somebody signed on with another crew got neither row -- the trial
-            // suppressed by `mine`, and this one suppressed because it thought the trial had
-            // it -- so there was no way to hand his package back at all.
-            var trialHasIt = FrontsWork(def)
-                             && (!_crew.IsAffiliated
-                                 || (_crew.IsAffiliated && _crew.Current.Id == def.GangId
-                                     && AfterJoining()));
-
-            // And only once you are one of his.
+            // His package. THE reason to walk up to him, and for a while it was not here at
+            // all.
             //
-            // This is the standing arrangement -- come to me broke and I will put something in
-            // your hands -- which is a thing you get for being in the set, not a thing a
-            // stranger can ask for. The trial above is how a stranger gets in; borrowing weight
-            // is what being in buys you, and having both open at once made the trial optional.
-            if (FrontsWork(def) && _crew.IsAffiliated && _state.MissionsDone.Count > 0
-                && !trialHasIt)
+            // This block used to be suppressed by a `trialHasIt` check, which asked whether the
+            // trial rows were on screen so the two would not both offer the same conversation.
+            // That check was written for Root -- the version of this menu you get BEFORE you
+            // are one of them, which is where the trial rows live. This is MemberRoot. There
+            // are no trial rows here to defer to, so the guard deferred to nothing, and the
+            // only row on the whole screen that lets you take work off him disappeared the
+            // moment you joined the set it was supposed to reward you for joining.
+            //
+            // That is also why he stood there saying "we already did this part, go work" with
+            // nothing on the list to go and work.
+            //
+            // Nothing to defer to means nothing to check. He is your set's man and you are in
+            // the set: he has a package, or you are holding it, or you owe him a conversation
+            // about it.
+            if (FrontsWork(def) && _crew.IsAffiliated)
             {
                 if (_state.FrontedWorkDone)
                 {

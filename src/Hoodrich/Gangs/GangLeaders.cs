@@ -1185,7 +1185,8 @@ namespace Hoodrich.Gangs
             {
                 UI.Notify.Text(Portrait(def), def.Name, "Chamberlain Hills",
                                "heard theres somebody new on the block movin little bits. " +
-                               "come see me before you go makin that my problem");
+                               "im in the flats on grove, round the back. come see me before " +
+                               "you go makin that my problem");
             }
             catch (System.Exception ex)
             {

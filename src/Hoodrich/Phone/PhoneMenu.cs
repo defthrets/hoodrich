@@ -664,7 +664,7 @@ namespace Hoodrich.Phone
         /// thing that ran out, and the whole phone is down to about fifty rectangles a frame.
         /// </summary>
         private static void RoundRect(float left, float top, float w, float h, float r, Color c,
-                                      bool sprite = true, int steps = 16)
+                                      bool sprite = false, int steps = 20)
         {
             if (c.A <= 0 || w <= 0f || h <= 0f) return;
 
@@ -717,7 +717,7 @@ namespace Hoodrich.Phone
         /// top of it -- spending the same number of rectangles on that as on the handset itself
         /// buys nothing anybody can see.
         /// </summary>
-        private static int Bands(float r, int steps = 16)
+        private static int Bands(float r, int steps = 20)
         {
             return Math.Max(1, (int)Math.Round(r * 2f * Hud.ScreenHeight / steps));
         }
@@ -939,10 +939,23 @@ namespace Hoodrich.Phone
                 // Every other tile keeps the sprite: a tile fill has only its own icon and
                 // label on top, and both of those are sprites and text, which do layer.
                 RoundRect(gx - rimX, gy - rim, gw + rimX * 2f, gh + rim * 2f,
-                          TileRound + rim, Fade(LitEdge, fade), sprite: false, steps: 8);
+                          TileRound + rim, Fade(LitEdge, fade), sprite: false, steps: 14);
             }
 
-            RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade));
+            // Rounded only when it can be SEEN.
+            //
+            // A quiet tile is near-black at alpha 200 on a near-black body -- its corners are
+            // a difference nobody has ever been able to make out, and rounding all seven of
+            // them cost more rectangles than the rest of the screen put together. The live one
+            // is the only tile with a shape you can actually read, so it is the only one that
+            // gets the treatment.
+            //
+            // All rectangles, no sprite. A runtime-texture sprite will not stay underneath a
+            // rectangle drawn after it, and this screen is nothing but rectangles drawn after
+            // each other -- which is how the corners kept surfacing as circles on top of the
+            // battery, and then on top of the live app.
+            if (on) RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade));
+            else Hud.RectFrom(gx, gy, gw, gh, Fade(back, fade));
 
             if (on) Sheen(gx, gy, gw, gh, fade);
 
