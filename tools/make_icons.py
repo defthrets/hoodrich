@@ -1553,7 +1553,7 @@ def socials():
 
 def baggie():
     """
-    A zip-seal baggie with two pills and a bar in it. The dealing icon.
+    A zip-seal baggie with three pills and a scored bar in it. The dealing icon.
 
     It was a bong, which is a picture of SMOKING and this menu is about selling -- the one
     thing nobody in it ever does with the product. A baggie is the unit the whole economy is
@@ -1566,47 +1566,39 @@ def baggie():
     the tint colour in the holes and makes the contrast come from the negative space -- the
     same trick that makes the skull's eye sockets work.
 
+    The pouch is square-shouldered and only slightly rounded. It was tapered with a half-round
+    bottom, on the reasoning that a full bag sags -- but a sagging bag at this size is a
+    shapeless blob, and the corners are most of what says "bag" rather than "pill bottle".
+
     The seal is a separate bar above the pouch with a real transparent slot between them, and
-    it overhangs either side the way the lip of a real one does. That has to be a gap rather
-    than a drawn line, because a stroke thin enough to read as a seam is gone after the
-    downsample -- and without the strong horizontal break the silhouette is just a box.
+    the seam runs the full width of it rather than sitting inset. An inset line reads as a
+    label; end to end it reads as the zip, which is the one detail that makes the whole thing
+    unambiguous.
 
-    The slider knob is gone. It stood proud at one end to stop the top reading as a lid, but a
-    small nub on the skyline at this size is a chip out of the shape rather than a detail, and
-    it made the bag look damaged instead of sealed. What says zip-lock in its place is a slot
-    punched along the middle of the bar -- the seam itself, as a hole, for the same reason the
-    gap under the bar is one.
-
-    Two round pills and one bar. The bar is the xanax shape the rest of the set already uses,
-    and having one of the three be a different shape is what stops the contents reading as
-    three identical dots, which is a pattern rather than a handful of pills.
+    Two lessons are baked into the contents. Two circles over a bar is a FACE, eyes and a
+    mouth, and once you have seen it you cannot see a baggie again -- so the pills scatter at
+    three different heights and no two of them line up. And the bar is scored across, in solid,
+    because an undivided lozenge is just a fourth pill; the score marks are what make it read
+    as a bar of something rather than one big tablet.
     """
     img, d = canvas()
 
-    # The zip strip, with the seam punched through the middle of it. The strip is deliberately
-    # taller than the seam is thick -- a slot that eats a third of the bar stops reading as a
-    # seam and turns the whole thing into an empty outline.
+    # The zip strip, with the seam running end to end.
     d.rounded_rectangle([32, 16, 480, 130], radius=34, fill=W)
-    d.rounded_rectangle([104, 64, 408, 84], radius=10, fill=CLEAR)
+    d.rounded_rectangle([58, 62, 454, 86], radius=12, fill=CLEAR)
 
-    # The pouch, hung off the strip and well inside it -- the overhang has to be a couple of
-    # rendered pixels or the strip stops looking like a lip and starts looking like a lid.
-    # Square shoulders under the seal, sides splaying out, bottom almost a half-circle, so it
-    # sags with the weight in it instead of sitting there like a tile.
-    d.polygon([(100, 168), (412, 168), (432, 380), (80, 380)], fill=W)
-    d.rounded_rectangle([80, 300, 432, 494], radius=86, fill=W)
+    # The pouch. Square shoulders, square-ish bottom, corners just knocked off.
+    d.rounded_rectangle([86, 172, 426, 486], radius=44, fill=W)
 
-    # The product, and the arrangement matters more than the shapes do.
-    #
-    # Two circles level with each other over a centred bar is a FACE -- two eyes and a mouth --
-    # and once you have seen it you cannot see a baggie again. So the two pills sit at
-    # different heights and the bar is narrower than the span between them and pushed off to
-    # one side. Nothing lines up with anything, which is what loose pills in a bag look like
-    # anyway.
-    for (x, y, r) in ((176, 252, 47), (334, 292, 47)):
+    # Three pills, scattered. No two at the same height and no two in a column.
+    for (x, y, r) in ((172, 260, 42), (264, 304, 42), (346, 256, 42)):
         d.ellipse([x - r, y - r, x + r, y + r], fill=CLEAR)
 
-    d.rounded_rectangle([132, 380, 296, 442], radius=30, fill=CLEAR)
+    # The bar, and then the scoring put back in solid so it divides into tablets.
+    d.rounded_rectangle([138, 380, 374, 442], radius=27, fill=CLEAR)
+
+    for x in (208, 284):
+        d.rectangle([x, 380, x + 20, 442], fill=W)
 
     save(img, 'baggie.png')
 
