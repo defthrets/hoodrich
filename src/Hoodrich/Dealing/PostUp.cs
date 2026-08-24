@@ -355,6 +355,7 @@ namespace Hoodrich.Dealing
             // Starting every pitch clean is what made the heat optional: the way to beat a
             // patrol was to pack up, take two steps and press the button again. Now the corner
             // remembers, and getting away from it means getting away from it.
+            _cooledAt = 0;
             _cornerHeat = _ground.At(_anchor);
             _sales = 0;
             _earned = 0;
@@ -382,6 +383,25 @@ namespace Hoodrich.Dealing
             {
                 Notify.Ticker("~o~This block's still warm from last time.~s~ " +
                               "Try somewhere else if you want a clean start.");
+            }
+
+            // And you tell the block, sideways.
+            //
+            // The YouPosted set already existed and could only be reached by opening the feed
+            // and choosing to say something, which is a thing nobody does mid-shift. Standing
+            // on a corner IS the announcement -- the post is how anybody knows to come, and it
+            // goes up in the product's street name rather than its own, because a man listing
+            // his stock on a public feed is a man who gets a visit.
+            //
+            // Gated on a short gap rather than fired blind, so flicking the pitch off and on
+            // does not fill the feed with the same man saying he is outside four times.
+            if (Social != null)
+            {
+                var code = string.IsNullOrEmpty(product.CodeWord)
+                    ? product.Name.ToLowerInvariant()
+                    : product.CodeWord;
+
+                Social.PostAsYouSometimes("YouPosted", code, PostGapMs, 100);
             }
 
             Log.Info("Posted up with " + product.Id + " at " + _anchor +
@@ -490,6 +510,56 @@ namespace Hoodrich.Dealing
 
         // ---- per-tick ----------------------------------------------------------
 
+        /// <summary>
+        /// How long before posting up will announce itself again.
+        ///
+        /// Ninety seconds. Long enough that packing up to move down the road and setting up
+        /// again does not read as somebody spamming their own feed, short enough that a real
+        /// shift on a new block is a new post.
+        /// </summary>
+        private const int PostGapMs = 90000;
+
+        /// <summary>Quiet for this long and the corner starts going off the boil.</summary>
+        private const int CoolAfterMs = 25000;
+
+        /// <summary>How much heat a minute of nobody coming takes back off.</summary>
+        private const float CoolPerMinute = 3.2f;
+
+        private int _cooledAt;
+
+        /// <summary>
+        /// Heat comes back down when nothing is happening.
+        ///
+        /// It only ever went UP, once per sale, and the only way down was to pack up and let
+        /// the ground cool while you were elsewhere. Which made a corner a one-way trip: stand
+        /// there long enough and the police are coming whether or not you have served anybody
+        /// for the last five minutes, and waiting it out -- the obvious thing to try, and the
+        /// thing a person would actually do -- did nothing at all.
+        ///
+        /// Tied to the last SALE rather than to a clock of its own, because what makes a corner
+        /// hot is traffic. A queue is what gets noticed; a man stood on his own is not, however
+        /// long he has been there.
+        ///
+        /// Slower than it builds, on purpose. Waiting should be a real decision with a real
+        /// cost in time, not a button that undoes the last ten minutes.
+        /// </summary>
+        private void Cool()
+        {
+            var now = Game.GameTime;
+
+            if (_cooledAt == 0) { _cooledAt = now; return; }
+
+            var since = now - _cooledAt;
+            if (since < 1000) return;
+
+            _cooledAt = now;
+
+            if (_cornerHeat <= 0f) return;
+            if (now - _soldAt < CoolAfterMs) return;
+
+            _cornerHeat = Math.Max(0f, _cornerHeat - CoolPerMinute * (since / 60000f));
+        }
+
         public void Update()
         {
             // Before the early return, deliberately. Blocks cool while you are somewhere else,
@@ -498,6 +568,8 @@ namespace Hoodrich.Dealing
             _ground.Tick();
 
             if (!IsPosted) return;
+
+            Cool();
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive)

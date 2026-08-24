@@ -1,4 +1,4 @@
-{
+﻿{
   "_comment": [
     "The block, talking about itself.",
     "",
@@ -3436,7 +3436,17 @@
       "chop out here with me. he don't do refunds neither",
       "holler my name, not what you want. {filler}",
       "if you gotta ask what i'm doin out here you ain't the customer",
-      "they rolled past twice. i'm just out here enjoyin the weather"
+      "they rolled past twice. i'm just out here enjoyin the weather",
+      "posted up with the {subject} man in {here}. iykyk",
+      "{here}. ask for the {subject} man. that's me. that's the post",
+      "{subject} man is OUT. {here}. iykyk",
+      "im in {here} doin what i do. you either know or you don't",
+      "open in {here}. no menu, no prices, no questions in the comments",
+      "{here} for the next lil while. don't make me say it twice",
+      "that {subject} in {here} if you was wonderin. wonder quieter next time",
+      "servin in {here}. iykyk and if you don't, scroll",
+      "customer service is OUTSIDE in {here} today",
+      "{here}. i'm the one who ain't waitin for a bus"
     ],
     "YouDidTheJob": [
       "handled it. don't ask what it was",
