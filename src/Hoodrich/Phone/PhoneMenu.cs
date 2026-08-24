@@ -497,19 +497,31 @@ namespace Hoodrich.Phone
             //
             // Drawn as a rim and then a body inside it, so the bezel is a real edge rather
             // than a hairline that disappears at small sizes.
+            // RECTS at the corners here, not the sprite, and that is the whole reason this
+            // argument exists.
+            //
+            // A runtime-texture sprite does not sit in the same queue as DRAW_RECT: it comes out
+            // ON TOP of any rectangle drawn after it, whatever order they were issued in. The
+            // handset is the bottom layer of the screen, so its four corner discs floated up
+            // over everything that is drawn as a rectangle afterwards -- the battery, the signal
+            // bars, the rule under the status bar -- and read as four grey circles sitting on
+            // the phone with the chrome behind them.
+            //
+            // The tiles keep the sprite because nothing is drawn under them; the body cannot,
+            // because everything is.
             RoundRect(left, top, w, h, BodyRound,
-                      Fade(Color.FromArgb(255, 96, 102, 104), fade));
+                      Fade(Color.FromArgb(255, 96, 102, 104), fade), sprite: false);
 
             var edge = 0.0022f;
             var edgeX = Hud.ToX(edge);
 
             RoundRect(left + edgeX, top + edge, w - edgeX * 2f, h - edge * 2f,
-                      BodyRound - edge, Fade(Color.FromArgb(252, 8, 9, 10), fade));
+                      BodyRound - edge, Fade(Color.FromArgb(252, 8, 9, 10), fade), sprite: false);
 
             // And the screen it houses, rounded with it.
             var bezX = Hud.ToX(Bezel);
             RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
-                      ScreenRound, Fade(Color.FromArgb(252, 13, 15, 17), fade));
+                      ScreenRound, Fade(Color.FromArgb(252, 13, 15, 17), fade), sprite: false);
         }
 
         private void StatusBar(float left, float top, float w, int fade)
@@ -526,10 +538,24 @@ namespace Hoodrich.Phone
             //
             // A slow sine, not a blink. The battery is the only thing on this screen allowed
             // to blink, because blinking means "look at this" and a logo has nothing to report.
-            var breath = 0.5f + 0.5f * (float)Math.Sin(
-                (Game.GameTime % PulseMs) / (double)PulseMs * Math.PI * 2d);
+            var turn = (Game.GameTime % PulseMs) / (double)PulseMs * Math.PI * 2d;
+            var breath = 0.5f + 0.5f * (float)Math.Sin(turn);
 
-            Hud.Brand(left + pad, mid, 0.0122f, Fade(Lerp(GreenDim, Green, breath), fade));
+            // And it MOVES, a little.
+            //
+            // The colour breathing on its own is a thing you have to be looking at to notice,
+            // and it is the mod's own name sitting on every page of the phone -- it should have
+            // a bit of life in it. So it rises and falls by about a pixel, on a quarter turn
+            // behind the colour so the two are not obviously the same wave, and it grows by a
+            // couple of per cent at the top of the breath.
+            //
+            // Deliberately small. This is a logo in a status bar, not a notification: if you
+            // can see it move without looking for it, it is too much.
+            var lift = (float)Math.Sin(turn - Math.PI * 0.5d) * 0.0011f;
+            var swell = 1f + 0.03f * breath;
+
+            Hud.Brand(left + pad, mid + lift, 0.0122f * swell,
+                      Fade(Lerp(GreenDim, Green, breath), fade));
 
             // The game's clock, because a phone that says the wrong time is a prop.
             var hh = Function.Call<int>(Hash.GET_CLOCK_HOURS);
@@ -637,7 +663,8 @@ namespace Hoodrich.Phone
         /// separately from DRAW_RECT -- so a corner no longer competes with the fills for the
         /// thing that ran out, and the whole phone is down to about fifty rectangles a frame.
         /// </summary>
-        private static void RoundRect(float left, float top, float w, float h, float r, Color c)
+        private static void RoundRect(float left, float top, float w, float h, float r, Color c,
+                                      bool sprite = true)
         {
             if (c.A <= 0 || w <= 0f || h <= 0f) return;
 
@@ -657,10 +684,37 @@ namespace Hoodrich.Phone
             Hud.RectFrom(left + rX, top, w - rX * 2f, r, c);
             Hud.RectFrom(left + rX, top + h - r, w - rX * 2f, r, c);
 
-            Corner(left + rX, top + r, r, c);
-            Corner(left + w - rX, top + r, r, c);
-            Corner(left + rX, top + h - r, r, c);
-            Corner(left + w - rX, top + h - r, r, c);
+            if (sprite)
+            {
+                Corner(left + rX, top + r, r, c);
+                Corner(left + w - rX, top + r, r, c);
+                Corner(left + rX, top + h - r, r, c);
+                Corner(left + w - rX, top + h - r, r, c);
+                return;
+            }
+
+            var band = Bands(r);
+
+            Hud.Disc(left + rX, top + r, r, c, band);
+            Hud.Disc(left + w - rX, top + r, r, c, band);
+            Hud.Disc(left + rX, top + h - r, r, c, band);
+            Hud.Disc(left + w - rX, top + h - r, r, c, band);
+        }
+
+        /// <summary>
+        /// How tall each band of a stacked corner is, in screen pixels.
+        ///
+        /// Returns a HEIGHT, not a count -- which is worth saying because getting those the
+        /// wrong way round gives a corner of two enormous steps and looks deliberate.
+        ///
+        /// Chosen so a corner is always about eighteen steps whatever the monitor is. That is
+        /// round enough that the stagger does not read at this size, and it fixes the cost:
+        /// Hud.Disc's default of one rectangle per pixel row is what put seventeen hundred
+        /// draws into a single frame and got the screen's own fills thrown away by the game.
+        /// </summary>
+        private static int Bands(float r)
+        {
+            return Math.Max(1, (int)Math.Round(r * 2f * Hud.ScreenHeight / 18f));
         }
 
         /// <summary>
