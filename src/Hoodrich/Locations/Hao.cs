@@ -278,6 +278,7 @@ namespace Hoodrich.Locations
                 else if (!_held) Settle();
 
                 StockTheYard();
+                ParkHisRide();
             }
         }
 
@@ -374,6 +375,114 @@ namespace Hoodrich.Locations
                 {
                     Log.Debug("Could not put out the " + car.Id + ": " + ex.Message);
                 }
+            }
+        }
+
+        /// <summary>
+        /// His own car, and it is not for sale.
+        ///
+        /// The orange Penumbra he leans on in story mode. It stands apart from the stock on
+        /// purpose: a man who deals cars drives one of them, and the one he keeps says more
+        /// about him than the eleven he is trying to move.
+        /// </summary>
+        private const string RideModel = "penumbra";
+
+        private static readonly Vector3 RideSpot = new Vector3(-33.923f, -1680.023f, 29.434f);
+        private const float RideHeading = 313.928f;
+
+        private Vehicle _ride;
+
+        /// <summary>
+        /// Every mod on the car Rockstar hand him, copied out of their own script.
+        ///
+        /// Not eyeballed off a screenshot. hao1.c4 builds his Penumbra at line 39721 and this is
+        /// that block: primary 38 over secondary 0, pearlescent 91, then nine mod slots and
+        /// three toggles. Reading it out of the script is the difference between "orange with a
+        /// black bonnet" and the actual car, which also has the spoiler, the splitter, the
+        /// skirts and wheel twenty on it.
+        ///
+        /// Slot and index, in the order they set them. Slot 7 is the bonnet -- index 2 is the
+        /// carbon one, which is the black nose in every picture of him.
+        /// </summary>
+        private static readonly int[,] RideMods =
+        {
+            { 0, 2 }, { 1, 1 }, { 2, 1 }, { 3, 1 }, { 4, 1 },
+            { 6, 0 }, { 7, 2 }, { 10, 0 }, { 23, 20 }
+        };
+
+        /// <summary>Turbo, and the two he switches on rather than picks an index for.</summary>
+        private static readonly int[] RideToggles = { 18, 17, 22 };
+
+        /// <summary>
+        /// Puts his Penumbra where he parks it.
+        ///
+        /// Re-checked the same way the stock is, and for the same reason -- the game will tow or
+        /// stream out a car standing in a yard, and his being missing reads as him being out.
+        /// </summary>
+        private void ParkHisRide()
+        {
+            if (_ride != null && _ride.Exists() && _ride.IsDriveable) return;
+
+            try
+            {
+                if (_ride != null && _ride.Exists())
+                {
+                    try { _ride.Delete(); } catch { /* it was a wreck anyway */ }
+                }
+
+                var model = new Model(RideModel);
+                if (!model.IsValid || !model.IsInCdImage || !model.Request(1200))
+                {
+                    Log.Debug("No " + RideModel + " on this install; Hao is on foot.");
+                    return;
+                }
+
+                _ride = World.CreateVehicle(model, RideSpot, RideHeading);
+                model.MarkAsNoLongerNeeded();
+
+                if (_ride == null || !_ride.Exists()) return;
+
+                var h = _ride.Handle;
+
+                _ride.IsPersistent = true;
+
+                Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, h);
+                Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, h, 0f);
+
+                Function.Call(Hash.SET_VEHICLE_COLOURS, h, 38, 0);
+                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, h, 91, 0);
+
+                // Before any mod takes, same as the lot cars.
+                Function.Call(Hash.SET_VEHICLE_MOD_KIT, h, 0);
+
+                // Asked for and then set, which is the order their script uses. PRELOAD is what
+                // stops a mod arriving a second late and popping onto the car in front of you.
+                for (var i = 0; i < RideMods.GetLength(0); i++)
+                {
+                    Function.Call(Hash.PRELOAD_VEHICLE_MOD, h, RideMods[i, 0], RideMods[i, 1]);
+                }
+
+                for (var i = 0; i < RideMods.GetLength(0); i++)
+                {
+                    Function.Call(Hash.SET_VEHICLE_MOD, h, RideMods[i, 0], RideMods[i, 1], false);
+                }
+
+                foreach (var slot in RideToggles)
+                {
+                    Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, slot, true);
+                }
+
+                // 3 is locked to the player and nobody else, which is what they give it -- you
+                // can walk round it and you cannot take it, and it does not read as a car that
+                // has been abandoned with the doors open.
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, h, 3);
+                Function.Call(Hash.ROLL_DOWN_WINDOW, h, 0);
+
+                Log.Info("Hao's Penumbra is on the lot.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not park Hao's own car: " + ex.Message);
             }
         }
 
@@ -558,6 +667,14 @@ namespace Hoodrich.Locations
             catch { /* he will be back */ }
 
             _ped = null;
+
+            try
+            {
+                if (_ride != null && _ride.Exists()) _ride.Delete();
+            }
+            catch { /* gone */ }
+
+            _ride = null;
 
             foreach (var car in _stock)
             {
