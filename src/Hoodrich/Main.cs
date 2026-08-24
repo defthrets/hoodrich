@@ -84,6 +84,7 @@ namespace Hoodrich
         private readonly MissionBook _missions;
         private readonly Fixer _fixer;
         private readonly Armourer _bigj;
+        private readonly Hao _hao;
 
         /// <summary>
         /// The block, talking about itself, and the screen it is read on.
@@ -351,6 +352,8 @@ namespace Hoodrich
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
         private GunScreen _gunScreen;
+        private HaoTalk _haoTalk;
+        private CarScreen _carScreen;
         private DealerTalk _juanTalk;
         private readonly FixerTalk _fixerTalk;
         private readonly MissionRunner _jobs;
@@ -429,6 +432,10 @@ namespace Hoodrich
                 // can change it without a reload.
                 _jobs.RestMinutes = () => _cfg.LamarRestMinutes;
                 _bigj = new Armourer(_gangs) { Working = () => _crew != null && _crew.IsAffiliated };
+
+                // Hao runs a second economy off the same map: metal instead of weight, with
+                // its own yard, its own money and eventually its own jobs.
+                _hao = new Hao(_state);
 
                 _social = SocialFeed.Load();
                 _socialScreen = new SocialScreen(_social);
@@ -959,7 +966,7 @@ namespace Hoodrich
                                    _stashScreen.IsOpen || _pocketScreen.IsOpen
                                    || _settingsScreen.IsOpen
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
-                                   || _gunScreen.IsOpen,
+                                   || _gunScreen.IsOpen || _carScreen.IsOpen,
                 };
 
                 _social.Toasts = _toasts;
@@ -1102,6 +1109,7 @@ namespace Hoodrich
                     Suppressed = () =>
                         (_fixer != null && _fixer.InReach) ||
                         (_bigj != null && _bigj.InReach) ||
+                        (_hao != null && _hao.InReach) ||
                         (_kitchen != null && _kitchen.InReach) ||
                         (_sleep != null && _sleep.InReach) ||
                         (_delivery != null && _delivery.IsActive) ||
@@ -1175,6 +1183,24 @@ namespace Hoodrich
 
                     Dialogue.Say(_bigj.Name, lines[_rng.Next(lines.Length)]);
                 };
+                _carScreen = new CarScreen(_hao);
+
+                _haoTalk = new HaoTalk(_hao, _state);
+                _haoTalk.Showroom = () => _carScreen.Open();
+
+                _carScreen.OnBought = car =>
+                {
+                    Dialogue.Say(_hao.Name, "Keys are in it. Don't bring it back.");
+                };
+
+                _hao.Talk = _talk;
+                _hao.Showroom = () => _carScreen.Open();
+                _hao.TalkBuilder = () =>
+                {
+                    _talk.Title = "Hao's";
+                    return _haoTalk.Root();
+                };
+
                 _bigj.Talk = _talk;
                 _bigj.TalkBuilder = () =>
                 {
@@ -1414,6 +1440,20 @@ namespace Hoodrich
                 // The rack owns the screen the same way the kitchen does. Without this the
                 // wheel could be opened on top of it, both would fight over up and down, and
                 // every walk-up prompt in the mod would carry on showing behind it.
+                if (_carScreen.IsOpen)
+                {
+                    // Closed by walking away, the same as every other counter in the mod.
+                    if (!available || !_hao.InReach) _carScreen.Close();
+                    else
+                    {
+                        _carScreen.Update();
+                        _carScreen.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_gunScreen.IsOpen)
                 {
                     if (!available || !_bigj.InReach) _gunScreen.Close();
@@ -1523,6 +1563,7 @@ namespace Hoodrich
                         _leaders.ReleaseFromTalk();
                         _fixer.ReleaseFromTalk();
                         _bigj.ReleaseFromTalk();
+                        _hao.ReleaseFromTalk();
                     }
                     else
                     {
@@ -1559,6 +1600,9 @@ namespace Hoodrich
                     _blockTalk.Update();
                     _bigj.Update();
                     _bigj.UpdatePrompt();
+
+                    _hao.Update();
+                    _hao.UpdatePrompt();
 
                     _social.Update();
 
@@ -2092,6 +2136,7 @@ namespace Hoodrich
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
             try { _bigj?.RestoreWorld(); } catch { /* teardown */ }
+            try { _hao?.RestoreWorld(); } catch { /* teardown */ }
             try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }

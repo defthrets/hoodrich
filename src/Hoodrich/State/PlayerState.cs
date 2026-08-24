@@ -170,6 +170,9 @@ namespace Hoodrich.State
         /// </summary>
         public bool HomiesUnlocked;
 
+        /// <summary>Whether Hao has introduced himself, so he only does it once.</summary>
+        public bool MetHao;
+
         /// <summary>
         /// True when the last thing you did was sleep at the stash house.
         ///
@@ -239,6 +242,15 @@ namespace Hoodrich.State
         /// not wipe the fact that you know him.
         /// </summary>
         public readonly List<string> LeadersMet = new List<string>();
+
+        /// <summary>
+        /// Cars bought off Hao, by id.
+        ///
+        /// Saved, because his lot is rebuilt from cars.json every load and without this it
+        /// would restock the exact car you are currently driving around in -- and then sell it
+        /// to you again.
+        /// </summary>
+        public readonly List<string> CarsBought = new List<string>();
 
         public bool HasMet(string gangId)
         {
@@ -469,6 +481,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json CarsJson()
+        {
+            var arr = Json.Array();
+            foreach (var id in CarsBought) arr.Add(Json.Str(id));
+            return arr;
+        }
+
         private Json OfferedJson()
         {
             var arr = Json.Array();
@@ -529,6 +548,7 @@ namespace Hoodrich.State
                 .Set("portRunStage", PortRunStage)
                 .Set("frontsDone", FrontsDone)
                 .Set("homiesUnlocked", HomiesUnlocked)
+                .Set("metHao", MetHao)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("followers", Followers)
                 .Set("frontedDrug", FrontedDrug)
@@ -537,6 +557,7 @@ namespace Hoodrich.State
                 .Set("lastJobAt", LastJobAtUtc)
                 .Set("missionsDone", MissionsJson())
                 .Set("leadersMet", LeadersJson())
+                .Set("carsBought", CarsJson())
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson());
         }
@@ -561,6 +582,7 @@ namespace Hoodrich.State
                 PortRunStage = Math.Max(0, Math.Min(3, doc["portRunStage"].AsInt(0)));
                 FrontsDone = Math.Max(0, doc["frontsDone"].AsInt(0));
                 HomiesUnlocked = doc["homiesUnlocked"].AsBool(false);
+                MetHao = doc["metHao"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
 
                 // Defaults to FALSE, so a save from before this existed shows the guide once
@@ -581,6 +603,13 @@ namespace Hoodrich.State
                 {
                     var id = node.AsString("");
                     if (!string.IsNullOrEmpty(id) && !HasDone(id)) MissionsDone.Add(id);
+                }
+
+                CarsBought.Clear();
+                foreach (var node in doc["carsBought"].Items)
+                {
+                    var id = node.AsString("");
+                    if (!string.IsNullOrEmpty(id) && !CarsBought.Contains(id)) CarsBought.Add(id);
                 }
 
                 LeadersMet.Clear();

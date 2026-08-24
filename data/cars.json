@@ -1,0 +1,109 @@
+{
+  "_comment": "Hao's yard. Every model name here was resolved from the HASH shown on the spawner panel rather than from the display name, which is how 'Baller' turned out to be baller2 and 'Asterope GZ' asterope2. Positions are read off the in-game coordinate HUD. Prices are under the showroom because none of these came with paperwork.",
+
+  "_suspension": "Every car on this lot gets competition suspension, set at spawn. It is applied by taking the HIGHEST index the model actually offers rather than a hardcoded 3, because the number of suspension mods varies per vehicle and a fixed index silently does nothing on the ones that have fewer.",
+
+  "cars": [
+    {
+      "id": "asbo",
+      "model": "asbo",
+      "name": "Asbo",
+      "class": "Compact",
+      "note": "Somebody's first car. Twice.",
+      "price": 9000,
+      "x": -51.177, "y": -1676.0, "z": 28.728, "heading": 232.005,
+      "_y": "The Y readout was under a minimap icon in the reference shot. This value is inferred from the row it sits in -- Minimus -1678.2, Asterope -1680.4, Kanjo -1682.4, all on the same heading and ~2.2m apart, which puts the Asbo at the head of that row. Worth correcting if it lands badly."
+    },
+    {
+      "id": "kanjosj",
+      "model": "kanjosj",
+      "name": "Kanjo SJ",
+      "class": "Coupe",
+      "note": "Built in a driveway. Runs like it.",
+      "price": 22000,
+      "x": -55.753, "y": -1682.439, "z": 28.805, "heading": 235.911
+    },
+    {
+      "id": "minimus",
+      "model": "minimus",
+      "name": "Minimus",
+      "class": "Sedan",
+      "note": "Clean. Too clean to ask about.",
+      "price": 18000,
+      "x": -52.881, "y": -1678.175, "z": 28.802, "heading": 234.863
+    },
+    {
+      "id": "asterope2",
+      "model": "asterope2",
+      "name": "Asterope GZ",
+      "class": "Sedan",
+      "note": "Four doors and a bad attitude.",
+      "price": 16000,
+      "x": -54.425, "y": -1680.435, "z": 28.965, "heading": 234.705
+    },
+    {
+      "id": "merula",
+      "model": "merula",
+      "name": "Merula",
+      "class": "Sedan",
+      "note": "Off a lease. Sort of.",
+      "price": 38000,
+      "_nudge": "Shifted 0.4m off the read position: an oriented-box check put it 0.01m from the Astron, which is touching, and two cars spawning in contact get shoved apart by the physics and scatter the row.",
+      "x": -59.729, "y": -1688.522, "z": 28.978, "heading": 285.837
+    },
+    {
+      "id": "vorschlaghammer",
+      "model": "vorschlaghammer",
+      "name": "Vorschlaghammer",
+      "class": "Sedan",
+      "note": "German. Old money. New plates.",
+      "price": 28000,
+      "x": -40.336, "y": -1688.842, "z": 28.727, "heading": 24.953
+    },
+    {
+      "id": "woodlander",
+      "model": "woodlander",
+      "name": "Woodlander",
+      "class": "SUV",
+      "note": "Nobody looks at one twice. That's the feature.",
+      "price": 19000,
+      "x": -43.019, "y": -1689.921, "z": 28.396, "heading": 22.464
+    },
+    {
+      "id": "baller2",
+      "model": "baller2",
+      "name": "Baller",
+      "class": "SUV",
+      "note": "For when you want to be seen arriving.",
+      "price": 32000,
+      "x": -49.681, "y": -1692.624, "z": 29.113, "heading": 4.497
+    },
+    {
+      "id": "toros",
+      "model": "toros",
+      "name": "Toros",
+      "class": "SUV",
+      "note": "Quick for something that shape.",
+      "price": 65000,
+      "x": -53.405, "y": -1693.812, "z": 28.987, "heading": 354.856
+    },
+    {
+      "id": "astron",
+      "model": "astron",
+      "name": "Astron",
+      "class": "SUV",
+      "note": "Somebody in Rockford is still reporting this one.",
+      "price": 55000,
+      "x": -56.417, "y": -1691.856, "z": 28.879, "heading": 349.604
+    },
+    {
+      "id": "caracara2",
+      "model": "caracara2",
+      "name": "Caracara 4x4",
+      "class": "Off-road",
+      "note": "Goes where the cameras aren't.",
+      "price": 42000,
+      "x": -59.002, "y": -1685.530, "z": 29.202, "heading": 278.527
+    }
+  ]
+}
