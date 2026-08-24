@@ -130,7 +130,15 @@ namespace Hoodrich.Missions
         private const int UpdateIntervalMs = 400;
 
         /// <summary>Chatter on the ride out, so four men on bikes are not four silent men on bikes.</summary>
-        private const int ChatterGapMs = 14000;
+        /// <summary>
+        /// How often somebody says something.
+        ///
+        /// Down from fourteen seconds, and it now runs for the WHOLE job rather than only the
+        /// ride out. Chatter was wired into the riding tick alone, so the walk to the bike, the
+        /// business at the courts, the shop and the ride home were all silent -- which is most
+        /// of the mission, and it made the one leg that did talk feel like a different scene.
+        /// </summary>
+        private const int ChatterGapMs = 7000;
 
         /// <summary>How often the escort task is put back on anybody who has lost it.</summary>
         private const int RetaskGapMs = 2500;
@@ -373,6 +381,12 @@ namespace Hoodrich.Missions
             HoldTheLaw(true);
             Mark(BikeSpot, "Your bike", BlipColor.Yellow);
 
+            // ON FOOT, from here. He used to appear on a bicycle at the moment you got on
+            // yours, which made the walk to the bike a walk on your own -- the man who just
+            // asked you to come with him standing where you left him until the scene needed
+            // him. He comes off his corner when the job starts and follows you across the lot.
+            LendLamar(player);
+
             Notify.Important("~g~Job on.~s~ " + Objective + ".");
             Log.Info("BikeRide started; bike at " + BikeSpot + ".");
             return null;
@@ -457,6 +471,9 @@ namespace Hoodrich.Missions
                 return;
             }
 
+            // Every leg, not just the ride. See ChatterGapMs.
+            Chatter();
+
             switch (Phase)
             {
                 case BikePhase.ToBike: TickToBike(player); return;
@@ -482,7 +499,7 @@ namespace Hoodrich.Missions
             // They turn up when you get on, not when you take the job. Three men standing about
             // in a courtyard while you decide whether to bother is not the same picture.
             SpawnHomiesOnBikes(player);
-            BringLamar(player);
+            MountLamar(player);
 
             Phase = BikePhase.Riding;
             _nextChatter = Game.GameTime + ChatterGapMs;
@@ -495,7 +512,6 @@ namespace Hoodrich.Missions
 
         private void TickRiding(Ped player)
         {
-            Chatter();
             KeepUp(player);
             SicThemOn(player);
 
@@ -1504,18 +1520,23 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// Puts the man who gave you the job on a bike.
+        /// Takes him off his corner and puts him behind you, on foot.
         ///
-        /// He is borrowed off the Fixer rather than spawned, so it is the same man you were
-        /// stood in front of a moment ago. Spawning a second Lamar while the first one watches
-        /// from the kerb is the kind of thing that cannot be unseen.
+        /// He used to arrive already sat on a bicycle at the moment you got on yours, which
+        /// meant the walk across the lot to your own bike was a walk on your own -- the man who
+        /// had just asked you to come with him standing exactly where you left him until the
+        /// scene needed him. He comes now when the job starts and follows you to it.
+        ///
+        /// Everything that makes him one of the crew happens HERE rather than at the bike:
+        /// the group, the relationship, the bat, being killable. Only the riding is left for
+        /// later, because only the riding needs a bike.
         ///
         /// He goes into _homies with the rest, which is deliberate: every piece of behaviour
         /// this mission has for a homie -- keeping up, remounting, being called up at the
         /// courts, fighting -- then applies to him for free. What does NOT apply is the
         /// teardown, which is handled where it happens.
         /// </summary>
-        private void BringLamar(Ped player)
+        private void LendLamar(Ped player)
         {
             if (Boss == null || _lamar != null) return;
 
@@ -1525,32 +1546,11 @@ namespace Hoodrich.Missions
             var ped = Boss.Lend();
             if (ped == null || !ped.Exists()) return;
 
-            // Under him rather than at a mark up the lot.
-            //
-            // He used to be borrowed off his corner and put on a bike parked twenty metres
-            // away, which is a man teleporting to a bicycle. The bike is made a stride in
-            // front of where he is actually stood and he is put straight on it, so the whole
-            // thing reads as him already being on it when the job starts -- and it needs no
-            // second coordinate to be kept in step with wherever he happens to be standing.
-            var infront = ped.Position + ped.ForwardVector * 1.4f;
-
-            var bike = SpawnBike(infront, ped.Heading) ?? SpawnBike(LamarBike, LamarBikeHeading);
-            if (bike == null)
-            {
-                // No bike, so no ride. Give him straight back rather than leaving him stood
-                // in the road with his tasks cleared.
-                Boss.TakeBack();
-                return;
-            }
-
             _lamar = ped;
             _homies.Add(ped);
-            _bikes.Add(bike);
 
             try
             {
-                ped.SetIntoVehicle(bike, VehicleSeat.Driver);
-
                 MakeSides();
                 Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle,
                               _usGroup != 0 ? _usGroup : gang.GroupHash);
@@ -1588,7 +1588,7 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
 
                 Enlist(ped, player);
-                Escort(ped, bike, player);
+                OnFoot(ped, player);
 
                 var blip = ped.AddBlip();
                 if (blip != null && blip.Exists())
@@ -1598,6 +1598,77 @@ namespace Hoodrich.Missions
                     blip.Name = "Lamar";
                     _blips.Add(blip);
                 }
+
+                Log.Info("Lamar is walking out with you.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not bring Lamar along: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Right behind you, rather than somewhere in the general area.
+        ///
+        /// A group member left to the formation wanders within its spacing, which is right for
+        /// four men on bicycles crossing a city and much too loose for one man walking twenty
+        /// feet with you. Following an OFFSET is the tighter instruction: a metre back and a
+        /// little to the side, held, so he arrives at the bike when you do.
+        /// </summary>
+        private static void OnFoot(Ped ped, Ped player)
+        {
+            if (ped == null || !ped.Exists() || player == null || !player.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.TASK_FOLLOW_TO_OFFSET_OF_ENTITY, ped.Handle, player.Handle,
+                              FootOffsetX, FootOffsetY, 0f, FootSpeed, -1, FootStop, true);
+            }
+            catch
+            {
+                // The group formation still has him in the right postcode.
+            }
+        }
+
+        /// <summary>A stride behind and off your shoulder, and he does not stop short.</summary>
+        private const float FootOffsetX = 0.8f;
+        private const float FootOffsetY = -1.2f;
+        private const float FootSpeed = 2.0f;
+        private const float FootStop = 1.0f;
+
+        /// <summary>
+        /// Puts him on a bike, once you are on yours.
+        ///
+        /// Under him rather than at a mark up the lot.
+        ///
+        /// He used to be borrowed off his corner and put on a bike parked twenty metres away,
+        /// which is a man teleporting to a bicycle. The bike is made a stride in front of where
+        /// he is actually stood and he is put straight on it, so the whole thing reads as him
+        /// getting on it beside you -- and it needs no second coordinate to be kept in step
+        /// with wherever he has walked to.
+        /// </summary>
+        private void MountLamar(Ped player)
+        {
+            // Not lent yet, so lend him now. Belt and braces: if the start-of-job call did not
+            // take -- he was missing, the boss had him -- this is still a ride with Lamar on it
+            // rather than a ride he is quietly absent from.
+            if (_lamar == null) LendLamar(player);
+
+            var ped = _lamar;
+            if (ped == null || !ped.Exists() || !ped.IsAlive) return;
+            if (ped.IsInVehicle()) return;
+
+            var infront = ped.Position + ped.ForwardVector * 1.4f;
+
+            var bike = SpawnBike(infront, ped.Heading) ?? SpawnBike(LamarBike, LamarBikeHeading);
+            if (bike == null) return;
+
+            _bikes.Add(bike);
+
+            try
+            {
+                ped.SetIntoVehicle(bike, VehicleSeat.Driver);
+                Escort(ped, bike, player);
 
                 Log.Info("Lamar is riding this one.");
             }

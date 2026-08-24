@@ -1410,6 +1410,9 @@ namespace Hoodrich
 
                 Log.Info("Paths: data=" + Paths.Data + "  writable=" + Paths.Writable);
 
+                // Skulls left on the map by a build that no longer exists. See StaleBlips.
+                UI.StaleBlips.Sweep();
+
                 Log.Info(Build.Name + " " + Build.Version + " loaded. Phone: phone button" +
                          (_cfg.PhoneKey == System.Windows.Forms.Keys.None
                              ? ""

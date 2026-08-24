@@ -1603,20 +1603,19 @@ namespace Hoodrich.Supply
                     // walking twenty feet up a path holding a box still, that is not a cost.
                     float yaw;
 
-                    if (Bales())
-                    {
-                        // A sensible place to stand it while the animation gets going.
-                        // CentreOnHands replaces this with the measured one as soon as his
-                        // hands are actually in the carry.
-                        var off = ChestOffset(model, out yaw);
+                    // HIS HAND EITHER WAY, to begin with.
+                    //
+                    // The crate used to be stood in front of his chest by measurement from the
+                    // ped's own origin, and it came out level with the top of his head and
+                    // stayed there for the whole walk up the path -- snapping into his arms
+                    // only when CentreOnHands finally got a look at the pose. A box floating
+                    // over a man for twenty feet is worse than a box held slightly wrong.
+                    //
+                    // The hand bone is never wildly out. So the first attachment is the same
+                    // for both, and CentreOnHands upgrades the carried one to the true midpoint
+                    // between his hands the moment the animation is actually on him.
+                    _centred = false;
 
-                        Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
-                                      0, off.X, off.Y, off.Z, 0f, 0f, yaw,
-                                      false, false, false, false, 2, true);
-
-                        _centred = false;
-                    }
-                    else
                     {
                         // In his hand, so it swings with his arm -- and centred ON the bone
                         // rather than pushed off it. The push existed for the crate, where the
@@ -1635,6 +1634,10 @@ namespace Hoodrich.Supply
                     // of stock reads as somebody miming. It stays stuck to his hand and he
                     // walks up the path normally.
                     _carrying = Bales() && PlayCarry();
+
+                    // Straight away if the dictionary was already in. TickCarrying asks again
+                    // on every pass for the case where it was not.
+                    CentreOnHands();
                     return;
                 }
                 catch
@@ -1727,54 +1730,6 @@ namespace Hoodrich.Supply
         /// <summary>SKEL_L_Hand and SKEL_R_Hand. The hands themselves, not the prop sockets.</summary>
         private const int LeftHand = 18905;
         private const int RightHand = 57005;
-
-        /// <summary>
-        /// The crate, in the middle of his chest, in the PED's own space.
-        ///
-        /// X is his right, Y is his front, Z is up from the ground he is stood on -- documented
-        /// axes rather than a bone's, which is the entire point of attaching here. Dead centre
-        /// is X of zero and nothing else.
-        ///
-        /// Forward and height come from the prop: a deeper box has to sit further out or it is
-        /// inside his ribs, and the middle of it belongs at the height his forearms are, which
-        /// for a standing adult ped is a bit over a metre off his own origin.
-        /// </summary>
-        private static Vector3 ChestOffset(Model model, out float yaw)
-        {
-            yaw = 0f;
-
-            var size = Measure(model);
-            var centre = Middle(model);
-
-            if (size.Length() < 0.01f) return new Vector3(0f, ChestOut, ChestUp);
-
-            // A long prop lies ACROSS him, or it points out of his chest like a plank.
-            if (size.Y > size.X * 1.4f)
-            {
-                yaw = 90f;
-                centre = new Vector3(-centre.Y, centre.X, centre.Z);
-                size = new Vector3(size.Y, size.X, size.Z);
-            }
-
-            // Half its depth clear of him, so a deep box does not eat his chest.
-            var out_ = ChestOut + size.Y * 0.5f;
-
-            Log.Info("Carry crate " + model.Hash + ": " +
-                     size.X.ToString("0.00") + " x " + size.Y.ToString("0.00") + " x " +
-                     size.Z.ToString("0.00") + ", yaw " + yaw.ToString("0") +
-                     ", out " + out_.ToString("0.00") + ".");
-
-            return new Vector3(0f, out_, ChestUp) - centre;
-        }
-
-        /// <summary>
-        /// How far in front of him the near face of a carried crate sits, and how high up.
-        ///
-        /// Both are about a standing adult rather than about any particular prop, which is why
-        /// they are constants here and the prop's own size is added on top.
-        /// </summary>
-        private const float ChestOut = 0.26f;
-        private const float ChestUp = 1.02f;
 
         /// <summary>
         /// A package in one hand, centred on the hand bone.

@@ -48,21 +48,26 @@
       "textCalled": [
         "yeah yeah im comin. give me a. give me a minute",
         "ok ok ok. loading now. do not call me again while im loading",
-        "on the road. dont text me im driving. why are you reading this",
         "yes. YES. i heard you the first time my friend",
-        "im coming. the traffic is not my fault. remember that later"
+        "you want it now. everyone wants it now. fine. FINE",
+        "im pulling it out the container myself. MYSELF. remember that",
+        "one minute. one. im not a delivery boy but ok. ok"
       ],
       "textLeaving": [
         "leaving now. dont go anywhere. im leaving NOW",
         "pulling out. be where you said you would be",
-        "in the van. moving. stay by the phone",
-        "on my way to you. keep it quiet out there"
+        "in the car. moving. stay by the phone",
+        "on my way to you. keep it quiet out there",
+        "im driving. do NOT text me while im driving my friend",
+        "twenty minutes. maybe. the traffic is not my fault, remember that later"
       ],
       "textOutside": [
-        "im outside. im outside your. im here. come out",
+        "im outside. come out. im not sitting here all day",
         "here. come out. i am not carrying this in",
         "outside. flashing the lights. can you see me",
-        "im here my friend. come and take it please"
+        "im here my friend. come and take it please",
+        "outside your house. its heavy. hurry up",
+        "im here. engine running. come on. come on"
       ],
       "lotValue": 60000,
       "lotStep": 500,
