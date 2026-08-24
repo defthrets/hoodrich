@@ -1807,6 +1807,17 @@ namespace Hoodrich.Wheel
             yield return new Opt
             {
                 Kind = OptKind.Danger,
+                Label = "Finish Gerald's package",
+                Note = "Counts what he's fronted you as sold without selling it, so he gets in " +
+                       "touch and you can hand it in. Press it again for the second one and the " +
+                       "port opens up",
+                Enabled = () => _state.FrontsDone < 2 || _state.HasFrontedWork,
+                Do = () => Notify.Important("~g~" + _state.FinishFront() + "~s~")
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
                 Label = "Count Gerald's packages done",
                 Note = "Marks both of his fronts as moved without moving them. For a save that " +
                        "cleared one and was not credited for it -- he opens up the port instead " +

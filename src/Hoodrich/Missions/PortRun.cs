@@ -309,21 +309,19 @@ namespace Hoodrich.Missions
         /// <summary>How much of the pallet's deck the load is allowed to cover.</summary>
         private const float PackFit = 0.88f;
 
-        /// <summary>How many bricks high it goes, and the hard cap on props either way.</summary>
-        private const int LoadLayers = 2;
-        private const int LoadMax = 16;
+        /// <summary>
+        /// How many bricks go on, and how high they are allowed to climb to fit.
+        ///
+        /// Sixteen. The layer count is a ceiling rather than a target -- the plan fills the
+        /// bottom course first and only starts another when that one is full, so a big brick
+        /// on a small pallet builds upward instead of refusing to fit, and a small one lies
+        /// flat. Either way sixteen go on.
+        /// </summary>
+        private const int LoadBricks = 16;
+        private const int LoadLayers = 4;
 
         /// <summary>One brick a second.</summary>
         private const int LoadEveryMs = 1000;
-
-        /// <summary>
-        /// How much of the planned stack actually goes on. Half.
-        ///
-        /// Which, because the plan is laid bottom layer first, is the bottom layer -- a pallet
-        /// with a full course of bricks on it and room above them. That reads as a quarter kilo
-        /// off a boat. A pallet stacked to the top reads as a warehouse delivery.
-        /// </summary>
-        private const float LoadFraction = 0.5f;
 
         /// <summary>Where each brick goes, in the van's own space, bottom layer first.</summary>
         private readonly List<Vector3> _loadPlan = new List<Vector3>();
@@ -1697,9 +1695,9 @@ namespace Hoodrich.Missions
 
                     _loadPlan.Clear();
 
-                    for (var layer = 0; layer < LoadLayers && _loadPlan.Count < LoadMax; layer++)
-                    for (var r = 0; r < rows && _loadPlan.Count < LoadMax; r++)
-                    for (var c = 0; c < cols && _loadPlan.Count < LoadMax; c++)
+                    for (var layer = 0; layer < LoadLayers && _loadPlan.Count < LoadBricks; layer++)
+                    for (var r = 0; r < rows && _loadPlan.Count < LoadBricks; r++)
+                    for (var c = 0; c < cols && _loadPlan.Count < LoadBricks; c++)
                     {
                         // Centred on the pallet, which is itself centred at CrateY.
                         _loadPlan.Add(new Vector3(
@@ -1710,9 +1708,16 @@ namespace Hoodrich.Missions
 
                     if (_loadPlan.Count == 0) continue;
 
+                    // Asked for a second before the first brick needs it, because
+                    // REQUEST_ANIM_DICT is asynchronous and a dict requested on the beat it is
+                    // played arrives too late for that beat -- the first man would stand still
+                    // through the first box and start work on the second.
+                    try { Function.Call(Hash.REQUEST_ANIM_DICT, LoadDict); }
+                    catch { /* Heave asks again on every brick */ }
+
                     _loadModel = model;
                     _loadNext = 0;
-                    _loadStop = Math.Max(1, (int)(_loadPlan.Count * LoadFraction));
+                    _loadStop = _loadPlan.Count;
                     _loadDueAt = Game.GameTime + LoadEveryMs;
 
                     Log.Info("Port run: loading " + _loadStop + " x " + name + " onto the pallet, " +
@@ -1751,11 +1756,13 @@ namespace Hoodrich.Missions
             _loadDueAt += LoadEveryMs;
             if (_loadDueAt < now) _loadDueAt = now + LoadEveryMs;
 
+            Heave();
+
             try
             {
                 // Held across the whole sequence rather than requested once and forgotten: the
-                // streamer is entitled to drop a model nobody is holding, and eight seconds is
-                // long enough for it to.
+                // streamer is entitled to drop a model nobody is holding, and sixteen seconds
+                // is long enough for it to.
                 if (!_loadModel.IsLoaded) _loadModel.Request();
 
                 var brick = World.CreateProp(_loadModel, _van.Position, false, false);
@@ -1790,6 +1797,56 @@ namespace Hoodrich.Missions
             catch { /* the streamer will get to it */ }
 
             Log.Info("Port run: pallet loaded, " + _loadNext + " on the deck.");
+        }
+
+        /// <summary>
+        /// One box each, onto the truck, on the beat the brick lands.
+        ///
+        /// Both men swing at once but not on the same clip -- the offset is what stops two
+        /// identical figures moving as one shape, which is the thing that reads as scripted
+        /// faster than anything else in a scene like this.
+        ///
+        /// Not looped and not held: the clip plays out and TASK_PLAY_ANIM's own end drops them
+        /// back, and the next brick a second later starts the next one. Nothing to schedule,
+        /// nothing to clear up.
+        /// </summary>
+        private void Heave()
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, LoadDict))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, LoadDict);
+                    return;
+                }
+            }
+            catch
+            {
+                return;
+            }
+
+            for (var i = 0; i < _loaders.Count; i++)
+            {
+                var ped = _loaders[i];
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                var clip = LoadClips[(_swing + i) % LoadClips.Length];
+
+                try
+                {
+                    // Whole body, and NOT secondary. He is putting a box on a truck with both
+                    // arms and his back; an upper-body layer over a carry idle is a man doing
+                    // two things at once and looking like he is doing neither.
+                    Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, LoadDict, clip,
+                                  4f, -4f, -1, 0, 0f, false, 0, false);
+                }
+                catch
+                {
+                    // He stands there. The brick still lands.
+                }
+            }
+
+            _swing++;
         }
 
         /// <summary>How many of something that wide fit across a deck that wide. At least one.</summary>
@@ -2373,6 +2430,13 @@ namespace Hoodrich.Missions
                 try
                 {
                     Function.Call(Hash.STOP_ANIM_TASK, ped.Handle, CarryDict, CarryClip, -4f);
+                    Function.Call(Hash.STOP_ANIM_TASK, ped.Handle, LoadDict, LoadIdle, -4f);
+
+                    foreach (var clip in LoadClips)
+                    {
+                        Function.Call(Hash.STOP_ANIM_TASK, ped.Handle, LoadDict, clip, -4f);
+                    }
+
                     Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, ped.Handle);
                     ped.Task.ClearAll();
                 }
@@ -2404,6 +2468,34 @@ namespace Hoodrich.Missions
         /// <summary>The box-carry set. Three clips, and all three are real.</summary>
         private const string CarryDict = "anim@heists@box_carry@";
         private const string CarryClip = "idle";
+
+        /// <summary>
+        /// Men putting boxes on a truck, which is the animation this scene was always miming.
+        ///
+        /// box_carry is a man HOLDING a box and nothing else -- fine for the walk down the
+        /// dock, a statue once he gets there. So the two of them stood at the tailgate in a
+        /// permanent carry pose while bricks appeared behind them one a second, which reads as
+        /// two men watching a load happen to them.
+        ///
+        /// anim@heists@load_box is the heist crew loading a van: a lift, a turn, a put-down.
+        /// One of them fires on each brick, so the swing and the brick landing are the same
+        /// beat, and between bricks they hold that set's own idle rather than the other one's
+        /// -- mixing the two puts a man holding a box through a lift he has no box for.
+        ///
+        /// The _box_a clips are the BOX's half of each animation, for a prop moved in sync
+        /// with the man. We do not use them: our brick is attached to the truck and arrives on
+        /// its own, and a second box in his hands would be one box too many.
+        /// </summary>
+        private const string LoadDict = "anim@heists@load_box";
+        private const string LoadIdle = "idle";
+
+        private static readonly string[] LoadClips =
+        {
+            "load_box_1", "load_box_2", "load_box_3", "load_box_4", "lift_box"
+        };
+
+        /// <summary>Which one each man does next, so the two are never in lockstep.</summary>
+        private int _swing;
 
         /// <summary>
         /// Loop, hold, upper body, secondary.
@@ -2642,6 +2734,7 @@ namespace Hoodrich.Missions
             _loadPlan.Clear();
             _loadNext = 0;
             _loadStop = 0;
+            _swing = 0;
 
             try { if (_crate != null && _crate.Exists()) _crate.Delete(); }
             catch { /* teardown */ }

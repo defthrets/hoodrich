@@ -369,6 +369,45 @@ namespace Hoodrich.State
         /// save can tell the difference between somebody the bug robbed and somebody who has not
         /// started -- which makes it a thing the player asserts, not a thing the mod guesses.
         /// </summary>
+        /// <summary>
+        /// Marks whatever Gerald has fronted you as moved, without moving it.
+        ///
+        /// Done by winding back the mark his package was measured FROM rather than by setting
+        /// a "done" flag of its own, so nothing downstream can tell the difference. He notices
+        /// the same way, texts the same text, and the hand-in appears where it always does --
+        /// which matters, because the thing people actually get stuck on is not the selling,
+        /// it is a count that has gone wrong and left the port shut with nothing to press.
+        ///
+        /// With nothing in hand it credits a package outright instead. Pressing this always
+        /// moves you one step closer to the port, whichever half of the sequence you are in,
+        /// and that is the whole point of it.
+        /// </summary>
+        public string FinishFront()
+        {
+            if (HasFrontedWork)
+            {
+                if (FrontedWorkDone) return "That one's already moved. Go and see him.";
+
+                FrontedAtGrams = GramsSold - FrontedGrams;
+                Touch();
+
+                Log.Info("Gerald's current package marked moved by hand.");
+                return "His package is moved. He'll be in touch.";
+            }
+
+            if (FrontsDone >= 2) return "Both his packages are done. The port's open.";
+
+            FrontsDone++;
+            ClearFronted();
+            Touch();
+
+            Log.Info("Credited one of Gerald's packages by hand (" + FrontsDone + " of 2).");
+
+            return FrontsDone >= 2
+                ? "That's both of them. Ask about the port."
+                : "That's one of two. He'll have another for you.";
+        }
+
         public void CreditFronts()
         {
             FrontsDone = 2;
