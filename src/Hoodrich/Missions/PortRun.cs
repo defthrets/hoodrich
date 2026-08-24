@@ -160,11 +160,12 @@ namespace Hoodrich.Missions
         /// <summary>
         /// What ends up in the back. ONE crate, not a stack.
         ///
-        /// The drug package leads now. A cardboard box was the right SIZE and the wrong thing
-        /// -- a quarter kilo coming off a ship in a moving box says nothing about what is in
-        /// it, and this is the one moment in the run where you can see the product. The
-        /// packages are the wrapped bales the game already uses for exactly this, and they are
-        /// bigger than the paper box on top of it.
+        /// A PALLET, and that is the point of it. This came off a ship: it is the biggest
+        /// single thing in the run and the one moment where you can see what the whole errand
+        /// was about, so it should fill the bed rather than sit in the middle of it looking
+        /// posted. The drug package that led this list before is a flat taped envelope
+        /// twenty-five centimetres across -- correct for what Gerald hands you at a door,
+        /// laughable as a quarter kilo off a boat.
         ///
         /// Wooden crates behind them, and the old paper box last, so a model missing from an
         /// install costs the look rather than the load.
@@ -175,8 +176,9 @@ namespace Hoodrich.Missions
         /// </summary>
         private static readonly string[] CrateModels =
         {
-            "prop_drug_package_02", "prop_drug_package",
-            "prop_box_wood04a", "prop_boxpile_06a", "prop_paper_box_01"
+            "bkr_prop_coke_pallet_01a", "hei_prop_heist_weed_pallet",
+            "bkr_prop_coke_block_01a", "prop_boxpile_06a",
+            "prop_box_wood04a", "prop_drug_package", "prop_paper_box_01"
         };
 
         /// <summary>
@@ -188,7 +190,9 @@ namespace Hoodrich.Missions
         /// box, and one sunk two centimetres reads as a bug.
         /// </summary>
         private const float CrateY = -1.50f;
-        private const float CrateZ = 0.30f;
+
+        /// <summary>Where the bed FLOOR is, in the truck's own space. The rest is measured.</summary>
+        private const float BedFloorZ = 0.30f;
 
         // ---- and the ride home is not quiet ------------------------------------
 
@@ -601,9 +605,22 @@ namespace Hoodrich.Missions
         }
 
         private bool _talkHeld;
+        private bool _talkArmed;
 
-        /// <summary>The mod's walk-up button, on its leading edge, disabled or not.</summary>
-        private bool WantsToTalk()
+        /// <summary>
+        /// Watches the walk-up button EVERY FRAME and remembers that it was pressed.
+        ///
+        /// This is the fix for "it only works if I bash it". A leading edge is "down now, up
+        /// last time you looked", and the rest of this file looks every four hundred
+        /// milliseconds -- so an ordinary tap begins and ends between two samples and is never
+        /// seen at all. Hammering the key worked because it raised the odds of one sample
+        /// catching it down while the one before had caught it up.
+        ///
+        /// Called from Draw, which the game runs every frame, and the press is held until the
+        /// tick gets round to acting on it. Every other walk-up in the mod already polls per
+        /// frame through its own UpdatePrompt; this was the one that did not.
+        /// </summary>
+        public void PollTalk()
         {
             var down = false;
 
@@ -621,9 +638,17 @@ namespace Hoodrich.Missions
                 // An unreadable control is simply not pressed.
             }
 
-            var pressed = down && !_talkHeld;
+            if (down && !_talkHeld) _talkArmed = true;
             _talkHeld = down;
-            return pressed;
+        }
+
+        /// <summary>Takes the remembered press, if there is one.</summary>
+        private bool WantsToTalk()
+        {
+            if (!_talkArmed) return false;
+
+            _talkArmed = false;
+            return true;
         }
 
         private bool VanIsNear(Ped man)
@@ -853,6 +878,8 @@ namespace Hoodrich.Missions
         {
             if (!Running) return;
 
+            PollTalk();
+
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
@@ -970,6 +997,79 @@ namespace Hoodrich.Missions
         /// one slot is not a layout problem to solve with an offset -- you can only be doing one
         /// of them at a time in any sense that matters, and the job is the one you chose.
         /// </summary>
+        /// <summary>One full breath of the status tag.</summary>
+        private const int TagPulseMs = 1800;
+
+        /// <summary>Whether the player is sat in the truck this errand is about.</summary>
+        private bool InTheTruck
+        {
+            get
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists() || !player.IsInVehicle()) return false;
+                if (_van == null || !_van.Exists()) return false;
+
+                return player.IsInVehicle(_van);
+            }
+        }
+
+        /// <summary>
+        /// What the card says you are doing, RIGHT NOW rather than this leg.
+        ///
+        /// One line per leg was true and unhelpful. "Meet the dock worker at Elysian Island" is
+        /// correct from the moment he hands you the keys to the moment you walk up to Tao, and
+        /// for most of that time the thing you actually have to do is something else -- get in
+        /// the truck, drive it four kilometres, get out again. A card that says the same
+        /// sentence for six minutes stops being read.
+        ///
+        /// So it follows the step. The leg is still the leg; what changes is which part of it
+        /// is in front of you.
+        /// </summary>
+        private string StepLine()
+        {
+            var player = Game.Player.Character;
+            var here = player != null && player.Exists() ? player.Position : Vector3.Zero;
+
+            var mark = Mark;
+            var close = here != Vector3.Zero && here.DistanceTo(mark) <= ParkRange;
+
+            if (!InTheTruck)
+            {
+                // On foot at the far end is the arrival, not a missing truck.
+                if (close)
+                {
+                    return Stage == StageDeliver ? "Hand it over to Gerald"
+                         : Stage == StageBay ? "Wait here while they load it"
+                         : "Go and talk to the dock worker";
+                }
+
+                var far = _van != null && _van.Exists() && here != Vector3.Zero
+                          && here.DistanceTo(_van.Position) > 25f;
+
+                return far ? "Get back to Gerald's truck" : "Get in Gerald's truck";
+            }
+
+            if (close)
+            {
+                return Stage == StageDeliver ? "Pull up on the mark and stop"
+                     : Stage == StageBay ? "Back in near bay one, then sound the horn"
+                     : "Park up and get out";
+            }
+
+            return Stage == StageDeliver ? "Drive his truck back to the yard in Chamberlain"
+                 : Stage == StageBay ? "Round the back of the sheds, near bay one"
+                 : "Take his truck out to Elysian Island";
+        }
+
+        /// <summary>The short status on the right of the card.</summary>
+        private string StepTag()
+        {
+            if (Stage == StageDeliver) return Package.ToString("0") + "g";
+            if (Stage == StageBay) return "BAY 1";
+
+            return InTheTruck ? "TAO" : "TRUCK";
+        }
+
         private void Card()
         {
             if (Busy != null && Busy()) return;
@@ -1017,18 +1117,21 @@ namespace Hoodrich.Missions
             Hud.Text("THE PORT RUN", x, top + 0.009f, 0.30f, Fade(Palette.Text, fade),
                      Hud.FontLabel, centre: false);
 
-            Hud.Text(Stage == StageDeliver
-                        ? "Get his truck back to the yard in Chamberlain"
-                     : Stage == StageBay
-                        ? "Back in near bay one behind the sheds, then sound the horn"
-                        : "Meet the dock worker at Elysian Island",
-                     x, top + 0.030f, 0.26f, Fade(Palette.TextDim, fade),
+            Hud.Text(StepLine(), x, top + 0.030f, 0.26f, Fade(Palette.TextDim, fade),
                      Hud.FontBody, centre: false);
 
-            Hud.TextRight(Stage == StageDeliver ? Package.ToString("0") + "g"
-                          : Stage == StageBay ? "BAY 1" : "TAO",
+            // The tag breathes while the leg is live, and sits still once the step is done.
+            //
+            // It is the one part of the card that is a STATUS rather than an instruction, so
+            // it is the part that should look like it is still running. A slow sine, the same
+            // one the phone's wordmark uses -- enough to read as a thing in progress from the
+            // corner of your eye, not enough to pull the eye off the road.
+            var pulse = 0.72f + 0.28f * (float)Math.Sin(
+                (Game.GameTime % TagPulseMs) / (double)TagPulseMs * Math.PI * 2d);
+
+            Hud.TextRight(StepTag(),
                           left + CardWidth - CardPad, top + 0.031f, 0.23f,
-                          ink, Hud.FontLabel);
+                          Fade(ink, pulse), Hud.FontLabel);
 
             // ---- the bar ------------------------------------------------------
             //
@@ -1468,9 +1571,14 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
                     Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _car.Handle, 2);
 
-                    // Door 5 is the boot, opened instantly rather than swung -- it was already
-                    // up when you drove in.
-                    Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, 5, false, true);
+                    // His plate. Eight characters is the limit and this is exactly eight.
+                    Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, _car.Handle, "HOODRICH");
+
+                    // Boot SHUT. It stood open on the reasoning that he had just unloaded out
+                    // of it, which was true for about four seconds and then was a man having a
+                    // conversation next to his own open boot for the rest of the errand -- and
+                    // the load does not come out of his car anyway, it comes off the dock.
+                    Function.Call(Hash.SET_VEHICLE_DOOR_SHUT, _car.Handle, 5, true);
 
                     Log.Info("The plug's car is parked at the port.");
                     return;
@@ -1479,6 +1587,32 @@ namespace Hoodrich.Missions
                 {
                     Log.Debug("Could not park the plug's car: " + ex.Message);
                 }
+            }
+        }
+
+        /// <summary>
+        /// How far to lift a prop so its underside lands on the bed rather than through it.
+        ///
+        /// GET_MODEL_DIMENSIONS gives the model's own bounding box in its own space. A prop
+        /// pivoted at its base reports a minimum Z of about zero and needs no lift at all; one
+        /// that straddles its middle reports a negative minimum and has to come up by that
+        /// much. Returns zero on anything it cannot measure, which is the old behaviour.
+        /// </summary>
+        private static float Underside(Model model)
+        {
+            try
+            {
+                var lo = new OutputArgument();
+                var hi = new OutputArgument();
+
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, model.Hash, lo, hi);
+
+                var min = lo.GetResult<Vector3>();
+                return min.Z < 0f ? -min.Z : 0f;
+            }
+            catch
+            {
+                return 0f;
             }
         }
 
@@ -2136,8 +2270,19 @@ namespace Hoodrich.Missions
 
                     _crate.IsPersistent = true;
 
+                    // MEASURED, not guessed.
+                    //
+                    // The old offset was a single number tuned against a cardboard box, and it
+                    // only worked because everything in the list was about that size. A pallet
+                    // is not, and props do not agree about where their own origin sits -- some
+                    // are pivoted at the base and some straddle their middle -- so one height
+                    // for all of them puts half the list through the bed floor and the other
+                    // half hovering above it.
+                    //
+                    // So the model's own box is read and its underside is placed on the bed
+                    // floor. Whatever wins the list sits on the deck properly.
                     Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _crate.Handle, _van.Handle, -1,
-                                  0f, CrateY, CrateZ, 0f, 0f, 0f,
+                                  0f, CrateY, BedFloorZ + Underside(model), 0f, 0f, 0f,
                                   false, false, false, false, 2, true);
 
                     Log.Info("Port run: " + name + " loaded into the van.");
