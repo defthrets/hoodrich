@@ -370,7 +370,9 @@ namespace Hoodrich.Gangs
 
             try
             {
-                Notify.Text("CHAR_DEFAULT", "Gerald", "Chamberlain Hills",
+                // Face left to the sender's name. Naming the picture here is exactly the habit
+                // that put a silhouette on this message in the first place.
+                Notify.Text(null, "Gerald", "Chamberlain Hills",
                             second
                                 ? "aight thats all of it gone. come see me, i got somethin " +
                                   "else for you and it aint corner work"
@@ -1199,14 +1201,8 @@ namespace Hoodrich.Gangs
         /// <summary>The contact picture for a leader, or the plain one.</summary>
         private static string Portrait(LeaderDef def)
         {
-            switch ((def == null ? "" : def.Name).Trim().ToUpperInvariant())
-            {
-                case "GERALD": return "CHAR_MP_GERALD";
-                case "STRETCH": return "CHAR_MP_STRETCH";
-                case "LAMAR": return "CHAR_LAMAR";
-
-                default: return "CHAR_DEFAULT";
-            }
+            var face = UI.Faces.For(def == null ? "" : def.Name);
+            return string.IsNullOrEmpty(face) ? UI.Faces.Nobody : face;
         }
 
         public string Join(LeaderDef def, Drugs catalogue)

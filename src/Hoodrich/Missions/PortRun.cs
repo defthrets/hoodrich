@@ -2134,7 +2134,7 @@ namespace Hoodrich.Missions
             _bay = 1;
             _bayAt = Game.GameTime;
 
-            Notify.Text("CHAR_DEFAULT", "Tao Cheng", "Elysian Island",
+            Notify.Text(null, "Tao Cheng", "Elysian Island",
                         "guys are coming out to you now. dont get out, dont help, dont talk to them");
 
             Log.Info("Port run: van parked in bay one, loaders sent.");

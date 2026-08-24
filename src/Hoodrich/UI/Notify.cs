@@ -55,14 +55,28 @@ namespace Hoodrich.UI
         /// contact who has just been phoned, so that is what it should have been.
         ///
         /// The portrait is a CHAR_ texture dictionary the game already ships, so nothing is
-        /// streamed or shipped for this. A name the install does not have simply draws no
-        /// picture and keeps the words, which is why an unknown portrait is not worth guarding
-        /// against.
+        /// streamed or shipped for this.
+        ///
+        /// And it is worked out HERE rather than trusted from the call site. Half of these
+        /// calls passed CHAR_DEFAULT -- including the first text of the whole mod, Gerald
+        /// asking you to come and see him, which went out under a grey silhouette. A message
+        /// from a man you know should have his face on it, and the sender's name is already
+        /// sitting right there in the argument list, so nothing else needs to be remembered.
         /// </summary>
         public static void Text(string portrait, string sender, string subject, string body,
                                 bool urgent = false)
         {
             if (string.IsNullOrEmpty(body)) return;
+
+            // A caller that named nobody in particular gets whoever the sender turns out to be.
+            if (string.IsNullOrEmpty(portrait) || portrait == Faces.Nobody)
+            {
+                var known = Faces.For(sender);
+                if (!string.IsNullOrEmpty(known)) portrait = known;
+            }
+
+            // And whatever we settled on has to actually be in this build.
+            portrait = Faces.Ready(portrait);
 
             try
             {
@@ -78,7 +92,7 @@ namespace Hoodrich.UI
                 }
 
                 Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_MESSAGETEXT,
-                              portrait ?? "CHAR_DEFAULT", portrait ?? "CHAR_DEFAULT",
+                              portrait, portrait,
                               urgent, MessageIcon, sender ?? "", subject ?? "");
             }
             catch (System.Exception ex)

@@ -317,30 +317,12 @@ namespace Hoodrich.UI
         /// be revisited to add a field. A name they all already set is the one thing they have
         /// in common.
         ///
-        /// These are the game's own contact pictures, which is why they are named CHAR_ and not
-        /// after a file: the same textures the phone uses. A name that is not on this list gets
-        /// no picture and the panel lays out exactly as it did before, which is what a
-        /// character added later should do until somebody puts him here.
+        /// The map itself moved to Faces, because the panel was not the only thing that needed
+        /// it -- texts did too, and having their own copy is how they ended up sending Gerald's
+        /// under a silhouette. Empty for an unknown name, and the panel lays out without a
+        /// picture exactly as it did before.
         /// </summary>
-        private static string FaceFor(string speaker)
-        {
-            if (string.IsNullOrEmpty(speaker)) return "";
-
-            switch (speaker.Trim().ToUpperInvariant())
-            {
-                case "LAMAR": return "CHAR_LAMAR";
-                case "GERALD": return "CHAR_MP_GERALD";
-                case "STRETCH": return "CHAR_MP_STRETCH";
-                case "TAO CHENG": return "CHAR_CHENG";
-                case "DENISE": return "CHAR_DENISE";
-                case "FRANKLIN": return "CHAR_FRANKLIN";
-                case "TANISHA": return "CHAR_TANISHA";
-                case "MICHAEL": return "CHAR_MICHAEL";
-                case "TREVOR": return "CHAR_TREVOR";
-
-                default: return "";
-            }
-        }
+        private static string FaceFor(string speaker) => Faces.For(speaker);
 
         /// <summary>
         /// Where the highlight actually is, which is not always where the cursor is.
