@@ -99,6 +99,20 @@ namespace Hoodrich.Gangs
         /// </summary>
         private const string DrunkWalk = "move_m@drunk@moderatedrunk";
 
+        /// <summary>
+        /// What each of them is always doing with his hands.
+        ///
+        /// One drinks, one smokes, one does neither -- and the point is that you can tell
+        /// which is which from across the street without anybody saying a word. Every dict,
+        /// clip and prop below is out of the game's own data rather than off a wiki; a
+        /// misspelt clip does not throw, it silently plays nothing.
+        /// </summary>
+        private const string BeerDict = "amb@world_human_drinking@beer@male@idle_a";
+        private const string BeerProp = "prop_amb_beer_bottle";
+
+        private const string JointDict = "amb@world_human_smoking_pot@male@idle_a";
+        private const string JointProp = "p_amb_joint_01";
+
         /// <summary>The one who is always smoking, and what he smokes.</summary>
         private const string CiggyProp = "prop_cs_ciggy_01";
 
@@ -128,6 +142,27 @@ namespace Hoodrich.Gangs
         /// <summary>His, and only his. Looped, because he never finishes it.</summary>
         private const string SmokeDict = "amb@world_human_smoking@male@male_a@idle_a";
         private static readonly string[] SmokeClips = { "idle_a", "idle_b", "idle_c" };
+
+        /// <summary>The three idle clips every one of these ambient sets is built from.</summary>
+        private static readonly string[] Idles = { "idle_a", "idle_b", "idle_c" };
+
+        /// <summary>
+        /// What they say, and how often.
+        ///
+        /// Three men who follow you round Los Santos in total silence are three props on a
+        /// lead. These are the game's own ambient speech labels rather than lines of ours --
+        /// they come out in the ped's own voice, which is the entire reason to use them, and
+        /// a label that does not exist on a given model is simply silent.
+        /// </summary>
+        private static readonly string[] Chatter =
+        {
+            "GENERIC_HI", "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "GENERIC_CURSE_MED",
+            "GENERIC_INSULT_HIGH", "CHAT_STATE", "GENERIC_WHATEVER", "GENERIC_THANKS"
+        };
+
+        /// <summary>Roughly this often, per man, jittered so they do not speak in chorus.</summary>
+        private const int SayMinMs = 9000;
+        private const int SayMaxMs = 22000;
 
         /// <summary>How long a gesture holds before another is picked.</summary>
         private const int IdleHoldMin = 6000;
@@ -169,14 +204,23 @@ namespace Hoodrich.Gangs
             /// <summary>He smokes whenever he is not walking or shooting.</summary>
             public bool Smoker;
 
-            /// <summary>The cigarette itself, which only exists while he is stood still.</summary>
+            /// <summary>Whatever is in his hand right now -- a bottle, a cigarette, a joint.</summary>
             public Prop Ciggy;
+
+            /// <summary>Which the smoker is on. He alternates rather than picking at random.</summary>
+            public bool OnTheJoint;
+
+            /// <summary>When he next opens his mouth.</summary>
+            public int NextWord;
 
             /// <summary>When the current gesture is allowed to be replaced.</summary>
             public int IdleUntil;
 
             /// <summary>Whether he is mid-gesture, so it is only cleared once.</summary>
             public bool Idling;
+
+            /// <summary>Which prop model is in his hand, so a swap can be spotted.</summary>
+            public string Holding;
         }
 
         /// <summary>
@@ -368,20 +412,79 @@ namespace Hoodrich.Gangs
             return null;
         }
 
-        /// <summary>Lets the cab go about its business once they are out of it.</summary>
-        private void ReleaseCab()
+        /// <summary>When the cab was sent off, so it can be let go once it is actually moving.</summary>
+        private int _cabSentAt;
+
+        /// <summary>How long it gets to pull away before we stop holding on to it.</summary>
+        private const int CabGoneMs = 9000;
+
+        /// <summary>
+        /// Sends the cab away, and gives it somewhere to go.
+        ///
+        /// It was a straight TASK_VEHICLE_DRIVE_WANDER, and wander has no DESTINATION -- it
+        /// picks a direction and negotiates out of wherever it happens to be standing. From a
+        /// kerbside stop with the car it just dropped three men beside, that is a taxi rocking
+        /// back and forth against the kerb for as long as anybody is looking at it. The
+        /// delivery driver had exactly this and was given a road to get to first; so is this.
+        ///
+        /// Released on a timer rather than immediately, because a car handed back to
+        /// population control the same frame it is tasked is a car the game may simply decide
+        /// it no longer needs to drive.
+        /// </summary>
+        private void SendCabOff()
         {
+            if (_cabbie == null || !_cabbie.Exists() || !_cabbie.IsAlive ||
+                _cab == null || !_cab.Exists())
+            {
+                ScrapCab();
+                return;
+            }
+
+            var slot = new OutputArgument();
+
             try
             {
-                if (_cabbie != null && _cabbie.Exists() && _cabbie.IsAlive && _cab != null && _cab.Exists())
-                {
-                    _cabbie.Task.ClearAll();
-                    Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _cabbie.Handle, _cab.Handle,
-                                  18f, 786603);
-                }
+                // Somewhere up the road, snapped to an actual street.
+                var ahead = _cab.Position + _cab.ForwardVector * 220f;
+                var away = World.GetNextPositionOnStreet(ahead);
+                if (away == Vector3.Zero) away = ahead;
 
+                _cabbie.Task.ClearAll();
+
+                Function.Call(Hash.OPEN_SEQUENCE_TASK, slot);
+                var seq = slot.GetResult<int>();
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, 0, _cab.Handle,
+                              away.X, away.Y, away.Z, 18f, 0, _cab.Model.Hash, 786603, 12f, 0f);
+
+                // And once it is out on a through road, wandering works.
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, 0, _cab.Handle, 18f, 786603);
+
+                Function.Call(Hash.CLOSE_SEQUENCE_TASK, seq);
+                Function.Call(Hash.TASK_PERFORM_SEQUENCE, _cabbie.Handle, seq);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("The cab would not pull away: " + ex.Message);
+            }
+            finally
+            {
+                try { Function.Call(Hash.CLEAR_SEQUENCE_TASK, slot); } catch { }
+            }
+
+            _cabSentAt = Game.GameTime;
+        }
+
+        /// <summary>Lets go of the cab once it has had time to actually drive off.</summary>
+        private void ReleaseCab()
+        {
+            if (_cabSentAt == 0 || Game.GameTime - _cabSentAt < CabGoneMs) return;
+
+            try
+            {
                 if (_cabbie != null && _cabbie.Exists())
                 {
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _cabbie.Handle, false);
                     _cabbie.IsPersistent = false;
                     _cabbie.MarkAsNoLongerNeeded();
                 }
@@ -392,10 +495,11 @@ namespace Hoodrich.Gangs
                     _cab.MarkAsNoLongerNeeded();
                 }
             }
-            catch { /* he knows the way */ }
+            catch { /* it knows the way */ }
 
             _cab = null;
             _cabbie = null;
+            _cabSentAt = 0;
         }
 
         /// <summary>And this one takes it away, for a cab nobody ever saw.</summary>
@@ -548,6 +652,9 @@ namespace Hoodrich.Gangs
                 }
             }
 
+            // The cab is let go once it has had time to get down the road.
+            ReleaseCab();
+
             // Walking away from the set does not leave you with three of their people.
             if (_men.Count > 0 && (_crew == null || !_crew.IsAffiliated))
             {
@@ -556,6 +663,7 @@ namespace Hoodrich.Gangs
             }
 
             Loiter();
+            Talk();
         }
 
         /// <summary>
@@ -593,7 +701,10 @@ namespace Hoodrich.Gangs
                 {
                     try
                     {
-                        Function.Call(Hash.BRING_VEHICLE_TO_HALT, _cab.Handle, 8f, 3000, false);
+                        // Short. This pins the car, and it is still pinning it when the last
+                        // man climbs out -- so a long halt is a taxi that sits there being
+                        // told not to move while we are telling it to leave.
+                        Function.Call(Hash.BRING_VEHICLE_TO_HALT, _cab.Handle, 8f, 1600, false);
                     }
                     catch { /* it will roll to a stop on its own */ }
                 }
@@ -668,7 +779,7 @@ namespace Hoodrich.Gangs
             }
             catch { /* they will keep up anyway */ }
 
-            ReleaseCab();
+            SendCabOff();
 
             _inbound = false;
             _dropping = false;
@@ -730,6 +841,50 @@ namespace Hoodrich.Gangs
             }
         }
 
+        /// <summary>
+        /// They talk. In their own voices, and often enough to notice.
+        ///
+        /// Ambient speech labels rather than lines of ours, which is the whole point: a line
+        /// of written dialogue needs a subtitle and a subtitle needs a name beside it, and
+        /// three men muttering captions at you while you are trying to sell something is a
+        /// worse screen than a quiet one. These come out in the ped's own voice with no text
+        /// at all -- the thing a bystander actually hears.
+        ///
+        /// Ticked whatever else they are doing, so they carry on talking while walking, and
+        /// jittered per man so they never speak in chorus.
+        /// </summary>
+        private void Talk()
+        {
+            var now = Game.GameTime;
+
+            foreach (var man in _men)
+            {
+                var ped = man.Ped;
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                if (man.NextWord == 0)
+                {
+                    // Staggered from the start rather than all three arming on the same tick.
+                    man.NextWord = now + _rng.Next(SayMinMs);
+                    continue;
+                }
+
+                if (now < man.NextWord) continue;
+
+                man.NextWord = now + SayMinMs + _rng.Next(SayMaxMs - SayMinMs);
+
+                try
+                {
+                    Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
+                                  Chatter[_rng.Next(Chatter.Length)], "SPEECH_PARAMS_FORCE");
+                }
+                catch
+                {
+                    // A label this model has no line for is simply silence.
+                }
+            }
+        }
+
         private void StartIdling(Homie man)
         {
             var ped = man.Ped;
@@ -738,15 +893,30 @@ namespace Hoodrich.Gangs
             {
                 string dict;
                 string clip;
+                string prop;
                 int flag;
 
-                if (man.Smoker)
+                if (man.Drunk)
                 {
-                    dict = SmokeDict;
-                    clip = SmokeClips[_rng.Next(SmokeClips.Length)];
+                    // He is not merely walking drunk, he is still drinking. The bottle is the
+                    // whole joke and it has to be in his hand for it to land.
+                    dict = BeerDict;
+                    clip = Idles[_rng.Next(Idles.Length)];
+                    prop = BeerProp;
+                    flag = 49;
+                }
+                else if (man.Smoker)
+                {
+                    // Alternated rather than rolled, so it reads as one man working through a
+                    // cigarette and then a joint rather than as a random prop generator.
+                    man.OnTheJoint = !man.OnTheJoint;
 
-                    // 49 is loop | upper body | secondary. He is never finished smoking, so
-                    // unlike the others his gesture loops until something takes it off him.
+                    dict = man.OnTheJoint ? JointDict : SmokeDict;
+                    clip = Idles[_rng.Next(Idles.Length)];
+                    prop = man.OnTheJoint ? JointProp : CiggyProp;
+
+                    // 49 is loop | upper body | secondary. He is never finished, so unlike the
+                    // third man his gesture loops until something takes it off him.
                     flag = 49;
                 }
                 else
@@ -754,6 +924,7 @@ namespace Hoodrich.Gangs
                     var set = LoiterIdles[_rng.Next(LoiterIdles.Length)];
                     dict = set[0];
                     clip = set[1 + _rng.Next(set.Length - 1)];
+                    prop = null;
 
                     // 48 is upper body | secondary, played once. Letting it end and picking
                     // another is what stops him metronoming the same gesture at you.
@@ -769,7 +940,10 @@ namespace Hoodrich.Gangs
                     return;
                 }
 
-                if (man.Smoker && man.Ciggy == null) LightOne(man);
+                // The prop is renewed whenever the vice changes hands -- the smoker swapping
+                // a cigarette for a joint has to actually swap what he is holding.
+                if (prop == null) PutItOut(man);
+                else if (man.Ciggy == null || man.Holding != prop) LightOne(man, prop);
 
                 // The last three are bPhaseControlled, IkFlags and bAllowOverrideCloneUpdate.
                 // They are NOT position locks, whatever their place in the signature suggests,
@@ -805,12 +979,14 @@ namespace Hoodrich.Gangs
             PutItOut(man);
         }
 
-        /// <summary>Gives the smoker something to actually be holding.</summary>
-        private void LightOne(Homie man)
+        /// <summary>Puts the right thing in his hand -- a bottle, a cigarette, a joint.</summary>
+        private void LightOne(Homie man, string what)
         {
+            PutItOut(man);
+
             try
             {
-                var model = new Model(CiggyProp);
+                var model = new Model(what);
                 if (!model.IsValid || !model.IsInCdImage || !model.Request(500)) return;
 
                 var prop = World.CreateProp(model, man.Ped.Position, false, false);
@@ -828,10 +1004,11 @@ namespace Hoodrich.Gangs
                               0f, 0f, 0f, 0f, 0f, 0f, true, true, false, true, 1, true);
 
                 man.Ciggy = prop;
+                man.Holding = what;
             }
             catch (Exception ex)
             {
-                Log.Debug("No cigarette: " + ex.Message);
+                Log.Debug("Nothing to hold: " + ex.Message);
             }
         }
 
@@ -843,6 +1020,7 @@ namespace Hoodrich.Gangs
             try { if (man.Ciggy.Exists()) man.Ciggy.Delete(); } catch { /* gone already */ }
 
             man.Ciggy = null;
+            man.Holding = null;
         }
 
         private void MakeHimDrunk(Ped ped)

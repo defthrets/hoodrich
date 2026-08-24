@@ -512,7 +512,11 @@ namespace Hoodrich.UI
         public void Close()
         {
             // The button that got you out of here does not also swing at somebody.
-            if (IsOpen) Core.InputGuard.Swallow();
+            if (IsOpen)
+            {
+                Core.InputGuard.Swallow();
+                _quietUntil = Game.GameTime + QuietAfterCloseMs;
+            }
             // Both of them, because a goodbye one man says on his own is not a goodbye.
             Speak(Game.Player.Character, PartingLines);
             Speak(Speaker, PartingLines);
@@ -665,13 +669,48 @@ namespace Hoodrich.UI
             Open(next, subject);
         }
 
-        private static void LockControls()
+        /// <summary>Attack stays dead until this, so the closing press cannot land.</summary>
+        private static int _quietUntil;
+
+        private const int QuietAfterCloseMs = 350;
+
+        /// <summary>
+        /// Every control that swings or fires. There are NINE of them.
+        ///
+        /// The list here had four, which is why walking out of a conversation threw a fist:
+        /// Backspace and pad B land on MeleeAttackLight and MeleeAttackAlternate, and neither
+        /// was in it. Exactly the same four were missing from the phone.
+        /// </summary>
+        private static void Swing()
         {
             Game.DisableControlThisFrame(Control.Attack);
             Game.DisableControlThisFrame(Control.Attack2);
-            Game.DisableControlThisFrame(Control.Aim);
             Game.DisableControlThisFrame(Control.MeleeAttack1);
             Game.DisableControlThisFrame(Control.MeleeAttack2);
+            Game.DisableControlThisFrame(Control.MeleeAttackLight);
+            Game.DisableControlThisFrame(Control.MeleeAttackHeavy);
+            Game.DisableControlThisFrame(Control.MeleeAttackAlternate);
+            Game.DisableControlThisFrame(Control.MeleeBlock);
+            Game.DisableControlThisFrame(Control.VehicleMeleeHold);
+        }
+
+        /// <summary>
+        /// Held for a moment AFTER the panel has gone.
+        ///
+        /// Disabling a control lasts exactly the frame you disable it on, and the button that
+        /// closed the conversation is still held down on the next one -- the frame we have
+        /// already stopped drawing and stopped locking. That gap is one punch wide.
+        /// </summary>
+        public static void TickQuiet()
+        {
+            if (Game.GameTime < _quietUntil) Swing();
+        }
+
+        private static void LockControls()
+        {
+            Swing();
+
+            Game.DisableControlThisFrame(Control.Aim);
             Game.DisableControlThisFrame(Control.Jump);
             Game.DisableControlThisFrame(Control.Enter);
             Game.DisableControlThisFrame(Control.Phone);

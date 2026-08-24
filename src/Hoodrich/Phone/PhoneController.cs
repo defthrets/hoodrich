@@ -511,7 +511,10 @@ namespace Hoodrich.Phone
             // is how you get a screen you can hear but not see.
             var action = item.OnSelect;
 
-            ClosePhone();
+            // Some rows take the phone with them. Texting a plug puts a handset in his hand
+            // and loops him reading it, and both that and our put-away run on cellphone@ --
+            // so playing ours over the top pocketed a phone he had only just taken out.
+            ClosePhone(item.KeepsPhoneUp);
 
             try
             {
@@ -570,6 +573,15 @@ namespace Hoodrich.Phone
 
         public void ClosePhone()
         {
+            ClosePhone(false);
+        }
+
+        /// <summary>
+        /// Puts the phone away. <paramref name="handingOver"/> means something else is about
+        /// to use it, so ours leaves without the theatre.
+        /// </summary>
+        private void ClosePhone(bool handingOver)
+        {
             var was = _menu.IsOpen;
 
             _menu.Close();
@@ -577,7 +589,17 @@ namespace Hoodrich.Phone
 
             // AFTER RestoreWorld, which drops the prop. He needs it back in his hand for the
             // length of the put-away clip, and TickHandset takes it off him when that ends.
-            if (was) PutItAway();
+            if (was && !handingOver) PutItAway();
+
+            if (handingOver)
+            {
+                // Not merely skipping the outro -- the pending clear has to go too, or it
+                // fires most of a second later and takes the OTHER animation's secondary task
+                // off him instead of ours.
+                _shownAt = 0;
+                _holding = false;
+                _puttingAwayAt = 0;
+            }
 
             // Disabling a control only lasts the frame you disable it on, and the button that
             // closed the phone is still held down on the NEXT one -- which is the frame we

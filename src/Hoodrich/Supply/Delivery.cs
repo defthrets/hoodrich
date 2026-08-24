@@ -2027,15 +2027,33 @@ namespace Hoodrich.Supply
                     Function.Call(Hash.TASK_PERFORM_SEQUENCE, _driver.Handle, handle);
                     Function.Call(Hash.CLEAR_SEQUENCE_TASK, seq);
 
-                    _car.IsPersistent = false;
-                    _car.MarkAsNoLongerNeeded();
-                    _driver.IsPersistent = false;
-                    _driver.MarkAsNoLongerNeeded();
                 }
             }
             catch { /* he can walk if he likes */ }
 
-            Cancel(null);
+            // NOT Cancel(), and that is the fix.
+            //
+            // Cancel unblocks non-temporary events and hands the ped back on the same frame --
+            // and at this point he is stood on the pavement with a sequence telling him to get
+            // into a car. An unblocked ped reacts to the world: a gunshot two streets away, an
+            // armed player next to him, anything at all, and he abandons the sequence and
+            // walks. What you were left looking at was his car sitting there with the boot
+            // open and nobody in it.
+            //
+            // So he is handed to the Leaving state instead, which is the path that already
+            // works: it waits until he is actually behind the wheel, says goodbye from the
+            // driver's seat, gives him somewhere to drive TO, and only then releases him.
+            try
+            {
+                if (_blip != null && _blip.Exists()) _blip.Delete();
+                _blip = null;
+            }
+            catch { /* teardown */ }
+
+            EndPhoneAnimation();
+
+            State = DeliveryState.Leaving;
+            _stateSince = Game.GameTime;
         }
 
         /// <summary>radar_nhp_wp2 -- the plug on his way, rather than a lorry.</summary>

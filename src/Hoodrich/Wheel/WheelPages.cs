@@ -953,12 +953,14 @@ namespace Hoodrich.Wheel
                 disabledReason: "Not wired up");
             page.WithIcon(Icons.FromFile("mobile.png"));
 
+            // A baggie, not a bong. The old one was a picture of SMOKING and this menu is
+            // about selling, which is the one thing nobody in it ever does with the product.
             page.AddSub("Dealing", "$", BuildDrugsPage,
                 detail: "Re-up, bag up, go to work",
                 value: DrugsSummary(),
                 enabled: !_cutting.IsBusy,
                 disabledReason: "You're working the counter");
-            page.WithIcon(Icons.Weed);
+            page.WithIcon(Icons.FromFile("baggie.png"));
 
             // Contacts sits on the RIGHT, two slots off Socials rather than next to it. The
             // wheel fills clockwise from the top, so where a wedge is added is where it lands
@@ -1008,11 +1010,50 @@ namespace Hoodrich.Wheel
                 value: Followers == null ? "" : Followers().ToString("N0") + " followers",
                 enabled: ShowSocials != null,
                 disabledReason: "Not right now");
-            page.WithIcon(Icons.FromFile("mobile.png"));
+
+            // The handset with a heart on the screen, so it cannot be confused with the Phone
+            // app two tiles up. mobile.png put a feed on the screen, and at twenty pixels a
+            // feed is three smudges -- which is exactly what a phone with nothing on it looks
+            // like. One big shape is the only thing that survives that size.
+            page.WithIcon(Icons.FromFile("socials.png"));
 
             return page;
         }
 
+
+        /// <summary>
+        /// What a plug carries, said the way the rest of the mod says it.
+        ///
+        /// The drug IDS were being printed straight out and uppercased, and one of them does
+        /// not match its own name: the id is "ecstasy" and the product is Oxycodone -- percs.
+        /// So Gerald's contact row advertised ecstasy, which he has never sold, while the buy
+        /// screen two clicks later correctly called the same thing Oxycodone.
+        ///
+        /// An id is a key. It is not a word for a player to read, and this is the only place
+        /// one ever reached the screen.
+        /// </summary>
+        private string Carrying(IEnumerable<string> ids)
+        {
+            var names = new List<string>();
+
+            foreach (var id in ids)
+            {
+                var drug = _drugs.Get(id);
+                names.Add(drug == null ? id : drug.Name);
+            }
+
+            return string.Join(", ", names.ToArray());
+        }
+
+        /// <summary>What a plug is FOR, in one line, under his name.</summary>
+        private string WhatTheyDo(DealerDef def)
+        {
+            if (def == null) return "";
+
+            return def.Drugs.Count == 0
+                ? "Bricks, and nothing smaller"
+                : Carrying(def.Drugs);
+        }
 
         private string DrugsSummary()
         {
@@ -1183,15 +1224,28 @@ namespace Hoodrich.Wheel
 
                 var carries = plug.Drugs.Count == 0
                     ? "everything"
-                    : string.Join(", ", plug.Drugs.ToArray()).ToUpperInvariant();
+                    : Carrying(plug.Drugs).ToUpperInvariant();
 
-                page.Add("Text " + plug.Name, ">", () => Call(plug),
-                    detail: refusal ?? plug.BuyLine,
+                // His NAME, his FACE, and what he is for underneath it.
+                //
+                // It was "Text <name>" with a generic crate beside it, and the "Text " prefix
+                // was eating the width -- "Text Gerald" came out as "Text Gera..." with his
+                // stock shouted across the rest of the row. The verb is the same on every line
+                // in a contacts list, which makes it the one word on it carrying no
+                // information, so it is gone and the name has the room back.
+                //
+                // The portrait is the game's own CHAR_ mugshot -- the same face that appears
+                // on his text messages, so the list and the message agree.
+                page.Add(plug.Name, ">", () => Call(plug),
+                    detail: refusal ?? WhatTheyDo(plug),
                     value: carries,
                     enabled: refusal == null,
                     disabledReason: refusal ?? "");
 
-                page.WithIcon(Icons.FromFile(plug.Drugs.Count == 0 ? "crate.png" : "weed.png"));
+                // He gets his phone out to send this one, so ours does not take it off him.
+                page.KeepsPhone();
+
+                page.WithIcon(Icons.Portrait(plug.Portrait));
             }
 
             return page;
@@ -1376,11 +1430,11 @@ namespace Hoodrich.Wheel
 
         // ---- supply ------------------------------------------------------------
 
-        private static string Carries(DealerDef def)
+        private string Carries(DealerDef def)
         {
             return def.Drugs.Count == 0
                 ? "everything"
-                : string.Join(", ", def.Drugs.ToArray()).ToUpperInvariant();
+                : Carrying(def.Drugs).ToUpperInvariant();
         }
 
         /// <summary>

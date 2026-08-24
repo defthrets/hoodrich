@@ -113,6 +113,7 @@ namespace Hoodrich.Locations
             if (_inside)
             {
                 Notify.Ticker("~g~You're at the spot.~s~ Open your inventory to move work in or out.");
+                Notify.Ticker("~g~Or text a plug from your contacts~s~ and have it brought here.");
             }
         }
 

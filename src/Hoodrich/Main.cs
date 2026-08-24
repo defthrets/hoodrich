@@ -1672,6 +1672,10 @@ namespace Hoodrich
                 // enough, gets re-issued now -- see Help.
                 UI.Help.Tick();
 
+                // The button that closed a conversation stays off the trigger for a moment
+                // after the panel has gone -- see Conversation.TickQuiet.
+                UI.Conversation.TickQuiet();
+
                 // The spotlight, every frame rather than every tick -- a beam that exists for
                 // one frame in nine is a strobe.
                 _patrol.Draw();

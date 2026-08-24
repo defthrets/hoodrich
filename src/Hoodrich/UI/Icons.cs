@@ -209,6 +209,20 @@ namespace Hoodrich.UI
         }
 
         /// <summary>Art of ours with no game texture behind it at all.</summary>
+        /// <summary>
+        /// Somebody's face, from the mugshot dictionary the game already uses for texts.
+        ///
+        /// CHAR_ dicts are named the same as the single texture inside them, so the dict IS
+        /// the texture name. These are the exact portraits that appear on a phone message, so
+        /// a contact list built out of them shows the same face the text does.
+        /// </summary>
+        public static Icon Portrait(string charDict)
+        {
+            return string.IsNullOrEmpty(charDict)
+                ? new Icon("CHAR_DEFAULT", "CHAR_DEFAULT")
+                : new Icon(charDict, charDict);
+        }
+
         public static Icon FromFile(string png)
         {
             return new Icon("", new string[0]).WithFile(png);

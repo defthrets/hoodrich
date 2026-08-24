@@ -1485,7 +1485,75 @@ def cut_25():
     purity(0.25, 'cut_25.png')
 
 
-ALL = [eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
+def socials():
+    """
+    The handset with a heart on the screen.
+
+    mobile.png is a phone with a feed on it -- an avatar and a line, three times down -- and
+    at twenty pixels that reads as a phone with some smudges, which is indistinguishable from
+    the Phone app sitting two tiles away from it. One big shape in the screen is the only
+    thing that survives the downsample, and a heart is the shape everybody already reads as
+    "what people think of you", which is exactly what this feed is for.
+    """
+    img, d = canvas()
+
+    # The same body as mobile.png, so the two are obviously the same object.
+    d.rounded_rectangle([146, 44, 366, 486], radius=44, fill=W)
+    d.rounded_rectangle([180, 108, 332, 404], radius=12, fill=CLEAR)
+
+    d.rounded_rectangle([228, 70, 284, 84], radius=7, fill=CLEAR)
+    d.ellipse([232, 428, 280, 476], fill=CLEAR)
+
+    # And a heart punched INTO the screen, filled -- the same construction as heart.png,
+    # scaled into the 152x296 window and centred on it.
+    cx, cy, s = 256, 236, 0.42
+
+    def at(x, y):
+        return (cx + (x - 256) * s, cy + (y - 256) * s)
+
+    d.ellipse([at(64, 78)[0], at(64, 78)[1], at(280, 294)[0], at(280, 294)[1]], fill=W)
+    d.ellipse([at(232, 78)[0], at(232, 78)[1], at(448, 294)[0], at(448, 294)[1]], fill=W)
+    d.polygon([at(78, 232), at(434, 232), at(256, 470)], fill=W)
+
+    save(img, 'socials.png')
+
+
+def baggie():
+    """
+    A corner baggie with the work still in it. The dealing icon.
+
+    It was a bong, which is a picture of SMOKING and this menu is about selling -- the one
+    thing nobody in it ever does with the product. A baggie is the unit the whole economy is
+    denominated in: you buy weight, you bag it up, you hand one of these over.
+
+    Drawn as the bag in outline with the contents solid inside it, because the contents are
+    the part that has to survive being twenty pixels tall. The heat-seal crimp across the top
+    and the two little ears either side of it are what stop it reading as a plain pouch.
+    """
+    img, d = canvas()
+
+    # The bag: a rounded pouch, slightly wider at the bottom.
+    d.polygon([(150, 150), (362, 150), (392, 452), (120, 452)], fill=W)
+    d.rounded_rectangle([120, 400, 392, 470], radius=34, fill=W)
+
+    # Hollowed out, leaving a wall thick enough to read.
+    d.polygon([(178, 196), (334, 196), (356, 424), (156, 424)], fill=CLEAR)
+    d.rounded_rectangle([156, 386, 356, 438], radius=24, fill=CLEAR)
+
+    # The crimp across the top, and the ears either side of it.
+    d.rounded_rectangle([132, 108, 380, 158], radius=18, fill=W)
+    d.polygon([(132, 108), (96, 66), (132, 158)], fill=W)
+    d.polygon([(380, 108), (416, 66), (380, 158)], fill=W)
+
+    # And what is in it: buds, biggest at the bottom where the bag sits heaviest.
+    for (x, y, r) in ((214, 372, 42), (298, 376, 38), (256, 316, 40),
+                      (206, 288, 30), (312, 300, 28), (258, 240, 26)):
+        d.ellipse([x - r, y - r, x + r, y + r], fill=W)
+
+    save(img, 'baggie.png')
+
+
+ALL = [socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
        cut_100, cut_75, cut_50, cut_33, cut_25]
 
 

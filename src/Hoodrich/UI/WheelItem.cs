@@ -83,6 +83,19 @@ namespace Hoodrich.UI
         /// <summary>Builds the page this item drills into, or null for a leaf.</summary>
         public Func<WheelPage> Submenu;
 
+        /// <summary>
+        /// Whether this item starts a phone animation of its own.
+        ///
+        /// Texting a plug puts a handset in Franklin's hand and loops him reading it -- and the
+        /// phone menu, on the way out, plays its own put-away clip and then clears the
+        /// secondary task a beat later. Both use cellphone@, so the second one killed the
+        /// first: you texted somebody and watched him pocket a phone he had just taken out.
+        ///
+        /// Set on the rows that own the phone after the menu has gone, so the menu bows out
+        /// silently instead of taking the handset with it.
+        /// </summary>
+        public bool KeepsPhoneUp;
+
         public bool IsSubmenu => Submenu != null;
     }
 
@@ -162,6 +175,13 @@ namespace Hoodrich.UI
         /// usually arrives a frame or two after the wheel opens -- evaluating it at build time
         /// would leave every icon permanently missing on the first open.
         /// </summary>
+        /// <summary>Marks the last-added item as one that keeps the phone in his hand.</summary>
+        public WheelPage KeepsPhone()
+        {
+            if (Items.Count > 0) Items[Items.Count - 1].KeepsPhoneUp = true;
+            return this;
+        }
+
         public WheelPage WithIcon(Icon icon)
         {
             if (Items.Count == 0 || !icon.IsSet) return this;
