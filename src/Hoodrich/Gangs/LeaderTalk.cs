@@ -145,8 +145,17 @@ namespace Hoodrich.Gangs
                     }
                     else if (!done)
                     {
+                        // The NUMBERS, on the row itself.
+                        //
+                        // "You are still holding his" is a state, not a progress bar, and it
+                        // reads identically at one gram in and at nineteen -- so somebody five
+                        // bars short of clearing a package and somebody who has just taken one
+                        // saw the same sentence, and both of them reasonably concluded nothing
+                        // was tracking.
                         node.Say("About that package.", () => WorkProgress(def, gang),
-                                 "You are still holding his");
+                                 Math.Max(0f, _state.FrontedGrams - _state.FrontedMoved)
+                                     .ToString("0") + " of " +
+                                 _state.FrontedGrams.ToString("0") + " still to move");
                         node.WithIcon(Icons.Locked);
                     }
                     else
