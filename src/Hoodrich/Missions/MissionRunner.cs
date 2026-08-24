@@ -838,6 +838,7 @@ namespace Hoodrich.Missions
             // where the bike ride and the tag run get them too.
             CountLostHomies();
             KeepThemSeated();
+            FollowMeOut();
 
             switch (State)
             {
@@ -993,6 +994,60 @@ namespace Hoodrich.Missions
         ///
         /// Released in Clear, which is what runs when the job hands in at Lamar's.
         /// </summary>
+        /// <summary>
+        /// When you get out, they get out.
+        ///
+        /// They were staying put through the whole torch phase: you park, walk round the back,
+        /// pour the fuel and shoot it, and three men sit inside the car you are setting fire
+        /// to. Nothing was telling them to leave -- the last thing they were given was a seat,
+        /// and events are blocked on every job so a burning car is not something they will
+        /// notice on their own either.
+        ///
+        /// HoldingSeats already knows the phases where staying in is correct: the drive-by
+        /// work, the escape, the dump, the payout. Everywhere else, the rule is simply that
+        /// they do what you do -- which covers the torch, and covers walking in on a hit.
+        ///
+        /// An explicit TASK_LEAVE_VEHICLE rather than clearing the combat attribute, because
+        /// the attribute governs whether he decides to get out to FIGHT and this is not a
+        /// fight; it is him following you out.
+        /// </summary>
+        private void FollowMeOut()
+        {
+            if (!IsRunning || HoldingSeats) return;
+
+            if (Game.GameTime < _nextFollowOut) return;
+            _nextFollowOut = Game.GameTime + FollowOutMs;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            // Only once you are actually out and standing on your own feet.
+            if (player.IsInVehicle()) return;
+
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+                if (!homie.IsInVehicle()) continue;
+
+                try
+                {
+                    var ride = homie.CurrentVehicle;
+
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, true);
+                    Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 292, false);
+
+                    Function.Call(Hash.TASK_LEAVE_VEHICLE, homie.Handle,
+                                  ride == null || !ride.Exists() ? 0 : ride.Handle, 0);
+
+                    _aimingAtNothing.Remove(homie.Handle);
+                }
+                catch { /* he will follow on the next pass */ }
+            }
+        }
+
+        private int _nextFollowOut;
+        private const int FollowOutMs = 900;
+
         private void KeepThemSeated()
         {
             // Every phase, not only the ones where getting out would be wrong.
@@ -1422,18 +1477,51 @@ namespace Hoodrich.Missions
                         continue;
                     }
 
+                    // Shot at, and stuck.
+                    //
+                    // A hit reaction lands on top of a running drive-by and the two do not
+                    // resolve: the reaction takes the upper body, the drive-by refuses to end
+                    // because it is aimed at something that is still there, and what you get
+                    // is a man in a T-pose leaning out of a rear window. It is always a rear
+                    // passenger because the front ones have a clean seat-specific clipset to
+                    // fall back on and the rear ones do not.
+                    //
+                    // So a homie who has just taken damage is torn off whatever he is doing
+                    // and re-tasked from scratch. Rate-limited, or a man under sustained fire
+                    // never finishes starting anything.
+                    var hurt = WasHit(homie);
+
                     // Only when he has actually stopped. Re-issuing over a running task
                     // restarts the aim every time and he never gets a round off -- the same
                     // mistake that had the bike homies permanently starting to follow.
-                    if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, homie.Handle, DriveByTask)) continue;
+                    var busy = !hurt &&
+                               Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, homie.Handle, DriveByTask);
 
                     var foe = NearestLiveTarget(homie);
 
+                    // THE HOLDING TASK IS NOT A REASON TO IGNORE A REAL TARGET.
+                    //
+                    // This is why they sat there. The no-target task below is deliberately one
+                    // that "cannot finish and will not end" -- so the moment it started,
+                    // GET_IS_TASK_ACTIVE was true forever and the guard above skipped every
+                    // frame after it. Somebody walked out in front of the car and nobody
+                    // looked up, for the rest of the job.
+                    //
+                    // A man parked on the holding aim is therefore treated as idle, not busy.
+                    var parked = _aimingAtNothing.Contains(homie.Handle);
+
                     if (foe != null)
                     {
-                        Shoot(homie, foe);
+                        if (!busy || parked)
+                        {
+                            _aimingAtNothing.Remove(homie.Handle);
+                            Shoot(homie, foe);
+                        }
+
                         continue;
                     }
+
+                    if (busy && parked) continue;
 
                     // NOBODY TO SHOOT AT IS THE MOMENT HE REACHES FOR THE DOOR.
                     //
@@ -1454,6 +1542,8 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.TASK_DRIVE_BY, homie.Handle, 0, 0,
                                   aim.X, aim.Y, aim.Z, DriveByRange, DriveByAccuracy,
                                   true, FullAuto);
+
+                    _aimingAtNothing.Add(homie.Handle);
                 }
                 catch { /* he will sit this one out */ }
             }
@@ -1490,6 +1580,62 @@ namespace Hoodrich.Missions
 
         private int _nextDriveBy;
         private const int DriveByRetaskMs = 700;
+
+        /// <summary>
+        /// Who is currently parked on the holding aim rather than on a real target.
+        ///
+        /// Needed because the holding task never ends by design, so "is a drive-by running"
+        /// stops being a useful question the moment one starts -- the only way to tell a man
+        /// shooting at somebody from a man aiming at a bush is to remember which he was given.
+        /// </summary>
+        private readonly HashSet<int> _aimingAtNothing = new HashSet<int>();
+
+        /// <summary>Last known health per homie, for spotting the frame he gets hit.</summary>
+        private readonly Dictionary<int, int> _wasOn = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> _lastTornOff = new Dictionary<int, int>();
+
+        /// <summary>How often one man may be torn off his task by being shot.</summary>
+        private const int UnstickMs = 1200;
+
+        /// <summary>
+        /// True on the tick a homie has taken damage, and clears whatever he was doing.
+        ///
+        /// The T-pose is a hit reaction and a drive-by fighting over the same upper body, and
+        /// neither yields -- so the fix is to stop asking them to share it. He is torn off
+        /// everything and re-tasked from scratch on the same tick.
+        /// </summary>
+        private bool WasHit(Ped homie)
+        {
+            var h = homie.Handle;
+            var now = homie.Health;
+
+            int before;
+            var known = _wasOn.TryGetValue(h, out before);
+
+            _wasOn[h] = now;
+
+            if (!known || now >= before) return false;
+
+            int last;
+            if (_lastTornOff.TryGetValue(h, out last) && Game.GameTime - last < UnstickMs)
+            {
+                return false;
+            }
+
+            _lastTornOff[h] = Game.GameTime;
+
+            try
+            {
+                homie.Task.ClearAllImmediately();
+                _aimingAtNothing.Remove(h);
+            }
+            catch
+            {
+                // He was probably already mid-something else.
+            }
+
+            return true;
+        }
 
         /// <summary>CTaskVehicleGun, which is what TASK_DRIVE_BY actually starts.</summary>
         private const int DriveByTask = 100;
@@ -2787,6 +2933,13 @@ namespace Hoodrich.Missions
 
             _homies.Clear();
             _seats.Clear();
+
+            // Keyed on ped handles, and handles are reused the moment a ped is released -- so
+            // a leftover entry is not merely stale, it is somebody else's health and somebody
+            // else's aim being read as this man's.
+            _aimingAtNothing.Clear();
+            _wasOn.Clear();
+            _lastTornOff.Clear();
 
             // Let go rather than deleted. A car you drove to a job and back should still be
             // sitting outside afterwards, the same as the bikes.
