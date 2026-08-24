@@ -883,6 +883,11 @@ namespace Hoodrich.Gangs
         /// is also him showing you a bit more of what he actually moves, which is the point of
         /// there being a second one at all.
         /// </summary>
+        // "ecstasy" IS oxycodone. The id is the one it shipped with and the display name is
+        // what it actually is -- drugs.json has ecstasy/Oxycodone, and the id cannot be renamed
+        // because every save on disk stores drug ids. Said here because the line below promises
+        // the player oxys, and a reader checking whether that promise is kept will otherwise
+        // find the wrong word and "fix" a bug that is not there.
         private static readonly string[] LaterFronts = { "ecstasy" };
 
         private DialogueNode OfferWork(LeaderDef def, GangDef gang)

@@ -1,4 +1,4 @@
-{
+﻿{
   "_comment": [
     "Where each gang leader holds court, and what he says.",
     "",
@@ -66,15 +66,15 @@
       "gang": "marabunta",
       "name": "Chavo",
       "zone": "CYPRE",
-      "x": 1288.383,
-      "y": -1713.385,
+      "x": 785.25,
+      "y": -2237.25,
       "heading": 227.852,
       "models": [
         "g_m_y_salvagoon_01",
         "g_m_y_salvaboss_01",
         "a_m_y_mexthug_01"
       ],
-      "z": 55.059
+      "z": 28.38
     },
     {
       "gang": "lost",
@@ -122,15 +122,15 @@
       "gang": "aztecas",
       "name": "Chuy",
       "zone": "BANNING",
-      "x": 274.5,
-      "y": -2059.0,
+      "x": 106.25,
+      "y": -2187.0,
       "heading": 160.0,
       "awayFromHour": 0,
       "awayToHour": 0,
       "models": [
         "g_m_y_azteca_01"
       ],
-      "z": 17.476
+      "z": 4.94
     },
     {
       "gang": "koreans",

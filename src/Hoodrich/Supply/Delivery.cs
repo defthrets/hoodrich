@@ -183,55 +183,99 @@ namespace Hoodrich.Supply
         private static readonly string[] LeavingLines = { "GENERIC_BYE", "GENERIC_THANKS" };
 
         /// <summary>
-        /// Stepping out of the car, outside the house.
+        /// What the man at your door actually says, and WHO is saying it.
         ///
-        /// He is a port man in Strawberry and would rather not be, and that is most of the
-        /// character: he came across the whole city with weight in the boot, he is doing you a
-        /// favour he has priced, and he is counting the minutes. None of these are friendly and
-        /// none of them are threats.
+        /// These were written once and never heard: Speak took them as an argument and threw
+        /// them away, playing a generic grunt instead. Twenty-four lines of dialogue that no
+        /// player has ever seen. They are shown now.
+        ///
+        /// And they are split, because the old single set could not be right for both men. It
+        /// talked about containers, the water and the gate at the port -- true of the plug off
+        /// Elysian Island and nonsense out of Gerald, who has driven four streets from a
+        /// Chamberlain corner and has never been near a boat. A shared pool is only a saving
+        /// when the people sharing it are interchangeable, and these two are the opposite of
+        /// that: the whole point of having both is that they are different men.
         /// </summary>
-        private static readonly string[] ArrivalWords =
+        private static readonly string[] PortArrival =
         {
-            "Car stays running. That isn't rudeness, that's scheduling.",
-            "Nice street. Lot of windows on it.",
-            "I drove this one myself. Draw your own conclusion.",
-            "Off a container at five, on a lawn by two. That's the day.",
-            "Forty minutes of freeway with that in the trunk.",
-            "You could have come to the port. There's a gate there.",
+            "Ayy. This the address? This the address. Okay.",
+            "Engine stay on, my dude. That's not rude, that's business.",
+            "I drove this one myself. MYSELF. Think about that.",
+            "Off a boat at five, on your lawn by two. That's my day.",
+            "Nice street. Lot of windows on it tho.",
+            "You could came to the port, bro. There's a gate and everything."
         };
 
-        /// <summary>Carrying it up the path, which is the exposed part and he knows it.</summary>
-        private static readonly string[] CarryWords =
+        private static readonly string[] PortCarry =
         {
-            "Heavy. Don't offer.",
-            "At work I'd have a forklift for this. Out here I have arms.",
-            "It weighs what it weighs. I'm not making two trips.",
-            "If a neighbor asks, this is a television.",
-            "Ten steps of driveway. Nobody's paid for these ten.",
-            "Door. Any time.",
+            "This is heavy. Don't just stand there lookin'.",
+            "At the yard I got a forklift for this. Out here I got arms.",
+            "Nah. I'm not makin' two trips, my guy.",
+            "Anybody ask, this a television.",
+            "Ten steps of driveway. Nobody paid me for these ten.",
+            "Door. Any time now."
         };
 
-        /// <summary>Setting it down. The moment it stops being his problem.</summary>
-        private static readonly string[] DropWords =
+        private static readonly string[] PortDrop =
         {
+            "Weight correct. It's always correct.",
             "Keep the box. I don't want it back and I don't want it in your trash.",
-            "Weight's correct. It always is.",
-            "Delivered. That's the whole ceremony.",
+            "Sealed at the port, opened by you. Nothin' in between.",
             "Get it inside before you get curious.",
-            "Sealed at the port, opened by you. Nothing in between.",
-            "Don't drag it. Lift it. It's not a suitcase.",
+            "Delivered. That's the whole ceremony, bro.",
+            "Don't drag it. Lift it. It's not a suitcase."
         };
 
-        /// <summary>Back behind the wheel, already gone in every sense but the literal.</summary>
-        private static readonly string[] PartingWords =
+        private static readonly string[] PortParting =
         {
-            "I've got a container due in at six. This was the detour.",
-            "The people I answer to like a slow news week. See that they get one.",
-            "I'm going back to the water. It smells worse and asks less.",
-            "If this goes wrong, it went wrong after I left.",
-            "Same number. Same hours. Don't get creative with either.",
-            "That's me. Go inside.",
+            "I got a container due in at six. This was the detour.",
+            "The people I answer to like a quiet week. See they get one.",
+            "Goin' back to the water. Smells worse, asks less.",
+            "Anything go wrong, it went wrong after I left.",
+            "Same number, same hours. Don't get creative with either.",
+            "That's me. Go inside."
         };
+
+        private static readonly string[] CornerArrival =
+        {
+            "You called, I came. Don't make that a habit.",
+            "I'm double parked, dawg. That's your problem now.",
+            "Out my yard, cross town, for this.",
+            "Quiet street. Keep it that way.",
+            "This ain't what I do. This a favour with a price on it.",
+            "Make it quick, I got somewhere to be."
+        };
+
+        private static readonly string[] CornerCarry =
+        {
+            "It ain't heavy. It's just not somethin' to be holdin' in the open.",
+            "Ten steps up a driveway. I don't do driveways.",
+            "Somebody watchin' this? 'Cause somebody always watchin'.",
+            "Move, dawg. I ain't stood out here all day.",
+            "Front door. Not the step. In.",
+            "This the last time I'm the one carryin'."
+        };
+
+        private static readonly string[] CornerDrop =
+        {
+            "That's yours. Count it if you want, it's right.",
+            "Take the bag too. Don't leave it in your bin.",
+            "Get it inside 'fore somebody see it.",
+            "There. Done. That's the whole thing.",
+            "Weight's right. It's always right, that's why you call me.",
+            "Now it's your problem. Look after it."
+        };
+
+        private static readonly string[] CornerParting =
+        {
+            "Aight. Don't call me for nothin' small.",
+            "Next time have somethin' worth the drive.",
+            "I'm gone. You ain't seen me.",
+            "Same number. Don't wear it out.",
+            "Go on inside. Standin' there don't help neither of us.",
+            "That's me. Go make some money with it."
+        };
+
 
         private static readonly Random Rng = new Random();
 
@@ -1290,7 +1334,7 @@ namespace Hoodrich.Supply
                 Log.Debug("Could not start the drop-off: " + ex.Message);
             }
 
-            Speak(CarryWords, TakingLines);
+            Speak(Mine(PortCarry, CornerCarry), TakingLines);
             Notify.Ticker("~g~He's bringing it in.~s~");
         }
 
@@ -1330,9 +1374,45 @@ namespace Hoodrich.Supply
         /// read to. The words stay in the file because they are what the barks are chosen
         /// against, and because putting them back is one line.
         /// </summary>
+        /// <summary>
+        /// The line, on screen, and a noise out of him to go with it.
+        ///
+        /// It used to take the words and drop them -- every call passed a set of written lines
+        /// and every call played a grunt instead, so the whole delivery happened in silence
+        /// with a man mouthing GENERIC_YES at you. The words are the point; the speech name is
+        /// there so his mouth moves while they are up, exactly as it is for Lamar on the ride.
+        ///
+        /// There is no recording of any of this and there never will be. A subtitle with a
+        /// name on it is how every other scene in this mod solves that.
+        /// </summary>
         private void Speak(string[] words, string[] voice)
         {
             Say(voice);
+
+            if (words == null || words.Length == 0) return;
+
+            var who = _def == null || string.IsNullOrEmpty(_def.Name) ? "" : _def.Name.ToUpperInvariant();
+
+            try
+            {
+                GTA.UI.Screen.ShowSubtitle(
+                    (who.Length == 0 ? "" : "~y~" + who + ":~s~ ") + Fresh(words), 3200);
+            }
+            catch
+            {
+                // He still made a noise, and the delivery still lands.
+            }
+        }
+
+        /// <summary>
+        /// Whose mouth this is. The man off the boat, or the man off the corner.
+        ///
+        /// Same test the carry animation uses -- a delivery is either the port or it is not,
+        /// and everything about how it looks and sounds follows from that one fact.
+        /// </summary>
+        private string[] Mine(string[] port, string[] corner)
+        {
+            return Bales() ? port : corner;
         }
 
         /// <summary>
@@ -1464,7 +1544,7 @@ namespace Hoodrich.Supply
 
             PutDown();
             Land();
-            Speak(DropWords, DroppedLines);
+            Speak(Mine(PortDrop, CornerDrop), DroppedLines);
 
             State = DeliveryState.Leaving;
             _stateSince = Game.GameTime;
@@ -1492,7 +1572,7 @@ namespace Hoodrich.Supply
                 {
                     // Said from the driver's seat, with the door shut, the way anybody says
                     // goodbye when they are already leaving.
-                    Speak(PartingWords, LeavingLines);
+                    Speak(Mine(PortParting, CornerParting), LeavingLines);
 
                     try
                     {
@@ -2007,7 +2087,7 @@ namespace Hoodrich.Supply
             {
                 _greeted = true;
 
-                Speak(ArrivalWords, TakingLines);
+                Speak(Mine(PortArrival, CornerArrival), TakingLines);
 
                 OpenTheBoot();
                 WalkToMeet();
