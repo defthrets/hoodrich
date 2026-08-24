@@ -32,7 +32,19 @@ namespace Hoodrich.State
         private readonly Settings _cfg;
         private readonly PlayerState _state;
 
-        private readonly Dictionary<string, float> _bagBulk = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// What is in the bag, and how strong it is.
+        ///
+        /// Bulk used to be grams alone, and that was a laundry. AddBulk takes purity as an
+        /// OPTIONAL argument defaulting to pure, so handing it back without one meant anything
+        /// dropped came home at a hundred per cent -- walk into a search holding stepped-on
+        /// weight, drop it, get searched, pick it up clean. The mod deliberately lets you drop
+        /// product before a search, which is the whole reason this mattered: the exploit was
+        /// not a corner case, it was the feature.
+        ///
+        /// The packaged side had it right all along and is the shape being copied here.
+        /// </summary>
+        private readonly Dictionary<string, Holding> _bagBulk = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Holding> _bagPackaged = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
 
         private Prop _bag;
@@ -159,7 +171,7 @@ namespace Hoodrich.State
         /// Removes a fraction of everything held. When given dictionaries, records what was
         /// taken so it can be handed back; otherwise the product is simply gone.
         /// </summary>
-        private float Confiscate(float fraction, Dictionary<string, float> bulkOut,
+        private float Confiscate(float fraction, Dictionary<string, Holding> bulkOut,
                                  Dictionary<string, Holding> packagedOut)
         {
             var stash = _state.Stash;
@@ -176,12 +188,16 @@ namespace Hoodrich.State
 
             foreach (var id in bulkIds)
             {
+                // Read BEFORE the removal, and from the bulk side rather than the packaged one.
+                // RemoveBulk can empty the holding, and an emptied holding reports pure.
+                var purity = stash.BulkPurityOf(id);
+
                 var amount = stash.BulkOf(id) * fraction;
                 var taken = stash.RemoveBulk(id, amount);
                 if (taken <= 0.005f) continue;
 
                 total += taken;
-                if (bulkOut != null) bulkOut[id] = taken;
+                if (bulkOut != null) bulkOut[id] = new Holding { Grams = taken, Purity = purity };
             }
 
             foreach (var id in packagedIds)
@@ -286,16 +302,20 @@ namespace Hoodrich.State
             var stash = _state.Stash;
             var back = 0f;
 
-            var bulkLeft = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+            var bulkLeft = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
             var packagedLeft = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var kv in _bagBulk)
             {
-                var took = stash.AddBulk(kv.Key, kv.Value);
+                // AddBulk blends what arrives into whatever is already held, weighted by grams,
+                // so a part-recovery into an existing pile averages correctly on its own. What
+                // stays behind in the bag keeps the strength it had -- the bag is not a mixer,
+                // it is the same product waiting where it was left.
+                var took = stash.AddBulk(kv.Key, kv.Value.Grams, kv.Value.Purity);
                 back += took;
 
-                var over = kv.Value - took;
-                if (over > 0.005f) bulkLeft[kv.Key] = over;
+                var over = kv.Value.Grams - took;
+                if (over > 0.005f) bulkLeft[kv.Key] = new Holding { Grams = over, Purity = kv.Value.Purity };
             }
 
             foreach (var kv in _bagPackaged)

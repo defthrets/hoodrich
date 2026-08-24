@@ -1590,15 +1590,36 @@ def baggie():
     # The pouch. Square shoulders, square-ish bottom, corners just knocked off.
     d.rounded_rectangle([86, 172, 426, 486], radius=44, fill=W)
 
-    # Three pills, scattered. No two at the same height and no two in a column.
-    for (x, y, r) in ((172, 260, 42), (264, 304, 42), (346, 256, 42)):
+    # Two pills up, the bar across on the diagonal, one pill tucked under its high end.
+    #
+    # Every symmetrical arrangement of this tried so far came out as a FACE. Two circles over a
+    # bar is eyes and a mouth; three circles over a bar is the same face with a nose. Staggering
+    # the heights only changed its expression. The diagonal is what actually kills it -- there
+    # is nothing on a slant in a face -- and hanging the last pill below the bar breaks the
+    # last bit of the reading, because a face has nothing under the mouth.
+    for (x, y, r) in ((176, 248, 44), (300, 230, 44)):
         d.ellipse([x - r, y - r, x + r, y + r], fill=CLEAR)
 
-    # The bar, and then the scoring put back in solid so it divides into tablets.
-    d.rounded_rectangle([138, 380, 374, 442], radius=27, fill=CLEAR)
+    d.ellipse([298, 392, 378, 472], fill=CLEAR)
 
-    for x in (208, 284):
-        d.rectangle([x, 380, x + 20, 442], fill=W)
+    # The bar, scored, then tilted as one piece.
+    #
+    # Built on its own layer as a MASK rather than drawn straight on: the scoring has to rotate
+    # with the bar, and the only way to keep the two square to each other is to cut the score
+    # marks out of the mask before it turns. What is left of the mask is what gets punched
+    # through the pouch, so the scores come out solid.
+    bar = Image.new('RGBA', (S, S), CLEAR)
+    b = ImageDraw.Draw(bar)
+    b.rounded_rectangle([146, 316, 376, 386], radius=35, fill=W)
+
+    # Thin, and they do not run the full depth. Cut at eighteen units through a bar that is two
+    # rendered pixels tall, the scores stopped being scores and sawed it into three separate
+    # blobs -- so the icon read as six pills and no bar at all. Ten units, stopped short of
+    # both edges, softens the waist without breaking the run.
+    for x in (218, 292):
+        b.rectangle([x, 326, x + 10, 376], fill=CLEAR)
+
+    img.paste(CLEAR, (0, 0), bar.rotate(18, resample=Image.BICUBIC, center=(261, 351)))
 
     save(img, 'baggie.png')
 
