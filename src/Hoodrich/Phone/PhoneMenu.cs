@@ -1030,23 +1030,34 @@ namespace Hoodrich.Phone
 
             if (item.Tint.HasValue && !on && item.Enabled) ink = item.Tint.Value;
 
-            // The icon, at the top of the tile.
-            var iconY = y + h * 0.34f;
-            Art(item, x + w * 0.5f, iconY, 0.044f, Fade(ink, fade));
+            // Icon, then what it says about itself, then its name. In that order down the
+            // tile, because that is the order you read it in.
+            //
+            // The badge used to sit ABOVE the icon, hard against the top edge, which put "20g"
+            // and "FAM" closer to the tile above them than to the app they belong to -- on a
+            // grid that reads as a caption for the wrong thing. Underneath, between the icon
+            // and the name, it is plainly part of this tile.
+            //
+            // The icon rides up to make the room rather than the name coming down, so the row
+            // of app names stays on one line across the whole screen.
+            var named = y + h - 0.024f;
+            var badged = named - 0.019f;
 
-            Hud.Text(Hud.Fit(item.Label, w * 0.94f, 0.26f, Hud.FontLabel),
-                     x + w * 0.5f, y + h - 0.026f, 0.26f,
-                     Fade(ink, fade), Hud.FontLabel, centre: true);
+            Art(item, x + w * 0.5f, y + h * 0.31f, 0.042f, Fade(ink, fade));
 
-            // A badge in the corner when the tile has something to say -- a count, a price, a
-            // "3 waiting". The wheel put this in its hub; a grid has no hub, so it goes here.
+            // A badge when the tile has something to say -- a count, a price, a "3 waiting".
+            // The wheel put this in its hub; a grid has no hub, so it goes with the name.
             if (!string.IsNullOrEmpty(item.Value) && item.Value.Length <= 12)
             {
                 Hud.Text(Hud.Fit(item.Value, w * 0.94f, 0.20f, Hud.FontBody),
-                         x + w * 0.5f, y + 0.006f, 0.20f,
+                         x + w * 0.5f, badged, 0.20f,
                          Fade(on ? Green : Palette.TextDim, fade),
                          Hud.FontBody, centre: true);
             }
+
+            Hud.Text(Hud.Fit(item.Label, w * 0.94f, 0.26f, Hud.FontLabel),
+                     x + w * 0.5f, named, 0.26f,
+                     Fade(ink, fade), Hud.FontLabel, centre: true);
         }
 
         // ---- lists --------------------------------------------------------------

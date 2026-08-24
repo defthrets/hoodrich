@@ -282,6 +282,14 @@ namespace Hoodrich.Dealing
         private int _driveBys;
 
         private readonly List<Ped> _rivals = new List<Ped>();
+
+        /// <summary>
+        /// Buyers who squared up over the cut and are NOT the sort to stand in front of a gun.
+        ///
+        /// Only the soft ones go on here. A gangster who takes offence stays on the list of
+        /// people you have a problem with, not on a list of people who can be made to leave.
+        /// </summary>
+        private readonly List<Ped> _swinging = new List<Ped>();
         private Vehicle _driveByCar;
         private Ped _driveByDriver;
         private int _driveByStartedAt;
@@ -566,6 +574,11 @@ namespace Hoodrich.Dealing
             // which is the only reason "come back later" is an answer as well as "go
             // somewhere else" -- and being somewhere else is exactly when this is not posted.
             _ground.Tick();
+
+            // Before the early return as well. A man swinging at you does not stop being a
+            // problem because you put the product away, and drawing on him is the same answer
+            // whether or not the pitch is still open.
+            ScareOff();
 
             if (!IsPosted) return;
 
@@ -2167,24 +2180,147 @@ namespace Hoodrich.Dealing
                 return;
             }
 
+            // Decided BEFORE anything is taken off him, because "would he normally have a gun"
+            // cannot be asked of a man we have just disarmed.
+            var hard = Hardened(buyer);
+
             try
             {
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, buyer.Handle, false);
-                Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, buyer.Handle, true);
+
+                // The soft ones fight with their hands; a gangster keeps whatever he came with.
+                if (!hard) Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, buyer.Handle, true);
+
                 Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, buyer.Handle, 46, true);
                 Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, buyer.Handle, 5, true);
                 // 46 is BF_CanFightArmedPedsWhenNotArmed, NOT BF_AlwaysFight. That is 5.
                 Function.Call(Hash.TASK_COMBAT_PED, buyer.Handle, player.Handle, 0, 16);
 
+                if (!hard) _swinging.Add(buyer);
+
                 _cornerHeat += RefusedFightHeat;
 
-                Notify.Problem("that one wants to do something about it.");
-                Log.Info("A knocked-back buyer squared up.");
+                Notify.Problem(hard
+                    ? "that one wants to do something about it, and he came prepared."
+                    : "that one wants to do something about it.");
+
+                Log.Info("A knocked-back buyer squared up (" +
+                         (hard ? "armed, will not back down" : "hands, will back down") + ").");
             }
             catch (Exception ex)
             {
                 Log.Debug("A refused buyer could not square up: " + ex.Message);
             }
+        }
+
+        /// <summary>Any weapon that is not fists and not melee. IS_PED_ARMED's 2|4.</summary>
+        private const int ArmedNotMelee = 6;
+
+        /// <summary>How far they get before they stop running, and for how long.</summary>
+        private const float FleeDistance = 90f;
+        private const int FleeForMs = -1;
+
+        /// <summary>
+        /// Whether this one is the sort who stands in front of a drawn gun.
+        ///
+        /// The rule is who he IS, not what he happens to be holding this second -- a gangster
+        /// with his piece still tucked is not a member of the public having a bad afternoon,
+        /// and should not scatter like one.
+        ///
+        /// ePedType answers it without a model list to keep up to date. 6 is police, 27 SWAT
+        /// and 29 army; 7 to 18 are the game's own gang types, which every Ballas, Vagos,
+        /// Families and Lost model in Los Santos is one of; 19 is a dealer and 22 a criminal.
+        /// Everything else on a Chamberlain pavement is a civilian, and a civilian runs.
+        ///
+        /// Carrying a firearm counts too, on the grounds that a man who already has one out is
+        /// self-evidently in the category however the game has him filed.
+        /// </summary>
+        private static bool Hardened(Ped ped)
+        {
+            if (ped == null || !ped.Exists()) return false;
+
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_PED_ARMED, ped.Handle, ArmedNotMelee)) return true;
+
+                var type = Function.Call<int>(Hash.GET_PED_TYPE, ped.Handle);
+
+                if (type == 6 || type == 27 || type == 29) return true;   // law and army
+                if (type >= 7 && type <= 18) return true;                 // every gang type
+                if (type == 19 || type == 22) return true;                // dealer, criminal
+
+                return false;
+            }
+            catch
+            {
+                // Unknown falls to civilian, so the worst an unreadable ped costs is one man
+                // running who might have stood.
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Anyone still swinging clears off the moment you draw on them.
+        ///
+        /// Somebody who feels short-changed will throw a punch. He will not stand there
+        /// throwing punches at a man pointing a pistol at him, and until now he did -- an
+        /// unarmed civilian kept coming until one of you was on the floor, which turned every
+        /// bad batch into a killing and made the purity system read as a punishment rather
+        /// than a risk you take.
+        ///
+        /// Drawing is the whole input. Not aiming, not firing: producing the thing IS the
+        /// point being made, and having to shoot somebody to make it is the outcome this
+        /// exists to avoid.
+        ///
+        /// Only the soft ones are on this list. A gangster is left exactly as he was.
+        /// </summary>
+        private void ScareOff()
+        {
+            if (_swinging.Count == 0) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) { _swinging.Clear(); return; }
+
+            bool drawn;
+
+            try { drawn = Function.Call<bool>(Hash.IS_PED_ARMED, player.Handle, ArmedNotMelee); }
+            catch { return; }
+
+            for (var i = _swinging.Count - 1; i >= 0; i--)
+            {
+                var ped = _swinging[i];
+
+                if (ped == null || !ped.Exists() || !ped.IsAlive)
+                {
+                    _swinging.RemoveAt(i);
+                    continue;
+                }
+
+                if (!drawn) continue;
+
+                try
+                {
+                    // Both attributes off first, or the combat task is handed straight back to
+                    // him -- 5 is always-fight and it outranks being told to run.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, false);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
+
+                    Function.Call(Hash.TASK_SMART_FLEE_PED, ped.Handle, player.Handle,
+                                  FleeDistance, FleeForMs, true, false);
+                    Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+
+                    ped.MarkAsNoLongerNeeded();
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not scare off a swinger: " + ex.Message);
+                }
+
+                _swinging.RemoveAt(i);
+            }
+
+            if (drawn) Log.Info("Drawn on; the ones fighting with their hands cleared off.");
         }
 
         /// <summary>
@@ -2469,6 +2605,17 @@ namespace Hoodrich.Dealing
             ReleaseCop();
             ReleaseRivals();
             ReleasePatrol();
+
+            foreach (var ped in _swinging)
+            {
+                try
+                {
+                    if (ped != null && ped.Exists()) ped.MarkAsNoLongerNeeded();
+                }
+                catch { /* teardown */ }
+            }
+
+            _swinging.Clear();
             State = PostState.Idle;
             _product = null;
         }

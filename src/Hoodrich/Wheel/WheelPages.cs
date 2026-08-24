@@ -956,9 +956,11 @@ namespace Hoodrich.Wheel
             // First on the home screen, top-left, because it is the one app on here that is
             // not ours. Somebody looking for their own phone should not have to read past six
             // things that took it off them.
+            // No badge. It said "yours", which is a thing the tile already says by being
+            // called Phone and sitting on a phone -- and a badge slot is for a number you
+            // would otherwise have to open the app to find out.
             page.Add("Phone", ">", () => ShowVanillaPhone?.Invoke(),
                 detail: "Hands the button back so you can open your own phone",
-                value: "yours",
                 enabled: ShowVanillaPhone != null,
                 disabledReason: "Not wired up");
             page.WithIcon(Icons.FromFile("mobile.png"));
