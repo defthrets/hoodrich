@@ -354,61 +354,107 @@ namespace Hoodrich.Gangs
             // The model list runs the two names the game might have him under and then the
             // Families heavies. He is a man on a Chamberlain corner either way, and a wrong
             // guess at a model costs a line in the log rather than an empty corner.
+            // Gerald. Clipped and transactional, and the whole relationship runs through
+            // Lamar having spoken for you -- which is the only reason he is talking to you at
+            // all and the thing he measures you against.
             Add("families", "Gerald", "CHAMH",
                 new[] { "ig_g", "csb_g", "g_m_y_famdnf_01", "a_m_m_soucent_01" },
-                "You the one Lamar keeps bringin' up. Alright. Talk.",
-                "Aight. Far as anybody need to know, you run with us. Take this, move it, and " +
-                "come see me when it's gone. Not before it's gone.",
-                "Nah. You ain't done nothin' for nobody yet. Go be useful and come back.",
-                "You already with us. Go handle your business.");
+                "You the one Lamar keep bringin' up. Aight. Talk.",
+                "Far as anybody need to know, you run with us. That's it, that's the whole " +
+                "ceremony. Now -- I don't wanna see you again til that bag's empty. Not " +
+                "halfway. Empty.",
+                "Lamar talk about you like you somebody. I ain't seen it yet. Go make him right.",
+                "We already did this part. Go work.");
 
+            // OG Reese. Asks rather than tells, because he is old enough to have watched
+            // everybody out here come up and he places you by who your people are.
             Add("ballas", "OG Reese", "RANCHO",
                 new[] { "g_m_y_ballaorig_01", "g_m_y_ballaeast_01", "a_m_m_soucent_02" },
-                "You a long way from wherever you from.",
-                "Purple looks alright on you. You ain't one of us yet though -- you a worker. " +
-                "Take this, bring me my money, then we talk.",
-                "Nah. You ain't put in nothin'. Come back when your name means somethin'.",
-                "You already with us. Go on.");
+                "Hold up. Who your people? 'Cause I know everybody out here, and I don't know you.",
+                "Purple look alright on you. Don't get comfortable in it. Somebody gon' be " +
+                "watchin' how you move for a while, and it ain't gon' be me -- you won't know " +
+                "which one he is. That's the job.",
+                "I been out here since before you could walk. You think you the first one come " +
+                "up to me askin'? Go get a name.",
+                "I know who you are. Go on.");
 
+            // El Tio. Everything is a debt and everything is on his name. He never says work.
             Add("vagos", "El Tio", "EBURO",
                 new[] { "g_m_y_mexgoon_02", "g_m_y_mexgoon_01", "a_m_y_mexthug_01" },
-                "You lost, or you looking for something.",
-                "Bueno. You run for us, not with us -- not yet. Take this, move it, don't be " +
-                "stupid with it. Then we see.",
-                "You ain't nobody to me yet. Go make a name, then come back.",
-                "You already with us. Go work.");
+                "Ey. You looking for something, or you lost? Around here those are different " +
+                "problems.",
+                "Bueno. Understand me -- this is not a job. This is a debt. Everything in that " +
+                "bag moves on my name, and my name is not free. You break it, I take it back " +
+                "out of you.",
+                "You want me to put my name on a stranger. No. Bring me somebody who will say " +
+                "your name out loud, and then we can owe each other something.",
+                "Ya. You're mine. Go.");
 
+            // Chavo. The fewest words of anyone here, and nothing is ceremonial.
             Add("marabunta", "Chavo", "CYPRE",
                 new[] { "g_m_y_salvagoon_01", "g_m_y_salvaboss_01", "a_m_y_mexthug_01" },
                 "You standing in the wrong place to be asking questions.",
-                "You want in, you start at the bottom like everyone. Take this, sell it, " +
-                "bring back what's ours.",
-                "You ain't earned a word from me. Go do something worth hearing about.",
-                "You one of ours already.");
+                "You're in. Nobody claps. You start where everybody starts, which is carrying " +
+                "what you're given and not asking what's in it.",
+                "No. Nobody has said your name to me.",
+                "You're one of ours. What else.");
 
+            // Bull. Club vocabulary and nothing else -- hangaround, prospect, church, patch.
+            // He never once uses a word that would mean anything to somebody outside it.
             Add("lost", "Bull", "SLAB",
                 new[] { "g_m_y_lost_02", "g_m_y_lost_01", "a_m_m_hillbilly_01" },
                 "You ain't wearing a patch, so make it quick.",
-                "You're a hangaround. That's it. Hangarounds work. Take this, shift it, " +
-                "don't touch it yourself.",
-                "Hangarounds earn. You ain't earned. Come back when you have.",
-                "You're already riding with us.");
+                "You're a hangaround. Not a prospect, not a member -- a hangaround. Hangarounds " +
+                "fetch. Fetch long enough and somebody might put your name up at church. Might.",
+                "Hangarounds earn it. You ain't hung around. There's a difference and you'll " +
+                "learn it standing over there.",
+                "You ride with us already. So go ride.");
 
+            // Uncle Wei. Formal, no contractions anywhere, and he measures in decades.
             Add("triads", "Uncle Wei", "KOREAT",
                 new[] { "g_m_m_chiboss_01", "g_m_m_chigoon_01", "a_m_y_ktown_01" },
                 "You are not expected. Speak.",
-                "You may work for us. You are not of us -- that takes years, not a conversation. " +
-                "Take this. Return with what it is worth.",
-                "You have done nothing. There is nothing to discuss. Go.",
-                "You already work for us. Do so.");
+                "You may carry for us. Understand what that is, and what it is not. There are " +
+                "men who have worked thirty years and are still outside this family. You are " +
+                "not inside it. You are useful. That is a different word.",
+                "You have done nothing, and I have no interest in what you intend to do. Go.",
+                "You work for us already. Do so.");
 
+            // Sarkis. Money, and specifically the idea that the first number you show him is
+            // the number you are stuck with.
             Add("armenians", "Sarkis", "ALTA",
                 new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "a_m_m_eastsa_02" },
                 "You want something. Everybody wants something.",
-                "You can carry for us. That's all, for now. Take this, sell it, bring the money. " +
-                "Then we find out what you are.",
-                "You're nobody. Nobody gets nothing. Come back when that changes.",
-                "You already ours.");
+                "Fine. You carry, I pay, and we find out what you are worth. Be careful what " +
+                "you show me first -- whatever I decide you are worth today is what you will " +
+                "be worth to me for as long as I know you.",
+                "You are nobody, and nobody is worth nothing. Change that and we will talk " +
+                "about numbers.",
+                "You are already mine. What do you want?");
+
+            // Chuy. Banning, and everything is about who is from here and who is not. He is
+            // the only one of the nine whose rules are about SECRECY rather than product.
+            Add("aztecas", "Chuy", "BANNING",
+                new[] { "g_m_y_azteca_01", "g_m_y_mexgoon_03", "a_m_y_mexthug_01" },
+                "This is Banning. Nobody comes to Banning by accident. So which is it?",
+                "Alright. You're not from here, so listen -- you don't say our name anywhere " +
+                "off this block, you don't bring nobody back here with you, and you never come " +
+                "looking for me at my house. Do that and there's always something to carry.",
+                "Your face isn't from here. Neither is your family. Round here that's the same " +
+                "as not existing. Go and exist somewhere else first.",
+                "You're with us. So stop standing out in the open like a tourist.");
+
+            // Mr Kim. Polite, precise, and menacing entirely by implication. What he sells is
+            // your business; what people REMEMBER about it is his.
+            Add("koreans", "Mr Kim", "KOREAT",
+                new[] { "g_m_m_korboss_01", "g_m_y_korlieut_01", "g_m_y_korean_01" },
+                "Yes? Be quick. I am polite, not patient.",
+                "Very well. Two rules, and they are the same rule twice. Nothing loud. Nothing " +
+                "that ends up on somebody's phone. What you sell is your business. What people " +
+                "remember about it is mine.",
+                "No. There is nothing written next to your name yet, and I do not do business " +
+                "with a blank page.",
+                "We have an arrangement. Do not spend it standing here.");
         }
 
         private void Add(string gangId, string name, string zone, string[] models,
