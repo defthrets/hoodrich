@@ -1697,7 +1697,14 @@ namespace Hoodrich.Supply
         /// </summary>
         private static Vector3 At(float reach, float across = 0f)
         {
-            return new Vector3(0.05f + across, 0.10f, -reach);
+            // MINUS across, not plus.
+            //
+            // Local X on the hand bone points AWAY from the body, so adding the shift walked
+            // the package further out past the outside of his left hand -- the opposite of
+            // what it was for. The direction is not something the dumps say and it is not
+            // something that can be read off a bone name; it took putting it in the game and
+            // looking at which way it went.
+            return new Vector3(0.05f - across, 0.10f, -reach);
         }
 
         /// <summary>
