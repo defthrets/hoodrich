@@ -29,6 +29,15 @@ namespace Hoodrich.Missions
         Escape,
 
         /// <summary>
+        /// The car is worth keeping, so it goes to Hao rather than up in smoke.
+        ///
+        /// Only ever reached on a job that rolled the Vorschlaghammer. Torching a beater is
+        /// the point of a torch job; torching a clean German saloon because the script says
+        /// "dump the car" is throwing away the one thing on the job worth anything.
+        /// </summary>
+        Deliver,
+
+        /// <summary>
         /// The shooting is over and the law has been lost, but you are still driving the car
         /// you did it in. It has to go somewhere quiet.
         /// </summary>
@@ -100,6 +109,26 @@ namespace Hoodrich.Missions
         /// the car, and you learn to leave it somewhere afterwards.
         /// </summary>
         private static readonly string[] DriveByCars = { "vorschlaghammer", "vorschlaghammer", "buccaneer2", "faction" };
+
+        /// <summary>
+        /// The one out of the pool that does not get burned.
+        ///
+        /// The job car is drawn at random, so which ending a job has is decided by what turned
+        /// up on the kerb rather than by the mission -- which is the right way round. A beater
+        /// gets left somewhere; a clean saloon goes to Hao, gets new numbers, and gets sold.
+        /// Lamar reads the plate at the start and tells you which it is, so it is never a
+        /// surprise at the end.
+        /// </summary>
+        private const string KeeperCar = "vorschlaghammer";
+
+        /// <summary>Hao's bay, off the lot. Where a car goes to stop being what it was.</summary>
+        private static readonly Vector3 HaoBay = new Vector3(-22.387f, -1677.849f, 28.833f);
+
+        /// <summary>Close enough to the bay to count as delivered.</summary>
+        private const float BayRange = 9f;
+
+        /// <summary>Whether THIS job's car is one Hao would want.</summary>
+        private bool _keeper;
 
         private readonly PlayerState _state;
         private readonly Affiliation _crew;
@@ -221,6 +250,9 @@ namespace Hoodrich.Missions
                         return _def.Kind == MissionKind.TorchJob && !_burned
                             ? "Lose the cops"
                             : "Lose the cops, then get back to Lamar";
+
+                    case MissionState.Deliver:
+                        return "Take the car to Hao's bay";
 
                     case MissionState.Dump:
                         return "Dump the car somewhere quiet";
@@ -502,6 +534,11 @@ namespace Hoodrich.Missions
                     model.MarkAsNoLongerNeeded();
 
                     if (_jobCar == null || !_jobCar.Exists()) continue;
+
+                    // Decided here, at the kerb, so everything downstream -- Lamar's brief, the
+                    // ending, the blip -- agrees about which job this is.
+                    _keeper = string.Equals(name, KeeperCar, StringComparison.OrdinalIgnoreCase)
+                              && _def.Kind != MissionKind.TorchJob;
 
                     _jobCar.IsPersistent = true;
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _jobCar.Handle, true, true);
@@ -871,6 +908,10 @@ namespace Hoodrich.Missions
                 }
 
                     TickEscape();
+                    return;
+
+                case MissionState.Deliver:
+                    TickDeliver(player);
                     return;
 
                 case MissionState.Dump:
@@ -1366,6 +1407,7 @@ namespace Hoodrich.Missions
                         return FromTheCar;
 
                     case MissionState.Escape:
+                    case MissionState.Deliver:
                     case MissionState.Dump:
                     case MissionState.Collect:
                         return true;
@@ -2549,8 +2591,119 @@ namespace Hoodrich.Missions
                 return;
             }
 
+            // A car worth keeping goes to Hao instead of being abandoned in the street.
+            if (_keeper && _jobCar != null && _jobCar.Exists() && _jobCar.IsDriveable)
+            {
+                State = MissionState.Deliver;
+                MarkBay();
+
+                Notify.Important("~g~You're clear.~s~ Take the car to Hao -- we ain't burning " +
+                                 "that one.");
+                return;
+            }
+
             State = MissionState.Collect;
             Notify.Important("~g~You're clear.~s~ Get back to Lamar.");
+        }
+
+        /// <summary>
+        /// Driving the car to Hao's bay and leaving it there.
+        ///
+        /// It is not enough to be near the spot -- the CAR has to be, because the whole point
+        /// is that Hao ends up with it. Arriving on foot having parked it two streets back is
+        /// the same as not arriving.
+        /// </summary>
+        private void TickDeliver(Ped player)
+        {
+            TalkAboutIt();
+
+            if (_jobCar == null || !_jobCar.Exists() || !_jobCar.IsDriveable)
+            {
+                // Wrecked on the way. Nothing to hand over, so the job just ends.
+                ClearBayBlip();
+
+                State = MissionState.Collect;
+                Notify.Important("~o~That's scrap now.~s~ Go and see Lamar.");
+                return;
+            }
+
+            var carThere = _jobCar.Position.DistanceTo(HaoBay) <= BayRange;
+
+            if (!carThere)
+            {
+                if (player.IsInVehicle(_jobCar)) Help.ShowThisFrame("Take it to Hao's bay.");
+                else Help.ShowThisFrame("Get back in the car -- Hao wants it, not you.");
+                return;
+            }
+
+            if (player.IsInVehicle())
+            {
+                Help.ShowThisFrame("Leave it here and walk.");
+                return;
+            }
+
+            HandOverTheCar();
+        }
+
+        /// <summary>Hao takes it from here.</summary>
+        private void HandOverTheCar()
+        {
+            ClearBayBlip();
+
+            try
+            {
+                if (_jobCar != null && _jobCar.Exists())
+                {
+                    // Locked, left, and no longer ours -- it is his now. Not deleted: watching
+                    // the car you just drove across the city blink out is worse than leaving it
+                    // standing in his bay, which is also the more honest picture of what
+                    // happened to it.
+                    Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _jobCar.Handle, 2);
+                    Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _jobCar.Handle, false, true, true);
+
+                    _jobCar.IsPersistent = false;
+                    _jobCar.MarkAsNoLongerNeeded();
+                }
+            }
+            catch { /* he will sort it out */ }
+
+            _keeper = false;
+
+            State = MissionState.Collect;
+
+            Notify.Important("~g~Dropped with Hao.~s~ He'll change its numbers. " +
+                             "Now walk back to Lamar for the money.");
+
+            if (Social != null) Social.On(SocialEvent.MissionDone);
+
+            Log.Info("Job car delivered to Hao's bay.");
+        }
+
+        private Blip _bayBlip;
+
+        private void MarkBay()
+        {
+            ClearBayBlip();
+
+            try
+            {
+                _bayBlip = World.CreateBlip(HaoBay);
+                if (_bayBlip == null || !_bayBlip.Exists()) return;
+
+                Function.Call(Hash.SET_BLIP_SPRITE, _bayBlip.Handle, 225);
+                _bayBlip.Color = BlipColor.Green;
+                _bayBlip.Name = "Hao's bay";
+                _bayBlip.ShowRoute = true;
+            }
+            catch { /* a blip is a nicety */ }
+        }
+
+        private void ClearBayBlip()
+        {
+            try { if (_bayBlip != null && _bayBlip.Exists()) _bayBlip.Delete(); }
+            catch { /* teardown */ }
+
+            _bayBlip = null;
         }
 
         /// <summary>
@@ -2941,6 +3094,9 @@ namespace Hoodrich.Missions
             _wasOn.Clear();
             _lastTornOff.Clear();
 
+            _keeper = false;
+            ClearBayBlip();
+
             // Let go rather than deleted. A car you drove to a job and back should still be
             // sitting outside afterwards, the same as the bikes.
             try { if (_jobCar != null && _jobCar.Exists()) _jobCar.MarkAsNoLongerNeeded(); }
@@ -3158,6 +3314,7 @@ namespace Hoodrich.Missions
             {
                 case MissionState.Escape: return Palette.Danger;
                 case MissionState.Travel: return Palette.Warn;
+                case MissionState.Deliver: return Palette.Cash;
                 case MissionState.Dump:
                 case MissionState.Torch: return Palette.Warn;
                 default: return Palette.Accent;
@@ -3251,6 +3408,10 @@ namespace Hoodrich.Missions
                     case MissionState.Escape:
                         ink = Palette.Danger;
                         return "WANTED";
+
+                    case MissionState.Deliver:
+                        ink = Palette.Cash;
+                        return "TO HAO";
 
                     case MissionState.Dump:
                         ink = Palette.Warn;

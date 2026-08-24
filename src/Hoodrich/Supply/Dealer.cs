@@ -185,7 +185,21 @@ namespace Hoodrich.Supply
         /// </summary>
         public string Voice = "";
 
-        public bool IsGangDealer => Kind == DealerKind.GangCorner && !string.IsNullOrEmpty(GangId);
+        /// <summary>
+        /// Whether this plug is a GANG's own man.
+        ///
+        /// Answered by whether he belongs to a set, and by nothing else. It used to also
+        /// demand Kind == GangCorner, which quietly locked Gerald out of his own mod: he is
+        /// Docks-kind because that is how he delivers -- a box to your door rather than a
+        /// corner to stand on -- so he was not a "gang dealer" by this test, so the PORT's
+        /// lock caught him, so the man on your own block told you that you do not know anybody
+        /// at the port. Which is true, and has nothing to do with him.
+        ///
+        /// The guard that lock is written with says as much three lines above it: "both
+        /// entries are Docks-kind because both drive a box to your door -- that is what the
+        /// kind means here". The kind is HOW he trades. This is WHO he trades for.
+        /// </summary>
+        public bool IsGangDealer => !string.IsNullOrEmpty(GangId);
 
         public bool IsOpenAt(int hour)
         {

@@ -103,6 +103,8 @@ namespace Hoodrich.Locations
                 QuietenHousehold();
             }
 
+            TickCutHint();
+
             var here = AtDoor;
             if (here == _inside) return;
 
@@ -114,7 +116,46 @@ namespace Hoodrich.Locations
             {
                 Notify.Ticker("~g~You're at the spot.~s~ Open your inventory to move work in or out.");
                 Notify.Ticker("~g~Or text a plug from your contacts~s~ and have it brought here.");
+
+                // The third one comes LATER, on purpose.
+                //
+                // Three tickers fired on the same frame are one block of text, and the eye
+                // reads the first line of a block. Held back until the other two have been and
+                // gone, this one arrives on its own with nothing to compete with -- which is
+                // what it needs, because it is the step everybody misses: weight that has not
+                // been through the kitchen cannot be sold, and nothing else in the house says
+                // so.
+                _sayCutAt = Game.GameTime + CutHintDelayMs;
             }
+            else
+            {
+                _sayCutAt = 0;
+            }
+        }
+
+        /// <summary>When to mention the kitchen, or 0 for not pending.</summary>
+        private int _sayCutAt;
+
+        /// <summary>Long enough for the first two to have cleared the screen.</summary>
+        private const int CutHintDelayMs = 7000;
+
+        /// <summary>
+        /// The queued line about cutting, once the others are out of the way.
+        ///
+        /// Dropped rather than delayed again if you have already left -- a hint about the
+        /// kitchen arriving while you are three streets away is worse than no hint.
+        /// </summary>
+        private void TickCutHint()
+        {
+            if (_sayCutAt == 0) return;
+            if (Game.GameTime < _sayCutAt) return;
+
+            _sayCutAt = 0;
+
+            if (!_inside) return;
+
+            Notify.Ticker("~o~Weight has to be cut before it will sell.~s~ " +
+                          "The kitchen is in here -- take bulk to it and bag it up.");
         }
 
         private void EnsureBlip()
