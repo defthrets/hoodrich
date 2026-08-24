@@ -686,15 +686,26 @@ namespace Hoodrich.Phone
 
             Hud.RectFrom(left, top, w, HeaderH, Fade(Palette.PanelHeader, fade));
 
-            var title = string.IsNullOrEmpty(page.Title) ? "Posted Up" : page.Title;
+            // The home page does NOT repeat its own name.
+            //
+            // The wordmark in the status bar already says POSTED UP, in the mod's own type, on
+            // every page -- so the home screen was printing it twice, once as art and once as
+            // a word, an inch apart. Which set you run with is the fact that actually belongs
+            // there, so on home it gets the big line and the title is dropped. Every other
+            // page keeps its title, because GANGS or CONTACTS under the mark is a breadcrumb
+            // rather than an echo.
+            var title = AtHome ? page.Subtitle : page.Title;
+            var under = AtHome ? "" : page.Subtitle;
+
+            if (string.IsNullOrEmpty(title)) title = AtHome ? "Unaffiliated" : "Posted Up";
 
             Hud.Text(Hud.Fit(title.ToUpperInvariant(), w - pad * 2f, 0.44f, Hud.FontLabel),
-                     left + pad, top + 0.007f, 0.44f,
+                     left + pad, top + (string.IsNullOrEmpty(under) ? 0.016f : 0.007f), 0.44f,
                      Fade(Palette.Text, fade), Hud.FontLabel, centre: false);
 
-            if (!string.IsNullOrEmpty(page.Subtitle))
+            if (!string.IsNullOrEmpty(under))
             {
-                Hud.Text(Hud.Fit(page.Subtitle, w - pad * 2f, 0.25f, Hud.FontBody),
+                Hud.Text(Hud.Fit(under, w - pad * 2f, 0.25f, Hud.FontBody),
                          left + pad, top + 0.032f, 0.25f,
                          Fade(Palette.TextDim, fade), Hud.FontBody, centre: false);
             }

@@ -237,6 +237,10 @@ namespace Hoodrich.Gangs
             var node = Node(def, gang,
                 "Man, again? Aight, aight. Which part you forget.");
 
+            node.Say("What are we doing here?", () => TwoPackages(def, gang),
+                     "The two packages, and where they lead");
+            node.WithIcon(Icons.FromFile("rank.png"));
+
             node.Say("How do I get weight?", () => HowWeight(def, gang),
                      "Where product comes from");
             node.WithIcon(Icons.Money);
@@ -861,6 +865,18 @@ namespace Hoodrich.Gangs
                     "all of it, come back, I break you off a lil somethin'. You eat 'em or you " +
                     "run off with my money, we gon have a whole different conversation.");
 
+                // The WHOLE arc, said once, before it starts.
+                //
+                // Two packages is the gate on everything that comes after -- the set, the
+                // port, the man who sells by the brick -- and it was never stated anywhere.
+                // Somebody who has moved fifteen of twenty bars and been told "take somethin'
+                // off me and move it, twice" cannot tell whether that is a thing they are
+                // partway through or a thing they have not started, because nobody ever told
+                // them there were two of them or where the second one leads.
+                one.Say("How many times we doin' this?", () => TwoPackages(def, gang),
+                        "Ask where this is going");
+                one.WithIcon(Icons.FromFile("rank.png"));
+
                 one.Say("Give it here.", () => TakeWork(def, gang, bars), "Take his bars");
                 one.WithIcon(Icons.ForDrug(bars.Id));
 
@@ -892,6 +908,39 @@ namespace Hoodrich.Gangs
             }
 
             node.Say("Not right now.", () => Root(def));
+            return node;
+        }
+
+        /// <summary>
+        /// Two packages, and what the second one is actually for.
+        ///
+        /// Reachable both before the first bag and from the refresher afterwards, because it
+        /// is the one thing about him a player needs to be holding in their head and the one
+        /// thing the mod never said out loud.
+        /// </summary>
+        private DialogueNode TwoPackages(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Twice. That's it, that's the whole thing. You take a bag off me, you move " +
+                "ALL of it -- not most, all -- and you bring yourself back here. Then I give " +
+                "you a second one and you do it again.");
+
+            node.Say("And then what?", () => TwoPackagesWhy(def, gang));
+            node.Say("Aight.", () => Root(def));
+            node.Leave();
+            return node;
+        }
+
+        private DialogueNode TwoPackagesWhy(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Then you ain't a stranger no more and I put you on to where I get mine. " +
+                "That's the port, dawg, and that's bricks -- proper weight, proper money, " +
+                "the kind you gotta take home and cut yourself. Everything after that is " +
+                "yours. Two bags is just me findin' out if you gon' come back.");
+
+            node.Say("I'll come back.", () => Root(def));
+            node.Leave();
             return node;
         }
 
@@ -1020,7 +1069,9 @@ namespace Hoodrich.Gangs
 
             var node = Node(def, gang,
                 "Aight. You took it, you moved it, you came back. That's three things most " +
-                "people don't do. So we can talk about you bein' one of us now.");
+                "people don't do. So we can talk about you bein' one of us now -- and then " +
+                "you're takin' ONE more bag off me, same as that one, and after that I tell " +
+                "you where it all comes from.");
 
             node.Say("Put me on.", () => AskToJoin(def, gang), "Sign on with " + gang.Name);
             node.WithIcon(Icons.Tick);
