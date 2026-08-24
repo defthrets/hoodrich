@@ -847,7 +847,17 @@ namespace Hoodrich.Gangs
         /// without every man in it selling everything.
         /// </summary>
         private static readonly string[] FirstFront = { "xanax" };
-        private static readonly string[] LaterFronts = { "xanax", "ecstasy" };
+
+        /// <summary>
+        /// The second one, and it is oxys.
+        ///
+        /// One entry, on purpose. It used to be a list you picked from, which is a nice idea
+        /// and the wrong one here: the two packages are a test he sets, and a test you get to
+        /// choose the terms of is not much of a test. Bars the first time and oxys the second
+        /// is also him showing you a bit more of what he actually moves, which is the point of
+        /// there being a second one at all.
+        /// </summary>
+        private static readonly string[] LaterFronts = { "ecstasy" };
 
         private DialogueNode OfferWork(LeaderDef def, GangDef gang)
         {
@@ -914,28 +924,27 @@ namespace Hoodrich.Gangs
                 return one;
             }
 
+            // The second package. Handed over, not chosen from.
+            var oxys = stock[0];
+
             var node = Node(def, gang,
-                "Aight, you been out there once and you came back, so you get to pick this " +
-                "time. Same deal -- " + FrontGrams.ToString("0") + " of whatever you take, " +
-                "bagged and ready same as before, all of it moved, then you see me.");
+                "Aight, you been out there once and you came back. Second one's different -- " +
+                oxys.Amount(FrontGrams) + ", and they don't need nothin' doin' to 'em neither. " +
+                "Straight out the bag same as the bars. All of it gone, then you see me, and " +
+                "after that we talk about where it comes from.");
 
-            foreach (var d in stock)
-            {
-                var pick = d;
+            // Amount() and Singular, not "g" and "a gram".
+            //
+            // Xanax is counted in bars and oxy in pills, so the old line offered the player
+            // "20g of Alprazolam ... about $40 a gram out there" for a product the entire rest
+            // of the mod calls twenty bars at forty dollars a bar. Amount() exists for exactly
+            // this and says so in its own summary; this node was the one place that went round
+            // it.
+            node.Say("Give it here.", () => TakeWork(def, gang, oxys),
+                     oxys.Amount(FrontGrams) + "  ·  about $" +
+                     oxys.BasePrice.ToString("0") + " a " + oxys.Singular + " out there");
 
-                // Amount() and Singular, not "g" and "a gram".
-                //
-                // Xanax is counted in bars and oxy in pills, so the old line offered the
-                // player "20g of Alprazolam ... about $40 a gram out there" for a product the
-                // entire rest of the mod calls twenty bars at forty dollars a bar. Amount()
-                // exists for exactly this and says so in its own summary; this node was the
-                // one place that went round it.
-                node.Say(pick.Name, () => TakeWork(def, gang, pick),
-                         pick.Amount(FrontGrams) + "  ·  about $" +
-                         pick.BasePrice.ToString("0") + " a " + pick.Singular + " out there");
-
-                node.WithIcon(Icons.ForDrug(pick.Id));
-            }
+            node.WithIcon(Icons.ForDrug(oxys.Id));
 
             node.Say("Not right now.", () => Root(def));
             return node;
