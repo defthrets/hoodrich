@@ -1392,6 +1392,8 @@ namespace Hoodrich.Supply
             // walks straight around is not a guard.
             if (Bales() && !_carrying && _box != null && _box.Exists()) _carrying = PlayCarry();
 
+            CentreOnHands();
+
             if (_driver == null || !_driver.Exists() || !_driver.IsAlive)
             {
                 // He is gone but you have paid, so the goods are yours regardless.
@@ -1603,11 +1605,16 @@ namespace Hoodrich.Supply
 
                     if (Bales())
                     {
+                        // A sensible place to stand it while the animation gets going.
+                        // CentreOnHands replaces this with the measured one as soon as his
+                        // hands are actually in the carry.
                         var off = ChestOffset(model, out yaw);
 
                         Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
                                       0, off.X, off.Y, off.Z, 0f, 0f, yaw,
                                       false, false, false, false, 2, true);
+
+                        _centred = false;
                     }
                     else
                     {
@@ -1638,6 +1645,88 @@ namespace Hoodrich.Supply
 
             Log.Debug("No box prop in this install; he will carry it in his hands.");
         }
+
+        private bool _centred;
+
+        /// <summary>
+        /// Puts the crate exactly between his hands, once they are actually holding it.
+        ///
+        /// MEASURED. Every previous go at this was a number somebody picked, and the number
+        /// was wrong three times running because "the middle of both arms" is not a constant
+        /// -- it is wherever the animation happens to put his hands, and that is a thing the
+        /// game will tell you if you ask it.
+        ///
+        /// So both hand bones are read, the point halfway between them is the answer, and it
+        /// is converted into the ped's own space -- where it can be handed straight to an
+        /// attachment. X falls out dead centre because it is the midpoint of a left and a
+        /// right; nothing is tuned to make that true.
+        ///
+        /// Raised by half the crate's own height, because the carry pose has his hands under
+        /// it rather than around it, and the middle of a box sitting on your hands is half a
+        /// box above them.
+        ///
+        /// Deliberately after the animation, and once. Sampled before it, the hands are in
+        /// whatever pose he got out of the car in and the answer is his idle stance rather
+        /// than his carry. Sampled every frame it would fight the animation's own motion, and
+        /// a box that corrects itself continuously reads worse than one held slightly wrong.
+        /// </summary>
+        private void CentreOnHands()
+        {
+            if (_centred || !_carrying) return;
+            if (_box == null || !_box.Exists()) return;
+            if (_driver == null || !_driver.Exists() || !_driver.IsAlive) return;
+
+            try
+            {
+                var left = Function.Call<Vector3>(Hash.GET_PED_BONE_COORDS,
+                                                  _driver.Handle, LeftHand, 0f, 0f, 0f);
+                var right = Function.Call<Vector3>(Hash.GET_PED_BONE_COORDS,
+                                                   _driver.Handle, RightHand, 0f, 0f, 0f);
+
+                // A bone the game will not answer for comes back as the world origin, which is
+                // four kilometres away and would put the crate in the sea.
+                if (left == Vector3.Zero || right == Vector3.Zero) return;
+                if (left.DistanceTo(right) > 1.5f) return;
+
+                var mid = (left + right) * 0.5f;
+
+                var local = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_GIVEN_WORLD_COORDS,
+                                                   _driver.Handle, mid.X, mid.Y, mid.Z);
+
+                var model = _box.Model;
+                var size = Measure(model);
+                var centre = Middle(model);
+
+                var yaw = 0f;
+
+                if (size.Y > size.X * 1.4f)
+                {
+                    yaw = 90f;
+                    centre = new Vector3(-centre.Y, centre.X, centre.Z);
+                    size = new Vector3(size.Y, size.X, size.Z);
+                }
+
+                var sit = new Vector3(local.X, local.Y, local.Z + size.Z * 0.5f) - centre;
+
+                Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
+                              0, sit.X, sit.Y, sit.Z, 0f, 0f, yaw,
+                              false, false, false, false, 2, true);
+
+                _centred = true;
+
+                Log.Info("Crate centred on his hands at " +
+                         sit.X.ToString("0.00") + ", " + sit.Y.ToString("0.00") + ", " +
+                         sit.Z.ToString("0.00") + ".");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not centre the crate: " + ex.Message);
+            }
+        }
+
+        /// <summary>SKEL_L_Hand and SKEL_R_Hand. The hands themselves, not the prop sockets.</summary>
+        private const int LeftHand = 18905;
+        private const int RightHand = 57005;
 
         /// <summary>
         /// The crate, in the middle of his chest, in the PED's own space.
