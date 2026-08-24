@@ -155,9 +155,10 @@ namespace Hoodrich.Supply
                 def.RidePaint = node["ridePaint"].AsInt(def.RidePaint);
                 def.OpeningText = node["openingText"].AsString(def.OpeningText);
                 def.Portrait = node["portrait"].AsString(FaceFor(def.Id));
-                def.TextCalled = node["textCalled"].AsString(def.TextCalled);
-                def.TextLeaving = node["textLeaving"].AsString(def.TextLeaving);
-                def.TextOutside = node["textOutside"].AsString(def.TextOutside);
+                // A string or a list of them, so an old file keeps working unchanged.
+                ReadLines(node["textCalled"], def.CalledLines, ref def.TextCalled);
+                ReadLines(node["textLeaving"], def.LeavingLines, ref def.TextLeaving);
+                ReadLines(node["textOutside"], def.OutsideLines, ref def.TextOutside);
                 def.LotValue = node["lotValue"].AsFloat(def.LotValue);
                 def.LotStep = node["lotStep"].AsFloat(def.LotStep);
                 def.PriceFloor = (int)node["priceFloor"].AsFloat(def.PriceFloor);
@@ -405,6 +406,35 @@ namespace Hoodrich.Supply
             // permanently loitering on your block; being on somebody's turf is a reason for
             // THEM to be somewhere, not a reason for a stranger to appear next to you.
             return null;
+        }
+
+        /// <summary>
+        /// Reads a message field that may be one line or several.
+        ///
+        /// A bare string fills the singular field and nothing else, which is exactly what a
+        /// dealer with one thing to say should do. An array fills the pool, and the first entry
+        /// also lands in the singular field so anything still reading that gets something
+        /// sensible rather than an empty string.
+        /// </summary>
+        private static void ReadLines(Json node, List<string> pool, ref string single)
+        {
+            if (node == null) return;
+
+            if (node.Kind == JsonKind.Array)
+            {
+                pool.Clear();
+
+                foreach (var item in node.Items)
+                {
+                    var line = item.AsString("");
+                    if (!string.IsNullOrEmpty(line)) pool.Add(line);
+                }
+
+                if (pool.Count > 0) single = pool[0];
+                return;
+            }
+
+            single = node.AsString(single);
         }
 
         private static bool ZoneMatches(List<string> zones, string zoneCode)

@@ -45,9 +45,25 @@
       "sourceTooSoon": "",
       "farewell": "Go on. Go. And dont come back in daylight if youre carryin, thats. thats just manners.",
       "openingText": "my friend. my FRIEND. you did that for gerald so now you do it for you. say where you are and what you want and i drive it to you myself. bricks only tho. dont ask me for grams, thats. thats insulting",
-      "textCalled": "yeah yeah im comin. give me a. give me a minute",
-      "textLeaving": "leaving now. dont go anywhere. im leaving NOW",
-      "textOutside": "im outside. im outside your. im here. come out",
+      "textCalled": [
+        "yeah yeah im comin. give me a. give me a minute",
+        "ok ok ok. loading now. do not call me again while im loading",
+        "on the road. dont text me im driving. why are you reading this",
+        "yes. YES. i heard you the first time my friend",
+        "im coming. the traffic is not my fault. remember that later"
+      ],
+      "textLeaving": [
+        "leaving now. dont go anywhere. im leaving NOW",
+        "pulling out. be where you said you would be",
+        "in the van. moving. stay by the phone",
+        "on my way to you. keep it quiet out there"
+      ],
+      "textOutside": [
+        "im outside. im outside your. im here. come out",
+        "here. come out. i am not carrying this in",
+        "outside. flashing the lights. can you see me",
+        "im here my friend. come and take it please"
+      ],
       "lotValue": 60000,
       "lotStep": 500,
       "drunk": true,
@@ -94,9 +110,25 @@
       "sourceTooSoon": "Not yet. Keep workin'.",
       "farewell": "Aight. And next time, have somethin' worth callin' me about.",
       "openingText": "heard you workin now. weed, pills, bars -- thats what i move. dont ask me for bricks, thats a different conversation",
-      "textCalled": "on my way. and im timin it",
-      "textLeaving": "leavin now. be outside when i get there. i dont wait on nobody",
-      "textOutside": "im outside. come out. clock's runnin",
+      "textCalled": [
+        "on my way. and im timin it",
+        "aight. movin. dont have me sittin there",
+        "comin. be ready, i ain't parkin up all day",
+        "yeah. give me a minute. one minute",
+        "on it. this better not be a wasted trip"
+      ],
+      "textLeaving": [
+        "leavin now. be outside when i get there. i dont wait on nobody",
+        "rollin. be at the door",
+        "on the road. dont make me knock",
+        "movin now. two minutes"
+      ],
+      "textOutside": [
+        "im outside. come out. clock's runnin",
+        "here. come get it",
+        "outside. now, cuz",
+        "im at the door. dont leave me stood here"
+      ],
       "lotValue": 240,
       "lotStep": 5,
       "drunk": false,

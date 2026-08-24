@@ -81,9 +81,52 @@ namespace Hoodrich.Supply
         /// couriers and means the third one ever added inherits Gerald's personality by
         /// default. These are the neutral versions; the data overrides them per man.
         /// </summary>
+        /// <summary>
+        /// What he texts back, and there is more than one of each.
+        ///
+        /// One line per moment meant the same eleven words every time you rang him, which
+        /// turns a person into a vending machine with a voice -- the second delivery reads
+        /// exactly like the first and by the fourth you have stopped looking at the phone. The
+        /// json takes a string or a list of them; a string is just a list of one.
+        ///
+        /// The singular fields below are the fallback for a dealer that names nothing.
+        /// </summary>
+        public readonly List<string> CalledLines = new List<string>();
+        public readonly List<string> LeavingLines = new List<string>();
+        public readonly List<string> OutsideLines = new List<string>();
+
         public string TextCalled = "on my way. give me a minute";
         public string TextLeaving = "leaving now";
         public string TextOutside = "im outside";
+
+        private int _lastCalled = -1;
+        private int _lastLeaving = -1;
+        private int _lastOutside = -1;
+
+        private static readonly Random Roll = new Random();
+
+        /// <summary>
+        /// One line out of a pool, never the same one twice running.
+        ///
+        /// Remembering the last index rather than shuffling, because a pool of three that is
+        /// allowed to repeat says the same thing twice about a third of the time -- which is
+        /// most of the way back to having one line.
+        /// </summary>
+        private static string Pick(List<string> pool, string fallback, ref int last)
+        {
+            if (pool == null || pool.Count == 0) return fallback;
+            if (pool.Count == 1) return pool[0];
+
+            int i;
+            do { i = Roll.Next(pool.Count); } while (i == last);
+
+            last = i;
+            return pool[i];
+        }
+
+        public string SayCalled() { return Pick(CalledLines, TextCalled, ref _lastCalled); }
+        public string SayLeaving() { return Pick(LeavingLines, TextLeaving, ref _lastLeaving); }
+        public string SayOutside() { return Pick(OutsideLines, TextOutside, ref _lastOutside); }
 
         /// <summary>
         /// Roughly what one lot off him is worth, before his own multiplier, and the weight it

@@ -710,7 +710,7 @@ namespace Hoodrich.Supply
                         // From HIM, with his face on it. You have just phoned a contact; a
                         // grey ticker saying he says give him a minute is the mod relaying a
                         // message he is perfectly capable of sending himself.
-                        Notify.Text(Portrait, _def.Name, "Los Santos", _def.TextCalled);
+                        Notify.Text(Portrait, _def.Name, "Los Santos", _def.SayCalled());
                     }
 
                     if (Game.GameTime - _stateSince >= CallMs + SettingOffMs) Dispatch(player);
@@ -823,7 +823,7 @@ namespace Hoodrich.Supply
                 _stateSince = Game.GameTime;
                 _stillSince = 0;
 
-                Notify.Text(Portrait, _def.Name, "Los Santos", _def.TextLeaving, true);
+                Notify.Text(Portrait, _def.Name, "Los Santos", _def.SayLeaving(), true);
                 Log.Info("Delivery dispatched from " + start + ".");
             }
             catch (Exception ex)
@@ -1183,7 +1183,7 @@ namespace Hoodrich.Supply
                 Log.Debug("Delivery driver could not get out: " + ex.Message);
             }
 
-            Notify.Text(Portrait, _def.Name, "Los Santos", _def.TextOutside, true);
+            Notify.Text(Portrait, _def.Name, "Los Santos", _def.SayOutside(), true);
         }
 
         /// <summary>How long he is given to park himself before he is simply put on the mark.</summary>
@@ -1585,7 +1585,11 @@ namespace Hoodrich.Supply
                                   off.X, off.Y, off.Z, 0f, 0f, yaw,
                                   false, false, false, false, 2, true);
 
-                    _carrying = PlayCarry();
+                    // The carry animation is the PORT's. Gerald brings twenty grams to a door
+                    // in one hand, and a man cradling a flat package in both arms like a crate
+                    // of stock reads as somebody miming. It stays stuck to his hand and he
+                    // walks up the path normally.
+                    _carrying = Bales() && PlayCarry();
                     return;
                 }
                 catch
@@ -1739,6 +1743,17 @@ namespace Hoodrich.Supply
         /// rather than replacing it -- which is the other half of why he has to be given the
         /// walk task first and this second.
         /// </summary>
+        /// <summary>
+        /// Whether this delivery is big enough to be carried with both arms.
+        ///
+        /// The same question the box list asks: the port brings a bale off a boat and
+        /// everybody else brings a package. Only the bale is worth an animation.
+        /// </summary>
+        private bool Bales()
+        {
+            return _def != null && _def.Kind == DealerKind.Docks && !_def.IsGangDealer;
+        }
+
         private bool PlayCarry()
         {
             if (_driver == null || !_driver.Exists() || !_driver.IsAlive) return false;
