@@ -485,6 +485,35 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _ped.Handle, true, true);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _ped.Handle, true);
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _ped.Handle, false);
+
+                    // HE IS ONE OF THEM, and this was the only spawn in the mod that never
+                    // said so.
+                    //
+                    // Every other ped this mod puts on the street is given its set's
+                    // relationship group. He was not, so he kept whatever his model defaults
+                    // to -- which is nobody -- and the whole gang system simply did not
+                    // include him. That is invisible while nothing is happening and obvious
+                    // the moment something is: a raid on his own yard sets the Families to
+                    // hate whoever turned up, he is not a Family, and so the men defending
+                    // his spot and the man whose spot it is opened fire on each other.
+                    //
+                    // Not targetable and invincible were already on him, but neither of those
+                    // is about relationships. They stop the player locking on and stop a
+                    // stray round killing him; they have nothing to say about who an NPC
+                    // decides is an enemy.
+                    var fam = _crew == null ? null : _crew.GangById("families");
+
+                    if (fam != null && fam.GroupHash != 0)
+                    {
+                        Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, _ped.Handle,
+                                      fam.GroupHash);
+                    }
+
+                    // And he does not answer a friendly bullet. Four men with rifles defending
+                    // a yard he is stood in the middle of will clip him eventually, and one
+                    // stray round should not turn the man giving out the work into a target
+                    // for everybody holding a gun for him.
+                    Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, _ped.Handle, false, false);
                     Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _ped.Handle,
                                   "WORLD_HUMAN_STAND_MOBILE", 0, true);
 

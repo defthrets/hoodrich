@@ -1256,6 +1256,14 @@ namespace Hoodrich
 
                 // And named when you have walked up to somebody instead, so the same screen
                 // quotes the same man's prices either way.
+                // So a dealer stood on a corner during a raid is on the same side as the men
+                // defending it. See DealerManager.GroupFor.
+                _dealers.GroupFor = id =>
+                {
+                    var gang = _gangs == null ? null : _gangs.Get(id);
+                    return gang == null ? 0 : gang.GroupHash;
+                };
+
                 _dealers.Talk = _talk;
                 _dealers.TalkBuilder = def =>
                 {

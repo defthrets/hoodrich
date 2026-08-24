@@ -29,6 +29,15 @@ namespace Hoodrich.Supply
         private const float TalkRange = 3.2f;
         private const int UpdateIntervalMs = 750;
 
+        /// <summary>
+        /// Which relationship group a gang id belongs to, asked of whoever knows.
+        ///
+        /// A hook rather than a reference to the registry, because this class has never needed
+        /// to know what a gang IS and should not start now -- it needs one number about one of
+        /// them, once, at spawn.
+        /// </summary>
+        public Func<string, int> GroupFor;
+
         private readonly List<DealerDef> _defs = new List<DealerDef>();
         private readonly Random _rng = new Random();
         private Settings _cfg;
@@ -782,6 +791,34 @@ namespace Hoodrich.Supply
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
+
+                // A man selling for a set is IN that set, and this never said so.
+                //
+                // The same fault as the one that had Lamar and his own men shooting each other
+                // in his yard: a ped with no relationship group is in nobody's, so when a raid
+                // sets the Families to hate whoever turned up, the Families man stood on the
+                // corner is not covered by it. Gerald's corner is one of the three places a
+                // raid musters, so this one was waiting to happen in the same way.
+                //
+                // Only gang dealers. The man at the port sells to everybody and belongs to
+                // none of them, which is the whole reason you can buy off him.
+                if (def.IsGangDealer && GroupFor != null)
+                {
+                    try
+                    {
+                        var group = GroupFor(def.GangId);
+
+                        if (group != 0)
+                        {
+                            Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, h, group);
+                            Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, h, false, false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Debug("Could not put " + def.Id + " in his set: " + ex.Message);
+                    }
+                }
                 Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, h, "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
 
                 _livePed.IsPersistent = true;
