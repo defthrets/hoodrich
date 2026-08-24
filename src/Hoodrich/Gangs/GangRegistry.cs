@@ -20,6 +20,20 @@ namespace Hoodrich.Gangs
         private readonly Dictionary<int, GangDef> _byGroupHash = new Dictionary<int, GangDef>();
         private readonly Dictionary<string, GangDef> _byZone = new Dictionary<string, GangDef>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// The OTHER gang on a block that two of them claim.
+        ///
+        /// A second claim used to be a warning and a discard -- "keeping ballas" -- which made
+        /// a contested block impossible to express at all. Some of them genuinely are: Davis
+        /// has Grove Street running through it, and a map that paints the whole of it purple
+        /// is telling you something the streets do not agree with.
+        ///
+        /// Two is the limit on purpose. A block held by three sets is a block with no holder,
+        /// and everything downstream -- who spots you, who comes, whose colour the notice is
+        /// -- is a question with one answer or two, never a list.
+        /// </summary>
+        private readonly Dictionary<string, GangDef> _contested = new Dictionary<string, GangDef>(StringComparer.OrdinalIgnoreCase);
+
         public IReadOnlyList<GangDef> All => _ordered;
 
         public GangDef Get(string id)
@@ -39,6 +53,19 @@ namespace Hoodrich.Gangs
         {
             if (string.IsNullOrEmpty(zoneCode)) return null;
             return _byZone.TryGetValue(zoneCode, out var g) ? g : null;
+        }
+
+        /// <summary>The second set on a contested block, or null where only one holds it.</summary>
+        public GangDef ContenderForZone(string zoneCode)
+        {
+            if (string.IsNullOrEmpty(zoneCode)) return null;
+            return _contested.TryGetValue(zoneCode, out var g) ? g : null;
+        }
+
+        /// <summary>Whether a block is held by two sets rather than one.</summary>
+        public bool IsContested(string zoneCode)
+        {
+            return ContenderForZone(zoneCode) != null;
         }
 
         public static GangRegistry Load()
@@ -152,6 +179,7 @@ namespace Hoodrich.Gangs
         {
             _byGroupHash.Clear();
             _byZone.Clear();
+            _contested.Clear();
 
             foreach (var g in _ordered)
             {
@@ -162,8 +190,17 @@ namespace Hoodrich.Gangs
                     if (string.IsNullOrEmpty(zone)) continue;
                     if (_byZone.TryGetValue(zone, out var other))
                     {
-                        Log.Warn("Zone '" + zone + "' claimed by both " + other.Id + " and " + g.Id +
-                                 "; keeping " + other.Id + ".");
+                        // The second claimant is CONTENDER, not an error. A third would be,
+                        // and is still dropped.
+                        if (_contested.ContainsKey(zone))
+                        {
+                            Log.Warn("Zone '" + zone + "' claimed by a third gang (" + g.Id +
+                                     "); keeping " + other.Id + " and " + _contested[zone].Id + ".");
+                            continue;
+                        }
+
+                        _contested[zone] = g;
+                        Log.Info("Zone '" + zone + "' is contested: " + other.Id + " and " + g.Id + ".");
                         continue;
                     }
                     _byZone[zone] = g;

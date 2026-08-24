@@ -89,6 +89,20 @@ namespace Hoodrich.Gangs
                      "Ask what they move");
             node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
 
+            // The one man who will explain the whole thing again, on demand, forever.
+            //
+            // Everything he says here is said once at the start, when there is a lot of it and
+            // none of it has happened to you yet -- so half of it does not stick, and a mod
+            // whose answer to that is "read the welcome screen you already closed" is a mod
+            // that expects you to take notes. He is the tutorial voice; being able to ask him
+            // twice is the least he can do.
+            if (FrontsWork(def))
+            {
+                node.Say("Run it by me again.", () => Refresher(def, gang),
+                         "Have him explain how all of it works");
+                node.WithIcon(Icons.FromFile("reply.png"));
+            }
+
             // The sets that will never have you sell to anybody. The one that WOULD have you
             // does not sell to strangers -- he fronts them work and watches what they do with
             // it, which is the entire opening of this mod and is also simply how it goes: a man
@@ -197,6 +211,113 @@ namespace Hoodrich.Gangs
                 " You walk them blocks wearing the wrong thing, that's on you.");
 
             node.Say("Back up.", () => Root(def));
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>
+        /// The whole business, explained again, in his voice and by its actual parts.
+        ///
+        /// A hub rather than one long speech: the panel wraps by width and does not honour
+        /// line breaks, so a five-paragraph answer is a wall. Each part is a page, each page
+        /// names the thing you actually press, and every one of them comes back here -- so
+        /// somebody who only wanted to know about cutting gets that and gets out.
+        /// </summary>
+        private DialogueNode Refresher(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Man, again? Aight, aight. Which part you forget.");
+
+            node.Say("How do I get weight?", () => HowWeight(def, gang),
+                     "Where product comes from");
+            node.WithIcon(Icons.Money);
+
+            node.Say("What do I do with it?", () => HowCut(def, gang),
+                     "Cutting it, and why");
+            node.WithIcon(Icons.FromFile("scales.png"));
+
+            node.Say("How do I sell it?", () => HowSell(def, gang),
+                     "Posting up on a corner");
+            node.WithIcon(Icons.FromFile("deal.png"));
+
+            node.Say("Where do I keep it?", () => HowStash(def, gang),
+                     "Pockets, the house, and deliveries");
+            node.WithIcon(Icons.Stash);
+
+            node.Say("What gets me caught?", () => HowHeat(def, gang),
+                     "Police, and other people's blocks");
+            node.WithIcon(Icons.Warning);
+
+            node.Say("I got it.", () => Root(def));
+            node.Leave();
+            return node;
+        }
+
+        private DialogueNode HowWeight(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Three ways. I front you a bag when you broke -- that's me takin' a risk on " +
+                "you, and you bring me back what it's worth. Or you buy weight off me proper, " +
+                "off your phone, Contacts. Or once you movin' real numbers you text the man at " +
+                "the port and he sell you BRICKS, which is a whole different conversation and a " +
+                "whole different pile of money.");
+
+            node.Say("What else?", () => Refresher(def, gang));
+            node.Leave();
+            return node;
+        }
+
+        private DialogueNode HowCut(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Weight ain't product. You can't stand on no corner with a brick, dawg. You " +
+                "take it to the kitchen at the house and you step on it -- and that's where " +
+                "the money actually is, 'cause a hundred grams cut to half strength is two " +
+                "hundred grams to sell. Step on it too hard though and people hand it back, " +
+                "and a refusal ain't one lost sale. The block remembers.");
+
+            node.Say("What else?", () => Refresher(def, gang));
+            node.Leave();
+            return node;
+        }
+
+        private DialogueNode HowSell(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Phone, Dealing, post up. You ain't pickin' customers -- you pickin' a SPOT, " +
+                "and the spot decide everything. Busy pavement move product fast and get you " +
+                "clocked fast. Dead alley don't do neither. Stand there long enough and " +
+                "somebody call it in, so you take your money and you walk before it get to " +
+                "that.");
+
+            node.Say("What else?", () => Refresher(def, gang));
+            node.Leave();
+            return node;
+        }
+
+        private DialogueNode HowStash(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "What's on you is what you can sell and what you can lose. What's at the house " +
+                "is safe and it's the only place a delivery can land -- text a plug while you " +
+                "stood at the spot and it come to you there. Move it between the two out your " +
+                "Inventory. And don't be walkin' round holdin' everything you own.");
+
+            node.Say("What else?", () => Refresher(def, gang));
+            node.Leave();
+            return node;
+        }
+
+        private DialogueNode HowHeat(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Two different problems. Police is heat -- stand on one corner too long and " +
+                "they come and search you, and if you holdin' they take it. Other people's " +
+                "blocks is worse, 'cause they ain't gonna search you. Look at the notice when " +
+                "you cross into somewhere: it tell you whose it is by the colour before you " +
+                "even read it.");
+
+            node.Say("What else?", () => Refresher(def, gang));
             node.Leave();
             return node;
         }

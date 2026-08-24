@@ -70,9 +70,11 @@
       ],
       "turf": [
         "CHAMH",
-        "STRAW"
+        "STRAW",
+        "DAVIS"
       ],
-      "turfHint": "Chamberlain Hills and Strawberry",
+      "_turf": "DAVIS is claimed by the Ballas as well, and that is deliberate -- a zone named by two gangs is CONTESTED rather than an error. Grove Street runs through Davis, so painting the whole block purple states something the streets do not agree with. The registry keeps the first claimant as holder and the second as contender; a third would still be dropped.",
+      "turfHint": "Chamberlain Hills, Strawberry, and half of Davis",
       "joinRespect": 0,
       "joinable": true,
       "paint": 49
@@ -102,7 +104,7 @@
         "DAVIS",
         "STAD"
       ],
-      "turfHint": "Davis, Grove Street and the blocks by the arena",
+      "turfHint": "Davis -- shared with the Families -- and the blocks by the arena",
       "joinRespect": 0,
       "paint": 145
     },

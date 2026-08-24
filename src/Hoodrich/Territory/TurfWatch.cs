@@ -202,6 +202,46 @@ namespace Hoodrich.Territory
             return _affiliation.Beefing(owner.Id) ? TurfStatus.Hostile : TurfStatus.Foreign;
         }
 
+        /// <summary>
+        /// The block's name in the colour of whoever holds it -- or in BOTH, split down the
+        /// middle, where two sets do.
+        ///
+        /// Davis is the case this exists for. Grove Street runs through it, so painting the
+        /// whole word purple states something the streets do not agree with; half green and
+        /// half purple says what is actually true about the place before you have read the
+        /// word. Split on a space where there is one, so "Rancho Heights" breaks between the
+        /// words rather than through one.
+        /// </summary>
+        private string Painted()
+        {
+            var name = ZoneName;
+
+            var other = _gangs.ContenderForZone(_zoneCode);
+            if (other == null || _owner == null)
+            {
+                return (_owner == null ? "" : _owner.TextTag) + name + "~s~";
+            }
+
+            var cut = name.Length / 2;
+
+            var space = name.LastIndexOf(' ', Math.Min(cut, name.Length - 1));
+            if (space > 0) cut = space;
+
+            return _owner.TextTag + name.Substring(0, cut) +
+                   other.TextTag + name.Substring(cut) + "~s~";
+        }
+
+        /// <summary>Who holds it, in words, for the tail of the notice.</summary>
+        private string Held()
+        {
+            var other = _gangs.ContenderForZone(_zoneCode);
+
+            if (_owner == null) return "nobody's";
+            if (other == null) return _owner.Name + " turf";
+
+            return _owner.Name + " and " + other.Name + " -- split down the middle";
+        }
+
         private void AnnounceZone()
         {
             if (!_affiliation.IsAffiliated) return;
@@ -209,13 +249,16 @@ namespace Hoodrich.Territory
             switch (_status)
             {
                 case TurfStatus.Home:
-                    Notify.Ticker("~g~" + ZoneName + "~s~ -- your block");
+                    // Contested even when it is yours: half of Davis being yours is the point.
+                    Notify.Ticker(_gangs.IsContested(_zoneCode)
+                        ? Painted() + " -- half of it yours"
+                        : "~g~" + ZoneName + "~s~ -- your block");
                     break;
                 case TurfStatus.Hostile:
                     // Their colour, not a blanket red. Driving into Davis and driving into
                     // Rancho are two different facts and the notice should look like it: the
                     // purple one means Ballas before you have read the word.
-                    Notify.Important(_owner.TextTag + ZoneName + "~s~ -- " + _owner.Name + " turf");
+                    Notify.Important(Painted() + " -- " + Held());
                     break;
             }
         }
