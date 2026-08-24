@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Control = GTA.Control;
 using GTA;
@@ -1660,7 +1660,20 @@ namespace Hoodrich.Supply
                          size.Z.ToString("0.00") + ", yaw " + yaw.ToString("0") +
                          ", reach " + reach.ToString("0.000") + ".");
 
-                return At(reach) - centre;
+                // And ACROSS, into the middle of both hands.
+                //
+                // The prop hangs off the LEFT hand bone, which is the only hand there is a
+                // bone for -- but the animation is both arms out cradling something, so the
+                // left hand is at one END of what he is holding, not under the middle of it.
+                // Placing the prop's centre on that bone put the whole box out past his left
+                // arm with his right hand closed on nothing.
+                //
+                // Half its own width is where the middle of it belongs, which is a measurement
+                // rather than a number: a wider box needs shifting further, by exactly the
+                // amount it is wider.
+                var across = Math.Max(size.X, size.Y) * 0.5f;
+
+                return At(reach, across) - centre;
             }
             catch (Exception ex)
             {
@@ -1682,9 +1695,9 @@ namespace Hoodrich.Supply
         /// point of measuring -- the number means something now, and a different prop with a
         /// different pivot lands in the same spot instead of sinking into his hip.
         /// </summary>
-        private static Vector3 At(float reach)
+        private static Vector3 At(float reach, float across = 0f)
         {
-            return new Vector3(0.05f, 0.10f, -reach);
+            return new Vector3(0.05f + across, 0.10f, -reach);
         }
 
         /// <summary>
