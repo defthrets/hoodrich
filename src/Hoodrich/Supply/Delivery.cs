@@ -1384,7 +1384,13 @@ namespace Hoodrich.Supply
         {
             // Kept asking until the dictionary lands. It is normally in by the time he is out
             // of the car, and on a cold start it is a stride or two.
-            if (!_carrying && _box != null && _box.Exists()) _carrying = PlayCarry();
+            //
+            // GATED, and this is why Gerald kept cradling a package in both arms after the
+            // gate was added. The gate was on the first attempt only; this retry asked the
+            // same question a tick later without it, found _carrying false -- which it always
+            // is for him, by design -- and started the animation anyway. A guard that a retry
+            // walks straight around is not a guard.
+            if (Bales() && !_carrying && _box != null && _box.Exists()) _carrying = PlayCarry();
 
             if (_driver == null || !_driver.Exists() || !_driver.IsAlive)
             {
@@ -1575,15 +1581,47 @@ namespace Hoodrich.Supply
 
                     if (_box == null || !_box.Exists()) continue;
 
-                    // Held out in front with both hands, on the left hand bone, which is where
-                    // the carry animation puts a crate.
+                    // TWO DIFFERENT ATTACHMENTS, because they are two different pictures.
+                    //
+                    // A man cradling a crate in both arms holds it in the middle of his chest,
+                    // and a man walking a package to a door holds it at his side. The first
+                    // has nothing to do with either hand -- it is centred on HIM -- and trying
+                    // to express that as an offset from the left hand bone is what has had
+                    // this box hanging off the outside of an arm through three attempts to
+                    // move it.
+                    //
+                    // The reason it kept failing is worth stating: a bone's local axes are not
+                    // written down anywhere, are not implied by its name, and change with the
+                    // pose. Every fix was a guess at which way was inwards. The PED's own axes
+                    // are not a guess -- X is his right, Y is his front, Z is up -- so the
+                    // carry attaches to the ped rather than to a hand, and X of zero is dead
+                    // centre between his arms by construction rather than by tuning.
+                    //
+                    // The cost is that it no longer tracks his hands frame by frame. For a man
+                    // walking twenty feet up a path holding a box still, that is not a cost.
                     float yaw;
-                    var off = CarryOffset(model, out yaw);
 
-                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
-                                  Function.Call<int>(Hash.GET_PED_BONE_INDEX, _driver.Handle, 60309),
-                                  off.X, off.Y, off.Z, 0f, 0f, yaw,
-                                  false, false, false, false, 2, true);
+                    if (Bales())
+                    {
+                        var off = ChestOffset(model, out yaw);
+
+                        Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
+                                      0, off.X, off.Y, off.Z, 0f, 0f, yaw,
+                                      false, false, false, false, 2, true);
+                    }
+                    else
+                    {
+                        // In his hand, so it swings with his arm -- and centred ON the bone
+                        // rather than pushed off it. The push existed for the crate, where the
+                        // hand is at one END of what is being held. A package in one fist has
+                        // its middle in that fist.
+                        var off = HandOffset(model, out yaw);
+
+                        Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
+                                      Function.Call<int>(Hash.GET_PED_BONE_INDEX, _driver.Handle, 60309),
+                                      off.X, off.Y, off.Z, 0f, 0f, yaw,
+                                      false, false, false, false, 2, true);
+                    }
 
                     // The carry animation is the PORT's. Gerald brings twenty grams to a door
                     // in one hand, and a man cradling a flat package in both arms like a crate
@@ -1602,126 +1640,118 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>
-        /// Where to hang a prop off the hand bone, worked out from the prop.
+        /// The crate, in the middle of his chest, in the PED's own space.
         ///
-        /// A single hardcoded offset cannot serve a list like the one above, because the props
-        /// do not agree on where their own origin is. prop_drug_package_02 is base-pivoted --
-        /// its mesh sits entirely ABOVE the origin -- while prop_drug_package is centre-pivoted
-        /// and straddles it. An offset tuned against one of those makes the other float or sink
-        /// by half its own height, which is most of what "glued to his hip" looked like.
+        /// X is his right, Y is his front, Z is up from the ground he is stood on -- documented
+        /// axes rather than a bone's, which is the entire point of attaching here. Dead centre
+        /// is X of zero and nothing else.
         ///
-        /// So the mesh's own middle is measured and cancelled out, and what is left is one
-        /// number for where a carried thing belongs relative to the hand. Swap the prop list
-        /// again and this still holds.
-        ///
-        /// The dimensions go in the log, because the push-away-from-the-chest below is the one
-        /// part that is a judgement rather than arithmetic, and a line saying exactly how big
-        /// the winning prop turned out to be is what makes tuning it one edit instead of five.
+        /// Forward and height come from the prop: a deeper box has to sit further out or it is
+        /// inside his ribs, and the middle of it belongs at the height his forearms are, which
+        /// for a standing adult ped is a bit over a metre off his own origin.
         /// </summary>
-        private static Vector3 CarryOffset(Model model, out float yaw)
+        private static Vector3 ChestOffset(Model model, out float yaw)
         {
             yaw = 0f;
 
+            var size = Measure(model);
+            var centre = Middle(model);
+
+            if (size.Length() < 0.01f) return new Vector3(0f, ChestOut, ChestUp);
+
+            // A long prop lies ACROSS him, or it points out of his chest like a plank.
+            if (size.Y > size.X * 1.4f)
+            {
+                yaw = 90f;
+                centre = new Vector3(-centre.Y, centre.X, centre.Z);
+                size = new Vector3(size.Y, size.X, size.Z);
+            }
+
+            // Half its depth clear of him, so a deep box does not eat his chest.
+            var out_ = ChestOut + size.Y * 0.5f;
+
+            Log.Info("Carry crate " + model.Hash + ": " +
+                     size.X.ToString("0.00") + " x " + size.Y.ToString("0.00") + " x " +
+                     size.Z.ToString("0.00") + ", yaw " + yaw.ToString("0") +
+                     ", out " + out_.ToString("0.00") + ".");
+
+            return new Vector3(0f, out_, ChestUp) - centre;
+        }
+
+        /// <summary>
+        /// How far in front of him the near face of a carried crate sits, and how high up.
+        ///
+        /// Both are about a standing adult rather than about any particular prop, which is why
+        /// they are constants here and the prop's own size is added on top.
+        /// </summary>
+        private const float ChestOut = 0.26f;
+        private const float ChestUp = 1.02f;
+
+        /// <summary>
+        /// A package in one hand, centred on the hand bone.
+        ///
+        /// No sideways push. That existed for the crate, where the left hand is at one END of
+        /// what is being held and the middle of it is half a box-width further in -- and it is
+        /// the reason a package Gerald carries in one fist ended up floating outside his arm.
+        /// A thing held IN a hand has its middle in that hand, and the only correction it needs
+        /// is for the model's own pivot.
+        /// </summary>
+        private static Vector3 HandOffset(Model model, out float yaw)
+        {
+            yaw = 0f;
+
+            var size = Measure(model);
+            var centre = Middle(model);
+
+            if (size.Length() < 0.01f) return Vector3.Zero;
+
+            if (size.Y > size.X * 1.4f)
+            {
+                yaw = 90f;
+                centre = new Vector3(-centre.Y, centre.X, centre.Z);
+            }
+
+            return -centre;
+        }
+
+        /// <summary>How big a model is, in its own space. Zero if it cannot be read.</summary>
+        private static Vector3 Measure(Model model)
+        {
             try
             {
                 var lo = new OutputArgument();
                 var hi = new OutputArgument();
                 Function.Call(Hash.GET_MODEL_DIMENSIONS, model.Hash, lo, hi);
 
-                var min = lo.GetResult<Vector3>();
-                var max = hi.GetResult<Vector3>();
-                var size = max - min;
-
-                if (size.Length() < 0.01f) return At(SmallestReach);
-
-                var centre = (min + max) * 0.5f;
-
-                // A long prop lies ACROSS him. Left at zero rotation a metre-long bale points
-                // straight out from his hip like a plank, because its long axis is local Y.
-                if (size.Y > size.X * 1.4f)
-                {
-                    yaw = 90f;
-                    centre = new Vector3(-centre.Y, centre.X, centre.Z);
-                }
-
-                // How far out in front the middle of it sits, from how big it is.
-                //
-                // This was one tuned number, and it could only ever be right for one prop. The
-                // file had already recorded both ends of the problem in prose: a quarter-metre
-                // package sat right at 0.155, and a metre-wide bale sat right at 0.26. Those
-                // are two points on a line, and the line through them is this -- so it returns
-                // the old value for the old package, the old value for the bale, and something
-                // sensible in between for a box, which is what he is carrying now.
-                var longest = Math.Max(size.X, size.Y);
-                var reach = Math.Min(WidestReach, ReachBase + ReachPerMetre * longest);
-
-                Log.Info("Carry prop " + model.Hash + ": " +
-                         size.X.ToString("0.00") + " x " + size.Y.ToString("0.00") + " x " +
-                         size.Z.ToString("0.00") + ", yaw " + yaw.ToString("0") +
-                         ", reach " + reach.ToString("0.000") + ".");
-
-                // And ACROSS, into the middle of both hands.
-                //
-                // The prop hangs off the LEFT hand bone, which is the only hand there is a
-                // bone for -- but the animation is both arms out cradling something, so the
-                // left hand is at one END of what he is holding, not under the middle of it.
-                // Placing the prop's centre on that bone put the whole box out past his left
-                // arm with his right hand closed on nothing.
-                //
-                // Half its own width is where the middle of it belongs, which is a measurement
-                // rather than a number: a wider box needs shifting further, by exactly the
-                // amount it is wider.
-                var across = Math.Max(size.X, size.Y) * 0.5f;
-
-                return At(reach, across) - centre;
+                return hi.GetResult<Vector3>() - lo.GetResult<Vector3>();
             }
-            catch (Exception ex)
+            catch
             {
-                Log.Debug("Could not measure the box: " + ex.Message);
-                return At(SmallestReach);
+                return Vector3.Zero;
             }
         }
 
         /// <summary>
-        /// Where the MIDDLE of whatever he is carrying sits, relative to the hand bone.
+        /// Where a model's middle sits relative to its own origin.
         ///
-        /// Back to the small package's own distance. It was pushed out to 0.26 for a bale a
-        /// metre wide, and at that reach a six-centimetre package floats in front of him with
-        /// daylight between it and his hands.
-        ///
-        /// This is the ORIGINAL pose expressed as a centre rather than as an origin: the old
-        /// hardcoded offset put the package's origin at -0.18, and that mesh sits entirely
-        /// above its origin with its middle 0.025 up, so -0.155 is the same place. Which is the
-        /// point of measuring -- the number means something now, and a different prop with a
-        /// different pivot lands in the same spot instead of sinking into his hip.
+        /// Subtracted from every placement, and it is what stops a prop pivoted at its base and
+        /// a prop pivoted through its middle needing two different sets of numbers.
         /// </summary>
-        private static Vector3 At(float reach, float across = 0f)
+        private static Vector3 Middle(Model model)
         {
-            // MINUS across, not plus.
-            //
-            // Local X on the hand bone points AWAY from the body, so adding the shift walked
-            // the package further out past the outside of his left hand -- the opposite of
-            // what it was for. The direction is not something the dumps say and it is not
-            // something that can be read off a bone name; it took putting it in the game and
-            // looking at which way it went.
-            return new Vector3(0.05f - across, 0.10f, -reach);
-        }
+            try
+            {
+                var lo = new OutputArgument();
+                var hi = new OutputArgument();
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, model.Hash, lo, hi);
 
-        /// <summary>
-        /// The line through the two reaches this file had already found by hand.
-        ///
-        /// 0.155 was where the small package looked right and 0.26 was where the metre bale
-        /// looked right; both were written down here as prose and one of them was live at any
-        /// time. Fitting a line to them costs nothing, reproduces both exactly, and means the
-        /// next prop swap is a name in the list above rather than another round of tuning.
-        ///
-        /// Capped at the bale's reach, because past a metre he is not carrying it in his hands
-        /// any more and pushing it further just makes it float.
-        /// </summary>
-        private const float ReachBase = 0.120f;
-        private const float ReachPerMetre = 0.140f;
-        private const float WidestReach = 0.260f;
-        private const float SmallestReach = 0.155f;
+                return (lo.GetResult<Vector3>() + hi.GetResult<Vector3>()) * 0.5f;
+            }
+            catch
+            {
+                return Vector3.Zero;
+            }
+        }
 
         /// <summary>Whether the carry clip has actually been put on him yet.</summary>
         private bool _carrying;
