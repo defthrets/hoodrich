@@ -116,6 +116,7 @@ namespace Hoodrich.Gangs
                 g.BlipColour = node["blipColour"].AsInt(g.BlipColour);
                 g.Paint = node["paint"].AsInt(g.Paint);
                 g.TurfHint = node["turfHint"].AsString(g.TurfHint);
+                g.Starter = node["starter"].AsString(g.Starter);
                 g.JoinRespect = Math.Max(0f, node["joinRespect"].AsFloat(g.JoinRespect));
                 g.Joinable = node["joinable"].AsBool(g.Joinable);
 

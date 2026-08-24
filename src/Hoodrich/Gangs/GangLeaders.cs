@@ -1262,7 +1262,14 @@ namespace Hoodrich.Gangs
         {
             if (catalogue == null || gang.Drugs.Count == 0) return;
 
-            var product = catalogue.Get(gang.Drugs[0]);
+            // The set's STARTER, which is not the same as the first thing on its list.
+            //
+            // Families lead with weed because that is what the block is known for, and the man
+            // who actually hands you your first bag deals pills. Taking Drugs[0] meant signing
+            // on with Gerald and being handed marijuana by Gerald, who does not sell it.
+            var product = catalogue.Get(gang.Starter.Length > 0 ? gang.Starter : gang.Drugs[0])
+                          ?? catalogue.Get(gang.Drugs[0]);
+
             if (product == null) return;
 
             // Fronted at three quarters, not untouched.
@@ -1282,7 +1289,9 @@ namespace Hoodrich.Gangs
             }
 
             _state.Touch();
-            Notify.Important("~g~" + given.ToString("0") + "g of " + product.Name.ToLowerInvariant() +
+            // Amount(), not grams. Bars and pills are counted; the catalogue carries a
+            // singular for exactly this and every other line in the mod uses it.
+            Notify.Important("~g~" + product.Amount(given) +
                              " fronted to you.~s~ Post up and move it.");
             Log.Info("Fronted " + given.ToString("0.#") + "g " + product.Id + " on joining " + gang.Id + ".");
         }

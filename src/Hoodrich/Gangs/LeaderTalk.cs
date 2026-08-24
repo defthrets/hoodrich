@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using Hoodrich.Core;
@@ -927,11 +927,14 @@ namespace Hoodrich.Gangs
             // The second package. Handed over, not chosen from.
             var oxys = stock[0];
 
+            // He NAMES it. "Twenty pills" is what they are counted in and not what they are:
+            // he is handing you oxycodone and the whole point of a second package is that it is
+            // a different product from the first, which a generic word erases.
             var node = Node(def, gang,
                 "Aight, you been out there once and you came back. Second one's different -- " +
-                oxys.Amount(FrontGrams) + ", and they don't need nothin' doin' to 'em neither. " +
-                "Straight out the bag same as the bars. All of it gone, then you see me, and " +
-                "after that we talk about where it comes from.");
+                FrontGrams.ToString("0") + " oxys. Oxycodone, straight out the bag, they don't " +
+                "need nothin' doin' to 'em same as the bars. All of it gone, then you see me, " +
+                "and after that we talk about where it comes from.");
 
             // Amount() and Singular, not "g" and "a gram".
             //
@@ -941,7 +944,7 @@ namespace Hoodrich.Gangs
             // this and says so in its own summary; this node was the one place that went round
             // it.
             node.Say("Give it here.", () => TakeWork(def, gang, oxys),
-                     oxys.Amount(FrontGrams) + "  ·  about $" +
+                     FrontGrams.ToString("0") + " " + oxys.Name.ToLowerInvariant() + "  ·  about $" +
                      oxys.BasePrice.ToString("0") + " a " + oxys.Singular + " out there");
 
             node.WithIcon(Icons.ForDrug(oxys.Id));

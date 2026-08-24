@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -140,6 +140,18 @@ namespace Hoodrich.Gangs
 
         /// <summary>Human-readable turf description for the gang panel.</summary>
         public string TurfHint = "";
+
+        /// <summary>
+        /// What a newcomer is handed on signing, when it is not just the first drug listed.
+        ///
+        /// A set's drug list is what it is KNOWN for, in the order somebody would say it. What
+        /// the man who signs you up actually puts in your hand is a different question, and for
+        /// the Families it has a different answer -- they are the weed on the block and Gerald
+        /// deals pills, so signing on with him and being handed marijuana BY him read as the
+        /// mod not knowing who he was. Empty falls back to the first drug, which is right for
+        /// every other set.
+        /// </summary>
+        public string Starter = "";
 
         /// <summary>Player respect needed before this gang will take you on.</summary>
         public float JoinRespect;

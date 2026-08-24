@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Native;
@@ -135,6 +135,9 @@ namespace Hoodrich.Territory
 
         public void Update()
         {
+            // Marks time out on their own, whether or not anything else this tick runs.
+            SweepMarks();
+
             var now = Game.GameTime;
             if (now - _lastScan < ScanIntervalMs) return;
             _lastScan = now;
@@ -288,7 +291,8 @@ namespace Hoodrich.Territory
             var chance = 1f - (float)Math.Pow(1f - NeutralShakedownChance * HeatScale(), nearby.Count);
             if (_rng.NextDouble() > chance) return;
 
-            Engage(nearby, player, "~o~Someone wants what you're holding.~s~");
+            Engage(nearby, player,
+                   "~o~Somebody's coming to take what you're carrying.~s~ He's on your map");
         }
 
         /// <summary>Heat makes you conspicuous; it scales every spotting roll.</summary>
@@ -329,6 +333,57 @@ namespace Hoodrich.Territory
             return found;
         }
 
+        /// <summary>How long a mark stays on somebody who has come for you.</summary>
+        private const int MarkMs = 25000;
+
+        private readonly List<Blip> _marks = new List<Blip>();
+        private readonly List<int> _markUntil = new List<int>();
+
+        /// <summary>
+        /// Puts a blip on somebody who is coming for you.
+        ///
+        /// "Someone wants what you're holding" with nothing on the map is a sentence about a
+        /// man you cannot find, and not knowing what it meant was the whole complaint. A mark
+        /// on him turns it into something happening in a direction.
+        ///
+        /// It times out rather than living as long as he does, because a red dot that outlives
+        /// the moment is clutter on the minimap.
+        /// </summary>
+        private void Mark(Ped ped)
+        {
+            try
+            {
+                var blip = ped.AddBlip();
+                if (blip == null || !blip.Exists()) return;
+
+                blip.Color = BlipColor.Red;
+                blip.Scale = 0.7f;
+                blip.Name = "Coming for you";
+
+                _marks.Add(blip);
+                _markUntil.Add(Game.GameTime + MarkMs);
+            }
+            catch
+            {
+                // A blip is a nicety; the man is still walking over.
+            }
+        }
+
+        /// <summary>Drops the marks once they have said what they were there to say.</summary>
+        private void SweepMarks()
+        {
+            for (var i = _marks.Count - 1; i >= 0; i--)
+            {
+                if (Game.GameTime < _markUntil[i] && _marks[i] != null && _marks[i].Exists()) continue;
+
+                try { if (_marks[i] != null && _marks[i].Exists()) _marks[i].Delete(); }
+                catch { /* teardown */ }
+
+                _marks.RemoveAt(i);
+                _markUntil.RemoveAt(i);
+            }
+        }
+
         private void Engage(List<Ped> crew, Ped player, string message)
         {
             var sent = 0;
@@ -343,8 +398,21 @@ namespace Hoodrich.Territory
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true); // always fight
                     // 46 is BF_CanFightArmedPedsWhenNotArmed, NOT BF_AlwaysFight. That is 5.
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 0, false); // no cover camping
+
+                    // He commits, and he comes forward.
+                    //
+                    // Without these he is a man who has been told to fight and is still free to
+                    // answer anything else that happens -- a siren, an argument down the road,
+                    // his own schedule -- so the notice fired and then nothing visible followed.
+                    // Movement 2 is advance, which is what somebody walking up to you for what
+                    // you are carrying actually does.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
+                    Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, ped.Handle, 2);
+
                     Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, player.Handle, 0, 16);
                     Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+
+                    Mark(ped);
                     sent++;
                 }
                 catch (Exception ex)

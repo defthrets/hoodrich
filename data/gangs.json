@@ -76,7 +76,8 @@
       "turfHint": "Chamberlain Hills and Strawberry",
       "joinRespect": 0,
       "joinable": true,
-      "paint": 49
+      "paint": 49,
+      "starter": "xanax"
     },
     {
       "id": "ballas",
