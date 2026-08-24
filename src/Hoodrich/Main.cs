@@ -347,6 +347,9 @@ namespace Hoodrich
         private readonly Fixture _armourerStockA;
         private readonly Fixture _armourerStockB;
         private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
+
+        /// <summary>Franklin's and Denise's front doors, held open. See HouseDoors.</summary>
+        private readonly HouseDoors _houseDoors = new HouseDoors();
         private readonly BlockLife _block;
         private readonly Rollers _rollers;
         private readonly Patrol _patrol;
@@ -1770,6 +1773,10 @@ namespace Hoodrich
 
             _postUp.Prune();
             _turf.Prune();
+
+            // The sink is inside Denise's house and cutting is not optional, so a door the
+            // story locked is the middle of the loop gone. See HouseDoors.
+            _houseDoors.Update();
 
             // Contact pictures pulled in early, so the first text of a session has a face on it
             // rather than losing the race with its own texture request. Stops asking once they
