@@ -474,8 +474,14 @@ namespace Hoodrich.Missions
                         var list = def.Kind == MissionKind.Hit ? HitWeapons : HomieWeapons;
                         var weapon = list[_rng.Next(list.Length)];
 
-                        Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
-                                      Function.Call<uint>(Hash.GET_HASH_KEY, weapon), 250, false, true);
+                        var hash = Function.Call<uint>(Hash.GET_HASH_KEY, weapon);
+
+                        Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle, hash, 250, false, true);
+                        Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle, hash, true);
+
+                        // Written down, because the give is not the last time it matters.
+                        // See Holding.
+                        _kit[ped.Handle] = hash;
                     }
 
                     var blip = ped.AddBlip();
@@ -1447,7 +1453,11 @@ namespace Hoodrich.Missions
 
             for (var seat = -1; seat < many; seat++)
             {
-                if (Function.Call<int>(Hash.GET_PED_IN_VEHICLE_SEAT, ride.Handle, seat) == man.Handle)
+                // Three arguments, not two. The third is whether a man currently WALKING to
+                // this seat counts as being in it, and leaving it off means the answer came
+                // back off whatever happened to be on the stack -- so which seat a man was
+                // judged to be in could change between two passes for no reason at all.
+                if (Function.Call<int>(Hash.GET_PED_IN_VEHICLE_SEAT, ride.Handle, seat, false) == man.Handle)
                 {
                     return seat;
                 }
@@ -1466,7 +1476,7 @@ namespace Hoodrich.Missions
         {
             int his;
             if (_seats.TryGetValue(man.Handle, out his) && his >= 0 &&
-                Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, his))
+                Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, his, false))
             {
                 return his;
             }
@@ -1475,7 +1485,7 @@ namespace Hoodrich.Missions
 
             for (var seat = 0; seat < many; seat++)
             {
-                if (Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, seat)) return seat;
+                if (Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, seat, false)) return seat;
             }
 
             return NoSeat;
@@ -1610,7 +1620,7 @@ namespace Hoodrich.Missions
                     var aim = ride.Position + ride.RightVector * 12f + ride.ForwardVector * 4f;
 
                     Function.Call(Hash.TASK_DRIVE_BY, homie.Handle, 0, 0,
-                                  aim.X, aim.Y, aim.Z, DriveByRange, DriveByAccuracy,
+                                  aim.X, aim.Y, aim.Z, DriveByRange, HoldingFrequency,
                                   true, FullAuto);
 
                     _aimingAtNothing.Add(homie.Handle);
@@ -1810,7 +1820,16 @@ namespace Hoodrich.Missions
                     // off, and Rockstar sets both on the peds it needs to stay sat down and
                     // behave. Handed back in ClearTheCar and in Clear, so a man who has finished
                     // the job is not walking round for the rest of the session unable to flinch.
-                    if (FromTheCar)
+                    // And only for the men actually sat in it.
+                    //
+                    // Gating this on FromTheCar alone was too coarse and would have been its
+                    // own bug report: two of the three cars this job can roll are two-seaters,
+                    // so on half the pool most of the crew never get a seat and fight the whole
+                    // thing on foot -- and Shoot already handles that, it puts them on
+                    // TASK_COMBAT_PED instead. Blocking THEIR ragdoll leaves men standing in
+                    // the road who cannot be knocked down by gunfire, which is a stranger sight
+                    // than the one being fixed.
+                    if (FromTheCar && homie.IsInVehicle())
                     {
                         Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 106, true);
                         Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 107, true);
@@ -2176,14 +2195,57 @@ namespace Hoodrich.Missions
         /// version. Which one depends on the job AND on where he actually is, because a man
         /// who never made it into the car cannot do a drive-by and would simply stand there.
         /// </summary>
+        /// <summary>Which gun each man was handed at the kerb.</summary>
+        private readonly Dictionary<int, uint> _kit = new Dictionary<int, uint>();
+
+        /// <summary>
+        /// Puts the gun he was given back in his hands.
+        ///
+        /// THIS IS WHY THEY DROVE PAST WAVING. TASK_DRIVE_BY fires whatever the ped currently
+        /// has equipped and nothing else -- it does not go and find him a weapon -- so a man
+        /// with empty hands leans out of the window, aims at the right person, and does nothing
+        /// at all for the whole street. It fails silently: no log line, and nothing on screen
+        /// to tell it apart from bad aim.
+        ///
+        /// This mod has already learned that twice. PostUp.ArmForDriveBy and
+        /// Payback.ArmForDriveBy both pair the give with SET_CURRENT_PED_WEAPON, and both carry
+        /// a comment saying what happens when you do not, in almost the same words. The mission
+        /// crew was the one place handed a gun and never told to hold it -- and it is worse
+        /// here than anywhere else, because they are armed standing at the muster point and
+        /// then walk to the car and climb into it, which is a lot of opportunity to arrive
+        /// empty-handed.
+        ///
+        /// Asked before it is set, so this is not a re-equip on a loop. Forcing a weapon into
+        /// somebody's hands every seven hundred milliseconds would interrupt the lean-and-aim
+        /// it exists to enable, which is the same mistake one step further along.
+        /// </summary>
+        private void Holding(Ped homie)
+        {
+            uint want;
+            if (!_kit.TryGetValue(homie.Handle, out want) || want == 0) return;
+
+            try
+            {
+                if (Function.Call<uint>(Hash.GET_SELECTED_PED_WEAPON, homie.Handle) == want) return;
+
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, homie.Handle, want, true);
+            }
+            catch
+            {
+                // He gets asked again on the next pass.
+            }
+        }
+
         private void Shoot(Ped homie, Ped foe)
         {
             var mounted = FromTheCar && homie.IsInVehicle();
 
             if (mounted)
             {
+                Holding(homie);
+
                 Function.Call(Hash.TASK_DRIVE_BY, homie.Handle, foe.Handle, 0,
-                              0f, 0f, 0f, DriveByRange, DriveByAccuracy, true, FullAuto);
+                              0f, 0f, 0f, DriveByRange, DriveByFrequency, true, FullAuto);
                 return;
             }
 
@@ -2194,13 +2256,29 @@ namespace Hoodrich.Missions
         private const float DriveByRange = 45f;
 
         /// <summary>
-        /// Not marksmen. They are hanging out of a moving car.
+        /// How often he pulls the trigger, as a percentage. NOT accuracy.
         ///
-        /// The point of the job is that a whole street hears it, not that four men die, so
-        /// spraying a block and hitting some of it is the correct result rather than a
-        /// shortcoming.
+        /// This is TASK_DRIVE_BY's FrequencyPercentage argument, and the name it used to have
+        /// here was wrong about what it does. How WELL they shoot is SET_PED_ACCURACY, set
+        /// separately at thirty when the crew is put together; what this was doing was telling
+        /// three men hanging out of a moving car to shoot two times in five.
+        ///
+        /// A hundred, which is what both of the drive-bys in this mod that already work pass.
+        /// They are not marksmen and are not meant to be -- the point of the job is that a
+        /// whole street hears it, so spraying a block and hitting some of it is the result
+        /// being asked for rather than a shortcoming.
         /// </summary>
-        private const int DriveByAccuracy = 40;
+        private const int DriveByFrequency = 100;
+
+        /// <summary>
+        /// And the holding aim stays quiet.
+        ///
+        /// It shares the task but not the point of it: it exists to keep a man leaning out of
+        /// the window instead of reaching for the door when there is nobody to shoot at, and it
+        /// is pointed at a patch of road off the flank. At the same frequency as the real thing
+        /// he would empty a magazine into a wall for as long as the street stayed empty.
+        /// </summary>
+        private const int HoldingFrequency = 8;
 
         private static readonly uint FullAuto = 0xC6EE6B4C;
 
@@ -3215,6 +3293,7 @@ namespace Hoodrich.Missions
             _aimingAtNothing.Clear();
             _wasOn.Clear();
             _lastTornOff.Clear();
+            _kit.Clear();
 
             _keeper = false;
             ClearBayBlip();
