@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -24,7 +24,16 @@ namespace Hoodrich.Territory
         Coming,
 
         /// <summary>Stood over you, taking what you are carrying.</summary>
-        Searching
+        Searching,
+
+        /// <summary>
+        /// Pulled over because you gave them the finger.
+        ///
+        /// Not a stop and not a search -- they cannot do you for it and both of you know it.
+        /// They put the light on you, chirp the siren, say something through the loudspeaker
+        /// and drive off, which is exactly the amount of nothing that actually happens.
+        /// </summary>
+        Told
     }
 
     /// <summary>One car and the two in it.</summary>
@@ -44,6 +53,9 @@ namespace Hoodrich.Territory
         public int LookedAt;
         public int Nudges;
         public int BornAt;
+
+        /// <summary>When they have had enough and pull away again.</summary>
+        public int ToldUntil;
 
         /// <summary>When the next line over the loudspeaker and the next siren chirp are due.</summary>
         public int NextBark;
@@ -160,6 +172,76 @@ namespace Hoodrich.Territory
             "SURROUNDED", "COP_HELI_MEGAPHONE", "GENERIC_INSULT_MED"
         };
 
+        /// <summary>
+        /// What comes out of the loudspeaker when you flip them off.
+        ///
+        /// Their own voices through the PA rather than lines of ours, on the same
+        /// SPEECH_PARAMS_FORCE_MEGAPHONE the searches already use -- so it arrives sounding
+        /// like it came out of the car instead of out of a man stood next to it.
+        /// </summary>
+        private static readonly string[] Insults =
+        {
+            "GENERIC_INSULT_HIGH", "GENERIC_INSULT_MED", "GENERIC_CURSE_HIGH",
+            "GENERIC_CURSE_MED", "COP_ARREST_PLAYER"
+        };
+
+        /// <summary>Close enough to be worth doing, and close enough for them to see it.</summary>
+        private const float FingerRange = 25f;
+
+        /// <summary>How long they sit there making the point before pulling away.</summary>
+        private const int ToldMs = 7000;
+
+        /// <summary>Camera ease on and off the car, either side of the hold.</summary>
+        private const int HintEase = 900;
+
+        /// <summary>
+        /// The gesture. Checked against the game's own animation data, not guessed.
+        ///
+        /// It is the one from Online, which is the only place the base game keeps it -- there
+        /// is no single-player clip of a man doing this to anybody.
+        ///
+        /// Three clips, not one, because that is how the dictionary is built: the arm goes up,
+        /// it stays up, it comes down. Playing the middle one on its own is the pose appearing
+        /// on him between two frames, which reads as a glitch rather than a gesture.
+        /// </summary>
+        private const string FingerDict = "anim@mp_player_intupperfinger";
+        private const string FingerUp = "enter";
+        private const string FingerHold = "idle_a";
+        private const string FingerDown = "exit";
+
+        /// <summary>How long the arm takes to get there, and how long it stays.</summary>
+        private const int UpMs = 700;
+        private const int HoldMs = 1500;
+
+        /// <summary>Past this the gesture is abandoned rather than resumed.</summary>
+        private const int Stale = 4000;
+
+        /// <summary>
+        /// How long before ANY car can be told again.
+        ///
+        /// Deliberately one clock for the lot rather than one per car: it is a gesture, and a
+        /// man stood on a corner working his way down a line of squad cars is a button being
+        /// spammed. Longer than a stop lasts, so it also guarantees the previous car has
+        /// finished and pulled away before another one can be started.
+        /// </summary>
+        private const int FingerCooldownMs = 11000;
+
+        private int _lastFinger;
+        private bool _fingerHeld;
+
+        /// <summary>Which of the three clips he is on, and when the next one is due.</summary>
+        private int _handStage;
+        private int _handDue;
+
+        /// <summary>
+        /// Whether something else on screen owns the button right now.
+        ///
+        /// Right on the d-pad is the mod's talk-to-somebody button everywhere else, so a cop
+        /// car rolling past a man stood in front of Gerald must not turn "talk to Gerald" into
+        /// a gesture at the police. Set by Main, which is the only thing that knows what is up.
+        /// </summary>
+        public Func<bool> Occupied;
+
         /// <summary>Which sets get driven past. Everybody else's blocks are not our business.</summary>
         private static readonly string[] Watched = { "families", "ballas", "vagos" };
 
@@ -254,6 +336,7 @@ namespace Hoodrich.Territory
             {
                 case PatrolPhase.Searching: return Search(car, now, player);
                 case PatrolPhase.Coming: return Coming(car, now, player);
+                case PatrolPhase.Told: return Told(car, now);
             }
 
             // A gun in your hand, on a street they are on, in sight of them. Checked before
@@ -530,16 +613,237 @@ namespace Hoodrich.Territory
 
         private void Bark(Ped who)
         {
-            if (!Alive(who)) return;
+            Bark(who, Barks);
+        }
+
+        private void Bark(Ped who, string[] pool)
+        {
+            if (!Alive(who) || pool == null || pool.Length == 0) return;
 
             try
             {
                 Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, who.Handle,
-                              Barks[_rng.Next(Barks.Length)], "SPEECH_PARAMS_FORCE_MEGAPHONE");
+                              pool[_rng.Next(pool.Length)], "SPEECH_PARAMS_FORCE_MEGAPHONE");
             }
             catch
             {
                 // A line his voice has not got costs nothing.
+            }
+        }
+
+        /// <summary>
+        /// Sitting there making their point, then leaving.
+        ///
+        /// Nothing happens to you, and that is the joke. There is nothing they can do a man for
+        /// over a hand, so what they CAN do is stop, put the light on him, make a noise and say
+        /// something -- and then they have to drive off again. That is the whole exchange, and
+        /// dressing it up as anything more (a search, a wanted level, a chase) would be the mod
+        /// deciding the gesture was a crime, which is the opposite of the point.
+        /// </summary>
+        private bool Told(Cruiser car, int now)
+        {
+            if (now < car.ToldUntil) return false;
+
+            // Enough said. Back on the round.
+            car.Phase = PatrolPhase.Rolling;
+            car.Nudges = 0;
+
+            // Released explicitly rather than left to expire. The halt and the ToldMs above are
+            // two clocks for the same thing, and a car whose halt outlives its phase by even a
+            // few frames is a car sat still with somewhere to be.
+            try { Function.Call(Hash.STOP_BRINGING_VEHICLE_TO_HALT, car.Car.Handle); }
+            catch { /* it lapses on its own */ }
+
+            StopWatching();
+            Aim(car, now);
+            return false;
+        }
+
+        /// <summary>
+        /// Whether this car can be given the finger right now.
+        ///
+        /// Rolling or sitting only. A car already coming for you, or already stood over you
+        /// going through your pockets, is having a different conversation -- interrupting it
+        /// with this would replace a phase that is in the middle of something.
+        /// </summary>
+        private static bool CanBeTold(Cruiser car)
+        {
+            return car.Phase == PatrolPhase.Rolling || car.Phase == PatrolPhase.Sitting;
+        }
+
+        /// <summary>
+        /// The gesture, and everything it sets off.
+        ///
+        /// Franklin does NOT whistle here. A whistle is how you ask a taxi for something, and
+        /// this is the opposite of asking -- so it is the finger, upper body, played over
+        /// whatever he happens to be stood doing.
+        /// </summary>
+        private void GiveThemThe(Cruiser car, Ped player, int now)
+        {
+            _lastFinger = now;
+
+            car.Phase = PatrolPhase.Told;
+            car.ToldUntil = now + ToldMs;
+
+            // Halted where they are rather than tasked to park somewhere. They have pulled up
+            // to have a word, not to attend anything.
+            try
+            {
+                Function.Call(Hash.BRING_VEHICLE_TO_HALT, car.Car.Handle, 6f, ToldMs, false);
+            }
+            catch
+            {
+                // They will roll to a stop on their own.
+            }
+
+            Hand(player);
+
+            // The light already swings to whatever a non-rolling car is looking at, so leaving
+            // Rolling aims it at him for free -- see Draw. The noise and the voice are not free.
+            Chirp(car);
+            Bark(Talker(car), Insults);
+
+            Watch(car.Car);
+
+            Log.Info("Flipped off a patrol car.");
+        }
+
+        /// <summary>Starts the arm going up.</summary>
+        private void Hand(Ped player)
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, FingerDict))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, FingerDict);
+                }
+            }
+            catch
+            {
+                // It will be there by the time it is asked for again.
+            }
+
+            Clip(player, FingerUp, 48);
+
+            _handStage = 1;
+            _handDue = Game.GameTime + UpMs;
+        }
+
+        /// <summary>
+        /// Walks him through the three clips.
+        ///
+        /// Driven from Draw rather than from the tick for the obvious reason and one less
+        /// obvious one: the tick is 700ms, so a stage boundary could land anywhere inside it
+        /// and the arm would visibly hang at the top of the raise waiting to be told to hold.
+        ///
+        /// Stages are stepped rather than queued because a second TASK_PLAY_ANIM does not go
+        /// behind the first, it replaces it -- issuing all three at once plays the third.
+        /// </summary>
+        private void HandTick(Ped player)
+        {
+            if (_handStage == 0) return;
+
+            var now = Game.GameTime;
+
+            // Draw stops being called when patrols switch off, which can happen mid-gesture --
+            // a job starts, a wanted level lands. The clip ends on its own duration either way,
+            // so the arm comes down regardless; what must not happen is the leftover stage
+            // firing an "exit" at him out of nowhere minutes later.
+            if (now - _handDue > Stale) { _handStage = 0; _handDue = 0; return; }
+
+            if (now < _handDue) return;
+
+            switch (_handStage)
+            {
+                case 1:
+                    // Held, looping, for as long as he is making the point.
+                    Clip(player, FingerHold, 49, HoldMs);
+                    _handStage = 2;
+                    _handDue = now + HoldMs;
+                    return;
+
+                case 2:
+                    Clip(player, FingerDown, 48);
+                    _handStage = 3;
+                    _handDue = now + UpMs;
+                    return;
+            }
+
+            _handStage = 0;
+            _handDue = 0;
+        }
+
+        /// <summary>
+        /// One clip, upper body, over whatever he is already doing.
+        ///
+        /// Upper body and secondary so his legs stay his own: he can keep walking through the
+        /// whole thing, and being able to walk away mid-gesture is the correct way to do this
+        /// to a police car.
+        /// </summary>
+        private static void Clip(Ped player, string clip, int flags, int ms = -1)
+        {
+            try
+            {
+                Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, FingerDict, clip,
+                              8f, -8f, ms, flags, 0f, false, false, false);
+            }
+            catch
+            {
+                // He meant it anyway.
+            }
+        }
+
+        /// <summary>Whoever is in the car to do the talking.</summary>
+        private static Ped Talker(Cruiser car)
+        {
+            if (Alive(car.Driver)) return car.Driver;
+
+            if (car.Crew != null)
+            {
+                foreach (var cop in car.Crew)
+                {
+                    if (Alive(cop)) return cop;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Points the camera at them, the way the game does when a taxi pulls up.
+        ///
+        /// A gameplay HINT rather than a camera of our own: it borrows the player's camera,
+        /// eases onto the entity, holds it, and hands it back -- without ever taking control
+        /// away. Anything hand-rolled would be a cutscene, and this is not one; you can walk
+        /// off in the middle of it, which you should be able to.
+        /// </summary>
+        private static void Watch(Vehicle car)
+        {
+            if (car == null || !car.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.SET_GAMEPLAY_ENTITY_HINT, car.Handle,
+                              0f, 0f, 0.5f, true, ToldMs - HintEase, HintEase, HintEase, 0);
+            }
+            catch
+            {
+                // The light is enough on its own.
+            }
+        }
+
+        private static void StopWatching()
+        {
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_GAMEPLAY_HINT_ACTIVE))
+                {
+                    Function.Call(Hash.STOP_GAMEPLAY_HINT, false);
+                }
+            }
+            catch
+            {
+                // It times out on its own.
             }
         }
 
@@ -576,6 +880,9 @@ namespace Hoodrich.Territory
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
+            HandTick(player);
+            Offer(player);
+
             foreach (var car in _out)
             {
                 if (car.Car == null || !car.Car.Exists()) continue;
@@ -611,6 +918,81 @@ namespace Hoodrich.Territory
                 {
                     // No light this frame.
                 }
+            }
+        }
+
+        /// <summary>
+        /// The prompt, and the press.
+        ///
+        /// Read every frame rather than on the tick, because a button offered nine frames out
+        /// of ten is a button that does not work -- the tick is 700ms and a tap is not.
+        /// </summary>
+        private void Offer(Ped player)
+        {
+            // Read on EVERY path, not just the ones that get as far as offering. The edge is
+            // "down now, up last frame", so a frame that skips the read entirely leaves a stale
+            // "up" behind -- and a button held down through a menu fires the moment the menu
+            // closes, which is not a press anybody made.
+            var down = Down();
+            var pressed = down && !_fingerHeld;
+            _fingerHeld = down;
+
+            if (player.IsInVehicle()) return;
+            if (Game.Player.Wanted.WantedLevel > 0) return;
+            if (Occupied != null && Occupied()) return;
+            if (Core.InputGuard.Busy) return;
+
+            var now = Game.GameTime;
+            if (now - _lastFinger < FingerCooldownMs) return;
+
+            var near = Closest(player);
+            if (near == null) return;
+
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to let them know how you feel.");
+
+            if (pressed) GiveThemThe(near, player, now);
+        }
+
+        /// <summary>The nearest car that could be told, if any is close enough.</summary>
+        private Cruiser Closest(Ped player)
+        {
+            Cruiser near = null;
+            var nearest = FingerRange;
+
+            foreach (var car in _out)
+            {
+                if (car.Car == null || !car.Car.Exists()) continue;
+                if (!CanBeTold(car)) continue;
+                if (!Alive(car.Driver)) continue;
+
+                var away = car.Car.Position.DistanceTo(player.Position);
+                if (away > nearest) continue;
+
+                nearest = away;
+                near = car;
+            }
+
+            return near;
+        }
+
+        /// <summary>
+        /// Right on the d-pad.
+        ///
+        /// Deliberately NOT the Context button the other prompts also accept. Context is a
+        /// crowded key and a stray press of it near a police car should not be this.
+        /// </summary>
+        private static bool Down()
+        {
+            try
+            {
+                return Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Right);
+            }
+            catch
+            {
+                // An unreadable control is simply not pressed.
+                return false;
             }
         }
 
@@ -946,6 +1328,11 @@ namespace Hoodrich.Territory
 
         private void Release(Cruiser car)
         {
+            // A car let go of mid-word takes the camera with it otherwise: the hint outlives
+            // the thing it was pointed at, and the player spends the rest of it looking at an
+            // empty stretch of road.
+            if (car.Phase == PatrolPhase.Told) StopWatching();
+
             try
             {
                 foreach (var cop in car.Crew)
@@ -959,6 +1346,7 @@ namespace Hoodrich.Territory
                 if (car.Car != null && car.Car.Exists())
                 {
                     Function.Call(Hash.SET_VEHICLE_SIREN, car.Car.Handle, false);
+                    Function.Call(Hash.STOP_BRINGING_VEHICLE_TO_HALT, car.Car.Handle);
 
                     car.Car.IsPersistent = false;
                     car.Car.MarkAsNoLongerNeeded();

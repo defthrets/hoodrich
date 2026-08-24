@@ -1071,6 +1071,17 @@ namespace Hoodrich
                                      || (_war != null && _war.IsRunning)
                                      || (_payback != null && _payback.IsRunning)
                                      || Game.Player.Wanted.WantedLevel > 0;
+
+                // Right on the d-pad is the talk-to-somebody button everywhere in the mod, so
+                // the gesture must not be offered while anything else already owns it -- a
+                // squad car rolling past while you are stood in front of Gerald would otherwise
+                // turn "talk to Gerald" into a hand at the police.
+                _patrol.Occupied = () => _phone.IsOpen || _talk.IsOpen || _info.IsOpen
+                                         || _cook.IsOpen || _socialScreen.IsOpen
+                                         || _stashScreen.IsOpen || _pocketScreen.IsOpen
+                                         || _settingsScreen.IsOpen || _gunScreen.IsOpen
+                                         || _carScreen.IsOpen;
+
                 _copWatch.Social = _social;
 
                 // So the set that turns up because of something you posted can answer it on
