@@ -129,10 +129,7 @@ namespace Hoodrich.Gangs
                 // same conversation for a reason: the first package is how he decides whether
                 // to have you, and the second is how he decides whether to put you on to the
                 // people he buys from. He does not have a different way of testing somebody.
-                var afterJoining = _crew.IsAffiliated && mine && !_state.DocksUnlocked
-                                   && _state.PortRunStage == PortRun.StageNone;
-
-                if (FrontsWork(def) && (!_crew.IsAffiliated || afterJoining))
+                if (FrontsWork(def) && (!_crew.IsAffiliated || (mine && AfterJoining())))
                 {
                     if (settled)
                     {
@@ -754,7 +751,12 @@ namespace Hoodrich.Gangs
 
             // Stretch, and only Stretch. He is the one who put you on in the first place, so
             // he is the one you can go back to with nothing in your pockets.
-            if (FrontsWork(def) && _state.MissionsDone.Count > 0)
+            // The trial rows above own the finished-package conversation whenever they are
+            // showing. This block is the same man saying the same thing a second time, and two
+            // rows for one event is how the count got lost in the first place.
+            var trialHasIt = FrontsWork(def) && (!_crew.IsAffiliated || AfterJoining());
+
+            if (FrontsWork(def) && _state.MissionsDone.Count > 0 && !trialHasIt)
             {
                 if (_state.FrontedWorkDone)
                 {
@@ -803,6 +805,18 @@ namespace Hoodrich.Gangs
         /// them fronts you work; if a second gang's leader should ever start doing it, that is
         /// a decision somebody makes here rather than something that happens by itself.
         /// </summary>
+        /// <summary>
+        /// Signed on with him, but he has not put you on to the port yet.
+        ///
+        /// The window the second package lives in. One definition, because two rows read it and
+        /// they must agree about which of them owns the conversation.
+        /// </summary>
+        private bool AfterJoining()
+        {
+            return _crew.IsAffiliated && !_state.DocksUnlocked
+                   && _state.PortRunStage == PortRun.StageNone;
+        }
+
         private static bool FrontsWork(LeaderDef def)
         {
             return def != null &&
@@ -1039,15 +1053,17 @@ namespace Hoodrich.Gangs
         /// </summary>
         private DialogueNode Squared(LeaderDef def, GangDef gang)
         {
-            _state.ClearFronted();
+            Settle(def, 0);
+            return Cleared(def, gang);
+        }
 
-            // The one that decides whether he ever asks you what you want to carry.
-            _state.FrontsDone++;
-
-            _crew.AddRep(SquaredRep, "for moving " + def.Name + "'s work");
-
-            _state.Touch();
-
+        /// <summary>
+        /// What he says once the ledger is clear -- and only that. No bookkeeping.
+        ///
+        /// Split off so the paid route can end up here too without settling a second time.
+        /// </summary>
+        private DialogueNode Cleared(LeaderDef def, GangDef gang)
+        {
             // The second package is a different conversation from the first, and offering to
             // sign somebody up who signed up an hour ago is the sort of thing that makes a
             // whole cast feel like a menu. First one gets you in; second one gets you the
@@ -1065,6 +1081,24 @@ namespace Hoodrich.Gangs
                 twice.Say("Another time.", () => Root(def));
                 twice.Leave();
                 return twice;
+            }
+
+            // Already signed on, so there is nothing to offer him but the next bag -- and he
+            // says how many are left, because that is the only number this whole arc turns on
+            // and the man who set the test should be the one keeping the count out loud.
+            if (_crew.IsAffiliated)
+            {
+                var one = Node(def, gang,
+                    "That's one. Take ONE more off me, same as that, move all of it and bring " +
+                    "yourself back -- then I'll tell you where it all comes from.");
+
+                one.Say("Front me the next one.", () => OfferWork(def, gang),
+                        "Take his second package");
+                one.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
+
+                one.Say("Later.", () => Root(def), PackageProgress());
+                one.Leave();
+                return one;
             }
 
             var node = Node(def, gang,
@@ -1100,22 +1134,54 @@ namespace Hoodrich.Gangs
             return node;
         }
 
+        /// <summary>
+        /// Handing his package back, and everything that follows from it. ONE place.
+        ///
+        /// It used to be two, and they disagreed. Gerald offered "It's all gone" (which counted
+        /// toward his two packages) and "Moved all your work" (which paid you and did not),
+        /// both on the same man, for the same finished package, at the same time -- so which
+        /// row you happened to press decided whether the thing you had just spent an hour doing
+        /// had happened at all.
+        ///
+        /// Pressing the one with money on it, which is the one anybody presses, cleared the
+        /// ledger without crediting it. Gerald then said "0 of 2 cleared" to somebody who had
+        /// just cleared one, and because the front was settled there was no row left to say so
+        /// -- the package was gone, the count had not moved, and there was no way back to it.
+        ///
+        /// So the two rows are one settlement now. Moving his work is moving his work; it
+        /// counts, it pays, and it does both no matter how you tell him about it.
+        /// </summary>
+        private void Settle(LeaderDef def, int pay)
+        {
+            _state.ClearFronted();
+
+            // The one that decides whether he ever asks you what you want to carry.
+            _state.FrontsDone++;
+
+            if (pay > 0) Game.Player.Money += pay;
+
+            _crew.AddRep(SquaredRep, "for moving " + def.Name + "'s work");
+
+            _state.Touch();
+
+            if (pay > 0 && Social != null)
+            {
+                Social.On(Hoodrich.Social.SocialEvent.FrontedPaid, def.Name, pay);
+            }
+        }
+
         private DialogueNode PayForWork(LeaderDef def, GangDef gang)
         {
             var pay = FrontPayMin + _rng.Next(FrontPayMax - FrontPayMin);
 
-            _state.ClearFronted();
-            _state.Touch();
+            Settle(def, pay);
 
-            Game.Player.Money += pay;
-            _crew.AddRep(6f, "for moving his work");
-
-            if (Social != null) Social.On(Hoodrich.Social.SocialEvent.FrontedPaid, def.Name, pay);
-
+            // And it goes on to say the same thing the other row says, because it IS the other
+            // row -- the money is just handed over on the way past.
             var node = Node(def, gang,
-                "There you go. " + pay.ToString("N0") + ". Don't spend it all on nothing stupid. " +
-                "Come see me when you need another one.");
+                "There you go. " + pay.ToString("N0") + ". Don't spend it all on nothing stupid.");
 
+            node.Say("What now?", () => Cleared(def, gang), PackageProgress());
             node.Leave("Appreciate it.");
             return node;
         }

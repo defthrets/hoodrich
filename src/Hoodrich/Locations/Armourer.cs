@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Control = GTA.Control;
 using GTA;
@@ -338,7 +338,7 @@ namespace Hoodrich.Locations
                 // who happens to sell.
                 var gang = _gangs == null ? null : _gangs.Get("families");
 
-                _blip.Name = Name + " -- " + (gang == null ? "The Families" : gang.Name);
+                _blip.Name = Name + " -- " + (gang == null ? "Chamberlain Gangster Families" : gang.Name);
             }
             catch (Exception ex)
             {

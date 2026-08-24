@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -265,7 +265,7 @@ namespace Hoodrich.Gangs
                 "a couple of streets in Rancho",
                 new[] { "g_m_y_azteca_01" }));
 
-            Register(Make("families", "The Families", "FAM", "AMBIENT_GANG_FAMILY",
+            Register(Make("families", "Chamberlain Gangster Families", "FAM", "AMBIENT_GANG_FAMILY",
                 Color.FromArgb(60, 180, 75), 2,
                 new[] { "weed", "crack" },
                 new[] { "ballas", "vagos", "lost", "aztecas" },

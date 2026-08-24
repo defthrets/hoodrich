@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using GTA;
@@ -189,59 +189,15 @@ namespace Hoodrich.Supply
         /// </summary>
         private void AddDefaults()
         {
-            AddGangDealer("families", "Lil' Marcus", "FAM", "weed", 1.0f,
-                new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01", "a_m_y_soucent_01" },
-                "You good? Green's what I got, don't ask for nothin' else.",
-                "Say how much and don't stand there lookin' at me.",
-                "Man... the boat. Down the port, Elysian. Dock boy pulls it off the containers " +
-                "before it's counted. Tell him Marcus sent you and don't waste his time.",
-                "You moved what, an ounce? Come back when you're worth talkin' to.",
-                "Go on then.");
-
-            AddGangDealer("ballas", "Big Slime", "BALL", "crack", 1.0f,
-                new[] { "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01", "a_m_m_soucent_02" },
-                "You ain't from round here. Talk fast.",
-                "Rock's rock. How much you want?",
-                "Port. Elysian Island. There's a dock hand down there movin' weight off the " +
-                "containers. He don't know you, so don't act like he does.",
-                "Nah. You ain't moved enough for me to be tellin' you nothin'.",
-                "Get gone.");
-
-            AddGangDealer("vagos", "Chuy", "VAGO", "coke", 1.0f,
-                new[] { "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03", "a_m_y_mexthug_01" },
-                "Que onda. You buying or you lost?",
-                "Powder only. Say a number.",
-                "Comes off the water, homie. Port of LS, Elysian. Ask for the dock guy, he " +
-                "handles the containers. He'll sort you out with weight.",
-                "You barely moved anything. Come back when you're serious.",
-                "Andale.");
-
-            AddGangDealer("lost", "Wrench", "LOST", "meth", 1.0f,
-                new[] { "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03", "a_m_m_hillbilly_01" },
-                "You lost? 'Cause I'm Lost. That's the joke. What do you want.",
-                "Glass. That's it. How much.",
-                "Ha. You want the tap, not the cup. Port of LS, Elysian Island. Dock worker " +
-                "down there gets it all off the boats. Everything, not just my stuff.",
-                "You've shifted nothin'. Ask me again when that changes.",
-                "Ride safe.");
-
-            AddGangDealer("triads", "Mr. Kwan", "TRI", "ecstasy", 1.0f,
-                new[] { "g_m_m_chiboss_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02", "a_m_y_ktown_01" },
-                "You're early or you're late. Which is it.",
-                "Pills. By the bag. Quantity.",
-                "It arrives by sea, like everything. Elysian Island, the port. There is a man " +
-                "on the docks who counts containers badly, on purpose. Speak to him.",
-                "You have moved almost nothing. We will speak again when you have.",
-                "Go.");
-
-            AddGangDealer("armenians", "Vartan", "ARM", "heroin", 1.0f,
-                new[] { "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_y_armgoon_02", "a_m_m_eastsa_02" },
-                "You want something, or you want to stand there.",
-                "Brown. Weight only. How much.",
-                "Off the boat, where else. Port of Los Santos, Elysian Island. There is a dock " +
-                "worker. He takes his cut before the manifest. He can get you anything.",
-                "You have moved nothing worth counting. Come back.",
-                "Finished.");
+            // The gang corner dealers used to live here -- one per set, placed at a random
+            // pitch near the player whenever you stood on your own crew's turf.
+            //
+            // Gone, because they were the same idea twice. The gang LEADERS already do this
+            // job and do it better: they stand in one place you can learn, they have names and
+            // scripts and a history with you, and finding one is an event. A second man who
+            // does the same thing but turns up at a different spot every time you walk down
+            // the road turns that into weather -- and it put a blue blip on the map wherever
+            // you happened to be standing, which is the opposite of somewhere to go.
 
             var docks = new DealerDef
             {
@@ -268,35 +224,6 @@ namespace Hoodrich.Supply
             // Drugs deliberately empty: the docks carry the whole catalogue.
             docks.Zones.AddRange(new[] { "ELYSIAN", "ZP_ORT", "TERMINA", "BANNING" });
             _defs.Add(docks);
-        }
-
-        private void AddGangDealer(string gangId, string name, string tag, string drug,
-                                   float priceMultiplier, string[] models,
-                                   string greeting, string buyLine, string sourceReply,
-                                   string sourceTooSoon, string farewell)
-        {
-            var def = new DealerDef
-            {
-                Id = gangId + "_corner",
-                Name = name,
-                Tag = tag,
-                Kind = DealerKind.GangCorner,
-                GangId = gangId,
-                PriceMultiplier = priceMultiplier,
-                MinRank = 0,
-                MaxOrderGrams = 60f,
-                OpenHour = 0,
-                CloseHour = 24,
-                Greeting = greeting,
-                BuyLine = buyLine,
-                SourceReply = sourceReply,
-                SourceTooSoon = sourceTooSoon,
-                Farewell = farewell
-            };
-            def.Models.AddRange(models);
-            def.Drugs.Add(drug);
-            // Zones left empty: a gang dealer stands wherever his crew holds turf.
-            _defs.Add(def);
         }
 
         // ---- what they actually have on them -----------------------------------
@@ -469,14 +396,15 @@ namespace Hoodrich.Supply
                 if (ZoneMatches(def.Zones, zoneCode)) return def;
             }
 
-            if (!crew.IsAffiliated) return null;
-
-            var gangDealer = ForGang(crew.Current.Id);
-            if (gangDealer == null) return null;
-
-            // Explicit zones win if the file names any; otherwise the crew's own turf.
-            var zones = gangDealer.Zones.Count > 0 ? gangDealer.Zones : crew.Current.Turf;
-            return ZoneMatches(zones, zoneCode) ? gangDealer : null;
+            // And that is the lot. Nothing is placed on a corner because you are affiliated.
+            //
+            // This used to fall through to ForGang(crew), which looks a dealer up by GANG and
+            // not by kind -- so with the corner dealers gone it found Gerald's delivery
+            // contact, who is a families dealer, and stood him on a random pavement with a
+            // blip on him. A man you ring up and who drives to you is not a man who is also
+            // permanently loitering on your block; being on somebody's turf is a reason for
+            // THEM to be somewhere, not a reason for a stranger to appear next to you.
+            return null;
         }
 
         private static bool ZoneMatches(List<string> zones, string zoneCode)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -124,6 +124,22 @@ namespace Hoodrich.Phone
 
         /// <summary>One full breath of the wordmark.</summary>
         private const int PulseMs = 2600;
+
+        /// <summary>
+        /// The fill under whatever is selected, and the ink on top of it.
+        ///
+        /// A near-white bar with near-black text on it, which is what this used to be, is a
+        /// PANEL's idea of a highlight -- and it is the one thing on a black handset that
+        /// cannot survive its background going missing. When the fill dropped, the item did
+        /// not fall back to looking unselected; it went invisible, because its text had been
+        /// coloured for a surface that was not there.
+        ///
+        /// Lit instead of inverted. A dark green bed with the set's own green on it, and the
+        /// text stays WHITE either way -- so the worst this can ever look now is an item that
+        /// is merely not highlighted, which is a thing you can still read.
+        /// </summary>
+        private static readonly Color Lit = Color.FromArgb(236, 20, 46, 26);
+        private static readonly Color LitEdge = Color.FromArgb(255, 108, 196, 106);
 
         // ---- state --------------------------------------------------------------
 
@@ -596,6 +612,24 @@ namespace Hoodrich.Phone
         /// DRAW_RECT has no radius and the game ships no rounded primitive, so this is the way
         /// to get one. Worth having on the app tiles specifically: a grid of hard-cornered
         /// boxes reads as a table of contents, and a grid of rounded ones reads as a phone.
+        ///
+        /// The corners are drawn COARSE, and that is the whole reason this screen works.
+        ///
+        /// Hud.Disc defaults to one rectangle per screen pixel row, which is right for the one
+        /// or two discs a panel draws and catastrophic here: a phone body, its rim, its screen
+        /// and seven rounded tiles came to about seventeen hundred DRAW_RECT calls in a single
+        /// frame at 1440p. The game does not draw seventeen hundred of anything -- it fills its
+        /// 2D buffer and silently drops the rest, and the rest is whatever was issued LAST.
+        ///
+        /// Which is why the bug looked the way it did. The body went down first and survived;
+        /// the selected tile's fill and the selected row's highlight came later and were
+        /// thrown away -- while the text and the icons, which go through DRAW_TEXT and
+        /// DRAW_SPRITE and are budgeted separately, drew perfectly. So every selection on this
+        /// screen was its on-hover ink, alone, on the black body behind it. Not an animation
+        /// that "blacked things out": an animation whose background never arrived.
+        ///
+        /// A corner here is about seventeen pixels across. Six bands is round at that size and
+        /// costs a quarter of what one-per-row does.
         /// </summary>
         private static void RoundRect(float left, float top, float w, float h, float r, Color c)
         {
@@ -617,10 +651,25 @@ namespace Hoodrich.Phone
             Hud.RectFrom(left + rX, top, w - rX * 2f, r, c);
             Hud.RectFrom(left + rX, top + h - r, w - rX * 2f, r, c);
 
-            Hud.Disc(left + rX, top + r, r, c);
-            Hud.Disc(left + w - rX, top + r, r, c);
-            Hud.Disc(left + rX, top + h - r, r, c);
-            Hud.Disc(left + w - rX, top + h - r, r, c);
+            var band = Bands(r);
+
+            Hud.Disc(left + rX, top + r, r, c, band);
+            Hud.Disc(left + w - rX, top + r, r, c, band);
+            Hud.Disc(left + rX, top + h - r, r, c, band);
+            Hud.Disc(left + w - rX, top + h - r, r, c, band);
+        }
+
+        /// <summary>
+        /// How tall each band of a corner is, in screen pixels.
+        ///
+        /// Sized so a corner is always about six steps regardless of how big the screen is --
+        /// so the cost of the phone is fixed rather than rising with resolution, which is the
+        /// direction that broke it.
+        /// </summary>
+        private static int Bands(float r)
+        {
+            var px = r * 2f * Hud.ScreenHeight;
+            return Math.Max(2, (int)Math.Round(px / 6f));
         }
 
         /// <summary>
@@ -767,7 +816,7 @@ namespace Hoodrich.Phone
             var on = here && item.Enabled;
 
             var back = !item.Enabled ? Palette.SegmentDisabled
-                     : on ? Palette.SegmentHover
+                     : on ? Lit
                      : Palette.Segment;
 
             // Rounded, and the selected one grows into place.
@@ -806,7 +855,7 @@ namespace Hoodrich.Phone
                 var rimX = Hud.ToX(rim);
 
                 RoundRect(gx - rimX, gy - rim, gw + rimX * 2f, gh + rim * 2f,
-                          TileRound + rim, Fade(Green, fade));
+                          TileRound + rim, Fade(LitEdge, fade));
             }
 
             RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade));
@@ -818,9 +867,8 @@ namespace Hoodrich.Phone
             w = gw;
             h = gh;
 
-            var ink = !item.Enabled ? Palette.TextDisabled
-                    : on ? Palette.TextOnHover
-                    : Palette.Text;
+            // White on the live one as well as the quiet ones. See Lit.
+            var ink = !item.Enabled ? Palette.TextDisabled : Palette.Text;
 
             if (item.Tint.HasValue && !on && item.Enabled) ink = item.Tint.Value;
 
@@ -838,7 +886,7 @@ namespace Hoodrich.Phone
             {
                 Hud.Text(Hud.Fit(item.Value, w * 0.94f, 0.20f, Hud.FontBody),
                          x + w * 0.5f, y + 0.006f, 0.20f,
-                         Fade(on ? Palette.TextOnHover : Palette.TextDim, fade),
+                         Fade(on ? Green : Palette.TextDim, fade),
                          Hud.FontBody, centre: true);
             }
         }
@@ -886,21 +934,19 @@ namespace Hoodrich.Phone
 
             if (on)
             {
-                Hud.RectFrom(left, top, w, RowH, Fade(Palette.SegmentHover, fade));
+                Hud.RectFrom(left, top, w, RowH, Fade(Lit, fade));
                 Sheen(left, top, w, RowH, fade);
-                Hud.RectFrom(left, top, Hud.ToX(0.0035f), RowH, Fade(Palette.Accent, fade));
+                Hud.RectFrom(left, top, Hud.ToX(0.0035f), RowH, Fade(LitEdge, fade));
             }
             else if (alt)
             {
                 Hud.RectFrom(left, top, w, RowH, Fade(Palette.PanelRowAlt, fade));
             }
 
-            var ink = !item.Enabled ? Palette.TextDisabled
-                    : on ? Palette.TextOnHover
-                    : Palette.Text;
+            var ink = item.Enabled ? Palette.Text : Palette.TextDisabled;
 
             var sub = !item.Enabled ? Palette.TextDisabled
-                    : on ? Color.FromArgb(200, 40, 42, 44)
+                    : on ? Color.FromArgb(235, 176, 214, 178)
                     : Palette.TextDim;
 
             if (item.Tint.HasValue && !on && item.Enabled) ink = item.Tint.Value;
@@ -937,7 +983,7 @@ namespace Hoodrich.Phone
                 valueWide = Hud.MeasureText(shown, vs, Hud.FontBody) + Hud.ToX(0.010f);
 
                 Hud.TextRight(shown, right, top + 0.010f, vs,
-                              Fade(on ? Palette.TextOnHover : Palette.TextDim, fade),
+                              Fade(on ? Green : Palette.TextDim, fade),
                               Hud.FontBody);
             }
 
@@ -961,7 +1007,7 @@ namespace Hoodrich.Phone
             if (item.IsSubmenu && string.IsNullOrEmpty(item.Value))
             {
                 Hud.TextRight(">", right, top + 0.011f, 0.30f,
-                              Fade(on ? Palette.TextOnHover : Palette.TextDim, fade),
+                              Fade(on ? Green : Palette.TextDim, fade),
                               Hud.FontBody);
             }
         }

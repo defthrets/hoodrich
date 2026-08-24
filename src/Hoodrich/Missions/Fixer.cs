@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using Control = GTA.Control;
 using GTA;
@@ -418,7 +418,7 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, Sprite);
                 Function.Call(Hash.SET_BLIP_COLOUR, _blip.Handle, 2);
 
-                _blip.Name = "Lamar -- The Families";
+                _blip.Name = "Lamar -- Chamberlain Gangster Families";
                 _blip.IsShortRange = false;
                 _blip.Scale = 0.85f;
             }

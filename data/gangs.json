@@ -1,4 +1,4 @@
-{
+﻿{
   "_comment": [
     "Hoodrich gang definitions. Edited here, reloaded on script start (Insert reloads SHVDN).",
     "",
@@ -48,7 +48,7 @@
     },
     {
       "id": "families",
-      "name": "The Families",
+      "name": "Chamberlain Gangster Families",
       "tag": "FAM",
       "relationshipGroup": "AMBIENT_GANG_FAMILY",
       "colour": [

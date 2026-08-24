@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Color = System.Drawing.Color;
 using GTA;
@@ -1752,8 +1752,13 @@ namespace Hoodrich.Wheel
                 Label = "Gerald's packages",
                 Note = "Both fronts back on the table and the port shut again, so his whole " +
                        "sequence runs from the top. What you already sold stays sold",
-                Enabled = () => _state.FrontsDone > 0 || _state.HasFrontedWork
-                                || _state.DocksUnlocked || _state.PortRunStage > 0,
+                // Always available, deliberately.
+                //
+                // It used to require the sequence to be visibly under way, which meant the one
+                // state you could not reset out of was the one where the count had gone wrong
+                // and everything read as zero -- the escape hatch was locked by the same
+                // reading that made you need it. Resetting something you have not started is a
+                // no-op, and a no-op is a far better failure than a dead end.
                 Do = () => _state.ForgetFronts()
             };
 

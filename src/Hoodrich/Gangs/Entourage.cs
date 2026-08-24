@@ -164,6 +164,53 @@ namespace Hoodrich.Gangs
         /// <summary>How long a clip gets to visibly start before it is written off.</summary>
         private const int AnimGraceMs = 900;
 
+        /// <summary>
+        /// What people say to each other when nobody is saying anything in particular.
+        ///
+        /// Every one of these is an AMBIENT SPEECH LABEL, not a line -- the game picks the
+        /// actual words from the ped's own voice, so a Families man, a woman off the block and
+        /// somebody's uncle all say different things and all say them in their own voices. A
+        /// yard where fifteen people share one voice is worse than a silent one.
+        ///
+        /// Conversational labels first, because that is what a party mostly is. The louder
+        /// ones are in there too but they are outnumbered, so the yard sounds like people
+        /// talking with the odd shout across it rather than fifteen arguments at once.
+        /// </summary>
+        private static readonly string[] Talk =
+        {
+            "GENERIC_HI", "GENERIC_HOWS_IT_GOING", "CHAT_STATE", "GENERIC_YES",
+            "GENERIC_THANKS", "GENERIC_WHATEVER", "GENERIC_NO", "CHAT_RESP",
+            "GENERIC_HOWS_IT_GOING", "GENERIC_BYE", "CHAT_STATE", "GENERIC_YES",
+            "GENERIC_CURSE_MED", "CHAT_RESP", "GENERIC_HI", "GENERIC_INSULT_MED"
+        };
+
+        /// <summary>
+        /// Where each person is up to in that list, and when they are next due to speak.
+        ///
+        /// Walked in ORDER rather than picked at random, one step per person per turn. Random
+        /// picking from sixteen labels repeats inside a minute and the repeat is the thing you
+        /// hear -- the same man saying the same word twice is what makes a crowd sound like a
+        /// tape loop. Everybody starts at a different point in the list, so at any moment the
+        /// yard is spread across the whole vocabulary rather than working through it together.
+        /// </summary>
+        private readonly List<int> _sayAt = new List<int>();
+        private readonly List<int> _sayDue = new List<int>();
+
+        /// <summary>
+        /// How often one person speaks. Per person, jittered.
+        ///
+        /// Fifteen people on this spread is a line landing somewhere in the yard roughly every
+        /// half second, which is the sound of a party. Tightening it further does not make it
+        /// busier, it makes it a queue.
+        /// </summary>
+        private const int SayMinMs = 4500;
+        private const int SayMaxMs = 9000;
+
+        /// <summary>Nobody who is not there to be heard. Speech carries about this far.</summary>
+        private const float EarShot = 32f;
+
+        private readonly Random _mouth = new Random();
+
         private readonly List<Ped> _crew = new List<Ped>();
         private readonly List<Vector3> _marks = new List<Vector3>();
 
@@ -193,6 +240,12 @@ namespace Hoodrich.Gangs
             _anims.Add(anim);
             _animPick.Add(-1);
             _animDue.Add(0);
+
+            // Staggered at the door rather than at spawn: a fixed offset per station means the
+            // yard never starts everybody's clock on the same frame, whatever order they got
+            // created in.
+            _sayAt.Add(_stations.Count * 3);
+            _sayDue.Add(0);
             _weapons.Add(weapon);
             return this;
         }
@@ -325,7 +378,7 @@ namespace Hoodrich.Gangs
             if (Standing() > 0)
             {
                 if (away > DespawnRange) Despawn();
-                else Settle();
+                else { Settle(); Talking(player); }
 
                 return;
             }
@@ -634,6 +687,58 @@ namespace Hoodrich.Gangs
         /// would arrive at his post and immediately leave. 71 lets him charge past the edge.
         /// </summary>
         private static readonly int[] HoldOff = { 13, 37, 43, 45, 47, 51, 62, 71 };
+
+        /// <summary>
+        /// The yard talking.
+        ///
+        /// Everybody is on their own clock, so this is not a round-robin -- it is fifteen
+        /// people each due to say something every few seconds, landing wherever they land. The
+        /// result is overlapping, which is correct; people at a party do not take turns.
+        ///
+        /// SPEECH_PARAMS_FORCE rather than the default, because the ambient system will
+        /// happily decide a man has spoken recently enough and drop the line -- and a yard
+        /// where two thirds of what is asked for is silently discarded is the quiet yard this
+        /// is meant to fix.
+        /// </summary>
+        private void Talking(Ped player)
+        {
+            var now = Game.GameTime;
+
+            for (var i = 0; i < _crew.Count; i++)
+            {
+                var ped = _crew[i];
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                if (i >= _sayDue.Count) continue;
+
+                if (_sayDue[i] == 0)
+                {
+                    _sayDue[i] = now + _mouth.Next(0, SayMaxMs);
+                    continue;
+                }
+
+                if (now < _sayDue[i]) continue;
+
+                _sayDue[i] = now + _mouth.Next(SayMinMs, SayMaxMs);
+
+                // Out of earshot is not worth the call. They carry on being due, so walking
+                // back into the yard does not walk into a silence while everybody re-clocks.
+                if (ped.Position.DistanceTo(player.Position) > EarShot) continue;
+
+                var at = _sayAt[i] % Talk.Length;
+                _sayAt[i] = at + 1;
+
+                try
+                {
+                    Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
+                                  Talk[at], "SPEECH_PARAMS_FORCE");
+                }
+                catch
+                {
+                    // A label this voice has no line for is simply somebody not talking.
+                }
+            }
+        }
 
         private void Settle()
         {
