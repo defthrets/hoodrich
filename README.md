@@ -12,12 +12,15 @@ config framework, no installer. The INI parser and the JSON parser are both hand
 live in `src/Hoodrich/Core`.
 
 ```
-37,156 lines of C# across 72 files   ·   9 data files   ·   66 icons drawn from scratch
+62,582 lines of C# across 94 files   ·   10 data files   ·   105 icons drawn from scratch
 ```
 
 ---
 
 ## Install
+
+**Players:** grab the zip from Releases and merge its `scripts` folder into your GTA V
+folder. Everything below is for building it yourself.
 
 1. **ScriptHookV** and **ScriptHookVDotNet 3** — the only prerequisites.
 2. Drop `Hoodrich.dll`, `Hoodrich.ini` and the `Hoodrich/` data folder into `scripts/`.
@@ -219,7 +222,7 @@ own house.
 ## The HUD
 
 Every surface is on the same art: the phone, the dialogue panel, the info panels, the kitchen,
-the stash, the feed and the toasts. **66 icons**, all drawn from scratch as white masks and
+the stash, the feed and the toasts. **105 icons**, all drawn from scratch as white masks and
 tinted at draw time, so the same file is the set's colour on a gang row and the money colour on
 a price.
 

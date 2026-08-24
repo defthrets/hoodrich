@@ -9,6 +9,7 @@
   Usage:
     .\build.ps1                 # build to .\build\Hoodrich.dll
     .\build.ps1 -Deploy         # build, then copy dll + data into the game's scripts\
+    .\build.ps1 -Package        # build, then zip a public release into .\release\
     .\build.ps1 -Configuration Debug
 #>
 [CmdletBinding()]
@@ -16,6 +17,10 @@ param(
     [ValidateSet('Release', 'Debug')]
     [string]$Configuration = 'Release',
     [switch]$Deploy,
+
+    # Build a zip anybody can drop into their GTA V folder. Ships the dll, a DEFAULT ini and
+    # the data -- never this machine's tuned ini and never a save. See the packaging section.
+    [switch]$Package,
 
     # Which install(s) -Deploy writes to. Hoodrich is a pure SHVDN script with no asset
     # dependencies, and both editions ship the same ScriptHookVDotNet3.dll, so one build
@@ -255,4 +260,50 @@ if ($Deploy) {
     if ($Target -in 'Enhanced', 'Both') { Deploy-To $EnhancedDir 'Enhanced' }
 
     Write-Host "Deploy complete." -ForegroundColor Green
+}
+
+# --- packaging ---------------------------------------------------------------
+# A zip that merges straight over the GTA V folder, because that is the one install
+# instruction nobody gets wrong. What goes in is only ever built from the repo -- never
+# from the game folder, or a release would carry whatever this machine happens to be
+# testing with, including a save.
+if ($Package) {
+    $version = (Select-String -Path (Join-Path $root 'src\Hoodrich\Core\Log.cs') `
+                              -Pattern 'Version = "([^"]+)"').Matches[0].Groups[1].Value
+
+    $relDir = Join-Path $root 'release'
+    $stage  = Join-Path $relDir "PostedUp-$version"
+    $zip    = Join-Path $relDir "PostedUp-$version.zip"
+
+    if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+    if (Test-Path $zip)   { Remove-Item $zip -Force }
+
+    $scripts = Join-Path $stage 'scripts'
+    $dataOut = Join-Path $scripts 'Hoodrich'
+    New-Item -ItemType Directory -Force -Path $dataOut | Out-Null
+
+    Copy-Item $outDll (Join-Path $scripts 'Hoodrich.dll')
+
+    # The REPO ini, which is the documented default. Not the game folder's, which is this
+    # machine's tuned copy and would ship somebody else's difficulty settings as the default.
+    Copy-Item (Join-Path $root 'Hoodrich.ini') (Join-Path $scripts 'Hoodrich.ini')
+
+    Copy-Item (Join-Path $root 'data\*.json') $dataOut
+    Copy-Item (Join-Path $root 'data\icons') $dataOut -Recurse
+
+    Copy-Item (Join-Path $relDir 'README.txt')  $stage
+    Copy-Item (Join-Path $relDir 'LICENCE.txt') $stage
+
+    # Belt and braces. A save in a release zip would overwrite the first thing a player did.
+    Get-ChildItem $stage -Recurse -Include 'save.json', '*.log', '*.bak' |
+        ForEach-Object { Remove-Item $_.FullName -Force }
+
+    Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal
+
+    $files = (Get-ChildItem $stage -Recurse -File).Count
+    $size  = [math]::Round((Get-Item $zip).Length / 1KB)
+
+    Write-Host ""
+    Write-Host "Packaged  $zip" -ForegroundColor Green
+    Write-Host "          $files files, $size KB, version $version"
 }

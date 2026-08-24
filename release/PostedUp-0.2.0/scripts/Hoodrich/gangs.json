@@ -1,0 +1,283 @@
+﻿{
+  "_comment": [
+    "Hoodrich gang definitions. Edited here, reloaded on script start (Insert reloads SHVDN).",
+    "",
+    "id                 stable key used in save files; never change it once you have a save",
+    "tag                4-character label drawn on the wheel",
+    "relationshipGroup  vanilla ped relationship group. Membership is detected by THIS, not by",
+    "                   ped model, so every gang ped the game spawns is recognised.",
+    "colour             [r,g,b] used for the wheel tint and the gang panel",
+    "rivals             gang ids this gang is at war with. Dealing on a rival's turf gets you",
+    "                   jumped, and their supply contact will not deal with you at all.",
+    "turf               GET_NAME_OF_ZONE codes this gang claims. Every code below is a real",
+    "                   zone from the game's own popzone table, so they all match something.",
+    "joinRespect        respect needed before they will take you on",
+    "",
+    "To retune territory: stand somewhere in game, open the wheel, Turf > Log zone. The exact",
+    "code is shown on screen and written to scripts\\Hoodrich.log. Turf > Dossier dumps the",
+    "whole current map. Zones not listed here are neutral ground.",
+    "paint              index into the game's own vehicle colour table, used for their cars. -1 falls back to the flat rgb above, which has no metallic flake in it"
+  ],
+  "gangs": [
+    {
+      "id": "aztecas",
+      "name": "Varrios Los Aztecas",
+      "tag": "VLA",
+      "colour": [
+        0,
+        190,
+        185
+      ],
+      "blipColour": 3,
+      "drugs": [
+        "weed",
+        "coke"
+      ],
+      "rivals": [
+        "vagos",
+        "ballas",
+        "families"
+      ],
+      "turf": [
+        "BANNING"
+      ],
+      "turfHint": "a few streets round Banning",
+      "joinRespect": 0,
+      "joinable": false,
+      "paint": 62
+    },
+    {
+      "id": "families",
+      "name": "Chamberlain Gangster Families",
+      "tag": "FAM",
+      "relationshipGroup": "AMBIENT_GANG_FAMILY",
+      "colour": [
+        60,
+        180,
+        75
+      ],
+      "blipColour": 2,
+      "drugs": [
+        "weed",
+        "ecstasy",
+        "xanax"
+      ],
+      "rivals": [
+        "ballas",
+        "vagos",
+        "lost",
+        "aztecas"
+      ],
+      "turf": [
+        "CHAMH",
+        "STRAW"
+      ],
+      "_turf": "DAVIS is the Ballas' and is not shared. It was listed here as a contested block for a while, on the reasoning that Grove Street runs through it -- but running a street through somewhere is not holding it, and the set that holds Davis is theirs. The registry still supports a contested zone if two sets ever name one; nothing does at the moment.",
+      "turfHint": "Chamberlain Hills and Strawberry",
+      "joinRespect": 0,
+      "joinable": true,
+      "paint": 49,
+      "starter": "xanax"
+    },
+    {
+      "id": "ballas",
+      "name": "Ballas",
+      "tag": "BALL",
+      "relationshipGroup": "AMBIENT_GANG_BALLAS",
+      "colour": [
+        145,
+        70,
+        190
+      ],
+      "blipColour": 27,
+      "drugs": [
+        "crack",
+        "weed"
+      ],
+      "rivals": [
+        "families",
+        "vagos",
+        "marabunta",
+        "aztecas"
+      ],
+      "turf": [
+        "DAVIS",
+        "STAD"
+      ],
+      "turfHint": "Davis and the blocks by the arena",
+      "joinRespect": 0,
+      "paint": 145
+    },
+    {
+      "id": "vagos",
+      "name": "Los Santos Vagos",
+      "tag": "VAGO",
+      "relationshipGroup": "AMBIENT_GANG_MEXICAN",
+      "colour": [
+        235,
+        195,
+        40
+      ],
+      "blipColour": 5,
+      "drugs": [
+        "coke",
+        "meth"
+      ],
+      "rivals": [
+        "families",
+        "ballas",
+        "marabunta",
+        "aztecas"
+      ],
+      "turf": [
+        "RANCHO",
+        "LMESA",
+        "MURRI",
+        "EBURO"
+      ],
+      "turfHint": "Rancho, La Mesa, Murrieta and El Burro Heights",
+      "joinRespect": 0,
+      "paint": 88
+    },
+    {
+      "id": "marabunta",
+      "name": "Marabunta Grande",
+      "tag": "MARA",
+      "relationshipGroup": "AMBIENT_GANG_MARABUNTE",
+      "colour": [
+        70,
+        200,
+        200
+      ],
+      "blipColour": 3,
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "rivals": [
+        "vagos",
+        "ballas",
+        "lost"
+      ],
+      "turf": [
+        "CYPRE",
+        "TEXTI"
+      ],
+      "turfHint": "Cypress Flats and Textile City",
+      "joinRespect": 250,
+      "paint": 51
+    },
+    {
+      "id": "lost",
+      "name": "The Lost MC",
+      "tag": "LOST",
+      "relationshipGroup": "AMBIENT_GANG_LOST",
+      "colour": [
+        200,
+        200,
+        200
+      ],
+      "blipColour": 40,
+      "drugs": [
+        "meth",
+        "heroin"
+      ],
+      "rivals": [
+        "families",
+        "marabunta",
+        "triads"
+      ],
+      "turf": [
+        "SLAB",
+        "GRAPES",
+        "SANDY"
+      ],
+      "turfHint": "Stab City, Sandy Shores and Grapeseed",
+      "joinRespect": 250,
+      "paint": 1
+    },
+    {
+      "id": "triads",
+      "name": "Wei Cheng Triads",
+      "tag": "TRI",
+      "relationshipGroup": "AMBIENT_GANG_WEICHENG",
+      "colour": [
+        220,
+        60,
+        60
+      ],
+      "blipColour": 1,
+      "drugs": [
+        "ecstasy",
+        "heroin",
+        "xanax"
+      ],
+      "rivals": [
+        "lost",
+        "armenians",
+        "koreans"
+      ],
+      "turf": [
+        "MIRR",
+        "HAWICK"
+      ],
+      "turfHint": "Mirror Park and Hawick",
+      "joinRespect": 900,
+      "paint": 27
+    },
+    {
+      "id": "armenians",
+      "name": "Armenian Mob",
+      "tag": "ARM",
+      "relationshipGroup": "AMBIENT_GANG_ARMENIAN",
+      "colour": [
+        150,
+        40,
+        60
+      ],
+      "blipColour": 76,
+      "drugs": [
+        "heroin"
+      ],
+      "rivals": [
+        "triads",
+        "lost",
+        "koreans"
+      ],
+      "turf": [
+        "ALTA",
+        "BURTON",
+        "PBOX"
+      ],
+      "turfHint": "Alta, Burton and Pillbox Hill",
+      "joinRespect": 900,
+      "paint": 4
+    },
+    {
+      "id": "koreans",
+      "name": "Kkangpae",
+      "tag": "KKP",
+      "colour": [
+        150,
+        40,
+        55
+      ],
+      "blipColour": 1,
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "rivals": [
+        "triads",
+        "armenians"
+      ],
+      "turf": [
+        "KOREAT"
+      ],
+      "turfHint": "Ginger Street, Little Seoul",
+      "joinRespect": 0,
+      "joinable": false,
+      "paint": 12
+    }
+  ]
+}
