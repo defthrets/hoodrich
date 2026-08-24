@@ -534,8 +534,17 @@ namespace Hoodrich.Phone
             //
             // The tiles keep the sprite because nothing is drawn under them; the body cannot,
             // because everything is.
+            // Coarse bands on the OUTER shell, fine ones on the screen.
+            //
+            // This is the chrome rim, and the body drawn inside it covers all but its outermost
+            // two pixels -- so a per-row corner here was two hundred and thirty rectangles
+            // spent on an arc that is a two-pixel band by the time anything is on top of it.
+            // That is the same waste the tile rim was deleted for, and between them they were
+            // what pushed the frame past GTA's rectangle ceiling and started costing other
+            // shapes their corners. Twenty steps is a three-pixel stagger on a two-pixel band,
+            // which is to say invisible.
             RoundRect(left, top, w, h, BodyRound,
-                      Fade(Color.FromArgb(255, 96, 102, 104), fade), sprite: false, steps: 0);
+                      Fade(Color.FromArgb(255, 96, 102, 104), fade), sprite: false, steps: 20);
 
             var edge = 0.0022f;
             var edgeX = Hud.ToX(edge);
@@ -989,17 +998,24 @@ namespace Hoodrich.Phone
             // is the only tile with a shape you can actually read, so it is the only one that
             // gets the treatment.
             //
-            // All rectangles, no sprite. A runtime-texture sprite will not stay underneath a
-            // rectangle drawn after it, and this screen is nothing but rectangles drawn after
-            // each other -- which is how the corners kept surfacing as circles on top of the
-            // battery, and then on top of the live app.
-            // One rectangle per screen ROW on the live tile.
+            // SPRITE corners on the live tile, and it took three goes to arrive back here.
             //
-            // Its corner is seventeen pixels across, and at two pixels a band that is nine
-            // steps -- a visible staircase at the size it is actually drawn. Per-row is the
-            // smoothest a stack of rectangles can be, and it is affordable precisely because
-            // the other six tiles stopped paying for corners they were never showing.
-            if (on) RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade), steps: 0);
+            // Per-row rectangles are the smoothest a stack of rectangles gets, and they were
+            // affordable right up until they were not: one tile's four corners is a hundred and
+            // thirty-seven rectangles, and with the handset's three shells already spending
+            // four hundred and sixty on the same trick the frame ran past GTA's ceiling. Over
+            // it, the game throws away whatever was issued LAST -- and RoundRect issues its
+            // corners after its flats, so the tile arrived as a full-width middle band with
+            // narrow strips above and below it. Four square bites out of the corners. Which is
+            // precisely what has been getting reported, and why redrawing the geometry never
+            // once helped: the geometry was right and never made it to the screen.
+            //
+            // The sprite costs FOUR calls, out of a different budget entirely, and is a real
+            // anti-aliased circle rather than a staircase. The reason it was ruled out here --
+            // that a runtime texture floats above any rectangle drawn after it -- does not
+            // apply to this shape: the only rectangle that follows is the shimmer, and that is
+            // inset clear of the corners on purpose. Tiles do not overlap each other.
+            if (on) RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade), sprite: true);
             else Hud.RectFrom(gx, gy, gw, gh, Fade(back, fade));
 
             if (on) Sheen(gx, gy, gw, gh, fade, TileRound);

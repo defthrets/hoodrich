@@ -35,6 +35,16 @@ namespace Hoodrich.UI
 
         public static void BeginFrame()
         {
+            // Logged only when it gets worse, so this is a handful of lines in a session
+            // rather than sixty a second.
+            if (RectsThisFrame > PeakRects)
+            {
+                PeakRects = RectsThisFrame;
+                Log.Info("Draw budget: " + PeakRects + " rectangles in a frame (new peak).");
+            }
+
+            RectsThisFrame = 0;
+
             try
             {
                 var res = GTA.UI.Screen.Resolution;
@@ -120,9 +130,27 @@ namespace Hoodrich.UI
 
         // ---- primitives --------------------------------------------------------
 
+        /// <summary>
+        /// How many rectangles this frame has asked for, and the worst it has ever been.
+        ///
+        /// GTA has a hard ceiling on DRAW_RECT per frame and does not report reaching it -- it
+        /// simply stops drawing the ones issued LAST, which comes out as parts of the interface
+        /// missing rather than as an error. This mod has now walked into that wall three times
+        /// and each time it was diagnosed as a geometry bug, because that is exactly what it
+        /// looks like: a rounded rectangle issues its corners after its flats, so the shape
+        /// arrives with four square bites taken out of it.
+        ///
+        /// So it is counted. A number in the log is worth more than another afternoon of
+        /// staring at a shape that is drawn correctly.
+        /// </summary>
+        public static int RectsThisFrame { get; private set; }
+
+        public static int PeakRects { get; private set; }
+
         /// <summary>Axis-aligned filled rectangle. w/h are normalized screen fractions.</summary>
         public static void Rect(float x, float y, float w, float h, Color c)
         {
+            RectsThisFrame++;
             Function.Call(Hash.DRAW_RECT, x, y, w, h, (int)c.R, (int)c.G, (int)c.B, (int)c.A);
         }
 
