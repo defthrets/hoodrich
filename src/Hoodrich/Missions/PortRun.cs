@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -158,16 +158,25 @@ namespace Hoodrich.Missions
         };
 
         /// <summary>
-        /// What ends up in the back. ONE box, not a stack.
+        /// What ends up in the back. ONE crate, not a stack.
         ///
-        /// prop_boxpile_07d is a pile about a metre and a half tall whose origin sits at its
-        /// base, so dropped into a van it came out through the roof and read as two crates
-        /// riding on top of the vehicle. A single box, in the middle of the bed, is both what
-        /// was asked for and what a quarter kilo actually looks like.
+        /// The drug package leads now. A cardboard box was the right SIZE and the wrong thing
+        /// -- a quarter kilo coming off a ship in a moving box says nothing about what is in
+        /// it, and this is the one moment in the run where you can see the product. The
+        /// packages are the wrapped bales the game already uses for exactly this, and they are
+        /// bigger than the paper box on top of it.
+        ///
+        /// Wooden crates behind them, and the old paper box last, so a model missing from an
+        /// install costs the look rather than the load.
+        ///
+        /// prop_boxpile_07d is out of the list entirely: it is a pile about a metre and a half
+        /// tall whose origin sits at its base, so dropped into a bed it came out through the
+        /// roof and read as two crates riding on the cab.
         /// </summary>
         private static readonly string[] CrateModels =
         {
-            "prop_paper_box_01", "prop_boxpile_06a", "prop_boxpile_07d"
+            "prop_drug_package_02", "prop_drug_package",
+            "prop_box_wood04a", "prop_boxpile_06a", "prop_paper_box_01"
         };
 
         /// <summary>
@@ -417,6 +426,12 @@ namespace Hoodrich.Missions
             // He is nine metres off the mark now, so "you have arrived" is about the ring and
             // "go and talk to him" is about him. Two different distances, said separately.
 
+            // The drop plays itself out; the port is still a walk-up.
+            if (Stage == StageDeliver && toDrop <= StreamRange && HandItOverHere(player, toDrop))
+            {
+                return;
+            }
+
             // And only one of them is the man you owe something to.
             var man = Stage == StageDeliver
                 ? (toDrop <= StreamRange ? _gerald : null)
@@ -436,6 +451,18 @@ namespace Hoodrich.Missions
                     Notify.Important(Stage == StageDeliver
                         ? "~g~He's waiting.~s~ Hand it over."
                         : "~g~That's him.~s~ Go and talk to him.");
+                }
+
+                // And say it on the windscreen as well as in the corner.
+                //
+                // The toast fires once, on the way in, and is gone by the time the truck has
+                // stopped -- so somebody who parks, looks up and sees nothing has been told
+                // what to do and has no way of being told again. The prompt below only ever
+                // appeared once you were already stood next to him, which is exactly when you
+                // no longer need it.
+                if (away <= ParkRange && player.IsInVehicle())
+                {
+                    Help.ShowThisFrame("Get out and talk to him.");
                 }
 
                 return;
@@ -464,11 +491,139 @@ namespace Hoodrich.Missions
                 ? "Press ~INPUT_CONTEXT~ to hand it over."
                 : "Press ~INPUT_CONTEXT~ to talk to him.");
 
-            if (!Game.IsControlJustPressed(GTA.Control.Context)) return;
+            // EVERY key the rest of the mod takes for this, and the disabled state with it.
+            //
+            // Context alone, read live, is why Tao could not be talked to: something else in
+            // the frame disables that control -- the vehicle prompts do it constantly around a
+            // parked car -- and IS_CONTROL_JUST_PRESSED answers false for a disabled control
+            // even while the player is pressing it. Every other walk-up in this mod goes
+            // through the same handful of inputs and reads IS_DISABLED_CONTROL_PRESSED too;
+            // this was the one place that did not, and it was the one place that did not work.
+            if (!WantsToTalk()) return;
             if (Talk == null || Talk.IsOpen) return;
 
             Talk.Speaker = man;
             Talk.Open(Stage == StageDeliver ? HandOver() : Meeting(), this);
+        }
+
+        /// <summary>
+        /// How long the truck has to be stood still on the mark before you get out of it.
+        ///
+        /// Two seconds, which is long enough to be a pause rather than a snatch, and short
+        /// enough that nobody sits there wondering whether the run is over.
+        /// </summary>
+        private const int SettleMs = 2000;
+
+        /// <summary>Close enough that he is talking to you rather than at you.</summary>
+        private const float WalkedUpRange = 2.4f;
+
+        private int _stoppedAt;
+        private bool _gotOut;
+        private bool _walkingOver;
+
+        /// <summary>
+        /// The end of the run, played rather than prompted.
+        ///
+        /// The last thing you did was drive four kilometres with a quarter kilo in the back;
+        /// being asked to press a button at the end of that is the mod handing the moment back
+        /// to you to perform. So the truck stops, Franklin gets out on his own, and the man
+        /// waiting for it walks over -- and the conversation opens when he arrives, because he
+        /// is the one who has come to you.
+        ///
+        /// Every step is guarded on its own flag rather than on distance alone: TASK_LEAVE_
+        /// VEHICLE and the walk are both things you ask for ONCE, and asking again every tick
+        /// is how a man ends up permanently starting to get out of a car.
+        /// </summary>
+        private bool HandItOverHere(Ped player, float toDrop)
+        {
+            if (Stage != StageDeliver) { Reset(); return false; }
+
+            var man = _gerald;
+            if (man == null || !man.Exists() || !man.IsAlive) return false;
+
+            if (toDrop > ParkRange) { Reset(); return false; }
+
+            var now = Game.GameTime;
+
+            // Stood still on the mark, in the truck he lent you.
+            if (!_gotOut)
+            {
+                if (!player.IsInVehicle())
+                {
+                    // Already on foot, so there is nothing to climb out of.
+                    _gotOut = true;
+                }
+                else
+                {
+                    var ride = player.CurrentVehicle;
+                    var still = ride != null && ride.Exists() && ride.Speed < 0.6f;
+
+                    if (!still) { _stoppedAt = 0; return true; }
+
+                    if (_stoppedAt == 0) _stoppedAt = now;
+                    if (now - _stoppedAt < SettleMs) return true;
+
+                    try { Function.Call(Hash.TASK_LEAVE_VEHICLE, player.Handle, ride.Handle, 0); }
+                    catch { /* he can get out himself */ }
+
+                    _gotOut = true;
+                }
+            }
+
+            // And he comes over. Asked once.
+            if (!_walkingOver)
+            {
+                _walkingOver = true;
+
+                try
+                {
+                    Function.Call(Hash.TASK_GO_TO_ENTITY, man.Handle, player.Handle,
+                                  20000, WalkedUpRange, 1.4f, 0f, 0);
+                }
+                catch { /* he will be talked to where he stands */ }
+            }
+
+            if (Talk == null || Talk.IsOpen) return true;
+            if (player.IsInVehicle()) return true;
+
+            if (player.Position.DistanceTo(man.Position) > WalkedUpRange + 1.2f) return true;
+
+            Talk.Speaker = man;
+            Talk.Open(HandOver(), this);
+            return true;
+        }
+
+        private void Reset()
+        {
+            _stoppedAt = 0;
+            _gotOut = false;
+            _walkingOver = false;
+        }
+
+        private bool _talkHeld;
+
+        /// <summary>The mod's walk-up button, on its leading edge, disabled or not.</summary>
+        private bool WantsToTalk()
+        {
+            var down = false;
+
+            try
+            {
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)GTA.Control.Context)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)GTA.Control.Context)
+                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)GTA.Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)GTA.Control.PhoneRight)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Right);
+            }
+            catch
+            {
+                // An unreadable control is simply not pressed.
+            }
+
+            var pressed = down && !_talkHeld;
+            _talkHeld = down;
+            return pressed;
         }
 
         private bool VanIsNear(Ped man)
@@ -519,7 +674,7 @@ namespace Hoodrich.Missions
             var node = new DialogueNode("Tao Cheng",
                 "BET. Okay so -- you get a number, you call the number, thing show up, you pay " +
                 "for the thing. Congratulations, you in the import business, my guy. Now go " +
-                "round the back of the sheds, bay one, back it in, nose out. My guys ain't " +
+                "round the back of the sheds, near bay one, back it in, nose out. My guys ain't " +
                 "carryin' nothin' further than they gotta and they ain't gonna ASK you to " +
                 "move, they just gonna stand there and hate you. And listen -- it's gone five. " +
                 "I got a bottle at the crib older than you with my actual name on the label. " +
@@ -528,7 +683,7 @@ namespace Hoodrich.Missions
                 SpeakerColour = Palette.Cash
             };
 
-            node.Say("Bay one. Got it.", Take, "Reverse into bay one round the back");
+            node.Say("Bay one. Got it.", Take, "Reverse in near bay one, round the back");
             node.WithIcon(Icons.FromFile("box.png"));
 
             return node;
@@ -550,10 +705,11 @@ namespace Hoodrich.Missions
             _state.Touch();
 
             _saidHere = false;
+            Reset();
             _bay = 0;
             _bayAt = 0;
 
-            Notify.Important("~g~Round the back.~s~ Reverse into bay one and wait.");
+            Notify.Important("~g~Round the back.~s~ Reverse in near bay one and wait.");
             Log.Info("Port run: docks unlocked, sent to the loading bay.");
 
             if (Social != null) Social.On(SocialEvent.PortRun, "Tao Cheng");
@@ -681,7 +837,7 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_BLIP_COLOUR, _blip.Handle, 2);
 
                 _blip.Name = Stage == StageDeliver ? "Drop it to Gerald"
-                           : Stage == StageBay ? "Bay one"
+                           : Stage == StageBay ? "Near bay one"
                            : "Meet the plug";
                 _blip.ShowRoute = true;
                 _blip.IsShortRange = false;
@@ -864,7 +1020,7 @@ namespace Hoodrich.Missions
             Hud.Text(Stage == StageDeliver
                         ? "Get his truck back to the yard in Chamberlain"
                      : Stage == StageBay
-                        ? "Back into bay one behind the sheds, then sound the horn"
+                        ? "Back in near bay one behind the sheds, then sound the horn"
                         : "Meet the dock worker at Elysian Island",
                      x, top + 0.030f, 0.26f, Fade(Palette.TextDim, fade),
                      Hud.FontBody, centre: false);
@@ -1730,7 +1886,7 @@ namespace Hoodrich.Missions
             {
                 Help.ShowThisFrame(Parked()
                     ? "Press ~INPUT_VEH_HORN~ to let them know you're in."
-                    : "Back into bay one -- nose out. Then sound the horn.");
+                    : "Back in near bay one -- nose out. Then sound the horn.");
             }
 
             // Edge, not level. A horn held down is one beep, not forty.
@@ -1840,6 +1996,7 @@ namespace Hoodrich.Missions
             _state.Touch();
 
             _saidHere = false;
+            Reset();
 
             Notify.Important("~g~Loaded.~s~ Get it back to Gerald.");
             Log.Info("Port run: van loaded, heading for the yard.");
@@ -2086,6 +2243,7 @@ namespace Hoodrich.Missions
             _vanBlip = null;
             _van = null;
             _saidHere = false;
+            Reset();
 
             // So the card arrives properly rather than being already there next time.
             _cardAt = 0;

@@ -569,6 +569,19 @@ namespace Hoodrich.Supply
                 return "You don't know nobody at the port";
             }
 
+            // And not while you are in the middle of his errand.
+            //
+            // DocksUnlocked goes true the moment he HANDS you the run, which is right for the
+            // run and wrong for everything else: it made him a contact you could ring for a
+            // delivery while you were still driving his quarter kilo across the city, and it
+            // fired his introduction text at you two minutes into the job he had just given
+            // you. He is somebody you know once you have finished, not once you have agreed.
+            if (def.Kind == DealerKind.Docks && !def.IsGangDealer
+                && state.PortRunStage != Missions.PortRun.StageNone)
+            {
+                return "Finish his run first";
+            }
+
             // He brings a box to a door, so there has to be a door. Checked here as well as in
             // Delivery itself, so the wheel greys the option out and says why rather than
             // letting you press it and be told no.
