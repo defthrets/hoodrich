@@ -92,13 +92,23 @@ namespace Hoodrich.Phone
         private const float SheenWide = 0.22f;
 
         /// <summary>How round the app tiles are, in screen heights.</summary>
-        private const float TileRound = 0.013f;
+        private const float TileRound = 0.012f;
+
+        /// <summary>How round the handset and its screen are.</summary>
+        private const float BodyRound = 0.020f;
+        private const float ScreenRound = 0.013f;
 
         /// <summary>How long a tile takes to pop when the cursor lands on it.</summary>
         private const int PopMs = 150;
 
-        /// <summary>And how far it grows, in screen heights.</summary>
-        private const float PopBy = 0.0055f;
+        /// <summary>
+        /// And how far it grows.
+        ///
+        /// Deliberately smaller than half the gap between tiles, RIM INCLUDED, so a grown tile
+        /// and its neighbour can never touch. The first pass overshot past that and the live
+        /// app collided with the one next to it.
+        /// </summary>
+        private const float PopBy = 0.0030f;
 
         /// <summary>
         /// The phone's own green.
@@ -111,7 +121,6 @@ namespace Hoodrich.Phone
         /// </summary>
         private static readonly Color Green = Color.FromArgb(255, 108, 196, 106);
         private static readonly Color GreenDim = Color.FromArgb(150, 66, 124, 68);
-        private static readonly Color GreenWash = Color.FromArgb(38, 108, 196, 106);
 
         /// <summary>One full breath of the wordmark.</summary>
         private const int PulseMs = 2600;
@@ -462,48 +471,29 @@ namespace Hoodrich.Phone
 
         private void Body(float left, float top, float w, float h, int fade)
         {
-            // The handset itself: a near-black slab with a hairline edge. Angular rather than
-            // rounded, because every other panel in this mod is angular and a lone glossy
-            // rounded rectangle would read as somebody else's UI dropped into it.
-            Hud.RectFrom(left, top, w, h, Fade(Color.FromArgb(248, 6, 7, 8), fade));
+            // The handset, rounded.
+            //
+            // It was an angular slab with corner ticks, on the reasoning that every other
+            // panel in this mod is angular. That is true of PANELS, and this is not one -- it
+            // is a picture of an object everybody has in their pocket, and the one thing every
+            // one of those has in common is that the corners are round. A phone with square
+            // corners reads as a menu pretending to be a phone.
+            //
+            // Drawn as a rim and then a body inside it, so the bezel is a real edge rather
+            // than a hairline that disappears at small sizes.
+            RoundRect(left, top, w, h, BodyRound,
+                      Fade(Color.FromArgb(255, 96, 102, 104), fade));
 
-            var line = Fade(Color.FromArgb(70, 190, 195, 200), fade);
-            var thin = 0.0016f;
-            var thinX = Hud.ToX(thin);
+            var edge = 0.0022f;
+            var edgeX = Hud.ToX(edge);
 
-            Hud.RectFrom(left, top, w, thin, line);
-            Hud.RectFrom(left, top + h - thin, w, thin, line);
-            Hud.RectFrom(left, top, thinX, h, line);
-            Hud.RectFrom(left + w - thinX, top, thinX, h, line);
+            RoundRect(left + edgeX, top + edge, w - edgeX * 2f, h - edge * 2f,
+                      BodyRound - edge, Fade(Color.FromArgb(252, 8, 9, 10), fade));
 
-            // Corner ticks, the mod's own signature instead of a full box.
-            Ticks(left, top, w, h, fade);
-
-            // The screen it houses.
+            // And the screen it houses, rounded with it.
             var bezX = Hud.ToX(Bezel);
-            Hud.RectFrom(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
-                         Fade(Color.FromArgb(252, 12, 14, 16), fade));
-        }
-
-        private static void Ticks(float left, float top, float w, float h, int fade)
-        {
-            var c = Fade(Palette.Accent, fade);
-            var len = 0.020f;
-            var lenX = Hud.ToX(len);
-            var t = 0.0022f;
-            var tX = Hud.ToX(t);
-
-            Hud.RectFrom(left, top, lenX, t, c);
-            Hud.RectFrom(left, top, tX, len, c);
-
-            Hud.RectFrom(left + w - lenX, top, lenX, t, c);
-            Hud.RectFrom(left + w - tX, top, tX, len, c);
-
-            Hud.RectFrom(left, top + h - t, lenX, t, c);
-            Hud.RectFrom(left, top + h - len, tX, len, c);
-
-            Hud.RectFrom(left + w - lenX, top + h - t, lenX, t, c);
-            Hud.RectFrom(left + w - tX, top + h - len, tX, len, c);
+            RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
+                      ScreenRound, Fade(Color.FromArgb(252, 13, 15, 17), fade));
         }
 
         private void StatusBar(float left, float top, float w, int fade)
@@ -743,16 +733,19 @@ namespace Hoodrich.Phone
                 if (ty + TileH > top + h) break;
 
                 // Each app lands a beat after the one before it. The whole run is under a
-                // fifth of a second, which is long enough to read as arriving and short enough
-                // that nobody waiting to press something has to wait for it.
+                // fifth of a second -- long enough to read as arriving, short enough that
+                // nobody waiting to press something has to wait for it.
+                //
+                // NEVER SKIPPED. A tile whose turn has not come is drawn at zero alpha rather
+                // than passed over: `continue` meant the row it belonged to had a hole in it
+                // for a fraction of a second, and on a grid that is not "not yet arrived", it
+                // is "missing".
                 var age = Game.GameTime - _openedAt - i * TileStaggerMs;
                 var lands = age <= 0 ? 0f
                           : age >= RiseMs ? 1f
                           : 1f - (float)Math.Pow(1f - age / (float)RiseMs, 3);
 
-                if (lands <= 0f) continue;
-
-                Tile(page.Items[i], tx, ty + (1f - lands) * 0.018f, tileW, TileH,
+                Tile(page.Items[i], tx, ty + (1f - lands) * 0.016f, tileW, TileH,
                      i == Top.Index, (int)(fade * lands));
             }
         }
@@ -768,9 +761,14 @@ namespace Hoodrich.Phone
 
             // Rounded, and the selected one grows into place.
             //
-            // The pop is what the eye follows when the cursor jumps two tiles across a grid --
-            // a highlight that simply appears somewhere else leaves you re-finding it, and a
+            // The pop is what the eye follows when the cursor jumps two tiles across a grid: a
+            // highlight that simply appears somewhere else leaves you re-finding it, and a
             // tile that swells out of the row tells you where it went.
+            //
+            // Grown about its own CENTRE and clamped, which the first version was not -- it
+            // overshot by more than the gap between tiles and drew a separate, larger halo
+            // offset from the tile it belonged to, so the live app came out as two shapes that
+            // did not line up.
             var pop = 0f;
 
             if (on)
@@ -778,23 +776,26 @@ namespace Hoodrich.Phone
                 var age = Game.GameTime - _movedAt;
                 var t = age >= PopMs ? 1f : Math.Max(0f, age / (float)PopMs);
 
-                // Overshoots slightly and settles, rather than easing flatly in.
                 var e = 1f - (float)Math.Pow(1f - t, 3);
-                pop = PopBy * (float)Math.Sin(e * Math.PI * 0.85f) * 1.25f;
+                pop = PopBy * (0.55f + 0.45f * e);
             }
 
-            var gx = x - Hud.ToX(pop);
+            var popX = Hud.ToX(pop);
+
+            var gx = x - popX;
             var gy = y - pop;
-            var gw = w + Hud.ToX(pop) * 2f;
+            var gw = w + popX * 2f;
             var gh = h + pop * 2f;
 
-            // A green halo behind the live one, so the set's colour is on the tile you are
-            // actually pointing at rather than smeared over the whole grid.
+            // A green rim on the live one, concentric with it rather than beside it, so the
+            // set's colour marks the tile you are pointing at without becoming a second shape.
             if (on)
             {
-                RoundRect(gx - Hud.ToX(0.0035f), gy - 0.0035f,
-                          gw + Hud.ToX(0.007f), gh + 0.007f,
-                          TileRound + 0.0035f, Fade(GreenWash, fade));
+                var rim = 0.0026f;
+                var rimX = Hud.ToX(rim);
+
+                RoundRect(gx - rimX, gy - rim, gw + rimX * 2f, gh + rim * 2f,
+                          TileRound + rim, Fade(Green, fade));
             }
 
             RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade));
@@ -906,14 +907,25 @@ namespace Hoodrich.Phone
             var right = left + w - padX;
 
             // The value first, so the label can be trimmed to whatever is left rather than
-            // drawn over the top of it.
+            // drawn over the top of it -- and the value itself is CAPPED, which is the half
+            // that was missing.
+            //
+            // Measuring it and subtracting only works while the answer leaves room for a
+            // name. A value wider than the row drove `room` to its floor and the label was cut
+            // to two letters while the value carried on drawing straight through it. Neither
+            // is allowed more than its share now: the value gets at most 45% of the row and is
+            // trimmed to fit it, so the name always has the rest.
             var valueWide = 0f;
+
             if (!string.IsNullOrEmpty(item.Value))
             {
                 var vs = 0.27f;
-                valueWide = Hud.MeasureText(item.Value, vs, Hud.FontBody) + Hud.ToX(0.010f);
+                var cap = (right - x) * 0.45f;
 
-                Hud.TextRight(item.Value, right, top + 0.010f, vs,
+                var shown = Hud.Fit(item.Value, cap, vs, Hud.FontBody);
+                valueWide = Hud.MeasureText(shown, vs, Hud.FontBody) + Hud.ToX(0.010f);
+
+                Hud.TextRight(shown, right, top + 0.010f, vs,
                               Fade(on ? Palette.TextOnHover : Palette.TextDim, fade),
                               Hud.FontBody);
             }

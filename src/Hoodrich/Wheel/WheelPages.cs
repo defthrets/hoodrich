@@ -1222,9 +1222,15 @@ namespace Hoodrich.Wheel
                 var plug = def;
                 var refusal = _dealers.RefusalReason(plug, _state, _crew);
 
+                // SHORT. The right-hand value is a status, not a stock list.
+                //
+                // It was the full product list -- "MARIJUANA, OXYCODONE, ALPRAZOLAM" -- which
+                // is wider than the row, so the label was squeezed down to "Ge..." and the
+                // list was drawn straight over the top of it. The names belong on the detail
+                // line underneath, where there is room and where they already are.
                 var carries = plug.Drugs.Count == 0
                     ? "everything"
-                    : Carrying(plug.Drugs).ToUpperInvariant();
+                    : plug.Drugs.Count + (plug.Drugs.Count == 1 ? " kind" : " kinds");
 
                 // His NAME, his FACE, and what he is for underneath it.
                 //
