@@ -543,18 +543,18 @@ namespace Hoodrich.Phone
             // what pushed the frame past GTA's rectangle ceiling and started costing other
             // shapes their corners. Twenty steps is a three-pixel stagger on a two-pixel band,
             // which is to say invisible.
-            RoundRect(left, top, w, h, BodyRound,
+            Hud.RoundRect(left, top, w, h, BodyRound,
                       Fade(Color.FromArgb(255, 96, 102, 104), fade), sprite: false, steps: 20);
 
             var edge = 0.0022f;
             var edgeX = Hud.ToX(edge);
 
-            RoundRect(left + edgeX, top + edge, w - edgeX * 2f, h - edge * 2f,
+            Hud.RoundRect(left + edgeX, top + edge, w - edgeX * 2f, h - edge * 2f,
                       BodyRound - edge, Fade(Color.FromArgb(252, 8, 9, 10), fade), sprite: false);
 
             // And the screen it houses, rounded with it.
             var bezX = Hud.ToX(Bezel);
-            RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
+            Hud.RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
                       ScreenRound, Fade(Color.FromArgb(252, 13, 15, 17), fade),
                       sprite: false, steps: 0);
         }
@@ -667,123 +667,8 @@ namespace Hoodrich.Phone
             }
         }
 
-        /// <summary>
-        /// A rectangle with rounded corners: three flat rects, and a sprite at each corner.
-        ///
-        /// DRAW_RECT has no radius and the game ships no rounded primitive, so this is the way
-        /// to get one. Worth having on the app tiles specifically: a grid of hard-cornered
-        /// boxes reads as a table of contents, and a grid of rounded ones reads as a phone.
-        ///
-        /// The corners cannot be built out of rectangles, and that is the whole reason this
-        /// screen works.
-        ///
-        /// Hud.Disc stacks one rectangle per screen pixel row, which is right for the one or
-        /// two discs a panel draws and catastrophic here: a phone body, its rim, its screen and
-        /// seven rounded tiles came to about seventeen hundred DRAW_RECT calls in a single
-        /// frame at 1440p. The game does not draw seventeen hundred of anything -- it fills its
-        /// 2D buffer and silently drops the rest, and the rest is whatever was issued LAST.
-        ///
-        /// Which is why the bug looked the way it did. The body went down first and survived;
-        /// the selected tile's fill and the selected row's highlight came later and were
-        /// thrown away -- while the text and the icons, which go through DRAW_TEXT and
-        /// DRAW_SPRITE and are budgeted separately, drew perfectly. So every selection on this
-        /// screen was its on-hover ink, alone, on the black body behind it. Not an animation
-        /// that "blacked things out": an animation whose background never arrived.
-        ///
-        /// Coarsening the stack to about six bands a corner bought the budget back and paid for
-        /// it in looks: six steps across seventeen pixels is a visible staircase on the one
-        /// shape whose entire job is to be round, and the phone came out jagged everywhere it
-        /// was meant to be soft. A sprite settles both at once. disc.png is an anti-aliased
-        /// circle, it costs ONE call however large it renders, and DRAW_SPRITE is budgeted
-        /// separately from DRAW_RECT -- so a corner no longer competes with the fills for the
-        /// thing that ran out, and the whole phone is down to about fifty rectangles a frame.
-        /// </summary>
-        private static void RoundRect(float left, float top, float w, float h, float r, Color c,
-                                      bool sprite = false, int steps = 20)
-        {
-            if (c.A <= 0 || w <= 0f || h <= 0f) return;
 
-            r = Math.Max(0f, Math.Min(r, h * 0.5f));
 
-            var rX = Hud.ToX(r);
-
-            // A corner cannot be wider than half the box, or the two sides cross over.
-            if (rX * 2f > w)
-            {
-                Hud.RectFrom(left, top, w, h, c);
-                return;
-            }
-
-            // Middle band, full width, then the flats above and below it.
-            Hud.RectFrom(left, top + r, w, h - r * 2f, c);
-            Hud.RectFrom(left + rX, top, w - rX * 2f, r, c);
-            Hud.RectFrom(left + rX, top + h - r, w - rX * 2f, r, c);
-
-            if (sprite)
-            {
-                Corner(left + rX, top + r, r, c);
-                Corner(left + w - rX, top + r, r, c);
-                Corner(left + rX, top + h - r, r, c);
-                Corner(left + w - rX, top + h - r, r, c);
-                return;
-            }
-
-            var band = Bands(r, steps);
-
-            Hud.Disc(left + rX, top + r, r, c, band);
-            Hud.Disc(left + w - rX, top + r, r, c, band);
-            Hud.Disc(left + rX, top + h - r, r, c, band);
-            Hud.Disc(left + w - rX, top + h - r, r, c, band);
-        }
-
-        /// <summary>
-        /// How tall each band of a stacked corner is, in screen pixels.
-        ///
-        /// Returns a HEIGHT, not a count -- which is worth saying because getting those the
-        /// wrong way round gives a corner of two enormous steps and looks deliberate.
-        ///
-        /// Sixteen steps by default, whatever the monitor is, which is round enough that the
-        /// stagger does not read at this size. It also fixes the cost: Hud.Disc's default of
-        /// one rectangle per pixel row is what put seventeen hundred draws into a single frame
-        /// and got the screen's own fills thrown away by the game.
-        ///
-        /// Callers can ask for fewer. The selected tile's rim does, because it is a two-and-a-
-        /// half-thousandth outline whose corners are mostly hidden behind the tile sitting on
-        /// top of it -- spending the same number of rectangles on that as on the handset itself
-        /// buys nothing anybody can see.
-        /// </summary>
-        private static int Bands(float r, int steps = 20)
-        {
-            // Zero steps means one rectangle per screen ROW, which is as round as a stack of
-            // rectangles can be. Spent only where the stagger actually shows.
-            if (steps <= 0) return 1;
-
-            return Math.Max(1, (int)Math.Round(r * 2f * Hud.ScreenHeight / steps));
-        }
-
-        /// <summary>
-        /// One corner, as a whole circle sat under the flats either side of it.
-        ///
-        /// A whole circle rather than a quarter of one because three quarters of it land on
-        /// fill that is already there, and a quarter sprite would have to be rotated four ways
-        /// and lined up on the pixel at each of them -- which is four chances to leave a
-        /// hairline down the join where a full circle leaves none.
-        ///
-        /// Hud.File centres the art on the point it is given and forces it square on screen, so
-        /// a sprite 2r tall at the corner's centre IS a circle of radius r, matching the arc
-        /// the flat rects are cut back to.
-        ///
-        /// It returns false when the PNG is not on disk, and then the old stacked corner goes
-        /// down instead. About six bands, which is stepped but round enough to read, and a
-        /// missing file should cost the smoothness rather than the corner.
-        /// </summary>
-        private static void Corner(float cx, float cy, float r, Color c)
-        {
-            if (Hud.File("disc.png", cx, cy, r * 2f, 0f, c)) return;
-
-            var px = r * 2f * Hud.ScreenHeight;
-            Hud.Disc(cx, cy, r, c, Math.Max(2, (int)Math.Round(px / 6f)));
-        }
 
         /// <summary>
         /// The battery, and it means something.
@@ -986,7 +871,7 @@ namespace Hoodrich.Phone
                 //
                 // Every other tile keeps the sprite: a tile fill has only its own icon and
                 // label on top, and both of those are sprites and text, which do layer.
-                RoundRect(gx - rimX, gy - rim, gw + rimX * 2f, gh + rim * 2f,
+                Hud.RoundRect(gx - rimX, gy - rim, gw + rimX * 2f, gh + rim * 2f,
                           TileRound + rim, Fade(LitEdge, fade), sprite: false, steps: 14);
             }
 
@@ -1015,7 +900,7 @@ namespace Hoodrich.Phone
             // that a runtime texture floats above any rectangle drawn after it -- does not
             // apply to this shape: the only rectangle that follows is the shimmer, and that is
             // inset clear of the corners on purpose. Tiles do not overlap each other.
-            if (on) RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade), sprite: true);
+            if (on) Hud.RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade), sprite: true);
             else Hud.RectFrom(gx, gy, gw, gh, Fade(back, fade));
 
             if (on) Sheen(gx, gy, gw, gh, fade, TileRound);

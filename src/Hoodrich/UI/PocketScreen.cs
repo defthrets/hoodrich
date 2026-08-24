@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -292,11 +292,8 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Hud.RectFrom(left, top, panelWidth, height,
-                         Color.FromArgb((int)(238f * arrive), 12, 13, 15));
-
-            Hud.RectFrom(left, top, panelWidth, 0.0028f,
-                         Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
+            Hud.Panel(left, top, panelWidth, height,
+                      Color.FromArgb((int)(238f * arrive), 12, 13, 15), Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
 
             var barT = (Game.GameTime % SweepMs) / (float)SweepMs;
             var barW = panelWidth * 0.15f;

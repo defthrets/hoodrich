@@ -365,6 +365,11 @@ namespace Hoodrich.Dealing
             // remembers, and getting away from it means getting away from it.
             _cooledAt = 0;
             _cornerHeat = _ground.At(_anchor);
+
+            // Snapped, not swept. Posting up on a corner that is already warm should show you
+            // that on the first frame -- the sweep is for heat you watch yourself earn.
+            _heatBar.Reset();
+            _repBar.Reset();
             _sales = 0;
             _earned = 0;
             _lastScan = 0;
@@ -2352,6 +2357,13 @@ namespace Hoodrich.Dealing
         private const float RepLabelScale = 0.26f;
         private const float RepLabelHalf = 0.0097f;
 
+        /// <summary>The two gauges on the corner HUD, each catching up at its own pace.</summary>
+        private readonly UI.Eased _heatBar = new UI.Eased();
+        private readonly UI.Eased _repBar = new UI.Eased();
+
+        /// <summary>Reputation moves over an evening, so its needle does too.</summary>
+        private const float RepEaseRate = 2.5f;
+
         private const string HeatBlip = "HEAT";
         private const string RepBlip = "REPUTATION";
 
@@ -2703,7 +2715,17 @@ namespace Hoodrich.Dealing
 
 
 
-            var heat = Math.Min(1f, _cornerHeat / Math.Max(1f, _cfg.PostUpHeatBeforePolice));
+            // EASED, both bars. See UI.Eased.
+            //
+            // A sale adds heat in one lump and the bar used to arrive at its new length on the
+            // same frame -- which reads as the bar being redrawn wrong rather than as heat
+            // going up. The number is the same; what changes is that you can now see it move,
+            // which is the only reason a bar exists instead of a figure.
+            //
+            // The COLOUR is taken from the eased value too, so a bar sliding up through the
+            // threshold changes colour when it gets there rather than the instant the sale
+            // lands, several tenths before the fill catches up with it.
+            var heat = _heatBar.To(Math.Min(1f, _cornerHeat / Math.Max(1f, _cfg.PostUpHeatBeforePolice)));
             var colour = heat > 0.75f ? Palette.Danger : heat > 0.4f ? Palette.Warn : Palette.Cash;
 
             Hud.Rect(x, y, w + 0.004f, h + 0.004f, Color.FromArgb(190, 8, 8, 10));
@@ -2730,7 +2752,12 @@ namespace Hoodrich.Dealing
             // two are the same kind of thing: one is how long you can stand here, the other is
             // whether anybody is going to walk up while you do. Thinner, so it reads as the
             // quieter of the two at a glance.
-            var rep = _state == null ? 1f : _state.ProductRep;
+            // Slower than the heat bar, and that is the point of them being different.
+            //
+            // Heat is a thing happening to you now and should keep up. Your name is a thing
+            // that moves by degrees over an evening, and a bar that eases into it says so
+            // without a word of explanation.
+            var rep = _repBar.To(_state == null ? 1f : _state.ProductRep, RepEaseRate);
 
             // Blue above the middle, red below it. The middle is where you start, so the two
             // colours are the two things that can happen to you rather than a scale from good

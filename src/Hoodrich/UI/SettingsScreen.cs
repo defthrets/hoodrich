@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
@@ -768,11 +768,8 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Hud.RectFrom(left, top, panelWidth, height,
-                         Color.FromArgb((int)(238f * arrive), 12, 13, 15));
-
-            Hud.RectFrom(left, top, panelWidth, 0.0028f,
-                         Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
+            Hud.Panel(left, top, panelWidth, height,
+                      Color.FromArgb((int)(238f * arrive), 12, 13, 15), Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
 
             // A light travelling along the bar, the same one the dialogue panels carry.
             var barT = (Game.GameTime % SweepMs) / (float)SweepMs;

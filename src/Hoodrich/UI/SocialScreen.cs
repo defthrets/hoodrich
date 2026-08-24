@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -814,8 +814,8 @@ namespace Hoodrich.UI
             // the one mode signal readable without looking at any particular element.
             var edge = _tab >= TabDiss ? Palette.Danger : Palette.Accent;
 
-            Hud.RectFrom(left, PanelTop, PanelWidth, PanelHeight, Color.FromArgb(238, 12, 13, 15));
-            Hud.RectFrom(left, PanelTop, PanelWidth, 0.0028f, edge);
+            Hud.Panel(left, PanelTop, PanelWidth, PanelHeight,
+                      Color.FromArgb(238, 12, 13, 15), edge);
 
             Count();
 

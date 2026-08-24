@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -542,11 +542,8 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Hud.RectFrom(x, top, PanelWidth, height,
-                         Color.FromArgb((int)(Ground.A * arrive), Ground.R, Ground.G, Ground.B));
-
-            Hud.RectFrom(x, top, PanelWidth, 0.0028f,
-                         Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
+            Hud.Panel(x, top, PanelWidth, height,
+                      Color.FromArgb((int)(Ground.A * arrive), Ground.R, Ground.G, Ground.B), Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
 
             // And a light running along the bar. This screen has no cursor on it -- there is
             // nothing to select, it is a readout -- so this is the only thing telling you it is

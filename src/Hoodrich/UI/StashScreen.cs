@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -354,8 +354,8 @@ namespace Hoodrich.UI
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f;
 
-            Hud.RectFrom(left, top, panelWidth, height, Color.FromArgb(238, 12, 13, 15));
-            Hud.RectFrom(left, top, panelWidth, 0.0028f, Palette.Accent);
+            Hud.Panel(left, top, panelWidth, height,
+                      Color.FromArgb(238, 12, 13, 15), Palette.Accent);
 
             var colWidth = (panelWidth - pad * 2f - columnGap) * 0.5f;
             var leftCol = left + pad;

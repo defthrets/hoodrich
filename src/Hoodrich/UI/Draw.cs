@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -700,6 +700,174 @@ namespace Hoodrich.UI
                 Rect(cx, rowY, ToX(half * 2f), rowHeight, c);
             }
         }
+
+        /// <summary>
+        /// A rectangle with rounded corners: three flat rects, and a sprite at each corner.
+        ///
+        /// DRAW_RECT has no radius and the game ships no rounded primitive, so this is the way
+        /// to get one. Worth having on the app tiles specifically: a grid of hard-cornered
+        /// boxes reads as a table of contents, and a grid of rounded ones reads as a phone.
+        ///
+        /// The corners cannot be built out of rectangles, and that is the whole reason this
+        /// screen works.
+        ///
+        /// Disc stacks one rectangle per screen pixel row, which is right for the one or
+        /// two discs a panel draws and catastrophic here: a phone body, its rim, its screen and
+        /// seven rounded tiles came to about seventeen hundred DRAW_RECT calls in a single
+        /// frame at 1440p. The game does not draw seventeen hundred of anything -- it fills its
+        /// 2D buffer and silently drops the rest, and the rest is whatever was issued LAST.
+        ///
+        /// Which is why the bug looked the way it did. The body went down first and survived;
+        /// the selected tile's fill and the selected row's highlight came later and were
+        /// thrown away -- while the text and the icons, which go through DRAW_TEXT and
+        /// DRAW_SPRITE and are budgeted separately, drew perfectly. So every selection on this
+        /// screen was its on-hover ink, alone, on the black body behind it. Not an animation
+        /// that "blacked things out": an animation whose background never arrived.
+        ///
+        /// Coarsening the stack to about six bands a corner bought the budget back and paid for
+        /// it in looks: six steps across seventeen pixels is a visible staircase on the one
+        /// shape whose entire job is to be round, and the phone came out jagged everywhere it
+        /// was meant to be soft. A sprite settles both at once. disc.png is an anti-aliased
+        /// circle, it costs ONE call however large it renders, and DRAW_SPRITE is budgeted
+        /// separately from DRAW_RECT -- so a corner no longer competes with the fills for the
+        /// thing that ran out, and the whole phone is down to about fifty rectangles a frame.
+        /// </summary>
+        public static void RoundRect(float left, float top, float w, float h, float r, Color c,
+                                      bool sprite = false, int steps = 20)
+        {
+            if (c.A <= 0 || w <= 0f || h <= 0f) return;
+
+            r = Math.Max(0f, Math.Min(r, h * 0.5f));
+
+            var rX = ToX(r);
+
+            // A corner cannot be wider than half the box, or the two sides cross over.
+            if (rX * 2f > w)
+            {
+                RectFrom(left, top, w, h, c);
+                return;
+            }
+
+            // Middle band, full width, then the flats above and below it.
+            RectFrom(left, top + r, w, h - r * 2f, c);
+            RectFrom(left + rX, top, w - rX * 2f, r, c);
+            RectFrom(left + rX, top + h - r, w - rX * 2f, r, c);
+
+            if (sprite)
+            {
+                Corner(left + rX, top + r, r, c);
+                Corner(left + w - rX, top + r, r, c);
+                Corner(left + rX, top + h - r, r, c);
+                Corner(left + w - rX, top + h - r, r, c);
+                return;
+            }
+
+            var band = Bands(r, steps);
+
+            Disc(left + rX, top + r, r, c, band);
+            Disc(left + w - rX, top + r, r, c, band);
+            Disc(left + rX, top + h - r, r, c, band);
+            Disc(left + w - rX, top + h - r, r, c, band);
+        }
+
+        /// <summary>
+        /// How tall each band of a stacked corner is, in screen pixels.
+        ///
+        /// Returns a HEIGHT, not a count -- which is worth saying because getting those the
+        /// wrong way round gives a corner of two enormous steps and looks deliberate.
+        ///
+        /// Sixteen steps by default, whatever the monitor is, which is round enough that the
+        /// stagger does not read at this size. It also fixes the cost: Disc's default of
+        /// one rectangle per pixel row is what put seventeen hundred draws into a single frame
+        /// and got the screen's own fills thrown away by the game.
+        ///
+        /// Callers can ask for fewer. The selected tile's rim does, because it is a two-and-a-
+        /// half-thousandth outline whose corners are mostly hidden behind the tile sitting on
+        /// top of it -- spending the same number of rectangles on that as on the handset itself
+        /// buys nothing anybody can see.
+        /// </summary>
+        private static int Bands(float r, int steps = 20)
+        {
+            // Zero steps means one rectangle per screen ROW, which is as round as a stack of
+            // rectangles can be. Spent only where the stagger actually shows.
+            if (steps <= 0) return 1;
+
+            return Math.Max(1, (int)Math.Round(r * 2f * ScreenHeight / steps));
+        }
+
+        /// <summary>
+        /// One corner, as a whole circle sat under the flats either side of it.
+        ///
+        /// A whole circle rather than a quarter of one because three quarters of it land on
+        /// fill that is already there, and a quarter sprite would have to be rotated four ways
+        /// and lined up on the pixel at each of them -- which is four chances to leave a
+        /// hairline down the join where a full circle leaves none.
+        ///
+        /// File centres the art on the point it is given and forces it square on screen, so
+        /// a sprite 2r tall at the corner's centre IS a circle of radius r, matching the arc
+        /// the flat rects are cut back to.
+        ///
+        /// It returns false when the PNG is not on disk, and then the old stacked corner goes
+        /// down instead. About six bands, which is stepped but round enough to read, and a
+        /// missing file should cost the smoothness rather than the corner.
+        /// </summary>
+        private static void Corner(float cx, float cy, float r, Color c)
+        {
+            if (File("disc.png", cx, cy, r * 2f, 0f, c)) return;
+
+            var px = r * 2f * ScreenHeight;
+            Disc(cx, cy, r, c, Math.Max(2, (int)Math.Round(px / 6f)));
+        }
+
+        /// <summary>
+        /// The body of a full-screen panel, with the corners the phone has and the rest do not.
+        ///
+        /// Eleven panels in this mod were square-cornered while the one piece of interface the
+        /// player looks at most -- the handset -- had rounded ones, because rounding used to
+        /// cost a hundred and thirty rectangles a shape and only the phone could afford it.
+        /// The sprite corner ended that: four draws, out of the sprite budget, and the same
+        /// shape at any size.
+        ///
+        /// The accent stripe along the top is INSET by the corner radius. It is a square bar
+        /// laid over a rounded shape, and at full width its ends hang off into the space the
+        /// rounding just removed -- which is the same fault that grew square ears on the phone
+        /// tiles and is worth only fixing once.
+        /// </summary>
+        public static void Panel(float left, float top, float w, float h, Color body, Color accent)
+        {
+            // OPAQUE, whatever the caller asked for, and this is not a liberty -- it is what
+            // rounding a translucent shape actually costs.
+            //
+            // A rounded rectangle is three flats plus four corner discs, and three quarters of
+            // every disc lands on a flat that is already there. At full opacity that overlap
+            // is invisible. At the 238 these panels were drawn with it is a second coat: over
+            // a bright street the body reads about 25 and the four corners about 14, so the
+            // shape comes out with a darker blotch at each corner -- which is precisely the
+            // complaint the phone tiles took three attempts to shake off.
+            //
+            // Seven per cent of translucency on a panel that is already near-black is a
+            // difference nobody has ever seen. Four blotched corners is one everybody sees.
+            // The caller should not have to know any of this, so it is decided here.
+            RoundRect(left, top, w, h, PanelRound,
+                      Color.FromArgb(255, body.R, body.G, body.B), sprite: true);
+
+            if (accent.A <= 0) return;
+
+            var inset = ToX(PanelRound);
+            RectFrom(left + inset, top, w - inset * 2f, PanelStripe, accent);
+        }
+
+        /// <summary>
+        /// How round a panel corner is, and how thick the stripe along its top.
+        ///
+        /// Matched to the handset's own body rather than picked. A panel eight hundred pixels
+        /// wide with a fourteen-pixel radius is technically rounded and reads as square at a
+        /// glance, which is the worst of both -- it pays for the corners and does not look
+        /// like it has any. The phone settled on 0.020 for a shape this size and there is no
+        /// reason for the screens beside it to disagree.
+        /// </summary>
+        public const float PanelRound = 0.018f;
+        public const float PanelStripe = 0.0028f;
 
         // ---- text --------------------------------------------------------------
 
