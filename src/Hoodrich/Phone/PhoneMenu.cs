@@ -664,7 +664,7 @@ namespace Hoodrich.Phone
         /// thing that ran out, and the whole phone is down to about fifty rectangles a frame.
         /// </summary>
         private static void RoundRect(float left, float top, float w, float h, float r, Color c,
-                                      bool sprite = true)
+                                      bool sprite = true, int steps = 16)
         {
             if (c.A <= 0 || w <= 0f || h <= 0f) return;
 
@@ -693,7 +693,7 @@ namespace Hoodrich.Phone
                 return;
             }
 
-            var band = Bands(r);
+            var band = Bands(r, steps);
 
             Hud.Disc(left + rX, top + r, r, c, band);
             Hud.Disc(left + w - rX, top + r, r, c, band);
@@ -707,14 +707,19 @@ namespace Hoodrich.Phone
         /// Returns a HEIGHT, not a count -- which is worth saying because getting those the
         /// wrong way round gives a corner of two enormous steps and looks deliberate.
         ///
-        /// Chosen so a corner is always about eighteen steps whatever the monitor is. That is
-        /// round enough that the stagger does not read at this size, and it fixes the cost:
-        /// Hud.Disc's default of one rectangle per pixel row is what put seventeen hundred
-        /// draws into a single frame and got the screen's own fills thrown away by the game.
+        /// Sixteen steps by default, whatever the monitor is, which is round enough that the
+        /// stagger does not read at this size. It also fixes the cost: Hud.Disc's default of
+        /// one rectangle per pixel row is what put seventeen hundred draws into a single frame
+        /// and got the screen's own fills thrown away by the game.
+        ///
+        /// Callers can ask for fewer. The selected tile's rim does, because it is a two-and-a-
+        /// half-thousandth outline whose corners are mostly hidden behind the tile sitting on
+        /// top of it -- spending the same number of rectangles on that as on the handset itself
+        /// buys nothing anybody can see.
         /// </summary>
-        private static int Bands(float r)
+        private static int Bands(float r, int steps = 16)
         {
-            return Math.Max(1, (int)Math.Round(r * 2f * Hud.ScreenHeight / 18f));
+            return Math.Max(1, (int)Math.Round(r * 2f * Hud.ScreenHeight / steps));
         }
 
         /// <summary>
@@ -923,8 +928,18 @@ namespace Hoodrich.Phone
                 var rim = 0.0026f;
                 var rimX = Hud.ToX(rim);
 
+                // Stacked corners, not the sprite, for the same reason the handset uses them.
+                //
+                // This one shape on the whole screen is drawn UNDERNEATH something else -- the
+                // tile fill goes straight over it and only the rim's margin is meant to show.
+                // A sprite corner does not stay under a rectangle, so the four corners of the
+                // rim came up through the fill and the live app wore four green rings while
+                // its straight edges showed nothing at all.
+                //
+                // Every other tile keeps the sprite: a tile fill has only its own icon and
+                // label on top, and both of those are sprites and text, which do layer.
                 RoundRect(gx - rimX, gy - rim, gw + rimX * 2f, gh + rim * 2f,
-                          TileRound + rim, Fade(LitEdge, fade));
+                          TileRound + rim, Fade(LitEdge, fade), sprite: false, steps: 8);
             }
 
             RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade));
