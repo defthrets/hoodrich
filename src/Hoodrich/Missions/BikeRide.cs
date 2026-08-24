@@ -314,9 +314,15 @@ namespace Hoodrich.Missions
                     case BikePhase.Words: return "Go say something to them";
                     case BikePhase.Fight: return "Hands only -- pull a gun and it's over";
                     case BikePhase.Rob:
-                        return _robAccepted
-                            ? (_gotCash ? "Get out and get on the bike" : "Aim at the clerk until he empties the till")
-                            : "Pull up outside the 24/7";
+                        // Three different sentences, because there are three different things
+                        // in front of you. It used to say "aim at the clerk until he empties
+                        // the till" for the whole leg -- which stopped being true the moment
+                        // the robbery became the game's, and was actively wrong stood over a
+                        // body with the register still shut.
+                        if (!_robAccepted) return "Pull up outside the 24/7";
+                        if (_gotCash) return "Get out and get on the bike";
+
+                        return _clerkDown ? "Clean out the register" : "Rob the store";
 
                     case BikePhase.Escape: return "Lose the cops";
                     case BikePhase.Home: return "Ride back to the spot";
@@ -335,6 +341,7 @@ namespace Hoodrich.Missions
 
             _def = def;
             _wentInside = false;
+            _clerkDown = false;
             _shouted = false;
             _robOffered = false;
             _robAccepted = false;
@@ -610,6 +617,7 @@ namespace Hoodrich.Missions
             Phase = BikePhase.Rob;
 
             _wentInside = false;
+            _clerkDown = false;
             _shouted = false;
             _robOffered = false;
             _robAccepted = false;
@@ -882,12 +890,72 @@ namespace Hoodrich.Missions
             {
                 _wentInside = true;
 
-                if (Game.Player.Money - _moneyIn >= TookEnough) Took();
+                if (Game.Player.Money - _moneyIn >= TookEnough) { Took(); return; }
+
+                // Shot him. The game leaves the register openable in that case, and standing
+                // over a body waiting to be told what to do is the one moment the leg needs a
+                // sentence of its own.
+                //
+                // Latched rather than re-tested for the objective, because the card asks for
+                // that string every frame and this is a ped scan.
+                if (!_clerkDown && SomebodyDown(player))
+                {
+                    _clerkDown = true;
+                    KilledTheClerk = true;
+                    Notify.Ticker("~o~He's not opening it now.~s~ Clean the register out yourself.");
+                }
+
+                if (_clerkDown) Help.ShowThisFrame("Take the money out of the register.");
                 return;
             }
 
             // Out again. Whatever happened in there, happened.
             if (_wentInside) Took();
+        }
+
+        /// <summary>Whether the man behind the counter is on the floor.</summary>
+        private bool _clerkDown;
+
+        /// <summary>
+        /// The same fact, for whoever asks afterwards.
+        ///
+        /// Kept separate from _clerkDown because that one resets with the leg and this has to
+        /// survive to the hand-in, which happens after the ride is over and the shop is four
+        /// streets away. Lamar has an opinion about it and he cannot have it if the only record
+        /// was cleared on the way out of the door.
+        /// </summary>
+        public bool KilledTheClerk;
+
+        /// <summary>How far into the shop a body counts as the one behind the counter.</summary>
+        private const float BodyRange = 12f;
+
+        /// <summary>
+        /// Whether anybody in the shop has been put down.
+        ///
+        /// Deliberately not "the clerk" -- that is the mistake the old robbery was built on. It
+        /// picked one man, waited on him, and deadlocked when he turned out to be somebody
+        /// else or turned out to be dead. Anybody on the floor in a shop you came in to rob
+        /// means the same thing whichever of them it is.
+        /// </summary>
+        private bool SomebodyDown(Ped player)
+        {
+            try
+            {
+                foreach (var ped in World.GetNearbyPeds(player, BodyRange))
+                {
+                    if (ped == null || !ped.Exists()) continue;
+                    if (ped.Handle == player.Handle) continue;
+                    if (ped.IsAlive) continue;
+
+                    return true;
+                }
+            }
+            catch
+            {
+                // A scan that failed is not a body.
+            }
+
+            return false;
         }
 
         /// <summary>The till is a few hundred, so anything at all off the counter counts.</summary>
@@ -2419,6 +2487,7 @@ namespace Hoodrich.Missions
             ReadyToCollect = false;
             Failure = null;
             _wentInside = false;
+            _clerkDown = false;
             _shouted = false;
             _robOffered = false;
             _robAccepted = false;

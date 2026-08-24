@@ -1840,6 +1840,22 @@ namespace Hoodrich.Wheel
             yield return new Opt
             {
                 Kind = OptKind.Danger,
+                Label = "Unlock Lamar's work",
+                Note = "Every job on his list open at once. He works the list in order, so this " +
+                       "marks them all as done -- and a done job still shows on his list as " +
+                       "one you can run again",
+                Do = () =>
+                {
+                    foreach (var id in AllMissionIds()) _state.MarkDone(id);
+
+                    _state.Touch();
+                    Notify.Important("~g~Lamar's list is open.~s~");
+                }
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
                 Label = "Start the mod over",
                 Note = "Everything this mod has written down, gone -- standing, rank, record, " +
                        "unlocks, contacts and the stash with them. Your money and your guns " +

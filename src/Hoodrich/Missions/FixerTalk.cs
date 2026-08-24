@@ -331,9 +331,26 @@ namespace Hoodrich.Missions
         {
             var def = _runner.Current;
 
-            var node = Node(def == null || string.IsNullOrEmpty(def.Done)
+            // He does not say the same thing over a body.
+            //
+            // The written line is him delighted about a basketball court and a shop that went
+            // smoothly, and it reads as the mod not having noticed when the man behind the
+            // counter is dead. He is not going to hand the money back over it -- but he is
+            // going to say something, and then get on with it, which is the whole character.
+            var line = def == null || string.IsNullOrEmpty(def.Done)
                 ? "Good look. Come get this."
-                : def.Done);
+                : def.Done;
+
+            if (_runner != null && _runner.ClerkKilled)
+            {
+                line = "Damn, dawg. DAMN. You didn't have to do that man, he was openin' it. "
+                     + "He was literally openin' it. ...Aight. Aight, it's done, I ain't gon' "
+                     + "sit here and cry about a man I never met. Just -- next one, let him "
+                     + "hand it over, yeah? Here. Take this before I change my mind about how "
+                     + "funny it was.";
+            }
+
+            var node = Node(line);
 
             node.Say("Appreciate it.", () =>
             {

@@ -197,6 +197,15 @@ namespace Hoodrich.Missions
         /// </summary>
         public MissionBook Book;
 
+        /// <summary>
+        /// Whether the shop on the bike ride ended with somebody on the floor.
+        ///
+        /// Asked by the hand-in, which is a different screen in a different file at the other
+        /// end of the job -- so it is exposed here rather than reached for, and it is false for
+        /// every job that is not that one.
+        /// </summary>
+        public bool ClerkKilled => _bike != null && _bike.KilledTheClerk;
+
         private readonly BikeRide _bike;
 
         /// <summary>Set by Main. Null-checked everywhere, so the feed is never load-bearing.</summary>
