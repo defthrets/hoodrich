@@ -302,6 +302,27 @@ namespace Hoodrich.Missions
         private int _bayAt;
         private readonly List<Ped> _loaders = new List<Ped>();
         private Prop _crate;
+
+        /// <summary>What is stacked on the pallet, when the pallet turns out to be a bare one.</summary>
+        private Prop _load;
+
+        /// <summary>
+        /// The load itself, in the order it is preferred.
+        ///
+        /// bkr_prop_coke_pallet_01a is the pallet the coke lab keeps its stock ON, not a pallet
+        /// WITH stock on it -- so the truck came back from the port carrying a bare wooden
+        /// pallet, which is a picture of an errand that did not happen.
+        ///
+        /// Rather than hunt for a pre-loaded pallet model and hope, the load is a second prop
+        /// stood on top of the first. Wrapped bales lead because this is a quarter kilo off a
+        /// boat and the bales are what the game already uses for exactly that; a box pile is
+        /// under them so an install without the biker pack still gets something on the deck.
+        /// </summary>
+        private static readonly string[] LoadModels =
+        {
+            "bkr_prop_coke_block_01a", "ba_prop_battle_coke_block_01a",
+            "bkr_prop_weed_bigbag_01a", "prop_boxpile_06a", "prop_box_wood04a"
+        };
         private readonly Random _rng = new Random();
 
         public PortRun(PlayerState state)
@@ -1599,6 +1620,68 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
+        /// Puts the goods on top of the pallet.
+        ///
+        /// Given the height the pallet's own deck ends up at, so it sits ON it rather than at a
+        /// guessed offset -- the same measurement the pallet itself is placed by, one level up.
+        /// Silent if nothing in the list is on this install: a bare pallet is a worse picture
+        /// than a loaded one and a better one than no truck.
+        /// </summary>
+        private void StackTheLoad(float deckZ)
+        {
+            if (_van == null || !_van.Exists()) return;
+
+            foreach (var name in LoadModels)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+
+                    _load = World.CreateProp(model, _van.Position, false, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_load == null || !_load.Exists()) continue;
+
+                    _load.IsPersistent = true;
+
+                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _load.Handle, _van.Handle, -1,
+                                  0f, CrateY, deckZ + Underside(model), 0f, 0f, 0f,
+                                  false, false, false, false, 2, true);
+
+                    Log.Info("Port run: " + name + " stacked on the pallet.");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not stack the load: " + ex.Message);
+                }
+            }
+        }
+
+        /// <summary>How tall a model is, from its own bounding box. Zero if it cannot be read.</summary>
+        private static float Height(Model model)
+        {
+            try
+            {
+                var lo = new OutputArgument();
+                var hi = new OutputArgument();
+
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, model.Hash, lo, hi);
+
+                var min = lo.GetResult<Vector3>();
+                var max = hi.GetResult<Vector3>();
+
+                var tall = max.Z - min.Z;
+                return tall > 0f ? tall : 0f;
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
+        /// <summary>
         /// How far to lift a prop so its underside lands on the bed rather than through it.
         ///
         /// GET_MODEL_DIMENSIONS gives the model's own bounding box in its own space. A prop
@@ -2293,6 +2376,9 @@ namespace Hoodrich.Missions
                                   0f, CrateY, BedFloorZ + Underside(model), 0f, 0f, 0f,
                                   false, false, false, false, 2, true);
 
+                    // And something ON it. See LoadModels.
+                    StackTheLoad(BedFloorZ + Underside(model) + Height(model));
+
                     Log.Info("Port run: " + name + " loaded into the van.");
                     return;
                 }
@@ -2371,6 +2457,11 @@ namespace Hoodrich.Missions
         {
             Clear();
             ClearBay();
+
+            try { if (_load != null && _load.Exists()) _load.Delete(); }
+            catch { /* teardown */ }
+
+            _load = null;
 
             try { if (_crate != null && _crate.Exists()) _crate.Delete(); }
             catch { /* teardown */ }
