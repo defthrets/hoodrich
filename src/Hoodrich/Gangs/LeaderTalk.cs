@@ -138,7 +138,11 @@ namespace Hoodrich.Gangs
                                      ? "Move a package for him and he'll put you on"
                                      : "Take a package off him and move it");
 
-                        node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
+                        // HIS product, not the set's first one. Families lead with weed, so
+                        // this row wore a weed leaf while the man behind it hands over bars --
+                        // which is a picture of the wrong thing on the one row that decides
+                        // what you are about to be carrying.
+                        node.WithIcon(Icons.ForDrug(FirstFront.Length > 0 ? FirstFront[0] : ""));
                     }
                     else if (!done)
                     {
@@ -764,7 +768,14 @@ namespace Hoodrich.Gangs
                                  || (_crew.IsAffiliated && _crew.Current.Id == def.GangId
                                      && AfterJoining()));
 
-            if (FrontsWork(def) && _state.MissionsDone.Count > 0 && !trialHasIt)
+            // And only once you are one of his.
+            //
+            // This is the standing arrangement -- come to me broke and I will put something in
+            // your hands -- which is a thing you get for being in the set, not a thing a
+            // stranger can ask for. The trial above is how a stranger gets in; borrowing weight
+            // is what being in buys you, and having both open at once made the trial optional.
+            if (FrontsWork(def) && _crew.IsAffiliated && _state.MissionsDone.Count > 0
+                && !trialHasIt)
             {
                 if (_state.FrontedWorkDone)
                 {
@@ -785,10 +796,6 @@ namespace Hoodrich.Gangs
                     node.WithIcon(Icons.Money);
                 }
             }
-
-            node.SayIf(false, "Coming soon",
-                       "Got any work for me?", () => null,
-                       "Ask for a job");
 
             node.Leave("I'm out.");
             return node;
@@ -838,9 +845,14 @@ namespace Hoodrich.Gangs
         /// like to sell -- he hands you the thing that is easiest to move, needs no
         /// explaining, and that he can afford to lose if you turn out to be nobody. Once
         /// you have taken one out and brought the money back, he lets you pick.
+        ///
+        /// And PILLS, both times. Weed used to lead the second list, which put a bag of green
+        /// in your hands from the man whose whole thing is that he is not the green -- Lamar
+        /// runs that side of the block and Gerald runs the pills. A set can sell everything
+        /// without every man in it selling everything.
         /// </summary>
         private static readonly string[] FirstFront = { "xanax" };
-        private static readonly string[] LaterFronts = { "weed", "ecstasy", "xanax" };
+        private static readonly string[] LaterFronts = { "xanax", "ecstasy" };
 
         private DialogueNode OfferWork(LeaderDef def, GangDef gang)
         {
@@ -899,7 +911,8 @@ namespace Hoodrich.Gangs
                         "Ask where this is going");
                 one.WithIcon(Icons.FromFile("rank.png"));
 
-                one.Say("Give it here.", () => TakeWork(def, gang, bars), "Take his bars");
+                one.Say("Give it here.", () => TakeWork(def, gang, bars),
+                        "Take his " + bars.Amount(FrontGrams));
                 one.WithIcon(Icons.ForDrug(bars.Id));
 
                 one.Say("Nah.", () => Root(def));
@@ -998,8 +1011,12 @@ namespace Hoodrich.Gangs
             _state.FrontedAtGrams = _state.GramsSold;
             _state.Touch();
 
-            Notify.Important("~g~" + took.ToString("0") + "g of " + product.Name.ToLowerInvariant() +
-                             "~s~ off " + def.Name + ". Move all of it and go back to him.");
+            // Amount(), not grams. Bars and pills are COUNTED -- the drug catalogue carries a
+            // singular for exactly this -- and "20g of xanax" is a unit nobody uses about a
+            // pill. The dialogue has always said it properly; this was the one line that did
+            // not, so he said one thing out loud and the corner of the screen said another.
+            Notify.Important("~g~" + product.Amount(took) + "~s~ off " + def.Name +
+                             ". Move all of it and go back to him.");
 
             if (Social != null) Social.On(Hoodrich.Social.SocialEvent.FrontedWork, def.Name);
 

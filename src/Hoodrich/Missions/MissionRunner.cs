@@ -1107,6 +1107,25 @@ namespace Hoodrich.Missions
         /// Locking a car you are a passenger in is locking somebody else's doors, and locking
         /// an empty one is locking a door for nobody.
         /// </summary>
+        /// <summary>
+        /// Whether any of the crew who are alive are outside this car.
+        ///
+        /// Dead men do not count. Somebody who went down in the street is not somebody waiting
+        /// to get back in, and counting him would hold the doors open for the rest of the job.
+        /// </summary>
+        private bool AnyoneAfoot(Vehicle ride)
+        {
+            if (ride == null || !ride.Exists()) return false;
+
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+                if (!homie.IsInVehicle(ride)) return true;
+            }
+
+            return false;
+        }
+
         private void LockThemIn()
         {
             var player = Game.Player.Character;
@@ -1128,6 +1147,24 @@ namespace Hoodrich.Missions
 
             if (ride == null || !ride.Exists())
             {
+                _drivingSince = 0;
+                return;
+            }
+
+            // ANYBODY STOOD OUTSIDE IT UNLOCKS IT, and this is not a nicety.
+            //
+            // Lock state 2 stops a ped getting IN as well as getting out. So the moment the
+            // work started and the crew piled out to fight, the car they had just been riding
+            // in was sealed against them -- three men stood in the road next to a locked car,
+            // unable to get back in, for the rest of the job. The lock is there to stop them
+            // bailing out at a red light on the way to somewhere; once they are out on their
+            // feet it has nothing left to do and is only in the way.
+            //
+            // The clock resets with it, so when they are all back aboard the ten seconds start
+            // again and it locks itself.
+            if (AnyoneAfoot(ride))
+            {
+                Unlock();
                 _drivingSince = 0;
                 return;
             }
@@ -1189,7 +1226,7 @@ namespace Hoodrich.Missions
         private int _drivingSince;
 
         /// <summary>Three seconds after you start driving, which is the number he asked for.</summary>
-        private const int LockAfterMs = 3000;
+        private const int LockAfterMs = 10000;
 
         /// <summary>
         /// Gives the car back the way it was found.

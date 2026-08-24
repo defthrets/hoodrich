@@ -262,7 +262,7 @@ namespace Hoodrich.Locations
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
-            EnsureBlip();
+            if (IsKnown) EnsureBlip(); else DropBlip();
 
             var away = player.Position.DistanceTo(Spot);
 
@@ -627,6 +627,28 @@ namespace Hoodrich.Locations
         }
 
         // ---- map ---------------------------------------------------------------
+
+        /// <summary>
+        /// Whether he is on the map at all yet.
+        ///
+        /// Set by Main and null-checked, so a caller that does not care gets the old behaviour.
+        /// Same reasoning as Lamar's: a marker on a yard in Little Seoul before anybody has
+        /// vouched for you is the map introducing you to a man you have no reason to know.
+        /// </summary>
+        public Func<bool> Known;
+
+        private bool IsKnown => Known == null || Known();
+
+        /// <summary>Takes the mark off the yard, for when he is not somebody you know yet.</summary>
+        private void DropBlip()
+        {
+            if (_blip == null) return;
+
+            try { if (_blip.Exists()) _blip.Delete(); }
+            catch { /* it was already gone */ }
+
+            _blip = null;
+        }
 
         private void EnsureBlip()
         {

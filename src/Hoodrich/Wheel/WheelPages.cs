@@ -96,6 +96,16 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main: clears the feed and the follower count.</summary>
         public Action WipeSocials;
 
+        /// <summary>
+        /// Every job in the book, for the unlock-everything row.
+        ///
+        /// A hook rather than a reference, because this class has no business holding the
+        /// mission catalogue for the sake of one row in a settings list -- and because a null
+        /// hook means that row unlocks everything else and no jobs, which is a smaller failure
+        /// than not compiling.
+        /// </summary>
+        public Func<IEnumerable<string>> AllJobs;
+
         public WheelPages(Core.Settings cfg, PlayerState state, Drugs drugs, Pricing pricing,
                           Cutting cutting, GangRegistry gangs, Affiliation crew, TurfWatch turf,
                           DealerManager suppliers, WeaponRegistry weapons,
@@ -1723,6 +1733,28 @@ namespace Hoodrich.Wheel
         /// says so without going anywhere. The wording that was on those pages is the note
         /// under each row now, so nothing about what survives has been lost.
         /// </summary>
+        /// <summary>Every job in the catalogue, so "unlock everything" means every job.</summary>
+        private IEnumerable<string> AllMissionIds()
+        {
+            return AllJobs == null ? new List<string>() : AllJobs();
+        }
+
+        /// <summary>And every set, so no leader is still hiding on the map.</summary>
+        private IEnumerable<string> AllGangIds()
+        {
+            var ids = new List<string>();
+
+            if (_gangs != null)
+            {
+                foreach (var g in _gangs.All)
+                {
+                    if (g != null && !string.IsNullOrEmpty(g.Id)) ids.Add(g.Id);
+                }
+            }
+
+            return ids;
+        }
+
         public IEnumerable<Opt> ResetOptions()
         {
             yield return new Opt { Kind = OptKind.Heading, Label = "Start over" };
@@ -1789,6 +1821,35 @@ namespace Hoodrich.Wheel
                        "talking; it stops knowing who you are",
                 Enabled = () => WipeSocials != null,
                 Do = () => WipeSocials?.Invoke()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Unlock everything",
+                Note = "Every job marked done, every leader met, the port open, Gerald's " +
+                       "packages cleared and the rank to match. For seeing the far end of the " +
+                       "mod without playing the near end again",
+                Do = () =>
+                {
+                    _state.UnlockEverything(AllMissionIds(), AllGangIds());
+                    Notify.Important("~g~Everything's open.~s~");
+                }
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Start the mod over",
+                Note = "Everything this mod has written down, gone -- standing, rank, record, " +
+                       "unlocks, contacts and the stash with them. Your money and your guns " +
+                       "are the game's, not ours, so they stay",
+                Do = () =>
+                {
+                    _state.ForgetEverything();
+                    WipeSocials?.Invoke();
+                    Notify.Important("~o~Back to nobody.~s~");
+                }
             };
 
             yield return new Opt

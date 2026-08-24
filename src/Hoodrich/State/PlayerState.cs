@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Hoodrich.Core;
 using Hoodrich.Economy;
@@ -361,6 +361,93 @@ namespace Hoodrich.State
         /// worst possible name a man can have, and a reset that leaves the block believing you
         /// sell chalk is not a reset.
         /// </summary>
+        /// <summary>
+        /// Everything this mod has ever written down, gone.
+        ///
+        /// Money and guns are deliberately untouched, and that is not a choice so much as a
+        /// fact: neither of them lives here. Cash is the game's and so is the contents of the
+        /// weapon wheel, so a reset of OUR save cannot take them even if it wanted to. What
+        /// goes is the part that is ours -- the standing, the record, the unlocks, the ledger
+        /// with Gerald, what the block thinks of your product and who you have met.
+        ///
+        /// The stash goes with it. It has to: leaving a kilo in the house of somebody the mod
+        /// has just decided is a stranger is not a fresh start, it is a stranger with a kilo.
+        /// </summary>
+        public void ForgetEverything()
+        {
+            Respect = 0f;
+            Notoriety = 0f;
+            TotalDealsMade = 0;
+            GramsSold = 0f;
+            ProductRep = Neutral;
+
+            DocksUnlocked = false;
+            PortRunStage = 0;
+            FrontsDone = 0;
+            HomiesUnlocked = false;
+            MetHao = false;
+            SleptAtStashHouse = false;
+            Followers = 0;
+
+            ClearFronted();
+
+            MissionsDone.Clear();
+            LeadersMet.Clear();
+            CarsBought.Clear();
+
+            SeenWelcome = false;
+            SentForYou = false;
+
+            _offered.Clear();
+            Stash.Clear();
+
+            Touch();
+            Log.Info("Mod state reset: everything forgotten but the money and the guns.");
+        }
+
+        /// <summary>
+        /// The whole thing open, and everything behind it done.
+        ///
+        /// For testing the far end of the mod without playing the near end of it again. It
+        /// does NOT hand out respect it has not earned beyond what the unlocks imply -- rank
+        /// comes off respect, so the rank has to move or half the gates it opens close again
+        /// behind it.
+        /// </summary>
+        public void UnlockEverything(IEnumerable<string> missionIds, IEnumerable<string> gangIds)
+        {
+            DocksUnlocked = true;
+            PortRunStage = 0;
+            FrontsDone = 2;
+            HomiesUnlocked = true;
+            MetHao = true;
+            SleptAtStashHouse = true;
+
+            ClearFronted();
+
+            if (missionIds != null)
+            {
+                foreach (var id in missionIds)
+                {
+                    if (!string.IsNullOrEmpty(id) && !MissionsDone.Contains(id)) MissionsDone.Add(id);
+                }
+            }
+
+            if (gangIds != null)
+            {
+                foreach (var id in gangIds) MarkMet(id);
+            }
+
+            // Enough to clear the last rank gate in the mod, and no more.
+            if (Respect < TopRespect) Respect = TopRespect;
+
+            Touch();
+            Log.Info("Everything unlocked by hand: " + MissionsDone.Count + " jobs, rank "
+                     + RankName + ".");
+        }
+
+        /// <summary>What the last rank in the table costs.</summary>
+        private const float TopRespect = 6000f;
+
         public void ForgetName()
         {
             Respect = 0f;

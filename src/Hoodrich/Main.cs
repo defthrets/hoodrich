@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -436,6 +436,11 @@ namespace Hoodrich
                 // Hao runs a second economy off the same map: metal instead of weight, with
                 // its own yard, its own money and eventually its own jobs.
                 _hao = new Hao(_state);
+
+                // Nobody sends you to a car dealer in Little Seoul before you are anybody. The
+                // yard is there the whole time and you can find it on foot; what waits is the
+                // marker telling you to.
+                _hao.Known = () => _crew != null && _crew.IsAffiliated;
 
                 _social = SocialFeed.Load();
                 _socialScreen = new SocialScreen(_social);
@@ -1279,6 +1284,16 @@ namespace Hoodrich
                 };
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
+
+                pages.AllJobs = () =>
+                {
+                    var ids = new List<string>();
+                    foreach (var def in _missions.All)
+                    {
+                        if (def != null && !string.IsNullOrEmpty(def.Id)) ids.Add(def.Id);
+                    }
+                    return ids;
+                };
 
                 // The feed screen posts now, so it gets what the wheel page used to hold. The
                 // wedge is a door and nothing else.
