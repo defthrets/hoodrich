@@ -343,6 +343,49 @@ namespace Hoodrich.Gangs
             return spot;
         }
 
+        /// <summary>
+        /// He notices the moment his package is gone, rather than the next time you see him.
+        ///
+        /// Selling the last gram of somebody else's work happens on a corner with a customer
+        /// in front of you and no menu open, so if he only reacted when you walked back up to
+        /// him there would be no moment at all -- you would simply find a new dialogue option
+        /// waiting whenever you next happened past. A text is how everybody else in this mod
+        /// gets hold of you and it is how he should too.
+        ///
+        /// Latched, because "the package is gone" stays true until the ledger is cleared and
+        /// this runs several times a second.
+        /// </summary>
+        private void HisWorkIsGone()
+        {
+            if (_state == null) return;
+            if (!_state.FrontedWorkDone || _state.FrontDoneTexted) return;
+
+            _state.FrontDoneTexted = true;
+            _state.Touch();
+
+            // Two different messages, because they are two different moments. The first
+            // package is an audition; the second is him deciding you are worth introducing to
+            // the people he buys from.
+            var second = _state.FrontsDone >= 1;
+
+            try
+            {
+                Notify.Text("CHAR_DEFAULT", "Gerald", "Chamberlain Hills",
+                            second
+                                ? "aight thats all of it gone. come see me, i got somethin " +
+                                  "else for you and it aint corner work"
+                                : "heard you moved all that already. come see me and we'll " +
+                                  "talk about you properly",
+                            false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not text about the front: " + ex.Message);
+            }
+
+            Log.Info("Gerald's front is cleared (" + (second ? "second" : "first") + ").");
+        }
+
         // ---- who they are ------------------------------------------------------
 
         private void AddDefaults()
@@ -671,6 +714,8 @@ namespace Hoodrich.Gangs
             _lastUpdate = now;
 
             SyncBlips();
+
+            HisWorkIsGone();
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;

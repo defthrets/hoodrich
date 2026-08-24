@@ -403,13 +403,24 @@ namespace Hoodrich.Gangs
                 return owed;
             }
 
-            if (_state.GramsSold < _cfg.DocksUnlockGrams)
+            // Gated on HIS packages, not on a lifetime total.
+            //
+            // It used to want fifty grams sold ever, which is a different thing from anything
+            // he asked you to do -- you could clear both of his fronts, be told he had
+            // something for you, walk over, and be sent away for not having moved enough of
+            // somebody else's product. Two packages taken and two packages cleared is the
+            // whole test, and it is a test he actually set.
+            if (_state.FrontsDone < 2)
             {
                 var soon = Node(def, gang,
-                    "You moved what, a couple of grams? Come back when you're worth telling.");
+                    _state.HasFrontedWork
+                        ? "You still holding mine. Finish that first, then we talk about where " +
+                          "it comes from."
+                        : "Nah. Take somethin' off me and move it first. Twice. Then I'll tell " +
+                          "you where I get it.");
 
                 soon.Say("Back up.", () => Root(def),
-                         _state.GramsSold.ToString("0") + " / " + _cfg.DocksUnlockGrams.ToString("0") + "g moved");
+                         _state.FrontsDone + " of 2 packages cleared");
                 soon.Leave();
                 return soon;
             }
@@ -820,6 +831,25 @@ namespace Hoodrich.Gangs
             _crew.AddRep(SquaredRep, "for moving " + def.Name + "'s work");
 
             _state.Touch();
+
+            // The second package is a different conversation from the first, and offering to
+            // sign somebody up who signed up an hour ago is the sort of thing that makes a
+            // whole cast feel like a menu. First one gets you in; second one gets you the
+            // number of the man he buys from.
+            if (_state.FrontsDone >= 2)
+            {
+                var twice = Node(def, gang,
+                    "Twice now. Took it, moved it, brought it back, didn't eat none of it and " +
+                    "didn't get got. Aight -- you been askin' where I get mine. I'm done " +
+                    "pretendin' I didn't hear you.");
+
+                twice.Say("So where?", () => AskSource(def, gang), "He'll tell you now");
+                twice.WithIcon(Icons.Tick);
+
+                twice.Say("Another time.", () => Root(def));
+                twice.Leave();
+                return twice;
+            }
 
             var node = Node(def, gang,
                 "Aight. You took it, you moved it, you came back. That's three things most " +

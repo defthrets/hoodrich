@@ -393,8 +393,8 @@ namespace Hoodrich.UI
             Slide("Bulk discount", "Economy", "BulkPurchaseDiscountPercent",
                   () => c.BulkPurchaseDiscountPercent, v => c.BulkPurchaseDiscountPercent = v,
                   0f, 90f, 5f, "0", "%");
-            Slide("Docks unlock at", "Economy", "DocksUnlockGrams",
-                  () => c.DocksUnlockGrams, v => c.DocksUnlockGrams = v, 0f, 500f, 10f, "0", "g");
+            Readout("Docks unlock", () => "after Gerald's two packages",
+                    "Not a number any more -- take a package off him and clear it, twice");
             Slide("Prices move every", "Economy", "MarketDriftIntervalMinutes",
                   () => c.MarketDriftIntervalMinutes, v => c.MarketDriftIntervalMinutes = v,
                   0f, 60f, 1f, "0", "m");

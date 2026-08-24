@@ -1432,16 +1432,16 @@ namespace Hoodrich.Wheel
             if (def.IsGangDealer)
             {
                 var known = _state.DocksUnlocked;
-                var toGo = DealerManager.GramsUntilSource(_state, _cfg.DocksUnlockGrams);
+                var owed = DealerManager.PackagesUntilSource(_state);
 
                 page.Add("Ask source", "?",
                     () => _dealers.AskSource(def, _state, _cfg.DocksUnlockGrams),
                     detail: known
                         ? "You already know: the port"
-                        : toGo > 0f
-                            ? "He will not say yet -- " + toGo.ToString("0.#") + "g more to move"
+                        : owed > 0
+                            ? "Nobody says until Gerald's packages are cleared -- " + owed + " to go"
                             : "\"Where are you getting this?\"",
-                    value: known ? "KNOWN" : toGo > 0f ? toGo.ToString("0.#") + "g to go" : "ASK HIM");
+                    value: known ? "KNOWN" : owed > 0 ? owed + " left" : "ASK HIM");
                 page.WithIcon(Icons.FromFile("reply.png"));
             }
 

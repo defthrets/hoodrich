@@ -31,6 +31,33 @@ namespace Hoodrich.Phone
         /// <summary>HUD component id for the phone, hidden while ours is up.</summary>
         private const int HudCellphone = 21;
 
+        /// <summary>
+        /// The stock phone animation, which is three clips and not one.
+        ///
+        /// cellphone_text_in takes it out of his pocket, cellphone_text_read_base is him
+        /// holding it and reading, cellphone_text_out puts it away. Playing only the base pose
+        /// makes the phone appear in a raised hand with no reach for it, which reads as a
+        /// teleport rather than as picking something up.
+        ///
+        /// Every clip verified against the game's own animation data.
+        /// </summary>
+        private const string PhoneDict = "cellphone@";
+        private const string ClipIn = "cellphone_text_in";
+        private const string ClipHold = "cellphone_text_read_base";
+        private const string ClipOut = "cellphone_text_out";
+
+        /// <summary>Franklin's own handset, with the generic one behind it.</summary>
+        private static readonly string[] PhoneProps = { "prop_phone_cs_frank", "prop_npc_phone_02" };
+
+        /// <summary>PH_R_Hand. The prop helper, so it sits where a hand holds it.</summary>
+        private const int RightHandBone = 28422;
+
+        /// <summary>How long the take-out runs before he settles into holding it.</summary>
+        private const int IntroMs = 620;
+
+        /// <summary>And how long the put-away runs before the prop goes.</summary>
+        private const int OutroMs = 700;
+
         /// <summary>Repeat delay for a held direction, then the rate once it kicks in.</summary>
         private const int RepeatFirstMs = 330;
         private const int RepeatThenMs = 90;
@@ -70,10 +97,15 @@ namespace Hoodrich.Phone
 
         public void Update(bool available)
         {
+            // Before anything else, and outside every early return: the put-away clip outlives
+            // the menu that started it and the prop has to survive until it has finished.
+            TickHandset();
+
             if (!available)
             {
                 if (_menu.IsOpen) ClosePhone();
                 EndVanillaMode();
+                DropHandset();
                 return;
             }
 
@@ -107,9 +139,184 @@ namespace Hoodrich.Phone
             if (edge && !Pressed(Control.PhoneUp)) { ClosePhone(); return; }
 
             LockControlsThisFrame();
+            HoldItUp();
             HandleInput();
 
             _menu.Render();
+        }
+
+        // ---- him actually holding it ---------------------------------------------
+
+        private Prop _handset;
+        private int _shownAt;
+        private bool _holding;
+        private int _puttingAwayAt;
+
+        /// <summary>
+        /// Takes the phone out, the way the game does it.
+        ///
+        /// UPPER BODY and SECONDARY (flag 49), so his legs stay his own -- you can still walk
+        /// while the phone is up, which is what the stock one lets you do and what anybody
+        /// would expect. A full-body clip would root him to the spot the moment the menu
+        /// opened.
+        /// </summary>
+        private void TakeItOut()
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            // On foot only. cellphone@ is the standing set -- the reach into a pocket and the
+            // arm position are both built for a man stood up, and played behind a steering
+            // wheel his forearm goes through it. The game swaps to a seated set of its own for
+            // this and matching that properly is a bigger job than it is worth right now, so
+            // in a car the menu simply opens without the theatre.
+            if (player.IsInVehicle()) return;
+
+            _shownAt = Game.GameTime;
+            _holding = false;
+            _puttingAwayAt = 0;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, PhoneDict))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, PhoneDict);
+                }
+
+                GiveHandset(player);
+
+                Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, PhoneDict, ClipIn,
+                              8f, -8f, -1, 48, 0f, false, 0, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not raise the phone: " + ex.Message);
+            }
+        }
+
+        /// <summary>Settles him into the reading pose once the take-out has played.</summary>
+        private void HoldItUp()
+        {
+            if (_holding || _shownAt == 0) return;
+            if (Game.GameTime - _shownAt < IntroMs) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            _holding = true;
+
+            try
+            {
+                Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, PhoneDict, ClipHold,
+                              4f, -4f, -1, 49, 0f, false, 0, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not hold the phone: " + ex.Message);
+            }
+        }
+
+        /// <summary>Puts it away, and only bins the prop once the clip has run.</summary>
+        private void PutItAway()
+        {
+            var player = Game.Player.Character;
+
+            _shownAt = 0;
+            _holding = false;
+
+            if (player == null || !player.Exists() || !player.IsAlive)
+            {
+                DropHandset();
+                return;
+            }
+
+            try
+            {
+                // Put back if it has already been taken off him. RestoreWorld drops the prop
+                // and runs first, so without this he mimes pocketing an empty hand for the
+                // whole clip -- which is the one thing the outro exists to avoid.
+                GiveHandset(player);
+
+                Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, PhoneDict, ClipOut,
+                              8f, -8f, -1, 48, 0f, false, 0, false);
+
+                _puttingAwayAt = Game.GameTime;
+            }
+            catch
+            {
+                DropHandset();
+            }
+        }
+
+        /// <summary>
+        /// Ticked even when the menu is shut, because putting it away outlives the menu.
+        ///
+        /// The outro is most of a second long and the phone closes instantly -- so if the prop
+        /// went with the screen his hand would be empty for the whole animation of him putting
+        /// something into his pocket.
+        /// </summary>
+        private void TickHandset()
+        {
+            if (_puttingAwayAt == 0) return;
+            if (Game.GameTime - _puttingAwayAt < OutroMs) return;
+
+            _puttingAwayAt = 0;
+
+            var player = Game.Player.Character;
+
+            try
+            {
+                if (player != null && player.Exists())
+                {
+                    Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, player.Handle);
+                }
+            }
+            catch { /* it runs out */ }
+
+            DropHandset();
+        }
+
+        private void GiveHandset(Ped player)
+        {
+            if (_handset != null && _handset.Exists()) return;
+
+            foreach (var name in PhoneProps)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(600)) continue;
+
+                    _handset = World.CreateProp(model, player.Position, false, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_handset == null || !_handset.Exists()) continue;
+
+                    var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, player.Handle,
+                                                  RightHandBone);
+
+                    // PH_R_Hand is a prop helper, so it already sits where a held object goes:
+                    // no offset, no rotation.
+                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _handset.Handle, player.Handle,
+                                  bone, 0f, 0f, 0f, 0f, 0f, 0f, true, true, false, true, 1, true);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("No handset: " + ex.Message);
+                }
+            }
+        }
+
+        private void DropHandset()
+        {
+            try
+            {
+                if (_handset != null && _handset.Exists()) _handset.Delete();
+            }
+            catch { /* gone */ }
+
+            _handset = null;
         }
 
         // ---- handing it back ----------------------------------------------------
@@ -336,6 +543,9 @@ namespace Hoodrich.Phone
 
             _menu.Open(root);
 
+            // He reaches into his pocket for it, same as he does for his own.
+            TakeItOut();
+
             // The key that opened it is still down, and on the default binding it is also the
             // "up" key -- so without this the phone opens and instantly scrolls itself.
             _navBlocked = true;
@@ -360,8 +570,14 @@ namespace Hoodrich.Phone
 
         public void ClosePhone()
         {
+            var was = _menu.IsOpen;
+
             _menu.Close();
             RestoreWorld();
+
+            // AFTER RestoreWorld, which drops the prop. He needs it back in his hand for the
+            // length of the put-away clip, and TickHandset takes it off him when that ends.
+            if (was) PutItAway();
 
             // Disabling a control only lasts the frame you disable it on, and the button that
             // closed the phone is still held down on the NEXT one -- which is the frame we
@@ -376,6 +592,8 @@ namespace Hoodrich.Phone
         /// <summary>Puts back everything opening it changed. Safe to call twice.</summary>
         public void RestoreWorld()
         {
+            DropHandset();
+
             if (_timeScaleApplied)
             {
                 Game.TimeScale = 1f;

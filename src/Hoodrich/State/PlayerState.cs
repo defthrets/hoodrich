@@ -213,11 +213,21 @@ namespace Hoodrich.State
         /// <summary>Whether the package is gone and he owes you for it.</summary>
         public bool FrontedWorkDone => HasFrontedWork && FrontedMoved >= FrontedGrams - 0.001f;
 
+        /// <summary>
+        /// Whether he has already been told the package is gone.
+        ///
+        /// The text fires the moment the last gram of HIS work is sold, which is a thing that
+        /// happens on a corner with no menu open -- so it needs a latch, or every tick after
+        /// that would send it again.
+        /// </summary>
+        public bool FrontDoneTexted;
+
         public void ClearFronted()
         {
             FrontedDrug = "";
             FrontedGrams = 0f;
             FrontedAtGrams = 0f;
+            FrontDoneTexted = false;
         }
 
         /// <summary>
@@ -553,6 +563,7 @@ namespace Hoodrich.State
                 .Set("followers", Followers)
                 .Set("frontedDrug", FrontedDrug)
                 .Set("frontedGrams", FrontedGrams)
+                .Set("frontDoneTexted", FrontDoneTexted)
                 .Set("frontedAtGrams", FrontedAtGrams)
                 .Set("lastJobAt", LastJobAtUtc)
                 .Set("missionsDone", MissionsJson())
@@ -594,6 +605,7 @@ namespace Hoodrich.State
 
                 FrontedDrug = doc["frontedDrug"].AsString("");
                 FrontedGrams = doc["frontedGrams"].AsFloat(0f);
+                FrontDoneTexted = doc["frontDoneTexted"].AsBool(false);
                 FrontedAtGrams = doc["frontedAtGrams"].AsFloat(0f);
 
                 LastJobAtUtc = Math.Max(0L, doc["lastJobAt"].AsLong(0L));

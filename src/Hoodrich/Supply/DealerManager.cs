@@ -975,6 +975,16 @@ namespace Hoodrich.Supply
         /// have moved enough weight to be worth telling -- and even then the answer is a drive
         /// rather than a phone number, which is PortRun's job.
         /// </summary>
+        /// <summary>
+        /// Asking a plug where the weight comes from.
+        ///
+        /// Gated on Gerald's PACKAGES rather than on a lifetime grams figure, and it has to be
+        /// the same gate he uses or this becomes a way round him: he wants two fronts taken
+        /// and cleared before he introduces anybody to the port, and a plug on the same block
+        /// answering the identical question off a different number makes that sequence
+        /// optional. The parameter is kept so the call sites do not all have to change; it is
+        /// simply no longer what decides the answer.
+        /// </summary>
         public void AskSource(DealerDef def, PlayerState state, float requiredGrams)
         {
             if (def == null) return;
@@ -993,14 +1003,14 @@ namespace Hoodrich.Supply
                 return;
             }
 
-            if (state.GramsSold < requiredGrams)
+            if (PackagesUntilSource(state) > 0)
             {
                 Bark(NoLines);
 
                 // The ticker rather than a subtitle. This one is a REFUSAL with a reason, and a
                 // grunt on its own leaves you standing there not knowing why nothing happened.
                 Notify.Ticker("~o~" + (string.IsNullOrEmpty(def.SourceTooSoon)
-                    ? "You ain't moved enough for him to be telling you that."
+                    ? "That ain't his to tell you. Square up with Gerald first."
                     : def.SourceTooSoon) + "~s~");
                 return;
             }
@@ -1017,6 +1027,12 @@ namespace Hoodrich.Supply
         public static float GramsUntilSource(PlayerState state, float requiredGrams)
         {
             return Math.Max(0f, requiredGrams - state.GramsSold);
+        }
+
+        /// <summary>How many of Gerald's packages are still owed before anybody will say.</summary>
+        public static int PackagesUntilSource(PlayerState state)
+        {
+            return state == null ? 2 : Math.Max(0, 2 - state.FrontsDone);
         }
 
         /// <summary>The conversation panel, and how to build the page for a given dealer.</summary>
