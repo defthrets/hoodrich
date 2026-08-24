@@ -540,8 +540,7 @@ namespace Hoodrich.Gangs
                         : "Nah. Take somethin' off me and move it first. Twice. Then I'll tell " +
                           "you where I get it.");
 
-                soon.Say("Back up.", () => Root(def),
-                         _state.FrontsDone + " of 2 packages cleared");
+                soon.Say("Back up.", () => Root(def), PackageProgress());
                 soon.Leave();
                 return soon;
             }
@@ -847,11 +846,11 @@ namespace Hoodrich.Gangs
 
                 var one = Node(def, gang,
                     "Look at you. Broke, standin' in my yard askin' for somethin'. Aight -- " +
-                    bars.Amount(FrontGrams) + ". Don't ask me for nothin' else, this " +
-                    "is what you get, 'cause bars sell theyself and I ain't gotta teach you " +
-                    "nothin'. Move all of it, come back, I break you off a lil somethin'. You " +
-                    "eat 'em or you run off with my money, we gon have a whole different " +
-                    "conversation.");
+                    bars.Amount(FrontGrams) + ", already bagged, you ain't gotta do nothin' to " +
+                    "'em but stand somewhere. Don't ask me for nothin' else, this is what you " +
+                    "get, 'cause bars sell theyself and I ain't gotta teach you nothin'. Move " +
+                    "all of it, come back, I break you off a lil somethin'. You eat 'em or you " +
+                    "run off with my money, we gon have a whole different conversation.");
 
                 one.Say("Give it here.", () => TakeWork(def, gang, bars), "Take his bars");
                 one.WithIcon(Icons.ForDrug(bars.Id));
@@ -862,8 +861,8 @@ namespace Hoodrich.Gangs
 
             var node = Node(def, gang,
                 "Aight, you been out there once and you came back, so you get to pick this " +
-                "time. Same deal -- " + FrontGrams.ToString("0") + " of whatever you take, all " +
-                "of it moved, then you see me.");
+                "time. Same deal -- " + FrontGrams.ToString("0") + " of whatever you take, " +
+                "bagged and ready same as before, all of it moved, then you see me.");
 
             foreach (var d in stock)
             {
@@ -889,8 +888,22 @@ namespace Hoodrich.Gangs
 
         private DialogueNode TakeWork(LeaderDef def, GangDef gang, DrugDef product)
         {
-            // Fronted weight is the same weight he sells, not a favour in purer product.
-            var took = _state.Stash.AddBulk(product.Id, FrontGrams, StreetPurity(gang));
+            // PACKAGED, not weight. It is already bagged and it is ready to go.
+            //
+            // He was handing over raw weight, which cannot be sold -- so the first thing the
+            // mod asked a broke player to do with a favour was drive to a kitchen and learn
+            // the cutting screen before a single thing had happened to them. That is the
+            // wrong first lesson and it is not what fronting somebody a bag means: a man
+            // putting you on does not hand you a brick and wish you luck, he hands you
+            // something you can stand on a corner with tonight.
+            //
+            // BOTH his packages come this way, not just the first. Weight, cutting and purity
+            // are still the whole economy -- they arrive the moment you BUY rather than are
+            // given, which is the honest place for them: what a man fronts you is a favour and
+            // it is ready to go; what you buy is raw and the work is yours.
+            //
+            // Fronted product is the same strength he sells, not a favour in purer product.
+            var took = _state.Stash.AddPackaged(product.Id, FrontGrams, StreetPurity(gang));
 
             if (took <= 0f)
             {
@@ -915,6 +928,30 @@ namespace Hoodrich.Gangs
 
             node.Leave("Say less.");
             return node;
+        }
+
+        /// <summary>
+        /// How far through his two packages you actually are, in one line.
+        ///
+        /// "0 of 2 packages cleared" was true and useless: it is the ONLY number on that row,
+        /// and it does not move for the entire time you are working a package -- which is all
+        /// of the time you would be looking at it. Somebody halfway through the first bag and
+        /// somebody who has not started see the same line, so the one thing it is there to
+        /// tell you is the one thing it does not.
+        ///
+        /// The count still leads, because that is what the gate is measured in. What is on
+        /// THIS package follows it, so the row moves as you sell.
+        /// </summary>
+        private string PackageProgress()
+        {
+            var done = _state.FrontsDone + " of 2 cleared";
+
+            if (!_state.HasFrontedWork) return done;
+
+            var moved = Math.Min(_state.FrontedMoved, _state.FrontedGrams);
+
+            return done + "  ·  " + moved.ToString("0") + " of " +
+                   _state.FrontedGrams.ToString("0") + " moved on this one";
         }
 
         private DialogueNode WorkProgress(LeaderDef def, GangDef gang)
