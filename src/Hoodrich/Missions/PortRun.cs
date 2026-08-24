@@ -753,7 +753,15 @@ namespace Hoodrich.Missions
         /// </summary>
         private DialogueNode HandOver()
         {
+            // He looks at the yard before he looks at you.
+            //
+            // The truck comes in off the road and there is no gentle way into that yard, so
+            // whatever else is true the first thing in front of him is the state of his fence.
+            // Him clocking that, swearing about it and then getting on with the actual business
+            // is worth more than a clean speech -- it is the difference between a man reacting
+            // to what just happened and a man reading out the end of a mission.
             var node = new DialogueNode("Gerald",
+                "THE FENCE DAWG! ...ah fuck it, that janky ass fence needed replacin' anyway. " +
                 "Aight. Leave it where it is, I got people for that. And quit standin' there " +
                 "lookin' at me like I'm finna say somethin' -- it's done, that's the whole " +
                 "thing. You got his number now so you call him your damn self, I ain't sittin' " +
