@@ -15,3 +15,8 @@ tools/*.zip
 # Python bytecode, from importing the icon tools
 __pycache__/
 *.pyc
+
+# Release staging and zips are BUILD OUTPUT -- 119 files and a copy of the dll each
+# time. release/README.txt and release/LICENCE.txt are sources and stay tracked.
+release/*/
+release/*.zip
