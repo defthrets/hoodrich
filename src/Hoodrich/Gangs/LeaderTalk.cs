@@ -76,6 +76,25 @@ namespace Hoodrich.Gangs
         private const string ChengGang = "triads";
 
         /// <summary>
+        /// Whether the Cheng business is open for playing yet. It is not.
+        ///
+        /// The whole of it is built and wired -- the reveal, the choice, the handover, the new
+        /// man on the dock, the price, the feed. What it is not is FINISHED, and the mod's
+        /// business right now is the Families: Gerald's packages, the corner, the courts, the
+        /// blocks. A second family's succession problem competing with that for the player's
+        /// attention would be the wrong thing at the wrong time, however good it is.
+        ///
+        /// So the door is visible and shut. One bool, in one place, and everything behind it
+        /// comes on together -- which is the point of leaving it built rather than leaving it
+        /// out: nothing has to be remembered or reassembled later, and a save made now already
+        /// knows whether the player found out whose son he is.
+        ///
+        /// The DISCOVERY stays live, because it costs nothing and is worth having on its own.
+        /// Tao naming his father is the best thing he does; it just does not lead anywhere yet.
+        /// </summary>
+        private const bool ChengArcLive = false;
+
+        /// <summary>
         /// Puts what you know about his son in front of him, if this is the right him.
         ///
         /// One row, on one leader, and only once you have something to say. Everything else in
@@ -96,9 +115,14 @@ namespace Hoodrich.Gangs
                 return;
             }
 
-            node.Say("Your son's selling off your dock.", () => TheOldMan(def, gang),
-                     "Say the name. It cannot be unsaid");
-            node.WithIcon(Icons.Warning);
+            // Shown and shut. See ChengArcLive -- the row is here so a player who worked out
+            // whose son the man at the port is can see that it was worth working out, and that
+            // there is somewhere for it to go.
+            node.SayIf(ChengArcLive, "Coming soon",
+                       "Your son's selling off your dock.", () => TheOldMan(def, gang),
+                       ChengArcLive ? "Say the name. It cannot be unsaid" : "Coming soon");
+
+            node.WithIcon(ChengArcLive ? Icons.Warning : Icons.Locked);
         }
 
         /// <summary>
