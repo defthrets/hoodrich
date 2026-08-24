@@ -104,11 +104,17 @@ namespace Hoodrich.Missions
         /// <summary>
         /// The car a drive-by turns up in, left where the job says and nowhere else.
         ///
-        /// Always the same one. A drive-by you did in whatever happened to be parked nearby is
-        /// a drive-by you did in a stranger car -- the point of a set car is that it becomes
-        /// the car, and you learn to leave it somewhere afterwards.
+        /// Always the same one, and now actually so. The list used to name four and the comment
+        /// above it claimed one, which was the comment being right about the intention and
+        /// wrong about the code: it took the first model that loaded, so the two Vorschlaghammer
+        /// entries at the front meant the other two almost never came up anyway.
+        ///
+        /// Cutting them is not only tidying. Both were two-seaters, so on the runs where one of
+        /// them DID come up there was one passenger seat between three homies and two of them
+        /// spent the job on foot chasing a car. A set car is the point: it becomes the car, and
+        /// you learn where it goes afterwards.
         /// </summary>
-        private static readonly string[] DriveByCars = { "vorschlaghammer", "vorschlaghammer", "buccaneer2", "faction" };
+        private static readonly string[] DriveByCars = { "vorschlaghammer" };
 
         /// <summary>
         /// The one out of the pool that does not get burned.
@@ -478,10 +484,6 @@ namespace Hoodrich.Missions
 
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle, hash, 250, false, true);
                         Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle, hash, true);
-
-                        // Written down, because the give is not the last time it matters.
-                        // See Holding.
-                        _kit[ped.Handle] = hash;
                     }
 
                     var blip = ped.AddBlip();
@@ -836,6 +838,9 @@ namespace Hoodrich.Missions
             // running. It throttles itself and does nothing at all until something is painted.
             _tags.Refresh();
 
+            // And so does a car dropped at Hao's, for the same reason and on the same terms.
+            Swept();
+
             // Going down, or being taken in, ends whatever was running -- and it has to be
             // taken again from the start.
             //
@@ -884,15 +889,6 @@ namespace Hoodrich.Missions
 
             if (!IsRunning) return;
 
-            // Above the throttle, because half a second is long enough to see.
-            //
-            // Everything else about keeping them seated is on a 500ms tick and then a 900ms
-            // check on top of that, so a man who opened a door was noticed up to a second and
-            // a half later and then told to WALK back to it. That is the whole complaint: not
-            // that nothing puts them back, but that you watch them get out, fight on foot and
-            // stroll back while the car you are driving pulls away.
-            HoldTheSeats();
-
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;
@@ -902,7 +898,7 @@ namespace Hoodrich.Missions
             // The death and arrest checks that used to sit here are at the top of Update now,
             // where the bike ride and the tag run get them too.
             CountLostHomies();
-            KeepThemSeated();
+            LockThemIn();
             FollowMeOut();
 
             switch (State)
@@ -1053,36 +1049,17 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// Puts anybody who has got out back in, for the whole length of a job done from a car.
-        ///
-        /// KeepShooting already did this, but only ever ran in the WORK state -- so the moment
-        /// the shooting was over and the objective read "lose the cops" nothing was watching
-        /// them any more, and that is exactly where they were last seen stood in the road
-        /// firing at a patrol car. The lock has to hold for the drive out, the work, the
-        /// escape and the run back, because it is the same car ride throughout.
-        ///
-        /// Released in Clear, which is what runs when the job hands in at Lamar's.
-        /// </summary>
-        /// <summary>
         /// When you get out, they get out.
         ///
-        /// They were staying put through the whole torch phase: you park, walk round the back,
-        /// pour the fuel and shoot it, and three men sit inside the car you are setting fire
-        /// to. Nothing was telling them to leave -- the last thing they were given was a seat,
-        /// and events are blocked on every job so a burning car is not something they will
-        /// notice on their own either.
-        ///
-        /// HoldingSeats already knows the phases where staying in is correct: the drive-by
-        /// work, the escape, the dump, the payout. Everywhere else, the rule is simply that
-        /// they do what you do -- which covers the torch, and covers walking in on a hit.
-        ///
-        /// An explicit TASK_LEAVE_VEHICLE rather than clearing the combat attribute, because
-        /// the attribute governs whether he decides to get out to FIGHT and this is not a
-        /// fight; it is him following you out.
+        /// The doors are unlocked the moment you are on your feet, so nothing is holding them
+        /// in any more -- but a man sitting in a car with no reason to move will sit in it, and
+        /// on the torch job that means three of them still aboard the thing you are pouring
+        /// petrol over. So they are told plainly to climb out after you rather than left to
+        /// work it out.
         /// </summary>
         private void FollowMeOut()
         {
-            if (!IsRunning || HoldingSeats) return;
+            if (!IsRunning) return;
 
             if (Game.GameTime < _nextFollowOut) return;
             _nextFollowOut = Game.GameTime + FollowOutMs;
@@ -1102,13 +1079,8 @@ namespace Hoodrich.Missions
                 {
                     var ride = homie.CurrentVehicle;
 
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, true);
-                    Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 292, false);
-
                     Function.Call(Hash.TASK_LEAVE_VEHICLE, homie.Handle,
                                   ride == null || !ride.Exists() ? 0 : ride.Handle, 0);
-
-                    _aimingAtNothing.Remove(homie.Handle);
                 }
                 catch { /* he will follow on the next pass */ }
             }
@@ -1117,188 +1089,107 @@ namespace Hoodrich.Missions
         private int _nextFollowOut;
         private const int FollowOutMs = 900;
 
-        private void KeepThemSeated()
+        /// <summary>
+        /// Locks the car three seconds after you take the wheel, and that is the whole of it.
+        ///
+        /// What stood here was three rounds of machinery for keeping the crew in their seats
+        /// and shooting out of the windows: blocked events, no dragging out, combat attributes
+        /// taken off them, two ragdoll flags, a warp back into the seat every frame and a
+        /// drive-by re-issued twice a second. It never worked once. They did not fire, and they
+        /// spent the job hanging out of a rear window in a bind pose. So none of it is here any
+        /// more. They are ordinary bodyguards, and the game has always known how to run those
+        /// -- including having them shoot out of a car somebody else is driving.
+        ///
+        /// Staying in the car is the car's business now instead of theirs. A locked door is a
+        /// property of the VEHICLE, so keeping them aboard costs nothing set on the men at all.
+        ///
+        /// Only while YOU are at the wheel, and only with somebody of ours actually in it.
+        /// Locking a car you are a passenger in is locking somebody else's doors, and locking
+        /// an empty one is locking a door for nobody.
+        /// </summary>
+        private void LockThemIn()
         {
-            // Every phase, not only the ones where getting out would be wrong.
-            //
-            // This used to sit behind HoldingSeats, which excludes the drive OUT -- so the one
-            // stretch of a job you spend doing nothing but driving was the one stretch with no
-            // lock on the doors. Locking is not the same question as warping somebody back into
-            // his seat: the warp still stays out of Travel, because that phase is three men
-            // walking to a car and getting into it properly.
-            if (!IsRunning) return;
-            if (Game.GameTime < _nextSeatCheck) return;
-            _nextSeatCheck = Game.GameTime + SeatCheckMs;
-
             var player = Game.Player.Character;
-            if (player == null || !player.Exists()) return;
+            var ride = player == null || !player.Exists() ? null : player.CurrentVehicle;
 
-            var ride = player.CurrentVehicle;
+            // Out of it, off in a different one, or it is not there any more. "Unlock the door
+            // when i exit the vehicle" is the ask, and handing it back is also what stops a
+            // locked car being left standing in the world with nobody who knows it was us.
+            //
+            // The wreck case matters as much as the other two: a car that has stopped existing
+            // is still a reference we are holding, and holding it means the next car you get
+            // into is read as the one already locked and never gets locked at all.
+            if (_lockedRide != null &&
+                (!_lockedRide.Exists() || ride == null || !ride.Exists() ||
+                 _lockedRide.Handle != ride.Handle))
+            {
+                Unlock();
+            }
+
             if (ride == null || !ride.Exists())
             {
-                _ridingSince = 0;
-                Unlock();
+                _drivingSince = 0;
                 return;
             }
 
-            // The clock starts when the CAR does, not when you sit in it.
-            //
-            // "Five seconds after we start driving" is the ask, and it is also the safer of the
-            // two readings: sitting on the kerb waiting for a straggler does not run the clock
-            // down, and the moment you pull away anybody not in the car has been left behind
-            // rather than locked out.
-            if (ride.Speed > MovingSpeed)
+            // Already locked. Set once and then left alone -- re-asserting it every tick is how
+            // the last version of this ended up arguing with your own door.
+            if (_lockedRide != null) return;
+
+            if (player.SeatIndex != VehicleSeat.Driver || !AnyoneAboard(ride))
             {
-                if (_ridingSince == 0) _ridingSince = Game.GameTime;
+                _drivingSince = 0;
+                return;
             }
 
-            var waiting = 0;
-
-            foreach (var homie in _homies)
+            // The clock starts when you sit down at the wheel, and starts again from nothing
+            // every time you get out and back in.
+            if (_drivingSince == 0)
             {
-                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
-                if (homie.IsInVehicle()) continue;
-
-                waiting++;
-                SitBackDown(homie, ride);
+                _drivingSince = Game.GameTime;
+                return;
             }
 
-            // Locked only once everybody who is coming is IN, and locked anyway after fifteen
-            // seconds of you sitting in it.
-            //
-            // This is the fix for what the lock broke. Locking on the frame you got in locked
-            // the homies out of the car they were walking to -- they stood at the handle of a
-            // door that would not open while the mission waited for them, which is a worse bug
-            // than the one being fixed and it is caused by the fix.
-            //
-            // The count is the real condition; the timer is the safety net for the man who
-            // died on the way to the door or got stuck on a bin, because "wait for everybody"
-            // with nobody left to wait for is a car that never locks at all.
-            if (waiting == 0 ||
-                (_ridingSince != 0 && Game.GameTime - _ridingSince > LockAfterMs))
-            {
-                LockThemIn(ride);
-            }
-
-            // And held shut, every tick, for as long as you are in it.
-            HoldDoorsShut(ride);
-        }
-
-        /// <summary>
-        /// The doors stay shut, and this is what actually does it.
-        ///
-        /// Locking was not enough and could not have been. SET_VEHICLE_DOORS_LOCKED stops a
-        /// door being OPENED -- it does not weld it, and it is not the only thing in the game
-        /// that opens one. A ped whose exit task starts before the block stops it swings the
-        /// door on the way, gunfire pops them, and a hard enough knock breaks them. All three
-        /// happen constantly on a job that ends in a police chase, which is exactly where this
-        /// was reported.
-        ///
-        /// So the lock is re-asserted every tick rather than set once, and anything that has
-        /// come open is shut again. Not door 0. That is the driver's, it is yours, and holding
-        /// it shut every frame would fight your own exit animation on the one job that ends
-        /// with you stood next to the car setting fire to it.
-        /// </summary>
-        private void HoldDoorsShut(Vehicle ride)
-        {
-            if (ride == null || !ride.Exists()) return;
-            if (_lockedRide == null || !_lockedRide.Exists()) return;
-            if (_lockedRide.Handle != ride.Handle) return;
-
-            // Only while you are actually in it. "Until I get out of the car" is the ask, and
-            // the moment you are out the car is a car again.
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists() || !player.IsInVehicle(ride)) return;
+            if (Game.GameTime - _drivingSince < LockAfterMs) return;
 
             try
             {
+                // 2 is LOCKED, which stops a ped opening a door from either side. It is not the
+                // state that shuts the player in -- that is 4, and the fact that it exists
+                // separately is the proof that 2 does not do it. The first call still covers
+                // him, though, so the second takes him straight back out: a torch job ends with
+                // you stood next to the car you are burning, and being sealed into it would not
+                // be a small bug.
                 Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, ride.Handle, 2);
                 Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER, ride.Handle,
                               Game.Player.Handle, false);
-
-                // 1 front right, 2 rear left, 3 rear right. Shut instantly rather than swung,
-                // because a door easing closed over half a second is the same picture as a
-                // door easing open.
-                for (var door = 1; door <= 3; door++)
-                {
-                    Function.Call(Hash.SET_VEHICLE_DOOR_SHUT, ride.Handle, door, true);
-                }
-            }
-            catch
-            {
-                // The lock and the seat-warp are still doing their half.
-            }
-        }
-
-        /// <summary>When the current ride started MOVING, or 0 if it has not yet.</summary>
-        private int _ridingSince;
-
-        /// <summary>Above walking pace, which is what "we start driving" means.</summary>
-        private const float MovingSpeed = 2.5f;
-
-        /// <summary>
-        /// How long after pulling away the doors go, whoever is still outside.
-        ///
-        /// Five, down from fifteen. The long version was written when the clock started the
-        /// moment you sat down, and it had to be generous because it was counting a man's walk
-        /// across a yard. Counting from the car moving instead makes the same safety net much
-        /// shorter without ever being the thing that leaves somebody behind.
-        /// </summary>
-        private const int LockAfterMs = 5000;
-
-        /// <summary>
-        /// Locks the doors, which is the difference between preventing this and tidying it up.
-        ///
-        /// Everything above this line REACTS: a man gets out, and a tick later he is told to
-        /// get back in. You watch him climb out, walk round the car and climb back in, which is
-        /// most of the way to just leaving him out there. A locked door means he never opens it.
-        ///
-        /// Locked for everyone and then unlocked for YOU, in that order, because the first call
-        /// includes the player and the second takes him back out of it. Otherwise the fix for
-        /// the homies would be a car you cannot get out of at the exact moment the job wants
-        /// you to -- a torch job ends with you stood next to the thing you are burning.
-        /// </summary>
-        private void LockThemIn(Vehicle ride)
-        {
-            if (_lockedRide != null && _lockedRide.Exists() &&
-                _lockedRide.Handle == ride.Handle) return;
-
-            Unlock();
-
-            try
-            {
-                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, ride.Handle, 2);
-                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER, ride.Handle,
-                              Game.Player.Handle, false);
-
-                // And each of them is told individually that he is staying put. The lock is
-                // about the DOOR; this is about the man, and a ped who never starts an exit
-                // task never reaches for the handle in the first place.
-                //
-                // 3 is CanLeaveVehicle. 292 is the config flag that stops a ped bailing out of
-                // a vehicle on his own account, which is the one that fires when the car is
-                // damaged or on fire -- and this job sets the car on fire.
-                foreach (var homie in _homies)
-                {
-                    if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
-
-                    try
-                    {
-                        Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, false);
-                        Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 292, true);
-                        Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, false);
-                    }
-                    catch { /* the lock still holds him */ }
-                }
 
                 _lockedRide = ride;
-                Log.Debug("Doors locked on the ride for the length of the job.");
+                Log.Debug("Doors locked on the ride, three seconds after pulling away.");
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not lock the ride: " + ex.Message);
             }
         }
+
+        /// <summary>Whether any of ours is actually riding in this one.</summary>
+        private bool AnyoneAboard(Vehicle ride)
+        {
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+                if (homie.IsInVehicle(ride)) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>When you took the wheel of the ride you are in, or 0 if you have not.</summary>
+        private int _drivingSince;
+
+        /// <summary>Three seconds after you start driving, which is the number he asked for.</summary>
+        private const int LockAfterMs = 3000;
 
         /// <summary>
         /// Gives the car back the way it was found.
@@ -1308,6 +1199,10 @@ namespace Hoodrich.Missions
         /// </summary>
         private void Unlock()
         {
+            // Cleared whether or not there was a car to hand back, because this is also what
+            // "get out and get back in" means: the three seconds start again from nothing.
+            _drivingSince = 0;
+
             if (_lockedRide == null) return;
 
             try
@@ -1322,186 +1217,17 @@ namespace Hoodrich.Missions
             catch { /* it is unlocked or it is gone */ }
 
             _lockedRide = null;
-            _ridingSince = 0;
         }
 
         /// <summary>The one car we locked, so exactly one gets unlocked again.</summary>
         private Vehicle _lockedRide;
 
-        /// <summary>Which seat each man rode out in, so he goes back to his own one.</summary>
-        private readonly Dictionary<int, int> _seats = new Dictionary<int, int>();
-
-        /// <summary>A man this close to the car has just got out of it.</summary>
-        private const float HoldRange = 12f;
-
-        /// <summary>Not a seat. Real ones start at -1, so -1 cannot mean "none".</summary>
-        private const int NoSeat = -99;
-
-        /// <summary>
-        /// Puts anybody out of his seat straight back into it, every tick, in place.
-        ///
-        /// The difference between this and everything above it is the word straight. The flags
-        /// are all set -- attribute 3 off, non-temporary events blocked, no dragging out, doors
-        /// locked -- and they are the right flags, and they are still not the whole answer,
-        /// because none of them covers a man in your GROUP being repositioned by the group.
-        /// He does not decide to get out; he is put out, and no combat flag has an opinion
-        /// about it.
-        ///
-        /// So this stops arguing about why and answers where it lands. If he is out and the
-        /// car is right there, he is in the seat again this frame. SET_PED_INTO_VEHICLE ignores
-        /// the door lock, which is the point -- the lock is what stops him opening it, and the
-        /// warp is what undoes it when something opens it for him.
-        ///
-        /// Not during Travel. The drive out is three men walking to a car and getting into it
-        /// properly, and snapping them through the doors while you stand watching is a worse
-        /// picture than the one being fixed. From the roll-up onwards the car is moving and
-        /// there is shooting, and nobody is looking at the back seat.
-        /// </summary>
-        private void HoldTheSeats()
-        {
-            if (!HoldingSeats) return;
-
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists()) return;
-
-            var ride = player.CurrentVehicle;
-            if (ride == null || !ride.Exists()) return;
-
-            foreach (var homie in _homies)
-            {
-                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
-
-                try
-                {
-                    // Where he is sitting is where he sits. Recorded while it is true rather
-                    // than assumed at spawn, because they get in wherever they get in.
-                    if (homie.IsSittingInVehicle(ride))
-                    {
-                        var his = SeatOf(ride, homie);
-                        if (his != NoSeat) _seats[homie.Handle] = his;
-
-                        continue;
-                    }
-
-                    // Left behind rather than just got out. Warping a man across a street is
-                    // worse than the walk, and KeepThemSeated still has him on the slow path.
-                    if (homie.Position.DistanceTo(ride.Position) > HoldRange) continue;
-
-                    var seat = SeatFor(ride, homie);
-                    if (seat == NoSeat) continue;
-
-                    Function.Call(Hash.SET_PED_INTO_VEHICLE, homie.Handle, ride.Handle, seat);
-
-                    // And straight back on the trigger -- but ONLY while there is still shooting
-                    // to do from the car. The warp takes his task with it, and a man sitting
-                    // there with nothing to do is the next frame's reason to get out.
-                    //
-                    // Not on the way home. Shoot falls back to foot combat for a man the game
-                    // does not consider mounted, and a foot-combat order is a request to get
-                    // out of the car -- which would make this the thing causing what it is
-                    // here to stop.
-                    if (!FromTheCar || State != MissionState.Work) continue;
-
-                    var foe = NearestLiveTarget(homie);
-                    if (foe != null) Shoot(homie, foe);
-                }
-                catch { /* he sits this one out */ }
-            }
-        }
-
-        /// <summary>
-        /// Whether right now is a moment when nobody should be getting out.
-        ///
-        /// It was FromTheCar, and FromTheCar is only half the question -- it says whether the
-        /// JOB is done out of a window, and the answer for a hit is no, because walking up on a
-        /// cut house is the job. What it does not say is that the job ENDS and the drive home
-        /// starts, and the drive home is the same drive home on every kind of work: get in,
-        /// lose them, get back to Lamar. Piling out at a red light on the way is not any more
-        /// correct after a hit than after a drive-by.
-        ///
-        /// So the rule is by phase, not by kind. During the work it depends on the work.
-        /// Afterwards it never does.
-        ///
-        /// Travel is deliberately not in here. That is three men walking to a car and getting
-        /// into it properly, and nothing has gone wrong yet.
-        /// </summary>
-        private bool HoldingSeats
-        {
-            get
-            {
-                switch (State)
-                {
-                    case MissionState.Work:
-                        return FromTheCar;
-
-                    case MissionState.Escape:
-                    case MissionState.Deliver:
-                    case MissionState.Dump:
-                    case MissionState.Collect:
-                        return true;
-
-                    default:
-                        return false;
-                }
-            }
-        }
-
-        /// <summary>Which seat he is in, or NoSeat. Driver is -1, so the scan starts there.</summary>
-        private static int SeatOf(Vehicle ride, Ped man)
-        {
-            var many = Function.Call<int>(Hash.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS, ride.Handle);
-
-            for (var seat = -1; seat < many; seat++)
-            {
-                // Three arguments, not two. The third is whether a man currently WALKING to
-                // this seat counts as being in it, and leaving it off means the answer came
-                // back off whatever happened to be on the stack -- so which seat a man was
-                // judged to be in could change between two passes for no reason at all.
-                if (Function.Call<int>(Hash.GET_PED_IN_VEHICLE_SEAT, ride.Handle, seat, false) == man.Handle)
-                {
-                    return seat;
-                }
-            }
-
-            return NoSeat;
-        }
-
-        /// <summary>
-        /// His own seat if it is still empty, otherwise any passenger seat that is.
-        ///
-        /// Never -1. That is the driver, and the driver is you -- a homie warped into the seat
-        /// you are sitting in is you thrown out of your own car in the middle of a job.
-        /// </summary>
-        private int SeatFor(Vehicle ride, Ped man)
-        {
-            int his;
-            if (_seats.TryGetValue(man.Handle, out his) && his >= 0 &&
-                Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, his, false))
-            {
-                return his;
-            }
-
-            var many = Function.Call<int>(Hash.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS, ride.Handle);
-
-            for (var seat = 0; seat < many; seat++)
-            {
-                if (Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, seat, false)) return seat;
-            }
-
-            return NoSeat;
-        }
-
         /// <summary>
         /// Lets them out before you set fire to it.
         ///
-        /// The other half of holding them in. Everything above keeps three men in a car for the
-        /// whole job, and the job ends with that car burning -- so without this the last thing
-        /// the fix does is hold the crew in place while you pour petrol over them.
-        ///
-        /// Unlocked first, because the doors are locked and a locked door is a door they cannot
-        /// open either. Then the flags they were given for the ride are handed back: they can
-        /// leave a vehicle again, and they can react to things again, which is what walking
-        /// away from a car fire is.
+        /// The doors come off the lock first, because a locked door is a door they cannot open
+        /// either, and then they are told to get out. Waiting for three men to notice on their
+        /// own that the car they are sitting in is about to be set alight is not a plan.
         /// </summary>
         private void ClearTheCar()
         {
@@ -1513,16 +1239,6 @@ namespace Hoodrich.Missions
 
                 try
                 {
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, true);
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
-                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, true);
-
-                    // And a bullet can knock him about again. Those two went on so a hit
-                    // reaction could not fight the drive-by for his body, and the shooting from
-                    // the car is what he is being let out of.
-                    Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 106, false);
-                    Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 107, false);
-
                     if (!homie.IsInVehicle()) continue;
 
                     Function.Call(Hash.TASK_LEAVE_ANY_VEHICLE, homie.Handle, 0, 0);
@@ -1530,215 +1246,6 @@ namespace Hoodrich.Missions
                 catch { /* he can climb out on his own */ }
             }
         }
-
-        private int _nextSeatCheck;
-        private const int SeatCheckMs = 900;
-
-        /// <summary>
-        /// Puts anybody idle back on a target, a couple of times a second at most.
-        /// </summary>
-        private void KeepShooting()
-        {
-            if (Game.GameTime < _nextDriveBy) return;
-            _nextDriveBy = Game.GameTime + DriveByRetaskMs;
-
-            var player = Game.Player.Character;
-            var ride = player == null || !player.Exists() ? null : player.CurrentVehicle;
-
-            foreach (var homie in _homies)
-            {
-                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
-
-                try
-                {
-                    if (!homie.IsInVehicle())
-                    {
-                        SitBackDown(homie, ride);
-                        continue;
-                    }
-
-                    // Shot at, and stuck.
-                    //
-                    // A hit reaction lands on top of a running drive-by and the two do not
-                    // resolve: the reaction takes the upper body, the drive-by refuses to end
-                    // because it is aimed at something that is still there, and what you get
-                    // is a man in a T-pose leaning out of a rear window. It is always a rear
-                    // passenger because the front ones have a clean seat-specific clipset to
-                    // fall back on and the rear ones do not.
-                    //
-                    // So a homie who has just taken damage is torn off whatever he is doing
-                    // and re-tasked from scratch. Rate-limited, or a man under sustained fire
-                    // never finishes starting anything.
-                    var hurt = WasHit(homie);
-
-                    // Only when he has actually stopped. Re-issuing over a running task
-                    // restarts the aim every time and he never gets a round off -- the same
-                    // mistake that had the bike homies permanently starting to follow.
-                    var busy = !hurt &&
-                               Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, homie.Handle, DriveByTask);
-
-                    var foe = NearestLiveTarget(homie);
-
-                    // THE HOLDING TASK IS NOT A REASON TO IGNORE A REAL TARGET.
-                    //
-                    // This is why they sat there. The no-target task below is deliberately one
-                    // that "cannot finish and will not end" -- so the moment it started,
-                    // GET_IS_TASK_ACTIVE was true forever and the guard above skipped every
-                    // frame after it. Somebody walked out in front of the car and nobody
-                    // looked up, for the rest of the job.
-                    //
-                    // A man parked on the holding aim is therefore treated as idle, not busy.
-                    var parked = _aimingAtNothing.Contains(homie.Handle);
-
-                    if (foe != null)
-                    {
-                        if (!busy || parked)
-                        {
-                            _aimingAtNothing.Remove(homie.Handle);
-                            Shoot(homie, foe);
-                        }
-
-                        continue;
-                    }
-
-                    if (busy && parked) continue;
-
-                    // NOBODY TO SHOOT AT IS THE MOMENT HE REACHES FOR THE DOOR.
-                    //
-                    // The locks hold and the warp puts him back, but neither stops him TRYING:
-                    // he swings the door open, gets a foot out, and is pulled back in, which is
-                    // the half-played animation you can see from the driver's seat. All of that
-                    // is a man with no task deciding what to do next.
-                    //
-                    // So he is never given the chance to decide. A drive-by at a point off the
-                    // side of the car is a task he cannot finish and will not end, which keeps
-                    // him leaning out of the window looking for somebody instead of climbing
-                    // out to find one. It is aimed AWAY from the road ahead so a stray round
-                    // does not go through whatever you are driving toward.
-                    if (ride == null || !ride.Exists()) continue;
-
-                    var aim = ride.Position + ride.RightVector * 12f + ride.ForwardVector * 4f;
-
-                    Function.Call(Hash.TASK_DRIVE_BY, homie.Handle, 0, 0,
-                                  aim.X, aim.Y, aim.Z, DriveByRange, HoldingFrequency,
-                                  true, FullAuto);
-
-                    _aimingAtNothing.Add(homie.Handle);
-                }
-                catch { /* he will sit this one out */ }
-            }
-        }
-
-        /// <summary>
-        /// Puts a man who has got out back in.
-        ///
-        /// Combat attribute 3 stops a man leaving a car to FIGHT, and it is set, and it works.
-        /// It has nothing to say about the other reason he gets out, which is that he is in
-        /// your GROUP -- and group members follow the leader, so the moment anything makes the
-        /// game think it should reposition him, out he goes. That is not a combat decision and
-        /// no combat flag touches it.
-        ///
-        /// So it is answered where it happens rather than prevented somewhere it cannot be.
-        /// If he is out and there is a car, he gets back in it.
-        ///
-        /// Only while YOU are in one. If you have parked and got out yourself, a homie being
-        /// dragged back into an empty car by an invisible hand is a worse bug than the one
-        /// being fixed -- and this only runs during the work phase anyway, so the moment the
-        /// job turns into burning the car they are free to get out with you.
-        /// </summary>
-        private static void SitBackDown(Ped homie, Vehicle ride)
-        {
-            if (ride == null || !ride.Exists()) return;
-            if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, homie.Handle, EnterVehicleTask)) return;
-
-            Function.Call(Hash.TASK_ENTER_VEHICLE, homie.Handle, ride.Handle,
-                          12000, -2, 2f, 1, 0);
-        }
-
-        /// <summary>CTaskEnterVehicle, so he is not told to get in while he is getting in.</summary>
-        private const int EnterVehicleTask = 160;
-
-        private int _nextDriveBy;
-        private const int DriveByRetaskMs = 700;
-
-        /// <summary>
-        /// Who is currently parked on the holding aim rather than on a real target.
-        ///
-        /// Needed because the holding task never ends by design, so "is a drive-by running"
-        /// stops being a useful question the moment one starts -- the only way to tell a man
-        /// shooting at somebody from a man aiming at a bush is to remember which he was given.
-        /// </summary>
-        private readonly HashSet<int> _aimingAtNothing = new HashSet<int>();
-
-        /// <summary>Last known health per homie, for spotting the frame he gets hit.</summary>
-        private readonly Dictionary<int, int> _wasOn = new Dictionary<int, int>();
-        private readonly Dictionary<int, int> _lastTornOff = new Dictionary<int, int>();
-
-        /// <summary>How often one man may be torn off his task by being shot.</summary>
-        private const int UnstickMs = 1200;
-
-        /// <summary>
-        /// True on the tick a homie has taken damage, so he can be put back on the trigger.
-        ///
-        /// It used to tear him off everything first, and that was the T-pose rather than the
-        /// cure for it. CLEAR_PED_TASKS_IMMEDIATELY is the call you make before you teleport
-        /// somebody -- Rockstar's own scripts put it in front of a re-seat ninety-odd times and
-        /// never once in front of a drive-by -- because on a man sitting in a seat it takes the
-        /// in-vehicle task away along with the drive-by, and a ped still attached to a seat with
-        /// no seat task has no animation left to play. That is the pose. It then stayed, because
-        /// he still reads as sitting in the car: the seat warp left him alone and every re-task
-        /// afterwards landed on a man with nothing to play it on.
-        ///
-        /// So the primary task is left where it is. Re-issuing the drive-by is enough on its
-        /// own, because a second task replaces the first rather than queueing behind it.
-        /// </summary>
-        private bool WasHit(Ped homie)
-        {
-            var h = homie.Handle;
-            var now = homie.Health;
-
-            int before;
-            var known = _wasOn.TryGetValue(h, out before);
-
-            if (!known || now >= before)
-            {
-                _wasOn[h] = now;
-                return false;
-            }
-
-            int last;
-            if (_lastTornOff.TryGetValue(h, out last) && Game.GameTime - last < UnstickMs)
-            {
-                // And the lower figure is deliberately NOT written down. This only looks once a
-                // second and the limit is longer than that, so recording it here spends the hit
-                // on a tick that did nothing with it and the next look compares against a number
-                // that already knows about it -- which is why a man under sustained fire was
-                // noticed about half the times he was shot.
-                return false;
-            }
-
-            _wasOn[h] = now;
-
-            _lastTornOff[h] = Game.GameTime;
-
-            try
-            {
-                // The secondary slot only. A damage anim sits there, and clearing it cannot
-                // reach the primary task -- which is the one holding him in the seat, and the
-                // whole reason the immediate clear had to go.
-                Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, homie.Handle);
-                _aimingAtNothing.Remove(h);
-            }
-            catch
-            {
-                // He was probably already mid-something else.
-            }
-
-            return true;
-        }
-
-        /// <summary>CTaskVehicleGun, which is what TASK_DRIVE_BY actually starts.</summary>
-        private const int DriveByTask = 100;
 
         private bool _feuding;
         private int _wasThem = 4;
@@ -1774,14 +1281,13 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, true);
 
-                    // 3 is BF_CanLeaveVehicle, and on a drive-by the answer is no.
+                    // 3 is BF_CanLeaveVehicle, and the answer is yes, on every kind of job.
                     //
-                    // This is why they were piling out of the car and fighting on foot. They
-                    // were told they could get out and then handed a foot-combat task, which
-                    // is a request to get out -- the mission asked for exactly what it did not
-                    // want. On a job that is done from a moving car they stay in it, and the
-                    // job ends when the car leaves rather than when everybody is dead.
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, !FromTheCar);
+                    // It used to be no for anything worked out of a car, and that turned out to
+                    // be the bug rather than the fix: a bodyguard who is not allowed to leave a
+                    // vehicle is a man handed a fight he cannot walk to. Keeping them aboard is
+                    // the locked door's business now, and the door lets go when you get out.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, true);
 
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 2, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 1, true);
@@ -1789,51 +1295,13 @@ namespace Hoodrich.Missions
 
                     Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, homie.Handle, 2);
 
-                    // Events blocked on EVERY job now, not only the ones done from a car.
+                    // And nothing else goes on them.
                     //
-                    // It was conditional because blocking them is what keeps a man in his seat,
-                    // and on foot jobs getting out is the job -- so foot crews were left to
-                    // answer whatever the world threw at them. Which is the other half of the
-                    // same problem: an unblocked ped picks his own fights. He hears a siren and
-                    // goes to it, he sees a hated ped two streets away and leaves, and the
-                    // moment you are wanted the nearest enemy is a police officer.
-                    //
-                    // Blocked, the only thing they act on is what this file tasks them with,
-                    // and this file only ever names the targets. They still take cover, still
-                    // move, still finish the man in front of them -- a blocked event is not a
-                    // frozen ped, it is one that stops volunteering.
-                    //
-                    // Getting OUT is separately controlled by attribute 3 above, so the foot
-                    // jobs lose nothing by this.
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
-                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, !FromTheCar);
-
-                    // And on a job done out of a window, he does not react to being shot at all.
-                    //
-                    // A hit reaction and a drive-by want the same body and neither gives it up.
-                    // Nothing in here can referee that: the loop below looks once a second, so
-                    // whatever it sees it is already late for, and tearing him off the reaction
-                    // is what put him in a T-pose in the first place. The only version of this
-                    // that ends is the one where the reaction never starts.
-                    //
-                    // 107 is the ragdoll a bullet sets off, 106 is the one a kerb at speed sets
-                    // off, and Rockstar sets both on the peds it needs to stay sat down and
-                    // behave. Handed back in ClearTheCar and in Clear, so a man who has finished
-                    // the job is not walking round for the rest of the session unable to flinch.
-                    // And only for the men actually sat in it.
-                    //
-                    // Gating this on FromTheCar alone was too coarse and would have been its
-                    // own bug report: two of the three cars this job can roll are two-seaters,
-                    // so on half the pool most of the crew never get a seat and fight the whole
-                    // thing on foot -- and Shoot already handles that, it puts them on
-                    // TASK_COMBAT_PED instead. Blocking THEIR ragdoll leaves men standing in
-                    // the road who cannot be knocked down by gunfire, which is a stranger sight
-                    // than the one being fixed.
-                    if (FromTheCar && homie.IsInVehicle())
-                    {
-                        Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 106, true);
-                        Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 107, true);
-                    }
+                    // Blocked non-temporary events, no dragging out and the two ragdoll flags
+                    // were all set here, to hold a man in a seat and to keep a hit reaction off
+                    // the drive-by that was fighting it for his body. Three goes at it and they
+                    // still would not shoot and still ended up in a bind pose leaning out of a
+                    // rear window. A ped left alone is a ped the game can animate.
 
                     // Named targets rather than "everybody hated within a hundred and twenty
                     // metres". The area order sweeps in whoever the game currently considers an
@@ -2124,8 +1592,8 @@ namespace Hoodrich.Missions
         ///
         /// Without this they carry on fighting into the escape -- and by then the only hostiles
         /// left are police, so the crew you brought along turn a two-star drive home into a
-        /// running battle you cannot leave. Blocking permanent events is the part that matters:
-        /// clearing tasks alone lasts until the next siren.
+        /// running battle you cannot leave. Taking the two "go and find somebody" attributes
+        /// back off them is what makes it stick past the next siren.
         /// </summary>
         private void StandDown()
         {
@@ -2137,15 +1605,6 @@ namespace Hoodrich.Missions
                 {
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, false);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, false);
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
-
-                    // 3 is BF_CanLeaveVehicle, and from here to Lamar's the answer is no on
-                    // every kind of job. StandDown already told them to stop fighting and get
-                    // back in the car; it never told them to stay in it, so the first thing
-                    // that happened after they got in was the game letting them straight back
-                    // out -- which is the same complaint as the drive-by, one phase later.
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, false);
-                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, false);
 
                     Function.Call(Hash.CLEAR_PED_TASKS, homie.Handle);
 
@@ -2170,130 +1629,22 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// Whether this job is shot out of a car window rather than on foot.
+        /// Puts a homie on a target, from wherever he happens to be.
         ///
-        /// A torch job is a message delivered at speed -- pull up, let them hear it, burn the
-        /// car and go. A drive-by is the same shape.
-        ///
-        /// The kind is only the DEFAULT, because the kind does not actually decide this. "Get
-        /// 'em off Grove" and "The cut house in Rancho" are both Hits, and one of them is a
-        /// street you roll down while your people lean out of the windows and the other is a
-        /// building you walk into. Grove's homies sat in the car doing nothing for exactly
-        /// that reason: KeepShooting only runs when this is true, and every job spawns its
-        /// homies with non-temporary events blocked so they will not volunteer for a fight on
-        /// their own either. Never tasked, never allowed to decide -- so, nothing.
+        /// Plain foot combat now, on every job. The drive-by half that used to be here is gone
+        /// with the rest of it: three attempts at leaning them out of the windows never once
+        /// produced a shot, and a bodyguard sitting in a car somebody else is driving already
+        /// fires out of it on his own if you leave him alone.
         /// </summary>
-        private bool FromTheCar =>
-            _def != null &&
-            (_def.FromTheCar ??
-             (_def.Kind == MissionKind.TorchJob || _def.Kind == MissionKind.DriveBy));
-
-        /// <summary>
-        /// Puts a homie on a target, from wherever he is.
-        ///
-        /// TASK_DRIVE_BY leans him out of the window and fires; TASK_COMBAT_PED is the foot
-        /// version. Which one depends on the job AND on where he actually is, because a man
-        /// who never made it into the car cannot do a drive-by and would simply stand there.
-        /// </summary>
-        /// <summary>Which gun each man was handed at the kerb.</summary>
-        private readonly Dictionary<int, uint> _kit = new Dictionary<int, uint>();
-
-        /// <summary>
-        /// Puts the gun he was given back in his hands.
-        ///
-        /// THIS IS WHY THEY DROVE PAST WAVING. TASK_DRIVE_BY fires whatever the ped currently
-        /// has equipped and nothing else -- it does not go and find him a weapon -- so a man
-        /// with empty hands leans out of the window, aims at the right person, and does nothing
-        /// at all for the whole street. It fails silently: no log line, and nothing on screen
-        /// to tell it apart from bad aim.
-        ///
-        /// This mod has already learned that twice. PostUp.ArmForDriveBy and
-        /// Payback.ArmForDriveBy both pair the give with SET_CURRENT_PED_WEAPON, and both carry
-        /// a comment saying what happens when you do not, in almost the same words. The mission
-        /// crew was the one place handed a gun and never told to hold it -- and it is worse
-        /// here than anywhere else, because they are armed standing at the muster point and
-        /// then walk to the car and climb into it, which is a lot of opportunity to arrive
-        /// empty-handed.
-        ///
-        /// Asked before it is set, so this is not a re-equip on a loop. Forcing a weapon into
-        /// somebody's hands every seven hundred milliseconds would interrupt the lean-and-aim
-        /// it exists to enable, which is the same mistake one step further along.
-        /// </summary>
-        private void Holding(Ped homie)
-        {
-            uint want;
-            if (!_kit.TryGetValue(homie.Handle, out want) || want == 0) return;
-
-            try
-            {
-                if (Function.Call<uint>(Hash.GET_SELECTED_PED_WEAPON, homie.Handle) == want) return;
-
-                Function.Call(Hash.SET_CURRENT_PED_WEAPON, homie.Handle, want, true);
-            }
-            catch
-            {
-                // He gets asked again on the next pass.
-            }
-        }
-
         private void Shoot(Ped homie, Ped foe)
         {
-            var mounted = FromTheCar && homie.IsInVehicle();
-
-            if (mounted)
-            {
-                Holding(homie);
-
-                Function.Call(Hash.TASK_DRIVE_BY, homie.Handle, foe.Handle, 0,
-                              0f, 0f, 0f, DriveByRange, DriveByFrequency, true, FullAuto);
-                return;
-            }
-
             Function.Call(Hash.TASK_COMBAT_PED, homie.Handle, foe.Handle, 0, 16);
         }
-
-        /// <summary>How far out of the window they will bother shooting.</summary>
-        private const float DriveByRange = 45f;
-
-        /// <summary>
-        /// How often he pulls the trigger, as a percentage. NOT accuracy.
-        ///
-        /// This is TASK_DRIVE_BY's FrequencyPercentage argument, and the name it used to have
-        /// here was wrong about what it does. How WELL they shoot is SET_PED_ACCURACY, set
-        /// separately at thirty when the crew is put together; what this was doing was telling
-        /// three men hanging out of a moving car to shoot two times in five.
-        ///
-        /// A hundred, which is what both of the drive-bys in this mod that already work pass.
-        /// They are not marksmen and are not meant to be -- the point of the job is that a
-        /// whole street hears it, so spraying a block and hitting some of it is the result
-        /// being asked for rather than a shortcoming.
-        /// </summary>
-        private const int DriveByFrequency = 100;
-
-        /// <summary>
-        /// And the holding aim stays quiet.
-        ///
-        /// It shares the task but not the point of it: it exists to keep a man leaning out of
-        /// the window instead of reaching for the door when there is nobody to shoot at, and it
-        /// is pointed at a patch of road off the flank. At the same frequency as the real thing
-        /// he would empty a magazine into a wall for as long as the street stayed empty.
-        /// </summary>
-        private const int HoldingFrequency = 8;
-
-        private static readonly uint FullAuto = 0xC6EE6B4C;
 
         private void TickWork(Ped player)
         {
             ClearDeadBlips();
             TalkAboutIt();
-
-            // Kept on the trigger.
-            //
-            // A drive-by task ends on its own -- the target dies, or goes out of range, or the
-            // car turns a corner and breaks line of sight -- and a homie with no task falls
-            // back on his own judgement, which is to get out and go after somebody. Re-issuing
-            // is what keeps him in his seat for the length of the street.
-            if (FromTheCar) KeepShooting();
 
             // Somebody is always saying something while it is going off. Being shot at wins
             // over shooting, because it is the more urgent of the two and the one you would
@@ -2306,8 +1657,6 @@ namespace Hoodrich.Missions
             var hit = AnyoneHit();
 
             Chat(hit ? TakingIt : GoingIn, hit ? TakingItWords : GoingInWords, ChatFightMs);
-
-            KeepThemSeated();
 
             var standing = 0;
             foreach (var ped in _targets)
@@ -2806,6 +2155,82 @@ namespace Hoodrich.Missions
             HandOverTheCar();
         }
 
+        /// <summary>One car left with Hao, and when.</summary>
+        private sealed class Drop
+        {
+            public Vehicle Car;
+            public int At;
+        }
+
+        private readonly List<Drop> _dropped = new List<Drop>();
+
+        /// <summary>How long a delivered car stands in the bay before it is taken away.</summary>
+        private const int DropKeepMs = 300000;
+
+        /// <summary>
+        /// Far enough away that a car going is something you did not see happen.
+        ///
+        /// It could simply delete on the clock, and the clock is what was asked for -- but a
+        /// car vanishing while you are stood next to it is the one way this can look broken
+        /// rather than tidy. Once the five minutes are up it goes the moment your back is far
+        /// enough turned, which on the way to Lamar is immediately.
+        /// </summary>
+        private const float DropGoneRange = 40f;
+
+        private int _sweptAt;
+
+        /// <summary>
+        /// Clears out the cars handed to Hao.
+        ///
+        /// Runs OUTSIDE IsRunning, deliberately, the same way the paint on the walls does: the
+        /// car outlives the job that delivered it, so hanging this off whether a job is running
+        /// would mean the only cars ever cleaned up are the ones you deliver and then
+        /// immediately start another job. It does nothing at all while the list is empty.
+        /// </summary>
+        private void Swept()
+        {
+            if (_dropped.Count == 0) return;
+
+            var now = Game.GameTime;
+            if (now - _sweptAt < 2000) return;
+            _sweptAt = now;
+
+            var player = Game.Player.Character;
+
+            for (var i = _dropped.Count - 1; i >= 0; i--)
+            {
+                var drop = _dropped[i];
+
+                if (drop.Car == null || !drop.Car.Exists())
+                {
+                    _dropped.RemoveAt(i);
+                    continue;
+                }
+
+                if (now - drop.At < DropKeepMs) continue;
+
+                // Never out from under the player, whatever the clock says.
+                if (player != null && player.Exists())
+                {
+                    if (player.IsInVehicle(drop.Car)) continue;
+                    if (player.Position.DistanceTo(drop.Car.Position) < DropGoneRange) continue;
+                }
+
+                try
+                {
+                    drop.Car.IsPersistent = false;
+                    drop.Car.Delete();
+                }
+                catch
+                {
+                    // Already gone is the outcome we wanted anyway.
+                }
+
+                _dropped.RemoveAt(i);
+                Log.Info("A car left with Hao was taken off the lot.");
+            }
+        }
+
         /// <summary>Hao takes it from here.</summary>
         private void HandOverTheCar()
         {
@@ -2815,15 +2240,21 @@ namespace Hoodrich.Missions
             {
                 if (_jobCar != null && _jobCar.Exists())
                 {
-                    // Locked, left, and no longer ours -- it is his now. Not deleted: watching
-                    // the car you just drove across the city blink out is worse than leaving it
-                    // standing in his bay, which is also the more honest picture of what
-                    // happened to it.
+                    // Locked and left standing. Not deleted on the spot: watching the car you
+                    // just drove across the city blink out in front of you is worse than seeing
+                    // it parked in his bay, which is also the truer picture of what happened.
                     Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _jobCar.Handle, 2);
                     Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _jobCar.Handle, false, true, true);
 
-                    _jobCar.IsPersistent = false;
-                    _jobCar.MarkAsNoLongerNeeded();
+                    // Kept PERSISTENT, which is the opposite of what it used to do, because we
+                    // are taking responsibility for the lifetime rather than handing it to the
+                    // streamer. Marked as no-longer-needed it went whenever the game felt like
+                    // it, which in practice was never while you were stood there -- so every
+                    // delivery left another one on the lot and Hao's yard slowly filled up with
+                    // cars nobody was going to buy. Five minutes and it is gone; see Swept.
+                    _jobCar.IsPersistent = true;
+
+                    _dropped.Add(new Drop { Car = _jobCar, At = Game.GameTime });
                 }
             }
             catch { /* he will sort it out */ }
@@ -3261,18 +2692,6 @@ namespace Hoodrich.Missions
                 {
                     if (ped == null || !ped.Exists()) continue;
 
-                    // Let go of them. They were locked into the car for the length of the job
-                    // and would otherwise spend the rest of the session unable to get out of
-                    // one, unable to be pulled out of one, and deaf to everything around them.
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 3, true);
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
-                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, ped.Handle, true);
-
-                    // Including the two ragdoll blocks the drive-by put on him. A man who spends
-                    // the rest of the session refusing to flinch is the fix outliving the job.
-                    Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 106, false);
-                    Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 107, false);
-
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
 
                     if (ped.IsAlive) SendHimOff(ped, sent++);
@@ -3285,15 +2704,6 @@ namespace Hoodrich.Missions
             if (_homies.Count > 0) Log.Info("Job over; " + _homies.Count + " homies sent on their way.");
 
             _homies.Clear();
-            _seats.Clear();
-
-            // Keyed on ped handles, and handles are reused the moment a ped is released -- so
-            // a leftover entry is not merely stale, it is somebody else's health and somebody
-            // else's aim being read as this man's.
-            _aimingAtNothing.Clear();
-            _wasOn.Clear();
-            _lastTornOff.Clear();
-            _kit.Clear();
 
             _keeper = false;
             ClearBayBlip();

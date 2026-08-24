@@ -867,7 +867,7 @@ namespace Hoodrich.Dealing
                 // else, so stretching product had no downside worth the name.
                 _state.RefusedAt(purity);
 
-                Notify.Problem("they clocked the cut.");
+                Notify.Problem("they noticed the product was low purity.");
 
                 Spooked();
                 Refused(player, customer);

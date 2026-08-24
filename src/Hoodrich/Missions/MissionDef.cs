@@ -162,18 +162,6 @@ namespace Hoodrich.Missions
         public int Homies = 2;
 
         /// <summary>
-        /// Whether the homies fight out of the car window instead of getting out.
-        ///
-        /// Three-state on purpose. Null means "whatever the kind implies", which keeps every
-        /// existing job behaving as it did; true and false are a per-mission override.
-        ///
-        /// It has to be per MISSION rather than per kind, because the kind is not what decides
-        /// it. "Get 'em off Grove" and "The cut house in Rancho" are both Hits, and one of them
-        /// is a street you roll down and the other is a building you walk into.
-        /// </summary>
-        public bool? FromTheCar;
-
-        /// <summary>
         /// Where the car gets left, for a <see cref="MissionKind.TorchJob"/>.
         ///
         /// Somewhere you would actually leave a car nobody should find, which in practice means
@@ -258,9 +246,6 @@ namespace Hoodrich.Missions
                 var kind = node["kind"].AsString(def.Kind.ToString());
                 try { def.Kind = (MissionKind)Enum.Parse(typeof(MissionKind), kind, true); }
                 catch { Log.Warn("Unknown mission kind '" + kind + "' on " + id + "."); }
-
-                var fromCar = node["fromTheCar"];
-                if (fromCar.Kind == JsonKind.Bool) def.FromTheCar = fromCar.AsBool(false);
 
                 var more = node["briefMore"];
                 if (more.Kind == JsonKind.Array)

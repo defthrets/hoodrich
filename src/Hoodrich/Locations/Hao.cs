@@ -23,6 +23,18 @@ namespace Hoodrich.Locations
         public Vector3 Spot;
         public float Heading;
 
+        /// <summary>
+        /// What it is painted, as indices into the game's own colour table.
+        ///
+        /// In the data rather than in the code, for the same reason the gang paints are: it is
+        /// a look, and looks get retuned by whoever is stood in the yard finding it too blue.
+        /// Minus one leaves the game to choose, which is what every car here used to do -- and
+        /// a forecourt of randomly painted cars comes out mostly primary blue and red, because
+        /// that is what the random table is mostly made of.
+        /// </summary>
+        public int Paint = -1;
+        public int Paint2 = -1;
+
         /// <summary>The one standing in the yard right now, if it is streamed in.</summary>
         public Vehicle Live;
 
@@ -155,7 +167,9 @@ namespace Hoodrich.Locations
                     Note = node["note"].AsString(""),
                     Price = Math.Max(1, node["price"].AsInt(10000)),
                     Spot = new Vector3(node["x"].AsFloat(), node["y"].AsFloat(), node["z"].AsFloat()),
-                    Heading = node["heading"].AsFloat()
+                    Heading = node["heading"].AsFloat(),
+                    Paint = node["paint"].AsInt(-1),
+                    Paint2 = node["paint2"].AsInt(-1)
                 });
             }
 
@@ -354,7 +368,7 @@ namespace Hoodrich.Locations
 
                     if (car.Live == null || !car.Live.Exists()) continue;
 
-                    Dress(car.Live);
+                    Dress(car.Live, car);
                 }
                 catch (Exception ex)
                 {
@@ -364,9 +378,29 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>How a car sits on his lot: locked, clean, and on competition suspension.</summary>
-        private static void Dress(Vehicle car)
+        private static void Dress(Vehicle car, CarLot def)
         {
             var h = car.Handle;
+
+            // Painted first, because a colour set after the mod kit is a colour the kit can
+            // overwrite.
+            //
+            // Both barrels or neither. Setting a primary and leaving the secondary alone keeps
+            // whatever the game rolled on the trim, which on a white car is regularly a red
+            // stripe -- and the trim is half of why the lot read as red and blue in the first
+            // place.
+            if (def != null && def.Paint >= 0)
+            {
+                try
+                {
+                    Function.Call(Hash.SET_VEHICLE_COLOURS, h, def.Paint,
+                                  def.Paint2 >= 0 ? def.Paint2 : def.Paint);
+                }
+                catch
+                {
+                    // It sells in whatever the game gave it.
+                }
+            }
 
             car.IsPersistent = true;
 

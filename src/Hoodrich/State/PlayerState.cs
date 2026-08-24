@@ -328,6 +328,29 @@ namespace Hoodrich.State
         }
 
         /// <summary>
+        /// Counts his packages as done without making you move them again.
+        ///
+        /// A repair, and it exists because of a specific bug rather than as a cheat. Gerald had
+        /// two rows for the same finished package -- one that counted it and one that paid you
+        /// and did not -- and pressing the one with money on it, which is the one anybody
+        /// presses, cleared the ledger without crediting it. The rows are one settlement now, but
+        /// that does not go back and give anybody their package back: a save that lost one is
+        /// simply short, is told it has cleared none, and has no way to say otherwise.
+        ///
+        /// So there is a way to say otherwise. It is deliberately not automatic -- nothing in a
+        /// save can tell the difference between somebody the bug robbed and somebody who has not
+        /// started -- which makes it a thing the player asserts, not a thing the mod guesses.
+        /// </summary>
+        public void CreditFronts()
+        {
+            FrontsDone = 2;
+            ClearFronted();
+
+            Touch();
+            Log.Info("Gerald's packages marked cleared by hand.");
+        }
+
+        /// <summary>
         /// Back to nobody: no respect, no rank, no record of what you have moved.
         ///
         /// Rank is derived from Respect rather than stored, so putting the one back to nothing

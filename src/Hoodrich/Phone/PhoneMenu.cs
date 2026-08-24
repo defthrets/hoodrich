@@ -607,17 +607,18 @@ namespace Hoodrich.Phone
         }
 
         /// <summary>
-        /// A rectangle with rounded corners, built from three rects and four discs.
+        /// A rectangle with rounded corners: three flat rects, and a sprite at each corner.
         ///
         /// DRAW_RECT has no radius and the game ships no rounded primitive, so this is the way
         /// to get one. Worth having on the app tiles specifically: a grid of hard-cornered
         /// boxes reads as a table of contents, and a grid of rounded ones reads as a phone.
         ///
-        /// The corners are drawn COARSE, and that is the whole reason this screen works.
+        /// The corners cannot be built out of rectangles, and that is the whole reason this
+        /// screen works.
         ///
-        /// Hud.Disc defaults to one rectangle per screen pixel row, which is right for the one
-        /// or two discs a panel draws and catastrophic here: a phone body, its rim, its screen
-        /// and seven rounded tiles came to about seventeen hundred DRAW_RECT calls in a single
+        /// Hud.Disc stacks one rectangle per screen pixel row, which is right for the one or
+        /// two discs a panel draws and catastrophic here: a phone body, its rim, its screen and
+        /// seven rounded tiles came to about seventeen hundred DRAW_RECT calls in a single
         /// frame at 1440p. The game does not draw seventeen hundred of anything -- it fills its
         /// 2D buffer and silently drops the rest, and the rest is whatever was issued LAST.
         ///
@@ -628,8 +629,13 @@ namespace Hoodrich.Phone
         /// screen was its on-hover ink, alone, on the black body behind it. Not an animation
         /// that "blacked things out": an animation whose background never arrived.
         ///
-        /// A corner here is about seventeen pixels across. Six bands is round at that size and
-        /// costs a quarter of what one-per-row does.
+        /// Coarsening the stack to about six bands a corner bought the budget back and paid for
+        /// it in looks: six steps across seventeen pixels is a visible staircase on the one
+        /// shape whose entire job is to be round, and the phone came out jagged everywhere it
+        /// was meant to be soft. A sprite settles both at once. disc.png is an anti-aliased
+        /// circle, it costs ONE call however large it renders, and DRAW_SPRITE is budgeted
+        /// separately from DRAW_RECT -- so a corner no longer competes with the fills for the
+        /// thing that ran out, and the whole phone is down to about fifty rectangles a frame.
         /// </summary>
         private static void RoundRect(float left, float top, float w, float h, float r, Color c)
         {
@@ -651,25 +657,34 @@ namespace Hoodrich.Phone
             Hud.RectFrom(left + rX, top, w - rX * 2f, r, c);
             Hud.RectFrom(left + rX, top + h - r, w - rX * 2f, r, c);
 
-            var band = Bands(r);
-
-            Hud.Disc(left + rX, top + r, r, c, band);
-            Hud.Disc(left + w - rX, top + r, r, c, band);
-            Hud.Disc(left + rX, top + h - r, r, c, band);
-            Hud.Disc(left + w - rX, top + h - r, r, c, band);
+            Corner(left + rX, top + r, r, c);
+            Corner(left + w - rX, top + r, r, c);
+            Corner(left + rX, top + h - r, r, c);
+            Corner(left + w - rX, top + h - r, r, c);
         }
 
         /// <summary>
-        /// How tall each band of a corner is, in screen pixels.
+        /// One corner, as a whole circle sat under the flats either side of it.
         ///
-        /// Sized so a corner is always about six steps regardless of how big the screen is --
-        /// so the cost of the phone is fixed rather than rising with resolution, which is the
-        /// direction that broke it.
+        /// A whole circle rather than a quarter of one because three quarters of it land on
+        /// fill that is already there, and a quarter sprite would have to be rotated four ways
+        /// and lined up on the pixel at each of them -- which is four chances to leave a
+        /// hairline down the join where a full circle leaves none.
+        ///
+        /// Hud.File centres the art on the point it is given and forces it square on screen, so
+        /// a sprite 2r tall at the corner's centre IS a circle of radius r, matching the arc
+        /// the flat rects are cut back to.
+        ///
+        /// It returns false when the PNG is not on disk, and then the old stacked corner goes
+        /// down instead. About six bands, which is stepped but round enough to read, and a
+        /// missing file should cost the smoothness rather than the corner.
         /// </summary>
-        private static int Bands(float r)
+        private static void Corner(float cx, float cy, float r, Color c)
         {
+            if (Hud.File("disc.png", cx, cy, r * 2f, 0f, c)) return;
+
             var px = r * 2f * Hud.ScreenHeight;
-            return Math.Max(2, (int)Math.Round(px / 6f));
+            Hud.Disc(cx, cy, r, c, Math.Max(2, (int)Math.Round(px / 6f)));
         }
 
         /// <summary>

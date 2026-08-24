@@ -113,8 +113,6 @@
     {
       "id": "hit_rancho",
       "kind": "Hit",
-      "_fromTheCar": "The homies work this one out of the windows and never get out on their own -- they only follow you out when YOU get out. Lamar says so in the brief.",
-      "fromTheCar": true,
       "name": "The cut house in Rancho.",
       "brief": "Aight. Messages ain't movin' 'em, still out there, still servin', so we done sendin' letters. Vagos got a lil cut house out Rancho where they break the weight down before it ever touch our side. Five of 'em in there, comfortable, actin' like it's somebody auntie barbecue.",
       "done": "I heard about that before you was even off the freeway, dawg. Phone been ringin' all mornin' and every last one of 'em sayin' LD sent him. LD SENT HIM. Five of them people gotta go buy that weight twice now, and my name is what did it to 'em. TAKE that.",
@@ -138,15 +136,13 @@
       "briefMore": [
         "And don't be standin' there thinkin' on it, I already did the thinkin' for the both of us, that's what I'm here for. You take that off 'em they gotta go buy more, and buyin' more cost 'em. Cost 'em enough times and all of a sudden our price look real reasonable again.",
         "Three homies, everybody with a machine pistol. Don't bring no shotgun in there, this ain't duck season, you want somethin' that spray. And somebody in that house ALWAYS call the laws, so shake 'em way off you before you come back round my block.",
-        "One more thing and this the important one. Them boys STAY IN THE CAR, cuz. They leanin' out them windows the whole time and they hittin' what we came for -- you ain't gotta tell 'em nothin'. And they only gettin' out when YOU get out, so if you want 'em shootin' out them windows, keep your ass in that seat.",
+        "One more thing and this the important one. Them boys ride with you, cuz -- doors locked once you rollin', so they ain't hoppin' out at no red light and gettin' theyself killed over nothin'. They get out when YOU get out, and when you do they on it. You ain't gotta tell 'em nothin'.",
         "And look at what you rollin' in before you go. If we got that German joint, that thing is way too clean to be leavin' in no ditch -- you take that straight to Hao when it's done and he swap the numbers on it, and we both eat off that. Any other beater, do what you want with it. Either way you walk back to me for the money."
       ]
     },
     {
       "id": "hit_grove",
       "kind": "Hit",
-      "_fromTheCar": "Grove is a street you roll down, not a building you walk into. The homies lean out and shoot; they never get out.",
-      "fromTheCar": true,
       "name": "Get 'em off Grove.",
       "brief": "Ballas standin' on Grove. On GROVE, Frank. My granddaddy raised nine kids on that street. We buried that man out the church on the corner. And now I gotta hear about two purple suckas leanin' on the same fence he painted with his own hands. Nah, dawg. Nah.",
       "done": "THAT'S what I'm talkin' about! Word went up and down Grove before you even parked, cuz. Old heads on the porch tellin' it to each other like they was out there watchin'. Granddaddy woulda shook my hand behind this one. Yours too. But mine first.",

@@ -1588,7 +1588,15 @@ namespace Hoodrich.Wheel
                 return;
             }
 
-            var accepted = Stash.AddBulk(product.Id, supplied);
+            // HIS purity, not a hundred per cent.
+            //
+            // AddBulk's purity argument is optional and defaults to pure, and this call left it
+            // off -- so every gram bought through the phone arrived perfect no matter who sold
+            // it. Gerald sells at seventy-five and it turned up at a hundred; so did everybody
+            // else's, which meant the whole purity economy only existed on the selling side.
+            // The delivery path and the face-to-face path both pass it; this was the one that
+            // did not.
+            var accepted = Stash.AddBulk(product.Id, supplied, def.Purity);
             if (accepted <= 0f)
             {
                 // Back in his bag before we walk away. It was taken off him a few lines up so
@@ -1760,6 +1768,17 @@ namespace Hoodrich.Wheel
                 // reading that made you need it. Resetting something you have not started is a
                 // no-op, and a no-op is a far better failure than a dead end.
                 Do = () => _state.ForgetFronts()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Count Gerald's packages done",
+                Note = "Marks both of his fronts as moved without moving them. For a save that " +
+                       "cleared one and was not credited for it -- he opens up the port instead " +
+                       "of asking again",
+                Enabled = () => _state.FrontsDone < 2,
+                Do = () => _state.CreditFronts()
             };
 
             yield return new Opt

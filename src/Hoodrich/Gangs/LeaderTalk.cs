@@ -754,7 +754,15 @@ namespace Hoodrich.Gangs
             // The trial rows above own the finished-package conversation whenever they are
             // showing. This block is the same man saying the same thing a second time, and two
             // rows for one event is how the count got lost in the first place.
-            var trialHasIt = FrontsWork(def) && (!_crew.IsAffiliated || AfterJoining());
+            // Word for word the condition the trial rows above are drawn under, INCLUDING the
+            // check that he is your set. It was missing that, which is a hole rather than an
+            // untidiness: somebody signed on with another crew got neither row -- the trial
+            // suppressed by `mine`, and this one suppressed because it thought the trial had
+            // it -- so there was no way to hand his package back at all.
+            var trialHasIt = FrontsWork(def)
+                             && (!_crew.IsAffiliated
+                                 || (_crew.IsAffiliated && _crew.Current.Id == def.GangId
+                                     && AfterJoining()));
 
             if (FrontsWork(def) && _state.MissionsDone.Count > 0 && !trialHasIt)
             {

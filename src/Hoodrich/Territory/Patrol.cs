@@ -948,6 +948,18 @@ namespace Hoodrich.Territory
             var near = Closest(player);
             if (near == null) return;
 
+            // And the game's own hail is held off while the prompt is up.
+            //
+            // Right on the d-pad is how you whistle a taxi down, and that is a vanilla
+            // behaviour on the same button -- so pressing it did both: Franklin whistled AND
+            // put his hand up, which is a man being friendly and rude at the same time and
+            // reads as neither. Disabled rather than rebound, because the button is the one the
+            // player was told to press.
+            //
+            // Down() reads IS_DISABLED_CONTROL_PRESSED as well as the live one, so disabling it
+            // costs us nothing -- the gesture still fires, the whistle does not.
+            Game.DisableControlThisFrame(Control.PhoneRight);
+
             Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to let them know how you feel.");
 
             if (pressed) GiveThemThe(near, player, now);

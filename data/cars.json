@@ -1,8 +1,7 @@
-{
+﻿{
   "_comment": "Hao's yard. Every model name here was resolved from the HASH shown on the spawner panel rather than from the display name, which is how 'Baller' turned out to be baller2 and 'Asterope GZ' asterope2. Positions are read off the in-game coordinate HUD. Prices are under the showroom because none of these came with paperwork.",
-
+  "_paint": "paint / paint2 are indices into the game's own vehicle colour table -- primary and secondary. Leave them out, or set -1, and the game picks, which is what every car here did to begin with: the random table is mostly primary blue and red, so the whole forecourt came out looking like a toy shop. The values used are all from the metallic blacks, greys and silvers at 0-11 plus the two whites at 111 and 112. The matte range higher up would suit one or two of these, but the exact indices are not written down anywhere we can check, and a wrong index is a car in a colour nobody chose.",
   "_suspension": "Every car on this lot gets competition suspension, set at spawn. It is applied by taking the HIGHEST index the model actually offers rather than a hardcoded 3, because the number of suspension mods varies per vehicle and a fixed index silently does nothing on the ones that have fewer.",
-
   "cars": [
     {
       "id": "asbo",
@@ -11,8 +10,13 @@
       "class": "Compact",
       "note": "Somebody's first car. Twice.",
       "price": 9000,
-      "x": -51.177, "y": -1676.0, "z": 28.728, "heading": 232.005,
-      "_y": "The Y readout was under a minimap icon in the reference shot. This value is inferred from the row it sits in -- Minimus -1678.2, Asterope -1680.4, Kanjo -1682.4, all on the same heading and ~2.2m apart, which puts the Asbo at the head of that row. Worth correcting if it lands badly."
+      "x": -51.177,
+      "y": -1676.0,
+      "z": 28.728,
+      "heading": 232.005,
+      "_y": "The Y readout was under a minimap icon in the reference shot. This value is inferred from the row it sits in -- Minimus -1678.2, Asterope -1680.4, Kanjo -1682.4, all on the same heading and ~2.2m apart, which puts the Asbo at the head of that row. Worth correcting if it lands badly.",
+      "paint": 112,
+      "paint2": 112
     },
     {
       "id": "kanjosj",
@@ -21,7 +25,12 @@
       "class": "Coupe",
       "note": "Built in a driveway. Runs like it.",
       "price": 22000,
-      "x": -55.753, "y": -1682.439, "z": 28.805, "heading": 235.911
+      "x": -55.753,
+      "y": -1682.439,
+      "z": 28.805,
+      "heading": 235.911,
+      "paint": 0,
+      "paint2": 1
     },
     {
       "id": "minimus",
@@ -30,7 +39,12 @@
       "class": "Sedan",
       "note": "Clean. Too clean to ask about.",
       "price": 18000,
-      "x": -52.881, "y": -1678.175, "z": 28.802, "heading": 234.863
+      "x": -52.881,
+      "y": -1678.175,
+      "z": 28.802,
+      "heading": 234.863,
+      "paint": 8,
+      "paint2": 8
     },
     {
       "id": "asterope2",
@@ -39,7 +53,12 @@
       "class": "Sedan",
       "note": "Four doors and a bad attitude.",
       "price": 16000,
-      "x": -54.425, "y": -1680.435, "z": 28.965, "heading": 234.705
+      "x": -54.425,
+      "y": -1680.435,
+      "z": 28.965,
+      "heading": 234.705,
+      "paint": 111,
+      "paint2": 4
     },
     {
       "id": "merula",
@@ -49,7 +68,12 @@
       "note": "Off a lease. Sort of.",
       "price": 38000,
       "_nudge": "Shifted 0.4m off the read position: an oriented-box check put it 0.01m from the Astron, which is touching, and two cars spawning in contact get shoved apart by the physics and scatter the row.",
-      "x": -59.729, "y": -1688.522, "z": 28.978, "heading": 285.837
+      "x": -59.729,
+      "y": -1688.522,
+      "z": 28.978,
+      "heading": 285.837,
+      "paint": 11,
+      "paint2": 11
     },
     {
       "id": "vorschlaghammer",
@@ -58,7 +82,12 @@
       "class": "Sedan",
       "note": "German. Old money. New plates.",
       "price": 28000,
-      "x": -40.336, "y": -1688.842, "z": 28.727, "heading": 24.953
+      "x": -40.336,
+      "y": -1688.842,
+      "z": 28.727,
+      "heading": 24.953,
+      "paint": 2,
+      "paint2": 0
     },
     {
       "id": "woodlander",
@@ -67,7 +96,12 @@
       "class": "SUV",
       "note": "Nobody looks at one twice. That's the feature.",
       "price": 19000,
-      "x": -43.019, "y": -1689.921, "z": 28.396, "heading": 22.464
+      "x": -43.019,
+      "y": -1689.921,
+      "z": 28.396,
+      "heading": 22.464,
+      "paint": 6,
+      "paint2": 6
     },
     {
       "id": "baller2",
@@ -76,7 +110,12 @@
       "class": "SUV",
       "note": "For when you want to be seen arriving.",
       "price": 32000,
-      "x": -49.681, "y": -1692.624, "z": 29.113, "heading": 4.497
+      "x": -49.681,
+      "y": -1692.624,
+      "z": 29.113,
+      "heading": 4.497,
+      "paint": 0,
+      "paint2": 4
     },
     {
       "id": "toros",
@@ -85,7 +124,12 @@
       "class": "SUV",
       "note": "Quick for something that shape.",
       "price": 65000,
-      "x": -53.405, "y": -1693.812, "z": 28.987, "heading": 354.856
+      "x": -53.405,
+      "y": -1693.812,
+      "z": 28.987,
+      "heading": 354.856,
+      "paint": 111,
+      "paint2": 111
     },
     {
       "id": "astron",
@@ -94,7 +138,12 @@
       "class": "SUV",
       "note": "Somebody in Rockford is still reporting this one.",
       "price": 55000,
-      "x": -56.417, "y": -1691.856, "z": 28.879, "heading": 349.604
+      "x": -56.417,
+      "y": -1691.856,
+      "z": 28.879,
+      "heading": 349.604,
+      "paint": 4,
+      "paint2": 3
     },
     {
       "id": "caracara2",
@@ -103,7 +152,12 @@
       "class": "Off-road",
       "note": "Goes where the cameras aren't.",
       "price": 42000,
-      "x": -59.002, "y": -1685.530, "z": 29.202, "heading": 278.527
+      "x": -59.002,
+      "y": -1685.53,
+      "z": 29.202,
+      "heading": 278.527,
+      "paint": 9,
+      "paint2": 9
     }
   ]
 }

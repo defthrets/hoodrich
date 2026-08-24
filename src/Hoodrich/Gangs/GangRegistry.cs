@@ -24,9 +24,13 @@ namespace Hoodrich.Gangs
         /// The OTHER gang on a block that two of them claim.
         ///
         /// A second claim used to be a warning and a discard -- "keeping ballas" -- which made
-        /// a contested block impossible to express at all. Some of them genuinely are: Davis
-        /// has Grove Street running through it, and a map that paints the whole of it purple
-        /// is telling you something the streets do not agree with.
+        /// a contested block impossible to express at all, so this holds the contender instead.
+        ///
+        /// Nothing is contested at the moment. Davis was, for a while, on the reasoning that
+        /// Grove Street runs through it -- but running a street through somewhere is not
+        /// holding it, and Davis is the Ballas'. The machinery stays because the question it
+        /// answers is a real one and the data can ask it again by naming a zone twice; it is
+        /// simply not being asked today.
         ///
         /// Two is the limit on purpose. A block held by three sets is a block with no holder,
         /// and everything downstream -- who spots you, who comes, whose colour the notice is
@@ -289,7 +293,7 @@ namespace Hoodrich.Gangs
                 new[] { "crack", "weed" },
                 new[] { "families", "vagos", "marabunta", "aztecas" },
                 new[] { "DAVIS", "STAD" },
-                "Davis, Grove Street and the blocks by the arena",
+                "Davis and the blocks by the arena",
                 new[] { "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01", "a_m_m_soucent_02" }));
 
             Register(Make("vagos", "Los Santos Vagos", "VAGO", "AMBIENT_GANG_MEXICAN",

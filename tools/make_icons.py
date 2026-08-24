@@ -1485,6 +1485,39 @@ def cut_25():
     purity(0.25, 'cut_25.png')
 
 
+# ------------------------------------------------------------------- geometry
+#
+# Not a symbol. A shape the HUD code needs because the game has no primitive for it.
+
+
+def disc():
+    """
+    A plain filled circle, for the rounded corners of the phone and its app tiles.
+
+    The phone draws a rounded rectangle as three flat rects with a circle sat in each corner,
+    and the circles used to be stacks of DRAW_RECTs -- one per screen pixel row. That came to
+    about seventeen hundred rectangles in a single frame at 1440p, which is past what the game
+    will draw in one pass, and everything issued after the limit was silently dropped. Coarsened
+    to six bands a corner it fitted the budget and looked like a staircase. As a sprite it is
+    one draw whatever size it renders at, and the curve is as smooth as the downsample makes it.
+
+    Drawn on WHITE at zero alpha rather than on CLEAR, which is the one place this file departs
+    from canvas(). PIL resizes the colour channels without reference to alpha, so art sat on
+    transparent BLACK picks up a dark hairline all round the edge on the way down -- invisible
+    on a twenty-pixel glyph, and a grey fringe running right round a corner nearly sixty pixels
+    across. White everywhere means only the alpha varies at the edge.
+
+    Inscribed corner to corner rather than inset, so a sprite drawn 2r across renders a circle
+    of exactly radius r and meets the flats it sits between without a seam.
+    """
+    img = Image.new('RGBA', (S, S), (255, 255, 255, 0))
+    d = ImageDraw.Draw(img)
+
+    d.ellipse([0, 0, S - 1, S - 1], fill=W)
+
+    save(img, 'disc.png')
+
+
 def socials():
     """
     The handset with a heart on the screen.
@@ -1520,41 +1553,66 @@ def socials():
 
 def baggie():
     """
-    A corner baggie with the work still in it. The dealing icon.
+    A zip-seal baggie with two pills and a bar in it. The dealing icon.
 
     It was a bong, which is a picture of SMOKING and this menu is about selling -- the one
     thing nobody in it ever does with the product. A baggie is the unit the whole economy is
     denominated in: you buy weight, you bag it up, you hand one of these over.
 
-    Drawn as the bag in outline with the contents solid inside it, because the contents are
-    the part that has to survive being twenty pixels tall. The heat-seal crimp across the top
-    and the two little ears either side of it are what stop it reading as a plain pouch.
+    The first attempt drew the bag as an outline with the buds solid inside it, and that is
+    exactly backwards for this size. The wall came out under a rendered pixel wide and the six
+    overlapping buds merged, so the whole icon was a grey lozenge. So there is no outline here
+    at all: the pouch is solid and the product is punched back out to transparent, which puts
+    the tint colour in the holes and makes the contrast come from the negative space -- the
+    same trick that makes the skull's eye sockets work.
+
+    The seal is a separate bar above the pouch with a real transparent slot between them, and
+    it overhangs either side the way the lip of a real one does. That has to be a gap rather
+    than a drawn line, because a stroke thin enough to read as a seam is gone after the
+    downsample -- and without the strong horizontal break the silhouette is just a box.
+
+    The slider knob is gone. It stood proud at one end to stop the top reading as a lid, but a
+    small nub on the skyline at this size is a chip out of the shape rather than a detail, and
+    it made the bag look damaged instead of sealed. What says zip-lock in its place is a slot
+    punched along the middle of the bar -- the seam itself, as a hole, for the same reason the
+    gap under the bar is one.
+
+    Two round pills and one bar. The bar is the xanax shape the rest of the set already uses,
+    and having one of the three be a different shape is what stops the contents reading as
+    three identical dots, which is a pattern rather than a handful of pills.
     """
     img, d = canvas()
 
-    # The bag: a rounded pouch, slightly wider at the bottom.
-    d.polygon([(150, 150), (362, 150), (392, 452), (120, 452)], fill=W)
-    d.rounded_rectangle([120, 400, 392, 470], radius=34, fill=W)
+    # The zip strip, with the seam punched through the middle of it. The strip is deliberately
+    # taller than the seam is thick -- a slot that eats a third of the bar stops reading as a
+    # seam and turns the whole thing into an empty outline.
+    d.rounded_rectangle([32, 16, 480, 130], radius=34, fill=W)
+    d.rounded_rectangle([104, 64, 408, 84], radius=10, fill=CLEAR)
 
-    # Hollowed out, leaving a wall thick enough to read.
-    d.polygon([(178, 196), (334, 196), (356, 424), (156, 424)], fill=CLEAR)
-    d.rounded_rectangle([156, 386, 356, 438], radius=24, fill=CLEAR)
+    # The pouch, hung off the strip and well inside it -- the overhang has to be a couple of
+    # rendered pixels or the strip stops looking like a lip and starts looking like a lid.
+    # Square shoulders under the seal, sides splaying out, bottom almost a half-circle, so it
+    # sags with the weight in it instead of sitting there like a tile.
+    d.polygon([(100, 168), (412, 168), (432, 380), (80, 380)], fill=W)
+    d.rounded_rectangle([80, 300, 432, 494], radius=86, fill=W)
 
-    # The crimp across the top, and the ears either side of it.
-    d.rounded_rectangle([132, 108, 380, 158], radius=18, fill=W)
-    d.polygon([(132, 108), (96, 66), (132, 158)], fill=W)
-    d.polygon([(380, 108), (416, 66), (380, 158)], fill=W)
+    # The product, and the arrangement matters more than the shapes do.
+    #
+    # Two circles level with each other over a centred bar is a FACE -- two eyes and a mouth --
+    # and once you have seen it you cannot see a baggie again. So the two pills sit at
+    # different heights and the bar is narrower than the span between them and pushed off to
+    # one side. Nothing lines up with anything, which is what loose pills in a bag look like
+    # anyway.
+    for (x, y, r) in ((176, 252, 47), (334, 292, 47)):
+        d.ellipse([x - r, y - r, x + r, y + r], fill=CLEAR)
 
-    # And what is in it: buds, biggest at the bottom where the bag sits heaviest.
-    for (x, y, r) in ((214, 372, 42), (298, 376, 38), (256, 316, 40),
-                      (206, 288, 30), (312, 300, 28), (258, 240, 26)):
-        d.ellipse([x - r, y - r, x + r, y + r], fill=W)
+    d.rounded_rectangle([132, 380, 296, 442], radius=30, fill=CLEAR)
 
     save(img, 'baggie.png')
 
 
 ALL = [socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
-       cut_100, cut_75, cut_50, cut_33, cut_25]
+       cut_100, cut_75, cut_50, cut_33, cut_25, disc]
 
 
 if __name__ == '__main__':
