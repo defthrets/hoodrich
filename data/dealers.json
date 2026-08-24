@@ -74,7 +74,42 @@
       "drunk": true,
       "priceFloor": 50000,
       "priceStep": 500,
-      "purity": 1.0
+      "purity": 1.0,
+      "afterCheng": {
+        "_comment": "Who is stood on the dock after the old man is told about his son. Read through the same loader as the block above, so everything here means exactly what it means there. He is the opposite of Tao in every way that costs the player something: sober, on time, cheaper, and completely uninterested in you. The price is the reward and it has to actually BE one -- Tao already sells at the cheapest multiplier in the mod because he is the port, so anything at or above his number turns the old man's promise into a lie the player can check.",
+        "name": "Mr Yun",
+        "portrait": "CHAR_CHENGSR",
+        "models": [
+          "g_m_m_chigoon_01",
+          "g_m_m_chigoon_02",
+          "g_m_y_korean_01"
+        ],
+        "drunk": false,
+        "priceMultiplier": 0.66,
+        "greeting": "You are the one who spoke to Mr Cheng. I know who you are, so we can skip that part. Bricks. What do you need.",
+        "buyLine": "Bricks, by the kilo, at the price on the sheet. There is no other price and there is no haggling, because there is no man here to haggle with. Say the number.",
+        "sourceReply": "It comes off the water and onto a lorry and that is all you need from me. You are buying product, not a story.",
+        "farewell": "Then we are finished. Do not stand about on the dock.",
+        "openingText": "This is the number for the port. It replaces the one you had. Say what you want and where you are and it will be brought to you. Nothing else is required from either of us.",
+        "textCalled": [
+          "Understood. It will be loaded within the hour.",
+          "Received. Wait by the phone.",
+          "Noted. Do not call again about the same order.",
+          "Yes. It is being pulled now."
+        ],
+        "textLeaving": [
+          "On the road. Be at the address you gave.",
+          "Leaving the port now. Twenty minutes.",
+          "Moving. Do not change the address.",
+          "En route. Be alone when I arrive."
+        ],
+        "textOutside": [
+          "Outside. Come down.",
+          "I am at the address. Two minutes, then I leave with it.",
+          "Here. Do not keep me on this street.",
+          "Outside. Bring nobody."
+        ]
+      }
     },
     {
       "id": "stretch_run",

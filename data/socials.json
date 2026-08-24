@@ -3637,6 +3637,18 @@
       "{you} we are outside your house",
       "{you} you have made this simple for us",
       "little seoul is outside {you}"
+    ],
+    "PortChanged": [
+      "Somebody new on the dock gate this morning. Older. Doesn't smile. Doesn't drink",
+      "{source} {hearsay} the Cheng boy ain't been seen at the port in a week. Not one shift",
+      "Whoever was runnin' that yard on the quiet, that's over. Grown men down there now",
+      "Heard the drunk one got sent home. Like, HOME home. Different country home",
+      "Port's runnin' smoother than it has all year and nobody's sayin' why",
+      "New guy at the water don't haggle, don't chat, don't remember your name. Refreshing honestly",
+      "{source} {hearsay} somebody put a name in front of the old man. Brave. Stupid. Same thing",
+      "That yard used to be a mess and now it's a business. Somebody made a phone call",
+      "Ain't seen Tao's car outside the sheds since whenever. That thing was always outside the sheds",
+      "Whatever happened down the port, it happened quiet and it happened fast. That's how you know who did it"
     ]
   },
   "voices": {

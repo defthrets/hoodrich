@@ -35,7 +35,11 @@ namespace Hoodrich.UI
         private static readonly string[] Everyone =
         {
             "CHAR_LAMAR", "CHAR_MP_GERALD", "CHAR_MP_STRETCH", "CHAR_CHENG",
-            "CHAR_DENISE", "CHAR_FRANKLIN", "CHAR_TANISHA", "CHAR_MICHAEL", "CHAR_TREVOR"
+            "CHAR_DENISE", "CHAR_FRANKLIN", "CHAR_TANISHA", "CHAR_MICHAEL", "CHAR_TREVOR",
+
+            // The father. Only ever needed once a save, and on the one text where a silhouette
+            // would land worst -- the new man at the port introducing himself.
+            "CHAR_CHENGSR"
         };
 
         private static readonly HashSet<string> Resident = new HashSet<string>();

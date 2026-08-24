@@ -72,6 +72,125 @@ namespace Hoodrich.Gangs
             return new DialogueNode(def.Name, line) { SpeakerColour = gang.Colour };
         }
 
+        /// <summary>Which set the old man runs. His son sells off their dock.</summary>
+        private const string ChengGang = "triads";
+
+        /// <summary>
+        /// Puts what you know about his son in front of him, if this is the right him.
+        ///
+        /// One row, on one leader, and only once you have something to say. Everything else in
+        /// this file is offered to all nine because it is about being in a gang; this is about
+        /// one family, and it appears on one man's list and nowhere else.
+        /// </summary>
+        private void OldManRow(DialogueNode node, LeaderDef def, GangDef gang)
+        {
+            if (node == null || gang == null) return;
+            if (!string.Equals(gang.Id, ChengGang, StringComparison.OrdinalIgnoreCase)) return;
+            if (_state == null || !_state.KnowsCheng) return;
+
+            if (_state.ToldTheOldMan)
+            {
+                node.Say("About your son.", () => AlreadyTold(def, gang),
+                         "That's done. It stays done");
+                node.WithIcon(Icons.Tick);
+                return;
+            }
+
+            node.Say("Your son's selling off your dock.", () => TheOldMan(def, gang),
+                     "Say the name. It cannot be unsaid");
+            node.WithIcon(Icons.Warning);
+        }
+
+        /// <summary>
+        /// The one door in this mod that shuts behind you.
+        ///
+        /// He is not surprised and that is the point of the scene: a man who runs an
+        /// organisation this size already knew somebody was at his containers, and the only
+        /// thing he was short of was a name. You are not informing on Tao. You are finishing a
+        /// sentence the old man started on his own months ago, and the price of finishing it
+        /// is that you were the one who did.
+        ///
+        /// Nothing here commits anything. The row below does.
+        /// </summary>
+        private DialogueNode TheOldMan(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Stop. Do not say the rest of it out here.\n\nI have known for four months " +
+                "that something goes off that dock that is not written down. I did not know " +
+                "the hand. You are about to tell me the hand, and once you have, you do not " +
+                "get to decide what happens to it. Think about whether you are telling me for " +
+                "your own reasons or because you are frightened of me. Both are fine. Only one " +
+                "of them is worth anything to you.");
+
+            node.Say("It's Tao. It's your son.", () => Said(def, gang),
+                     "There is no version of this where he does not find out");
+            node.WithIcon(Icons.Warning);
+
+            node.Say("Nothing. Forget it.", () => Root(def), "Keep him");
+            node.WithIcon(Icons.Tick);
+
+            node.Leave("Another time.");
+            return node;
+        }
+
+        /// <summary>Said. The port keeps running; the man on it does not.</summary>
+        private DialogueNode Said(LeaderDef def, GangDef gang)
+        {
+            if (_state != null && !_state.ToldTheOldMan)
+            {
+                _state.ToldTheOldMan = true;
+
+                // Worth a great deal, and to THIS set. You have handed the head of a family
+                // the one thing he could not buy, and you have done it about his own blood.
+                _state.AddRespect(ToldRespect);
+                _state.Touch();
+
+                TookHisSon?.Invoke();
+
+                Log.Info("The player told Wei Cheng about Tao. The port changes hands.");
+            }
+
+            var node = Node(def, gang,
+                "My son.\n\nYes. Of course it is my son. Nobody else could take from that " +
+                "yard for four months without being found, because nobody else would have been " +
+                "looked for.\n\nYou will not see him at the dock again. You will see somebody " +
+                "else, and that somebody will answer his phone the first time and will not be " +
+                "drinking. Your price goes down, because you are dealing with the company now " +
+                "and not with a boy. That is what I am giving you and it is more than you " +
+                "think.\n\nAnd hear this properly, because it is the whole of what you have " +
+                "bought: you are a man who told me. That is a good thing to be, once.");
+
+            node.Say("Understood.", () => Root(def), "Take it");
+            node.WithIcon(Icons.Tick);
+
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>Afterwards. He does not want to discuss it and says so exactly once.</summary>
+        private DialogueNode AlreadyTold(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "That business is closed and I do not reopen closed business for conversation. " +
+                "He is alive, he is not in Los Santos, and he is not your concern. The dock " +
+                "runs. Use it.");
+
+            node.Say("Fair enough.", () => Root(def));
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>What telling him is worth. A great deal, and only from him.</summary>
+        private const float ToldRespect = 250f;
+
+        /// <summary>
+        /// Set by Main. Hands the port to the old man's people.
+        ///
+        /// A hook rather than a call, because this file talks to gang leaders and knows
+        /// nothing about who sells what off which dock -- and should not learn.
+        /// </summary>
+        public Action TookHisSon;
+
         // ---- before you are in -------------------------------------------------
 
         private DialogueNode StrangerRoot(LeaderDef def, GangDef gang)
@@ -231,6 +350,14 @@ namespace Hoodrich.Gangs
                          "He ain't taking nobody on");
                 node.WithIcon(Icons.Locked);
             }
+
+            // WHAT YOU KNOW ABOUT HIS SON.
+            //
+            // Offered to anybody who has stood in front of him, member or not, because it is
+            // not a favour between friends -- it is a thing you have that he wants, and the
+            // whole shape of it is that you are not one of his and are about to be owed
+            // something. See TheOldMan.
+            OldManRow(node, def, gang);
 
             node.Leave("Forget it.");
             return node;
@@ -753,6 +880,8 @@ namespace Hoodrich.Gangs
             var node = Node(def, gang, def.Already);
 
             // Icons down the whole list, the way the wheel and the rack have them.
+            OldManRow(node, def, gang);
+
             node.Say("Where should I be working?", () => WhereToWork(def, gang),
                      "Ask which blocks are safe");
             node.WithIcon(Icons.Mask);

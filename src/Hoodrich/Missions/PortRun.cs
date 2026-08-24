@@ -743,6 +743,75 @@ namespace Hoodrich.Missions
             node.Say("...Sure.", Hurry, "Don't encourage him");
             node.WithIcon(Icons.Tick);
 
+            // THE QUESTION HE JUST TOLD YOU NOT TO ASK.
+            //
+            // He has spent the whole speech saying whose it is without saying whose it is --
+            // my family, the actual paperwork, a man in my position -- and then told you not
+            // to ask. That is not a warning, it is an invitation, and he does not know the
+            // difference. Asking is the only interesting thing you can do in this scene.
+            node.Say("Whose paperwork?", Whose, "Ask the one thing he said not to");
+            node.WithIcon(Icons.FromFile("eyes.png"));
+
+            return node;
+        }
+
+        /// <summary>
+        /// He tells you, because not telling you was never on the table.
+        ///
+        /// The joke and the hinge of the whole thing, in one node. Everything Tao does is
+        /// borrowing his father's weight and then checking your face to see whether it landed
+        /// -- so the one fact he genuinely must not give away is the one fact he cannot stop
+        /// himself giving away, because giving it away is the only way it does any work for
+        /// him. A man who has to say the name has already lost the argument the name was for.
+        ///
+        /// And it is the only thing in this mod that is worth anything to somebody else. What
+        /// you now know is that the containers a Cheng is selling out the back of belong to
+        /// the Cheng who did not agree to it.
+        /// </summary>
+        private DialogueNode Whose()
+        {
+            if (_state != null && !_state.KnowsCheng)
+            {
+                _state.KnowsCheng = true;
+                _state.Touch();
+
+                Log.Info("The player asked whose paperwork it is. Tao told him.");
+            }
+
+            var node = new DialogueNode("Tao Cheng",
+                "Man, whose -- CHENG. It's Cheng, my dude. Wei Cheng. That's my old man, that's " +
+                "his name on every piece of paper in this yard and every boat that ties up on " +
+                "it. Which make it mine. Eventually. Obviously. Look -- he don't need to know " +
+                "every little thing that move through here, that's not, like. That's not " +
+                "efficient. He's got a whole ORGANISATION, bro, he can't be countin' boxes. " +
+                "So this stay between us. Yeah? Yeah.")
+            {
+                SpeakerColour = Palette.Cash
+            };
+
+            node.Say("Between us.", Hurry, "Say nothing");
+            node.WithIcon(Icons.Tick);
+
+            node.Say("Does he know?", () => Knows(), "Push it");
+            node.WithIcon(Icons.FromFile("eyes.png"));
+
+            return node;
+        }
+
+        /// <summary>The one moment the act comes all the way off him.</summary>
+        private DialogueNode Knows()
+        {
+            var node = new DialogueNode("Tao Cheng",
+                "...He knows what he need to know. Okay? He's a busy man. Ay -- ay, why you " +
+                "askin' me that. Why would you ask me that. Nah, we good, we good, it's " +
+                "nothin'. Go get your truck, my guy. Go on. Bay one.")
+            {
+                SpeakerColour = Palette.Cash
+            };
+
+            node.Say("Bay one.", Hurry, "Leave it");
+            node.WithIcon(Icons.FromFile("box.png"));
+
             return node;
         }
 

@@ -139,48 +139,114 @@ namespace Hoodrich.Supply
                 var isNew = def == null;
                 if (isNew) def = new DealerDef { Id = id };
 
-                def.Name = node["name"].AsString(def.Name.Length > 0 ? def.Name : id);
-                def.Tag = node["tag"].AsString(def.Tag);
-                def.GangId = node["gangId"].AsString(def.GangId);
-                def.PriceMultiplier = Math.Max(0.1f, node["priceMultiplier"].AsFloat(def.PriceMultiplier));
-                def.MinRank = Math.Max(0, node["minRank"].AsInt(def.MinRank));
-                def.MaxOrderGrams = Math.Max(1f, node["maxOrderGrams"].AsFloat(def.MaxOrderGrams));
-                def.OpenHour = node["openHour"].AsInt(def.OpenHour);
-                def.CloseHour = node["closeHour"].AsInt(def.CloseHour);
+                Apply(def, node, id);
 
-                def.Greeting = node["greeting"].AsString(def.Greeting);
-                def.BuyLine = node["buyLine"].AsString(def.BuyLine);
-                def.SourceReply = node["sourceReply"].AsString(def.SourceReply);
-                def.SourceTooSoon = node["sourceTooSoon"].AsString(def.SourceTooSoon);
-                def.Farewell = node["farewell"].AsString(def.Farewell);
-
-                var kind = node["kind"].AsString(def.Kind.ToString());
-                try { def.Kind = (DealerKind)Enum.Parse(typeof(DealerKind), kind, true); }
-                catch { Log.Warn("Unknown dealer kind '" + kind + "' on " + id + "."); }
-
-                ReplaceList(def.Models, node["models"]);
-                ReplaceList(def.Drugs, node["drugs"]);
-                ReplaceList(def.Rides, node["rides"]);
-                def.RidePaint = node["ridePaint"].AsInt(def.RidePaint);
-                def.OpeningText = node["openingText"].AsString(def.OpeningText);
-                def.Portrait = node["portrait"].AsString(FaceFor(def.Id));
-                // A string or a list of them, so an old file keeps working unchanged.
-                ReadLines(node["textCalled"], def.CalledLines, ref def.TextCalled);
-                ReadLines(node["textLeaving"], def.LeavingLines, ref def.TextLeaving);
-                ReadLines(node["textOutside"], def.OutsideLines, ref def.TextOutside);
-                def.LotValue = node["lotValue"].AsFloat(def.LotValue);
-                def.LotStep = node["lotStep"].AsFloat(def.LotStep);
-                def.PriceFloor = (int)node["priceFloor"].AsFloat(def.PriceFloor);
-                def.PriceStep = Math.Max(1, (int)node["priceStep"].AsFloat(def.PriceStep));
-                def.Drunk = node["drunk"].AsBool(def.Drunk);
-                ReplaceList(def.Zones, node["zones"]);
-
-                def.Purity = Math.Max(Economy.Stash.MinPurity,
-                                      Math.Min(Economy.Stash.MaxPurity,
-                                               node["purity"].AsFloat(def.Purity)));
+                // Kept, not applied. See Handover.
+                var after = node["afterCheng"];
+                if (after.Kind == JsonKind.Object) _afterCheng[def.Id] = after;
 
                 if (isNew) _defs.Add(def);
             }
+        }
+
+        /// <summary>Every field a dealer reads out of one json object.</summary>
+        private void Apply(DealerDef def, Json node, string id)
+        {
+            def.Name = node["name"].AsString(def.Name.Length > 0 ? def.Name : id);
+            def.Tag = node["tag"].AsString(def.Tag);
+            def.GangId = node["gangId"].AsString(def.GangId);
+            def.PriceMultiplier = Math.Max(0.1f, node["priceMultiplier"].AsFloat(def.PriceMultiplier));
+            def.MinRank = Math.Max(0, node["minRank"].AsInt(def.MinRank));
+            def.MaxOrderGrams = Math.Max(1f, node["maxOrderGrams"].AsFloat(def.MaxOrderGrams));
+            def.OpenHour = node["openHour"].AsInt(def.OpenHour);
+            def.CloseHour = node["closeHour"].AsInt(def.CloseHour);
+
+            def.Greeting = node["greeting"].AsString(def.Greeting);
+            def.BuyLine = node["buyLine"].AsString(def.BuyLine);
+            def.SourceReply = node["sourceReply"].AsString(def.SourceReply);
+            def.SourceTooSoon = node["sourceTooSoon"].AsString(def.SourceTooSoon);
+            def.Farewell = node["farewell"].AsString(def.Farewell);
+
+            var kind = node["kind"].AsString(def.Kind.ToString());
+            try { def.Kind = (DealerKind)Enum.Parse(typeof(DealerKind), kind, true); }
+            catch { Log.Warn("Unknown dealer kind '" + kind + "' on " + id + "."); }
+
+            ReplaceList(def.Models, node["models"]);
+            ReplaceList(def.Drugs, node["drugs"]);
+            ReplaceList(def.Rides, node["rides"]);
+            def.RidePaint = node["ridePaint"].AsInt(def.RidePaint);
+            def.OpeningText = node["openingText"].AsString(def.OpeningText);
+            def.Portrait = node["portrait"].AsString(FaceFor(def.Id));
+            // A string or a list of them, so an old file keeps working unchanged.
+            ReadLines(node["textCalled"], def.CalledLines, ref def.TextCalled);
+            ReadLines(node["textLeaving"], def.LeavingLines, ref def.TextLeaving);
+            ReadLines(node["textOutside"], def.OutsideLines, ref def.TextOutside);
+            def.LotValue = node["lotValue"].AsFloat(def.LotValue);
+            def.LotStep = node["lotStep"].AsFloat(def.LotStep);
+            def.PriceFloor = (int)node["priceFloor"].AsFloat(def.PriceFloor);
+            def.PriceStep = Math.Max(1, (int)node["priceStep"].AsFloat(def.PriceStep));
+            def.Drunk = node["drunk"].AsBool(def.Drunk);
+            ReplaceList(def.Zones, node["zones"]);
+
+            def.Purity = Math.Max(Economy.Stash.MinPurity,
+                                  Math.Min(Economy.Stash.MaxPurity,
+                                           node["purity"].AsFloat(def.Purity)));
+        }
+
+        /// <summary>
+        /// A second set of fields for the same dealer, applied when the world changes under him.
+        ///
+        /// The port does not stop working because Tao stopped standing on it -- the boats still
+        /// tie up, the containers still come off, and the family that owns the paperwork is
+        /// perfectly capable of putting somebody sober on the dock. So the DEALER survives and
+        /// his identity is replaced: name, face, models, voice, every line and the price.
+        ///
+        /// Done by re-reading him out of a second block in dealers.json through exactly the
+        /// same code that read the first one, rather than by branching every accessor on a
+        /// flag. One path, one set of rules, and the man who ends up standing there is as real
+        /// as the man who was there before him.
+        /// </summary>
+        private readonly Dictionary<string, Json> _afterCheng =
+            new Dictionary<string, Json>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Hands a dealer's pitch to whoever comes next, and clears the man who was on it.
+        ///
+        /// The live ped goes with him. Leaving him standing there would be the old face on the
+        /// new name, and the first thing the player does after telling the old man is drive
+        /// down to the port to see whether it was true.
+        /// </summary>
+        public void Handover(string id, PlayerState state = null)
+        {
+            Json after;
+            if (!_afterCheng.TryGetValue(id ?? "", out after)) return;
+
+            var def = _defs.Find(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (def == null) return;
+
+            Apply(def, after, def.Id);
+
+            // Only if HE is the one stood there. Despawn clears whichever dealer is live, and
+            // taking away a different man because this one changed his name is not the job.
+            try
+            {
+                if (_liveDef != null &&
+                    string.Equals(_liveDef.Id, def.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    Despawn();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not clear the old plug: " + ex.Message);
+            }
+
+            // He introduces himself, because his number is not the old one and nobody else is
+            // going to tell you that. The offer is un-marked rather than sent by hand, so the
+            // new man's text arrives through exactly the path the old man's did.
+            if (state != null) state.ForgetOffered("plug:" + def.Id);
+
+            Log.Info("The port changed hands: " + id + " is now " + def.Name + ".");
         }
 
         private static void ReplaceList(List<string> target, Json node)

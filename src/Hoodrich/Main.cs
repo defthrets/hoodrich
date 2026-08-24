@@ -1173,6 +1173,19 @@ namespace Hoodrich
 
                 _leaderTalk = new LeaderTalk(_leaders, _gangs, _crew, _state, _drugs, _pricing, _cfg);
                 _leaderTalk.SendToThePort = () => _port.Send();
+
+                // Telling Wei Cheng about his son changes who is stood on the dock. The talk
+                // knows nothing about docks and should not learn -- see LeaderTalk.TookHisSon
+                // and DealerManager.Handover.
+                _leaderTalk.TookHisSon = () =>
+                {
+                    _dealers.Handover("docks", _state);
+
+                    Notify.Important("~g~The port's changed hands.~s~ New number, new man, " +
+                                     "better price.");
+
+                    _social?.On(SocialEvent.PortChanged, "the port", 0);
+                };
                 _leaders.Talk = _talk;
                 _leaders.TalkBuilder = def => _leaderTalk.Root(def);
                 _leaderTalk.Social = _social;
@@ -1412,6 +1425,11 @@ namespace Hoodrich
 
                 // Skulls left on the map by a build that no longer exists. See StaleBlips.
                 UI.StaleBlips.Sweep();
+
+                // A save where the old man was already told loads straight into the world it
+                // left. The choice is written down; the dock has to agree with it.
+                if (_state != null && _state.ToldTheOldMan) _dealers.Handover("docks");
+
 
                 Log.Info(Build.Name + " " + Build.Version + " loaded. Phone: phone button" +
                          (_cfg.PhoneKey == System.Windows.Forms.Keys.None

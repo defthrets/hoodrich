@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Color = System.Drawing.Color;
 using GTA;
@@ -187,6 +187,18 @@ namespace Hoodrich.Supply
                 node.WithMark(Stash.Mark(strength));
             }
 
+            // THE QUESTION, AGAIN, AND FOR AS LONG AS IT TAKES.
+            //
+            // He gives his father up at the port, once, in a scene you can walk out of by
+            // picking either of the other two answers -- and everything that comes after it is
+            // gated on having heard it. A one-shot line that locks a whole branch of the mod
+            // behind noticing it at the time is not a choice, it is a trap.
+            //
+            // So he can be asked at your own door as well, every time he stands at it, until
+            // you have it. He does not mind being asked. Being asked is the best thing that
+            // happens to him all week.
+            OldManRow(node);
+
             node.Leave("Not today.");
 
             // Sending him off, which there was no way to do.
@@ -211,6 +223,49 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>How many bricks, once you have said what.</summary>
+        /// <summary>Only the man off the boat, and only while it is still news.</summary>
+        private void OldManRow(DialogueNode node)
+        {
+            if (node == null || _state == null || Def == null) return;
+            if (_state.KnowsCheng || _state.ToldTheOldMan) return;
+            if (Def.Kind != DealerKind.Docks || Def.IsGangDealer) return;
+
+            node.Say("Who are you, really?", Whose, "He has been waiting to be asked");
+            node.WithIcon(Icons.FromFile("eyes.png"));
+        }
+
+        /// <summary>
+        /// The same thing he says at the port, said on a driveway instead.
+        ///
+        /// Written out rather than shared with PortRun, because it is not the same scene: there
+        /// he is on his own dock in front of his own men and it is a boast. Here he has driven
+        /// a box across the city himself, in the evening, and it is closer to a complaint. Same
+        /// fact, and the fact is the only part that has to match.
+        /// </summary>
+        private DialogueNode Whose()
+        {
+            if (_state != null && !_state.KnowsCheng)
+            {
+                _state.KnowsCheng = true;
+                _state.Touch();
+
+                Log.Info("Asked on the doorstep. Tao named his father anyway.");
+            }
+
+            var node = Node(
+                "Who am I. Bro. CHENG. Wei Cheng, that's my father, that's the name on every " +
+                "container in that yard -- and here I am, on your driveway, at night, carryin' " +
+                "a box up a path like a. like a guy who carries boxes." +
+                "\n\nHe don't know about " +
+                "this part. Obviously he don't know about this part. And you're not gonna be " +
+                "the one who tells him, 'cause then who brings you your stuff? Nobody. Exactly. " +
+                "So we're good. We're good, right?");
+
+            node.Say("We're good.", () => Root(), "Let him believe it");
+            node.Leave("Sure.");
+            return node;
+        }
+
         private DialogueNode Amounts(Brick brick, DrugDef product)
         {
             var strength = Def == null ? 1f : Def.Purity;

@@ -35,6 +35,15 @@ namespace Hoodrich.Social
         /// <summary>Police down. The city notices this one more than anything else you do.</summary>
         CopKilled,
 
+        /// <summary>
+        /// The port changed hands. Nobody on that feed knows why, and that is the post.
+        ///
+        /// The one thing the player has done that the whole city can see the shape of without
+        /// being able to see the cause -- a yard that was a mess is suddenly a business, and
+        /// the only person who knows a name was said is holding the phone.
+        /// </summary>
+        PortChanged,
+
         /// <summary>Woke up at Pillbox. Word gets round before you are out of the bed.</summary>
         Hospital,
 
@@ -1395,6 +1404,9 @@ namespace Hoodrich.Social
                 case SocialEvent.Tagged: return 0.5f;
                 case SocialEvent.BigSale: return 0.35f;
                 case SocialEvent.Delivery: return 0.2f;
+
+                // Certain. It happens once in a save and it is the loudest quiet thing in it.
+                case SocialEvent.PortChanged: return 1f;
 
                 // Somebody serving somebody on a corner is not news.
                 case SocialEvent.Sale: return 0.05f;

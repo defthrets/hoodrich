@@ -160,6 +160,33 @@ namespace Hoodrich.State
         public bool DocksUnlocked;
 
         /// <summary>
+        /// Whether the player has worked out whose son the man at the port is.
+        ///
+        /// Tao gives it away himself, because he cannot help it -- the whole of him is a boy
+        /// borrowing his father's weight and checking whether you noticed. Nobody has to tell
+        /// you; you have to ask, and he will not shut up once you do.
+        ///
+        /// A flag rather than something inferred, because knowing it is what puts the choice
+        /// below on the table. Before you know, there is nothing to tell anybody.
+        /// </summary>
+        public bool KnowsCheng;
+
+        /// <summary>
+        /// Whether the player took that to the old man.
+        ///
+        /// The one door in this mod that shuts behind you. Tao is skimming his family's
+        /// containers to run a side business he is not entitled to, and the person with the
+        /// most to say about that is four miles away in Mirror Park wondering who has been at
+        /// his stock. Say the name and the port carries on -- it just is not Tao standing on
+        /// it any more.
+        ///
+        /// Deliberately not reversible and deliberately not a failure. It is a trade: you give
+        /// up the only man in Los Santos who sells to you at five in the afternoon because he
+        /// is too drunk to check the time, and you get an organisation that answers the phone.
+        /// </summary>
+        public bool ToldTheOldMan;
+
+        /// <summary>
         /// Where the trip to the port has got to. 0 nothing, 1 fetch it, 2 deliver it.
         ///
         /// Saved, because it is a drive across the whole map in two halves and quitting
@@ -352,6 +379,10 @@ namespace Hoodrich.State
             DocksUnlocked = false;
             PortRunStage = 0;
 
+            // The port going back to being a rumour takes the man on it with it.
+            KnowsCheng = false;
+            ToldTheOldMan = false;
+
             Touch();
         }
 
@@ -449,6 +480,8 @@ namespace Hoodrich.State
             ProductRep = Neutral;
 
             DocksUnlocked = false;
+            KnowsCheng = false;
+            ToldTheOldMan = false;
             PortRunStage = 0;
             FrontsDone = 0;
             HomiesUnlocked = false;
@@ -760,6 +793,22 @@ namespace Hoodrich.State
                    _offered.Exists(x => string.Equals(x, id, StringComparison.OrdinalIgnoreCase));
         }
 
+        /// <summary>
+        /// Un-marks one offer, so it can be made again.
+        ///
+        /// For the case where the offer was somebody ELSE'S. A plug texts you his number once
+        /// and is never heard from again, which is right until the man on that pitch changes:
+        /// the new one has a different number, a different price and no way to tell you either,
+        /// because as far as this list is concerned that introduction already happened.
+        /// </summary>
+        public void ForgetOffered(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+
+            _offered.RemoveAll(x => string.Equals(x, id, StringComparison.OrdinalIgnoreCase));
+            Touch();
+        }
+
         public void MarkOffered(string id)
         {
             if (string.IsNullOrEmpty(id) || HasBeenOffered(id)) return;
@@ -778,6 +827,8 @@ namespace Hoodrich.State
                 .Set("gramsSold", Math.Round(GramsSold, 2))
                 .Set("productRep", Math.Round(ProductRep, 3))
                 .Set("docksUnlocked", DocksUnlocked)
+                .Set("knowsCheng", KnowsCheng)
+                .Set("toldTheOldMan", ToldTheOldMan)
                 .Set("portRunStage", PortRunStage)
                 .Set("frontsDone", FrontsDone)
                 .Set("homiesUnlocked", HomiesUnlocked)
@@ -814,6 +865,8 @@ namespace Hoodrich.State
                 // earn -- or at one, which would be a good one they never earned either.
                 ProductRep = Math.Min(1f, Math.Max(0.1f, doc["productRep"].AsFloat(Neutral)));
                 DocksUnlocked = doc["docksUnlocked"].AsBool(false);
+                KnowsCheng = doc["knowsCheng"].AsBool(false);
+                ToldTheOldMan = doc["toldTheOldMan"].AsBool(false);
                 PortRunStage = Math.Max(0, Math.Min(3, doc["portRunStage"].AsInt(0)));
                 FrontsDone = Math.Max(0, doc["frontsDone"].AsInt(0));
                 HomiesUnlocked = doc["homiesUnlocked"].AsBool(false);
