@@ -140,15 +140,32 @@ namespace Hoodrich.Supply
         };
 
         /// <summary>
-        /// Carrying a box with both hands. Checked before use, because a clip that is not in
-        /// this install fails silently and leaves him strolling with a crate glued to his hip.
+        /// What everybody who is not the port brings.
+        ///
+        /// Gerald drives over with twenty grams of bars. A metre of shrink-wrapped kilos in his
+        /// arms is the port's delivery, not his -- so the small package leads for him, which is
+        /// the flat taped one at twenty-five by seventeen centimetres. It is the wrong size for
+        /// a kilo off a boat and exactly the right size for what he actually turned up with.
         /// </summary>
-        private static readonly string[] CarryDicts =
+        private static readonly string[] SmallBoxProps =
         {
-            "anim@heists@box_carry@", "anim@heists@narcotics@trash", "missfinale_c2mcs_1"
+            "prop_drug_package_02", "prop_drug_package", "prop_mp_drug_pack_red",
+            "prop_paper_box_01"
         };
 
-        private static readonly string[] CarryClips = { "idle", "walk", "base" };
+        /// <summary>
+        /// Carrying a box with both hands.
+        ///
+        /// ONE dictionary, because there is only one. The other two in this list were decoys:
+        /// anim@heists@narcotics@trash holds nothing but bin-bag throws and missfinale_c2mcs_1
+        /// is a cutscene, and neither contains a clip called idle, walk or base -- so falling
+        /// through to them could only ever have played nothing. Checked against the game's own
+        /// animation data rather than assumed, which is how they were caught.
+        /// </summary>
+        private const string CarryDict = "anim@heists@box_carry@";
+
+        /// <summary>Both real, and walk is the one that matches a man walking.</summary>
+        private static readonly string[] CarryClips = { "walk", "idle" };
 
         /// <summary>
         /// What he says, and when.
@@ -494,6 +511,12 @@ namespace Hoodrich.Supply
             _stateSince = Game.GameTime;
             _messageSent = false;
             _greeted = false;
+            _carrying = false;
+
+            // The whole drive over is the loading window for the carry clip. Asking here rather
+            // than at the moment he needs it is the difference between a man walking up the
+            // path holding a box and a man walking up the path next to one.
+            WantCarry();
 
             PlayPhoneAnimation(player);
 
@@ -1234,6 +1257,7 @@ namespace Hoodrich.Supply
             _dropSpot = HouseDoor;
             _wentIn = false;
             _carryingSince = Game.GameTime;
+            _carrying = false;
             State = DeliveryState.Carrying;
 
             try
@@ -1358,6 +1382,10 @@ namespace Hoodrich.Supply
 
         private void TickCarrying()
         {
+            // Kept asking until the dictionary lands. It is normally in by the time he is out
+            // of the car, and on a cold start it is a stride or two.
+            if (!_carrying && _box != null && _box.Exists()) _carrying = PlayCarry();
+
             if (_driver == null || !_driver.Exists() || !_driver.IsAlive)
             {
                 // He is gone but you have paid, so the goods are yours regardless.
@@ -1534,7 +1562,8 @@ namespace Hoodrich.Supply
         {
             TakeBox();
 
-            foreach (var name in BoxProps)
+            foreach (var name in (_def != null && _def.Kind == DealerKind.Docks
+                                  && !_def.IsGangDealer ? BoxProps : SmallBoxProps))
             {
                 try
                 {
@@ -1556,7 +1585,7 @@ namespace Hoodrich.Supply
                                   off.X, off.Y, off.Z, 0f, 0f, yaw,
                                   false, false, false, false, 2, true);
 
-                    PlayCarry();
+                    _carrying = PlayCarry();
                     return;
                 }
                 catch
@@ -1670,31 +1699,73 @@ namespace Hoodrich.Supply
         private const float WidestReach = 0.260f;
         private const float SmallestReach = 0.155f;
 
-        private void PlayCarry()
+        /// <summary>Whether the carry clip has actually been put on him yet.</summary>
+        private bool _carrying;
+
+        /// <summary>
+        /// Starts the dictionary loading, well before anybody needs it.
+        ///
+        /// Called when the delivery is arranged, so the whole drive across the city is the
+        /// loading window. Costs nothing once it is in.
+        /// </summary>
+        private static void WantCarry()
         {
-            foreach (var dict in CarryDicts)
+            try
             {
-                try
+                if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, CarryDict)) return;
+                Function.Call(Hash.REQUEST_ANIM_DICT, CarryDict);
+            }
+            catch
+            {
+                // It will be asked for again on the next pass.
+            }
+        }
+
+        /// <summary>
+        /// Puts the box in his hands, once the game has the animation to do it with.
+        ///
+        /// THIS IS WHY HE CARRIED IT AT HIS HIP. REQUEST_ANIM_DICT is a request, not a load:
+        /// it returns immediately and the dictionary arrives some frames later. The old version
+        /// asked for the dictionary and then tested HAS_ANIM_DICT_LOADED on the very next line,
+        /// which is false for a cold dictionary every time -- so it skipped that entry, skipped
+        /// the other two, ran off the end of the list and played nothing at all. Every delivery
+        /// ever made walked up the path with a package welded to one hand and both arms down.
+        ///
+        /// This file knew it, too. PrepAnimation carries a comment saying in as many words that
+        /// the first attempt at a cold dictionary always fails.
+        ///
+        /// So it returns whether it managed it, and the carry tick keeps asking until it does.
+        /// The clip is upper body and looped, so it layers over whatever walk he is doing
+        /// rather than replacing it -- which is the other half of why he has to be given the
+        /// walk task first and this second.
+        /// </summary>
+        private bool PlayCarry()
+        {
+            if (_driver == null || !_driver.Exists() || !_driver.IsAlive) return false;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, CarryDict))
                 {
-                    if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) continue;
-
-                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
-                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
-
-                    foreach (var clip in CarryClips)
-                    {
-                        Function.Call(Hash.TASK_PLAY_ANIM, _driver.Handle, dict, clip,
-                                      4f, -4f, -1, 49, 0f, false, false, false);
-
-                        Log.Info("Delivery carry: " + dict + " / " + clip + ".");
-                        return;
-                    }
+                    Function.Call(Hash.REQUEST_ANIM_DICT, CarryDict);
+                    return false;
                 }
-                catch
+
+                foreach (var clip in CarryClips)
                 {
-                    // Try the next dictionary.
+                    Function.Call(Hash.TASK_PLAY_ANIM, _driver.Handle, CarryDict, clip,
+                                  4f, -4f, -1, 49, 0f, false, false, false);
+
+                    Log.Info("Delivery carry: " + CarryDict + " / " + clip + ".");
+                    return true;
                 }
             }
+            catch
+            {
+                // Asked again next pass.
+            }
+
+            return false;
         }
 
         /// <summary>Box off him and on the floor, where it stays.</summary>
