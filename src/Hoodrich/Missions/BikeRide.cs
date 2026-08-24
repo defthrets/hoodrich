@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Control = GTA.Control;
 using GTA;
@@ -340,7 +340,6 @@ namespace Hoodrich.Missions
             _robAccepted = false;
             _gotCash = false;
             _heldAt = 0;
-            _clerk = null;
             _lamarSlipSince = 0;
             _lamarWasAt = 0f;
             _lamarGoneSince = 0;
@@ -616,7 +615,6 @@ namespace Hoodrich.Missions
             _robAccepted = false;
             _gotCash = false;
             _lawLoose = false;
-            _clerk = null;
             _doorAt = 0;
 
             Cheer();
@@ -822,14 +820,26 @@ namespace Hoodrich.Missions
             {
                 _robAccepted = true;
 
-                MaskUp();
+                // The law comes back on the moment you agree to this.
+                //
+                // The job holds the wanted system off for its whole length, which is right for
+                // a fist fight on a basketball court and exactly wrong here: the game's own
+                // robbery raises a star and sets the alarm off, and a hold with a ceiling of
+                // zero eats both in the frame they are asked for.
+                // _lawLoose is read at the top of every tick: while it is false the job pins
+                // the ceiling at nothing, and once it is true it caps at RobberyStars instead.
+                // Setting it here rather than at the payout is the point -- the alarm goes off
+                // while you are still in there, and a ceiling of zero swallowed it.
+                _lawLoose = true;
+                HoldTheLaw(false);
 
-                Notify.Important("~r~In you go.~s~ Aim at the man behind the counter and hold " +
-                                 "it on him until he empties the till.");
+                _moneyIn = Game.Player.Money;
+
+                Notify.Important("~r~In you go.~s~ Take the till.");
 
                 LamarSays("I'm right here on the bike. Go on.");
                 return null;
-            }, "Walk in, aim at the clerk, hold it on him -- somebody will call it in");
+            }, "Rob it however it goes -- somebody will call it in");
 
             node.WithIcon(Icons.FromFile("cash.png"));
 
@@ -846,150 +856,68 @@ namespace Hoodrich.Missions
 
             return node;
         }
-
         /// <summary>
-        /// The shop floor.
+        /// The shop floor, WATCHED rather than run.
         ///
-        /// Held rather than pressed. Waving a gun once and getting paid is a button; keeping it
-        /// on a frightened man while he empties a till is the thing the scene is about.
+        /// This used to be a robbery of our own: find or stand up a clerk, wait for the player
+        /// to free-aim at that particular man, task him with his hands up, count a hold timer,
+        /// pay out. It kept finding new ways to stop. The last one was the worst -- shoot the
+        /// clerk and the job deadlocked, still telling you to aim at a corpse, with the money
+        /// sat in a till nothing would ever open.
+        ///
+        /// The game ships a shop robbery that handles all of it, including that. Aim and he
+        /// empties it; shoot him and you take it out of the register yourself; the alarm and
+        /// the star are its business. So ours is gone and this only notices the outcome.
+        ///
+        /// Money is the signal because money is the point, and it is the one thing that is
+        /// true however the scene played out. And there is a way out that does not depend on
+        /// it: walk back out of the shop and the job carries on regardless, because a player
+        /// who changed their mind in there should still get to ride home.
         /// </summary>
         private void Robbery(Ped player)
         {
-            if (!Inside(player))
-            {
-                _heldAt = 0;
-                return;
-            }
+            var inside = Inside(player);
 
-            if (!_wentInside)
+            if (inside)
             {
                 _wentInside = true;
-                Notify.Ticker("~r~Aim at him.~s~ Hold it on him.");
-            }
 
-            // And it stays on screen for as long as you are in there.
-            //
-            // The ticker above is one shot: look at the shelves for ten seconds and the only
-            // instruction the robbery ever gave you has gone, leaving a man stood in a shop
-            // with no idea what the game wants. This is the standing instruction, and it
-            // changes to "keep it on him" once the gun is up.
-            if (!_gotCash) Help.ShowThisFrame("Aim at the man behind the counter.");
-
-            // WHOEVER YOU ARE ACTUALLY POINTING IT AT is the clerk.
-            //
-            // This is the fix for "he emptied the till and it still says aim at him". The shop
-            // can now hold two men behind that counter -- the game staffs it and, on a night it
-            // does not, we stand one up ourselves -- and the mission had picked one of them and
-            // was waiting on that one. Aim at the other and you are holding a gun on a man the
-            // job is not watching, forever.
-            //
-            // Asking the game who you are aiming at settles it whoever is stood there, and it
-            // is also simply more honest: the man with his hands up is the man being robbed.
-            var pointed = AimedAt(player);
-
-            if (pointed != null) _clerk = pointed;
-            else if (_clerk == null || !_clerk.Exists() || !_clerk.IsAlive) _clerk = FindClerk(player);
-
-            // Nobody there. The game staffs its own shops and mostly does, but "mostly" is not
-            // a thing a mission can be built on: turn up on the wrong night and the robbery is
-            // a man stood in an empty shop with an instruction telling him to aim at somebody.
-            //
-            // Given a moment first, because the shop's own peds stream in a beat behind the
-            // room does -- spawning instantly would put two clerks behind one counter.
-            if (_clerk == null)
-            {
-                if (_clerkDue == 0) _clerkDue = Game.GameTime + ClerkGraceMs;
-                if (Game.GameTime < _clerkDue) return;
-
-                _clerk = MakeClerk(player);
-                _clerkDue = 0;
-            }
-
-            if (_clerk == null) return;
-
-            var onHim = Function.Call<bool>(Hash.IS_PLAYER_FREE_AIMING_AT_ENTITY,
-                                            Game.Player.Handle, _clerk.Handle);
-
-            if (!onHim)
-            {
-                if (_heldAt != 0)
-                {
-                    _heldAt = 0;
-                    Notify.Problem("keep it on him.");
-                }
-
+                if (Game.Player.Money - _moneyIn >= TookEnough) Took();
                 return;
             }
 
-            if (_heldAt == 0)
-            {
-                _heldAt = Game.GameTime;
+            // Out again. Whatever happened in there, happened.
+            if (_wentInside) Took();
+        }
 
-                try
-                {
-                    // Hands up, and he stays put. Without the block he runs the moment the
-                    // first shot goes off anywhere in the neighbourhood.
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _clerk.Handle, true);
-                    Function.Call(Hash.TASK_HANDS_UP, _clerk.Handle, HoldMs + 2000, 0, -1, false);
-                    Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _clerk.Handle,
-                                  "GENERIC_FRIGHTENED_HIGH", "SPEECH_PARAMS_FORCE");
-                }
-                catch { /* he can be frightened silently */ }
+        /// <summary>The till is a few hundred, so anything at all off the counter counts.</summary>
+        private const int TookEnough = 25;
 
-                return;
-            }
+        /// <summary>What the player was carrying when they walked in.</summary>
+        private int _moneyIn;
 
-            var held = Game.GameTime - _heldAt;
-            if (held < HoldMs)
-            {
-                Help.ShowThisFrame("Keep it on him.");
-                return;
-            }
+        /// <summary>Books the robbery as done, however it went.</summary>
+        private void Took()
+        {
+            if (_gotCash) return;
 
             _gotCash = true;
 
-            var take = _rng.Next(TillMin, TillMax);
-            Game.Player.Money += take;
+            var take = Game.Player.Money - _moneyIn;
 
-            Notify.Important("~g~+$" + take.ToString("N0") + "~s~ out the till.");
-            LamarSays("THAT'S what I'm talkin' about! Go, go, go!");
-
-            Social?.On(Hoodrich.Social.SocialEvent.StoreRobbed, "");
-
-            try
+            if (take >= TookEnough)
             {
-                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _clerk.Handle, false);
+                Notify.Important("~g~+$" + take.ToString("N0") + "~s~ out of there.");
+                LamarSays("THAT'S what I'm talkin' about! Go, go, go!");
+                Social?.On(Hoodrich.Social.SocialEvent.StoreRobbed, "");
             }
-            catch { /* he is free either way */ }
-
-            // The police come back on FIRST, and this is the whole fix.
-            //
-            // The job holds the wanted system off for its whole length, for a good reason: a
-            // fist fight on a basketball court should not put a helicopter over Chamberlain.
-            // But the hold sets the maximum wanted level to zero, so the star this line asks
-            // for was being asked for against a ceiling of none -- set, and gone in the same
-            // frame. There has been no heat on the ride home since the robbery was written.
-            //
-            // Robbing a shop is exactly the moment that reasoning stops applying. Somebody
-            // presses the button under the counter, and from here it is meant to be a chase.
-            HoldTheLaw(false);
-            _lawLoose = true;
-
-            LawHold.Cap(RobberyStars);
-
-            try
+            else
             {
-                Game.Player.Wanted.SetWantedLevel(RobberyStars, false);
-                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+                LamarSays("You walked in and walked back out. Man, get on the bike.");
             }
-            catch { /* then it is a very easy escape */ }
+
+            Log.Info("Bike ride: shop done, $" + take + " taken.");
         }
-
-        /// <summary>How long the game gets to staff its own shop before we do it for it.</summary>
-        private const int ClerkGraceMs = 1500;
-
-        /// <summary>When that grace runs out, or 0 if it has not started.</summary>
-        private int _clerkDue;
 
         /// <summary>Who serves in a shop the game did not staff.</summary>
         private static readonly string[] ClerkModels =
@@ -1058,85 +986,6 @@ namespace Hoodrich.Missions
         private const int DoorCheckMs = 1500;
 
         private int _doorAt;
-
-        private Ped MakeClerk(Ped player)
-        {
-            var where = player.Position;
-            var facing = player.Heading;
-            var found = false;
-
-            foreach (var till in new[] { "prop_till_01", "prop_till_02", "prop_till_03",
-                                         "v_ret_gc_till", "prop_cash_register_01" })
-            {
-                try
-                {
-                    var handle = Function.Call<int>(Hash.GET_CLOSEST_OBJECT_OF_TYPE,
-                                                    where.X, where.Y, where.Z, 12f,
-                                                    Function.Call<int>(Hash.GET_HASH_KEY, till),
-                                                    false, false, false);
-
-                    var prop = Entity.FromHandle(handle);
-                    if (prop == null || !prop.Exists()) continue;
-
-                    var at = prop.Position;
-                    var away = prop.ForwardVector * 0.85f;
-
-                    var behind = Behind(at + away) ? at + away : at - away;
-
-                    where = behind;
-                    facing = (float)(Math.Atan2(at.Y - behind.Y, at.X - behind.X) * 180.0 / Math.PI) - 90f;
-                    found = true;
-                    break;
-                }
-                catch
-                {
-                    // Try the next till model.
-                }
-            }
-
-            if (!found)
-            {
-                Log.Warn("No till in the 24/7 to stand a clerk behind; using the doorway instead.");
-            }
-
-            foreach (var name in ClerkModels)
-            {
-                try
-                {
-                    var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
-
-                    var handle = Function.Call<int>(Hash.CREATE_PED, 4, model.Hash,
-                                                    where.X, where.Y, where.Z, facing, false, false);
-
-                    model.MarkAsNoLongerNeeded();
-                    if (handle == 0) continue;
-
-                    var man = Entity.FromHandle(handle) as Ped;
-                    if (man == null || !man.Exists()) continue;
-
-                    man.IsPersistent = true;
-
-                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, man.Handle, true, true);
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, man.Handle, true);
-                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, man.Handle, false);
-                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, man.Handle,
-                                  "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
-
-                    _madeClerk = man;
-
-                    Log.Info("Staffed the 24/7 with a " + name + " at " + where + ".");
-                    return man;
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug("Could not stand a clerk up: " + ex.Message);
-                }
-            }
-
-            return null;
-        }
-
         /// <summary>Whether there is floor at a spot, which is how the right side of a counter
         /// is told from the wrong one.</summary>
         private static bool Behind(Vector3 at)
@@ -1155,78 +1004,6 @@ namespace Hoodrich.Missions
 
         /// <summary>The one we stood up, so he can be cleared away with everything else.</summary>
         private Ped _madeClerk;
-
-        /// <summary>
-        /// Whoever is behind the counter.
-        ///
-        /// Nearest ped in the shop who is not you and not one of ours. The 24/7 has exactly one
-        /// person working in it, so nearest-inside is the right answer rather than a guess.
-        /// </summary>
-        /// <summary>
-        /// The ped the player is free-aiming at, if it is somebody who could be the clerk.
-        ///
-        /// Ours and Lamar are excluded: pointing at your own crew should never start a robbery,
-        /// and on the way out of that shop they are the two nearest people to you.
-        /// </summary>
-        private Ped AimedAt(Ped player)
-        {
-            try
-            {
-                var got = new OutputArgument();
-
-                if (!Function.Call<bool>(Hash.GET_ENTITY_PLAYER_IS_FREE_AIMING_AT,
-                                         Game.Player.Handle, got))
-                {
-                    return null;
-                }
-
-                var ped = Entity.FromHandle(got.GetResult<int>()) as Ped;
-
-                if (ped == null || !ped.Exists() || !ped.IsAlive) return null;
-                if (ped.Handle == player.Handle) return null;
-                if (_lamar != null && _lamar.Exists() && ped.Handle == _lamar.Handle) return null;
-
-                foreach (var homie in _homies)
-                {
-                    if (homie != null && homie.Exists() && homie.Handle == ped.Handle) return null;
-                }
-
-                return ped;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private Ped FindClerk(Ped player)
-        {
-            try
-            {
-                Ped best = null;
-                var bestAt = float.MaxValue;
-
-                foreach (var ped in World.GetNearbyPeds(player, 14f))
-                {
-                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
-                    if (ped.Handle == player.Handle) continue;
-                    if (_homies.Contains(ped)) continue;
-
-                    var at = player.Position.DistanceTo(ped.Position);
-                    if (at >= bestAt) continue;
-
-                    best = ped;
-                    bestAt = at;
-                }
-
-                return best;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         /// <summary>Out the door, on the bike, and away from them.</summary>
         private void TickEscape(Ped player)
         {
@@ -1425,12 +1202,6 @@ namespace Hoodrich.Missions
         /// <summary>He calls it out here, before you have stopped.</summary>
         private const float ShoutRange = 70f;
 
-        /// <summary>How long the gun stays on him before he gives it up.</summary>
-        private const int HoldMs = 4000;
-
-        private const int TillMin = 900;
-        private const int TillMax = 2600;
-
         /// <summary>Somebody presses the button under the counter. One, and you are on a bike.</summary>
         private const int RobberyStars = 1;
 
@@ -1445,7 +1216,6 @@ namespace Hoodrich.Missions
         private bool _robAccepted;
         private bool _gotCash;
         private int _heldAt;
-        private Ped _clerk;
 
         private void TickHome(Ped player)
         {
@@ -2559,113 +2329,16 @@ namespace Hoodrich.Missions
         }
 
         // ---- finishing ---------------------------------------------------------
-
-        /// <summary>
-        /// A balaclava, for as long as the robbery lasts.
-        ///
-        /// Component 1 is the mask slot on every ped in the game, and what is IN it depends
-        /// entirely on the model -- the numbers everybody quotes are the freemode list, and
-        /// Franklin is not a freemode ped. So the wanted one is asked for first and the rest of
-        /// the slot is searched only if the game says no.
-        ///
-        /// IS_PED_COMPONENT_VARIATION_VALID is the whole reason this is safe. Setting a
-        /// component to a drawable a model has not got does not fail, it produces a hole where
-        /// the head was, and that is not a thing to find out about in a screenshot.
-        ///
-        /// What he was wearing is remembered before anything is changed, because the mask has
-        /// to come off again and "put it back to zero" is not the same as putting it back.
-        /// </summary>
-        private void MaskUp()
-        {
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists()) return;
-
-            try
-            {
-                _woreDrawable = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, player.Handle, MaskSlot);
-                _woreTexture = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, player.Handle, MaskSlot);
-                _masked = false;
-
-                var many = Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS,
-                                              player.Handle, MaskSlot);
-
-                // FROM THE END, and no freemode numbers anywhere near it.
-                //
-                // Component 1 is "berd", and on a freemode ped that is the mask slot while on a
-                // story ped it is the BEARD slot with the heist masks appended after the facial
-                // hair. Asking for 54 because a wiki page about freemode masks says 54 is
-                // exactly how Franklin ended up in a goatee.
-                //
-                // Nothing here can tell a beard from a balaclava, so it takes the last valid
-                // drawable in the list, which is where the masks were added. If that is still
-                // wrong it is one number, and the line below says what the choices were.
-                var found = -1;
-
-                for (var drawable = many - 1; drawable >= 1; drawable--)
-                {
-                    if (!Function.Call<bool>(Hash.IS_PED_COMPONENT_VARIATION_VALID,
-                                             player.Handle, MaskSlot, drawable, 0))
-                    {
-                        continue;
-                    }
-
-                    found = drawable;
-                    break;
-                }
-
-                if (found < 0)
-                {
-                    Log.Warn("Nothing usable in component 1 on this model; going in bare-faced.");
-                    return;
-                }
-
-                Function.Call(Hash.SET_PED_COMPONENT_VARIATION,
-                              player.Handle, MaskSlot, found, 0, 0);
-
-                _masked = true;
-
-                Log.Info("Mask on for the store: component 1, drawable " + found + " of " +
-                         many + " (0.." + (many - 1) + " to choose from).");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not mask up: " + ex.Message);
-            }
-        }
-
-        /// <summary>Puts his own face back, however the job ended.</summary>
-        private void MaskOff()
-        {
-            if (!_masked) return;
-
-            _masked = false;
-
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists()) return;
-
-            try
-            {
-                Function.Call(Hash.SET_PED_COMPONENT_VARIATION, player.Handle, MaskSlot,
-                              _woreDrawable, _woreTexture, 0);
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not take the mask off: " + ex.Message);
-            }
-        }
-
-        /// <summary>Component 1 is the mask on every model the game ships.</summary>
-        private const int MaskSlot = 1;
-
-        private bool _masked;
-        private int _woreDrawable;
-        private int _woreTexture;
-
+        // MaskUp lived here, and it only ever put a BEARD on him.
+        //
+        // Component 1 is the mask slot on a freemode ped and the beard slot on a story one,
+        // and Franklin is a story ped -- so taking "the last valid drawable in the slot" took
+        // the last beard. It could not have produced a mask on him whatever it asked for. The
+        // game's own shop robberies do not involve one, so it is gone rather than patched.
         public void Clear()
         {
             // Whatever else happens in teardown, he does not keep the balaclava. This runs on
             // the job finishing, on failing it, and on the mod being switched off.
-            MaskOff();
 
             // First, before anything else can go wrong in teardown. Leaving the player unable
             // to attract police for the rest of the session because a cleanup threw is far
@@ -2751,7 +2424,6 @@ namespace Hoodrich.Missions
             _robAccepted = false;
             _gotCash = false;
             _heldAt = 0;
-            _clerk = null;
             _lamarSlipSince = 0;
             _lamarWasAt = 0f;
             _lamarGoneSince = 0;
@@ -2759,7 +2431,6 @@ namespace Hoodrich.Missions
             _wordsAt = 0;
             _laughAt = 0;
             _thirstyAt = 0;
-            _clerkDue = 0;
 
             // A clerk the game provided is the game's to keep. One WE stood up is ours, and
             // leaving him behind the counter after the job would put two men there next time.
