@@ -313,6 +313,29 @@ namespace Hoodrich.Missions
         private const int LoadLayers = 2;
         private const int LoadMax = 16;
 
+        /// <summary>One brick a second.</summary>
+        private const int LoadEveryMs = 1000;
+
+        /// <summary>
+        /// How much of the planned stack actually goes on. Half.
+        ///
+        /// Which, because the plan is laid bottom layer first, is the bottom layer -- a pallet
+        /// with a full course of bricks on it and room above them. That reads as a quarter kilo
+        /// off a boat. A pallet stacked to the top reads as a warehouse delivery.
+        /// </summary>
+        private const float LoadFraction = 0.5f;
+
+        /// <summary>Where each brick goes, in the van's own space, bottom layer first.</summary>
+        private readonly List<Vector3> _loadPlan = new List<Vector3>();
+
+        private Model _loadModel;
+        private int _loadNext;
+        private int _loadStop;
+        private int _loadDueAt;
+
+        /// <summary>Whether there are still bricks to come.</summary>
+        private bool StillLoading => _loadNext < _loadStop;
+
         /// <summary>
         /// The load itself, in the order it is preferred.
         ///
@@ -422,6 +445,10 @@ namespace Hoodrich.Missions
 
             if (Game.GameTime < _next) return;
             _next = Game.GameTime + TickMs;
+
+            // Before everything else, because it keeps a clock of its own and the bay phase
+            // below is waiting on it to finish.
+            TickLoad();
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
@@ -1668,34 +1695,28 @@ namespace Hoodrich.Missions
                     var rows = Fits(deck.Y, one.Y);
                     var lift = Underside(model);
 
-                    var made = 0;
+                    _loadPlan.Clear();
 
-                    for (var layer = 0; layer < LoadLayers && made < LoadMax; layer++)
-                    for (var r = 0; r < rows && made < LoadMax; r++)
-                    for (var c = 0; c < cols && made < LoadMax; c++)
+                    for (var layer = 0; layer < LoadLayers && _loadPlan.Count < LoadMax; layer++)
+                    for (var r = 0; r < rows && _loadPlan.Count < LoadMax; r++)
+                    for (var c = 0; c < cols && _loadPlan.Count < LoadMax; c++)
                     {
-                        var brick = World.CreateProp(model, _van.Position, false, false);
-                        if (brick == null || !brick.Exists()) continue;
-
-                        brick.IsPersistent = true;
-                        _load.Add(brick);
-                        made++;
-
                         // Centred on the pallet, which is itself centred at CrateY.
-                        var ox = (c - (cols - 1) * 0.5f) * one.X;
-                        var oy = CrateY + (r - (rows - 1) * 0.5f) * one.Y;
-
-                        Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, brick.Handle, _van.Handle, -1,
-                                      ox, oy, deckZ + lift + layer * tall, 0f, 0f, 0f,
-                                      false, false, false, false, 2, true);
+                        _loadPlan.Add(new Vector3(
+                            (c - (cols - 1) * 0.5f) * one.X,
+                            CrateY + (r - (rows - 1) * 0.5f) * one.Y,
+                            deckZ + lift + layer * tall));
                     }
 
-                    model.MarkAsNoLongerNeeded();
+                    if (_loadPlan.Count == 0) continue;
 
-                    if (made == 0) continue;
+                    _loadModel = model;
+                    _loadNext = 0;
+                    _loadStop = Math.Max(1, (int)(_loadPlan.Count * LoadFraction));
+                    _loadDueAt = Game.GameTime + LoadEveryMs;
 
-                    Log.Info("Port run: " + made + " x " + name + " on the pallet (" +
-                             cols + " across, " + rows + " deep, " + LoadLayers + " high).");
+                    Log.Info("Port run: loading " + _loadStop + " x " + name + " onto the pallet, " +
+                             "one a second (" + cols + " across, " + rows + " deep).");
                     return;
                 }
                 catch (Exception ex)
@@ -1703,6 +1724,72 @@ namespace Hoodrich.Missions
                     Log.Debug("Could not stack the load: " + ex.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// Puts one brick on, once a second, while you watch.
+        ///
+        /// The whole stack used to appear the instant the van was ready, which is a load that
+        /// has happened rather than a load happening -- two men walk over carrying boxes and a
+        /// pallet's worth of product blinks into the bed behind them. Placing them one at a
+        /// time makes the men and the pallet the same event.
+        ///
+        /// Off the 400ms tick rather than per frame, and the due time steps by a fixed second
+        /// rather than being set from now, so eight bricks take eight seconds instead of eight
+        /// and a bit. Clamped if the tick has been starved, so a stall catches up rather than
+        /// dumping the rest of the pallet in one go.
+        /// </summary>
+        private void TickLoad()
+        {
+            if (!StillLoading) return;
+
+            if (_van == null || !_van.Exists()) { _loadNext = _loadStop; return; }
+
+            var now = Game.GameTime;
+            if (now < _loadDueAt) return;
+
+            _loadDueAt += LoadEveryMs;
+            if (_loadDueAt < now) _loadDueAt = now + LoadEveryMs;
+
+            try
+            {
+                // Held across the whole sequence rather than requested once and forgotten: the
+                // streamer is entitled to drop a model nobody is holding, and eight seconds is
+                // long enough for it to.
+                if (!_loadModel.IsLoaded) _loadModel.Request();
+
+                var brick = World.CreateProp(_loadModel, _van.Position, false, false);
+
+                if (brick != null && brick.Exists())
+                {
+                    brick.IsPersistent = true;
+                    _load.Add(brick);
+
+                    var at = _loadPlan[_loadNext];
+
+                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, brick.Handle, _van.Handle, -1,
+                                  at.X, at.Y, at.Z, 0f, 0f, 0f,
+                                  false, false, false, false, 2, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put a brick on the pallet: " + ex.Message);
+            }
+
+            _loadNext++;
+
+            if (StillLoading) return;
+
+            // Done. The men can go, and the settle beat starts from HERE rather than from the
+            // moment the van pulled in -- otherwise they say their goodbyes and walk off while
+            // the pallet behind them is still filling up.
+            _bayAt = Game.GameTime;
+
+            try { _loadModel.MarkAsNoLongerNeeded(); }
+            catch { /* the streamer will get to it */ }
+
+            Log.Info("Port run: pallet loaded, " + _loadNext + " on the deck.");
         }
 
         /// <summary>How many of something that wide fit across a deck that wide. At least one.</summary>
@@ -2258,6 +2345,9 @@ namespace Hoodrich.Missions
 
         private void Settling()
         {
+            // Not while there are still boxes going on. See TickLoad.
+            if (StillLoading) return;
+
             if (Game.GameTime - _bayAt < LoaderSettleMs) return;
 
             // Said in Korean, by men whose own voice is Korean. The English underneath is what
@@ -2549,6 +2639,9 @@ namespace Hoodrich.Missions
             }
 
             _load.Clear();
+            _loadPlan.Clear();
+            _loadNext = 0;
+            _loadStop = 0;
 
             try { if (_crate != null && _crate.Exists()) _crate.Delete(); }
             catch { /* teardown */ }
