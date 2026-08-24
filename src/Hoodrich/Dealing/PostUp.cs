@@ -219,6 +219,17 @@ namespace Hoodrich.Dealing
         /// <summary>Attention specific to this pitch. Separate from global notoriety.</summary>
         private float _cornerHeat;
 
+        /// <summary>
+        /// Heat that stays on the ground after you have walked off it.
+        ///
+        /// The pitch's own _cornerHeat is a session counter and always was. This is the
+        /// memory underneath it -- see CornerHeat.
+        /// </summary>
+        private readonly CornerHeat _ground = new CornerHeat();
+
+        /// <summary>Exposed so the reset section can wipe it with everything else.</summary>
+        public CornerHeat Ground => _ground;
+
         /// <summary>When the last sale landed, for the mark's pulse. 0 for none.</summary>
         private int _soldAt;
 
@@ -329,7 +340,13 @@ namespace Hoodrich.Dealing
 
             _product = product;
             _anchor = player.Position;
-            _cornerHeat = 0f;
+
+            // NOT zero. Whatever this block already has is what you are standing in.
+            //
+            // Starting every pitch clean is what made the heat optional: the way to beat a
+            // patrol was to pack up, take two steps and press the button again. Now the corner
+            // remembers, and getting away from it means getting away from it.
+            _cornerHeat = _ground.At(_anchor);
             _sales = 0;
             _earned = 0;
             _lastScan = 0;
@@ -348,7 +365,18 @@ namespace Hoodrich.Dealing
 
             Notify.Ticker("~g~Posted up.~s~ Moving " + product.Name.ToLowerInvariant() +
                           ". A busy sidewalk sells faster and burns hotter.");
-            Log.Info("Posted up with " + product.Id + " at " + _anchor + ".");
+
+            // Said out loud, or the bar starting halfway along is a bug as far as anybody
+            // watching is concerned. The heat is on the BLOCK, and a mechanic nobody is told
+            // about is a mechanic that reads as one.
+            if (_cornerHeat > 1f)
+            {
+                Notify.Ticker("~o~This block's still warm from last time.~s~ " +
+                              "Try somewhere else if you want a clean start.");
+            }
+
+            Log.Info("Posted up with " + product.Id + " at " + _anchor +
+                     " (inherited " + _cornerHeat.ToString("0.#") + " heat).");
             return null;
         }
 
@@ -429,6 +457,9 @@ namespace Hoodrich.Dealing
             ReleasePatrol();
             ReleaseRivals();
 
+            // Left on the ground rather than binned. This is the whole mechanic.
+            _ground.Remember(_anchor, _cornerHeat);
+
             State = PostState.Idle;
             _product = null;
             _cornerHeat = 0f;
@@ -452,6 +483,11 @@ namespace Hoodrich.Dealing
 
         public void Update()
         {
+            // Before the early return, deliberately. Blocks cool while you are somewhere else,
+            // which is the only reason "come back later" is an answer as well as "go
+            // somewhere else" -- and being somewhere else is exactly when this is not posted.
+            _ground.Tick();
+
             if (!IsPosted) return;
 
             var player = Game.Player.Character;

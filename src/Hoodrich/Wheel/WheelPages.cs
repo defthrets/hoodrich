@@ -1740,6 +1740,15 @@ namespace Hoodrich.Wheel
             yield return new Opt
             {
                 Kind = OptKind.Danger,
+                Label = "Hot blocks",
+                Note = "Every corner you have made hot forgets it. The city starts cold again",
+                Enabled = () => _postUp != null && _postUp.Ground.WarmBlocks > 0,
+                Do = () => _postUp.Ground.Forget()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
                 Label = "Gerald's packages",
                 Note = "Both fronts back on the table and the port shut again, so his whole " +
                        "sequence runs from the top. What you already sold stays sold",
