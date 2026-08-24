@@ -1809,8 +1809,8 @@ namespace Hoodrich.Wheel
                 Kind = OptKind.Danger,
                 Label = "Finish Gerald's package",
                 Note = "Counts what he's fronted you as sold without selling it, so he gets in " +
-                       "touch and you can hand it in. Press it again for the second one and the " +
-                       "port opens up",
+                       "touch and you can hand it in. Skips the audition, so the set will take " +
+                       "you. Press it again for the second one and the port opens up",
                 Enabled = () => _state.FrontsDone < 2 || _state.HasFrontedWork,
                 Do = () => Notify.Important("~g~" + _state.FinishFront() + "~s~")
             };

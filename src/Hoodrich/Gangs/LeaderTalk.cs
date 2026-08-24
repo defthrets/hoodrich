@@ -183,7 +183,16 @@ namespace Hoodrich.Gangs
                 // Counted in grams sold rather than a new flag: it is already tracked, it
                 // survives a save, and it is the same number the package is measured in. Move
                 // his twenty and the door opens.
-                var proved = !FrontsWork(def) || _state.GramsSold >= FrontGrams;
+                // Cleared a package, OR moved enough to have cleared one.
+                //
+                // It was the gram count alone, and that quietly broke the one escape hatch
+                // there is: Settings can mark his package moved for a save where the count has
+                // gone wrong, and doing so left the audition passed and the door still shut,
+                // because GramsSold had not gone anywhere. A package he considers cleared is a
+                // package cleared however it got there -- and FrontsDone is the number he
+                // actually counts in.
+                var proved = !FrontsWork(def) || _state.FrontsDone > 0 ||
+                             _state.GramsSold >= FrontGrams;
 
                 var no = _crew.IsAffiliated
                     ? "You already run with " + _crew.Current.Name
@@ -197,6 +206,23 @@ namespace Hoodrich.Gangs
                            "Sign on with " + gang.Name);
 
                 node.WithIcon(owed || short_ || !proved ? Icons.Locked : Icons.Tick);
+
+                // THE QUESTION STAYS ON THE TABLE once he has offered to answer it.
+                //
+                // Clearing his second package makes him say he is done pretending he did not
+                // hear you asking -- and if you said "another time" to that, the offer went
+                // with the conversation. The member root carries this row permanently, so a
+                // player who had joined could simply ask again; a player who had not was left
+                // with no way back to it at all, short of clearing a third package that does
+                // not exist.
+                //
+                // Saying not now is not saying no.
+                if (_state.FrontsDone >= 2 && !_state.DocksUnlocked)
+                {
+                    node.Say("Where do you get it?", () => AskSource(def, gang),
+                             "He already said he'd tell you");
+                    node.WithIcon(Icons.Tick);
+                }
             }
             else
             {
@@ -967,6 +993,8 @@ namespace Hoodrich.Gangs
                 "ALL of it -- not most, all -- and you bring yourself back here. Then I give " +
                 "you a second one and you do it again.");
 
+            Offer(node, def, gang);
+
             node.Say("And then what?", () => TwoPackagesWhy(def, gang));
             node.Say("Aight.", () => Root(def));
             node.Leave();
@@ -981,9 +1009,59 @@ namespace Hoodrich.Gangs
                 "the kind you gotta take home and cut yourself. Everything after that is " +
                 "yours. Two bags is just me findin' out if you gon' come back.");
 
+            Offer(node, def, gang);
+
             node.Say("I'll come back.", () => Root(def));
             node.Leave();
             return node;
+        }
+
+        /// <summary>
+        /// Puts the package on the table wherever the conversation has got to.
+        ///
+        /// Asking him how the arrangement works used to be a detour with no way out of it
+        /// except back to the top: you took the "how many times we doin' this" branch, got the
+        /// answer, said you would come back -- and were returned to the root having NOT been
+        /// given anything, with the offer you had been looking at a moment ago now two rows
+        /// down a different menu. Somebody who asks a question before accepting has not
+        /// declined; they have asked a question.
+        ///
+        /// So every node on that branch carries the same row the offer does, and both ways
+        /// through the conversation end with a bag in your hand.
+        /// </summary>
+        private void Offer(DialogueNode node, LeaderDef def, GangDef gang)
+        {
+            var front = OnOffer();
+            if (front == null) return;
+
+            node.Say("Give it here.", () => TakeWork(def, gang, front),
+                     "Take his " + front.Amount(FrontGrams));
+
+            node.WithIcon(Icons.ForDrug(front.Id));
+        }
+
+        /// <summary>
+        /// Whatever he is fronting right now, or nothing if he is not.
+        ///
+        /// The same three questions OfferWork asks before it builds its node, in one place so
+        /// a row offered somewhere else cannot get a different answer: is your bag empty
+        /// enough, are you already holding one of his, and has he run out of reasons to test
+        /// you. Which package it is follows from how many you have cleared.
+        /// </summary>
+        private DrugDef OnOffer()
+        {
+            if (_state == null || _drugs == null) return null;
+            if (_state.HasFrontedWork) return null;
+            if (_state.FrontsDone >= 2) return null;
+            if (_state.Stash.FreeSpace < FrontGrams) return null;
+
+            foreach (var id in _state.FrontsDone <= 0 ? FirstFront : LaterFronts)
+            {
+                var d = _drugs.Get(id);
+                if (d != null) return d;
+            }
+
+            return null;
         }
 
         private DialogueNode TakeWork(LeaderDef def, GangDef gang, DrugDef product)

@@ -317,7 +317,7 @@ namespace Hoodrich.Missions
         /// on a small pallet builds upward instead of refusing to fit, and a small one lies
         /// flat. Either way sixteen go on.
         /// </summary>
-        private const int LoadBricks = 8;
+        private const int LoadBricks = 4;
         private const int LoadLayers = 4;
 
         /// <summary>One brick a second.</summary>
