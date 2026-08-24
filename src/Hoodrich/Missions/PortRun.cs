@@ -317,7 +317,7 @@ namespace Hoodrich.Missions
         /// on a small pallet builds upward instead of refusing to fit, and a small one lies
         /// flat. Either way sixteen go on.
         /// </summary>
-        private const int LoadBricks = 16;
+        private const int LoadBricks = 8;
         private const int LoadLayers = 4;
 
         /// <summary>One brick a second.</summary>
@@ -1689,8 +1689,16 @@ namespace Hoodrich.Missions
                     if (one.X < 0.02f || one.Y < 0.02f) one = new Vector3(0.34f, 0.34f, 0f);
                     if (tall < 0.02f) tall = 0.18f;
 
-                    var cols = Fits(deck.X, one.X);
-                    var rows = Fits(deck.Y, one.Y);
+                    // TRIMMED to a tidy block, not just capped.
+                    //
+                    // Taking the biggest grid the pallet will hold and then stopping at eight
+                    // fills the front two rows of a four-deep deck and leaves the back bare --
+                    // a load that looks like it was interrupted. Choosing the footprint from
+                    // the NUMBER instead gives four across and two deep, and the plan centres
+                    // that on the pallet like a load somebody stacked on purpose.
+                    var cols = Math.Min(Fits(deck.X, one.X), LoadBricks);
+                    var rows = Math.Max(1, Math.Min(Fits(deck.Y, one.Y),
+                                                    (LoadBricks + cols - 1) / cols));
                     var lift = Underside(model);
 
                     _loadPlan.Clear();
@@ -2274,8 +2282,119 @@ namespace Hoodrich.Missions
         /// the instruction and a van nosed into the bay is not reversed into it -- and stopped,
         /// because being dragged past the mark at forty is not parking.
         /// </summary>
+        /// <summary>How far around the bay is kept clear, and how far the hold extends.</summary>
+        private const float BayClear = 20f;
+
+        /// <summary>
+        /// What is allowed to stay.
+        ///
+        /// The cement mixer parked against the shed is part of what the place looks like, and
+        /// a working dock with nothing on it but your own truck reads as a set rather than a
+        /// port. It is the parked CARS that are the problem -- one of them lands in the bay
+        /// you have been told to reverse into.
+        /// </summary>
+        private static readonly string[] BayKeep = { "mixer", "mixer2" };
+
+        private bool _bayHeld;
+
+        /// <summary>
+        /// Keeps the bay empty for the length of the errand.
+        ///
+        /// Two halves, because there are two ways a vehicle gets there. Anything already stood
+        /// in the bay is taken away; the car generators that put it there are switched off for
+        /// the area so the game does not simply put another one back while you are watching
+        /// the loaders.
+        ///
+        /// Only EMPTY vehicles go. Deleting one with somebody in it takes the driver with it,
+        /// and a car that is being driven is leaving anyway.
+        /// </summary>
+        private void HoldTheBay()
+        {
+            if (!_bayHeld)
+            {
+                _bayHeld = true;
+
+                try
+                {
+                    Function.Call(Hash.SET_ALL_VEHICLE_GENERATORS_ACTIVE_IN_AREA,
+                                  BaySpot.X - BayClear, BaySpot.Y - BayClear, BaySpot.Z - 12f,
+                                  BaySpot.X + BayClear, BaySpot.Y + BayClear, BaySpot.Z + 12f,
+                                  false, true);
+                }
+                catch
+                {
+                    // Then they keep coming back, and the sweep below keeps taking them away.
+                }
+            }
+
+            try
+            {
+                foreach (var car in World.GetNearbyVehicles(BaySpot, BayClear))
+                {
+                    if (car == null || !car.Exists()) continue;
+
+                    if (Ours(car)) continue;
+                    if (Keeper(car)) continue;
+                    if (!Empty(car)) continue;
+
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, car.Handle, true, true);
+                    car.Delete();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not clear the bay: " + ex.Message);
+            }
+        }
+
+        /// <summary>Gives the dock its own traffic back.</summary>
+        private void ReleaseTheBay()
+        {
+            if (!_bayHeld) return;
+            _bayHeld = false;
+
+            try { Function.Call(Hash.SET_ALL_VEHICLE_GENERATORS_ACTIVE); }
+            catch { /* they come back on their own eventually */ }
+        }
+
+        private bool Ours(Vehicle car)
+        {
+            if (_van != null && _van.Exists() && car.Handle == _van.Handle) return true;
+            if (_car != null && _car.Exists() && car.Handle == _car.Handle) return true;
+
+            var player = Game.Player.Character;
+
+            return player != null && player.Exists() && player.IsInVehicle() &&
+                   player.CurrentVehicle != null && player.CurrentVehicle.Handle == car.Handle;
+        }
+
+        private static bool Keeper(Vehicle car)
+        {
+            foreach (var name in BayKeep)
+            {
+                if (car.Model == new Model(name)) return true;
+            }
+
+            return false;
+        }
+
+        private static bool Empty(Vehicle car)
+        {
+            try
+            {
+                return Function.Call<int>(Hash.GET_VEHICLE_NUMBER_OF_PASSENGERS, car.Handle) == 0 &&
+                       Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, car.Handle, -1, false);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private void Loading(Ped player)
         {
+            HoldTheBay();
+
             switch (_bay)
             {
                 case 0: WaitingForTheVan(player); return;
@@ -2729,6 +2848,8 @@ namespace Hoodrich.Missions
                 try { if (brick != null && brick.Exists()) brick.Delete(); }
                 catch { /* gone */ }
             }
+
+            ReleaseTheBay();
 
             _load.Clear();
             _loadPlan.Clear();
