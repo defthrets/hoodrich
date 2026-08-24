@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -127,8 +127,28 @@ namespace Hoodrich.Missions
         /// <summary>Close enough to the bay to count as delivered.</summary>
         private const float BayRange = 9f;
 
+        /// <summary>
+        /// How far out the ring on the bay starts drawing.
+        ///
+        /// The same reach the port run gives its own bay, because this is the same kind of
+        /// arrival: you come at it down a road at speed, and a mark that only appears once you
+        /// are on top of it is a mark you have already driven past.
+        /// </summary>
+        private const float BayMarkerRange = 120f;
+
         /// <summary>Whether THIS job's car is one Hao would want.</summary>
         private bool _keeper;
+
+        /// <summary>
+        /// Whether this job is still going to end at Hao's rather than at Lamar's.
+        ///
+        /// The escape asks this before it forks and every line that names the destination has
+        /// to ask the same question, or the card tells you to go and see Lamar while the blip
+        /// points at the bay. It is more than _keeper on its own because a keeper folded round
+        /// a lamppost on the way out is not a delivery any more.
+        /// </summary>
+        private bool GoingToHao =>
+            _keeper && _jobCar != null && _jobCar.Exists() && _jobCar.IsDriveable;
 
         private readonly PlayerState _state;
         private readonly Affiliation _crew;
@@ -247,8 +267,10 @@ namespace Hoodrich.Missions
                         return Fists(_def.Kind) ? "Put hands on them" : "Put 'em down";
 
                     case MissionState.Escape:
-                        return _def.Kind == MissionKind.TorchJob && !_burned
-                            ? "Lose the cops"
+                        if (_def.Kind == MissionKind.TorchJob && !_burned) return "Lose the cops";
+
+                        return GoingToHao
+                            ? "Lose the cops, then run the car to Hao"
                             : "Lose the cops, then get back to Lamar";
 
                     case MissionState.Deliver:
@@ -1485,6 +1507,12 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
                     Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, true);
 
+                    // And a bullet can knock him about again. Those two went on so a hit
+                    // reaction could not fight the drive-by for his body, and the shooting from
+                    // the car is what he is being let out of.
+                    Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 106, false);
+                    Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 107, false);
+
                     if (!homie.IsInVehicle()) continue;
 
                     Function.Call(Hash.TASK_LEAVE_ANY_VEHICLE, homie.Handle, 0, 0);
@@ -1640,11 +1668,19 @@ namespace Hoodrich.Missions
         private const int UnstickMs = 1200;
 
         /// <summary>
-        /// True on the tick a homie has taken damage, and clears whatever he was doing.
+        /// True on the tick a homie has taken damage, so he can be put back on the trigger.
         ///
-        /// The T-pose is a hit reaction and a drive-by fighting over the same upper body, and
-        /// neither yields -- so the fix is to stop asking them to share it. He is torn off
-        /// everything and re-tasked from scratch on the same tick.
+        /// It used to tear him off everything first, and that was the T-pose rather than the
+        /// cure for it. CLEAR_PED_TASKS_IMMEDIATELY is the call you make before you teleport
+        /// somebody -- Rockstar's own scripts put it in front of a re-seat ninety-odd times and
+        /// never once in front of a drive-by -- because on a man sitting in a seat it takes the
+        /// in-vehicle task away along with the drive-by, and a ped still attached to a seat with
+        /// no seat task has no animation left to play. That is the pose. It then stayed, because
+        /// he still reads as sitting in the car: the seat warp left him alone and every re-task
+        /// afterwards landed on a man with nothing to play it on.
+        ///
+        /// So the primary task is left where it is. Re-issuing the drive-by is enough on its
+        /// own, because a second task replaces the first rather than queueing behind it.
         /// </summary>
         private bool WasHit(Ped homie)
         {
@@ -1654,21 +1690,33 @@ namespace Hoodrich.Missions
             int before;
             var known = _wasOn.TryGetValue(h, out before);
 
-            _wasOn[h] = now;
-
-            if (!known || now >= before) return false;
+            if (!known || now >= before)
+            {
+                _wasOn[h] = now;
+                return false;
+            }
 
             int last;
             if (_lastTornOff.TryGetValue(h, out last) && Game.GameTime - last < UnstickMs)
             {
+                // And the lower figure is deliberately NOT written down. This only looks once a
+                // second and the limit is longer than that, so recording it here spends the hit
+                // on a tick that did nothing with it and the next look compares against a number
+                // that already knows about it -- which is why a man under sustained fire was
+                // noticed about half the times he was shot.
                 return false;
             }
+
+            _wasOn[h] = now;
 
             _lastTornOff[h] = Game.GameTime;
 
             try
             {
-                homie.Task.ClearAllImmediately();
+                // The secondary slot only. A damage anim sits there, and clearing it cannot
+                // reach the primary task -- which is the one holding him in the seat, and the
+                // whole reason the immediate clear had to go.
+                Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, homie.Handle);
                 _aimingAtNothing.Remove(h);
             }
             catch
@@ -1749,6 +1797,24 @@ namespace Hoodrich.Missions
                     // jobs lose nothing by this.
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
                     Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, !FromTheCar);
+
+                    // And on a job done out of a window, he does not react to being shot at all.
+                    //
+                    // A hit reaction and a drive-by want the same body and neither gives it up.
+                    // Nothing in here can referee that: the loop below looks once a second, so
+                    // whatever it sees it is already late for, and tearing him off the reaction
+                    // is what put him in a T-pose in the first place. The only version of this
+                    // that ends is the one where the reaction never starts.
+                    //
+                    // 107 is the ragdoll a bullet sets off, 106 is the one a kerb at speed sets
+                    // off, and Rockstar sets both on the peds it needs to stay sat down and
+                    // behave. Handed back in ClearTheCar and in Clear, so a man who has finished
+                    // the job is not walking round for the rest of the session unable to flinch.
+                    if (FromTheCar)
+                    {
+                        Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 106, true);
+                        Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, 107, true);
+                    }
 
                     // Named targets rather than "everybody hated within a hundred and twenty
                     // metres". The area order sweeps in whoever the game currently considers an
@@ -2208,11 +2274,28 @@ namespace Hoodrich.Missions
                 State = MissionState.Escape;
 
                 Wanted(_def.HeatStars);
-                Notify.Important("~r~Somebody called it in.~s~ Lose 'em, then get back to Lamar.");
+
+                Notify.Important(GoingToHao
+                    ? "~r~Somebody called it in.~s~ Lose 'em, then run the car to Hao."
+                    : "~r~Somebody called it in.~s~ Lose 'em, then get back to Lamar.");
                 return;
             }
 
             StandDown();
+
+            // A job with no heat on it never goes through the escape, and the escape is the only
+            // place the delivery was ever decided -- so a clean saloon on a quiet job went home
+            // in your hands and Hao never saw it. The fork belongs on both roads out of the
+            // work, not only the loud one.
+            if (GoingToHao)
+            {
+                State = MissionState.Deliver;
+                MarkBay();
+
+                Notify.Important("~g~That's them done.~s~ Now run the car to Hao -- " +
+                                 "we ain't leaving that one out here.");
+                return;
+            }
 
             State = MissionState.Collect;
             Notify.Important("~g~That's them done.~s~ Get back to Lamar.");
@@ -2592,7 +2675,7 @@ namespace Hoodrich.Missions
             }
 
             // A car worth keeping goes to Hao instead of being abandoned in the street.
-            if (_keeper && _jobCar != null && _jobCar.Exists() && _jobCar.IsDriveable)
+            if (GoingToHao)
             {
                 State = MissionState.Deliver;
                 MarkBay();
@@ -2677,6 +2760,40 @@ namespace Hoodrich.Missions
             if (Social != null) Social.On(SocialEvent.MissionDone);
 
             Log.Info("Job car delivered to Hao's bay.");
+        }
+
+        /// <summary>
+        /// The ring on the tarmac at Hao's bay.
+        ///
+        /// The blip on its own only ever said which end of the lot to aim at, and a lot is a
+        /// wide flat thing with no obvious place on it to stop -- so the car got left at the
+        /// shutter, no hand-over came, and there was nothing to tell you that you were four
+        /// metres short of a check you could not see. Drawn narrower than BayRange on purpose:
+        /// a car sat inside the ring has definitely passed, rather than nearly passed.
+        /// </summary>
+        private void DrawBay()
+        {
+            if (State != MissionState.Deliver) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+            if (player.Position.DistanceTo(HaoBay) > BayMarkerRange) return;
+
+            try
+            {
+                // Sunk by nine tenths the way the port bay ring is, so only the top of the
+                // cylinder clears the ground and it reads as paint on the tarmac rather than
+                // as a green post you are meant to drive round.
+                World.DrawMarker(MarkerType.Cylinder,
+                                 HaoBay - new Vector3(0f, 0f, 0.9f),
+                                 Vector3.Zero, Vector3.Zero,
+                                 new Vector3(7.5f, 7.5f, 1.4f),
+                                 Palette.Alpha(Palette.Cash, 90));
+            }
+            catch
+            {
+                // No ring this frame; the blip still says which lot.
+            }
         }
 
         private Blip _bayBlip;
@@ -3073,6 +3190,11 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
                     Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, ped.Handle, true);
 
+                    // Including the two ragdoll blocks the drive-by put on him. A man who spends
+                    // the rest of the session refusing to flinch is the fix outliving the job.
+                    Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 106, false);
+                    Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 107, false);
+
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
 
                     if (ped.IsAlive) SendHimOff(ped, sent++);
@@ -3149,6 +3271,7 @@ namespace Hoodrich.Missions
 
             _tags.Draw();
             _bike.Draw();
+            DrawBay();
 
             // Centred at the top: it belongs to the job, not to the corner of the screen.
             var left = 0.5f - CardWidth * 0.5f;
