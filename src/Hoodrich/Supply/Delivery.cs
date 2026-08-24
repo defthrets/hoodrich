@@ -1789,7 +1789,20 @@ namespace Hoodrich.Supply
                     size = new Vector3(size.Y, size.X, size.Z);
                 }
 
-                var sit = new Vector3(local.X, local.Y, local.Z + size.Z * 0.5f) - centre;
+                // AND FORWARD, off his chest.
+                //
+                // The hand midpoint is where his hands are, and his hands in the carry pose are
+                // held in against his body -- so putting the box's MIDDLE there buries half of
+                // it in his ribs. What belongs at his hands is the box's near face; its middle
+                // is half a box further out. Measured, so a deep crate clears him by more than
+                // a flat one does, exactly as much more as it is deeper.
+                //
+                // The half-depth is size.Y in both cases: a long prop has already been turned
+                // ninety degrees above and had its extents swapped with it, so Y is the axis
+                // pointing out of his chest whichever way round the thing ended up.
+                var out_ = local.Y + size.Y * 0.5f + ChestClear;
+
+                var sit = new Vector3(local.X, out_, local.Z + size.Z * 0.5f) - centre;
 
                 Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
                               0, sit.X, sit.Y, sit.Z, 0f, 0f, yaw,
@@ -1806,6 +1819,14 @@ namespace Hoodrich.Supply
                 Log.Debug("Could not centre the crate: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// Daylight between the box and his shirt.
+        ///
+        /// Small, because half the box's own depth is doing the actual work -- this is only the
+        /// gap that stops a corner grazing his forearm as he walks.
+        /// </summary>
+        private const float ChestClear = 0.05f;
 
         /// <summary>SKEL_L_Hand and SKEL_R_Hand. The hands themselves, not the prop sockets.</summary>
         private const int LeftHand = 18905;
