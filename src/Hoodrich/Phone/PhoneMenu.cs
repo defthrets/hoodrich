@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
+using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.UI;
@@ -90,6 +91,31 @@ namespace Hoodrich.Phone
         /// <summary>How wide the sheen is, as a fraction of the row.</summary>
         private const float SheenWide = 0.22f;
 
+        /// <summary>How round the app tiles are, in screen heights.</summary>
+        private const float TileRound = 0.013f;
+
+        /// <summary>How long a tile takes to pop when the cursor lands on it.</summary>
+        private const int PopMs = 150;
+
+        /// <summary>And how far it grows, in screen heights.</summary>
+        private const float PopBy = 0.0055f;
+
+        /// <summary>
+        /// The phone's own green.
+        ///
+        /// Deliberately NOT Palette.Cash. Money green already means money on every other screen
+        /// in this mod, and a handset lit in it would be saying "money" about the clock, the
+        /// signal and the wordmark. This is the SET's green -- whose phone it is -- and it is
+        /// spent on chrome only: the mark, the bars, the rules and the cursor. Never on a
+        /// number, because that is the one place green already means something else.
+        /// </summary>
+        private static readonly Color Green = Color.FromArgb(255, 108, 196, 106);
+        private static readonly Color GreenDim = Color.FromArgb(150, 66, 124, 68);
+        private static readonly Color GreenWash = Color.FromArgb(38, 108, 196, 106);
+
+        /// <summary>One full breath of the wordmark.</summary>
+        private const int PulseMs = 2600;
+
         // ---- state --------------------------------------------------------------
 
         /// <summary>One level of the menu, and where the player was on it.</summary>
@@ -121,6 +147,10 @@ namespace Hoodrich.Phone
         /// <summary>When the page last changed, and which way, so it can slide in.</summary>
         private int _pageAt;
         private int _pageDir;
+
+        /// <summary>When the cursor last moved, so the tile under it can pop.</summary>
+        private int _movedAt;
+        private int _lastIndex = -1;
 
         public bool IsOpen { get; private set; }
 
@@ -479,9 +509,21 @@ namespace Hoodrich.Phone
         private void StatusBar(float left, float top, float w, int fade)
         {
             var pad = Hud.ToX(0.012f);
+            var mid = top + StatusH * 0.5f;
 
-            Hud.Text("POSTED UP", left + pad, top + 0.007f, 0.24f,
-                     Fade(Palette.TextDim, fade), Hud.FontLabel, centre: false);
+            // The wordmark, breathing.
+            //
+            // The real mark rather than the words typed out -- logo.png is the same art the
+            // welcome screen and the panel headers carry, so the phone WEARS the mod's name
+            // instead of spelling it. It lives in the status bar, which means it is on screen
+            // on every page rather than only the home one.
+            //
+            // A slow sine, not a blink. The battery is the only thing on this screen allowed
+            // to blink, because blinking means "look at this" and a logo has nothing to report.
+            var breath = 0.5f + 0.5f * (float)Math.Sin(
+                (Game.GameTime % PulseMs) / (double)PulseMs * Math.PI * 2d);
+
+            Hud.Brand(left + pad, mid, 0.0122f, Fade(Lerp(GreenDim, Green, breath), fade));
 
             // The game's clock, because a phone that says the wrong time is a prop.
             var hh = Function.Call<int>(Hash.GET_CLOCK_HOURS);
@@ -491,16 +533,104 @@ namespace Hoodrich.Phone
                      left + w * 0.5f, top + 0.006f, 0.26f,
                      Fade(Palette.Text, fade), Hud.FontLabel, centre: true);
 
-            // Signal, then a battery drawn rather than typed.
             var right = left + w - pad;
 
-            Battery(right, top + StatusH * 0.5f, fade);
+            Battery(right, mid, fade);
+            Signal(right - Hud.ToX(0.026f), mid, fade);
 
-            Hud.TextRight("▮▮▮", right - Hud.ToX(0.030f), top + 0.007f, 0.22f,
-                          Fade(Palette.TextDim, fade), Hud.FontLabel);
+            Hud.RectFrom(left, top + StatusH - 0.0014f, w, 0.0014f, Fade(GreenDim, fade));
+        }
 
-            Hud.RectFrom(left, top + StatusH - 0.0014f, w, 0.0014f,
-                         Fade(Color.FromArgb(46, 255, 255, 255), fade));
+        /// <summary>Blends two colours, for the pulse.</summary>
+        private static Color Lerp(Color a, Color b, float t)
+        {
+            t = Math.Max(0f, Math.Min(1f, t));
+
+            return Color.FromArgb(
+                (int)(a.A + (b.A - a.A) * t),
+                (int)(a.R + (b.R - a.R) * t),
+                (int)(a.G + (b.G - a.G) * t),
+                (int)(a.B + (b.B - a.B) * t));
+        }
+
+        /// <summary>
+        /// Reception, as four climbing bars.
+        ///
+        /// It was three identical blocks typed into a string, which reads as decoration
+        /// because nothing about it could ever change. Bars that climb and that empty out are
+        /// the shape everybody already knows -- and this set has something true to put in it:
+        /// signal falls off the further you get from the block. Stood in Chamberlain Hills you
+        /// have all four; out past the airport you are down to one.
+        /// </summary>
+        private static void Signal(float rightX, float midY, int fade)
+        {
+            const int bars = 4;
+            var lit = bars;
+
+            try
+            {
+                var player = Game.Player.Character;
+                if (player != null && player.Exists())
+                {
+                    var home = new Vector3(-150f, -1640f, 33f);
+                    var away = player.Position.DistanceTo2D(home);
+
+                    lit = away < 700f ? 4
+                        : away < 1800f ? 3
+                        : away < 3400f ? 2
+                        : 1;
+                }
+            }
+            catch
+            {
+                // Full bars is a fine thing to be wrong about.
+            }
+
+            var wide = Hud.ToX(0.0030f);
+            var gap = Hud.ToX(0.0016f);
+            var bottom = midY + 0.0058f;
+
+            for (var i = 0; i < bars; i++)
+            {
+                var h = 0.0032f + i * 0.0026f;
+                var x = rightX - (bars - i) * (wide + gap);
+
+                Hud.RectFrom(x, bottom - h, wide, h,
+                             Fade(i < lit ? Green : Color.FromArgb(70, 96, 108, 96), fade));
+            }
+        }
+
+        /// <summary>
+        /// A rectangle with rounded corners, built from three rects and four discs.
+        ///
+        /// DRAW_RECT has no radius and the game ships no rounded primitive, so this is the way
+        /// to get one. Worth having on the app tiles specifically: a grid of hard-cornered
+        /// boxes reads as a table of contents, and a grid of rounded ones reads as a phone.
+        /// </summary>
+        private static void RoundRect(float left, float top, float w, float h, float r, Color c)
+        {
+            if (c.A <= 0 || w <= 0f || h <= 0f) return;
+
+            r = Math.Max(0f, Math.Min(r, h * 0.5f));
+
+            var rX = Hud.ToX(r);
+
+            // A corner cannot be wider than half the box, or the two sides cross over.
+            if (rX * 2f > w)
+            {
+                Hud.RectFrom(left, top, w, h, c);
+                return;
+            }
+
+            // Middle band, full width, then the flats above and below it.
+            Hud.RectFrom(left, top + r, w, h - r * 2f, c);
+            Hud.RectFrom(left + rX, top, w - rX * 2f, r, c);
+            Hud.RectFrom(left + rX, top + h - r, w - rX * 2f, r, c);
+
+            Hud.Disc(left + rX, top + r, r, c);
+            Hud.Disc(left + w - rX, top + r, r, c);
+            Hud.Disc(left + rX, top + h - r, r, c);
+            Hud.Disc(left + w - rX, top + h - r, r, c);
         }
 
         /// <summary>
@@ -589,6 +719,13 @@ namespace Hoodrich.Phone
             var page = Current;
             if (page == null) return;
 
+            // The cursor landing somewhere is an event, and the tile it lands on says so.
+            if (Top.Index != _lastIndex)
+            {
+                _lastIndex = Top.Index;
+                _movedAt = Game.GameTime;
+            }
+
             var padX = Hud.ToX(TilePad);
             var tileW = (w - padX * (Columns + 1)) / Columns;
 
@@ -629,9 +766,45 @@ namespace Hoodrich.Phone
                      : on ? Palette.SegmentHover
                      : Palette.Segment;
 
-            Hud.RectFrom(x, y, w, h, Fade(back, fade));
+            // Rounded, and the selected one grows into place.
+            //
+            // The pop is what the eye follows when the cursor jumps two tiles across a grid --
+            // a highlight that simply appears somewhere else leaves you re-finding it, and a
+            // tile that swells out of the row tells you where it went.
+            var pop = 0f;
 
-            if (on) Sheen(x, y, w, h, fade);
+            if (on)
+            {
+                var age = Game.GameTime - _movedAt;
+                var t = age >= PopMs ? 1f : Math.Max(0f, age / (float)PopMs);
+
+                // Overshoots slightly and settles, rather than easing flatly in.
+                var e = 1f - (float)Math.Pow(1f - t, 3);
+                pop = PopBy * (float)Math.Sin(e * Math.PI * 0.85f) * 1.25f;
+            }
+
+            var gx = x - Hud.ToX(pop);
+            var gy = y - pop;
+            var gw = w + Hud.ToX(pop) * 2f;
+            var gh = h + pop * 2f;
+
+            // A green halo behind the live one, so the set's colour is on the tile you are
+            // actually pointing at rather than smeared over the whole grid.
+            if (on)
+            {
+                RoundRect(gx - Hud.ToX(0.0035f), gy - 0.0035f,
+                          gw + Hud.ToX(0.007f), gh + 0.007f,
+                          TileRound + 0.0035f, Fade(GreenWash, fade));
+            }
+
+            RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade));
+
+            if (on) Sheen(gx, gy, gw, gh, fade);
+
+            x = gx;
+            y = gy;
+            w = gw;
+            h = gh;
 
             var ink = !item.Enabled ? Palette.TextDisabled
                     : on ? Palette.TextOnHover

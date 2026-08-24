@@ -943,6 +943,16 @@ namespace Hoodrich.Wheel
             // Every top-level app owns its own sub-pages rather than spilling onto the home
             // screen: product and its paperwork under Dealing, everything territorial under
             // Gangs, your own standing inside that.
+            // First on the home screen, top-left, because it is the one app on here that is
+            // not ours. Somebody looking for their own phone should not have to read past six
+            // things that took it off them.
+            page.Add("Phone", ">", () => ShowVanillaPhone?.Invoke(),
+                detail: "Hands the button back so you can open your own phone",
+                value: "yours",
+                enabled: ShowVanillaPhone != null,
+                disabledReason: "Not wired up");
+            page.WithIcon(Icons.FromFile("mobile.png"));
+
             page.AddSub("Dealing", "$", BuildDrugsPage,
                 detail: "Re-up, bag up, go to work",
                 value: DrugsSummary(),
@@ -990,18 +1000,6 @@ namespace Hoodrich.Wheel
                 enabled: ShowSettings != null,
                 disabledReason: "Not wired up");
             page.WithIcon(Icons.FromFile("scales.png"));
-
-            // The real phone, given back.
-            //
-            // This one has replaced Franklin's, and his has his contacts in it -- Lester, the
-            // emergency services, every story number. Taking the button was a trade, not a
-            // seizure, and this is the other half of it.
-            page.Add("Phone", ">", () => ShowVanillaPhone?.Invoke(),
-                detail: "Hands the button back so you can open your own phone",
-                value: "yours",
-                enabled: ShowVanillaPhone != null,
-                disabledReason: "Not wired up");
-            page.WithIcon(Icons.FromFile("mobile.png"));
 
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
                 detail: PaybackDue != null && PaybackDue()
@@ -1677,6 +1675,17 @@ namespace Hoodrich.Wheel
                 Note = "He works down his list from the top again. What he already paid you stays paid",
                 Enabled = () => _state.MissionsDone.Count > 0,
                 Do = () => _state.ForgetMissions()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Gerald's packages",
+                Note = "Both fronts back on the table and the port shut again, so his whole " +
+                       "sequence runs from the top. What you already sold stays sold",
+                Enabled = () => _state.FrontsDone > 0 || _state.HasFrontedWork
+                                || _state.DocksUnlocked || _state.PortRunStage > 0,
+                Do = () => _state.ForgetFronts()
             };
 
             yield return new Opt

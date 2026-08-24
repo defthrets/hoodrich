@@ -305,6 +305,29 @@ namespace Hoodrich.State
         }
 
         /// <summary>
+        /// Puts Gerald's whole sequence back to the start.
+        ///
+        /// Everything the two-package chain runs on, in one go: the packages themselves, the
+        /// ledger for whatever you are currently holding of his, the latch that stops him
+        /// texting twice, and the port he only opens once both are cleared. The PORT RUN stage
+        /// goes with it, or the docks stay half-open -- a save that has been sent to Elysian
+        /// but not come back would otherwise sit there refusing to be sent again.
+        ///
+        /// Deliberately does NOT touch what you have sold, what you are carrying, your money
+        /// or your standing. This is his storyline, not your record.
+        /// </summary>
+        public void ForgetFronts()
+        {
+            FrontsDone = 0;
+            ClearFronted();
+
+            DocksUnlocked = false;
+            PortRunStage = 0;
+
+            Touch();
+        }
+
+        /// <summary>
         /// Back to nobody: no respect, no rank, no record of what you have moved.
         ///
         /// Rank is derived from Respect rather than stored, so putting the one back to nothing
