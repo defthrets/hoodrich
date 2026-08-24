@@ -431,14 +431,17 @@ namespace Hoodrich.Territory
             if (now < car.SearchDone) return false;
 
             var took = 0f;
-            var guns = false;
 
-            try
-            {
-                guns = Function.Call<bool>(Hash.IS_PED_ARMED, player.Handle, 7);
-                Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, player.Handle, true);
-            }
-            catch { /* he found nothing */ }
+            // A ROADSIDE STOP DOES NOT TAKE YOUR GUNS.
+            //
+            // It used to empty the lot -- every weapon and every round, to a patrol car that
+            // happened to roll past while you were standing still. That is a different event
+            // from the one it looks like: the post-up bust is a consequence of a risk you
+            // chose to keep taking, and losing your arsenal to it is the price of that. This
+            // is a car driving by. Getting stripped of everything you own by traffic is not a
+            // setback, it is an ambush, and there is nothing you could have done differently.
+            //
+            // The product still goes. That is what they were looking for.
 
             if (_state != null && _state.Stash != null)
             {
@@ -450,24 +453,16 @@ namespace Hoodrich.Territory
 
             Bark(car.OnFoot);
 
-            if (took > 0.005f && guns)
-            {
-                Notify.Failure("they took your piece and " + took.ToString("0.#") + "g off you.");
-            }
-            else if (took > 0.005f)
+            if (took > 0.005f)
             {
                 Notify.Failure("they took " + took.ToString("0.#") + "g off you.");
-            }
-            else if (guns)
-            {
-                Notify.Failure("they took your piece.");
             }
             else
             {
                 Notify.Ticker("~o~Nothing on you.~s~ On your way.");
             }
 
-            Log.Info("Patrol searched the player: guns=" + guns + ", " + took.ToString("0.#") + "g.");
+            Log.Info("Patrol searched the player: " + took.ToString("0.#") + "g (guns left alone).");
 
             Back(car, now);
             return false;
