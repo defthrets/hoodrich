@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Control = GTA.Control;
 using GTA;
@@ -239,6 +239,15 @@ namespace Hoodrich.Locations
                 Log.Debug("Could not hand over " + car.Id + ": " + ex.Message);
             }
 
+            // Written down, so it is still yours next time you start the game.
+            //
+            // Everything above holds the car against the population manager for as long as this
+            // session lasts and not one second longer. See OwnedCars.
+            if (Owned != null && car.Live != null && car.Live.Exists())
+            {
+                Owned.Bought(car.Id, car.Name, car.Live);
+            }
+
             _stock.Remove(car);
 
             if (_state != null)
@@ -391,6 +400,9 @@ namespace Hoodrich.Locations
         private const float RideHeading = 313.928f;
 
         private Vehicle _ride;
+
+        /// <summary>Set by Main. The ledger that keeps a bought car between sessions.</summary>
+        public OwnedCars Owned;
 
         /// <summary>
         /// Every mod on the car Rockstar hand him, copied out of their own script.

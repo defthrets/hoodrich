@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using GTA.Math;
 using Hoodrich.Core;
 using Hoodrich.Economy;
 using Hoodrich.UI;
@@ -10,6 +11,23 @@ namespace Hoodrich.State
     /// Hoodrich's own progression. Cash is deliberately NOT stored here -- the game already
     /// owns the player's money and duplicating it would drift.
     /// </summary>
+    /// <summary>One car the player owns, and where it was left.</summary>
+    internal sealed class OwnedCar
+    {
+        public string Id = "";
+        public string Name = "";
+        public int Model;
+
+        /// <summary>What makes it findable again. Nothing else in the world wears this.</summary>
+        public string Plate = "";
+
+        public int Paint = -1;
+        public int Paint2 = -1;
+
+        public Vector3 Where;
+        public float Heading;
+    }
+
     internal sealed class PlayerState
     {
         /// <summary>Respect needed to reach each rank, 0..4. Read by the Reputation page.</summary>
@@ -262,6 +280,16 @@ namespace Hoodrich.State
         /// </summary>
         public readonly List<string> CarsBought = new List<string>();
 
+        /// <summary>
+        /// Cars you have actually paid for, and enough about each to stand it back up.
+        ///
+        /// CarsBought is only a list of ids, and its whole job is stopping Hao restocking
+        /// something you already own. It says nothing about the car itself -- so the vehicle
+        /// lived exactly as long as the session did, and the only trace of a twenty-two
+        /// thousand dollar purchase after a reload was a gap on his lot.
+        /// </summary>
+        public readonly List<OwnedCar> Owned = new List<OwnedCar>();
+
         public bool HasMet(string gangId)
         {
             if (string.IsNullOrEmpty(gangId)) return false;
@@ -394,6 +422,7 @@ namespace Hoodrich.State
             MissionsDone.Clear();
             LeadersMet.Clear();
             CarsBought.Clear();
+            Owned.Clear();
 
             SeenWelcome = false;
             SentForYou = false;
@@ -624,6 +653,28 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json OwnedJson()
+        {
+            var arr = Json.Array();
+
+            foreach (var c in Owned)
+            {
+                arr.Add(Json.Object()
+                    .Set("id", c.Id)
+                    .Set("name", c.Name)
+                    .Set("model", c.Model)
+                    .Set("plate", c.Plate)
+                    .Set("paint", c.Paint)
+                    .Set("paint2", c.Paint2)
+                    .Set("x", Math.Round(c.Where.X, 2))
+                    .Set("y", Math.Round(c.Where.Y, 2))
+                    .Set("z", Math.Round(c.Where.Z, 2))
+                    .Set("h", Math.Round(c.Heading, 1)));
+            }
+
+            return arr;
+        }
+
         private Json CarsJson()
         {
             var arr = Json.Array();
@@ -702,6 +753,7 @@ namespace Hoodrich.State
                 .Set("missionsDone", MissionsJson())
                 .Set("leadersMet", LeadersJson())
                 .Set("carsBought", CarsJson())
+                .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson());
         }
@@ -751,6 +803,28 @@ namespace Hoodrich.State
                 }
 
                 CarsBought.Clear();
+            Owned.Clear();
+                Owned.Clear();
+
+                foreach (var node in doc["ownedCars"].Items)
+                {
+                    var id = node["id"].AsString("");
+                    if (string.IsNullOrEmpty(id)) continue;
+
+                    Owned.Add(new OwnedCar
+                    {
+                        Id = id,
+                        Name = node["name"].AsString(id),
+                        Model = node["model"].AsInt(0),
+                        Plate = node["plate"].AsString(""),
+                        Paint = node["paint"].AsInt(-1),
+                        Paint2 = node["paint2"].AsInt(-1),
+                        Where = new Vector3(node["x"].AsFloat(), node["y"].AsFloat(),
+                                            node["z"].AsFloat()),
+                        Heading = node["h"].AsFloat()
+                    });
+                }
+
                 foreach (var node in doc["carsBought"].Items)
                 {
                     var id = node.AsString("");

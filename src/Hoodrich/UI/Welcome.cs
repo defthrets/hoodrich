@@ -25,15 +25,16 @@ namespace Hoodrich.UI
             var what = new InfoSection { Title = "What this is" };
 
             what.Row("You run with the Families", "Chamberlain Hills", Palette.Cash,
-                     "Buy weight, cut it at home, sell it on a corner, try to be gone first",
+                     "Buy weight, cut it at home, stand somewhere and sell it. Be gone before "
+                     + "anybody makes it their business",
                      r => r.ArtFile = "gang_families.png");
 
-            what.Row("Everything is on your phone", "The phone button", null,
-                     "Apps on the home screen, arrows to move, Enter to open, Backspace to back out",
+            what.Row("It all lives on your phone", "The phone button", null,
+                     "Arrows move, Enter opens, Backspace backs out. That is the whole of it",
                      r => r.ArtFile = "phone.png");
 
-            what.Row("Your weapon wheel is untouched", "It works as it always did", null,
-                     "Hoodrich takes the phone instead, so getting a gun out costs you nothing",
+            what.Row("Your weapon wheel still works", "Nothing was taken off it", null,
+                     "We put all this on the phone instead, so pulling a gun costs you nothing",
                      r => r.ArtFile = "guns.png");
 
             sections.Add(what);
@@ -41,8 +42,9 @@ namespace Hoodrich.UI
             // ---- the loop ------------------------------------------------------
             var loop = new InfoSection { Title = "The whole job, in order" };
 
-            loop.Row("1. Buy weight", "Gangs > your leader", Palette.Cash,
-                     "Gerald fronts you a bag to start. Later, text the plug at the port",
+            loop.Row("1. Get hold of some", "Gangs > your leader", Palette.Cash,
+                     "Gerald puts the first bag in your hand for nothing. Later you ring the "
+                     + "man at the port and he drives it over",
                      r => r.ArtFile = "crate.png");
 
             loop.Row("2. Cut it in the kitchen", "Aunt Denise's", null,
@@ -50,12 +52,12 @@ namespace Hoodrich.UI
                      + "people miss",
                      r => r.ArtFile = "scales.png");
 
-            loop.Row("3. Post up on a corner", "Dealing > Post up", null,
-                     "You pick a SPOT, not a customer. Buyers come to you",
+            loop.Row("3. Go and stand somewhere", "Dealing > Post up", null,
+                     "You pick the SPOT, not the customer. They come to you",
                      r => r.ArtFile = "footfall.png");
 
-            loop.Row("4. Leave before they notice", "Watch your heat", Palette.Warn,
-                     "Stand too long and you get clocked, and then it is a police matter",
+            loop.Row("4. Do not still be there", "Watch your heat", Palette.Warn,
+                     "Stand on one corner long enough and somebody makes a phone call",
                      r => r.ArtFile = "police.png");
 
             sections.Add(loop);
@@ -72,7 +74,8 @@ namespace Hoodrich.UI
                     r => r.ArtFile = "megaphone.png");
 
             cut.Row("Your name is a number", "It moves every sale", null,
-                    "Good work earns it back. That is the whole trade-off, and it is yours to make",
+                    "Sell decent stuff for a while and it comes back up. Step on everything and "
+                    + "it does not. That trade is the game",
                     r => r.ArtFile = "rank.png");
 
             sections.Add(cut);
@@ -219,8 +222,9 @@ namespace Hoodrich.UI
                      + "you are FRONTED is already bagged",
                      r => r.ArtFile = "warning.png");
 
-            last.Row("This screen will not come back", "Everything is on the phone", null,
-                     "Backspace or the back button closes it",
+            last.Row("You will not see this again", "It is all on the phone", null,
+                     "Backspace closes it. Settings has a switch to start the whole thing over "
+                     + "if you ever want this back",
                      r => r.ArtFile = "tick.png");
 
             sections.Add(last);

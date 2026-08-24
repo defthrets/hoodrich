@@ -455,7 +455,8 @@ namespace Hoodrich.Phone
         /// screensaver; one that runs the width of the thing you have selected is that thing
         /// telling you it is the live one.
         /// </summary>
-        private static void Sheen(float left, float top, float w, float h, int fade)
+        private static void Sheen(float left, float top, float w, float h, int fade,
+                                  float inset = 0f)
         {
             var t = (Game.GameTime % SheenMs) / (float)SheenMs;
 
@@ -467,7 +468,31 @@ namespace Hoodrich.Phone
             var b = Math.Min(left + w, at + wide);
             if (b <= a) return;
 
-            Hud.RectFrom(a, top, b - a, h, Fade(Color.FromArgb(38, 255, 255, 255), fade));
+            // KEPT OUT OF THE CORNERS, and that is what the inset is for.
+            //
+            // The band is a square-cornered rectangle laid over a rounded one. On a row the two
+            // agree; on a tile they do not, and every pass of the shimmer painted the four
+            // corner patches the rounded shape had deliberately left empty -- so the live app
+            // grew square ears twice a second.
+            //
+            // Inset by the corner radius, the band only ever crosses the straight middle of the
+            // shape, which is where a shimmer reads anyway.
+            var top2 = top + inset;
+            var high = h - inset * 2f;
+            if (high <= 0f) return;
+
+            // Two passes rather than one: a wide soft wash with a brighter core inside it, so
+            // it travels as a highlight with an edge rather than as a grey block sliding past.
+            Hud.RectFrom(a, top2, b - a, high, Fade(Color.FromArgb(26, 255, 255, 255), fade));
+
+            var coreWide = (b - a) * 0.34f;
+            var coreAt = a + (b - a) * 0.5f - coreWide * 0.5f;
+
+            if (coreWide > 0f)
+            {
+                Hud.RectFrom(coreAt, top2, coreWide, high,
+                             Fade(Color.FromArgb(34, 255, 255, 255), fade));
+            }
         }
 
         /// <summary>Eased-out rise, the same curve every other panel in the mod opens on.</summary>
@@ -977,7 +1002,7 @@ namespace Hoodrich.Phone
             if (on) RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade), steps: 0);
             else Hud.RectFrom(gx, gy, gw, gh, Fade(back, fade));
 
-            if (on) Sheen(gx, gy, gw, gh, fade);
+            if (on) Sheen(gx, gy, gw, gh, fade, TileRound);
 
             x = gx;
             y = gy;

@@ -82,6 +82,7 @@ namespace Hoodrich
         private readonly SleepSpot _sleep;
         private readonly Kitchen _kitchen;
         private readonly MissionBook _missions;
+        private readonly OwnedCars _ownedCars;
         private readonly Fixer _fixer;
         private readonly Armourer _bigj;
         private readonly Hao _hao;
@@ -436,6 +437,10 @@ namespace Hoodrich
                 // Hao runs a second economy off the same map: metal instead of weight, with
                 // its own yard, its own money and eventually its own jobs.
                 _hao = new Hao(_state);
+
+                // A car you paid for outlives the session now. See OwnedCars.
+                _ownedCars = new OwnedCars(_state);
+                _hao.Owned = _ownedCars;
 
                 // Nobody sends you to a car dealer in Little Seoul before you are anybody. The
                 // yard is there the whole time and you can find it on foot; what waits is the
@@ -1628,6 +1633,7 @@ namespace Hoodrich
                     _bigj.UpdatePrompt();
 
                     _hao.Update();
+                    if (_ownedCars != null) _ownedCars.Update();
                     _hao.UpdatePrompt();
 
                     _social.Update();
