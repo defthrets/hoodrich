@@ -1,0 +1,68 @@
+===============================================================================
+  POSTED UP 0.2.0  --  FULL PACKAGE
+===============================================================================
+
+  DRAG EVERYTHING IN THIS ZIP INTO YOUR GTA V FOLDER. SAY YES TO MERGING.
+
+  Your GTA V folder is the one with GTA5.exe in it, normally:
+  C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V
+
+
+-------------------------------------------------------------------------------
+  YOU STILL NEED ONE FILE. IT IS NOT IN HERE AND CANNOT BE.
+-------------------------------------------------------------------------------
+
+  ScriptHookV        http://www.dev-c.com/gtav/scripthookv/
+
+  Nothing in its package grants anyone permission to hand it on, so no mod is
+  allowed to include it -- and it is locked to one exact game build besides, so
+  a copy bundled today would be the wrong one the week after the next patch.
+  It takes about thirty seconds:
+
+    1. Download from the link above.
+    2. Open the zip, go into the "bin" folder.
+    3. Drag ScriptHookV.dll and dinput8.dll into your GTA V folder.
+
+  If ScriptHookV.dll is already sitting next to GTA5.exe -- and it is, if you
+  run any .asi mod at all -- you have nothing to do. Skip this.
+
+
+-------------------------------------------------------------------------------
+  WHAT IS IN HERE
+-------------------------------------------------------------------------------
+
+  scripts\Hoodrich.dll        the mod
+  scripts\Hoodrich.ini        every setting, commented
+  scripts\Hoodrich\           its data: 10 json files and 105 icons
+
+  ScriptHookVDotNet.asi       ScriptHookVDotNet, which runs .NET mods. Included
+  ScriptHookVDotNet2.dll      because its licence expressly allows it. Not our
+  ScriptHookVDotNet3.dll      work -- (c) crosire, kagikn and Chiheb-Bacha.
+  ScriptHookVDotNet.ini
+  Licenses\                   their licence and notices, kept with the binaries
+
+  README.txt                  how the mod works, controls, configuring it
+  LICENCE.txt                 ours
+
+  ALREADY RUN OTHER .NET MODS? Then you already have ScriptHookVDotNet, and
+  yours may well be newer than this copy. Every .NET mod on your machine shares
+  one copy of it, so if in doubt, keep the newer one -- skip the four
+  ScriptHookVDotNet files when merging and take only the scripts folder.
+
+  If you would rather not be handed somebody else's copy at all, the mod-only
+  zip is the same release without them.
+
+
+-------------------------------------------------------------------------------
+  THEN
+-------------------------------------------------------------------------------
+
+  Load a save. Press the phone button.
+
+  Gerald is the only marker on your map. Go and see him -- he puts the first
+  lot of product in your hand for nothing.
+
+  Read README.txt for the rest.
+
+  To uninstall: delete scripts\Hoodrich.dll, scripts\Hoodrich.ini and the
+  scripts\Hoodrich folder. No game files are modified by this mod.

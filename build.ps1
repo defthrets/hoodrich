@@ -10,6 +10,7 @@
     .\build.ps1                 # build to .\build\Hoodrich.dll
     .\build.ps1 -Deploy         # build, then copy dll + data into the game's scripts\
     .\build.ps1 -Package        # build, then zip a public release into .\release\
+    .\build.ps1 -Package -Full  # ...and bundle ScriptHookVDotNet with it
     .\build.ps1 -Configuration Debug
 #>
 [CmdletBinding()]
@@ -21,6 +22,22 @@ param(
     # Build a zip anybody can drop into their GTA V folder. Ships the dll, a DEFAULT ini and
     # the data -- never this machine's tuned ini and never a save. See the packaging section.
     [switch]$Package,
+
+    # Bundle ScriptHookVDotNet into the release as well, so the zip merges over the GTA V
+    # ROOT and the player installs one thing instead of three.
+    #
+    # Legitimate: SHVDN is zlib licensed and says in as many words that anyone may
+    # "redistribute it freely" provided the notice travels with it and nobody claims to have
+    # written it. Its whole Licenses folder is copied in for that reason.
+    #
+    # ScriptHookV is NOT bundled and will not be. No licence in its package grants
+    # redistribution, and it is version-locked to the game besides -- a copy shipped today is
+    # the wrong one the week after the next patch.
+    [switch]$Full,
+
+    # Where the SHVDN files are taken from for -Full. Not committed to this repo: they are
+    # somebody else's binaries and do not belong in our history.
+    [string]$ShvdnFrom = 'C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V Enhanced',
 
     # Which install(s) -Deploy writes to. Hoodrich is a pure SHVDN script with no asset
     # dependencies, and both editions ship the same ScriptHookVDotNet3.dll, so one build
@@ -293,6 +310,26 @@ if ($Package) {
 
     Copy-Item (Join-Path $relDir 'README.txt')  $stage
     Copy-Item (Join-Path $relDir 'LICENCE.txt') $stage
+
+    if ($Full) {
+        $need = @('ScriptHookVDotNet.asi', 'ScriptHookVDotNet2.dll',
+                  'ScriptHookVDotNet3.dll', 'ScriptHookVDotNet.ini')
+
+        foreach ($f in $need) {
+            $p = Join-Path $ShvdnFrom $f
+            if (-not (Test-Path $p)) { throw "-Full needs $f. Not found in $ShvdnFrom" }
+            Copy-Item $p $stage
+        }
+
+        # The zlib licence's one hard condition: the notice travels with the binary. Their
+        # whole Licenses folder goes, third-party notices and all, not just the LICENSE.
+        $lic = Join-Path $ShvdnFrom 'Licenses'
+        if (Test-Path $lic) { Copy-Item $lic $stage -Recurse }
+
+        Copy-Item (Join-Path $relDir 'READ ME FIRST.txt') $stage
+        $zip = Join-Path $relDir "PostedUp-$version-full.zip"
+        if (Test-Path $zip) { Remove-Item $zip -Force }
+    }
 
     # Belt and braces. A save in a release zip would overwrite the first thing a player did.
     Get-ChildItem $stage -Recurse -Include 'save.json', '*.log', '*.bak' |
