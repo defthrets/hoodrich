@@ -47,7 +47,7 @@ namespace Hoodrich.Core
                         RollIfLarge(path);
                         _started = true;
                         AppendLine(path, "");
-                        AppendLine(path, "=== Hoodrich " + Build.Version + " started " +
+                        AppendLine(path, "=== " + Build.Name + " " + Build.Version + " started " +
                                          DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) + " ===");
                     }
 
@@ -104,9 +104,22 @@ namespace Hoodrich.Core
         }
     }
 
+    /// <summary>
+    /// What this thing is called, in the one place anything is allowed to ask.
+    ///
+    /// Name was already here and nothing used it, so every line that wanted it typed the word
+    /// out instead -- and they all typed the OLD word. That is how a rename ends up half done:
+    /// the screens say Posted Up, the log says Hoodrich, and somebody reading a log to work out
+    /// what is wrong has to know those are the same thing.
+    ///
+    /// The file names are a separate matter and stay as they are. Hoodrich.dll, Hoodrich.ini,
+    /// Hoodrich.log and the folder beside them are paths -- renaming those breaks every
+    /// installation that exists for the sake of a word nobody reads. This is the word people
+    /// read.
+    /// </summary>
     internal static class Build
     {
         public const string Version = "0.2.0";
-        public const string Name = "Hoodrich";
+        public const string Name = "Posted Up";
     }
 }

@@ -1402,7 +1402,7 @@ namespace Hoodrich
 
                 Log.Info("Paths: data=" + Paths.Data + "  writable=" + Paths.Writable);
 
-                Log.Info("Hoodrich " + Build.Version + " loaded. Phone: phone button" +
+                Log.Info(Build.Name + " " + Build.Version + " loaded. Phone: phone button" +
                          (_cfg.PhoneKey == System.Windows.Forms.Keys.None
                              ? ""
                              : " or " + _cfg.PhoneKey) +
@@ -1411,7 +1411,7 @@ namespace Hoodrich
             catch (Exception ex)
             {
                 _parked = true;
-                Log.Error("Hoodrich failed to initialise and is disabled for this session.", ex);
+                Log.Error(Build.Name + " failed to initialise and is disabled for this session.", ex);
             }
         }
 
@@ -1751,7 +1751,8 @@ namespace Hoodrich
                 if (_failures >= MaxConsecutiveFailures)
                 {
                     _parked = true;
-                    Log.Error("Too many consecutive failures; Hoodrich is parked for this session.");
+                    Log.Error("Too many consecutive failures; " + Build.Name +
+                              " is parked for this session.");
                     Notify.Failure("shut itself off for this session. Check the log.");
                 }
             }
@@ -2159,7 +2160,7 @@ namespace Hoodrich
             try
             {
                 SaveGame.Save(_state, _crew, _market, _stash, true);
-                Log.Info("Hoodrich unloaded cleanly.");
+                Log.Info(Build.Name + " unloaded cleanly.");
             }
             catch (Exception ex)
             {

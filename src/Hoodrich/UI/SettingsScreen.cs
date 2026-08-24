@@ -299,7 +299,7 @@ namespace Hoodrich.UI
 
             Head("The phone");
             Readout("Opens with", () => "the phone button",
-                    "Hoodrich takes the phone. The weapon wheel is the game's own again");
+                    Core.Build.Name + " takes the phone. The weapon wheel is the game's own again");
             Bind("Extra key", "Phone", "Key", () => c.PhoneKey, v => c.PhoneKey = v,
                  "Optional. Select, then press the key you want");
             Bind("Modifier", "Phone", "Modifier", () => c.PhoneModifier, v => c.PhoneModifier = v,
