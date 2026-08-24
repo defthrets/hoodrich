@@ -510,7 +510,7 @@ namespace Hoodrich.Phone
             // The tiles keep the sprite because nothing is drawn under them; the body cannot,
             // because everything is.
             RoundRect(left, top, w, h, BodyRound,
-                      Fade(Color.FromArgb(255, 96, 102, 104), fade), sprite: false);
+                      Fade(Color.FromArgb(255, 96, 102, 104), fade), sprite: false, steps: 0);
 
             var edge = 0.0022f;
             var edgeX = Hud.ToX(edge);
@@ -521,7 +521,8 @@ namespace Hoodrich.Phone
             // And the screen it houses, rounded with it.
             var bezX = Hud.ToX(Bezel);
             RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
-                      ScreenRound, Fade(Color.FromArgb(252, 13, 15, 17), fade), sprite: false);
+                      ScreenRound, Fade(Color.FromArgb(252, 13, 15, 17), fade),
+                      sprite: false, steps: 0);
         }
 
         private void StatusBar(float left, float top, float w, int fade)
@@ -719,6 +720,10 @@ namespace Hoodrich.Phone
         /// </summary>
         private static int Bands(float r, int steps = 20)
         {
+            // Zero steps means one rectangle per screen ROW, which is as round as a stack of
+            // rectangles can be. Spent only where the stagger actually shows.
+            if (steps <= 0) return 1;
+
             return Math.Max(1, (int)Math.Round(r * 2f * Hud.ScreenHeight / steps));
         }
 
@@ -890,7 +895,7 @@ namespace Hoodrich.Phone
             var on = here && item.Enabled;
 
             var back = !item.Enabled ? Palette.SegmentDisabled
-                     : on ? Lit
+                     : on ? LitEdge
                      : Palette.Segment;
 
             // Rounded, and the selected one grows into place.
@@ -923,7 +928,16 @@ namespace Hoodrich.Phone
 
             // A green rim on the live one, concentric with it rather than beside it, so the
             // set's colour marks the tile you are pointing at without becoming a second shape.
-            if (on)
+            // NO SEPARATE RIM. One shape, and this is the third go at it.
+            //
+            // A bright outline under a darker fill needs the two to agree about where the
+            // corner is, and they cannot: Hud.Disc snaps its rows to a pixel grid anchored on
+            // each disc's OWN centre, and these two centres sit a few pixels apart. So the ring
+            // came out even down the straight edges and blobbed at the corners -- which is what
+            // has been getting reported as circles on the apps.
+            //
+            // A solid fill has nothing to line up with. The live app is simply green.
+            if (false)
             {
                 var rim = 0.0026f;
                 var rimX = Hud.ToX(rim);
@@ -954,7 +968,13 @@ namespace Hoodrich.Phone
             // rectangle drawn after it, and this screen is nothing but rectangles drawn after
             // each other -- which is how the corners kept surfacing as circles on top of the
             // battery, and then on top of the live app.
-            if (on) RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade));
+            // One rectangle per screen ROW on the live tile.
+            //
+            // Its corner is seventeen pixels across, and at two pixels a band that is nine
+            // steps -- a visible staircase at the size it is actually drawn. Per-row is the
+            // smoothest a stack of rectangles can be, and it is affordable precisely because
+            // the other six tiles stopped paying for corners they were never showing.
+            if (on) RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade), steps: 0);
             else Hud.RectFrom(gx, gy, gw, gh, Fade(back, fade));
 
             if (on) Sheen(gx, gy, gw, gh, fade);

@@ -1847,6 +1847,17 @@ namespace Hoodrich.Wheel
                 Do = () =>
                 {
                     _state.ForgetEverything();
+
+                    // AND you leave the set, which the first version of this did not do.
+                    //
+                    // Affiliation does not live in PlayerState -- it is its own thing with its
+                    // own save -- so forgetting everything in the save forgot everything except
+                    // the one fact the whole opening hangs off. You came out of a full reset
+                    // still a Families man: Lamar texting you about work on a fresh start,
+                    // his marker on his corner, and Gerald talking to you like somebody he had
+                    // already vouched for.
+                    if (_crew != null) _crew.Leave();
+
                     WipeSocials?.Invoke();
                     Notify.Important("~o~Back to nobody.~s~");
                 }
