@@ -1900,11 +1900,20 @@ namespace Hoodrich.Missions
         /// Whether this job is shot out of a car window rather than on foot.
         ///
         /// A torch job is a message delivered at speed -- pull up, let them hear it, burn the
-        /// car and go. A drive-by is the same shape. Everything else is people getting out.
+        /// car and go. A drive-by is the same shape.
+        ///
+        /// The kind is only the DEFAULT, because the kind does not actually decide this. "Get
+        /// 'em off Grove" and "The cut house in Rancho" are both Hits, and one of them is a
+        /// street you roll down while your people lean out of the windows and the other is a
+        /// building you walk into. Grove's homies sat in the car doing nothing for exactly
+        /// that reason: KeepShooting only runs when this is true, and every job spawns its
+        /// homies with non-temporary events blocked so they will not volunteer for a fight on
+        /// their own either. Never tasked, never allowed to decide -- so, nothing.
         /// </summary>
         private bool FromTheCar =>
             _def != null &&
-            (_def.Kind == MissionKind.TorchJob || _def.Kind == MissionKind.DriveBy);
+            (_def.FromTheCar ??
+             (_def.Kind == MissionKind.TorchJob || _def.Kind == MissionKind.DriveBy));
 
         /// <summary>
         /// Puts a homie on a target, from wherever he is.
@@ -2634,6 +2643,90 @@ namespace Hoodrich.Missions
             if (Social != null) Social.On(SocialEvent.MissionFailed);
         }
 
+        /// <summary>The yard the block party is in, by the second set of decks.</summary>
+        private static readonly Vector3 PartySpot = new Vector3(-202.900f, -1729.900f, 32.664f);
+
+        /// <summary>Past this and he just goes home. Nobody crosses the city to dance.</summary>
+        private const float PartyRange = 320f;
+
+        /// <summary>Verified against the game's own animation data, not guessed.</summary>
+        private const string PartyDict = "amb@world_human_partying@male@partying_beer@base";
+        private const string PartyClip = "base";
+
+        private const int PartyMinMs = 26000;
+        private const int PartyMaxMs = 48000;
+
+        /// <summary>
+        /// Gets a homie out of the car and gives him somewhere to be.
+        ///
+        /// A SEQUENCE, and that is the whole fix. The previous version tasked him to leave the
+        /// vehicle and then tasked him to wander on the very next line -- and a second task
+        /// does not queue behind the first, it REPLACES it. So the leave-vehicle was thrown
+        /// away before it started, the wander could not run from a passenger seat, and three
+        /// men sat in a parked car for the rest of the session. Exactly the same mistake the
+        /// taxi drop-off made.
+        ///
+        /// Inside a sequence, 0 means "the ped performing this", and each task genuinely waits
+        /// for the one before it.
+        ///
+        /// If the job finished anywhere near the block party he walks over and joins it for
+        /// half a minute before drifting off, because a man who has just been paid does not
+        /// silently evaporate into traffic. Anywhere else, he just goes.
+        /// </summary>
+        private void SendHimOff(Ped ped, int index)
+        {
+            var slot = new OutputArgument();
+            var seq = 0;
+
+            try
+            {
+                var atParty = ped.Position.DistanceTo(PartySpot) <= PartyRange
+                              && Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, PartyDict);
+
+                Function.Call(Hash.OPEN_SEQUENCE_TASK, slot);
+                seq = slot.GetResult<int>();
+
+                // Out of the car first, whatever comes after it. Flag 0 is the ordinary exit
+                // that closes the door behind him.
+                Function.Call(Hash.TASK_LEAVE_VEHICLE, 0, 0, 0);
+
+                if (atParty)
+                {
+                    // Spread out, so three men do not stand inside each other by the speaker.
+                    var spread = new Vector3(
+                        PartySpot.X + (index - 1) * 1.3f,
+                        PartySpot.Y + (index % 2 == 0 ? 0.9f : -0.9f),
+                        PartySpot.Z);
+
+                    Function.Call(Hash.TASK_GO_TO_COORD_ANY_MEANS, 0,
+                                  spread.X, spread.Y, spread.Z, 1.3f, 0, false, 786603, 0f);
+
+                    // Timed rather than looped forever: the task ends on its own and the
+                    // wander behind it is what takes him home. A scenario here would never
+                    // finish and he would stand in that yard until the session ended.
+                    var dance = PartyMinMs + _rng.Next(PartyMaxMs - PartyMinMs);
+
+                    Function.Call(Hash.TASK_PLAY_ANIM, 0, PartyDict, PartyClip,
+                                  4f, -4f, dance, 1, 0f, false, 0, false);
+                }
+
+                Function.Call(Hash.TASK_WANDER_STANDARD, 0, 10f, 10);
+
+                Function.Call(Hash.CLOSE_SEQUENCE_TASK, seq);
+                Function.Call(Hash.TASK_PERFORM_SEQUENCE, ped.Handle, seq);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not send a homie off: " + ex.Message);
+            }
+            finally
+            {
+                // Always, even if the sequence threw halfway through building it. There are
+                // only so many sequence slots and a leaked one is gone for the session.
+                try { Function.Call(Hash.CLEAR_SEQUENCE_TASK, slot); } catch { }
+            }
+        }
+
         private void Clear()
         {
             // Before the job's own record of who it was against is thrown away.
@@ -2662,6 +2755,12 @@ namespace Hoodrich.Missions
             _targets.Clear();
             _targetBlips.Clear();
 
+            // Asked for before anybody is tasked, so it is resident by the time the first man
+            // has finished climbing out and walked across the yard.
+            if (_homies.Count > 0) Function.Call(Hash.REQUEST_ANIM_DICT, PartyDict);
+
+            var sent = 0;
+
             foreach (var ped in _homies)
             {
                 try
@@ -2677,27 +2776,7 @@ namespace Hoodrich.Missions
 
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
 
-                    // And then they actually leave.
-                    //
-                    // Releasing them was only half of it. A released homie keeps whatever he
-                    // was last told to do, and what he was last told to do was sit in that
-                    // seat -- so the job ended, the pay landed, and three men stayed parked
-                    // outside your house for the rest of the session. The job is over; they go
-                    // home.
-                    //
-                    // Flag 0 is the ordinary exit that closes the door behind him, then he
-                    // wanders off on his own. Not deleted: you just drove across the city with
-                    // him and watching him blink out is worse than watching him walk.
-                    if (ped.IsAlive)
-                    {
-                        if (ped.IsInVehicle())
-                        {
-                            Function.Call(Hash.TASK_LEAVE_VEHICLE, ped.Handle,
-                                          ped.CurrentVehicle == null ? 0 : ped.CurrentVehicle.Handle, 0);
-                        }
-
-                        Function.Call(Hash.TASK_WANDER_STANDARD, ped.Handle, 10f, 10);
-                    }
+                    if (ped.IsAlive) SendHimOff(ped, sent++);
 
                     ped.MarkAsNoLongerNeeded();
                 }

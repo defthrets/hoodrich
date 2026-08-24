@@ -80,6 +80,15 @@ namespace Hoodrich.Wheel
         /// </summary>
         public Action ShowSettings;
 
+        /// <summary>
+        /// Closes ours and hands the button back so the game's own phone can be opened.
+        ///
+        /// A phone that has replaced the phone owes the player the real one back. Franklin's
+        /// contacts, Lester, the emergency services and every story number live in there, and
+        /// none of it is ours to take away.
+        /// </summary>
+        public Action ShowVanillaPhone;
+
         /// <summary>Whether somebody is already on their way about something you said.</summary>
         public Func<bool> PaybackDue;
         public Func<int> Followers;
@@ -972,6 +981,28 @@ namespace Hoodrich.Wheel
             // naming a set, calling one out -- is a section inside the feed screen now, next to
             // the timeline those posts land in. A wheel page whose four items were "open a
             // screen" and three things belonging ON that screen was one door too many.
+            // Its own app rather than a line at the bottom of Gangs. Settings was buried
+            // three rows into a page about turf, which is nowhere anybody would look for it --
+            // it is not a gang question, it is a question about the mod.
+            page.Add("Settings", "*", () => ShowSettings?.Invoke(),
+                detail: "How the mod behaves, and how to undo what you have done",
+                value: "",
+                enabled: ShowSettings != null,
+                disabledReason: "Not wired up");
+            page.WithIcon(Icons.FromFile("scales.png"));
+
+            // The real phone, given back.
+            //
+            // This one has replaced Franklin's, and his has his contacts in it -- Lester, the
+            // emergency services, every story number. Taking the button was a trade, not a
+            // seizure, and this is the other half of it.
+            page.Add("Phone", ">", () => ShowVanillaPhone?.Invoke(),
+                detail: "Hands the button back so you can open your own phone",
+                value: "yours",
+                enabled: ShowVanillaPhone != null,
+                disabledReason: "Not wired up");
+            page.WithIcon(Icons.FromFile("mobile.png"));
+
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
                 detail: PaybackDue != null && PaybackDue()
                     ? "Somebody's coming about what you said"
@@ -1605,16 +1636,6 @@ namespace Hoodrich.Wheel
                     : "Your rank, your heat, and what every gang thinks of you",
                 value: _crew.IsAffiliated ? _crew.Current.Name : _state.RankName);
             page.WithIcon(Icons.Mask);
-
-            // Behind its own page, because none of it can be undone and a wheel is a thing you
-            // flick through. One accidental commit should never erase a save's worth of
-            // standing -- so the flick lands on a list of questions rather than on the act.
-            page.Add("Settings", "*", () => ShowSettings?.Invoke(),
-                detail: "How the mod behaves, and how to undo what you have done",
-                value: "",
-                enabled: ShowSettings != null,
-                disabledReason: "Not wired up");
-            page.WithIcon(Icons.FromFile("scales.png"));
 
             return page;
         }

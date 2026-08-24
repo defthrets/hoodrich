@@ -30,6 +30,14 @@ namespace Hoodrich.Core
         public Keys PhoneKey = Keys.None;
         public Keys PhoneModifier = Keys.None;
 
+        /// <summary>
+        /// Seconds the phone button is handed back after picking the real phone.
+        ///
+        /// There is no native that opens the vanilla phone, so the only way to show it is to
+        /// stop suppressing the button and give the player a window to press it in.
+        /// </summary>
+        public int VanillaPhoneSeconds = 6;
+
         /// <summary>Time scale while the phone is open. 1.0 disables the slowdown.</summary>
         public float WheelTimeScale = 0.25f;
 
@@ -232,6 +240,9 @@ namespace Hoodrich.Core
 
             // [Phone] first, then the old [Wheel] key as a fallback, so an existing
             // Hoodrich.ini keeps working rather than silently reverting to defaults.
+            s.VanillaPhoneSeconds =
+                (int)Clamp(ini.GetInt("Phone", "VanillaPhoneSeconds", s.VanillaPhoneSeconds), 1f, 30f);
+
             s.PhoneKey = ini.GetKey("Phone", "Key", ini.GetKey("Wheel", "Key", s.PhoneKey));
             s.PhoneModifier = ini.GetKey("Phone", "Modifier",
                                          ini.GetKey("Wheel", "Modifier", s.PhoneModifier));

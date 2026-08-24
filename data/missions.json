@@ -141,6 +141,8 @@
     {
       "id": "hit_grove",
       "kind": "Hit",
+      "_fromTheCar": "Grove is a street you roll down, not a building you walk into. The homies lean out and shoot; they never get out.",
+      "fromTheCar": true,
       "name": "Get 'em off Grove.",
       "brief": "Ballas standin' on Grove. On GROVE, Frank. My granddaddy raised nine kids on that street. We buried that man out the church on the corner. And now I gotta hear about two purple suckas leanin' on the same fence he painted with his own hands. Nah, dawg. Nah.",
       "done": "THAT'S what I'm talkin' about! Word went up and down Grove before you even parked, cuz. Old heads on the porch tellin' it to each other like they was out there watchin'. Granddaddy woulda shook my hand behind this one. Yours too. But mine first.",

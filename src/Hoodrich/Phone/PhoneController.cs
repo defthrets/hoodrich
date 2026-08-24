@@ -73,6 +73,13 @@ namespace Hoodrich.Phone
             if (!available)
             {
                 if (_menu.IsOpen) ClosePhone();
+                EndVanillaMode();
+                return;
+            }
+
+            if (_vanillaMode)
+            {
+                VanillaFrame(available);
                 return;
             }
 
@@ -82,6 +89,7 @@ namespace Hoodrich.Phone
 
             if (!_menu.IsOpen)
             {
+                if (Game.GameTime < _quietUntil) Swing();
                 if (edge && (Busy == null || !Busy())) OpenPhone();
                 return;
             }
@@ -102,6 +110,70 @@ namespace Hoodrich.Phone
             HandleInput();
 
             _menu.Render();
+        }
+
+        // ---- handing it back ----------------------------------------------------
+
+        private bool _vanillaMode;
+        private bool _vanillaUsed;
+        private int _vanillaUntil;
+
+        /// <summary>
+        /// Gives the phone button back to the game for a few seconds.
+        ///
+        /// There is no native that opens the vanilla phone. CREATE_MOBILE_PHONE makes the prop
+        /// and nothing else -- the actual interface is the game's own cellphone script reacting
+        /// to INPUT_PHONE, so the only honest way to show it is to stop suppressing the button
+        /// and let the player press it. That is the same thing the old wheel did to hand back
+        /// the weapon wheel, and for the same reason.
+        /// </summary>
+        public void ShowVanillaPhone()
+        {
+            _menu.Close();
+            RestoreWorld();
+
+            _vanillaMode = true;
+            _vanillaUsed = false;
+            _vanillaUntil = Game.GameTime + Math.Max(1, _cfg.VanillaPhoneSeconds) * 1000;
+        }
+
+        private void EndVanillaMode()
+        {
+            _vanillaMode = false;
+            _vanillaUsed = false;
+        }
+
+        /// <summary>
+        /// Hands entirely off: nothing disabled, nothing hidden, nothing forced.
+        ///
+        /// Whether they took the offer is read from the ped rather than from the button --
+        /// IS_PED_RUNNING_MOBILE_PHONE_TASK is true for exactly as long as the phone is
+        /// actually up, so the handoff ends when they put it away rather than on a timer that
+        /// might snatch it back mid-call.
+        /// </summary>
+        private void VanillaFrame(bool available)
+        {
+            var player = Game.Player.Character;
+
+            var up = player != null && player.Exists() &&
+                     Function.Call<bool>(Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, player.Handle);
+
+            if (up) _vanillaUsed = true;
+
+            if (!up && !_vanillaUsed)
+            {
+                Help.ShowThisFrame("Press ~INPUT_PHONE~ for your own phone.");
+            }
+
+            var finished = _vanillaUsed ? !up : Game.GameTime >= _vanillaUntil;
+
+            if (!available || finished)
+            {
+                EndVanillaMode();
+
+                // And do not let the same press fall straight back into ours.
+                _wasOpenPressed = true;
+            }
         }
 
         /// <summary>
@@ -281,10 +353,21 @@ namespace Hoodrich.Phone
             }
         }
 
+        /// <summary>Attack stays dead until this, so the closing press cannot land.</summary>
+        private int _quietUntil;
+
+        private const int QuietAfterCloseMs = 350;
+
         public void ClosePhone()
         {
             _menu.Close();
             RestoreWorld();
+
+            // Disabling a control only lasts the frame you disable it on, and the button that
+            // closed the phone is still held down on the NEXT one -- which is the frame we
+            // have already stopped drawing and stopped locking. That gap is exactly one punch
+            // wide, so it is held shut for a moment afterwards instead.
+            _quietUntil = Game.GameTime + QuietAfterCloseMs;
 
             // So the world does not eat the same press that put the phone away.
             InputGuard.Swallow();
@@ -316,13 +399,33 @@ namespace Hoodrich.Phone
         /// deliberate -- it is the one control this whole change exists to hand back, and a
         /// player who wants their gun out mid-menu is allowed to have it.
         /// </summary>
-        private static void LockControlsThisFrame()
+        /// <summary>
+        /// Every control that throws a punch or pulls a trigger.
+        ///
+        /// There are NINE of these and the first pass disabled four, which is why closing the
+        /// phone swung a fist: Backspace and pad B both land on melee inputs that were not in
+        /// the list, so the press that put the handset away went straight through to Franklin.
+        /// Attack and MeleeAttack1/2 are the obvious ones; MeleeAttackLight, MeleeAttackHeavy,
+        /// MeleeAttackAlternate and MeleeBlock are the ones that actually fire on a pad.
+        /// </summary>
+        private static void Swing()
         {
             Game.DisableControlThisFrame(Control.Attack);
             Game.DisableControlThisFrame(Control.Attack2);
-            Game.DisableControlThisFrame(Control.Aim);
             Game.DisableControlThisFrame(Control.MeleeAttack1);
             Game.DisableControlThisFrame(Control.MeleeAttack2);
+            Game.DisableControlThisFrame(Control.MeleeAttackLight);
+            Game.DisableControlThisFrame(Control.MeleeAttackHeavy);
+            Game.DisableControlThisFrame(Control.MeleeAttackAlternate);
+            Game.DisableControlThisFrame(Control.MeleeBlock);
+            Game.DisableControlThisFrame(Control.VehicleMeleeHold);
+        }
+
+        private static void LockControlsThisFrame()
+        {
+            Swing();
+
+            Game.DisableControlThisFrame(Control.Aim);
             Game.DisableControlThisFrame(Control.VehicleAttack);
             Game.DisableControlThisFrame(Control.VehicleAttack2);
 

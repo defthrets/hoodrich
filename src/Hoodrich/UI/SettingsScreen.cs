@@ -311,6 +311,10 @@ namespace Hoodrich.UI
             Tick("Blips in the bars", "Wheel", "BlipsInBars",
                  () => c.BlipsInBars, v => c.BlipsInBars = v,
                  "Map art at the ends of the reputation and heat bars");
+            Slide("Real phone hold", "Phone", "VanillaPhoneSeconds",
+                  () => c.VanillaPhoneSeconds, v => c.VanillaPhoneSeconds = (int)v,
+                  1f, 30f, 1f, "0", "s",
+                  note: "How long the button is yours after picking Phone");
             Slide("Time slows to", "Phone", "TimeScale",
                   () => c.WheelTimeScale, v => c.WheelTimeScale = v, 0.05f, 1f, 0.05f, "0.00",
                   note: "1.00 turns the slowdown off");

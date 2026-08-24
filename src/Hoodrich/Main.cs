@@ -1330,6 +1330,8 @@ namespace Hoodrich
                 // it would otherwise be talked over by a handset appearing in front of it.
                 _phone.Busy = () => _talk.IsOpen;
 
+                pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
+
                 Interval = 0;
                 Tick += OnTick;
                 Aborted += OnAborted;

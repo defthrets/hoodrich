@@ -442,7 +442,7 @@ namespace Hoodrich.Gangs
                         Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, ped.Handle);
 
                         ped.Task.ClearAll();
-                        Function.Call(Hash.TASK_WANDER_STANDARD, ped.Handle, 10f, 10);
+                        WalkOff(ped);
                     }
 
                     // Released rather than deleted, for the same reason nothing else in this
@@ -465,6 +465,40 @@ namespace Hoodrich.Gangs
             Log.Info("Homies sent home.");
 
             return null;
+        }
+
+        /// <summary>
+        /// Out of whatever he is sitting in, and then away on foot.
+        ///
+        /// A SEQUENCE, because a second task does not queue behind the first -- it replaces
+        /// it. Tasking him to leave the car and then tasking him to wander on the next line
+        /// throws the exit away before it starts, and a wander issued to a man in a passenger
+        /// seat does nothing at all, so he simply stays there. Inside a sequence 0 means "the
+        /// ped performing this", and each task genuinely waits for the one before it.
+        /// </summary>
+        private static void WalkOff(Ped ped)
+        {
+            var slot = new OutputArgument();
+
+            try
+            {
+                Function.Call(Hash.OPEN_SEQUENCE_TASK, slot);
+                var seq = slot.GetResult<int>();
+
+                Function.Call(Hash.TASK_LEAVE_VEHICLE, 0, 0, 0);
+                Function.Call(Hash.TASK_WANDER_STANDARD, 0, 10f, 10);
+
+                Function.Call(Hash.CLOSE_SEQUENCE_TASK, seq);
+                Function.Call(Hash.TASK_PERFORM_SEQUENCE, ped.Handle, seq);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not send a homie off: " + ex.Message);
+            }
+            finally
+            {
+                try { Function.Call(Hash.CLEAR_SEQUENCE_TASK, slot); } catch { }
+            }
         }
 
         // ---- keeping them -------------------------------------------------------

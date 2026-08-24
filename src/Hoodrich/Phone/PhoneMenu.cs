@@ -67,6 +67,29 @@ namespace Hoodrich.Phone
         /// <summary>And how far it rises through, in screen heights.</summary>
         private const float RiseBy = 0.055f;
 
+        /// <summary>Apps land one after another rather than all at once.</summary>
+        private const int TileStaggerMs = 26;
+
+        /// <summary>
+        /// How long a page takes to slide in when you drill in or back out.
+        ///
+        /// This replaced a press-flash on the picked row, which could never work: pressing a
+        /// submenu swaps the page on the same frame, so the flash landed on whatever row
+        /// happened to sit at that index on the NEW page, and pressing a leaf closes the phone
+        /// so it was never on screen at all. The thing that acknowledges a press is the page
+        /// arriving, so that is what is animated.
+        /// </summary>
+        private const int PageMs = 155;
+
+        /// <summary>How far a page slides in from, in X.</summary>
+        private const float PageSlide = 0.055f;
+
+        /// <summary>One full pass of the sheen across a selected row.</summary>
+        private const int SheenMs = 1500;
+
+        /// <summary>How wide the sheen is, as a fraction of the row.</summary>
+        private const float SheenWide = 0.22f;
+
         // ---- state --------------------------------------------------------------
 
         /// <summary>One level of the menu, and where the player was on it.</summary>
@@ -94,6 +117,10 @@ namespace Hoodrich.Phone
         }
 
         private int _openedAt;
+
+        /// <summary>When the page last changed, and which way, so it can slide in.</summary>
+        private int _pageAt;
+        private int _pageDir;
 
         public bool IsOpen { get; private set; }
 
@@ -127,6 +154,8 @@ namespace Hoodrich.Phone
 
             IsOpen = true;
             _openedAt = Game.GameTime;
+            _pageAt = Game.GameTime;
+            _pageDir = 0;
 
             Beep("SELECT");
         }
@@ -251,6 +280,8 @@ namespace Hoodrich.Phone
                 return null;
             }
 
+
+
             if (item.IsSubmenu)
             {
                 WheelPage next;
@@ -272,6 +303,7 @@ namespace Hoodrich.Phone
                 }
 
                 _stack.Add(new Level { Page = next, Index = FirstPickable(next) });
+                Turn(1);
                 Beep("SELECT");
                 return null;
             }
@@ -286,6 +318,7 @@ namespace Hoodrich.Phone
             if (_stack.Count <= 1) return false;
 
             _stack.RemoveAt(_stack.Count - 1);
+            Turn(-1);
             Beep("BACK");
             return true;
         }
@@ -296,6 +329,7 @@ namespace Hoodrich.Phone
             if (_stack.Count <= 1) return;
 
             while (_stack.Count > 1) _stack.RemoveAt(_stack.Count - 1);
+            Turn(-1);
             Beep("BACK");
         }
 
@@ -329,10 +363,56 @@ namespace Hoodrich.Phone
             var bodyTop = headTop + HeaderH;
             var bodyHeight = scrH - StatusH - HeaderH - FooterH;
 
-            if (AtHome) Grid(scrLeft, bodyTop, scrW, bodyHeight, fade);
-            else List(scrLeft, bodyTop, scrW, bodyHeight, fade);
+            // The page slides in from whichever way you went. Drilling in comes from the
+            // right, backing out comes from the left, so the direction carries the meaning
+            // rather than the animation merely being present.
+            var landed = Landed();
+            var slide = _pageDir == 0 ? 0f : (1f - landed) * Hud.ToX(PageSlide) * _pageDir;
+            var pageFade = (int)(fade * (0.35f + 0.65f * landed));
+
+            if (AtHome) Grid(scrLeft + slide, bodyTop, scrW, bodyHeight, pageFade);
+            else List(scrLeft + slide, bodyTop, scrW, bodyHeight, pageFade);
 
             Footer(scrLeft, scrTop + scrH - FooterH, scrW, fade);
+        }
+
+        /// <summary>Starts a page transition. +1 drilling in, -1 coming back.</summary>
+        private void Turn(int dir)
+        {
+            _pageAt = Game.GameTime;
+            _pageDir = dir;
+        }
+
+        /// <summary>0 while a page is still arriving, 1 once it has landed.</summary>
+        private float Landed()
+        {
+            var age = Game.GameTime - _pageAt;
+            if (age >= PageMs) return 1f;
+
+            var x = Math.Max(0f, age / (float)PageMs);
+            return 1f - (1f - x) * (1f - x) * (1f - x);
+        }
+
+        /// <summary>
+        /// A travelling highlight, drawn INSIDE the selection fill and nowhere else.
+        ///
+        /// Clipped to the fill on purpose. A sheen that runs the width of the screen is a
+        /// screensaver; one that runs the width of the thing you have selected is that thing
+        /// telling you it is the live one.
+        /// </summary>
+        private static void Sheen(float left, float top, float w, float h, int fade)
+        {
+            var t = (Game.GameTime % SheenMs) / (float)SheenMs;
+
+            var wide = w * SheenWide;
+            var at = left - wide + (w + wide * 2f) * t;
+
+            // Trimmed to the row rather than allowed to hang off either end.
+            var a = Math.Max(left, at);
+            var b = Math.Min(left + w, at + wide);
+            if (b <= a) return;
+
+            Hud.RectFrom(a, top, b - a, h, Fade(Color.FromArgb(38, 255, 255, 255), fade));
         }
 
         /// <summary>Eased-out rise, the same curve every other panel in the mod opens on.</summary>
@@ -400,7 +480,7 @@ namespace Hoodrich.Phone
         {
             var pad = Hud.ToX(0.012f);
 
-            Hud.Text("HOODRICH", left + pad, top + 0.007f, 0.24f,
+            Hud.Text("POSTED UP", left + pad, top + 0.007f, 0.24f,
                      Fade(Palette.TextDim, fade), Hud.FontLabel, centre: false);
 
             // The game's clock, because a phone that says the wrong time is a prop.
@@ -411,12 +491,70 @@ namespace Hoodrich.Phone
                      left + w * 0.5f, top + 0.006f, 0.26f,
                      Fade(Palette.Text, fade), Hud.FontLabel, centre: true);
 
-            // Signal and battery as text marks. Never emoji.
-            Hud.TextRight("▮▮▮  ●", left + w - pad, top + 0.007f, 0.22f,
+            // Signal, then a battery drawn rather than typed.
+            var right = left + w - pad;
+
+            Battery(right, top + StatusH * 0.5f, fade);
+
+            Hud.TextRight("▮▮▮", right - Hud.ToX(0.030f), top + 0.007f, 0.22f,
                           Fade(Palette.TextDim, fade), Hud.FontLabel);
 
             Hud.RectFrom(left, top + StatusH - 0.0014f, w, 0.0014f,
                          Fade(Color.FromArgb(46, 255, 255, 255), fade));
+        }
+
+        /// <summary>
+        /// The battery, and it means something.
+        ///
+        /// Tied to the game clock rather than to a timer of our own: full first thing, down to
+        /// a sliver by the early hours. A phone that reads 100% at four in the morning after a
+        /// night of driving around is a picture of a battery; one that does not is a phone.
+        ///
+        /// It blinks red under a fifth, which is the one place on this screen anything blinks
+        /// -- so it means "look at this" rather than being decoration.
+        /// </summary>
+        private static void Battery(float rightX, float midY, int fade)
+        {
+            var hour = Function.Call<int>(Hash.GET_CLOCK_HOURS);
+            var mins = Function.Call<int>(Hash.GET_CLOCK_MINUTES);
+
+            // Runs from 7am, so the day drains it and sleeping puts it back.
+            var since = ((hour - 7 + 24) % 24) + mins / 60f;
+            var charge = Math.Max(0.06f, 1f - since / 26f);
+
+            var low = charge < 0.2f;
+
+            var bodyW = Hud.ToX(0.019f);
+            var bodyH = 0.011f;
+            var left = rightX - bodyW;
+            var top = midY - bodyH * 0.5f;
+
+            var ink = low ? Palette.Danger : Palette.TextDim;
+
+            // Blinks about twice a second, and only when it is nearly out.
+            if (low)
+            {
+                var on = (Game.GameTime / 380) % 2 == 0;
+                if (!on) ink = Color.FromArgb(70, ink.R, ink.G, ink.B);
+            }
+
+            var line = 0.0014f;
+            var lineX = Hud.ToX(line);
+
+            // Shell.
+            Hud.RectFrom(left, top, bodyW, line, Fade(ink, fade));
+            Hud.RectFrom(left, top + bodyH - line, bodyW, line, Fade(ink, fade));
+            Hud.RectFrom(left, top, lineX, bodyH, Fade(ink, fade));
+            Hud.RectFrom(left + bodyW - lineX, top, lineX, bodyH, Fade(ink, fade));
+
+            // The nub on the end.
+            Hud.RectFrom(left + bodyW, midY - 0.0026f, Hud.ToX(0.0028f), 0.0052f, Fade(ink, fade));
+
+            // And what is left in it.
+            var inset = Hud.ToX(0.0022f);
+            var room = bodyW - inset * 2f;
+            Hud.RectFrom(left + inset, top + 0.0026f, room * charge, bodyH - 0.0052f,
+                         Fade(ink, fade));
         }
 
         private void Header(float left, float top, float w, int fade)
@@ -467,11 +605,23 @@ namespace Hoodrich.Phone
 
                 if (ty + TileH > top + h) break;
 
-                Tile(page.Items[i], tx, ty, tileW, TileH, i == Top.Index, fade);
+                // Each app lands a beat after the one before it. The whole run is under a
+                // fifth of a second, which is long enough to read as arriving and short enough
+                // that nobody waiting to press something has to wait for it.
+                var age = Game.GameTime - _openedAt - i * TileStaggerMs;
+                var lands = age <= 0 ? 0f
+                          : age >= RiseMs ? 1f
+                          : 1f - (float)Math.Pow(1f - age / (float)RiseMs, 3);
+
+                if (lands <= 0f) continue;
+
+                Tile(page.Items[i], tx, ty + (1f - lands) * 0.018f, tileW, TileH,
+                     i == Top.Index, (int)(fade * lands));
             }
         }
 
-        private void Tile(WheelItem item, float x, float y, float w, float h, bool here, int fade)
+        private void Tile(WheelItem item, float x, float y, float w, float h, bool here,
+                          int fade)
         {
             var on = here && item.Enabled;
 
@@ -480,6 +630,8 @@ namespace Hoodrich.Phone
                      : Palette.Segment;
 
             Hud.RectFrom(x, y, w, h, Fade(back, fade));
+
+            if (on) Sheen(x, y, w, h, fade);
 
             var ink = !item.Enabled ? Palette.TextDisabled
                     : on ? Palette.TextOnHover
@@ -550,6 +702,7 @@ namespace Hoodrich.Phone
             if (on)
             {
                 Hud.RectFrom(left, top, w, RowH, Fade(Palette.SegmentHover, fade));
+                Sheen(left, top, w, RowH, fade);
                 Hud.RectFrom(left, top, Hud.ToX(0.0035f), RowH, Fade(Palette.Accent, fade));
             }
             else if (alt)
