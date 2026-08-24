@@ -1190,7 +1190,7 @@ namespace Hoodrich.Gangs
             // The one that decides whether he ever asks you what you want to carry.
             _state.FrontsDone++;
 
-            if (pay > 0) Game.Player.Money += pay;
+            if (pay > 0) UI.Cash.Give(pay);
 
             _crew.AddRep(SquaredRep, "for moving " + def.Name + "'s work");
 

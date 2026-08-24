@@ -325,7 +325,7 @@ namespace Hoodrich.Supply
                     spare -= House.AddBulk(product.Id, spare, strength);
                 }
 
-                if (spare > 0.005f) Game.Player.Money += (int)(cost * (spare / grams));
+                if (spare > 0.005f) UI.Cash.Give((int)(cost * (spare / grams)));
 
                 Notify.Important("~y~-$" + cost.ToString("N0") + "~s~  " +
                                  product.Amount(grams - Math.Max(0f, spare)) + " of " +

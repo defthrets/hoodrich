@@ -530,8 +530,15 @@ namespace Hoodrich.Dealing
         /// <summary>Quiet for this long and the corner starts going off the boil.</summary>
         private const int CoolAfterMs = 25000;
 
-        /// <summary>How much heat a minute of nobody coming takes back off.</summary>
-        private const float CoolPerMinute = 3.2f;
+        /// <summary>
+        /// How much heat a minute of nobody coming takes back off.
+        ///
+        /// Deliberately slow. Waiting has to be a decision with a real price in time, not a
+        /// button that undoes the last ten minutes -- at the first figure a quiet minute wiped
+        /// out three sales' worth of attention, which made standing still strictly better than
+        /// moving on and turned the corner into somewhere you never had to leave.
+        /// </summary>
+        private const float CoolPerMinute = 1.3f;
 
         private int _cooledAt;
 
@@ -976,7 +983,7 @@ namespace Hoodrich.Dealing
             var payout = deal != null && sold >= asked - 0.001f
                 ? _pricing.DealValue(product, deal, purity)
                 : _pricing.SaleValue(product, sold, purity);
-            Game.Player.Money += payout;
+            Cash.Give(payout);
 
             _sales++;
             _earned += payout;
@@ -1450,6 +1457,19 @@ namespace Hoodrich.Dealing
 
         /// <summary>Shuffled per call, so the same cruiser is not always the one that shows up.</summary>
         private static readonly string[] PatrolCars = { "police", "police2", "police3", "sheriff", "police4" };
+
+        /// <summary>
+        /// The patrol easing past your corner, for anything that wants to react to it.
+        ///
+        /// Exposed so Patrol can offer the finger at it -- see Patrol.Passing. Null whenever
+        /// there is no car or it is not a car worth telling: one that has already stopped to
+        /// question you is having a different conversation.
+        /// </summary>
+        public Vehicle RollingPast =>
+            _patrolCar != null && _patrolCar.Exists() &&
+            State != PostState.Investigated && State != PostState.Questioned
+                ? _patrolCar
+                : null;
 
         private Vehicle _patrolCar;
         private readonly List<Ped> _patrolCops = new List<Ped>();
@@ -2122,7 +2142,7 @@ namespace Hoodrich.Dealing
             catch { /* he keeps them */ }
 
             var fine = Math.Min(Game.Player.Money, _cfg.PostUpFine);
-            Game.Player.Money -= fine;
+            Cash.Take(fine);
 
             _state.AddRespect(-15f);
             _state.AddNotoriety(20f);

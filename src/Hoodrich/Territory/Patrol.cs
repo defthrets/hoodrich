@@ -204,17 +204,20 @@ namespace Hoodrich.Territory
         /// it stays up, it comes down. Playing the middle one on its own is the pose appearing
         /// on him between two frames, which reads as a glitch rather than a gesture.
         /// </summary>
-        private const string FingerDict = "anim@mp_player_intupperfinger";
-        private const string FingerUp = "enter";
-        private const string FingerHold = "idle_a";
-        private const string FingerDown = "exit";
-
-        /// <summary>How long the arm takes to get there, and how long it stays.</summary>
-        private const int UpMs = 700;
-        private const int HoldMs = 1500;
-
-        /// <summary>Past this the gesture is abandoned rather than resumed.</summary>
-        private const int Stale = 4000;
+        /// <summary>
+        /// ONE arm, not two.
+        ///
+        /// anim@mp_player_intupperfinger is Up Yours, and Up Yours is a man throwing both arms
+        /// in the air. Right sentiment, wrong number of hands -- what this wants is somebody
+        /// putting a finger up at a car going past without making a performance of it.
+        ///
+        /// The celebration set is the single-handed one, and it comes in a male and a female
+        /// cut because it is animated per body rather than retargeted. One clip, no enter and
+        /// no exit, which is why the three-stage walk below went with the old dictionary.
+        /// </summary>
+        private const string FingerDictMale = "anim@mp_player_intcelebrationmale@finger";
+        private const string FingerDictFemale = "anim@mp_player_intcelebrationfemale@finger";
+        private const string FingerClip = "finger";
 
         /// <summary>
         /// How long before ANY car can be told again.
@@ -229,10 +232,6 @@ namespace Hoodrich.Territory
         private int _lastFinger;
         private bool _fingerHeld;
 
-        /// <summary>Which of the three clips he is on, and when the next one is due.</summary>
-        private int _handStage;
-        private int _handDue;
-
         /// <summary>
         /// Whether something else on screen owns the button right now.
         ///
@@ -241,6 +240,28 @@ namespace Hoodrich.Territory
         /// a gesture at the police. Set by Main, which is the only thing that knows what is up.
         /// </summary>
         public Func<bool> Occupied;
+
+        /// <summary>
+        /// A police car somebody else is running that should also be flip-off-able.
+        ///
+        /// The patrol that eases past while you are stood on a corner is PostUp's, not this
+        /// class's -- it is part of the dealing loop, dispatched by heat and driven on its own
+        /// schedule. So the one police car you most want to put a finger up at was the only one
+        /// in the game you could not, because Closest only ever looked at cars this system had
+        /// sent out itself.
+        ///
+        /// Borrowed rather than adopted. We do not own it, we do not stop it and we do not put
+        /// it into a phase -- PostUp is still driving, and a car halted out from under its own
+        /// state machine is a bug in somebody else's file. What it gets is the reaction: the
+        /// hand, a chirp, something said over the speaker and the light swung onto you.
+        /// </summary>
+        public Func<Vehicle> Passing;
+
+        /// <summary>Refilled rather than allocated. There is only ever one borrowed car.</summary>
+        private readonly Cruiser _borrowed = new Cruiser();
+
+        /// <summary>When a borrowed car's siren goes back off. Nothing else ticks it.</summary>
+        private int _borrowedSirenOff;
 
         /// <summary>Which sets get driven past. Everybody else's blocks are not our business.</summary>
         private static readonly string[] Watched = { "families", "ballas", "vagos" };
@@ -682,18 +703,30 @@ namespace Hoodrich.Territory
         {
             _lastFinger = now;
 
-            car.Phase = PatrolPhase.Told;
-            car.ToldUntil = now + ToldMs;
+            var ours = !ReferenceEquals(car, _borrowed);
 
-            // Halted where they are rather than tasked to park somewhere. They have pulled up
-            // to have a word, not to attend anything.
-            try
+            if (ours)
             {
-                Function.Call(Hash.BRING_VEHICLE_TO_HALT, car.Car.Handle, 6f, ToldMs, false);
+                car.Phase = PatrolPhase.Told;
+                car.ToldUntil = now + ToldMs;
+
+                // Halted where they are rather than tasked to park somewhere. They have pulled
+                // up to have a word, not to attend anything.
+                try
+                {
+                    Function.Call(Hash.BRING_VEHICLE_TO_HALT, car.Car.Handle, 6f, ToldMs, false);
+                }
+                catch
+                {
+                    // They will roll to a stop on their own.
+                }
             }
-            catch
+            else
             {
-                // They will roll to a stop on their own.
+                // Somebody else's car, so somebody else's driving. The siren is switched on
+                // here and off in Draw, because the per-car timer that does it for ours only
+                // runs over cars this system is holding.
+                _borrowedSirenOff = now + ChirpMs;
             }
 
             Hand(player);
@@ -705,17 +738,32 @@ namespace Hoodrich.Territory
 
             Watch(car.Car);
 
-            Log.Info("Flipped off a patrol car.");
+            Log.Info(ours ? "Flipped off a patrol car."
+                          : "Flipped off a passing patrol at the corner.");
         }
 
-        /// <summary>Starts the arm going up.</summary>
+        /// <summary>
+        /// The arm goes up, once.
+        ///
+        /// One clip rather than the raise-hold-drop it used to be. That machinery existed
+        /// because Up Yours ships as three clips and issuing them together plays only the last;
+        /// the one-handed version is a single gesture with its own beginning and end, so there
+        /// is nothing left to sequence and the whole stage walk went with it.
+        ///
+        /// The dict is requested here and played here, which is a race the first time and only
+        /// the first time -- REQUEST_ANIM_DICT is asynchronous, so a cold dictionary costs the
+        /// player the animation on his first press and nothing after that. Worth it against
+        /// holding a streaming request open for a gesture nobody may ever use.
+        /// </summary>
         private void Hand(Ped player)
         {
+            var dict = Female(player) ? FingerDictFemale : FingerDictMale;
+
             try
             {
-                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, FingerDict))
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict))
                 {
-                    Function.Call(Hash.REQUEST_ANIM_DICT, FingerDict);
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
                 }
             }
             catch
@@ -723,54 +771,14 @@ namespace Hoodrich.Territory
                 // It will be there by the time it is asked for again.
             }
 
-            Clip(player, FingerUp, 48);
-
-            _handStage = 1;
-            _handDue = Game.GameTime + UpMs;
+            Clip(player, dict, FingerClip, 48);
         }
 
-        /// <summary>
-        /// Walks him through the three clips.
-        ///
-        /// Driven from Draw rather than from the tick for the obvious reason and one less
-        /// obvious one: the tick is 700ms, so a stage boundary could land anywhere inside it
-        /// and the arm would visibly hang at the top of the raise waiting to be told to hold.
-        ///
-        /// Stages are stepped rather than queued because a second TASK_PLAY_ANIM does not go
-        /// behind the first, it replaces it -- issuing all three at once plays the third.
-        /// </summary>
-        private void HandTick(Ped player)
+        /// <summary>Which of the two cuts to play. Franklin is not the only man this can be.</summary>
+        private static bool Female(Ped player)
         {
-            if (_handStage == 0) return;
-
-            var now = Game.GameTime;
-
-            // Draw stops being called when patrols switch off, which can happen mid-gesture --
-            // a job starts, a wanted level lands. The clip ends on its own duration either way,
-            // so the arm comes down regardless; what must not happen is the leftover stage
-            // firing an "exit" at him out of nowhere minutes later.
-            if (now - _handDue > Stale) { _handStage = 0; _handDue = 0; return; }
-
-            if (now < _handDue) return;
-
-            switch (_handStage)
-            {
-                case 1:
-                    // Held, looping, for as long as he is making the point.
-                    Clip(player, FingerHold, 49, HoldMs);
-                    _handStage = 2;
-                    _handDue = now + HoldMs;
-                    return;
-
-                case 2:
-                    Clip(player, FingerDown, 48);
-                    _handStage = 3;
-                    _handDue = now + UpMs;
-                    return;
-            }
-
-            _handStage = 0;
-            _handDue = 0;
+            try { return !Function.Call<bool>(Hash.IS_PED_MALE, player.Handle); }
+            catch { return false; }
         }
 
         /// <summary>
@@ -780,11 +788,11 @@ namespace Hoodrich.Territory
         /// whole thing, and being able to walk away mid-gesture is the correct way to do this
         /// to a police car.
         /// </summary>
-        private static void Clip(Ped player, string clip, int flags, int ms = -1)
+        private static void Clip(Ped player, string dict, string clip, int flags, int ms = -1)
         {
             try
             {
-                Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, FingerDict, clip,
+                Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, dict, clip,
                               8f, -8f, ms, flags, 0f, false, false, false);
             }
             catch
@@ -847,6 +855,23 @@ namespace Hoodrich.Territory
             }
         }
 
+        /// <summary>Puts a borrowed car's siren back off. Ours are handled per car in Draw.</summary>
+        private void BorrowedSiren()
+        {
+            if (_borrowedSirenOff == 0 || Game.GameTime < _borrowedSirenOff) return;
+
+            _borrowedSirenOff = 0;
+
+            try
+            {
+                if (_borrowed.Car != null && _borrowed.Car.Exists())
+                {
+                    Function.Call(Hash.SET_VEHICLE_SIREN, _borrowed.Car.Handle, false);
+                }
+            }
+            catch { /* it will time out on its own */ }
+        }
+
         private void Chirp(Cruiser car)
         {
             if (car.Car == null || !car.Car.Exists()) return;
@@ -875,13 +900,21 @@ namespace Hoodrich.Territory
         /// </summary>
         public void Draw()
         {
-            if (!Enabled || _out.Count == 0) return;
-
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
-            HandTick(player);
+            // BEFORE the early return, and that is the whole of the second half of this fix.
+            //
+            // Draw used to give up the moment this system had no cars out, which is exactly
+            // the state you are in while posted up: heat sends PostUp's patrol past you and
+            // ours are somewhere else or switched off. So the prompt never appeared for the
+            // one car in the game a man on a corner would actually want to do this to.
+            //
+            // Offer costs a distance check when there is nothing to tell.
             Offer(player);
+            BorrowedSiren();
+
+            if (!Enabled || _out.Count == 0) return;
 
             foreach (var car in _out)
             {
@@ -984,7 +1017,33 @@ namespace Hoodrich.Territory
                 near = car;
             }
 
-            return near;
+            // Ours first, always. A car we are driving can actually be made to stop.
+            return near ?? Borrowed(player);
+        }
+
+        /// <summary>The passing car, if there is one and it is close enough to be told.</summary>
+        private Cruiser Borrowed(Ped player)
+        {
+            if (Passing == null) return null;
+
+            try
+            {
+                var car = Passing();
+                if (car == null || !car.Exists()) return null;
+                if (car.Position.DistanceTo(player.Position) > FingerRange) return null;
+
+                var driver = car.GetPedOnSeat(VehicleSeat.Driver);
+                if (!Alive(driver)) return null;
+
+                _borrowed.Car = car;
+                _borrowed.Driver = driver;
+
+                return _borrowed;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>

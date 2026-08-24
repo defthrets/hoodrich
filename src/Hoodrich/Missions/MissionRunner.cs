@@ -2480,7 +2480,7 @@ namespace Hoodrich.Missions
             var pay = def.PayMin + _rng.Next(Math.Max(1, def.PayMax - def.PayMin + 1));
             var rep = Math.Max(0f, def.Rep - _homiesLost * HomieLostRep);
 
-            Game.Player.Money += pay;
+            UI.Cash.Give(pay);
 
             _crew.AddRep(rep, "for the work");
             _state.AddRespect(rep * 0.5f);

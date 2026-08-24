@@ -44,13 +44,13 @@ namespace Hoodrich.Territory
         private const int ExposureMs = 45_000;
 
         private const float SpotRange = 32f;
-        private const float ShakedownRange = 22f;
+
 
         /// <summary>Per-check chance a rival who can see you decides to do something about it.</summary>
         private const float HostileSpotChance = 0.35f;
 
         /// <summary>Same, on unclaimed ground, where it is opportunistic rather than territorial.</summary>
-        private const float NeutralShakedownChance = 0.10f;
+
 
         /// <summary>Once a crew has come for you, hold off this long before rolling again.</summary>
         private const int AggroCooldownMs = 60_000;
@@ -156,10 +156,14 @@ namespace Hoodrich.Territory
                 case TurfStatus.Hostile:
                     RollHostileTurf(player);
                     break;
-                case TurfStatus.Neutral:
-                case TurfStatus.Foreign:
-                    RollShakedown(player);
-                    break;
+                // NOTHING on ground nobody owns.
+                //
+                // There used to be a stick-up here: stand on unclaimed pavement long enough
+                // and somebody would be sent to take what you were carrying. It read as a
+                // warning that never resolved -- a line about somebody coming, a blip, and
+                // then a man walking at you for reasons the player had no way to connect to
+                // anything he had done. Rivals coming for you on THEIR block is the same idea
+                // with a reason attached, and that one stays.
             }
         }
 
@@ -280,19 +284,6 @@ namespace Hoodrich.Territory
 
             Engage(spotters, player,
                 "~r~" + _owner.Name + " clocked you dealing on their block.~s~");
-        }
-
-        /// <summary>On unclaimed ground it is a stick-up, not a war.</summary>
-        private void RollShakedown(Ped player)
-        {
-            var nearby = FindWatchers(player, ShakedownRange, rivalsOnly: false);
-            if (nearby.Count == 0) return;
-
-            var chance = 1f - (float)Math.Pow(1f - NeutralShakedownChance * HeatScale(), nearby.Count);
-            if (_rng.NextDouble() > chance) return;
-
-            Engage(nearby, player,
-                   "~o~Somebody's coming to take what you're carrying.~s~ He's on your map");
         }
 
         /// <summary>Heat makes you conspicuous; it scales every spotting roll.</summary>

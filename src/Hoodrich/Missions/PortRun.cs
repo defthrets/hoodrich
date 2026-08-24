@@ -304,7 +304,14 @@ namespace Hoodrich.Missions
         private Prop _crate;
 
         /// <summary>What is stacked on the pallet, when the pallet turns out to be a bare one.</summary>
-        private Prop _load;
+        private readonly List<Prop> _load = new List<Prop>();
+
+        /// <summary>How much of the pallet's deck the load is allowed to cover.</summary>
+        private const float PackFit = 0.88f;
+
+        /// <summary>How many bricks high it goes, and the hard cap on props either way.</summary>
+        private const int LoadLayers = 2;
+        private const int LoadMax = 16;
 
         /// <summary>
         /// The load itself, in the order it is preferred.
@@ -807,7 +814,7 @@ namespace Hoodrich.Missions
             _state.AddRespect(15f);
             _state.Touch();
 
-            Game.Player.Money += pay;
+            UI.Cash.Give(pay);
 
             Notify.Important("~g~$" + pay.ToString("N0") + "~s~ for the run. The port's yours.");
             Log.Info("Port run finished: $" + pay + " paid, docks unlocked.");
@@ -1620,14 +1627,24 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// Puts the goods on top of the pallet.
+        /// Loads the pallet, rather than putting one thing on it.
         ///
-        /// Given the height the pallet's own deck ends up at, so it sits ON it rather than at a
-        /// guessed offset -- the same measurement the pallet itself is placed by, one level up.
+        /// It was a single brick, dead centre, on a pallet you could park a motorbike on -- so
+        /// the truck came back from a quarter-kilo pickup carrying what looked like a sample.
+        /// A pallet is only a picture of a delivery when it is stacked.
+        ///
+        /// So the bricks are TILED, and both the deck and the brick are measured rather than
+        /// guessed at: how many fit across is the pallet's own footprint divided by the
+        /// brick's, and the layer height is the brick's own height. That means a different
+        /// load model, or a different pallet, still comes out packed instead of coming out
+        /// overlapping or floating -- which is what any hand-tuned offset would have done the
+        /// first time either of them changed.
+        ///
+        /// Capped, because this is scenery on the back of a truck and not a warehouse.
         /// Silent if nothing in the list is on this install: a bare pallet is a worse picture
         /// than a loaded one and a better one than no truck.
         /// </summary>
-        private void StackTheLoad(float deckZ)
+        private void StackTheLoad(float deckZ, Model pallet)
         {
             if (_van == null || !_van.Exists()) return;
 
@@ -1638,24 +1655,91 @@ namespace Hoodrich.Missions
                     var model = new Model(name);
                     if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
 
-                    _load = World.CreateProp(model, _van.Position, false, false);
+                    var deck = Footprint(pallet);
+                    var one = Footprint(model);
+                    var tall = Height(model);
+
+                    // A prop we cannot measure still gets stacked, just on the assumption that
+                    // it is about the size of a brick. Better than one item in the middle.
+                    if (one.X < 0.02f || one.Y < 0.02f) one = new Vector3(0.34f, 0.34f, 0f);
+                    if (tall < 0.02f) tall = 0.18f;
+
+                    var cols = Fits(deck.X, one.X);
+                    var rows = Fits(deck.Y, one.Y);
+                    var lift = Underside(model);
+
+                    var made = 0;
+
+                    for (var layer = 0; layer < LoadLayers && made < LoadMax; layer++)
+                    for (var r = 0; r < rows && made < LoadMax; r++)
+                    for (var c = 0; c < cols && made < LoadMax; c++)
+                    {
+                        var brick = World.CreateProp(model, _van.Position, false, false);
+                        if (brick == null || !brick.Exists()) continue;
+
+                        brick.IsPersistent = true;
+                        _load.Add(brick);
+                        made++;
+
+                        // Centred on the pallet, which is itself centred at CrateY.
+                        var ox = (c - (cols - 1) * 0.5f) * one.X;
+                        var oy = CrateY + (r - (rows - 1) * 0.5f) * one.Y;
+
+                        Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, brick.Handle, _van.Handle, -1,
+                                      ox, oy, deckZ + lift + layer * tall, 0f, 0f, 0f,
+                                      false, false, false, false, 2, true);
+                    }
+
                     model.MarkAsNoLongerNeeded();
 
-                    if (_load == null || !_load.Exists()) continue;
+                    if (made == 0) continue;
 
-                    _load.IsPersistent = true;
-
-                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _load.Handle, _van.Handle, -1,
-                                  0f, CrateY, deckZ + Underside(model), 0f, 0f, 0f,
-                                  false, false, false, false, 2, true);
-
-                    Log.Info("Port run: " + name + " stacked on the pallet.");
+                    Log.Info("Port run: " + made + " x " + name + " on the pallet (" +
+                             cols + " across, " + rows + " deep, " + LoadLayers + " high).");
                     return;
                 }
                 catch (Exception ex)
                 {
                     Log.Debug("Could not stack the load: " + ex.Message);
                 }
+            }
+        }
+
+        /// <summary>How many of something that wide fit across a deck that wide. At least one.</summary>
+        private static int Fits(float deck, float one)
+        {
+            if (one <= 0.02f) return 1;
+
+            var n = (int)((deck * PackFit) / one);
+            return n < 1 ? 1 : n > 4 ? 4 : n;
+        }
+
+        /// <summary>
+        /// How much floor a model takes up, from its own bounding box.
+        ///
+        /// The flat companion to Height, and it exists for the same reason: laying one prop out
+        /// on another is arithmetic the game will do for you if you ask, and guesswork if you
+        /// do not. Z is carried through so callers that want all three do not need both calls.
+        /// </summary>
+        private static Vector3 Footprint(Model model)
+        {
+            try
+            {
+                var lo = new OutputArgument();
+                var hi = new OutputArgument();
+
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, model.Hash, lo, hi);
+
+                var min = lo.GetResult<Vector3>();
+                var max = hi.GetResult<Vector3>();
+
+                return new Vector3(Math.Abs(max.X - min.X),
+                                   Math.Abs(max.Y - min.Y),
+                                   Math.Abs(max.Z - min.Z));
+            }
+            catch
+            {
+                return Vector3.Zero;
             }
         }
 
@@ -2377,7 +2461,7 @@ namespace Hoodrich.Missions
                                   false, false, false, false, 2, true);
 
                     // And something ON it. See LoadModels.
-                    StackTheLoad(BedFloorZ + Underside(model) + Height(model));
+                    StackTheLoad(BedFloorZ + Underside(model) + Height(model), model);
 
                     Log.Info("Port run: " + name + " loaded into the van.");
                     return;
@@ -2458,10 +2542,13 @@ namespace Hoodrich.Missions
             Clear();
             ClearBay();
 
-            try { if (_load != null && _load.Exists()) _load.Delete(); }
-            catch { /* teardown */ }
+            foreach (var brick in _load)
+            {
+                try { if (brick != null && brick.Exists()) brick.Delete(); }
+                catch { /* gone */ }
+            }
 
-            _load = null;
+            _load.Clear();
 
             try { if (_crate != null && _crate.Exists()) _crate.Delete(); }
             catch { /* teardown */ }

@@ -1086,6 +1086,10 @@ namespace Hoodrich
                 // the gesture must not be offered while anything else already owns it -- a
                 // squad car rolling past while you are stood in front of Gerald would otherwise
                 // turn "talk to Gerald" into a hand at the police.
+                // The car that comes past while you are dealing is PostUp's, not the patrol
+                // system's, and it is the one you most want to put a hand up at.
+                _patrol.Passing = () => _postUp == null ? null : _postUp.RollingPast;
+
                 _patrol.Occupied = () => _phone.IsOpen || _talk.IsOpen || _info.IsOpen
                                          || _cook.IsOpen || _socialScreen.IsOpen
                                          || _stashScreen.IsOpen || _pocketScreen.IsOpen
@@ -1707,6 +1711,9 @@ namespace Hoodrich
                 // The button that closed a conversation stays off the trigger for a moment
                 // after the panel has gone -- see Conversation.TickQuiet.
                 UI.Conversation.TickQuiet();
+
+                // The green "+$" the game leaves behind after we pay somebody. See Cash.
+                UI.Cash.Tick();
 
                 // The spotlight, every frame rather than every tick -- a beam that exists for
                 // one frame in nine is a strobe.
