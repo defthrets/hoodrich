@@ -421,7 +421,10 @@ namespace Hoodrich.Missions
 
             MakeVan();
 
-            Notify.Important("~g~Take his truck.~s~ Elysian Island, ask for the dock worker.");
+            // No name and nobody to ask for. Gerald gives an address and a truck and keeps
+            // the rest back -- an objective that says "ask for the dock worker" hands over the
+            // introduction he deliberately withheld two lines earlier.
+            Notify.Important("~g~Take his truck.~s~ Elysian Island, round the back of the sheds.");
             Log.Info("Port run started after " + _state.GramsSold.ToString("0.#") + "g sold.");
 
             return true;

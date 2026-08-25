@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -1034,6 +1034,36 @@ namespace Hoodrich.UI
         {
             var lines = new List<string>();
             if (string.IsNullOrEmpty(text)) return lines;
+
+            // PARAGRAPHS FIRST, and this is not a nicety.
+            //
+            // The wrap only ever split on spaces, so a newline stayed inside whatever "word"
+            // it was attached to and went to DRAW_TEXT intact -- which draws the second half
+            // at the same height as the first and lays a whole paragraph over the one above
+            // it. Any line with a break in it came out as unreadable overlapping text.
+            //
+            // Split on the break, wrap each half on its own, and put one empty line between
+            // them. An empty line costs a row of height and draws nothing, which is exactly
+            // what a paragraph break is.
+            if (text.IndexOf('\n') >= 0)
+            {
+                var paras = text.Split('\n');
+
+                for (var p = 0; p < paras.Length; p++)
+                {
+                    var para = paras[p].Trim();
+
+                    // A run of breaks is one break. Two newlines is how a paragraph is
+                    // written and it should not cost two blank rows.
+                    if (para.Length == 0) continue;
+
+                    if (lines.Count > 0) lines.Add("");
+
+                    lines.AddRange(Wrap(para, width, scale));
+                }
+
+                return lines;
+            }
 
             var words = text.Split(' ');
             var current = "";
