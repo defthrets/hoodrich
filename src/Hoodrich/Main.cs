@@ -955,9 +955,9 @@ namespace Hoodrich
                 // whole time -- which is the other half of what it is for. See ParkedCar: the
                 // traffic watchdog is told it is parked on purpose, and PortRun's bay sweep
                 // knows its models by name so it does not clear away its own screen.
-                // Nudged a metre up its own nose from where it was first placed. Heading
-                // 269.5 is very nearly due east, so forward is +X and almost nothing else.
-                _cars.Add(new ParkedCar(new Vector3(1247.484f, -3169.446f, 5.249f), 269.487f,
+                // Two metres up its own nose from where it was first placed. Heading 269.5 is
+                // within half a degree of due east, so forward is +X and almost nothing else.
+                _cars.Add(new ParkedCar(new Vector3(1248.484f, -3169.455f, 5.249f), 269.487f,
                                         -1,
                                         "benson", "mule3", "mule", "pounder"));
 
