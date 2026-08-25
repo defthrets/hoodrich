@@ -152,9 +152,23 @@ namespace Hoodrich.Missions
         /// Korean one -- so this is the difference between a subtitle claiming a language and
         /// a man actually speaking it. All three verified against the game's ped dump.
         /// </summary>
+        /// <summary>
+        /// Cheng's men, because it is Cheng's dock.
+        ///
+        /// These were Korean, which was wrong twice. Wrong on the lore first: the man you are
+        /// stood in front of is Tao Cheng, Wei Cheng's son, and the Chengs are Triads -- their
+        /// dock is not staffed by the Korean mob, who are a different set on the other side of
+        /// the city with no reason to be loading his boxes. And wrong on the screen second,
+        /// because the fallback at the end of the list was a generic dock worker whose skin and
+        /// build are random, so when a Korean model did not come up the scene played out with
+        /// two men who were not Asian at all.
+        ///
+        /// So the fallbacks are Chinese too, all the way down. Every one verified against the
+        /// game's own ped dump rather than remembered.
+        /// </summary>
         private static readonly string[] LoaderModels =
         {
-            "g_m_y_korean_01", "g_m_y_korean_02", "g_m_y_korlieut_01", "s_m_y_dockwork_01"
+            "g_m_m_chigoon_01", "g_m_m_chigoon_02", "g_m_m_chicold_01", "csb_chin_goon"
         };
 
         /// <summary>
@@ -1835,6 +1849,11 @@ namespace Hoodrich.Missions
         /// </summary>
         private void TickLoad()
         {
+            // Before the early returns below. A man scheduled on the last brick still has a
+            // swing owed to him on the ticks between bricks, and hanging it off the brick beat
+            // is exactly what put the two of them back in step.
+            TickHeave();
+
             if (!StillLoading) return;
 
             if (_van == null || !_van.Exists()) { _loadNext = _loadStop; return; }
@@ -1889,15 +1908,20 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// One box each, onto the truck, on the beat the brick lands.
+        /// One box each, onto the truck, around the beat the brick lands.
         ///
-        /// Both men swing at once but not on the same clip -- the offset is what stops two
-        /// identical figures moving as one shape, which is the thing that reads as scripted
-        /// faster than anything else in a scene like this.
+        /// A DIFFERENT CLIP EACH WAS NOT ENOUGH. Two men starting two different animations on
+        /// the same frame still read as one machine with two arms -- the giveaway is not which
+        /// clip is playing, it is that they begin and end together, every time, for the whole
+        /// job. Which is what it looked like: two men doing PT.
+        ///
+        /// So each man gets his own clock. The brick beat only schedules them, staggered by
+        /// most of a second with a bit of slop on top so the gap is never the same twice, and
+        /// whoever is due swings on the next tick. Nobody is ever waiting on anybody, and the
+        /// pair drift in and out of step the way two people working next to each other do.
         ///
         /// Not looped and not held: the clip plays out and TASK_PLAY_ANIM's own end drops them
-        /// back, and the next brick a second later starts the next one. Nothing to schedule,
-        /// nothing to clear up.
+        /// back, and the next brick starts the next one.
         /// </summary>
         private void Heave()
         {
@@ -1914,8 +1938,33 @@ namespace Hoodrich.Missions
                 return;
             }
 
+            while (_heaveAt.Count < _loaders.Count) _heaveAt.Add(0);
+
+            var now = Game.GameTime;
+
             for (var i = 0; i < _loaders.Count; i++)
             {
+                // The first man goes more or less on the beat and everybody after him trails.
+                // The jitter is what keeps it from becoming its own rhythm -- a fixed stagger
+                // is still two men in lockstep, just half a second apart.
+                _heaveAt[i] = now + i * LoaderStaggerMs + _rng.Next(LoaderSlopMs);
+            }
+
+            _swing++;
+        }
+
+        /// <summary>Swings whoever is due. Called off the same tick the load runs on.</summary>
+        private void TickHeave()
+        {
+            if (_loaders.Count == 0 || _heaveAt.Count == 0) return;
+
+            var now = Game.GameTime;
+
+            for (var i = 0; i < _loaders.Count && i < _heaveAt.Count; i++)
+            {
+                if (_heaveAt[i] == 0 || now < _heaveAt[i]) continue;
+                _heaveAt[i] = 0;
+
                 var ped = _loaders[i];
                 if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
 
@@ -1926,17 +1975,33 @@ namespace Hoodrich.Missions
                     // Whole body, and NOT secondary. He is putting a box on a truck with both
                     // arms and his back; an upper-body layer over a carry idle is a man doing
                     // two things at once and looking like he is doing neither.
+                    //
+                    // The rate is per man and slightly off one, so even the two of them caught
+                    // mid-swing at the same moment are not the same shape.
+                    var rate = 0.92f + i * 0.07f;
+
                     Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, LoadDict, clip,
-                                  4f, -4f, -1, 0, 0f, false, 0, false);
+                                  4f * rate, -4f, -1, 0, 0f, false, 0, false);
                 }
                 catch
                 {
                     // He stands there. The brick still lands.
                 }
             }
-
-            _swing++;
         }
+
+        /// <summary>When each loader is next due to swing, or 0 for nothing owed.</summary>
+        private readonly List<int> _heaveAt = new List<int>();
+
+        /// <summary>
+        /// How far apart the two of them work.
+        ///
+        /// Most of a second between men, on a brick every two and a half -- far enough apart to
+        /// read as two people and near enough that neither looks idle. The slop is added on top
+        /// per man per brick, so the gap is never twice the same.
+        /// </summary>
+        private const int LoaderStaggerMs = 850;
+        private const int LoaderSlopMs = 420;
 
         /// <summary>How many of something that wide fit across a deck that wide. At least one.</summary>
         private static int Fits(float deck, float one)
@@ -2607,10 +2672,18 @@ namespace Hoodrich.Missions
 
             if (Game.GameTime - _bayAt < LoaderSettleMs) return;
 
-            // Said in Korean, by men whose own voice is Korean. The English underneath is what
-            // a subtitle is for -- and it is the half that still works if this install's font
-            // has no Hangul in it.
-            GTA.UI.Screen.ShowSubtitle("~s~\uAC00\uB3C4 \uB429\uB2C8\uB2E4.~n~~c~(You can go now.)", 4000);
+            // ROMANISED, because the game cannot draw the alphabet.
+            //
+            // This was Hangul, with the English gloss under it and a note in this very comment
+            // saying the gloss is the half that survives a font with no Hangul in it. No font
+            // in this game has any: GTA ships Latin and Cyrillic, and everything else comes out
+            // as a row of empty boxes. So the line the men actually speak rendered as tofu on
+            // every install, including the one it was written on.
+            //
+            // Cantonese now rather than Korean, for the same reason the men changed -- this is
+            // a Cheng dock -- and written the way it sounds, which draws.
+            GTA.UI.Screen.ShowSubtitle("~s~Hou la, hou la. Zau dak la.~n~~c~(Alright, alright. " +
+                                       "You can go.)", 4000);
 
             foreach (var ped in _loaders)
             {
@@ -2937,6 +3010,7 @@ namespace Hoodrich.Missions
             _loadNext = 0;
             _loadStop = 0;
             _swing = 0;
+            _heaveAt.Clear();
 
             try { if (_crate != null && _crate.Exists()) _crate.Delete(); }
             catch { /* teardown */ }
