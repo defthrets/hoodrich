@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Control = GTA.Control;
@@ -362,6 +362,10 @@ namespace Hoodrich.Missions
             ReadyToCollect = false;
             _rolling = false;
 
+            // A new run has not failed yet. Without this a stale reason would fail the next
+            // one the instant MissionRunner read it.
+            Failure = null;
+
             _playerBike = SpawnBike(BikeSpot, BikeHeading);
             if (_playerBike == null)
             {
@@ -424,7 +428,21 @@ namespace Hoodrich.Missions
             // ---- get on the bike -----------------------------------------------
             if (!_rolling)
             {
-                if (_playerBike == null || !_playerBike.Exists()) return;
+                // NO BIKE, NO JOB -- and it has to SAY so.
+                //
+                // This used to return, every tick, forever. The objective stayed on "Get on the
+                // bike", the run never became collectable, and Fixer would only say "you
+                // already got something on" -- so shoving the bike into the water at the lot
+                // left a live mission that could be neither finished nor cancelled, with dying
+                // or being arrested as the only exits. The bike ride handles exactly this case
+                // and says "Somebody took the bike"; this file had no way to say anything at
+                // all, because it had no Failure channel and nothing was reading one.
+                if (_playerBike == null || !_playerBike.Exists())
+                {
+                    Failure = "Somebody took the bike.";
+                    return;
+                }
+
                 if (!player.IsInVehicle(_playerBike)) return;
 
                 _rolling = true;
@@ -1919,8 +1937,15 @@ namespace Hoodrich.Missions
 
         // ---- finishing ---------------------------------------------------------
 
+        /// <summary>
+        /// Why the run ended badly, or null. Read by MissionRunner, same as the bike ride's.
+        /// </summary>
+        public string Failure { get; private set; }
+
         public void Clear()
         {
+            Failure = null;
+
             var player = Game.Player.Character;
             if (_spraying != null && player != null && player.Exists()) EndSpray(player);
 

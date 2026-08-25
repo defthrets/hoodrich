@@ -233,7 +233,17 @@ namespace Hoodrich.Economy
             }
             else
             {
-                UI.Notify.Problem("no room for that.");
+                // ONCE, not two and a half times a second.
+                //
+                // Update runs on a 400ms cadence and this fires whenever you are within reach
+                // of a bag you cannot carry -- so standing anywhere near it produced a wall of
+                // identical messages for the bag's full thirty minute life, with no way to
+                // stop it but walking away.
+                if (Game.GameTime >= _saidNoRoom)
+                {
+                    _saidNoRoom = Game.GameTime + NoRoomQuietMs;
+                    UI.Notify.Problem("no room for that.");
+                }
             }
 
             if (left > 0.005f)
@@ -273,6 +283,11 @@ namespace Hoodrich.Economy
         /// Not handed back. A persistent prop with a blip on it left behind on somebody's save
         /// is litter nothing in the game knows how to clear up.
         /// </summary>
+        /// <summary>The soonest we will say "no room" again. See Take.</summary>
+        private int _saidNoRoom;
+
+        private const int NoRoomQuietMs = 8000;
+
         public void RestoreWorld()
         {
             // BACK IN THE STASH, NOT INTO THE BIN.

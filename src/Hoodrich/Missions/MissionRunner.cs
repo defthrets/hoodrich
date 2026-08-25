@@ -893,6 +893,12 @@ namespace Hoodrich.Missions
             if (OnTags)
             {
                 _tags.Update();
+
+                // The same courtesy the bike ride gets. Without this the tag run had a failure
+                // it could not report and the job simply hung.
+                var tagsWentWrong = _tags.Failure;
+                if (!string.IsNullOrEmpty(tagsWentWrong)) Fail(tagsWentWrong);
+
                 return;
             }
 
