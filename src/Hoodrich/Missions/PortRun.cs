@@ -2264,8 +2264,18 @@ namespace Hoodrich.Missions
             {
                 // ORDER MATTERS. Both flags before the damage, or the first hit lands under
                 // the old rules and dents the truck before the rule that forbids it is set.
+                // VISIBLE DAMAGE STAYS ON, and that is not a retreat -- it is what the
+                // measurement said. Turning it off to protect the bodywork moved nothing at
+                // all: axle 0.000m and flank 0.000m, twice. It is not a body-only switch, it
+                // is the master switch for the whole deformation system, and the wheels are
+                // downstream of it.
+                //
+                // Which leaves deformation-with-damage as the only rear-specific lever in the
+                // game that is not hydraulics or a flat tyre. So it is aimed as far from the
+                // panels as it can be -- under the chassis, on the centreline, at the bottom
+                // of the force range Rockstar's own scripts use -- and the flank reading below
+                // is what decides whether that is enough. A number, not an opinion.
                 Function.Call(Hash.SET_VEHICLE_CAN_DEFORM_WHEELS, _van.Handle, true);
-                Function.Call(Hash.SET_VEHICLE_CAN_BE_VISIBLY_DAMAGED, _van.Handle, false);
 
                 // On the centreline so both sides go down together, behind the middle and below
                 // the floor, which is where a rear axle is.
@@ -2314,11 +2324,7 @@ namespace Hoodrich.Missions
 
             if (_van == null || !_van.Exists()) return;
 
-            try
-            {
-                Function.Call(Hash.SET_VEHICLE_DEFORMATION_FIXED, _van.Handle);
-                Function.Call(Hash.SET_VEHICLE_CAN_BE_VISIBLY_DAMAGED, _van.Handle, true);
-            }
+            try { Function.Call(Hash.SET_VEHICLE_DEFORMATION_FIXED, _van.Handle); }
             catch { /* it stays bent, which is survivable */ }
         }
 
