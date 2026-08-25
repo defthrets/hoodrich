@@ -534,13 +534,26 @@ namespace Hoodrich.Gangs
                      : product.Counted ? product.UnitName.ToLowerInvariant()
                      : product.Name.ToLowerInvariant();
 
+            // And what he warns you off doing with it.
+            //
+            // "Don't smoke it" was written when the first front was weed. He deals bars and
+            // oxys, and nobody smokes either -- the warning was telling the player something
+            // about a product that is not in their hand. A counted drug is pills, and what a
+            // man tells you not to do with pills is eat them.
+            //
+            // Off the same test as the word above, so a front swapped back to something
+            // smokeable brings the smokeable warning back with it. One fact, one place.
+            var dont = product != null && product.Counted
+                ? "don't be eatin' 'em"
+                : "don't smoke it";
+
             // He is not briefing you. He is answering a question he has been asked a hundred
             // times by people who did not last the month, and the answer is short because most
             // of it is things not to do.
             var node = Node(def, gang,
                 what + ". That's it, that's the whole business, ain't no second page. You get " +
                 "a bag, you go stand somewhere, you bring me back what it's worth. And listen " +
-                "-- don't smoke it, don't be frontin' it to your homies, and don't be out " +
+                "-- " + dont + ", don't be frontin' 'em to your homies, and don't be out " +
                 "there on somebody else corner tryna look like a big man. Dudes done got shot " +
                 "over less than a corner, dawg.");
 
