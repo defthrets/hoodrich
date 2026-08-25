@@ -350,6 +350,11 @@ namespace Hoodrich.Missions
             _def = def;
             _wentInside = false;
             _clerkDown = false;
+
+            // A new ride has not killed anybody yet. Without this the flag survives from the
+            // last attempt, and Lamar debriefs a body that is not there this time.
+            KilledTheClerk = false;
+
             _shouted = false;
             _robOffered = false;
             _robAccepted = false;

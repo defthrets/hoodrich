@@ -909,6 +909,7 @@ namespace Hoodrich.Missions
             CountLostHomies();
             LockThemIn();
             FollowMeOut();
+            EndTheFeud();
 
             switch (State)
             {
@@ -1058,6 +1059,33 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
+        /// The war is called off the moment the work is.
+        ///
+        /// SetFeud makes two whole gangs hate each other -- not the five men at the corner, but
+        /// every member of either one anywhere in Los Santos. That is exactly right while you
+        /// are stood in their yard and completely wrong thirty seconds later, because the drive
+        /// home passes other people wearing the same colour and the crew in your back seat have
+        /// no way of knowing those ones are not the job.
+        ///
+        /// On the torch job it was worst of all: the whole point of the second half is driving
+        /// a hot car to a quiet park, and instead it was three men leaning out of the windows at
+        /// every Vago between Jamestown and the water.
+        ///
+        /// Clearing it here rather than in Clear costs nothing, because a ped already told to
+        /// fight somebody keeps that order -- anyone shooting back at the corner carries on. It
+        /// is only NEW hatred that stops, which is the only kind that was the problem.
+        /// </summary>
+        private void EndTheFeud()
+        {
+            if (!_feuding) return;
+            if (State == MissionState.None || State == MissionState.Travel ||
+                State == MissionState.Work) return;
+
+            SetFeud(false);
+            Log.Debug("Work's done -- the two sets go back to ignoring each other.");
+        }
+
+        /// <summary>
         /// When you get out, they get out.
         ///
         /// The doors are unlocked the moment you are on your feet, so nothing is holding them
@@ -1196,7 +1224,11 @@ namespace Hoodrich.Missions
                 return;
             }
 
-            if (Game.GameTime - _drivingSince < LockAfterMs) return;
+            // A drive-by does not get the grace period. Ten seconds is the whole spin past the
+            // corner, so on the one job where the door matters most it was still open for all of
+            // it. On a job you park for, the pause is still worth having -- it stops the door
+            // slamming on somebody who is halfway in.
+            if (!FromTheCar && Game.GameTime - _drivingSince < LockAfterMs) return;
 
             try
             {
@@ -1297,6 +1329,16 @@ namespace Hoodrich.Missions
         private int _wasThem = 4;
         private int _wasUs = 4;
 
+        /// <summary>
+        /// Whether this job is done from inside a car.
+        ///
+        /// A drive-by and a torch job are both a spin past somebody else's corner -- the whole
+        /// point is that you do not stop, and nobody in the car should be deciding otherwise.
+        /// Everything else is a job you park for.
+        /// </summary>
+        private bool FromTheCar =>
+            _def != null && (_def.Kind == MissionKind.DriveBy || _def.Kind == MissionKind.TorchJob);
+
         private void BeginWork(Ped player)
         {
             State = MissionState.Work;
@@ -1327,13 +1369,21 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, true);
 
-                    // 3 is BF_CanLeaveVehicle, and the answer is yes, on every kind of job.
+                    // 3 is BF_CanLeaveVehicle, and the answer depends on what the job IS.
                     //
-                    // It used to be no for anything worked out of a car, and that turned out to
-                    // be the bug rather than the fix: a bodyguard who is not allowed to leave a
-                    // vehicle is a man handed a fight he cannot walk to. Keeping them aboard is
-                    // the locked door's business now, and the door lets go when you get out.
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, true);
+                    // Yes on a job you get out for -- a bodyguard who cannot leave a vehicle is
+                    // a man handed a fight he is not allowed to walk to, which is what this was
+                    // fixed for.
+                    //
+                    // NO ON A DRIVE-BY, and a locked door was never going to carry that on its
+                    // own. A ped that has decided to exit fights the lock rather than accepting
+                    // it, and there is a ten second window before the lock is even applied --
+                    // which on a spin past a corner is the entire job. So the three men in the
+                    // car with you piled out into Jamestown and turned a message into a war.
+                    //
+                    // The door stays as well. Two answers to the same question is right here:
+                    // one stops them wanting to leave, the other stops them managing it.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, !FromTheCar);
 
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 2, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 1, true);

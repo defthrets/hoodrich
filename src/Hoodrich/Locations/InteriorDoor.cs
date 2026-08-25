@@ -106,6 +106,14 @@ namespace Hoodrich.Locations
         /// <summary>Long enough after the warp for the room to have decided he is in it.</summary>
         private const int SettleGraceMs = 2500;
 
+        /// <summary>
+        /// How far the nothing around one of these shells reaches.
+        ///
+        /// Inside this, he is a man who walked out of the wrong side of the building and needs
+        /// putting back on the street. Outside it, he is a man who got arrested.
+        /// </summary>
+        private const float ShellYard = 500f;
+
         private readonly DoorSpec _spec;
 
         private Blip _blip;
@@ -172,6 +180,8 @@ namespace Hoodrich.Locations
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            NoticeHesInThere(player);
 
             if (Known != null && !Known())
             {
@@ -452,6 +462,54 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
+        /// Realises he is standing in the room even though nothing here put him there.
+        ///
+        /// THIS IS THE DESERT. Being inside is a bool in memory, and memory is exactly what a
+        /// script reload and a loaded save both throw away -- so a man who walked into the pill
+        /// press and then reloaded scripts, or saved and came back, was stood in the room with
+        /// the mod certain he was on the street. No prompt, no way out but the room's own
+        /// opening, and these rooms are shells parked in the empty quarter of the map with
+        /// nothing around them. Walk out of one and you are in the desert, miles from Strawberry
+        /// and with no idea how you got there.
+        ///
+        /// So the room is asked rather than remembered. If the game says he is standing in our
+        /// interior, he is inside, and the door works again. The way back out is the ini's
+        /// street coordinate, because the doorway he actually used went with the same memory --
+        /// but the ini's door is a real place on a real street, which is the whole point.
+        /// </summary>
+        private void NoticeHesInThere(Ped player)
+        {
+            if (_inside) return;
+            if (_busy) return;
+
+            // Cheap first: nothing to work out unless he is somewhere no street is.
+            if (player.Position.DistanceTo(Inside) > OriginTrust) return;
+
+            int room;
+
+            try
+            {
+                room = Function.Call<int>(Hash.GET_INTERIOR_FROM_ENTITY, player.Handle);
+            }
+            catch
+            {
+                return;
+            }
+
+            if (room == 0) return;
+
+            _inside = true;
+            _standing = player.Position;
+            _enteredAt = Game.GameTime;
+
+            // Deliberately NOT cleared. If a reload happened while he was inside, the doorway
+            // he came in by is already gone -- but if this fires for any other reason and we
+            // still have it, it is better than the ini.
+            Log.Info("Found him already in the " + _spec.Name +
+                     "; the door works again, out to " + Back + ".");
+        }
+
+        /// <summary>
         /// Whether he has got out of the room some way other than the door he came in by.
         ///
         /// These interiors are real places on the map, sitting forty metres under it, and their
@@ -487,13 +545,32 @@ namespace Hoodrich.Locations
             // properly clear of it.
             if (away < DoorwaySlack) return false;
 
-            if (away > OriginTrust)
+            // Out of the room but still in the empty quarter it is parked in.
+            //
+            // The old rule was that anything past sixty metres was somebody else having moved
+            // him, and it let go. That is right for Pillbox and a cell, and completely wrong
+            // for the case that actually happens: these shells sit in unused map space with no
+            // roads and no ground worth standing on, so walking out of one puts you a couple of
+            // hundred metres into nothing. Letting go there abandons him in the desert instead
+            // of taking him home, which is the bug reported as "it puts me in the desert".
+            //
+            // A real place he could have been moved TO is a long way further off than that.
+            if (away > ShellYard)
             {
                 Log.Info("Out of the " + _spec.Name + " and " + (int)away +
                          "m from it; something else moved him, so it is forgotten.");
 
                 _inside = false;
                 _standing = Vector3.Zero;
+                return true;
+            }
+
+            if (away > OriginTrust)
+            {
+                Log.Info("Wandered " + (int)away + "m out of the " + _spec.Name +
+                         " into the empty ground round it; taking him back to the street.");
+
+                Leave(player);
                 return true;
             }
 
@@ -521,6 +598,10 @@ namespace Hoodrich.Locations
 
                 player.Position = Back;
                 player.Heading = BackFacing;
+
+                Log.Info("Out of the " + _spec.Name + " to " + Back +
+                         (_cameFrom == Vector3.Zero ? " (the ini's door -- nothing remembered "
+                                                    + "the way in)" : " (the way he came in)"));
 
                 _inside = false;
                 _standing = Vector3.Zero;

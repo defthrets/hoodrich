@@ -341,7 +341,15 @@ namespace Hoodrich.Missions
                 ? "Good look. Come get this."
                 : def.Done;
 
-            if (_runner != null && _runner.ClerkKilled)
+            // AND ONLY ON THE JOB THAT HAD A SHOP IN IT.
+            //
+            // KilledTheClerk is a fact about the bike ride that never expires, and this asked
+            // for it on every hand-in -- so once you shot the man behind the counter on the
+            // first job, Lamar opened every debrief after it by grieving him. Burn a car on the
+            // other side of the city, come back, and he is still asking why you couldn't let
+            // the guy open the register.
+            if (_runner != null && _runner.ClerkKilled &&
+                def != null && def.Kind == MissionKind.BikeRide)
             {
                 line = "Damn, dawg. DAMN. You didn't have to do that man, he was openin' it. "
                      + "He was literally openin' it. ...Aight. Aight, it's done, I ain't gon' "

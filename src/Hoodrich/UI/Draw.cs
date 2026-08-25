@@ -796,6 +796,63 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
+        /// One corner as the quarter of a circle that is actually missing, and nothing else.
+        ///
+        /// The other two ways of doing this each have a fault this one does not.
+        ///
+        /// A SPRITE DISC sits above the text. Runtime-texture sprites are drawn over
+        /// everything issued after them in the same frame, so a panel with sprite corners has
+        /// four black coins laid on top of its own writing -- which ate the S and the E off
+        /// SETTINGS, the first word of the footer, and the end of the line in the top right.
+        /// It also ignores the panel's alpha, so on the way out the body faded and the four
+        /// coins stayed, hanging in the air over the street.
+        ///
+        /// A WHOLE STACKED DISC under the flats fixes the order and brings back the blotch:
+        /// three quarters of it lands on fill that is already there, and two coats of a
+        /// translucent colour is darker than one at each corner.
+        ///
+        /// Drawing only the quadrant that no flat reaches has neither problem. It is rects, so
+        /// it obeys issue order and text goes over it; it overlaps nothing, so the colour is
+        /// laid down exactly once and a translucent panel stays one shade all over.
+        /// </summary>
+        private static void Quarter(float cx, float cy, float r, Color c, int rowPx,
+                                    bool right, bool below)
+        {
+            if (r <= 0f || c.A <= 0) return;
+
+            var r2 = r * r;
+            var rows = Math.Max(1, rowPx);
+
+            // Anchored on the centre row, so the two quadrants of a side meet on a row
+            // boundary rather than half a row apart with a line of ground showing through.
+            var pxCentre = (int)Math.Round(cy * ScreenHeight);
+
+            var pxTop = below ? pxCentre : (int)Math.Floor((cy - r) * ScreenHeight);
+            var pxBottom = below ? (int)Math.Ceiling((cy + r) * ScreenHeight) : pxCentre;
+
+            pxTop -= ((pxTop - pxCentre) % rows + rows) % rows;
+
+            var rowHeight = rows / (float)ScreenHeight;
+
+            for (var py = pxTop; py < pxBottom; py += rows)
+            {
+                var rowY = (py + rows * 0.5f) / ScreenHeight;
+
+                // The row's far edge from the equator rather than its centre -- the same rule
+                // Disc uses, and the difference between a clean arc and a row of notches.
+                var edge = Math.Abs(cy - rowY) + rowHeight * 0.5f;
+                var e2 = edge * edge;
+                if (e2 >= r2) continue;
+
+                var half = (float)Math.Sqrt(r2 - e2);
+                if (half <= 0f) continue;
+
+                var w = ToX(half);
+                Rect(right ? cx + w * 0.5f : cx - w * 0.5f, rowY, w, rowHeight, c);
+            }
+        }
+
+        /// <summary>
         /// One corner, as a whole circle sat under the flats either side of it.
         ///
         /// A whole circle rather than a quarter of one because three quarters of it land on
@@ -835,21 +892,42 @@ namespace Hoodrich.UI
         /// </summary>
         public static void Panel(float left, float top, float w, float h, Color body, Color accent)
         {
-            // OPAQUE, whatever the caller asked for, and this is not a liberty -- it is what
-            // rounding a translucent shape actually costs.
+            // The caller's alpha, as asked for.
             //
-            // A rounded rectangle is three flats plus four corner discs, and three quarters of
-            // every disc lands on a flat that is already there. At full opacity that overlap
-            // is invisible. At the 238 these panels were drawn with it is a second coat: over
-            // a bright street the body reads about 25 and the four corners about 14, so the
-            // shape comes out with a darker blotch at each corner -- which is precisely the
-            // complaint the phone tiles took three attempts to shake off.
+            // This used to be forced to 255 whatever came in, to kill a blotch at each corner
+            // -- three quarters of a corner disc landed on a flat that was already there, and
+            // two coats of a translucent colour is darker than one. Forcing it opaque hid that
+            // and cost the panel its fade: the body could not go anywhere on the way out, and
+            // the four sprite corners could not either.
             //
-            // Seven per cent of translucency on a panel that is already near-black is a
-            // difference nobody has ever seen. Four blotched corners is one everybody sees.
-            // The caller should not have to know any of this, so it is decided here.
-            RoundRect(left, top, w, h, PanelRound,
-                      Color.FromArgb(255, body.R, body.G, body.B), sprite: true);
+            // Quarter fixes the cause instead. It fills only the ground no flat reaches, so
+            // nothing is painted twice and the alpha coming in is the alpha going down.
+            if (body.A <= 0) return;
+
+            var r = Math.Max(0f, Math.Min(PanelRound, h * 0.5f));
+            var rX = ToX(r);
+
+            if (rX * 2f > w)
+            {
+                RectFrom(left, top, w, h, body);
+            }
+            else
+            {
+                RectFrom(left, top + r, w, h - r * 2f, body);
+                RectFrom(left + rX, top, w - rX * 2f, r, body);
+                RectFrom(left + rX, top + h - r, w - rX * 2f, r, body);
+
+                // Two pixels a band. Four corners comes to about eighty rectangles, against a
+                // measured busiest frame of five hundred -- the budget this was avoiding is
+                // nowhere near, and it was the phone's HUNDRED-AND-THIRTY-a-shape corners that
+                // it was ever really about.
+                var band = Bands(r, PanelSteps);
+
+                Quarter(left + rX, top + r, r, body, band, false, false);
+                Quarter(left + w - rX, top + r, r, body, band, true, false);
+                Quarter(left + rX, top + h - r, r, body, band, false, true);
+                Quarter(left + w - rX, top + h - r, r, body, band, true, true);
+            }
 
             if (accent.A <= 0) return;
 
@@ -868,6 +946,14 @@ namespace Hoodrich.UI
         /// </summary>
         public const float PanelRound = 0.018f;
         public const float PanelStripe = 0.0028f;
+
+        /// <summary>
+        /// How finely a panel corner is stepped. Higher is coarser.
+        ///
+        /// Forty gives a band of about one screen pixel at this radius, which is as round as a
+        /// stack of rectangles goes, for roughly twenty rects a corner.
+        /// </summary>
+        private const int PanelSteps = 40;
 
         // ---- text --------------------------------------------------------------
 
