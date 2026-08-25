@@ -2112,9 +2112,6 @@ namespace Hoodrich.Missions
 
             _loadNext++;
 
-            // Halfway on, and then all of it on. See Squat.
-            Squat(_loadNext * 2 >= _loadPlan.Count ? (StillLoading ? 1 : 2) : 0);
-
             if (StillLoading) return;
 
             // Done. The men can go, and the settle beat starts from HERE rather than from the
@@ -2228,105 +2225,25 @@ namespace Hoodrich.Missions
         private const int LoaderStaggerMs = 850;
         private const int LoaderSlopMs = 420;
 
-        /// <summary>
-        /// Puts the back end down as the weight goes on.
-        ///
-        /// THIRD ATTEMPT, and the first two are worth writing down so nobody tries them again.
-        ///
-        /// Deformation on its own dented the truck: the sag you get from shooting a car above
-        /// the wheel IS body damage, the panel caves and the wheel follows it down, so it
-        /// cannot lower the back without also wrecking the look of it.
-        ///
-        /// A steady downward FORCE at the rear axle threw the truck around the road. Obvious in
-        /// hindsight -- a force is not weight. Weight is a constant the physics solves against
-        /// every other constraint; a force applied once a frame at an offset is a shove, it
-        /// stacks with whatever the suspension was already doing, and on a bump it launches.
-        ///
-        /// This one separates the two halves of the deformation instead of fighting it. The
-        /// game has a flag for each: CAN_DEFORM_WHEELS decides whether wheel and suspension
-        /// geometry moves, and CAN_BE_VISIBLY_DAMAGED decides whether the BODY does. Turn the
-        /// first on and the second off and the same damage call lands on the suspension only.
-        /// Nothing is pushed, so nothing can be pushed off the road.
-        ///
-        /// Whether the pair really are independent is the one thing I cannot check from here,
-        /// so it measures itself: the axle deformation and the bed-side deformation both go in
-        /// the log. Axle moved and flank at zero is the thing working. Both moved and the flag
-        /// does not separate them, and this goes in the bin like the other two.
-        /// </summary>
-        private void Squat(int stage)
-        {
-            if (stage <= 0 || stage == _squat) return;
-            if (_van == null || !_van.Exists()) return;
-
-            _squat = stage;
-
-            try
-            {
-                // ORDER MATTERS. Both flags before the damage, or the first hit lands under
-                // the old rules and dents the truck before the rule that forbids it is set.
-                // VISIBLE DAMAGE STAYS ON, and that is not a retreat -- it is what the
-                // measurement said. Turning it off to protect the bodywork moved nothing at
-                // all: axle 0.000m and flank 0.000m, twice. It is not a body-only switch, it
-                // is the master switch for the whole deformation system, and the wheels are
-                // downstream of it.
-                //
-                // Which leaves deformation-with-damage as the only rear-specific lever in the
-                // game that is not hydraulics or a flat tyre. So it is aimed as far from the
-                // panels as it can be -- under the chassis, on the centreline, at the bottom
-                // of the force range Rockstar's own scripts use -- and the flank reading below
-                // is what decides whether that is enough. A number, not an opinion.
-                Function.Call(Hash.SET_VEHICLE_CAN_DEFORM_WHEELS, _van.Handle, true);
-
-                // On the centreline so both sides go down together, behind the middle and below
-                // the floor, which is where a rear axle is.
-                Function.Call(Hash.SET_VEHICLE_DAMAGE, _van.Handle,
-                              0f, SquatY, SquatZ, SquatForce, SquatRadius, true);
-
-                var axle = Function.Call<Vector3>(Hash.GET_VEHICLE_DEFORMATION_AT_POS,
-                                                  _van.Handle, 0f, SquatY, SquatZ);
-
-                var flank = Function.Call<Vector3>(Hash.GET_VEHICLE_DEFORMATION_AT_POS,
-                                                   _van.Handle, FlankX, SquatY, FlankZ);
-
-                Log.Info("Truck squats: stage " + stage + " of 2 -- axle moved " +
-                         axle.Length().ToString("0.000") + "m, bed side moved " +
-                         flank.Length().ToString("0.000") + "m (wants to be 0).");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not settle the truck on its springs: " + ex.Message);
-            }
-        }
-
-        /// <summary>Which stage of squat the truck is at: 0 empty, 1 half loaded, 2 full.</summary>
-        private int _squat;
-
-        /// <summary>Where the rear axle is in the truck's own space, and how hard it is leant on.</summary>
-        private const float SquatY = -1.55f;
-        private const float SquatZ = -0.55f;
-        private const float SquatForce = 240f;
-        private const float SquatRadius = 200f;
-
-        /// <summary>Where the bed side is, for proving we did not touch it.</summary>
-        private const float FlankX = 0.95f;
-        private const float FlankZ = 0.10f;
-
-        /// <summary>
-        /// Back on its springs, and allowed to dent again.
-        ///
-        /// The visible-damage flag has to go back on or Gerald's truck spends the rest of the
-        /// save immune to bullets and lamp posts, which is a stranger bug than the one it was
-        /// turned off to prevent.
-        /// </summary>
-        private void Unsquat()
-        {
-            _squat = 0;
-
-            if (_van == null || !_van.Exists()) return;
-
-            try { Function.Call(Hash.SET_VEHICLE_DEFORMATION_FIXED, _van.Handle); }
-            catch { /* it stays bent, which is survivable */ }
-        }
+        // A LOADED TRUCK THAT SITS LOWER AT THE BACK lived here across three attempts and
+        // none of them worked, so it is gone rather than left half-on.
+        //
+        // Deformation aimed at the rear axle does drop it, and dents the panel doing it,
+        // because the sag IS the dent -- that is why shooting a car above the wheel works.
+        // A steady downward force at the rear threw the truck across the road: a force is not
+        // weight, it is a shove, and it stacks with whatever the suspension was already doing.
+        // Hiding the body damage with CAN_BE_VISIBLY_DAMAGED moved nothing at all -- measured
+        // twice at 0.000m on both the axle and the flank -- because that flag is the master
+        // switch for the whole deformation system and the wheels are downstream of it.
+        //
+        // What is left is per-wheel bone editing, which is how VStancer does it: the wheels are
+        // bones on the vehicle skeleton and their local offsets can be written directly.
+        // SHVDN 3.9 hands out VehicleWheel.MemoryAddress, so the door is open. It wants the
+        // CVehicleWheel layout for this game build, which is a real piece of work and not
+        // something to guess at with a pointer.
+        //
+        // Worth picking up again if the truck ever needs to look loaded. It is not worth
+        // denting his truck every run in the meantime.
 
         /// <summary>How many of something that wide fit across a deck that wide. At least one.</summary>
         private static int Fits(float deck, float one)
@@ -3443,8 +3360,6 @@ namespace Hoodrich.Missions
             _swing = 0;
             _heaveAt.Clear();
 
-            // The load is off, so the springs come back up.
-            Unsquat();
 
             try { if (_crate != null && _crate.Exists()) _crate.Delete(); }
             catch { /* teardown */ }
