@@ -172,8 +172,17 @@ namespace Hoodrich.UI
             foreach (var control in new[]
                      {
                          Control.PhoneUp, Control.PhoneDown, Control.PhoneLeft, Control.PhoneRight,
-                         Control.PhoneSelect, Control.PhoneCancel, Control.Context,
-                         Control.Jump, Control.Cover, Control.LookLeftRight, Control.LookUpDown,
+                         // Jump, Cover and Context are DELIBERATELY NOT HERE any more.
+                         //
+                         // Pressed() reads IS_DISABLED_CONTROL_JUST_PRESSED, which answers
+                         // whether or not the control is enabled -- so handing these three back
+                         // to the game bought nothing and cost plenty: the footer says
+                         // "SPACE  RACK", and pressing space changed the rack AND jumped
+                         // Franklin on the spot. Q browsed the shelf and put him into cover.
+                         //
+                         // The look axes stay, because the camera should still move.
+                         Control.PhoneSelect, Control.PhoneCancel,
+                         Control.LookLeftRight, Control.LookUpDown,
                          Control.FrontendLb, Control.FrontendRb
                      })
             {

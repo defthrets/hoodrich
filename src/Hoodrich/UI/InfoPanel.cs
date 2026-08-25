@@ -591,7 +591,17 @@ namespace Hoodrich.UI
             }
 
             var y = top + HeaderH + BodyLead;
-            var gutter = 0f;
+
+            // THE GUTTER FOR WHATEVER SECTION WE ARE ALREADY INSIDE.
+            //
+            // It used to start at zero and only a Heading ever set it -- fine while the window
+            // began at the top, and wrong the moment you scrolled. A window that opens partway
+            // down a section drew every row with no gutter at all, which puts the row's icon
+            // and the row's first characters at the same x. The icon is a runtime-texture
+            // sprite, so it renders ABOVE the text issued after it, and the label came out with
+            // its first two or three letters buried. It fixed itself as soon as a heading
+            // scrolled back into view, which is what made it look intermittent.
+            var gutter = GutterAt(_scroll);
             var first = true;
 
             for (var i = _scroll; i <= last; i++)
@@ -670,6 +680,23 @@ namespace Hoodrich.UI
                 Hud.TextRight(s.Total, right, y + 0.001f, 0.28f, s.TotalColour,
                               Hud.FontChaletLondon);
             }
+        }
+
+        /// <summary>
+        /// The art gutter in force at a given row, found by looking back for its heading.
+        ///
+        /// Sections own the gutter and rows inherit it, so a row's indent is a property of the
+        /// heading above it rather than of the row -- which means the only way to know it for a
+        /// window that starts mid-section is to walk back to that heading.
+        /// </summary>
+        private float GutterAt(int index)
+        {
+            for (var i = Math.Min(index, _items.Count - 1); i >= 0; i--)
+            {
+                if (_items[i].Kind == ItemKind.Heading) return GutterFor(_items[i].Section);
+            }
+
+            return 0f;
         }
 
         /// <summary>

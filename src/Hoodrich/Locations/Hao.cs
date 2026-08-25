@@ -224,7 +224,16 @@ namespace Hoodrich.Locations
                     car.Live.IsPersistent = true;
 
                     // Yours on the map until you have actually found it once.
+                    //
+                    // KEPT, so it can be taken down. This used to be a local that was
+                    // configured and dropped on the floor -- nothing stored it, nothing deleted
+                    // it, and the vehicle it is attached to is persistent, so it was never
+                    // cleaned up with the car either. OwnedCars then drew its own marker for
+                    // the same vehicle, so a car you had just bought carried two blips: a blue
+                    // one that vanished when you got in, and a green one that followed you
+                    // around for the rest of the session.
                     var blip = car.Live.AddBlip();
+                    if (blip != null && blip.Exists()) _sold.Add(blip);
                     if (blip != null && blip.Exists())
                     {
                         Function.Call(Hash.SET_BLIP_SPRITE, blip.Handle, Sprite);
@@ -729,9 +738,26 @@ namespace Hoodrich.Locations
         /// and deleting somebody's car on unload is how a mod loses you a vehicle you paid for.
         /// Only the unsold stock is ours to take away.
         /// </summary>
+        /// <summary>Blips put on cars that have been sold, so they can be taken down.</summary>
+        private readonly System.Collections.Generic.List<Blip> _sold =
+            new System.Collections.Generic.List<Blip>();
+
+        /// <summary>Takes down the sale markers. OwnedCars draws its own from then on.</summary>
+        private void ClearSoldBlips()
+        {
+            foreach (var blip in _sold)
+            {
+                try { if (blip != null && blip.Exists()) blip.Delete(); }
+                catch { /* it is gone */ }
+            }
+
+            _sold.Clear();
+        }
+
         public void RestoreWorld()
         {
             Despawn();
+            ClearSoldBlips();
 
             try
             {

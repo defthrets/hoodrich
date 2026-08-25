@@ -1458,7 +1458,29 @@ namespace Hoodrich.Missions
                 try
                 {
                     var model = new Model(modelName);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    // THE SAME BUG THAT SWAPPED GERALD'S TRUCK, one file over.
+                    //
+                    // Three unrelated causes behind one silent continue: absent from the
+                    // install, and not streamed in YET, are not the same thing. Stand is
+                    // called off the tick the moment you cross a hundred and twenty metres of
+                    // the mark -- driving in at speed, mid-stream, which is the worst possible
+                    // moment to ask for a cutscene ped. ig_taocheng is almost never already
+                    // resident, so the request lost the race and the list fell through to a
+                    // generic businessman standing in for Tao Cheng for the whole scene, with
+                    // nothing in the log saying why.
+                    if (!model.IsValid || !model.IsInCdImage)
+                    {
+                        Log.Info("Ped model " + modelName + " is not in this install; next one.");
+                        continue;
+                    }
+
+                    if (!model.Request(ModelWaitMs))
+                    {
+                        Log.Debug("Ped model " + modelName + " has not streamed in yet; waiting " +
+                                  "rather than standing in a different man.");
+                        return null;
+                    }
 
                     var ped = World.CreatePed(model, Standing(where), heading);
                     model.MarkAsNoLongerNeeded();

@@ -181,7 +181,14 @@ namespace Hoodrich.Locations
             // not have to wait two and a half seconds more to be told the road arrived.
             Settle(now);
 
-            if (now - _next < TickMs) return;
+            // _next is a DEADLINE, so the test is against now, not against a gap.
+            //
+            // It was `now - _next < TickMs` against a _next that had already had TickMs added
+            // to it, which asks for two intervals rather than one -- so the scan ran every five
+            // seconds while every constant around it, and the whole RebuildGapMs argument in
+            // the comment above, was reasoned about two and a half. Every other ticker in
+            // Locations stores a last-ran stamp and compares properly.
+            if (now < _next) return;
             _next = now + TickMs;
 
             var player = Game.Player.Character;

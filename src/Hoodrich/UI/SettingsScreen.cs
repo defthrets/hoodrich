@@ -141,6 +141,9 @@ namespace Hoodrich.UI
         /// <summary>When the current dangerous line started being held down, or 0.</summary>
         private int _holdingSince;
 
+        /// <summary>True once a held Danger row has fired, until the key comes back up.</summary>
+        private bool _holdSpent;
+
         /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
         private readonly Curtain _curtain = new Curtain();
 
@@ -479,8 +482,19 @@ namespace Hoodrich.UI
                 {
                     if (_holdingSince == 0) _holdingSince = Game.GameTime;
 
-                    if (Game.GameTime - _holdingSince >= HoldMs)
+                    if (!_holdSpent && Game.GameTime - _holdingSince >= HoldMs)
                     {
+                        // SPENT UNTIL THE KEY COMES BACK UP.
+                        //
+                        // Zeroing the clock was not enough: the key is still down, so the next
+                        // frame stamped it again and the row fired again a second later, and
+                        // again, for as long as you held it. On rows like "Start the mod over"
+                        // and "Unlock everything" that is a destructive action on a repeat
+                        // timer. Hold Enter on the front-finisher for three seconds and it blew
+                        // through both of Gerald's packages and opened the port in one press.
+                        //
+                        // SocialScreen has carried exactly this latch for the same reason.
+                        _holdSpent = true;
                         _holdingSince = 0;
 
                         try { row.Do?.Invoke(); }
@@ -493,13 +507,16 @@ namespace Hoodrich.UI
                 }
                 else
                 {
+                    // Released: the next hold is a new one.
                     _holdingSince = 0;
+                    _holdSpent = false;
                 }
 
                 return;
             }
 
             _holdingSince = 0;
+            _holdSpent = false;
 
             if (row.Kind == OptKind.Binding && Pressed(Control.PhoneSelect))
             {

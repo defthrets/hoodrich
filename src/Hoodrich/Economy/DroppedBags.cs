@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -275,7 +275,42 @@ namespace Hoodrich.Economy
         /// </summary>
         public void RestoreWorld()
         {
-            foreach (var bag in _bags) Bin(bag);
+            // BACK IN THE STASH, NOT INTO THE BIN.
+            //
+            // A dropped bag lives only in this list -- nothing writes it to the save. Drop is
+            // what a player does when a patrol is coming, and it takes the weight out of your
+            // pockets immediately; the autosave then writes a save with the product gone. Bin
+            // deletes the prop and the blip and says nothing about the contents, so a script
+            // reload turned "put it in a hedge for two minutes" into four hundred grams
+            // destroyed with no message of any kind.
+            //
+            // Handing it back can overflow a full stash, and that is still strictly better than
+            // deleting it: whatever will not fit is the only part lost, rather than all of it.
+            foreach (var bag in _bags)
+            {
+                try
+                {
+                    if (Pockets != null && bag != null && bag.Grams > 0.005f)
+                    {
+                        var back = bag.Bagged
+                            ? Pockets.AddPackaged(bag.DrugId, bag.Grams, bag.Purity)
+                            : Pockets.AddBulk(bag.DrugId, bag.Grams, bag.Purity);
+
+                        if (back > 0.005f)
+                        {
+                            Log.Info("Put " + back.ToString("0.#") + "g of " + bag.DrugId +
+                                     " back in the stash from a dropped bag.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not recover a dropped bag: " + ex.Message);
+                }
+
+                Bin(bag);
+            }
+
             _bags.Clear();
         }
     }

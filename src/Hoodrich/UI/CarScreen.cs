@@ -118,7 +118,10 @@ namespace Hoodrich.UI
             foreach (var control in new[]
                      {
                          Control.PhoneUp, Control.PhoneDown, Control.PhoneLeft, Control.PhoneRight,
-                         Control.PhoneSelect, Control.PhoneCancel, Control.Context,
+                         // Context is not here for the same reason it is not in GunScreen:
+                         // the screen reads the disabled variant, so enabling it only let
+                         // pressing E to buy a car also fire the world's context action.
+                         Control.PhoneSelect, Control.PhoneCancel,
                          Control.LookLeftRight, Control.LookUpDown
                      })
             {
