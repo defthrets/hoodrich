@@ -909,6 +909,7 @@ namespace Hoodrich.Missions
             CountLostHomies();
             LockThemIn();
             FollowMeOut();
+            KeepThemAboard();
             EndTheFeud();
 
             switch (State)
@@ -1111,6 +1112,10 @@ namespace Hoodrich.Missions
             {
                 if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
                 if (!homie.IsInVehicle()) continue;
+
+                // You are out, so they are allowed out. That is the rule the whole drive-by
+                // hangs on, said in the one place that acts on it.
+                LetHimOut(homie);
 
                 try
                 {
@@ -1315,6 +1320,12 @@ namespace Hoodrich.Missions
             {
                 if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
 
+                // Before the order, not after it. On a drive-by these men have been told they
+                // may not leave a vehicle, and that is a rule the leave order simply loses to
+                // -- so this is the difference between everybody getting out and everybody
+                // sitting in the car you are pouring petrol over.
+                LetHimOut(homie);
+
                 try
                 {
                     if (!homie.IsInVehicle()) continue;
@@ -1389,7 +1400,14 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 1, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 0, true);
 
-                    Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, homie.Handle, 2);
+                    // 2 is WillAdvance, which is an instruction to close the distance on foot.
+                    // On a job nobody is getting out of, that is one more reason to get out.
+                    // 0 is Stationary, which is what a man in a passenger seat is.
+                    Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, homie.Handle,
+                                  FromTheCar ? 0 : 2);
+
+                    // And he is not to be pulled out of it either.
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, !FromTheCar);
 
                     // And nothing else goes on them.
                     //
@@ -1702,6 +1720,13 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, false);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, false);
 
+                    // Deliberately NOT letting him out here.
+                    //
+                    // StandDown runs the moment the shooting stops, which on a drive-by is
+                    // while you are still driving away from it -- and the rule is that nobody
+                    // is on their feet until you are. KeepThemAboard would put the flag back
+                    // within the second anyway, and the gap between the two is exactly long
+                    // enough for somebody to open a door at forty miles an hour.
                     Function.Call(Hash.CLEAR_PED_TASKS, homie.Handle);
 
                     // Back to the car if you are in one, otherwise back to you. Standing where
@@ -1725,16 +1750,202 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// Puts a homie on a target, from wherever he happens to be.
+        /// Puts a homie on a target the right way for where he is sitting.
         ///
-        /// Plain foot combat now, on every job. The drive-by half that used to be here is gone
-        /// with the rest of it: three attempts at leaning them out of the windows never once
-        /// produced a shot, and a bodyguard sitting in a car somebody else is driving already
-        /// fires out of it on his own if you leave him alone.
+        /// THIS IS THE WHOLE OF THE DRIVE-BY BUG. Everything else was treating the symptom.
+        ///
+        /// TASK_COMBAT_PED does not mean "shoot that man". It means "deal with that man", and
+        /// the game's answer to that, for a ped sitting in a car, is to open the door and walk
+        /// over. It will do that through a locked door, past BF_CanLeaveVehicle, and around
+        /// every flag anybody has ever set on a ped -- because none of those are instructions
+        /// about the TASK, they are conditions the task is allowed to ignore while it decides
+        /// how to reach its target. Three men given that order at the edge of Jamestown got out
+        /// of the car at the edge of Jamestown. Correctly, from the game's point of view.
+        ///
+        /// The task that means "shoot out of the window" is TASK_DRIVE_BY, and it is what
+        /// Rockstar's own scripts use for exactly this -- seven hundred lines of them, at two
+        /// hundred metres with burst fire. Given that, a man stays in his seat because staying
+        /// in his seat is what the order says to do, rather than because a door is in his way.
         /// </summary>
         private void Shoot(Ped homie, Ped foe)
         {
+            if (homie == null || !homie.Exists() || foe == null || !foe.Exists()) return;
+
+            if (FromTheCar && homie.IsInVehicle())
+            {
+                // 200m and burst fire, which are Rockstar's numbers for a passenger drive-by
+                // rather than ours. The 1 is pushUnderneathDrivingTaskIfDriving, which matters
+                // for a driver and is harmless for everybody else.
+                Function.Call(Hash.TASK_DRIVE_BY, homie.Handle, foe.Handle, 0,
+                              0f, 0f, 0f, 200f, 100, true, BurstDriveBy);
+                return;
+            }
+
             Function.Call(Hash.TASK_COMBAT_PED, homie.Handle, foe.Handle, 0, 16);
+        }
+
+        /// <summary>
+        /// firing_pattern_burst_fire_driveby, which is what the game shoots drive-bys with.
+        ///
+        /// Hashed here rather than at runtime because Game.GenerateHash is deprecated in this
+        /// build and a constant cannot go wrong. Checked by hashing
+        /// firing_pattern_full_auto with the same routine and getting 0xC6EE6B4C, which is the
+        /// value the native database lists for it.
+        /// </summary>
+        private const int BurstDriveBy = unchecked((int)0xD31265F2);
+
+        /// <summary>
+        /// Keeps the car full for as long as you are in it.
+        ///
+        /// The player's rule, and it is the right one: on a job done from a car, nobody of ours
+        /// is on their feet until YOU are on your feet. So this runs the whole time you are at
+        /// the wheel and does three things -- re-seats anybody who got out anyway, holds the
+        /// two flags that say he may not, and keeps a live drive-by on him.
+        ///
+        /// The last of those is not belt and braces. TASK_DRIVE_BY ENDS -- when the target dies,
+        /// when it goes out of range, when the car turns a corner too hard -- and a ped whose
+        /// task has ended falls back on combat AI, which is the thing that empties cars. So the
+        /// order is re-read rather than issued once and hoped over.
+        ///
+        /// SET_DRIVEBY_TASK_TARGET where the task is still running, because re-issuing the whole
+        /// task every three quarters of a second restarts the aim and they never settle on
+        /// anybody.
+        /// </summary>
+        private void KeepThemAboard()
+        {
+            if (!FromTheCar) return;
+            if (State != MissionState.Work && State != MissionState.Escape) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            // The one line the whole thing turns on. Out of the car yourself and this stops
+            // caring; FollowMeOut takes them out after you, which is the only time it is right.
+            if (!player.IsInVehicle()) return;
+
+            if (Game.GameTime < _nextAboard) return;
+            _nextAboard = Game.GameTime + AboardMs;
+
+            var ride = player.CurrentVehicle;
+
+            // Nobody is being put back into a car that is alight or finished. Holding men in
+            // a burning vehicle is a worse bug than the one this fixes.
+            var usable = ride != null && ride.Exists() && ride.IsDriveable;
+
+            if (usable)
+            {
+                try { usable = !Function.Call<bool>(Hash.IS_ENTITY_ON_FIRE, ride.Handle); }
+                catch { usable = true; }
+            }
+
+            foreach (var homie in _homies)
+            {
+                if (homie == null || !homie.Exists() || !homie.IsAlive) continue;
+
+                try
+                {
+                    if (!homie.IsInVehicle())
+                    {
+                        if (!usable) continue;
+
+                        // Close enough that he was in this car a moment ago. A man a street
+                        // back is a man who got left, and dragging him across it by teleport
+                        // would look far worse than the gap in the back seat.
+                        if (homie.Position.DistanceTo(ride.Position) > ReseatRange) continue;
+
+                        var seat = FreeSeat(ride);
+                        if (seat == NoSeat) continue;
+
+                        Function.Call(Hash.SET_PED_INTO_VEHICLE, homie.Handle, ride.Handle, seat);
+                        Log.Debug("Put a homie back in the car; he is not walking on this one.");
+                    }
+
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, false);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, false);
+
+                    // Shooting is only for the part of the job that has somebody to shoot at.
+                    // On the way home they sit there.
+                    if (State != MissionState.Work) continue;
+
+                    var foe = NearestLiveTarget(homie);
+                    if (foe == null || !foe.Exists() || !foe.IsAlive) continue;
+
+                    if (Function.Call<bool>(Hash.IS_PED_DOING_DRIVEBY, homie.Handle))
+                    {
+                        Function.Call(Hash.SET_DRIVEBY_TASK_TARGET, homie.Handle,
+                                      foe.Handle, 0, 0f, 0f, 0f);
+                        continue;
+                    }
+
+                    Shoot(homie, foe);
+                }
+                catch { /* the next pass gets him */ }
+            }
+        }
+
+        /// <summary>
+        /// Gives a man his legs back.
+        ///
+        /// The other half of KeepThemAboard, and it has to be called from every place that
+        /// tells one of them to get out -- because "he may not leave a vehicle" is not advice,
+        /// it is a hard no, and a TASK_LEAVE_VEHICLE issued against it is a task that quietly
+        /// does nothing. Without this the torch job deadlocks with three men refusing to leave
+        /// the car you are stood there trying to set fire to.
+        /// </summary>
+        private static void LetHimOut(Ped homie)
+        {
+            if (homie == null || !homie.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, true);
+                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, true);
+
+                // And his legs. BeginWork sets a man on a car job to Stationary, which is right
+                // for a passenger and useless for the same man stood in the street -- he would
+                // hold his ground and never close on anybody.
+                Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, homie.Handle, 2);
+            }
+            catch
+            {
+                // He is still a man in a car; he is just harder to get out of it.
+            }
+        }
+
+        private int _nextAboard;
+
+        /// <summary>Often enough that a finished drive-by is noticed before the AI acts on it.</summary>
+        private const int AboardMs = 750;
+
+        /// <summary>How far a man on his feet may be and still be one of the ones in this car.</summary>
+        private const float ReseatRange = 30f;
+
+        private const int NoSeat = int.MinValue;
+
+        /// <summary>The first passenger seat with nobody in it, or NoSeat.</summary>
+        private static int FreeSeat(Vehicle ride)
+        {
+            try
+            {
+                var seats = Function.Call<int>(Hash.GET_VEHICLE_MODEL_NUMBER_OF_SEATS,
+                                               ride.Model.Hash);
+
+                // Zero is the front passenger and the count includes the driver, so the last
+                // passenger index is two below it.
+                for (var seat = 0; seat <= seats - 2; seat++)
+                {
+                    if (Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, seat))
+                    {
+                        return seat;
+                    }
+                }
+            }
+            catch
+            {
+                // No seat we can prove is empty is no seat.
+            }
+
+            return NoSeat;
         }
 
         private void TickWork(Ped player)
@@ -2696,6 +2907,11 @@ namespace Hoodrich.Missions
         /// </summary>
         private void SendHimOff(Ped ped, int index)
         {
+            // Handed back to the world the way he was found. A man who spends the rest of the
+            // save unable to get out of any car he is put in is a bug that would outlive this
+            // job by hours and never be traced back to it.
+            LetHimOut(ped);
+
             var slot = new OutputArgument();
             var seq = 0;
 

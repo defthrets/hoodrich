@@ -2222,6 +2222,7 @@ namespace Hoodrich
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
             try { _bigj?.RestoreWorld(); } catch { /* teardown */ }
             try { _hao?.RestoreWorld(); } catch { /* teardown */ }
+            try { _ownedCars?.RestoreWorld(); } catch { /* teardown */ }
             try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }

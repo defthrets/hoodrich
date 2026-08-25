@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -43,7 +43,7 @@ namespace Hoodrich.Locations
         /// That is what "it is gone everywhere" was. Not a car that failed to save -- a car
         /// that was being rebuilt faster than the game could keep it.
         /// </summary>
-        private const float FoundRange = 130f;
+        private const float FoundRange = 200f;
 
         /// <summary>
         /// How close you have to be before a car being missing MEANS anything.
@@ -53,7 +53,7 @@ namespace Hoodrich.Locations
         /// map it is evidence of nothing at all, and acting on it is what put a dozen of them
         /// on that street.
         /// </summary>
-        private const float SeenRange = 100f;
+        private const float SeenRange = 150f;
 
         /// <summary>Scanning every vehicle around the player is not a per-frame job.</summary>
         private const int TickMs = 2500;
@@ -61,11 +61,43 @@ namespace Hoodrich.Locations
         /// <summary>The soonest a given car may be stood back up after the last attempt.</summary>
         private const int RebuildGapMs = 30000;
 
+        /// <summary>How long a car waits for the ground before it is let go anyway.</summary>
+        private const int SettleMs = 8000;
+
         private readonly PlayerState _state;
         private readonly Dictionary<string, int> _rebuiltAt =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         private int _next;
+
+        /// <summary>
+        /// The marker on the map for each one, keyed by car id.
+        ///
+        /// This is the half of "kept between sessions" that was missing. The record survived
+        /// perfectly -- plate, paint, coordinate, all of it written down and read back -- and
+        /// none of that is worth anything to somebody stood three hundred metres away with an
+        /// empty map. The car had not gone; there was just nothing anywhere that said where it
+        /// was, and a car you cannot find is a car you have lost.
+        /// </summary>
+        private readonly Dictionary<string, Blip> _blips =
+            new Dictionary<string, Blip>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Cars stood back up before the ground under them had finished arriving.
+        ///
+        /// Putting one back at a hundred and fifty metres means the road it is meant to sit on
+        /// may not be loaded yet, and a car dropped on nothing falls through the world. So it
+        /// is frozen where it was put and let go the moment the collision turns up, with a
+        /// deadline in case it never does.
+        /// </summary>
+        private readonly List<Settling> _settling = new List<Settling>();
+
+        private struct Settling
+        {
+            public Vehicle Car;
+            public Vector3 Where;
+            public int Until;
+        }
 
         private int Since(OwnedCar owned)
         {
@@ -132,9 +164,23 @@ namespace Hoodrich.Locations
         /// </summary>
         public void Update()
         {
-            if (_state == null || _state.Owned.Count == 0) return;
+            if (_state == null) return;
+
+            // Not folded into the guard below. A car struck off the books is the one case where
+            // there is nothing left to walk and a marker still on the map, so the sweep has to
+            // run on the tick where the list went empty rather than be skipped by it.
+            if (_state.Owned.Count == 0)
+            {
+                SweepBlips();
+                return;
+            }
 
             var now = Game.GameTime;
+
+            // Every tick, not every scan: a car waiting for the road to load under it should
+            // not have to wait two and a half seconds more to be told the road arrived.
+            Settle(now);
+
             if (now - _next < TickMs) return;
             _next = now + TickMs;
 
@@ -143,6 +189,8 @@ namespace Hoodrich.Locations
 
             var here = player.Position;
             var moved = false;
+
+            SweepBlips();
 
             foreach (var owned in _state.Owned)
             {
@@ -161,11 +209,20 @@ namespace Hoodrich.Locations
                     }
 
                     Hold(live);
+
+                    // Marked unless you are sat in it, which is the game's own rule for a
+                    // personal vehicle and the right one: a blip on the car you are driving
+                    // is a blip on yourself.
+                    Mark(owned, live.Position, !player.IsInVehicle(live));
                     continue;
                 }
 
-                // Not in the world. Only worth doing anything about it if you are close enough
-                // to be looking at the space where it should be.
+                // Not in the world -- but it is still yours and it is still there, so it stays
+                // on the map. THIS is what "gone" actually was.
+                Mark(owned, owned.Where, true);
+
+                // Only worth standing it back up if you are close enough to be looking at the
+                // space where it should be.
                 if (here.DistanceTo(owned.Where) > SeenRange) continue;
 
                 // And not again for a while, whatever happens.
@@ -182,6 +239,167 @@ namespace Hoodrich.Locations
             }
 
             if (moved) _state.Touch();
+        }
+
+        /// <summary>
+        /// Puts the car on the map, or takes it off.
+        ///
+        /// One coordinate blip rather than one attached to the vehicle, and moved as the car
+        /// moves. An attached blip cannot be given a position and a positioned one cannot be
+        /// attached, so keeping both would mean deleting and rebuilding the marker every time
+        /// the car streamed in or out -- a flicker on the map for no gain, since the car is
+        /// either parked and not moving or being driven by you and not marked.
+        /// </summary>
+        private void Mark(OwnedCar owned, Vector3 at, bool wanted)
+        {
+            var key = owned.Id ?? "";
+
+            Blip blip;
+            _blips.TryGetValue(key, out blip);
+
+            try
+            {
+                if (!wanted)
+                {
+                    if (blip != null && blip.Exists()) blip.Delete();
+                    _blips.Remove(key);
+                    return;
+                }
+
+                if (blip != null && !blip.Exists()) blip = null;
+
+                if (blip == null)
+                {
+                    blip = World.CreateBlip(at);
+                    if (blip == null || !blip.Exists()) return;
+
+                    // 225 is the game's own personal-vehicle marker, which is the picture
+                    // somebody looking for their car already knows to look for.
+                    blip.Sprite = (BlipSprite)225;
+                    blip.Color = BlipColor.Blue;
+                    blip.Scale = 0.85f;
+
+                    // Long range, so it is on the pause map from the other side of the city
+                    // rather than only once you are near enough not to need it.
+                    blip.IsShortRange = false;
+                    blip.Name = string.IsNullOrEmpty(owned.Name) ? "Your car" : owned.Name;
+
+                    _blips[key] = blip;
+                    return;
+                }
+
+                if (blip.Position.DistanceTo(at) > 1f) blip.Position = at;
+            }
+            catch
+            {
+                // A marker we could not draw is not worth throwing over. The car is still there.
+            }
+        }
+
+        /// <summary>Drops markers for cars that are no longer on the books.</summary>
+        private void SweepBlips()
+        {
+            if (_blips.Count == 0) return;
+
+            List<string> gone = null;
+
+            foreach (var pair in _blips)
+            {
+                var still = false;
+
+                foreach (var owned in _state.Owned)
+                {
+                    if (!string.Equals(owned.Id, pair.Key, StringComparison.OrdinalIgnoreCase)) continue;
+                    still = true;
+                    break;
+                }
+
+                if (still) continue;
+
+                if (gone == null) gone = new List<string>();
+                gone.Add(pair.Key);
+            }
+
+            if (gone == null) return;
+
+            foreach (var key in gone)
+            {
+                Blip blip;
+
+                if (_blips.TryGetValue(key, out blip))
+                {
+                    try { if (blip != null && blip.Exists()) blip.Delete(); }
+                    catch { /* it is already gone */ }
+                }
+
+                _blips.Remove(key);
+            }
+        }
+
+        /// <summary>
+        /// Lets go of a car once the ground it was put on has turned up.
+        ///
+        /// The deadline is the important half. If you drive off before the collision loads the
+        /// car would otherwise stay frozen in mid-air for the rest of the session, so after
+        /// eight seconds it is let go regardless -- at that distance nobody is looking, and
+        /// wherever it ends up is read back by the next scan anyway.
+        /// </summary>
+        private void Settle(int now)
+        {
+            for (var i = _settling.Count - 1; i >= 0; i--)
+            {
+                var wait = _settling[i];
+                var car = wait.Car;
+
+                if (car == null || !car.Exists())
+                {
+                    _settling.RemoveAt(i);
+                    continue;
+                }
+
+                var ready = now >= wait.Until;
+
+                if (!ready)
+                {
+                    try
+                    {
+                        ready = Function.Call<bool>(Hash.HAS_COLLISION_LOADED_AROUND_ENTITY,
+                                                    car.Handle);
+                    }
+                    catch
+                    {
+                        ready = true;
+                    }
+                }
+
+                if (!ready) continue;
+
+                try
+                {
+                    Function.Call(Hash.FREEZE_ENTITY_POSITION, car.Handle, false);
+                    car.Position = wait.Where;
+                    Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
+                }
+                catch
+                {
+                    // It is standing somewhere. The next scan will read wherever that is.
+                }
+
+                _settling.RemoveAt(i);
+            }
+        }
+
+        /// <summary>Takes the markers down. Called when the script unloads.</summary>
+        public void RestoreWorld()
+        {
+            foreach (var pair in _blips)
+            {
+                try { if (pair.Value != null && pair.Value.Exists()) pair.Value.Delete(); }
+                catch { /* teardown */ }
+            }
+
+            _blips.Clear();
+            _settling.Clear();
         }
 
         /// <summary>The one with our plate on it, if it is anywhere nearby.</summary>
@@ -214,12 +432,24 @@ namespace Hoodrich.Locations
         /// and the competition suspension every car on that lot leaves with. A car that comes
         /// back a different colour on stock springs is not the car you bought.
         /// </summary>
-        private static bool PutBack(OwnedCar owned)
+        private bool PutBack(OwnedCar owned)
         {
             try
             {
                 var model = new Model(owned.Model);
                 if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) return false;
+
+                // Asked for BEFORE the car exists, so the streamer has the whole of the create
+                // to work in rather than being told about the road once something is stood on it.
+                try
+                {
+                    Function.Call(Hash.REQUEST_COLLISION_AT_COORD,
+                                  owned.Where.X, owned.Where.Y, owned.Where.Z);
+                }
+                catch
+                {
+                    // Then it loads when it loads, and the freeze below covers the gap.
+                }
 
                 var car = World.CreateVehicle(model, owned.Where, owned.Heading);
                 model.MarkAsNoLongerNeeded();
@@ -227,6 +457,39 @@ namespace Hoodrich.Locations
                 if (car == null || !car.Exists()) return false;
 
                 var h = car.Handle;
+
+                // Held up until there is a road under it. At a hundred and fifty metres there
+                // very often is not yet, and a car dropped on nothing is a car at the bottom of
+                // the map -- which would read as exactly the bug this is meant to fix.
+                var solid = true;
+
+                try
+                {
+                    solid = Function.Call<bool>(Hash.HAS_COLLISION_LOADED_AROUND_ENTITY, h);
+                }
+                catch
+                {
+                    solid = true;
+                }
+
+                if (!solid)
+                {
+                    try
+                    {
+                        Function.Call(Hash.FREEZE_ENTITY_POSITION, h, true);
+
+                        _settling.Add(new Settling
+                        {
+                            Car = car,
+                            Where = owned.Where,
+                            Until = Game.GameTime + SettleMs
+                        });
+                    }
+                    catch
+                    {
+                        // Unfrozen and on its own. Better than not being there at all.
+                    }
+                }
 
                 Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, h);
                 Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h, owned.Plate);

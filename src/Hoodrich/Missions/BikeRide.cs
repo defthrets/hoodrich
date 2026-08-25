@@ -537,6 +537,7 @@ namespace Hoodrich.Missions
 
             Phase = BikePhase.Words;
             CallThemUp();
+            GetDown(player);
             ClearMarker();
 
             Notify.Important("~r~They're already here.~s~ " + Objective + ".");
@@ -558,6 +559,18 @@ namespace Hoodrich.Missions
         private void TickWords(Ped player)
         {
             if (Talk != null && Talk.IsOpen) return;
+
+            // Whichever comes first: the last line, or you not waiting for it.
+            //
+            // The exchange is written to be walked into and it plays on a clock, so a player
+            // who has already decided how this goes and swings at somebody was, until now,
+            // punching a man who stood there taking it while the subtitles finished. Now the
+            // punch IS the answer -- everybody piles in on the frame you throw it.
+            if (ThrownHands(player))
+            {
+                ItGoesOff();
+                return;
+            }
 
             var nearest = Nearest(_rivals, player);
             if (nearest == null)
@@ -636,6 +649,10 @@ namespace Hoodrich.Missions
             if (standing > 0) return;
 
             Phase = BikePhase.Rob;
+
+            // Straight away, rather than waiting for TickRob's first pass -- the beat right
+            // after a fight is the one where four men standing still reads worst.
+            RemountHomies(Game.Player.Character);
 
             _wentInside = false;
             _clerkDown = false;
@@ -1453,6 +1470,153 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>
+        /// Whose bike is whose, by ped handle.
+        ///
+        /// THIS IS WHY HE DID NOT FOLLOW. _homies and _bikes were two lists read as though the
+        /// same index meant the same man, and they are not filled in the same order: Lamar is
+        /// lent at the start of the job and goes into _homies FIRST, but he is put on a bike
+        /// LAST, after the other three -- so every man was paired with somebody else's bicycle,
+        /// off by one, all the way down.
+        ///
+        /// What that looks like in play is exactly what was reported. KeepUp checks whether a
+        /// man is on "his" bike, decides Lamar is not, and tells him to get on one of the
+        /// others -- every two seconds, for the entire ride. He climbs off the bike he is
+        /// riding perfectly well, walks to a bicycle with somebody already on it, fails, and
+        /// gets told again. Four men doing that to each other is a ride nobody arrives at.
+        ///
+        /// A handle is the thing that actually identifies a man, so the pairing is written down
+        /// against it and the index is never asked again.
+        /// </summary>
+        private readonly Dictionary<int, Vehicle> _ride = new Dictionary<int, Vehicle>();
+
+        /// <summary>The bike this man rode in on, or whatever he is sat on now.</summary>
+        private Vehicle BikeFor(Ped ped)
+        {
+            if (ped == null || !ped.Exists()) return null;
+
+            Vehicle bike;
+
+            if (_ride.TryGetValue(ped.Handle, out bike) && bike != null && bike.Exists())
+            {
+                return bike;
+            }
+
+            // He is on something we did not write down -- knocked off and back on, or given a
+            // replacement. That is his bike now.
+            var now = ped.CurrentVehicle;
+
+            if (now != null && now.Exists())
+            {
+                _ride[ped.Handle] = now;
+                return now;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Whether Franklin has started it himself.
+        ///
+        /// Two questions, because one of them is not enough on its own. Being in melee combat
+        /// catches a swing that connected or was blocked; the damage check catches the case
+        /// where the game has not decided you are "in melee" yet but somebody on that court has
+        /// just been hit by you. Either is Franklin having made his position clear.
+        /// </summary>
+        private bool ThrownHands(Ped player)
+        {
+            if (player == null || !player.Exists()) return false;
+
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_PED_IN_MELEE_COMBAT, player.Handle)) return true;
+
+                foreach (var ped in _rivals)
+                {
+                    if (ped == null || !ped.Exists()) continue;
+
+                    if (Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY,
+                                            ped.Handle, player.Handle, true))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Then the written exchange runs its course, which is the old behaviour.
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Off the bikes, onto the court, and stood with you.
+        ///
+        /// Nobody did this before, and it showed on the one beat the whole ride builds to: four
+        /// men rode up to a basketball court and then had the argument, and the fight, sitting
+        /// on bicycles. Lamar included -- the man who talked you into coming, watching it from
+        /// the saddle.
+        ///
+        /// A SEQUENCE, for the reason this file has already been bitten by twice: a second task
+        /// does not queue behind the first, it replaces it. Telling a man to get off a bike and
+        /// then telling him to walk over throws the dismount away before it starts, and he sits
+        /// there. Inside a sequence 0 is the ped performing it and each task waits its turn.
+        ///
+        /// They follow YOU rather than a coordinate, because the court is wherever you have
+        /// walked to on it, and the offsets fan them out so four men do not arrive on the same
+        /// paving slab.
+        /// </summary>
+        private void GetDown(Ped player)
+        {
+            if (player == null || !player.Exists()) return;
+
+            var spread = 0;
+
+            foreach (var ped in _homies)
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                var side = spread % 2 == 0 ? 1f : -1f;
+                var back = 1.6f + spread * 0.5f;
+                var across = 1.4f + spread * 0.6f;
+
+                spread++;
+
+                try
+                {
+                    if (!ped.IsInVehicle())
+                    {
+                        Function.Call(Hash.TASK_FOLLOW_TO_OFFSET_OF_ENTITY, ped.Handle,
+                                      player.Handle, across * side, -back, 0f,
+                                      3f, -1, 1.5f, true);
+                        continue;
+                    }
+
+                    var slot = new OutputArgument();
+
+                    Function.Call(Hash.OPEN_SEQUENCE_TASK, slot);
+                    var seq = slot.GetResult<int>();
+
+                    // Flag 0 is the ordinary dismount rather than a dive off it.
+                    Function.Call(Hash.TASK_LEAVE_VEHICLE, 0, 0, 0);
+
+                    Function.Call(Hash.TASK_FOLLOW_TO_OFFSET_OF_ENTITY, 0, player.Handle,
+                                  across * side, -back, 0f, 3f, -1, 1.5f, true);
+
+                    Function.Call(Hash.CLOSE_SEQUENCE_TASK, seq);
+                    Function.Call(Hash.TASK_PERFORM_SEQUENCE, ped.Handle, seq);
+                    Function.Call(Hash.CLEAR_SEQUENCE_TASK, slot);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not get a homie off his bike: " + ex.Message);
+                }
+            }
+
+            Log.Info("BikeRide: everybody off the bikes at the courts.");
+        }
+
         private int _nextSic;
 
         /// <summary>Twice a second. Often enough to feel immediate, rare enough to be free.</summary>
@@ -1489,6 +1653,7 @@ namespace Hoodrich.Missions
 
                 _homies.Add(ped);
                 _bikes.Add(bike);
+                _ride[ped.Handle] = bike;
 
                 try
                 {
@@ -1669,6 +1834,7 @@ namespace Hoodrich.Missions
             if (bike == null) return;
 
             _bikes.Add(bike);
+            _ride[ped.Handle] = bike;
 
             try
             {
@@ -1752,9 +1918,8 @@ namespace Hoodrich.Missions
             {
                 var ped = _homies[i];
                 if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
-                if (i >= _bikes.Count) continue;
 
-                var bike = _bikes[i];
+                var bike = BikeFor(ped);
                 if (bike == null || !bike.Exists()) continue;
 
                 if (!ped.IsInVehicle(bike))
@@ -1909,13 +2074,20 @@ namespace Hoodrich.Missions
                 // within seconds, which is most of what "he keeps getting stuck" actually was.
                 var bike = _lamar.CurrentVehicle;
 
-                if (bike == null || !bike.Exists())
+                // NOT AT THE COURTS. This exists for the ride, where a man without a bicycle
+                // is a man who cannot keep up -- and at the court it would hand him one in the
+                // middle of the fight and sit him on it. On foot beats mounted there, and the
+                // catch-up is what he needs put right rather than the transport.
+                var riding = Phase != BikePhase.Words && Phase != BikePhase.Fight;
+
+                if (riding && (bike == null || !bike.Exists()))
                 {
                     bike = SpawnBike(behind, player.Heading);
 
                     if (bike != null && bike.Exists())
                     {
                         _bikes.Add(bike);
+                        _ride[_lamar.Handle] = bike;
                         _lamar.SetIntoVehicle(bike, VehicleSeat.Driver);
                     }
                 }
@@ -1959,25 +2131,45 @@ namespace Hoodrich.Missions
         private int _lamarSlipSince;
         private float _lamarWasAt;
 
+        /// <summary>
+        /// Back on the bikes after the court, and back on your wheel once you are riding.
+        ///
+        /// It used to do nothing at all until YOU were mounted, which is the wrong way round
+        /// on the one beat that needed it: the fight ends, you walk to your bike, and behind
+        /// you three men and Lamar are stood in the middle of a basketball court watching. By
+        /// the time you are on yours they start walking to theirs, so you ride off alone and
+        /// they catch up somewhere near the shop, if at all.
+        ///
+        /// They get on their bikes when the fighting stops. The escort is the part that waits
+        /// for you, because there is nothing to follow until there is.
+        /// </summary>
         private void RemountHomies(Ped player)
         {
-            if (!player.IsInVehicle()) return;
+            var yours = player == null ? null : player.CurrentVehicle;
+            var riding = yours != null && yours.Exists();
 
-            for (var i = 0; i < _homies.Count; i++)
+            foreach (var ped in _homies)
             {
-                var ped = _homies[i];
                 if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
-                if (ped.IsInVehicle()) continue;
 
-                if (i >= _bikes.Count) continue;
-
-                var bike = _bikes[i];
+                var bike = BikeFor(ped);
                 if (bike == null || !bike.Exists()) continue;
 
                 try
                 {
-                    Function.Call(Hash.TASK_ENTER_VEHICLE, ped.Handle, bike.Handle,
-                                  -1, (int)VehicleSeat.Driver, 2f, 1, 0);
+                    if (!ped.IsInVehicle(bike))
+                    {
+                        Function.Call(Hash.TASK_ENTER_VEHICLE, ped.Handle, bike.Handle,
+                                      -1, (int)VehicleSeat.Driver, 2f, 1, 0);
+                        continue;
+                    }
+
+                    // On it, and you are moving. Give him something to follow rather than
+                    // leaving him sat on a bicycle at the kerb.
+                    if (riding && ped.Position.DistanceTo(player.Position) > TrailingRange)
+                    {
+                        Escort(ped, bike, player);
+                    }
                 }
                 catch
                 {
@@ -2551,6 +2743,7 @@ namespace Hoodrich.Missions
             // street the moment you get paid is the mod tidying up in front of you.
             foreach (var bike in _bikes) Release(bike);
             _bikes.Clear();
+            _ride.Clear();
 
             Release(_playerBike);
             _playerBike = null;
