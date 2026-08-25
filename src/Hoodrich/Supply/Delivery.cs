@@ -1802,7 +1802,7 @@ namespace Hoodrich.Supply
                 // pointing out of his chest whichever way round the thing ended up.
                 var out_ = local.Y + size.Y * 0.5f + ChestClear;
 
-                var sit = new Vector3(local.X, out_, local.Z + size.Z * 0.5f) - centre;
+                var sit = new Vector3(local.X, out_, local.Z + size.Z * 0.5f + ChestLift) - centre;
 
                 Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
                               0, sit.X, sit.Y, sit.Z, 0f, 0f, yaw,
@@ -1819,6 +1819,16 @@ namespace Hoodrich.Supply
                 Log.Debug("Could not centre the crate: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// A little above his hands, rather than exactly level with them.
+        ///
+        /// The bone midpoint is where his palms are, and a man carrying a box has it resting
+        /// ON his hands with the mass above them -- so measuring to the middle of the box and
+        /// stopping there hangs it at his thighs. This is the rest of the lift, and it is the
+        /// last number in this placement that is a judgement rather than a measurement.
+        /// </summary>
+        private const float ChestLift = 0.11f;
 
         /// <summary>
         /// Daylight between the box and his shirt.
