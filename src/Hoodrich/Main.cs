@@ -938,6 +938,27 @@ namespace Hoodrich
                                         MetallicDarkGreen,
                                         "buccaneer2", "voodoo", "chino2", "primo2"));
 
+                // A SCREEN, not scenery.
+                //
+                // Cheng's two men are made at a mark on the apron and walk from it to the
+                // tailgate, and a ped is made the way everything in this game is made: it is
+                // not there and then it is. Standing in the bay watching two men appear out of
+                // nothing four metres away is the one moment of that whole scene that says
+                // "script" out loud.
+                //
+                // So there is a box truck between the bay and the mark, sat lengthways. They
+                // come out from behind it, which is where men on a dock come from. Nothing
+                // clever, and it fixes the thing completely.
+                //
+                // Parked rather than spawned by the mission, so it is there before you arrive,
+                // there after you leave, and holds the ground against ambient traffic the
+                // whole time -- which is the other half of what it is for. See ParkedCar: the
+                // traffic watchdog is told it is parked on purpose, and PortRun's bay sweep
+                // knows its models by name so it does not clear away its own screen.
+                _cars.Add(new ParkedCar(new Vector3(1246.484f, -3169.437f, 5.249f), 269.487f,
+                                        -1,
+                                        "benson", "mule3", "mule", "pounder"));
+
                 _copWatch = new CopWatch();
 
                 _traffic = new TrafficWatch()

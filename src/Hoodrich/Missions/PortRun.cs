@@ -2439,7 +2439,20 @@ namespace Hoodrich.Missions
         /// port. It is the parked CARS that are the problem -- one of them lands in the bay
         /// you have been told to reverse into.
         /// </summary>
-        private static readonly string[] BayKeep = { "mixer", "mixer2" };
+        /// <summary>
+        /// Vehicles the bay sweep may not take.
+        ///
+        /// The mixers were here because they are part of the yard. The box truck is here for a
+        /// better reason: it is the thing standing between you and the spot the loaders are
+        /// made at, and a sweep that clears a twenty metre circle of empty vehicles would
+        /// otherwise delete the screen about a second before the men appear behind where it
+        /// used to be. Matched by model, because it is a parked car owned by Main and this
+        /// file has no reference to it.
+        /// </summary>
+        private static readonly string[] BayKeep =
+        {
+            "mixer", "mixer2", "benson", "mule3", "mule", "pounder"
+        };
 
         private bool _bayHeld;
 
