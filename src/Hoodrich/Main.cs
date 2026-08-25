@@ -417,7 +417,6 @@ namespace Hoodrich
 
                 // Two of yours, on call once you have ridden a job out with them.
                 _homies = new Gangs.Homies(_gangs, _crew, _state);
-                _homies.Feed = _social;
                 _cook = new CookScreen();
                 _kitchen = new Kitchen(OpenKitchen, () => _cutting.IsBusy);
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
@@ -452,6 +451,14 @@ namespace Hoodrich
 
                 _social = SocialFeed.Load();
                 _socialScreen = new SocialScreen(_social);
+
+                // HERE, not thirty lines up where it used to be.
+                //
+                // This is a field copy, not a lambda, and it was made before _social existed --
+                // so the crew held a null feed for the entire life of the script and the one
+                // event they raise, HomiesOut, was swallowed by its own null guard every time.
+                // No error, no log line, nothing to notice.
+                _homies.Feed = _social;
 
                 // Two for Lamar, on their own marks -- one on watch, one smoking, because a
                 // courtyard where both men are doing the same thing looks staged.
@@ -974,6 +981,7 @@ namespace Hoodrich
                                   || (_payback != null && _payback.Owns(car))
                                   || OurParkedCar(car)
                                   || (_port != null && _port.Owns(car))
+                                  || OwnedByPlayer(car)
                                   || (_decks != null && _decks.Owns(car))
                                   || (_partyDecks != null && _partyDecks.Owns(car))
                 };
@@ -1092,7 +1100,15 @@ namespace Hoodrich
                 Func<bool> onAJob = () => (_jobs != null && _jobs.IsRunning)
                                           || (_port != null && _port.Running);
 
-                _war.Busy = onAJob;
+                // AND NOT WHILE YOU ARE WANTED.
+                //
+                // A war holds the law off, and holding the law off starts by setting the wanted
+                // level to zero and re-applying it every seven hundred milliseconds for the
+                // whole fight. So a war that began during a three star chase deleted the chase
+                // and kept it deleted for up to eight minutes -- rob, run people over, shoot at
+                // police, nothing sticks. Patrol already refuses to act while you are wanted
+                // for the same reason; the war did not.
+                _war.Busy = () => onAJob() || Game.Player.Wanted.WantedLevel > 0;
 
                 // Whose block you are stood on, so a war you start yourself knows it is being
                 // started on theirs.
@@ -1190,6 +1206,8 @@ namespace Hoodrich
                 _pocketScreen = new PocketScreen();
                 _port = new Missions.PortRun(_state)
                 {
+                    // Nothing of ours gets swept off a kerb by the port run.
+                    Spare = car => OurParkedCar(car) || OwnedByPlayer(car),
                     Talk = _talk,
                     Social = _social,
                     // A raid banner and this card are both centred at the top of the screen
@@ -2244,6 +2262,39 @@ namespace Hoodrich
         /// <summary>True while the mod is stood down because somebody else is on screen.</summary>
         private bool _asleep;
 
+        /// <summary>
+        /// A car the player actually paid for, by plate.
+        ///
+        /// OwnedCars stamps a plate on everything bought off Hao and that plate is the one
+        /// thing about the car nothing else in the world shares -- which makes it the only
+        /// honest way to ask this question about a vehicle handle that may have been rebuilt
+        /// since the sale.
+        /// </summary>
+        private bool OwnedByPlayer(Vehicle car)
+        {
+            if (car == null || !car.Exists() || _state == null) return false;
+
+            try
+            {
+                var plate = Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle);
+                if (string.IsNullOrEmpty(plate)) return false;
+
+                foreach (var owned in _state.Owned)
+                {
+                    if (string.Equals(owned.Plate, plate, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Cannot read the plate, so cannot claim it.
+            }
+
+            return false;
+        }
+
         private bool IsPlayable()
         {
             try
@@ -2349,6 +2400,7 @@ namespace Hoodrich
             }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
+            try { _turf?.RestoreWorld(); } catch { /* teardown */ }
             try { _rollers?.RestoreWorld(); } catch { /* teardown */ }
             try { _patrol?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }

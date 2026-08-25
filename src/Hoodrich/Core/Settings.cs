@@ -235,7 +235,19 @@ namespace Hoodrich.Core
 
             s.Enabled = ini.GetBool("General", "Enabled", s.Enabled);
             s.LogLevel = ini.GetEnum("General", "LogLevel", s.LogLevel);
-            s.SaveIntervalSeconds = ini.GetInt("General", "SaveIntervalSeconds", s.SaveIntervalSeconds);
+            // CLAMPED, because Main multiplies this by a thousand into an int.
+            //
+            // It was the only setting in this whole method with neither a Clamp nor a Max on
+            // it. Anything above 2,147,483 wraps the multiply negative, the "is it time to
+            // save yet" test becomes permanently true, and the mod writes the entire save
+            // document to disk once a second forever -- which is the exact opposite of what
+            // somebody typing a huge number is asking for. A floor of ten stops the other end
+            // doing the same thing more slowly.
+            s.SaveIntervalSeconds =
+                (int)Clamp(ini.GetInt("General", "SaveIntervalSeconds", s.SaveIntervalSeconds),
+                           0f, 86400f);
+
+            if (s.SaveIntervalSeconds > 0 && s.SaveIntervalSeconds < 10) s.SaveIntervalSeconds = 10;
             s.PauseDuringMission = ini.GetBool("General", "PauseDuringMission", s.PauseDuringMission);
 
             // [Phone] first, then the old [Wheel] key as a fallback, so an existing

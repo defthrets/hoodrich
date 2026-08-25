@@ -65,6 +65,17 @@ namespace Hoodrich.Locations
             if (_state == null || !_state.SleptAtStashHouse) return;
             if (Game.GameTime > 60000) return;
 
+            // SPENT ON USE. The flag means "the last thing you did was sleep here", and
+            // nothing in normal play ever set it back to false -- only ForgetEverything did.
+            // So one nap at Denise's, at hour three of a forty hour save, and every session
+            // after it dragged you out of wherever the game had put you and stood you at that
+            // bed. Save in Sandy Shores, load, wake up on Forum Drive without your car.
+            //
+            // Cleared here rather than at the end, because every return below is a case where
+            // the restore did not happen and should not be tried again next load either.
+            _state.SleptAtStashHouse = false;
+            _state.Touch();
+
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 

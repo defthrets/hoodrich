@@ -1577,6 +1577,18 @@ namespace Hoodrich.Missions
             {
                 if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
 
+                // NOT THE ONES STILL RIDING IN.
+                //
+                // CallThemUp runs on the line above this and gives anybody more than forty
+                // metres out a drive-to-the-courts order. This then walked the whole list and
+                // replaced that order with a dismount -- microseconds later, before the first
+                // one could turn a wheel. Ride ahead of Lamar and he would get off his bike in
+                // the middle of Chamberlain and jog the last sixty metres, leaving the bike
+                // where it stood.
+                //
+                // Same radius CallThemUp uses, so the two agree on who is still on the road.
+                if (Flat(ped.Position, Courts) > 40f) continue;
+
                 var side = spread % 2 == 0 ? 1f : -1f;
                 var back = 1.6f + spread * 0.5f;
                 var across = 1.4f + spread * 0.6f;

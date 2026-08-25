@@ -2716,6 +2716,24 @@ namespace Hoodrich.Missions
                 var ped = _homies[i];
                 if (ped != null && ped.Exists() && ped.IsAlive) continue;
 
+                // HANDED BACK BEFORE HE IS FORGOTTEN.
+                //
+                // SpawnGangMember marks every one of these persistent and a mission entity,
+                // which is the game being told not to clean them up. Clear() releases the men
+                // still in _homies -- so anybody who DIED was dropped from the list first and
+                // then never released by anything. Four jobs with two losses each and there are
+                // eight bodies on the pavement for the rest of the session, immune to the
+                // engine's own tidying.
+                try
+                {
+                    if (ped != null && ped.Exists())
+                    {
+                        ped.IsPersistent = false;
+                        ped.MarkAsNoLongerNeeded();
+                    }
+                }
+                catch { /* the engine gets him now either way */ }
+
                 _homies.RemoveAt(i);
                 _homiesLost++;
 
@@ -3061,7 +3079,19 @@ namespace Hoodrich.Missions
             _siteBlip = null;
         }
 
-        public void RestoreWorld() => Clear();
+        public void RestoreWorld()
+        {
+            // The tag run's own teardown, which nothing was reaching. MissionRunner.Clear
+            // calls _tags.Clear(), and Clear deliberately leaves the paint on the walls --
+            // that is the persistence. RestoreWorld is the one that also wipes the decals, and
+            // it has to happen HERE and only here: a script reload loses the handle list but
+            // not the marks, so without this a reload orphans up to ninety-six decals for the
+            // session and the next run paints a second set over the first.
+            try { _tags.RestoreWorld(); }
+            catch { /* teardown */ }
+
+            Clear();
+        }
 
         // ---- hud ---------------------------------------------------------------
 

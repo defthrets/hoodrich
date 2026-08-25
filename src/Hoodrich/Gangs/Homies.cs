@@ -609,6 +609,16 @@ namespace Hoodrich.Gangs
 
         public void Update()
         {
+            // THE CAB FIRST, because the cab outlives the crew.
+            //
+            // ReleaseCab sat below this guard, so a carload wiped out inside the nine seconds
+            // between the drop-off and the hand-back left the taxi and its driver standing in
+            // the road as persistent mission entities the game's own population control is
+            // forbidden from touching -- permanently, for the session. That is the exact
+            // failure Payback's own comment calls "a permanent roadblock, which is a bug this
+            // mod has already been through once".
+            ReleaseCab();
+
             if (_men.Count == 0) return;
 
             if (Game.GameTime < _next) return;

@@ -309,8 +309,14 @@ namespace Hoodrich.Gangs
 
                 if (_driver == null)
                 {
-                    Pack();
+                    // REARM FIRST. Pack() clears _who, and Rearm()'s first line is a guard on
+                    // _who being non-null -- so in this order the retry it was written to
+                    // schedule could never once have run. The debt simply evaporated, silently,
+                    // every time the game failed to put somebody in the driver's seat: a common
+                    // outcome on bikes and in tight spawn geometry. From the player's side the
+                    // whole consequence of dissing a set just did not happen.
                     Rearm();
+                    Pack();
                     return;
                 }
 

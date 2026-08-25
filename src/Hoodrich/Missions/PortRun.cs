@@ -2758,10 +2758,24 @@ namespace Hoodrich.Missions
             catch { /* they come back on their own eventually */ }
         }
 
+        /// <summary>
+        /// Set by Main: anything the rest of the mod considers parked on purpose.
+        ///
+        /// Without this the sweeps below know about their own two vehicles and nothing else --
+        /// so a car you BOUGHT, left on Gerald's kerb and walked eighteen metres away from was
+        /// deleted in front of you the moment you took the job, and any parked car of ours
+        /// inside twenty metres of bay one went the same way. The rest of the mod already has
+        /// one answer to "is this ours"; this borrows it rather than keeping a second list.
+        /// </summary>
+        public Func<Vehicle, bool> Spare;
+
         private bool Ours(Vehicle car)
         {
             if (_van != null && _van.Exists() && car.Handle == _van.Handle) return true;
             if (_car != null && _car.Exists() && car.Handle == _car.Handle) return true;
+
+            try { if (Spare != null && Spare(car)) return true; }
+            catch { /* then it is not spared, which is the old behaviour */ }
 
             var player = Game.Player.Character;
 
@@ -3332,6 +3346,20 @@ namespace Hoodrich.Missions
             if (_state != null)
             {
                 _state.PortRunStage = StageNone;
+
+                // AND THE DOCKS GO BACK TO LOCKED.
+                //
+                // Take() grants DocksUnlocked the moment Tao hands the package over, which is
+                // before you have driven a metre of the way home. Send() refuses to start a run
+                // while that flag is set, and Gerald's only line for "unlocked but nothing
+                // running" is "I already told you, go see the man" with no way to start.
+                //
+                // So failing anywhere after the bay -- shot on the freeway, arrested, truck
+                // burned -- left the run permanently unreachable and simultaneously handed over
+                // the thing the run exists to unlock, for free, without ever delivering. Blow
+                // is only ever reached on failure, and Send cannot run twice, so putting it
+                // back here can only ever undo a reward that was not earned.
+                _state.DocksUnlocked = false;
                 _state.Touch();
             }
 

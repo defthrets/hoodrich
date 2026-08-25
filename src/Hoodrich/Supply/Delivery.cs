@@ -2234,6 +2234,10 @@ namespace Hoodrich.Supply
         /// <summary>Ends the run and lets the world have the driver and the van back.</summary>
         public void Cancel(string reason)
         {
+            // The bale goes with it. See DropTheBox -- every abnormal ending came through here
+            // and none of them released the prop.
+            DropTheBox();
+
             var name = _def == null ? "Your contact" : _def.Name;
 
             // Whatever happened, the phone comes down. A call that is called off leaving the
@@ -2465,6 +2469,31 @@ namespace Hoodrich.Supply
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Drops the bale, wherever the delivery got to.
+        ///
+        /// _box is a prop this class makes and attaches to the driver, and only the two normal
+        /// endings ever released it. Every abnormal one -- you died, you drove off, the driver
+        /// was killed, the script unloaded -- went through Cancel, which tidies the phone, the
+        /// driver, the car and the blip and never mentions the box. A quarter kilo of prop
+        /// stayed welded to a corpse or floating in the front garden for the session.
+        /// </summary>
+        private void DropTheBox()
+        {
+            try
+            {
+                if (_box != null && _box.Exists())
+                {
+                    Function.Call(Hash.DETACH_ENTITY, _box.Handle, true, true);
+                    _box.IsPersistent = false;
+                    _box.Delete();
+                }
+            }
+            catch { /* the streamer gets it */ }
+
+            _box = null;
         }
 
         public void RestoreWorld() => Cancel(null);

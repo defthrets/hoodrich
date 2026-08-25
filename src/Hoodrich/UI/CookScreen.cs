@@ -283,13 +283,25 @@ namespace Hoodrich.UI
         {
             if (wanted <= 0.005f || _house == null || drug == null) return 0f;
 
+            // THE STRENGTH TRAVELS WITH IT, read before the weight leaves the cupboard.
+            //
+            // AddBulk's purity argument defaults to 1f, and these were the only two calls in
+            // the mod that left it off -- every other one passes a real value. So walking to
+            // the kitchen with 200g of 75% in the house and fetching it onto the counter handed
+            // you 200g of PURE, out of nothing, every batch. Cut that to a third and you got
+            // 151g where the honest answer was 113g; sold it at 100% and the refusal chance
+            // that punishes stepped-on product went to zero, and product rep never took the
+            // knock it was supposed to. The whole penalty for buying cut weight was erased by
+            // carrying it across one room.
+            var strength = _house.BulkPurityOf(drug.Id);
+
             var taken = _house.RemoveBulk(drug.Id, wanted);
             if (taken <= 0f) return 0f;
 
-            var accepted = _stash.AddBulk(drug.Id, taken);
+            var accepted = _stash.AddBulk(drug.Id, taken, strength);
             var over = taken - accepted;
 
-            if (over > 0.005f) _house.AddBulk(drug.Id, over);
+            if (over > 0.005f) _house.AddBulk(drug.Id, over, strength);
 
             return accepted;
         }
@@ -390,7 +402,18 @@ namespace Hoodrich.UI
             var row = _rows[Math.Max(0, Math.Min(_selected, _rows.Count - 1))];
             if (row == null || row.Source == null) return 1f;
 
-            return _stash.BulkPurityOf(row.Source.Id);
+            // The pocket if there is weight in it, otherwise the cupboard.
+            //
+            // These two go together with the fix above and cannot be separated. A row is listed
+            // whenever there is weight in EITHER place, but this only ever asked the pocket --
+            // and BulkPurityOf answers "full strength" for a drug you are holding none of. So
+            // with the lot in the cupboard the screen offered a 100% rung for 75% product.
+            // While Fetch was laundering it that was accidentally consistent; with Fetch fixed
+            // and this left alone the batch would be fetched, then refused outright with
+            // "that's already cut to 75%", and the fetched weight left on the counter.
+            if (_stash.BulkOf(row.Source.Id) > 0.005f) return _stash.BulkPurityOf(row.Source.Id);
+
+            return _house == null ? 1f : _house.BulkPurityOf(row.Source.Id);
         }
 
         private void Begin()
@@ -405,7 +428,17 @@ namespace Hoodrich.UI
             // at the cupboard -- putting the finished ones away is what a person does before
             // starting the next lot.
             var wanted = FromHouse(row.Source, batch);
-            if (wanted > 0.005f) MakeRoom(wanted);
+
+            // ROOM FIRST, EVEN WHEN NOTHING NEEDS FETCHING.
+            //
+            // This used to be gated on wanted > 0, so it only ran when weight had to come out
+            // of the cupboard. But the batch that fails for want of room is the one where the
+            // bulk is ALREADY in your pocket -- two batches of weed at a third leave you with
+            // 303g of packaged product and 47g of space, and the third batch is refused with
+            // "no room for 152g, sell some first" while you are stood at a cupboard with four
+            // and a half kilos free. The bags it needs to put away are the same bags either
+            // way, so the fetch is not what decides whether to put them away.
+            MakeRoom(Math.Max(wanted, batch));
 
             // Out of the cupboard and onto the counter, which is the step that used to have to
             // be done by hand through a different screen in a different room.

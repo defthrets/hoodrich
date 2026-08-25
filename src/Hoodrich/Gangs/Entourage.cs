@@ -532,11 +532,20 @@ namespace Hoodrich.Gangs
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped.Handle, false);
 
+                    // OUTSIDE the armed check, which is where it should always have been.
+                    //
+                    // Whose side a man is on has nothing to do with whether he is holding a
+                    // gun. Four of the seven men in Gerald's courtyard are unarmed, and they
+                    // were being left in the CIVMALE group the ped was created with -- so in a
+                    // raid on that yard the attackers did not consider them targets, the
+                    // lookout bonus did not count them, turf checks did not see them as allies,
+                    // and shooting one cost no respect because nothing could work out which set
+                    // he belonged to. They stood in a firefight being nobody.
+                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
+                    Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
+
                     if (armed)
                     {
-                        Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
-                        Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
-
                         var gun = string.IsNullOrEmpty(carrying) ? Weapon : carrying;
 
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,

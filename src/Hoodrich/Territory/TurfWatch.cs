@@ -64,6 +64,54 @@ namespace Hoodrich.Territory
 
         private readonly HashSet<int> _aggroed = new HashSet<int>();
 
+        /// <summary>
+        /// Undoes everything Engage did to a ped this mod did not create.
+        ///
+        /// This is the only system in the mod that reached into AMBIENT peds and left them
+        /// altered. Engage sets blocked non-temporary events, KEEP_TASK and no-cover on
+        /// somebody the game owns, and nothing ever put any of it back -- and _aggroed
+        /// guaranteed the ped was never looked at again, so it could not even be undone by
+        /// accident. Every comparable system pairs the flag with its release; this did not, and
+        /// it had no RestoreWorld at all, so a script unload could not fix it either.
+        ///
+        /// The result was a permanently broken pedestrian: a man stood in Davis with a combat
+        /// order on a player who left twenty minutes ago, deaf to gunfire, sirens and his own
+        /// schedule, for the rest of his life.
+        /// </summary>
+        private void LetThemGo()
+        {
+            foreach (var handle in _aggroed)
+            {
+                try
+                {
+                    var ped = (Ped)Entity.FromHandle(handle);
+                    if (ped == null || !ped.Exists()) continue;
+
+                    Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, false);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 0, true);
+                    Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, ped.Handle, 1);
+
+                    if (ped.IsAlive) Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+
+                    ped.MarkAsNoLongerNeeded();
+                }
+                catch
+                {
+                    // He is gone, or the handle went stale. Either way he is not our problem.
+                }
+            }
+        }
+
+        /// <summary>Gives every ped this class touched back to the game.</summary>
+        public void RestoreWorld()
+        {
+            LetThemGo();
+            _aggroed.Clear();
+        }
+
         private int _lastScan;
         private int _exposedUntil;
         private int _nextAggroAllowedAt;
@@ -459,6 +507,10 @@ namespace Hoodrich.Territory
         public void Prune()
         {
             if (_aggroed.Count < 200) return;
+
+            // Handed back before the set is dropped, or they stay broken.
+            LetThemGo();
+
             _aggroed.Clear();
         }
     }
