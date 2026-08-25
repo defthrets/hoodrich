@@ -451,6 +451,44 @@ namespace Hoodrich.Missions
 
         public void Update()
         {
+            // THE THREE WAYS THIS JOB ENDS BADLY, and none of them were checked.
+            //
+            // MissionRunner has had this at the top of its own Update for a while and every
+            // job it owns gets it for free. This file is the one mission that is not one of
+            // those, so it had nothing: die on the way to the docks and you came round outside
+            // a hospital with the card still up, still counting, still telling you to get into
+            // a truck that was a burnt shell on the other side of the freeway. There is no way
+            // out of that except loading a save.
+            //
+            // Not throttled, deliberately. You are only dead for the couple of seconds before
+            // the game stands you up outside Pillbox, and a check that runs twice a second can
+            // miss that window entirely and conclude you were fine the whole time.
+            if (Running)
+            {
+                var who = Game.Player.Character;
+
+                if (who == null || !who.Exists() || !who.IsAlive || Game.Player.IsDead)
+                {
+                    Blow("You went down out there.");
+                    return;
+                }
+
+                if (Function.Call<bool>(Hash.IS_PLAYER_BEING_ARRESTED, Game.Player.Handle, false))
+                {
+                    Blow("They took you in.");
+                    return;
+                }
+
+                // And the truck, which is the actual subject of this mission. No truck, no
+                // run -- an objective that says "get in Gerald's truck" while pointing at a
+                // wreck is the same dead end as the one above, reached a different way.
+                if (_van != null && _van.Exists() && !_van.IsDriveable)
+                {
+                    Blow("You wrecked Gerald's truck.");
+                    return;
+                }
+            }
+
             if (!Running)
             {
                 // He does not vanish while you are stood in front of him.
@@ -3287,6 +3325,42 @@ namespace Hoodrich.Missions
         public bool Owns(Vehicle car)
         {
             return car != null && _van != null && _van.Exists() && car.Handle == _van.Handle;
+        }
+
+        /// <summary>
+        /// Ends the run badly and puts everything back where it can be started again.
+        ///
+        /// The wreck goes with it. A burnt shell is not something to hand back to the man who
+        /// lent it to you, and leaving it standing in the world means the kerb outside his yard
+        /// stays empty for the rest of the save -- Idle only stands a replacement up when there
+        /// is no truck at all. Deleting it is what lets a fresh one turn up out front, which is
+        /// the whole of "you can go and do it again".
+        /// </summary>
+        private void Blow(string why)
+        {
+            Log.Info("Port run failed: " + why);
+
+            try
+            {
+                if (_van != null && _van.Exists())
+                {
+                    _van.IsPersistent = false;
+                    _van.Delete();
+                }
+            }
+            catch { /* the streamer gets it */ }
+
+            _van = null;
+
+            if (_state != null)
+            {
+                _state.PortRunStage = StageNone;
+                _state.Touch();
+            }
+
+            Pack();
+
+            Notify.Important("~r~" + why + "~s~ Go see Gerald and start over.");
         }
 
         public void Pack()
