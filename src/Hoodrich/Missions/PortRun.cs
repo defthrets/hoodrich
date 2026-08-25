@@ -2030,6 +2030,9 @@ namespace Hoodrich.Missions
 
             _loadNext++;
 
+            // Halfway on, and then all of it on. See Squat.
+            Squat(_loadNext * 2 >= _loadPlan.Count ? (StillLoading ? 1 : 2) : 0);
+
             if (StillLoading) return;
 
             // Done. The men can go, and the settle beat starts from HERE rather than from the
@@ -2138,6 +2141,96 @@ namespace Hoodrich.Missions
         /// </summary>
         private const int LoaderStaggerMs = 850;
         private const int LoaderSlopMs = 420;
+
+        /// <summary>
+        /// Puts the back end down as the weight goes on.
+        ///
+        /// THERE IS NO SUSPENSION-DAMAGE NATIVE. I looked -- the whole VEHICLE namespace has
+        /// eighty-six calls touching wheels, damage or suspension and not one of them is "set
+        /// this corner's ride height". What exists is hydraulics (a lowrider system that needs
+        /// the mod fitted), tyre bursting (a flat tyre, and you have to drive this thing four
+        /// kilometres afterwards), and DEFORMATION, which is the one that actually does what
+        /// was asked.
+        ///
+        /// SET_VEHICLE_DAMAGE at a point deforms the body and, with CAN_DEFORM_WHEELS on, the
+        /// wheel and suspension geometry under it. Aimed at the rear axle from below it pushes
+        /// that end down, which is the sag. It stacks, so calling it twice with a modest value
+        /// each time gives two visible steps rather than one drop -- which is the two stages,
+        /// and the reason it is done this way round instead of one big hit at the end.
+        ///
+        /// Modest on purpose. Rockstar's own scripts run this between 200 and 1600, and the
+        /// top of that range is for a car that has been in a crash: it caves panels in and
+        /// leaves the truck looking wrecked rather than loaded. The numbers here are near the
+        /// bottom of their range, aimed low and behind the axle so what moves is the ride
+        /// height rather than the bed sides.
+        ///
+        /// The deformation is measured after each stage and logged, because "it should sag" and
+        /// "it sagged four centimetres" are different claims and only one of them is checkable.
+        /// </summary>
+        private void Squat(int stage)
+        {
+            if (stage <= 0 || stage == _squat) return;
+            if (_van == null || !_van.Exists()) return;
+
+            _squat = stage;
+
+            try
+            {
+                // The wheels are allowed to move with the body. Without this the panel dents
+                // and the truck stays at the same height, which is a dented truck and not a
+                // loaded one.
+                Function.Call(Hash.SET_VEHICLE_CAN_DEFORM_WHEELS, _van.Handle, true);
+
+                // Behind the middle and below the floor, which is where a rear axle is. The
+                // hit is on the centreline so both sides go down together -- off to one side
+                // and it sits like something has gone through the springs on one corner.
+                Function.Call(Hash.SET_VEHICLE_DAMAGE, _van.Handle,
+                              0f, SquatY, SquatZ, SquatForce, SquatRadius, true);
+
+                var sag = Function.Call<Vector3>(Hash.GET_VEHICLE_DEFORMATION_AT_POS,
+                                                 _van.Handle, 0f, SquatY, SquatZ);
+
+                Log.Info("Truck squats: stage " + stage + " of 2, rear deformed by " +
+                         sag.Z.ToString("0.000") + "m (" + sag.X.ToString("0.00") + ", " +
+                         sag.Y.ToString("0.00") + ", " + sag.Z.ToString("0.00") + ").");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not settle the truck on its springs: " + ex.Message);
+            }
+        }
+
+        /// <summary>Which stage of squat the truck is at: 0 empty, 1 half loaded, 2 full.</summary>
+        private int _squat;
+
+        /// <summary>
+        /// Where the rear axle is in the truck's own space, and how hard it is leant on.
+        ///
+        /// Y is metres behind the centre and Z is metres below it. The force is at the bottom
+        /// of the range the game's own scripts use, applied twice.
+        /// </summary>
+        private const float SquatY = -1.55f;
+        private const float SquatZ = -0.45f;
+        private const float SquatForce = 190f;
+        private const float SquatRadius = 220f;
+
+        /// <summary>
+        /// Puts it back on its springs.
+        ///
+        /// The weight comes off at Gerald's yard, so the truck should not spend the rest of the
+        /// save sitting on its bump stops. This also repairs whatever else you did to it on the
+        /// way home, which is a fair trade: it is his truck, he gets it back straight, and the
+        /// alternative is a permanently bent one.
+        /// </summary>
+        private void Unsquat()
+        {
+            _squat = 0;
+
+            if (_van == null || !_van.Exists()) return;
+
+            try { Function.Call(Hash.SET_VEHICLE_DEFORMATION_FIXED, _van.Handle); }
+            catch { /* it stays bent, which is survivable */ }
+        }
 
         /// <summary>How many of something that wide fit across a deck that wide. At least one.</summary>
         private static int Fits(float deck, float one)
@@ -3166,6 +3259,9 @@ namespace Hoodrich.Missions
             _loadStop = 0;
             _swing = 0;
             _heaveAt.Clear();
+
+            // The load is off, so the springs come back up.
+            Unsquat();
 
             try { if (_crate != null && _crate.Exists()) _crate.Delete(); }
             catch { /* teardown */ }
