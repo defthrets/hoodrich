@@ -267,6 +267,14 @@ namespace Hoodrich.Missions
         /// <summary>What it says on the back of Gerald's truck.</summary>
         private const string VanPlate = "BIG G";
 
+        /// <summary>
+        /// How long to wait for his truck's model before giving up on THIS attempt.
+        ///
+        /// Giving up here costs nothing -- Idle tries again a couple of seconds later -- so it
+        /// can afford to be short. What it must never do is fall through to another model.
+        /// </summary>
+        private const int ModelWaitMs = 1500;
+
         private const int TickMs = 400;
 
         /// <summary>
@@ -1596,12 +1604,44 @@ namespace Hoodrich.Missions
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                    // THREE DIFFERENT FAILURES, and they used to be one silent `continue`.
+                    //
+                    // That is how Gerald's truck changed. The list is yosemite1500 first --
+                    // the lifted extended cab -- and plain yosemite behind it, which is a
+                    // slammed single cab and a completely different vehicle. A model REQUEST
+                    // timing out means "not resident yet", not "this install has not got it",
+                    // and treating the two the same meant one slow streaming moment parked
+                    // the wrong truck outside his yard for good.
+                    //
+                    // It never showed before because MakeVan only ever ran from Send -- a calm
+                    // moment straight after a conversation, with everything already in memory.
+                    // Idle calls it whenever the kerb is empty, which is often mid-stream.
+                    //
+                    // So: missing from the install is a reason to try the next one. Not loaded
+                    // yet is a reason to WAIT. Idle comes back in two seconds and nothing is
+                    // lost by it.
+                    if (!model.IsValid || !model.IsInCdImage)
+                    {
+                        Log.Info("Van model " + name + " is not in this install; next one.");
+                        continue;
+                    }
+
+                    if (!model.Request(ModelWaitMs))
+                    {
+                        Log.Debug("Van model " + name + " has not streamed in yet; waiting for " +
+                                  "it rather than parking a different truck.");
+                        return;
+                    }
 
                     _van = World.CreateVehicle(model, VanSpot, VanHeading);
                     model.MarkAsNoLongerNeeded();
 
-                    if (_van == null || !_van.Exists()) continue;
+                    if (_van == null || !_van.Exists())
+                    {
+                        Log.Info("Van model " + name + " would not spawn; next one.");
+                        continue;
+                    }
 
                     var h = _van.Handle;
 
@@ -1654,7 +1694,11 @@ namespace Hoodrich.Missions
 
                     if (Running) MarkVan();
 
-                    Log.Info("Gerald's van is parked up for the port run.");
+                    // Which one, by name. "His van is parked up" was true of four different
+                    // vehicles and said nothing about which had turned up -- so when the wrong
+                    // one did, the log agreed with itself and the truck on the street was the
+                    // only evidence anything was wrong.
+                    Log.Info("Gerald's truck is parked up: " + name + ", plate " + VanPlate + ".");
                     return;
                 }
                 catch (Exception ex)
