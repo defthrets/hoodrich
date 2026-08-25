@@ -74,7 +74,10 @@ namespace Hoodrich.UI
         private int _openedAt;
         private int _nextRepeat;
 
-        public bool IsOpen { get; private set; }
+        /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
+        private readonly Curtain _curtain = new Curtain();
+
+        public bool IsOpen => _curtain.Showing;
 
         public void Open(Stash pockets, Stash house, Drugs catalogue, Action onChange)
         {
@@ -87,7 +90,7 @@ namespace Hoodrich.UI
 
             _selected = 0;
             _openedAt = Game.GameTime;
-            IsOpen = true;
+            _curtain.Open();
 
             Rebuild();
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -97,7 +100,7 @@ namespace Hoodrich.UI
         {
             // The button that got you out of here does not also swing at somebody.
             if (IsOpen) Core.InputGuard.Swallow();
-            IsOpen = false;
+            _curtain.Close();
             _pockets = null;
             _house = null;
             _catalogue = null;
@@ -153,6 +156,11 @@ namespace Hoodrich.UI
             if (!IsOpen) return;
 
             LockControls();
+
+            // On its way out it still draws and still holds the controls, but it has stopped
+            // listening -- otherwise the panel you just closed spends its last tenth of a
+            // second acting on whatever you press next.
+            if (!_curtain.Taking) return;
 
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
@@ -352,7 +360,7 @@ namespace Hoodrich.UI
             var columnGap = Hud.ToX(ColumnGapH);
 
             var left = 0.5f - panelWidth * 0.5f;
-            var top = 0.5f - height * 0.5f;
+            var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             Hud.Panel(left, top, panelWidth, height,
                       Color.FromArgb(238, 12, 13, 15), Palette.Accent);

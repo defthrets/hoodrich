@@ -75,14 +75,17 @@ namespace Hoodrich.UI
             _state = state;
         }
 
-        public bool IsOpen { get; private set; }
+        /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
+        private readonly Curtain _curtain = new Curtain();
+
+        public bool IsOpen => _curtain.Showing;
 
         /// <summary>Set by Main: what he says when money changes hands.</summary>
         public Action<Piece, bool> OnBought;
 
         public void Open()
         {
-            IsOpen = true;
+            _curtain.Open();
             _shownAt = Game.GameTime;
 
             // Snapped on open. A bar travelling in from wherever it was last time is a bar
@@ -104,7 +107,7 @@ namespace Hoodrich.UI
             if (IsOpen) Core.InputGuard.Swallow();
             if (!IsOpen) return;
 
-            IsOpen = false;
+            _curtain.Close();
             Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
@@ -126,6 +129,11 @@ namespace Hoodrich.UI
             if (!IsOpen) return;
 
             LockControls();
+
+            // On its way out it still draws and still holds the controls, but it has stopped
+            // listening -- otherwise the panel you just closed spends its last tenth of a
+            // second acting on whatever you press next.
+            if (!_curtain.Taking) return;
 
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
@@ -335,7 +343,7 @@ namespace Hoodrich.UI
             var pad = Hud.ToX(PadH);
 
             var left = 0.5f - panelWidth * 0.5f;
-            var top = 0.5f - height * 0.5f;
+            var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             // Up and in, the same arrival every other screen in the mod uses.
             var age = Game.GameTime - _shownAt;

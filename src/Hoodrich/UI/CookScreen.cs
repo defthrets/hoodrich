@@ -100,7 +100,10 @@ namespace Hoodrich.UI
         /// </summary>
         private const float ArtSize = 0.019f;
 
-        public bool IsOpen { get; private set; }
+        /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
+        private readonly Curtain _curtain = new Curtain();
+
+        public bool IsOpen => _curtain.Showing;
 
         public void Open(Stash stash, Stash house, Drugs catalogue, Pricing pricing,
                          Func<DrugDef, DrugDef, float, float, string> start)
@@ -116,7 +119,7 @@ namespace Hoodrich.UI
             _selected = 0;
             _purity = 0;
             _openedAt = Game.GameTime;
-            IsOpen = true;
+            _curtain.Open();
             _shownAt = Game.GameTime;
 
             // Snapped on open. A bar sliding in from wherever it was last time is a bar
@@ -128,7 +131,7 @@ namespace Hoodrich.UI
             if (_rows.Count == 0)
             {
                 Notify.Problem("nothing here to work.");
-                IsOpen = false;
+                _curtain.Close();
                 return;
             }
 
@@ -139,7 +142,7 @@ namespace Hoodrich.UI
         {
             // The button that got you out of here does not also swing at somebody.
             if (IsOpen) Core.InputGuard.Swallow();
-            IsOpen = false;
+            _curtain.Close();
             _stash = null;
             _house = null;
             _catalogue = null;
@@ -298,6 +301,11 @@ namespace Hoodrich.UI
             if (!IsOpen) return;
 
             LockControls();
+
+            // On its way out it still draws and still holds the controls, but it has stopped
+            // listening -- otherwise the panel you just closed spends its last tenth of a
+            // second acting on whatever you press next.
+            if (!_curtain.Taking) return;
 
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
@@ -465,7 +473,7 @@ namespace Hoodrich.UI
             var pad = Hud.ToX(PadH);
 
             var left = 0.5f - panelWidth * 0.5f;
-            var top = 0.5f - height * 0.5f;
+            var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             // Up and in, eased out so it slows as it lands -- the same arrival every other
             // screen in the mod uses, so opening any of them feels like opening one thing.

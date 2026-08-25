@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -42,14 +42,17 @@ namespace Hoodrich.UI
             _hao = hao;
         }
 
-        public bool IsOpen { get; private set; }
+        /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
+        private readonly Curtain _curtain = new Curtain();
+
+        public bool IsOpen => _curtain.Showing;
 
         /// <summary>Set by Main: what he says when money changes hands.</summary>
         public Action<CarLot> OnBought;
 
         public void Open()
         {
-            IsOpen = true;
+            _curtain.Open();
             _openedAt = Game.GameTime;
             _row = 0;
             _slide = 0f;
@@ -64,7 +67,7 @@ namespace Hoodrich.UI
             // The button that got you out of here does not also swing at somebody.
             Core.InputGuard.Swallow();
 
-            IsOpen = false;
+            _curtain.Close();
             Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
@@ -87,6 +90,11 @@ namespace Hoodrich.UI
             if (!IsOpen) return;
 
             LockControls();
+
+            // On its way out it still draws and still holds the controls, but it has stopped
+            // listening -- otherwise the panel you just closed spends its last tenth of a
+            // second acting on whatever you press next.
+            if (!_curtain.Taking) return;
 
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
@@ -174,7 +182,7 @@ namespace Hoodrich.UI
 
             var rows = Math.Max(1, stock.Count);
             var height = 0.250f + rows * RowHeight;
-            var top = 0.5f - height * 0.5f;
+            var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             Hud.RectFrom(left, top, width, height, Palette.Hub);
             Corners(left, top, width, height);

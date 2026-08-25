@@ -324,7 +324,17 @@ namespace Hoodrich.UI
         /// </summary>
         private void Refill() => _openedAt = Game.GameTime;
 
-        public bool IsOpen => _items != null;
+        /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
+        private readonly Curtain _curtain = new Curtain();
+
+        /// <summary>
+        /// Open while there is anything to show OR while it is still leaving.
+        ///
+        /// The rows are what this panel is; keeping them for the length of the exit is the
+        /// whole trick, because a panel that has already thrown its contents away has nothing
+        /// left to animate. They go on the next Open, which overwrites them anyway.
+        /// </summary>
+        public bool IsOpen => _items != null && _curtain.Showing;
 
         /// <summary>How far a line drops in from as it arrives.</summary>
         private const float RowRise = 0.006f;
@@ -367,6 +377,7 @@ namespace Hoodrich.UI
 
             // Flattened once, into one list of cells. Everything downstream walks this and only
             // this, so there is no second structure to keep in step with it.
+            _curtain.Open();
             _items = new List<Item>();
 
             foreach (var s in sections)
@@ -403,13 +414,17 @@ namespace Hoodrich.UI
         {
             // The button that got you out of here does not also swing at somebody.
             if (IsOpen) Core.InputGuard.Swallow();
-            _items = null;
-            _scroll = 0;
+
+            // The rows STAY. See IsOpen -- they are dropped when the next Open builds its own.
+            _curtain.Close();
         }
 
         public void Update()
         {
             if (_items == null) return;
+
+            // Still drawn on the way out, but no longer listening.
+            if (!_curtain.Taking) return;
 
             LockControls();
 
@@ -527,7 +542,7 @@ namespace Hoodrich.UI
             // Centred. A readout in the corner competes with the minimap and the wanted stars
             // and reads as a notification; in the middle it reads as a screen you opened.
             var x = 0.5f - PanelWidth * 0.5f;
-            var top = Math.Max(0.06f, 0.5f - height * 0.5f);
+            var top = Math.Max(0.06f, 0.5f - height * 0.5f) + _curtain.Lift;
             var right = x + PanelWidth - Pad;
 
             // The house frame: one ground, one bar. There used to be three framing devices on

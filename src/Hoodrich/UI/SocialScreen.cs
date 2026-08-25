@@ -28,7 +28,20 @@ namespace Hoodrich.UI
     internal sealed class SocialScreen
     {
         private const float PanelWidth = 0.360f;
-        private const float PanelTop = 0.070f;
+        /// <summary>
+        /// Where the panel's top edge is THIS FRAME.
+        ///
+        /// A property rather than the constant it used to be, and that one change moves the
+        /// whole screen. Every one of the two dozen places this file positions something --
+        /// the frame, the cards, the rule, the footer -- measures from here, so the panel
+        /// slides in and out as a single piece without any of them being touched.
+        /// </summary>
+        private float PanelTop => PanelTopAt + _curtain.Lift;
+
+        private const float PanelTopAt = 0.070f;
+
+        /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
+        private readonly Curtain _curtain = new Curtain();
         private const float PanelHeight = 0.860f;
 
         private const float Pad = 0.014f;
@@ -73,7 +86,7 @@ namespace Hoodrich.UI
         /// optically would have walked the caps into that hairline for a gain nobody can see.
         /// </summary>
         private const float TitleScale = 0.42f;
-        private const float TitleTop = PanelTop + 0.0395f;
+        private float TitleTop => PanelTop + 0.0395f;
 
         /// <summary>Your own face. Larger than a stranger's, and the best-rendered thing here.</summary>
         private const float HeadSize = 0.046f;
@@ -260,11 +273,11 @@ namespace Hoodrich.UI
             _feed = feed;
         }
 
-        public bool IsOpen { get; private set; }
+        public bool IsOpen => _curtain.Showing;
 
         public void Open()
         {
-            IsOpen = true;
+            _curtain.Open();
 
             Count();
 
@@ -293,7 +306,7 @@ namespace Hoodrich.UI
         {
             // The button that got you out of here does not also swing at somebody.
             if (IsOpen) Core.InputGuard.Swallow();
-            IsOpen = false;
+            _curtain.Close();
             _holdFrom = 0;
             ReleaseMugshot();
         }
@@ -441,6 +454,11 @@ namespace Hoodrich.UI
             Count();
             HoldPosition();
             LockControls();
+
+            // Still drawn on the way out, and still holding the controls, but no longer
+            // listening -- or the screen you have just closed spends its last tenth of a
+            // second acting on whatever you press next.
+            if (!_curtain.Taking) return;
 
             // Everything is written here. Draw only reads.
             _live = CanFire(out _why);
@@ -881,7 +899,7 @@ namespace Hoodrich.UI
         /// the loudest colour on the screen around the outside of everything and leave the top
         /// bar with nothing to say; corner ticks carry the same signal in a tenth of the ink.
         /// </summary>
-        private static void Frame(float left, Color edge)
+        private void Frame(float left, Color edge)
         {
             // Cyan, and brighter than a hairline.
             //

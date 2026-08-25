@@ -98,7 +98,10 @@ namespace Hoodrich.UI
 
         private const int DropFlashMs = 420;
 
-        public bool IsOpen { get; private set; }
+        /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
+        private readonly Curtain _curtain = new Curtain();
+
+        public bool IsOpen => _curtain.Showing;
 
         public void Open(Stash pockets, Drugs catalogue, DroppedBags bags)
         {
@@ -119,7 +122,7 @@ namespace Hoodrich.UI
             _slide = 0f;
             _fill = Full();
 
-            IsOpen = true;
+            _curtain.Open();
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -130,7 +133,7 @@ namespace Hoodrich.UI
             if (IsOpen) Core.InputGuard.Swallow();
             if (!IsOpen) return;
 
-            IsOpen = false;
+            _curtain.Close();
             Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
@@ -192,6 +195,11 @@ namespace Hoodrich.UI
             if (!IsOpen) return;
 
             LockControls();
+
+            // On its way out it still draws and still holds the controls, but it has stopped
+            // listening -- otherwise the panel you just closed spends its last tenth of a
+            // second acting on whatever you press next.
+            if (!_curtain.Taking) return;
 
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
@@ -284,7 +292,7 @@ namespace Hoodrich.UI
             var pad = Hud.ToX(PadH);
 
             var left = 0.5f - panelWidth * 0.5f;
-            var top = 0.5f - height * 0.5f;
+            var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             var age = Game.GameTime - _shownAt;
             var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
