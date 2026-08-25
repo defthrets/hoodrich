@@ -264,6 +264,9 @@ namespace Hoodrich.Missions
         /// <summary>Everything is placed at this range, so it is there before you can see it.</summary>
         private const float StreamRange = 120f;
 
+        /// <summary>What it says on the back of Gerald's truck.</summary>
+        private const string VanPlate = "BIG G";
+
         private const int TickMs = 400;
 
         /// <summary>
@@ -463,9 +466,15 @@ namespace Hoodrich.Missions
                     return;
                 }
 
-                if (_tao != null || _gerald != null || _car != null || _van != null || _blip != null) Pack();
+                if (_tao != null || _gerald != null || _car != null || _blip != null) Pack();
+
+                // And then it sits there, which is the whole point of it sitting there.
+                Idle();
                 return;
             }
+
+            // There is a run on, so the keys are yours for the length of it.
+            LockTruck(false);
 
             if (Game.GameTime < _next) return;
             _next = Game.GameTime + TickMs;
@@ -1477,6 +1486,50 @@ namespace Hoodrich.Missions
         /// to still be wherever you left it when you walk back to it. Persistent, so the
         /// population manager cannot quietly reclaim it while you are at the port.
         /// </summary>
+        /// <summary>
+        /// Keeps Gerald's truck parked between jobs.
+        ///
+        /// Same rule KeepVan uses on the job and for the same reason: a replacement is only
+        /// put back when you are nowhere near the kerb it lives on, because a truck fading into
+        /// existence ten metres in front of you is worse than a missing truck. Drive it off and
+        /// abandon it and it finds its way home once you are done looking at it, which is what
+        /// happens to a borrowed vehicle whose owner wants it back.
+        ///
+        /// Throttled, because the idle branch of Update runs every frame rather than on the
+        /// mod's own tick -- and a model request per frame is not free.
+        /// </summary>
+        private void Idle()
+        {
+            if (_van != null && _van.Exists())
+            {
+                // Held against the population manager the same as on the job. Without this the
+                // game takes it back the first time the block streams out.
+                try { _van.IsPersistent = true; }
+                catch { /* it is still the truck */ }
+
+                // And shut. Not on a job means not your truck.
+                LockTruck(true);
+                return;
+            }
+
+            _van = null;
+
+            if (Game.GameTime < _idleNext) return;
+            _idleNext = Game.GameTime + IdleCheckMs;
+
+            var player = Game.Player.Character;
+
+            if (player != null && player.Exists() &&
+                player.Position.DistanceTo(VanSpot) < StreamRange) return;
+
+            MakeVan();
+        }
+
+        private int _idleNext;
+
+        /// <summary>Twice a second is plenty for a truck that is not going anywhere.</summary>
+        private const int IdleCheckMs = 2000;
+
         private void KeepVan()
         {
             if (_van != null && _van.Exists()) { MarkVan(); return; }
@@ -1497,6 +1550,8 @@ namespace Hoodrich.Missions
         private void MakeVan()
         {
             if (_van != null && _van.Exists()) return;
+
+            ClearTheKerb();
 
             foreach (var name in VanModels)
             {
@@ -1546,11 +1601,20 @@ namespace Hoodrich.Missions
                     // Filthy. It has been up that kerb a long time.
                     Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, h, VanDirt);
 
-                    Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, h, 1);
+                    // His name is on it, which is the cheapest characterisation in the mod.
+                    // A green flatbed on a kerb is scenery; a green flatbed with BIG G on the
+                    // plate is a man's truck, and you know whose before he says a word.
+                    Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h, VanPlate);
+
+                    // A fresh truck has no remembered lock state, so the next call decides
+                    // rather than being skipped as a no-op.
+                    _truckLocked = null;
+                    LockTruck(!Running);
+
                     Function.Call(Hash.SET_VEHICLE_NEEDS_TO_BE_HOTWIRED, h, false);
                     Function.Call(Hash.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER, h, true);
 
-                    MarkVan();
+                    if (Running) MarkVan();
 
                     Log.Info("Gerald's van is parked up for the port run.");
                     return;
@@ -1678,6 +1742,78 @@ namespace Hoodrich.Missions
 
             return clean;
         }
+
+        /// <summary>
+        /// Takes whatever the traffic left on Gerald's kerb.
+        ///
+        /// The truck holds the spot for as long as it is standing on it -- nothing spawns
+        /// inside an existing vehicle. The gap is the moment BEFORE it exists: the block
+        /// streams in without it, the game parks an ambient car there because it is a parking
+        /// space, and then the truck is created in the same cubic metre as a Premier. So the
+        /// space is cleared first.
+        ///
+        /// Empty cars only, and never one of ours. Somebody sitting in a car is a person, and
+        /// a car with a person in it is not litter -- it is left where it is and the truck goes
+        /// on top of it, which is a worse outcome than either but a much rarer one.
+        /// </summary>
+        private void ClearTheKerb()
+        {
+            try
+            {
+                foreach (var car in World.GetNearbyVehicles(VanSpot, KerbClear))
+                {
+                    if (car == null || !car.Exists()) continue;
+                    if (Ours(car)) continue;
+                    if (!Empty(car)) continue;
+
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, car.Handle, true, true);
+                    car.Delete();
+                }
+            }
+            catch
+            {
+                // Then the truck lands where it lands and the game sorts it out.
+            }
+        }
+
+        /// <summary>Just the truck's own footprint. This is a parking space, not a street.</summary>
+        private const float KerbClear = 4.5f;
+
+        /// <summary>
+        /// Locks or unlocks Gerald's truck.
+        ///
+        /// IT IS HIS TRUCK. Between jobs it sits on his kerb with the doors locked, because a
+        /// man who lends you a vehicle for an errand has not given you a vehicle -- and a truck
+        /// you can climb into any time you walk past is not lent, it is yours. He hands you the
+        /// keys when there is a run on and takes them back when there is not.
+        ///
+        /// Both calls, because they answer different questions. State 2 stops anybody opening a
+        /// door; LOCKED_FOR_PLAYER is the one that specifically refuses YOU, and the game has
+        /// been known to let the player into a state-2 vehicle it considers his.
+        ///
+        /// Only on a change. This is reached from a branch that runs every frame.
+        /// </summary>
+        private void LockTruck(bool locked)
+        {
+            if (_van == null || !_van.Exists()) return;
+            if (_truckLocked.HasValue && _truckLocked.Value == locked) return;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _van.Handle, locked ? 2 : 1);
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER, _van.Handle,
+                              Game.Player.Handle, locked);
+
+                _truckLocked = locked;
+            }
+            catch
+            {
+                // Left as it was, and tried again on the next change.
+            }
+        }
+
+        /// <summary>What we last set the truck to, or null if we have not set it yet.</summary>
+        private bool? _truckLocked;
 
         private void MarkVan()
         {
@@ -3005,6 +3141,12 @@ namespace Hoodrich.Missions
         /// thanks would undo the only physical thing in the whole errand. Dropping persistence
         /// lets the game clean it up in its own time, the way it does every other car.
         /// </summary>
+        /// <summary>Whether this is Gerald's truck, so nothing else tows or clears it.</summary>
+        public bool Owns(Vehicle car)
+        {
+            return car != null && _van != null && _van.Exists() && car.Handle == _van.Handle;
+        }
+
         public void Pack()
         {
             Clear();
@@ -3042,12 +3184,14 @@ namespace Hoodrich.Missions
             try { if (_vanBlip != null && _vanBlip.Exists()) _vanBlip.Delete(); }
             catch { /* teardown */ }
 
-            try { if (_van != null && _van.Exists()) _van.IsPersistent = false; }
-            catch { /* teardown */ }
-
+            // THE TRUCK STAYS. Everything else here belongs to the errand and goes with it;
+            // the truck belongs to Gerald. It used to be let go the moment a run ended, so the
+            // yard he tells you it is parked outside of was empty every time you were not
+            // actually on the job -- and the line "truck's sat right out front" was true for
+            // about four minutes a session. Released in RestoreWorld, which is where things
+            // this mod made stop being this mod's problem.
             _blip = null;
             _vanBlip = null;
-            _van = null;
             _saidHere = false;
             Reset();
 
@@ -3062,6 +3206,13 @@ namespace Hoodrich.Missions
 
         public void RestoreWorld()
         {
+            // Here rather than in Pack. Pack ends a JOB and the truck outlives jobs; this ends
+            // the MOD, and nothing of ours should be left holding a vehicle after it.
+            try { if (_van != null && _van.Exists()) _van.IsPersistent = false; }
+            catch { /* teardown */ }
+
+            _van = null;
+
             // The linger is dropped FIRST, because ClearDrop deliberately refuses to touch him
             // while it is set -- which is right every tick of the game and wrong exactly once,
             // when the mod is being torn down and there will be no next tick to release him.

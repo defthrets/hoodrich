@@ -973,6 +973,7 @@ namespace Hoodrich
                                    car.Handle == _delivery.Car.Handle)
                                   || (_payback != null && _payback.Owns(car))
                                   || OurParkedCar(car)
+                                  || (_port != null && _port.Owns(car))
                                   || (_decks != null && _decks.Owns(car))
                                   || (_partyDecks != null && _partyDecks.Owns(car))
                 };
