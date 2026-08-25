@@ -2181,6 +2181,10 @@ namespace Hoodrich.Missions
 
             var now = Game.GameTime;
 
+            // Turned back towards it on every swing. The clip finishes and hands them back
+            // their own heading, so setting it once at the start lasts exactly one box.
+            FaceTheTruck();
+
             for (var i = 0; i < _loaders.Count && i < _heaveAt.Count; i++)
             {
                 if (_heaveAt[i] == 0 || now < _heaveAt[i]) continue;
@@ -2989,7 +2993,7 @@ namespace Hoodrich.Missions
 
                 LoadTheVan();
 
-                foreach (var ped in _loaders) Face(ped, LoaderToHeading);
+                FaceTheTruck();
             }
         }
 
@@ -3191,6 +3195,57 @@ namespace Hoodrich.Missions
             catch (Exception ex)
             {
                 Log.Debug("No box for the loader: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Turns both men towards the truck they are loading.
+        ///
+        /// They used to be turned to a FIXED heading -- a number written down when the mark was
+        /// placed, pointing roughly along the dock. Which is fine right up until you notice
+        /// what they are actually doing: two men lifting boxes onto a truck while facing the
+        /// wall behind them, arms out into a shutter. The truck is not at a heading, it is
+        /// wherever you reversed it to, and it is different every run.
+        ///
+        /// So it is worked out from where the truck actually is. Flat -- the bearing only, with
+        /// the height difference thrown away -- because they are stood on a loading dock a
+        /// metre above it and a ped pitched down at a truck is worse than one facing the wrong
+        /// way.
+        ///
+        /// Re-read each time rather than set once, because the swing animation returns them to
+        /// their own heading when it ends and the truck may have been nudged since.
+        /// </summary>
+        private void FaceTheTruck()
+        {
+            var at = _van != null && _van.Exists() ? _van.Position : Vector3.Zero;
+
+            foreach (var ped in _loaders)
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                // No truck to face is the one case the written-down heading is still the best
+                // answer available.
+                if (at == Vector3.Zero)
+                {
+                    Face(ped, LoaderToHeading);
+                    continue;
+                }
+
+                try
+                {
+                    var dx = at.X - ped.Position.X;
+                    var dy = at.Y - ped.Position.Y;
+
+                    if (dx * dx + dy * dy < 0.04f) continue;
+
+                    // GTA headings run anticlockwise from north, which is the opposite of the
+                    // usual atan2 convention -- hence the negated X and the wrap.
+                    var heading = (float)(Math.Atan2(-dx, dy) * 180d / Math.PI);
+                    if (heading < 0f) heading += 360f;
+
+                    ped.Heading = heading;
+                }
+                catch { /* he stands how he likes */ }
             }
         }
 

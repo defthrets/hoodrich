@@ -1078,7 +1078,21 @@ namespace Hoodrich
 
                 _jobs.Social = _social;
                 _war.Social = _social;
-                _war.Busy = () => _jobs != null && _jobs.IsRunning;
+                // ONE ANSWER, asked in four places.
+                //
+                // Every one of these lists used to name _jobs on its own, and _jobs is Lamar's
+                // book -- it does not know the port run exists. So the whole time you were
+                // driving Gerald's quarter kilo across the city, the mod considered you idle:
+                // gang wars could start, a debt could come due, riders kept coming out on the
+                // block and patrols kept rolling. A war going off mid-errand is not a
+                // coincidence, it is this.
+                //
+                // Written down once so the next job added cannot be forgotten from four
+                // separate lists, which is exactly how this one was.
+                Func<bool> onAJob = () => (_jobs != null && _jobs.IsRunning)
+                                          || (_port != null && _port.Running);
+
+                _war.Busy = onAJob;
 
                 // Whose block you are stood on, so a war you start yourself knows it is being
                 // started on theirs.
@@ -1092,19 +1106,19 @@ namespace Hoodrich
 
                 // Not in the middle of a job. It keeps waiting rather than being cancelled --
                 // the debt does not expire because you happened to be working when it came due.
-                _payback.Busy = () => (_jobs != null && _jobs.IsRunning)
+                _payback.Busy = () => onAJob()
                                       || (_war != null && _war.IsRunning);
 
                 // Nobody goes for a drive round the block during a raid. Existing ones are left
                 // where they are -- they simply stop being replaced.
-                _rollers.Busy = () => (_jobs != null && _jobs.IsRunning)
+                _rollers.Busy = () => onAJob()
                                       || (_war != null && _war.IsRunning)
                                       || (_payback != null && _payback.IsRunning);
 
                 // And the law stays out of a raid, a job and a bust -- all three send police of
                 // their own, and two lots of police for two different reasons in one street is
                 // neither of them reading as what it is.
-                _patrol.Busy = () => (_jobs != null && _jobs.IsRunning)
+                _patrol.Busy = () => onAJob()
                                      || (_war != null && _war.IsRunning)
                                      || (_payback != null && _payback.IsRunning)
                                      || Game.Player.Wanted.WantedLevel > 0;
@@ -1471,6 +1485,42 @@ namespace Hoodrich
         private void OnTick(object sender, EventArgs e)
         {
             if (_parked || _cfg == null || !_cfg.Enabled) return;
+
+            // FRANKLIN'S MOD. Michael and Trevor get none of it.
+            //
+            // Everything in here is his: his set, his block, his phone, his fifteen-year-old
+            // history with Lamar. A retired bank robber in Rockford Hills opening a phone that
+            // says Chamberlain Gangster Families on it is not a feature, and neither is
+            // Gerald's front door glowing on the map while you are flying a plane in Sandy
+            // Shores.
+            //
+            // A hard return rather than a flag on each system, because "off" has to mean off:
+            // no blips, no props, no dealers, no cards, nothing spawning, nothing listening for
+            // the phone button.
+            //
+            // The teardown runs ONCE on the way out. Returning early on its own would freeze
+            // the world exactly as Franklin left it -- his stash house still marked, the men
+            // outside Gerald's still stood there -- for whoever you switched to. Coming back is
+            // free: every one of these systems stands its own world back up on the next tick.
+            if (!IsFranklin())
+            {
+                if (!_asleep)
+                {
+                    _asleep = true;
+                    Log.Info("Not Franklin. Standing down until he is back.");
+
+                    try { TryRestore(); }
+                    catch (Exception ex) { Log.Debug("Could not stand down cleanly: " + ex.Message); }
+                }
+
+                return;
+            }
+
+            if (_asleep)
+            {
+                _asleep = false;
+                Log.Info("Franklin again. Back on.");
+            }
 
             try
             {
@@ -2157,6 +2207,43 @@ namespace Hoodrich
         }
 
         /// <summary>True when the player is in normal control and the mod should be live.</summary>
+        /// <summary>
+        /// Whether the man on screen is Franklin.
+        ///
+        /// By MODEL rather than by the character-switch index, because the model is what is
+        /// true right now -- during a switch, in a cutscene that borrows a body, and on a save
+        /// loaded straight into somebody else. The index has to be asked for and can be stale;
+        /// the ped standing there cannot be.
+        /// </summary>
+        private static bool IsFranklin()
+        {
+            try
+            {
+                var player = Game.Player?.Character;
+                if (player == null || !player.Exists()) return false;
+
+                if (_franklinModel == 0)
+                {
+                    _franklinModel = Function.Call<int>(Hash.GET_HASH_KEY, FranklinModelName);
+                }
+
+                return player.Model.Hash == _franklinModel;
+            }
+            catch
+            {
+                // Cannot tell who it is, so do nothing. Off is the safe answer.
+                return false;
+            }
+        }
+
+        /// <summary>player_one is Franklin. Zero is Michael and two is Trevor.</summary>
+        private const string FranklinModelName = "player_one";
+
+        private static int _franklinModel;
+
+        /// <summary>True while the mod is stood down because somebody else is on screen.</summary>
+        private bool _asleep;
+
         private bool IsPlayable()
         {
             try
