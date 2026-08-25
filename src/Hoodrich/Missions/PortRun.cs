@@ -476,6 +476,10 @@ namespace Hoodrich.Missions
             // There is a run on, so the keys are yours for the length of it.
             LockTruck(false);
 
+            // And the load sits on the back axle for the whole of the drive home, not just
+            // while you are stood in the bay watching it go on.
+            TickSquat();
+
             if (Game.GameTime < _next) return;
             _next = Game.GameTime + TickMs;
 
@@ -2145,27 +2149,20 @@ namespace Hoodrich.Missions
         /// <summary>
         /// Puts the back end down as the weight goes on.
         ///
-        /// THERE IS NO SUSPENSION-DAMAGE NATIVE. I looked -- the whole VEHICLE namespace has
-        /// eighty-six calls touching wheels, damage or suspension and not one of them is "set
-        /// this corner's ride height". What exists is hydraulics (a lowrider system that needs
-        /// the mod fitted), tyre bursting (a flat tyre, and you have to drive this thing four
-        /// kilometres afterwards), and DEFORMATION, which is the one that actually does what
-        /// was asked.
+        /// NO DEFORMATION. That was the first attempt and it was the wrong tool: the sag you
+        /// get from shooting a car above the wheel IS body damage -- the panel caves and the
+        /// wheel follows it down -- so it cannot drop the back end without also denting the
+        /// thing, and a truck that comes back from a pickup looking shot up is worse than one
+        /// that does not squat at all.
         ///
-        /// SET_VEHICLE_DAMAGE at a point deforms the body and, with CAN_DEFORM_WHEELS on, the
-        /// wheel and suspension geometry under it. Aimed at the rear axle from below it pushes
-        /// that end down, which is the sag. It stacks, so calling it twice with a modest value
-        /// each time gives two visible steps rather than one drop -- which is the two stages,
-        /// and the reason it is done this way round instead of one big hit at the end.
+        /// Soft springs and weight instead, which is what is actually happening to it.
+        /// SET_REDUCED_SUSPENSION_FORCE gives the whole truck springs that travel, and a steady
+        /// downward push at the rear axle is the load sitting on them. Nothing is damaged,
+        /// nothing needs repairing afterwards, and it comes back up the moment the weight is
+        /// off.
         ///
-        /// Modest on purpose. Rockstar's own scripts run this between 200 and 1600, and the
-        /// top of that range is for a car that has been in a crash: it caves panels in and
-        /// leaves the truck looking wrecked rather than loaded. The numbers here are near the
-        /// bottom of their range, aimed low and behind the axle so what moves is the ride
-        /// height rather than the bed sides.
-        ///
-        /// The deformation is measured after each stage and logged, because "it should sag" and
-        /// "it sagged four centimetres" are different claims and only one of them is checkable.
+        /// Two stages: half the pallet on gets the soft springs and a light push, the last
+        /// package leans on it properly.
         /// </summary>
         private void Squat(int stage)
         {
@@ -2176,23 +2173,12 @@ namespace Hoodrich.Missions
 
             try
             {
-                // The wheels are allowed to move with the body. Without this the panel dents
-                // and the truck stays at the same height, which is a dented truck and not a
-                // loaded one.
-                Function.Call(Hash.SET_VEHICLE_CAN_DEFORM_WHEELS, _van.Handle, true);
+                // Springs that can actually move. Without this the push has almost nothing to
+                // compress and the truck just gets heavy rather than low.
+                Function.Call(Hash.SET_REDUCED_SUSPENSION_FORCE, _van.Handle, true);
 
-                // Behind the middle and below the floor, which is where a rear axle is. The
-                // hit is on the centreline so both sides go down together -- off to one side
-                // and it sits like something has gone through the springs on one corner.
-                Function.Call(Hash.SET_VEHICLE_DAMAGE, _van.Handle,
-                              0f, SquatY, SquatZ, SquatForce, SquatRadius, true);
-
-                var sag = Function.Call<Vector3>(Hash.GET_VEHICLE_DEFORMATION_AT_POS,
-                                                 _van.Handle, 0f, SquatY, SquatZ);
-
-                Log.Info("Truck squats: stage " + stage + " of 2, rear deformed by " +
-                         sag.Z.ToString("0.000") + "m (" + sag.X.ToString("0.00") + ", " +
-                         sag.Y.ToString("0.00") + ", " + sag.Z.ToString("0.00") + ").");
+                Log.Info("Truck squats: stage " + stage + " of 2, springs soft, rear load " +
+                         (stage >= 2 ? SquatPushFull : SquatPushHalf).ToString("0") + ".");
             }
             catch (Exception ex)
             {
@@ -2200,27 +2186,90 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>
+        /// The weight, held on the back axle for as long as the load is on it.
+        ///
+        /// Every frame, because a force is not a state -- it is a push, and the springs come
+        /// straight back up the moment it stops. Applied in the truck's OWN space so it stays
+        /// straight down through the bed however the truck is pointing, and at an offset behind
+        /// the middle so it presses on the rear axle rather than on the whole vehicle.
+        ///
+        /// Only with the wheels on the ground. Pushing down on a truck in mid-air is not a
+        /// loaded truck, it is one that drops like a stone off every kerb it meets.
+        /// </summary>
+        private void TickSquat()
+        {
+            if (_squat <= 0) return;
+            if (_van == null || !_van.Exists()) return;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.IS_VEHICLE_ON_ALL_WHEELS, _van.Handle)) return;
+
+                var push = _squat >= 2 ? SquatPushFull : SquatPushHalf;
+
+                // Type 0 is a force rather than an impulse, which is the one that behaves like
+                // weight: it scales with the mass it is pushing instead of shoving a light
+                // vehicle across the yard and barely moving a heavy one.
+                Function.Call(Hash.APPLY_FORCE_TO_ENTITY, _van.Handle, 0,
+                              0f, 0f, -push,
+                              0f, SquatY, 0f,
+                              0, true, true, true, false, true);
+            }
+            catch
+            {
+                // It rides high. Nothing else breaks.
+            }
+
+            ReportSag();
+        }
+
+        /// <summary>
+        /// Writes down how far it actually went, once a second while loaded.
+        ///
+        /// Pitch is the number that matters. A truck sagging at the back is a truck with its
+        /// nose up, and that is measurable in a way "it should look lower" is not -- so the
+        /// force values below get tuned off this line rather than off an argument.
+        /// </summary>
+        private void ReportSag()
+        {
+            if (Game.GameTime < _sagSaid) return;
+            _sagSaid = Game.GameTime + SagSayMs;
+
+            try
+            {
+                var pitch = _van.Rotation.X;
+                var high = Function.Call<float>(Hash.GET_ENTITY_HEIGHT_ABOVE_GROUND, _van.Handle);
+
+                Log.Info("  sag: stage " + _squat + ", nose up " + pitch.ToString("0.00") +
+                         " deg, body " + high.ToString("0.000") + "m off the deck.");
+            }
+            catch { /* nothing to report */ }
+        }
+
+        private int _sagSaid;
+        private const int SagSayMs = 1000;
+
         /// <summary>Which stage of squat the truck is at: 0 empty, 1 half loaded, 2 full.</summary>
         private int _squat;
 
-        /// <summary>
-        /// Where the rear axle is in the truck's own space, and how hard it is leant on.
-        ///
-        /// Y is metres behind the centre and Z is metres below it. The force is at the bottom
-        /// of the range the game's own scripts use, applied twice.
-        /// </summary>
+        /// <summary>How far behind the middle the load sits, in the truck's own space.</summary>
         private const float SquatY = -1.55f;
-        private const float SquatZ = -0.45f;
-        private const float SquatForce = 190f;
-        private const float SquatRadius = 220f;
 
         /// <summary>
-        /// Puts it back on its springs.
+        /// How hard the load leans on the back axle, half a pallet and a full one.
         ///
-        /// The weight comes off at Gerald's yard, so the truck should not spend the rest of the
-        /// save sitting on its bump stops. This also repairs whatever else you did to it on the
-        /// way home, which is a fair trade: it is his truck, he gets it back straight, and the
-        /// alternative is a permanently bent one.
+        /// First numbers, and meant to be tuned -- ReportSag prints what they actually did, in
+        /// degrees of nose-up, so the next value is picked off a measurement.
+        /// </summary>
+        private const float SquatPushHalf = 900f;
+        private const float SquatPushFull = 2200f;
+
+        /// <summary>
+        /// Springs back up, weight off.
+        ///
+        /// Nothing to repair -- that is the whole point of doing it this way. The push simply
+        /// stops and the suspension goes back to standard.
         /// </summary>
         private void Unsquat()
         {
@@ -2228,8 +2277,8 @@ namespace Hoodrich.Missions
 
             if (_van == null || !_van.Exists()) return;
 
-            try { Function.Call(Hash.SET_VEHICLE_DEFORMATION_FIXED, _van.Handle); }
-            catch { /* it stays bent, which is survivable */ }
+            try { Function.Call(Hash.SET_REDUCED_SUSPENSION_FORCE, _van.Handle, false); }
+            catch { /* it rides soft, which nobody will notice */ }
         }
 
         /// <summary>How many of something that wide fit across a deck that wide. At least one.</summary>
