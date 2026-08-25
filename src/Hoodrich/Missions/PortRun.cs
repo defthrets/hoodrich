@@ -320,8 +320,17 @@ namespace Hoodrich.Missions
         private const int LoadBricks = 4;
         private const int LoadLayers = 4;
 
-        /// <summary>One brick a second.</summary>
-        private const int LoadEveryMs = 1000;
+        /// <summary>
+        /// How long between bricks, and it is set by the ANIMATION rather than by taste.
+        ///
+        /// A second was faster than the clip. anim@heists@load_box is a man bending down,
+        /// taking the weight and putting it on the truck, and a new brick every second cut him
+        /// off partway through and restarted him -- so the loaders spent the whole job
+        /// twitching at the waist instead of lifting anything. Two and a half seconds lets the
+        /// bend, the lift and the placement all land, and the brick appears at the end of it
+        /// rather than in the middle.
+        /// </summary>
+        private const int LoadEveryMs = 2500;
 
         /// <summary>Where each brick goes, in the van's own space, bottom layer first.</summary>
         private readonly List<Vector3> _loadPlan = new List<Vector3>();

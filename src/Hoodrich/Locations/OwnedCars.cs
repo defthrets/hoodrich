@@ -30,18 +30,53 @@ namespace Hoodrich.Locations
     /// </summary>
     internal sealed class OwnedCars
     {
-        /// <summary>Near enough that the car should be standing there rather than waiting.</summary>
-        private const float StreamRange = 220f;
+        /// <summary>
+        /// How far a plate scan reaches.
+        ///
+        /// This has to be the LARGER of the two. It was ninety against a two hundred and
+        /// twenty metre replace range, which meant a ring around your own car -- from ninety
+        /// metres out to two hundred and twenty -- where the search could not see it and the
+        /// replacement fired anyway. Standing anywhere in that ring built a fresh Asbo every
+        /// few seconds, each one immediately invisible to the next scan, until the population
+        /// manager started culling them and took the real one with the copies.
+        ///
+        /// That is what "it is gone everywhere" was. Not a car that failed to save -- a car
+        /// that was being rebuilt faster than the game could keep it.
+        /// </summary>
+        private const float FoundRange = 130f;
 
-        /// <summary>How far from the saved spot a plate match still counts as the same car.</summary>
-        private const float FoundRange = 90f;
+        /// <summary>
+        /// How close you have to be before a car being missing MEANS anything.
+        ///
+        /// Deliberately shorter than the scan. Vehicles only exist while the game has streamed
+        /// them in, so "I cannot see it" is only evidence from close up -- from across the
+        /// map it is evidence of nothing at all, and acting on it is what put a dozen of them
+        /// on that street.
+        /// </summary>
+        private const float SeenRange = 100f;
 
         /// <summary>Scanning every vehicle around the player is not a per-frame job.</summary>
         private const int TickMs = 2500;
 
+        /// <summary>The soonest a given car may be stood back up after the last attempt.</summary>
+        private const int RebuildGapMs = 30000;
+
         private readonly PlayerState _state;
+        private readonly Dictionary<string, int> _rebuiltAt =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         private int _next;
+
+        private int Since(OwnedCar owned)
+        {
+            int at;
+            return _rebuiltAt.TryGetValue(owned.Id ?? "", out at) ? at : int.MinValue / 2;
+        }
+
+        private void Stamp(OwnedCar owned, int now)
+        {
+            _rebuiltAt[owned.Id ?? ""] = now;
+        }
 
         public OwnedCars(PlayerState state)
         {
@@ -111,7 +146,9 @@ namespace Hoodrich.Locations
 
             foreach (var owned in _state.Owned)
             {
-                var live = Find(owned, here);
+                // Searched around where the CAR was left, not around the player. A car parked
+                // round the corner has not moved because you walked away from it.
+                var live = Find(owned, owned.Where);
 
                 if (live != null)
                 {
@@ -129,7 +166,17 @@ namespace Hoodrich.Locations
 
                 // Not in the world. Only worth doing anything about it if you are close enough
                 // to be looking at the space where it should be.
-                if (here.DistanceTo(owned.Where) > StreamRange) continue;
+                if (here.DistanceTo(owned.Where) > SeenRange) continue;
+
+                // And not again for a while, whatever happens.
+                //
+                // A belt-and-braces stop on exactly the failure above: even if a car cannot be
+                // found for some reason nobody has thought of yet, this puts a floor under how
+                // often that mistake can be repeated. One car every thirty seconds is
+                // recoverable and visible in the log; one every two and a half is a flood.
+                if (now - Since(owned) < RebuildGapMs) continue;
+
+                Stamp(owned, now);
 
                 if (PutBack(owned)) moved = true;
             }

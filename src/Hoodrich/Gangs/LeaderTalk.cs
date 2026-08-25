@@ -362,8 +362,8 @@ namespace Hoodrich.Gangs
                 // Saying not now is not saying no.
                 if (_state.FrontsDone >= 2 && !_state.DocksUnlocked)
                 {
-                    node.Say("Where do you get it?", () => AskSource(def, gang),
-                             "He already said he'd tell you");
+                    node.Say("You said you had somethin'.", () => AskSource(def, gang),
+                             "He offered you work");
                     node.WithIcon(Icons.Tick);
                 }
             }
@@ -415,9 +415,12 @@ namespace Hoodrich.Gangs
             var node = Node(def, gang,
                 "Man, again? Aight, aight. Which part you forget.");
 
-            node.Say("What are we doing here?", () => TwoPackages(def, gang),
-                     "The two packages, and where they lead");
-            node.WithIcon(Icons.FromFile("rank.png"));
+            // "What are we doing here" went with TwoPackages. Even in the refresher -- which
+            // is the one place the player has explicitly asked to be explained to -- it was
+            // Gerald describing the shape of the arrangement rather than the work in it. What
+            // is left below is all mechanics: where product comes from, what to do with it,
+            // how to sell it, where to keep it, what gets you caught. Those are things a man
+            // would actually tell you twice.
 
             node.Say("How do I get weight?", () => HowWeight(def, gang),
                      "Where product comes from");
@@ -515,8 +518,21 @@ namespace Hoodrich.Gangs
 
         private DialogueNode TheWork(LeaderDef def, GangDef gang)
         {
-            var product = gang.Drugs.Count == 0 ? null : _drugs.Get(gang.Drugs[0]);
-            var what = product == null ? "product" : product.Name.ToLowerInvariant();
+            // WHAT HE FRONTS, not what his set is filed under.
+            //
+            // This read gang.Drugs[0], which for the Families is weed -- so the man whose
+            // whole business is bars and oxys opened his explanation of that business with the
+            // word "marijuana". The gang's list is what the set moves between them all; the
+            // front list is what THIS man puts in your hand, and he is the one talking.
+            var product = _drugs.Get(FirstFront.Length > 0 ? FirstFront[0] : "");
+
+            if (product == null && gang.Drugs.Count > 0) product = _drugs.Get(gang.Drugs[0]);
+
+            // And in the word he would use. A counted drug has a street unit -- bars, pills --
+            // and "alprazolam. That's it, that's the whole business" is a pharmacist talking.
+            var what = product == null ? "product"
+                     : product.Counted ? product.UnitName.ToLowerInvariant()
+                     : product.Name.ToLowerInvariant();
 
             // He is not briefing you. He is answering a question he has been asked a hundred
             // times by people who did not last the month, and the answer is short because most
@@ -746,11 +762,24 @@ namespace Hoodrich.Gangs
             _state.AddRespect(5f);
             _state.Touch();
 
+            // A JOB, NOT A PHONE NUMBER.
+            //
+            // He used to name the port, describe the man on it and tell you to say Gerald sent
+            // you -- which hands the player an introduction they have not earned and makes the
+            // drive down there a formality with a stranger who is already expecting them. The
+            // interesting version is the one where he tells you where to be and nothing else,
+            // and the man at the far end is somebody you have to deal with yourself.
+            //
+            // He also keeps something back on purpose. Fifteen years in, you do not explain
+            // your supply to somebody the week they started; you send them to collect and see
+            // what comes back.
             var node = Node(def, gang,
-                "Alright. You earned the answer, so here go the answer: it's a boat. Elysian " +
-                "Island, down the port. Man down there pulls it off the containers before " +
-                "anybody counts 'em. Go see him, tell him I sent you -- he'll put somethin' in " +
-                "your hands. Bring that straight back to the yard and don't open it on the way.");
+                "Nah, see, that ain't a thing I tell you. That's a thing you go and find " +
+                "out.\n\nElysian Island. The port. Take the truck that's sat out front and be " +
+                "down there before it gets dark, 'cause after dark the only people in that " +
+                "yard are people who work there.\n\nSomebody'll be expectin' a truck. They " +
+                "ain't expectin' YOU, so that part's on you. Come back with what they load and " +
+                "don't open it, and then we'll see about who you talk to next time.");
 
             node.Say("Say less.", () => null, "Drive to the port");
             node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
@@ -923,11 +952,16 @@ namespace Hoodrich.Gangs
 
             // The one progression gate in the supply chain, and it belongs to him now that the
             // corner dealers are gone.
-            node.Say("Where's it all coming from?", () => AskSource(def, gang),
+            // WHAT HE WANTS DONE, rather than where his product is from.
+            //
+            // He does not answer the second one and never did -- the reply to it was always a
+            // job. Asking him a question he deflects, and then being given an errand, is a
+            // worse version of walking up and being given the errand.
+            node.Say("You got anything for me?", () => AskSource(def, gang),
                      _state.PortRunStage == PortRun.StageFetch ? "He's sent you to the port"
                      : _state.PortRunStage == PortRun.StageDeliver ? "He wants his package"
-                     : _state.DocksUnlocked ? "You already know"
-                     : "Ask about his supply");
+                     : _state.DocksUnlocked ? "You know the run"
+                     : "See if there's work");
 
             node.WithIcon(_state.PortRunStage != PortRun.StageNone ? Icons.Warning
                           : _state.DocksUnlocked ? Icons.Tick : Icons.Locked);
@@ -1096,10 +1130,6 @@ namespace Hoodrich.Gangs
                 // off me and move it, twice" cannot tell whether that is a thing they are
                 // partway through or a thing they have not started, because nobody ever told
                 // them there were two of them or where the second one leads.
-                one.Say("How many times we doin' this?", () => TwoPackages(def, gang),
-                        "Ask where this is going");
-                one.WithIcon(Icons.FromFile("rank.png"));
-
                 one.Say("Give it here.", () => TakeWork(def, gang, bars),
                         "Take his " + bars.Amount(FrontGrams));
                 one.WithIcon(Icons.ForDrug(bars.Id));
@@ -1137,66 +1167,23 @@ namespace Hoodrich.Gangs
             return node;
         }
 
-        /// <summary>
-        /// Two packages, and what the second one is actually for.
-        ///
-        /// Reachable both before the first bag and from the refresher afterwards, because it
-        /// is the one thing about him a player needs to be holding in their head and the one
-        /// thing the mod never said out loud.
-        /// </summary>
-        private DialogueNode TwoPackages(LeaderDef def, GangDef gang)
-        {
-            var node = Node(def, gang,
-                "Twice. That's it, that's the whole thing. You take a bag off me, you move " +
-                "ALL of it -- not most, all -- and you bring yourself back here. Then I give " +
-                "you a second one and you do it again.");
+        // TwoPackages and TwoPackagesWhy lived here and are deliberately gone.
+        //
+        // They were a branch where the player asked how many packages the arrangement runs to
+        // and Gerald explained the structure of it -- "two bags is just me findin' out if you
+        // gon' come back". Accurate, useful, and nobody in that yard talks like that. It is a
+        // man reading out the design of the thing he is inside, and it broke the one scene in
+        // this mod that has to feel like two people rather than a menu.
+        //
+        // What it was there to solve was real: the arc was never stated anywhere and somebody
+        // halfway through could not tell whether they were partway or had not started. That is
+        // answered now by the package counter on his own row, which shows it without anybody
+        // having to say it out loud.
 
-            Offer(node, def, gang);
-
-            node.Say("And then what?", () => TwoPackagesWhy(def, gang));
-            node.Say("Aight.", () => Root(def));
-            node.Leave();
-            return node;
-        }
-
-        private DialogueNode TwoPackagesWhy(LeaderDef def, GangDef gang)
-        {
-            var node = Node(def, gang,
-                "Then you ain't a stranger no more and I put you on to where I get mine. " +
-                "That's the port, dawg, and that's bricks -- proper weight, proper money, " +
-                "the kind you gotta take home and cut yourself. Everything after that is " +
-                "yours. Two bags is just me findin' out if you gon' come back.");
-
-            Offer(node, def, gang);
-
-            node.Say("I'll come back.", () => Root(def));
-            node.Leave();
-            return node;
-        }
-
-        /// <summary>
-        /// Puts the package on the table wherever the conversation has got to.
-        ///
-        /// Asking him how the arrangement works used to be a detour with no way out of it
-        /// except back to the top: you took the "how many times we doin' this" branch, got the
-        /// answer, said you would come back -- and were returned to the root having NOT been
-        /// given anything, with the offer you had been looking at a moment ago now two rows
-        /// down a different menu. Somebody who asks a question before accepting has not
-        /// declined; they have asked a question.
-        ///
-        /// So every node on that branch carries the same row the offer does, and both ways
-        /// through the conversation end with a bag in your hand.
-        /// </summary>
-        private void Offer(DialogueNode node, LeaderDef def, GangDef gang)
-        {
-            var front = OnOffer();
-            if (front == null) return;
-
-            node.Say("Give it here.", () => TakeWork(def, gang, front),
-                     "Take his " + front.Amount(FrontGrams));
-
-            node.WithIcon(Icons.ForDrug(front.Id));
-        }
+        // Offer lived here. It put the package row on every node of the how-many-times
+        // branch so that asking a question did not cost you the thing you were being offered.
+        // With that branch gone there is nothing left to put it on -- the offer is on his root
+        // and on the front node, which is where it always belonged.
 
         /// <summary>
         /// Whatever he is fronting right now, or nothing if he is not.
@@ -1340,10 +1327,10 @@ namespace Hoodrich.Gangs
             {
                 var twice = Node(def, gang,
                     "Twice now. Took it, moved it, brought it back, didn't eat none of it and " +
-                    "didn't get got. Aight -- you been askin' where I get mine. I'm done " +
-                    "pretendin' I didn't hear you.");
+                    "didn't get got.\n\nAight. I got somethin' else for you, and it ain't " +
+                    "corner work.");
 
-                twice.Say("So where?", () => AskSource(def, gang), "He'll tell you now");
+                twice.Say("Go on.", () => AskSource(def, gang), "Hear what it is");
                 twice.WithIcon(Icons.Tick);
 
                 twice.Say("Another time.", () => Root(def));
