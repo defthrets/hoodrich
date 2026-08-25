@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using GTA;
 using Hoodrich.Core;
 
 namespace Hoodrich.Supply
@@ -23,9 +24,22 @@ namespace Hoodrich.Supply
             return ms < MinDurationMs ? MinDurationMs : ms > MaxDurationMs ? MaxDurationMs : ms;
         }
 
-        public static void Say(string speaker, string line)
+        /// <param name="who">
+        /// The man saying it, when the caller knows. Optional, and only used to place the
+        /// voice in space -- everything else about this method behaves the same without it.
+        ///
+        /// An OPTIONAL PARAMETER rather than a search. The obvious alternative is a helper
+        /// that picks the nearest ped and hopes it is the speaker, which in a yard with four
+        /// men in it is a coin toss -- and every one of the seven callers already has the ped
+        /// in hand. Asking is free; guessing is wrong about a quarter of the time.
+        /// </param>
+        public static void Say(string speaker, string line, Ped who = null)
         {
             if (string.IsNullOrEmpty(line)) return;
+
+            // Said aloud if anybody recorded it. The subtitle below happens either way -- this
+            // layer never replaces the words, it only adds a voice to them.
+            Voice.VoiceHook.Speak(speaker, line, who);
 
             try
             {

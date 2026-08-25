@@ -1222,7 +1222,7 @@ namespace Hoodrich
                     var lines = rounds ? ArmourerTalk.OverTheAmmo : ArmourerTalk.OverTheCounter;
                     if (lines.Length == 0) return;
 
-                    Dialogue.Say(_bigj.Name, lines[_rng.Next(lines.Length)]);
+                    Dialogue.Say(_bigj.Name, lines[_rng.Next(lines.Length)], _bigj.Ped);
                 };
                 _carScreen = new CarScreen(_hao);
 
@@ -1231,7 +1231,7 @@ namespace Hoodrich
 
                 _carScreen.OnBought = car =>
                 {
-                    Dialogue.Say(_hao.Name, "Keys are in it. Don't bring it back.");
+                    Dialogue.Say(_hao.Name, "Keys are in it. Don't bring it back.", _hao.Ped);
                 };
 
                 _hao.Talk = _talk;
@@ -1422,6 +1422,17 @@ namespace Hoodrich
                 Aborted += OnAborted;
 
                 Log.Info("Paths: data=" + Paths.Data + "  writable=" + Paths.Writable);
+
+                // Recorded dialogue, if a voice pack is installed. Does nothing at all when
+                // one is not, which is how the mod ships. See Voice.VoiceHook.
+                Voice.VoiceHook.Enabled = _cfg.VoiceEnabled;
+                Voice.VoiceHook.MasterVolume = _cfg.VoiceVolume;
+                Voice.VoiceHook.DuckRadio = _cfg.VoiceDuckRadio;
+                Voice.VoiceHook.FacialAnimation = _cfg.VoiceFacialAnim;
+
+                Voice.VoiceHook.Init(
+                    System.IO.Path.Combine(Paths.Data, "voice"),
+                    System.IO.Path.Combine(Paths.Data, "voice", "voice_manifest.json"));
 
                 // Skulls left on the map by a build that no longer exists. See StaleBlips.
                 UI.StaleBlips.Sweep();
@@ -1746,6 +1757,11 @@ namespace Hoodrich
 
                 // The green "+$" the game leaves behind after we pay somebody. See Cash.
                 UI.Cash.Tick();
+
+                // Frees the audio buffer once Windows is done with it, and keeps a voice at
+                // the right volume while you walk away mid-sentence. Returns on a comparison
+                // when nothing is playing, which is nearly always.
+                Voice.VoiceHook.Tick();
 
                 // The spotlight, every frame rather than every tick -- a beam that exists for
                 // one frame in nine is a strobe.
@@ -2186,9 +2202,20 @@ namespace Hoodrich
         {
             TryRestore();
 
+            // BEFORE the save, and in a try of its own.
+            //
+            // An open waveOut handle with a prepared header outlives the managed side of a
+            // reload, and a few of those leaves the game with no free audio devices and
+            // nothing in any log to say why. Sharing a try with the save meant a save that
+            // threw -- which is exactly when an unload is going badly -- took the device
+            // release with it, so the one path that most needed cleaning up was the one that
+            // skipped it.
+            Voice.VoiceHook.Shutdown();
+
             try
             {
                 SaveGame.Save(_state, _crew, _market, _stash, true);
+
                 Log.Info(Build.Name + " unloaded cleanly.");
             }
             catch (Exception ex)

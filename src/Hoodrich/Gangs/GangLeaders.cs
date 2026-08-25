@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -1205,6 +1205,23 @@ namespace Hoodrich.Gangs
             return string.IsNullOrEmpty(face) ? UI.Faces.Nobody : face;
         }
 
+        /// <summary>
+        /// The man himself, if the one being talked about is the one stood there.
+        ///
+        /// Only ever one leader is live at a time, so this is a comparison rather than a
+        /// search -- and it returns null for a leader who is being quoted rather than spoken
+        /// to, which is exactly when a voice should not come from anywhere in particular.
+        /// </summary>
+        private Ped Standing(LeaderDef def)
+        {
+            if (def == null || _liveDef == null || _livePed == null) return null;
+            if (!_livePed.Exists() || !_livePed.IsAlive) return null;
+
+            return string.Equals(_liveDef.GangId, def.GangId, StringComparison.OrdinalIgnoreCase)
+                ? _livePed
+                : null;
+        }
+
         public string Join(LeaderDef def, Drugs catalogue)
         {
             if (def == null) return "Nobody here.";
@@ -1214,13 +1231,13 @@ namespace Hoodrich.Gangs
 
             if (_crew.IsAffiliated && _crew.Current.Id == gang.Id)
             {
-                Dialogue.Say(def.Name, def.Already);
+                Dialogue.Say(def.Name, def.Already, Standing(def));
                 return null;
             }
 
             if (_state.Respect < gang.JoinRespect)
             {
-                Dialogue.Say(def.Name, def.Refuse);
+                Dialogue.Say(def.Name, def.Refuse, Standing(def));
                 return "Need " + gang.JoinRespect.ToString("F0") + " respect. You have " +
                        _state.Respect.ToString("F0") + ".";
             }
@@ -1228,11 +1245,11 @@ namespace Hoodrich.Gangs
             var failure = _crew.Join(gang, _state.Respect);
             if (failure != null)
             {
-                Dialogue.Say(def.Name, def.Refuse);
+                Dialogue.Say(def.Name, def.Refuse, Standing(def));
                 return failure;
             }
 
-            Dialogue.Say(def.Name, def.Accept);
+            Dialogue.Say(def.Name, def.Accept, Standing(def));
 
             // Only if he has not already put you to work.
             //

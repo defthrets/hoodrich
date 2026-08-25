@@ -496,6 +496,10 @@ namespace Hoodrich.UI
             // The button that got you out of here does not also swing at somebody.
             if (IsOpen)
             {
+                // Walking off mid-sentence stops the sentence. A voice carrying on out of a
+                // panel that is no longer there is the worst thing this layer could do.
+                Voice.VoiceHook.Silence();
+
                 Core.InputGuard.Swallow();
                 _quietUntil = Game.GameTime + QuietAfterCloseMs;
             }
@@ -603,7 +607,17 @@ namespace Hoodrich.UI
             // and a man answering a conversation that has ended is a voice from nowhere.
             if (_node == null) return;
 
-            Speak(Speaker, Theirs);
+            // HIS ACTUAL WORDS IF ANYBODY RECORDED THEM, and the stand-in grunt only if not.
+            //
+            // This is the one place the man on screen makes a noise, on every page of every
+            // conversation, a beat after your line -- so it is the one place a voice belongs.
+            // Speak returns whether it found a take, and Theirs is what has always happened
+            // when it did not: an ambient line from the game, standing in for words nobody
+            // had. Playing both would put a stranger grunting over the top of him.
+            if (!Voice.VoiceHook.Speak(_node.Speaker, _node.Line, Speaker))
+            {
+                Speak(Speaker, Theirs);
+            }
         }
 
         private void Commit()

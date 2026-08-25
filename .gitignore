@@ -20,3 +20,8 @@ __pycache__/
 # time. release/README.txt and release/LICENCE.txt are sources and stay tracked.
 release/*/
 release/*.zip
+
+# Recorded dialogue. The manifest and the work list are generated and small enough
+# to keep; tens of megabytes of speech are not, and are distributed separately.
+data/voice/*.wav
+data/voice/*.mp3

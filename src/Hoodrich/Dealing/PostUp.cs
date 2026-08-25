@@ -2095,7 +2095,8 @@ namespace Hoodrich.Dealing
             Territory.StopSearch.HandsUp(player, takes);
             Territory.StopSearch.Frisk(_cop);
 
-            Dialogue.Say("Officer", "You been standing here a while. Mind if I check your pockets?");
+            Dialogue.Say("Officer", "You been standing here a while. Mind if I check your pockets?",
+                         _cop);
         }
 
         private void TickQuestioning(Ped player)

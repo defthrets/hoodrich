@@ -1387,16 +1387,23 @@ namespace Hoodrich.Supply
         /// </summary>
         private void Speak(string[] words, string[] voice)
         {
-            Say(voice);
-
-            if (words == null || words.Length == 0) return;
+            if (words == null || words.Length == 0) { Say(voice); return; }
 
             var who = _def == null || string.IsNullOrEmpty(_def.Name) ? "" : _def.Name.ToUpperInvariant();
+
+            // PICKED ONCE. Fresh chooses at random, so asking it twice gets two different
+            // lines -- and the voice would then be saying something other than the subtitle,
+            // which is worse than having no voice at all.
+            var line = Fresh(words);
+
+            // His real words if anybody recorded them, and the stand-in grunt only if not.
+            // Both would be a stranger talking over him.
+            if (!Voice.VoiceHook.Speak(who, line, _driver)) Say(voice);
 
             try
             {
                 GTA.UI.Screen.ShowSubtitle(
-                    (who.Length == 0 ? "" : "~y~" + who + ":~s~ ") + Fresh(words), 3200);
+                    (who.Length == 0 ? "" : "~y~" + who + ":~s~ ") + line, 3200);
             }
             catch
             {

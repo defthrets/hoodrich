@@ -1,4 +1,4 @@
-<#
+﻿<#
   Hoodrich build script.
 
   Uses the self-contained Roslyn compiler in tools\ rather than `dotnet build`,
@@ -11,6 +11,7 @@
     .\build.ps1 -Deploy         # build, then copy dll + data into the game's scripts\
     .\build.ps1 -Package        # build, then zip a public release into .\release\
     .\build.ps1 -Package -Full  # ...and bundle ScriptHookVDotNet with it
+    .\build.ps1 -Package -Voice # ...and bundle the recorded dialogue
     .\build.ps1 -Configuration Debug
 #>
 [CmdletBinding()]
@@ -34,6 +35,11 @@ param(
     # redistribution, and it is version-locked to the game besides -- a copy shipped today is
     # the wrong one the week after the next patch.
     [switch]$Full,
+
+    # Bundle the recorded dialogue into the release as well. Separate from -Full because they
+    # are separate decisions: -Full is about the runtime a player needs, -Voice is about tens
+    # of megabytes of speech they may not want.
+    [switch]$Voice,
 
     # Where the SHVDN files are taken from for -Full. Not committed to this repo: they are
     # somebody else's binaries and do not belong in our history.
@@ -307,6 +313,23 @@ if ($Package) {
 
     Copy-Item (Join-Path $root 'data\*.json') $dataOut
     Copy-Item (Join-Path $root 'data\icons') $dataOut -Recurse
+
+    # Recorded dialogue, if any has been made yet. Optional by design: the mod ships without
+    # it and behaves identically, so the folder simply not existing is the normal case rather
+    # than a packaging failure.
+    #
+    # NOT in the default zip. Thirty-odd minutes of speech is tens of megabytes against a mod
+    # that is under one, and somebody who wants the words on screen should not have to
+    # download the voices to get them. -Voice puts them in.
+    $voiceSrc = Join-Path $root 'data\voice'
+
+    if ($Voice -and (Test-Path $voiceSrc)) {
+        Copy-Item $voiceSrc $dataOut -Recurse
+        $voiced = (Get-ChildItem $voiceSrc -Recurse -File).Count
+        Write-Host "  voice  $voiced files bundled" -ForegroundColor DarkGray
+    } elseif ($Voice) {
+        Write-Host "  voice  -Voice asked for, but data\voice does not exist yet" -ForegroundColor Yellow
+    }
 
     Copy-Item (Join-Path $relDir 'README.txt')  $stage
     Copy-Item (Join-Path $relDir 'LICENCE.txt') $stage

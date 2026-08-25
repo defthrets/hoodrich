@@ -18,6 +18,26 @@ namespace Hoodrich.Core
         public int SaveIntervalSeconds = 120;
         public bool PauseDuringMission = true;
 
+        // ---- voice --------------------------------------------------------------
+
+        /// <summary>Whether recorded dialogue plays, when any is installed.</summary>
+        public bool VoiceEnabled = true;
+
+        /// <summary>How loud, 0 to 1.</summary>
+        public float VoiceVolume = 1.0f;
+
+        /// <summary>
+        /// Whether the on-foot radio drops while somebody is talking.
+        ///
+        /// OFF by default, and that is deliberate. It improves intelligibility and it also
+        /// reaches out and changes a setting of the base game that the player did not ask this
+        /// mod to touch. Opt in.
+        /// </summary>
+        public bool VoiceDuckRadio = false;
+
+        /// <summary>Whether a voiced character's jaw moves while he talks.</summary>
+        public bool VoiceFacialAnim = true;
+
         // ---- phone -------------------------------------------------------------
 
         /// <summary>
@@ -237,6 +257,11 @@ namespace Hoodrich.Core
             s.LogLevel = ini.GetEnum("General", "LogLevel", s.LogLevel);
             s.SaveIntervalSeconds = ini.GetInt("General", "SaveIntervalSeconds", s.SaveIntervalSeconds);
             s.PauseDuringMission = ini.GetBool("General", "PauseDuringMission", s.PauseDuringMission);
+
+            s.VoiceEnabled = ini.GetBool("Voice", "Enabled", s.VoiceEnabled);
+            s.VoiceVolume = Clamp(ini.GetFloat("Voice", "Volume", s.VoiceVolume), 0f, 1f);
+            s.VoiceDuckRadio = ini.GetBool("Voice", "DuckRadio", s.VoiceDuckRadio);
+            s.VoiceFacialAnim = ini.GetBool("Voice", "FacialAnim", s.VoiceFacialAnim);
 
             // [Phone] first, then the old [Wheel] key as a fallback, so an existing
             // Hoodrich.ini keeps working rather than silently reverting to defaults.
