@@ -242,7 +242,7 @@ namespace Hoodrich.Missions
         private DialogueNode StillOn()
         {
             var node = Node("You already got something on. Go handle that first.");
-            node.Say("I'm on it.", () => null, _runner.Objective);
+            node.Say("I'm on it.", () => null, _runner.Objective).MovesOn();
             return node;
         }
 
@@ -275,6 +275,7 @@ namespace Hoodrich.Missions
                      "  ·  " + def.Rep.ToString("0") + " rep");
 
             node.WithIcon(Icons.Tick);
+            node.MovesOn();
 
             node.Say("Nah. What else you got?", Root);
             node.Leave("Forget it.");
@@ -315,7 +316,7 @@ namespace Hoodrich.Missions
             }
 
             var yes = Node(line);
-            yes.Say("Say less.", () => null, _runner.Objective);
+            yes.Say("Say less.", () => null, _runner.Objective).MovesOn();
             return yes;
         }
 
@@ -367,6 +368,7 @@ namespace Hoodrich.Missions
             }, "Take the money");
 
             node.WithIcon(Icons.Money);
+            node.MovesOn();
             return node;
         }
     }

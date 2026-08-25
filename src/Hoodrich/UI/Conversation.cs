@@ -60,6 +60,21 @@ namespace Hoodrich.UI
         /// </summary>
         public string MarkFile = "";
 
+        /// <summary>
+        /// Whether picking this one is what carries the story forward.
+        ///
+        /// A leader's list is eight rows of things you can say and one of them is the job. The
+        /// other seven are prices, stock, how you are doing, a front, a way out -- all real,
+        /// all worth having, and all indistinguishable from the one the game is waiting on. So
+        /// somebody stood in front of Gerald with an objective reading "ask about the port"
+        /// reads down a menu with no port on it and has to guess which of "You got anything for
+        /// me?" and "How am I doing?" is the door.
+        ///
+        /// Marked rather than reworded, because the words are his and should stay his. The
+        /// panel does the telling.
+        /// </summary>
+        public bool MovesOn;
+
         /// <summary>Texture names to try, for icons that are not named after their dictionary.</summary>
         public string[] Candidates;
 
@@ -136,6 +151,22 @@ namespace Hoodrich.UI
             var choice = Choices[Choices.Count - 1];
             choice.IconDict = weaponName;
             choice.SelfNamed = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Marks the choice just added as the one that takes the story somewhere.
+        ///
+        /// Deliberately a claim the caller makes rather than something worked out here. Only
+        /// the code that built the row knows whether THIS row, on THIS node, at this point in
+        /// the save, is the next beat -- "You got anything for me?" is the job when there is a
+        /// job and small talk when there is not.
+        /// </summary>
+        public DialogueNode MovesOn(bool yes = true)
+        {
+            if (Choices.Count == 0) return this;
+
+            Choices[Choices.Count - 1].MovesOn = yes;
             return this;
         }
 
@@ -348,6 +379,18 @@ namespace Hoodrich.UI
         private const int BarSweepMs = 3400;
 
         /// <summary>The caret's breathing, which is the one thing that never stops.</summary>
+        /// <summary>
+        /// How the waiting row breathes: the length of one breath, and how far it goes.
+        ///
+        /// Slower than the caret on purpose. The caret is telling you where you are, which
+        /// wants to feel responsive; this is telling you where to go, which wants to feel
+        /// patient. Low numbers throughout -- at twenty-six over near-black it is a shade
+        /// rather than a colour, and it is the movement that does the work, not the brightness.
+        /// </summary>
+        private const int MovesOnMs = 2200;
+        private const float MovesOnFloor = 10f;
+        private const float MovesOnSwing = 16f;
+
         private const int CaretMs = 1300;
         private List<string> _wrapped = new List<string>();
 
@@ -874,6 +917,37 @@ namespace Hoodrich.UI
                 var colour = !choice.Enabled
                     ? Palette.TextDisabled
                     : Blend(Palette.TextDim, Palette.TextOnHover, under);
+
+                // The one the game is waiting on, breathing.
+                //
+                // UNDER everything else on the row rather than over it, so the words stay the
+                // words -- this is a light behind the line, not a badge stuck on the front of
+                // it. It fades out as the highlight arrives, by the same measure the ink uses,
+                // so it hands over during the slide instead of blinking off: two things
+                // pulsing on one row is a fairground, and the highlight is much the louder.
+                //
+                // A sine, and a slow one. Anything that snaps back to its start reads as a
+                // warning. Something that swells and falls reads as waiting, which is what
+                // this is.
+                if (choice.MovesOn && choice.Enabled && under < 0.99f)
+                {
+                    var breath = (Game.GameTime % MovesOnMs) / (float)MovesOnMs;
+                    var swell = 0.5f + 0.5f * (float)Math.Sin(breath * Math.PI * 2.0);
+
+                    var strength = (1f - under) * arrive;
+
+                    Hud.RectFrom(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight,
+                                 Palette.Alpha(Palette.Accent,
+                                               (int)((MovesOnFloor + MovesOnSwing * swell)
+                                                     * strength)));
+
+                    // And a hairline down the near edge, which is what the eye actually catches
+                    // in the corner of a panel this wide. The wash alone is a shade; the edge
+                    // is a mark.
+                    Hud.RectFrom(PanelX, y - 0.0015f, 0.0026f, ChoiceHeight,
+                                 Palette.Alpha(Palette.Accent,
+                                               (int)((90f + 130f * swell) * strength)));
+                }
 
                 var textX = PanelX + 0.014f;
 

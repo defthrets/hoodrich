@@ -786,15 +786,27 @@ namespace Hoodrich.Gangs
             // He also keeps something back on purpose. Fifteen years in, you do not explain
             // your supply to somebody the week they started; you send them to collect and see
             // what comes back.
+            // HE ANSWERS THE QUESTION THAT WAS ASKED.
+            //
+            // The row used to read "Where's it all coming from?" and this line was the reply to
+            // it -- a man refusing to name his supply and giving you an errand instead. The row
+            // is "You got anything for me?" now, and the reply never moved: you walked up and
+            // asked for work and he opened with "that ain't a thing I tell you", which is him
+            // deflecting a question nobody put to him.
+            //
+            // So it is a job offer, which is what it always did and now what it also sounds
+            // like. What he holds back he holds back at the END -- who you talk to next time --
+            // rather than opening on it, because that is a man keeping something for later
+            // instead of a man being cagey about being asked.
             var node = Node(def, gang,
-                "Nah, see, that ain't a thing I tell you. That's a thing you go and find " +
-                "out.\n\nElysian Island. The port. Take the truck that's sat out front and be " +
-                "down there before it gets dark, 'cause after dark the only people in that " +
-                "yard are people who work there.\n\nSomebody'll be expectin' a truck. They " +
-                "ain't expectin' YOU, so that part's on you. Come back with what they load and " +
-                "don't open it, and then we'll see about who you talk to next time.");
+                "Matter of fact I do. Got a pickup needs doin' down the port -- Elysian " +
+                "Island.\n\nTruck's sat right out front, keys in it. Be down there before it " +
+                "gets dark, 'cause after dark the only people in that yard are people who work " +
+                "there.\n\nSomebody'll be expectin' a truck. They ain't expectin' YOU, so " +
+                "that part's on you. Come back with what they load, don't open it, and then " +
+                "we'll see about who you talk to next time.");
 
-            node.Say("Say less.", () => null, "Drive to the port");
+            node.Say("Say less.", () => null, "Drive to the port").MovesOn();
             node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
             return node;
         }
@@ -976,6 +988,16 @@ namespace Hoodrich.Gangs
                      : _state.DocksUnlocked ? "You know the run"
                      : "See if there's work");
 
+            // Lit only while it actually is the door.
+            //
+            // Once the docks are open and no run is going, this row is a man asking his boss
+            // whether anything is about -- which it should stay, and which is exactly the small
+            // talk the mark exists to be told apart FROM. Lighting it always would make the
+            // light mean "a row exists" rather than "this one".
+            node.MovesOn(_state.PortRunStage == PortRun.StageFetch
+                         || _state.PortRunStage == PortRun.StageDeliver
+                         || !_state.DocksUnlocked);
+
             node.WithIcon(_state.PortRunStage != PortRun.StageNone ? Icons.Warning
                           : _state.DocksUnlocked ? Icons.Tick : Icons.Locked);
 
@@ -1146,6 +1168,7 @@ namespace Hoodrich.Gangs
                 one.Say("Give it here.", () => TakeWork(def, gang, bars),
                         "Take his " + bars.Amount(FrontGrams));
                 one.WithIcon(Icons.ForDrug(bars.Id));
+                one.MovesOn();
 
                 one.Say("Nah.", () => Root(def));
                 return one;
@@ -1175,6 +1198,7 @@ namespace Hoodrich.Gangs
                      oxys.BasePrice.ToString("0") + " a " + oxys.Singular + " out there");
 
             node.WithIcon(Icons.ForDrug(oxys.Id));
+            node.MovesOn();
 
             node.Say("Not right now.", () => Root(def));
             return node;
