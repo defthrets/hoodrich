@@ -1463,6 +1463,34 @@ namespace Hoodrich.Missions
                         // to go and deal with a man. Blocking events while ordering somebody to
                         // walk over is two instructions that contradict each other. With a
                         // drive-by as the order they agree.
+                        // ROCKSTAR'S OWN ANSWER, AND THE PIECE THAT WAS MISSING.
+                        //
+                        // I stopped reasoning about flags and went and read their scripts. Of
+                        // the thirty-seven of their missions that contain a drive-by, the one
+                        // shaped exactly like ours -- a car of armed men created into seats,
+                        // then told to shoot out of the windows -- sets ONE thing on every man
+                        // as he is seated, before the task, and it is this:
+                        //
+                        //     SET_PED_CONFIG_FLAG(ped, 272, 1)
+                        //     SET_PED_ACCURACY(ped, 50)
+                        //     TASK_DRIVE_BY(ped, target, ...)
+                        //
+                        // Sixteen occurrences across their files, always at the seat, always
+                        // immediately before the drive-by. Nothing else in this method appears
+                        // in that recipe at all, which is the strongest hint yet that the
+                        // door locks and the leave-vehicle flag were never the lever.
+                        //
+                        // I cannot tell you what 272 is CALLED -- the published flag lists
+                        // disagree and I am not going to invent a name for it. What I can tell
+                        // you is what it is FOR, which is this exact job, on their authority
+                        // and sixteen times over.
+                        Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, DriveByFlag, true);
+
+                        // Their number, not one of mine. A hundred is a man who cannot miss
+                        // from a moving car, which reads as a firing squad rather than a spin
+                        // past a corner.
+                        Function.Call(Hash.SET_PED_ACCURACY, homie.Handle, DriveByAim);
+
                         Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
                         Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, true);
 
@@ -1846,8 +1874,12 @@ namespace Hoodrich.Missions
                 // 200m and burst fire, which are Rockstar's numbers for a passenger drive-by
                 // rather than ours. The 1 is pushUnderneathDrivingTaskIfDriving, which matters
                 // for a driver and is harmless for everybody else.
+                // 0 on the second-to-last, not 1. That argument is
+                // pushUnderneathDrivingTaskIfDriving, and it matters for the man at the WHEEL.
+                // These are passengers, and passengers is the case Rockstar pass 0 for. 50 for
+                // the accuracy is theirs as well.
                 Function.Call(Hash.TASK_DRIVE_BY, homie.Handle, foe.Handle, 0,
-                              0f, 0f, 0f, 200f, 100, true, BurstDriveBy);
+                              0f, 0f, 0f, 200f, DriveByAim, false, BurstDriveBy);
                 return;
             }
 
@@ -1863,6 +1895,20 @@ namespace Hoodrich.Missions
         /// value the native database lists for it.
         /// </summary>
         private const int BurstDriveBy = unchecked((int)0xD31265F2);
+
+        /// <summary>
+        /// The ped config flag Rockstar set on every drive-by shooter they seat.
+        ///
+        /// Taken from their scripts, not from a flag list: of the thirty-seven of their
+        /// missions containing a drive-by, the ones that seat men in a car and tell them to
+        /// shoot out of it set this on each man at the seat, sixteen times over, immediately
+        /// before the task. Its published NAME is disputed and is not worth inventing; what it
+        /// is for is not in doubt.
+        /// </summary>
+        private const int DriveByFlag = 272;
+
+        /// <summary>Their accuracy for a man shooting out of a moving car, not ours.</summary>
+        private const int DriveByAim = 50;
 
         /// <summary>
         /// Keeps the car full for as long as you are in it.
@@ -1936,6 +1982,8 @@ namespace Hoodrich.Missions
                     // Said again with the rest of it. The game clears these on its own when a
                     // ped changes seats or is re-tasked, and one lapsed frame is one event
                     // getting through, which is all it takes.
+                    Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, DriveByFlag, true);
+                    Function.Call(Hash.SET_PED_ACCURACY, homie.Handle, DriveByAim);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
                     Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, false);
@@ -1983,6 +2031,7 @@ namespace Hoodrich.Missions
                 // His ears and his own judgement back. He was made deaf for the drive-by so
                 // that nothing could talk him out of the car; on his feet he needs both, or he
                 // stands in the street ignoring the men shooting at him.
+                Function.Call(Hash.SET_PED_CONFIG_FLAG, homie.Handle, DriveByFlag, false);
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
                 Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, false);
 
