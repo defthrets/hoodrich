@@ -713,11 +713,29 @@ namespace Hoodrich.Gangs
         /// </summary>
         private DialogueNode AskSource(LeaderDef def, GangDef gang)
         {
-            // Already been, already delivered, and the number is in the phone.
+            // Already been, already delivered. He goes over it rather than waving you off.
+            //
+            // "I already told you. Go see the man." is a door closing, and it was sat behind a
+            // row that read "you got anything for me?" -- so the one thing you could ask him
+            // about the only route you run was answered with a brush-off. He is fifteen years
+            // in and you now drive his weight; going over it again is exactly the thing he
+            // would do, and it is where somebody who put the mod down for a fortnight finds
+            // out how this works without reading a menu.
             if (_state.DocksUnlocked && _state.PortRunStage == PortRun.StageNone)
             {
-                var known = Node(def, gang, "I already told you. The port. Go see the man.");
-                known.Say("Back up.", () => Root(def));
+                var known = Node(def, gang,
+                    "Elysian Island, round the back of the sheds. Take the truck out front, get " +
+                    "there before dark.\n\nAsian fella down there name of Tao. He runs that " +
+                    "yard for his people, and he don't know you from nobody -- so you go when " +
+                    "you go, and you handle him yourself.\n\nBring back what they load. Don't " +
+                    "open it, don't stop nowhere, don't let nobody follow you in.");
+
+                known.Say("Got it.", () => Root(def), "Back to it");
+                known.WithIcon(Icons.Tick);
+
+                known.Say("Who's Tao again?", () => WhoIsTao(def, gang), "Ask about the man");
+                known.WithIcon(Icons.FromFile("people.png"));
+
                 known.Leave();
                 return known;
             }
@@ -808,6 +826,27 @@ namespace Hoodrich.Gangs
 
             node.Say("Say less.", () => null, "Drive to the port").MovesOn();
             node.WithIcon(Icons.ForDrug(gang.Drugs.Count > 0 ? gang.Drugs[0] : ""));
+            return node;
+        }
+
+        /// <summary>
+        /// Who the man at the far end is, as much of it as Gerald actually knows.
+        ///
+        /// Deliberately short of the whole story. Gerald knows a name and a yard; the Cheng
+        /// business behind it is Tao's to give away and is not open yet. He is not being cagey
+        /// here, he genuinely does not have the rest of it.
+        /// </summary>
+        private DialogueNode WhoIsTao(LeaderDef def, GangDef gang)
+        {
+            var node = Node(def, gang,
+                "Tao. Young dude, act like he own the place -- 'cause far as that yard go, he " +
+                "kinda do.\n\nHis people got paperwork on half them containers. That's all I " +
+                "know and all I need to know. He talk a lot. Let him.");
+
+            node.Say("Aight.", () => Root(def), "Back to it");
+            node.WithIcon(Icons.Tick);
+
+            node.Leave();
             return node;
         }
 
@@ -982,10 +1021,19 @@ namespace Hoodrich.Gangs
             // He does not answer the second one and never did -- the reply to it was always a
             // job. Asking him a question he deflects, and then being given an errand, is a
             // worse version of walking up and being given the errand.
-            node.Say("You got anything for me?", () => AskSource(def, gang),
+            // THE ROW SAYS WHAT IS ACTUALLY LEFT TO ASK.
+            //
+            // Once the run is done there is no work to ask for -- he has nothing else, and
+            // "you got anything for me?" answered with "I already told you" is a question the
+            // player can see is going nowhere before he picks it. What IS worth asking a man
+            // whose route you now run is to go over it again, so that is what the row becomes.
+            var doneWithIt = _state.DocksUnlocked && _state.PortRunStage == PortRun.StageNone;
+
+            node.Say(doneWithIt ? "Run the port past me again." : "You got anything for me?",
+                     () => AskSource(def, gang),
                      _state.PortRunStage == PortRun.StageFetch ? "He's sent you to the port"
                      : _state.PortRunStage == PortRun.StageDeliver ? "He wants his package"
-                     : _state.DocksUnlocked ? "You know the run"
+                     : doneWithIt ? "Go over the run"
                      : "See if there's work");
 
             // Lit only while it actually is the door.
@@ -997,6 +1045,8 @@ namespace Hoodrich.Gangs
             node.MovesOn(_state.PortRunStage == PortRun.StageFetch
                          || _state.PortRunStage == PortRun.StageDeliver
                          || !_state.DocksUnlocked);
+
+            // A refresher is not a door, so it does not breathe.
 
             node.WithIcon(_state.PortRunStage != PortRun.StageNone ? Icons.Warning
                           : _state.DocksUnlocked ? Icons.Tick : Icons.Locked);
