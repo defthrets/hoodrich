@@ -249,7 +249,7 @@ namespace Hoodrich.Wheel
                 var note = "worth nothing until you " + SplitPhrase(drug.SplitVerb);
                 var art = Icons.ForDrug(drug.Id);
 
-                weight.Row(drug.Name, drug.Amount(have), Palette.Warn,
+                weight.Row(drug.Name, drug.Bulk(have), Palette.Warn,
                            r => { r.Note = note; r.Art = art; r.ArtTint = ProductArt; });
             }
 
@@ -279,7 +279,15 @@ namespace Hoodrich.Wheel
                     var have = den.BulkOf(drug.Id) + den.PackagedOf(drug.Id);
                     if (have <= 0.005f) continue;
 
-                    home.Row(drug.Name, drug.Amount(have), Palette.Cash);
+                    // WEIGHED, because this line adds the two halves together and one of them
+                    // is powder. For everything except the two pill entries the question does
+                    // not arise. For those it does, and neither answer is completely right --
+                    // a number that is partly grams of un-pressed powder and partly finished
+                    // bars is not honestly a count of anything, and calling the total "35 bars"
+                    // claims you have thirty-five bars when some of it has never seen a press.
+                    // Grams is the unit both halves are actually stored in, so grams is the
+                    // half-truth that does not overstate what is in the house.
+                    home.Row(drug.Name, drug.Bulk(have), Palette.Cash);
                     kept++;
                 }
 

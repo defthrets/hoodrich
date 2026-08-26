@@ -178,7 +178,7 @@ namespace Hoodrich.Supply
                 // a kilo count. Kilos are true of the port and nonsense off a bicycle, where
                 // the same routine was rendering an ounce as "0.1 of a kilo".
                 node.Say(product.Name + ".", () => Amounts(pick, product),
-                         product.Amount(brick.Grams) + " at " + Stash.Percent(strength) +
+                         product.Bulk(brick.Grams) + " at " + Stash.Percent(strength) +
                          "%   from $" + cost.ToString("N0"));
 
                 node.WithIcon(Icons.ForDrug(product.Id));
@@ -310,7 +310,7 @@ namespace Hoodrich.Supply
         /// </summary>
         private static string Weight(DrugDef product, Brick brick, int lot)
         {
-            var amount = product.Amount(brick.Grams * lot);
+            var amount = product.Bulk(brick.Grams * lot);
             return lot == 1 ? amount : lot + "x  --  " + amount;
         }
 
@@ -383,7 +383,7 @@ namespace Hoodrich.Supply
                 if (spare > 0.005f) UI.Cash.Give((int)(cost * (spare / grams)));
 
                 Notify.Important("~y~-$" + cost.ToString("N0") + "~s~  " +
-                                 product.Amount(grams - Math.Max(0f, spare)) + " of " +
+                                 product.Bulk(grams - Math.Max(0f, spare)) + " of " +
                                  product.Name.ToLowerInvariant() +
                                  (cut ? "  ~y~" + Stash.Percent(strength) + "%" : ""));
 
@@ -404,7 +404,7 @@ namespace Hoodrich.Supply
             // "0 kilos of oxycodone", a delivery of nothing. DrugDef already knows whether it
             // deals in grams or in units, and every other readout in the mod asks it.
             Notify.Important("~y~-$" + cost.ToString("N0") + "~s~  " +
-                             product.Amount(grams) + " of " +
+                             product.Bulk(grams) + " of " +
                              product.Name.ToLowerInvariant());
 
             Log.Info("Bought " + grams.ToString("0") + "g " + product.Id + " off " + Name +

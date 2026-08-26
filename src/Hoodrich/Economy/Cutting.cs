@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using GTA;
 using GTA.Math;
@@ -146,7 +146,7 @@ namespace Hoodrich.Economy
 
             if (_stash.BulkOf(product.Id) < bulkGrams - 0.001f)
             {
-                return "Only holding " + product.Amount(_stash.BulkOf(product.Id)) + " of bulk " + product.Name + ".";
+                return "Only holding " + product.Bulk(_stash.BulkOf(product.Id)) + " of bulk " + product.Name + ".";
             }
 
             // What is actually on the counter, which is not always full strength any more.
@@ -190,7 +190,7 @@ namespace Hoodrich.Economy
             StandAtTheCounter();
             _startPosition = Game.Player.Character.Position;
 
-            Notify.Ticker(product.SplitVerb + " " + product.Amount(bulkGrams) + " of " + product.Name +
+            Notify.Ticker(product.SplitVerb + " " + product.Bulk(bulkGrams) + " of " + product.Name +
                           " at " + (targetPurity * 100f).ToString("0") + "%...");
 
             // The animation gets the first go, not the scenario. The scenario is only reached

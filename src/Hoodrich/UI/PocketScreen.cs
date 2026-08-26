@@ -454,7 +454,8 @@ namespace Hoodrich.UI
 
             var flashing = _droppedRow == i && Game.GameTime - _droppedAt < DropFlashMs;
 
-            Hud.TextRight(row.Drug.Amount(row.Held), right, y, 0.30f,
+            Hud.TextRight(row.Bagged ? row.Drug.Amount(row.Held) : row.Drug.Bulk(row.Held),
+                          right, y, 0.30f,
                           flashing ? Palette.Warn : picked ? Palette.Standing : Palette.TextDim,
                           Hud.FontBody);
         }

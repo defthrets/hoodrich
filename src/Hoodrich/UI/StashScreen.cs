@@ -513,11 +513,11 @@ namespace Hoodrich.UI
 
             var flashing = _movedRow == i && Game.GameTime - _movedAt < MovedFlashMs;
 
-            Hud.TextRight(Amount(row.Drug, row.OnYou), leftCol + colWidth, y, 0.30f,
+            Hud.TextRight(Amount(row.Drug, row.OnYou, row.Bagged), leftCol + colWidth, y, 0.30f,
                           Side(row.OnYou, picked, flashing && !_movedHome, Palette.Text),
                           Hud.FontBody);
 
-            Hud.TextRight(Amount(row.Drug, row.AtHome), rightCol + colWidth, y, 0.30f,
+            Hud.TextRight(Amount(row.Drug, row.AtHome, row.Bagged), rightCol + colWidth, y, 0.30f,
                           Side(row.AtHome, picked, flashing && _movedHome, Palette.Standing),
                           Hud.FontBody);
         }
@@ -597,10 +597,14 @@ namespace Hoodrich.UI
         /// <summary>The picture beside a column's name.</summary>
         private const float HeadIcon = 0.016f;
 
-        private static string Amount(DrugDef drug, float quantity)
+        private static string Amount(DrugDef drug, float quantity, bool bagged)
         {
             if (quantity <= 0.005f) return "-";
-            return drug == null ? quantity.ToString("0.#") + "g" : drug.Amount(quantity);
+            if (drug == null) return quantity.ToString("0.#") + "g";
+
+            // The row already knows which of the two it is -- it puts "(weight)" after the name
+            // for one of them -- so it may as well say so in the number too.
+            return bagged ? drug.Amount(quantity) : drug.Bulk(quantity);
         }
     }
 }

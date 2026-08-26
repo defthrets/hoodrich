@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Hoodrich.Core;
@@ -133,6 +133,24 @@ namespace Hoodrich.Economy
             }
 
             return quantity.ToString("0.#") + "g";
+        }
+
+        /// <summary>
+        /// A RAW amount, which is always a weight -- even for the things that get counted.
+        ///
+        /// Amount() asks what one of these is called and answers "a pill", which is right for
+        /// the finished article and wrong for what it was made from. Nobody presses pills out
+        /// of pills. What Gerald turns up with is powder: it is weighed, it is cut, and only
+        /// once it has been through a press is there anything to count -- so twenty grams of
+        /// alprazolam in the cupboard is twenty grams, and reading "20 bars" there was the
+        /// stash claiming to hold something that has not been made yet.
+        ///
+        /// Deliberately identical to Amount() for everything that is not counted, so this
+        /// changes the two pill entries in the catalogue and nothing else in the game.
+        /// </summary>
+        public string Bulk(float grams)
+        {
+            return grams.ToString("0.#") + "g";
         }
 
         /// <summary>Short form, for a corner readout where there is no room for a word.</summary>

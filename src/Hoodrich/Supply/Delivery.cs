@@ -1559,8 +1559,21 @@ namespace Hoodrich.Supply
                 // was discarded on the way in he is still belted in when the delivery ends.
                 if (_car != null && _car.Exists() && !_driver.IsInVehicle(_car))
                 {
+                    // WALKING, and the native's own documentation is where the number comes
+                    // from: "speed 1.0 = walk, 2.0 = run". It was 2, so having handed over the
+                    // package he turned and ran out of the house to his car, which reads as
+                    // somebody fleeing a burglary rather than a man who has finished a job.
+                    //
+                    // It is also why Tao never staggered on the way out. A movement clipset is
+                    // a WALK clipset -- a drunk running is just a man running -- so the whole
+                    // second half of his delivery was sober, and only the walk up the path
+                    // ever showed it.
                     Function.Call(Hash.TASK_ENTER_VEHICLE, _driver.Handle, _car.Handle,
-                                  20000, -1, 2f, 1, 0);
+                                  20000, -1, 1f, 1, 0);
+
+                    // Said again on the way out. Nothing has taken it off him, but the walk out
+                    // is the longer of the two and the one where it is worth being certain.
+                    Stagger(true);
                 }
             }
             catch { /* he will find his own way back */ }
@@ -1637,8 +1650,17 @@ namespace Hoodrich.Supply
 
             var taken = House == null ? 0f : House.AddBulk(_owedDrug, _owedGrams, _owedPurity);
 
-            Notify.Important("~g~Delivered.~s~ " + (taken / 1000f).ToString("0.#") +
-                             " kilos in the house" +
+            // KILOS OR GRAMS, whichever the delivery actually was.
+            //
+            // It said kilos every time. That is fine for the port, which is what it was written
+            // for, and Gerald brings twenty grams -- which divided by a thousand and rounded is
+            // nought, so his deliveries announced themselves as "0 kilos in the house".
+            var landed = taken >= 1000f
+                ? (taken / 1000f).ToString("0.#") + " kilos"
+                : taken.ToString("0.#") + "g";
+
+            Notify.Important("~g~Delivered.~s~ " + landed +
+                             " in the house" +
                              (_owedPurity < 0.999f
                                  ? ", ~y~" + Economy.Stash.Percent(_owedPurity) + "%~s~."
                                  : "."));
@@ -2338,7 +2360,9 @@ namespace Hoodrich.Supply
                     Function.Call(Hash.OPEN_SEQUENCE_TASK, seq);
                     var handle = seq.GetResult<int>();
 
-                    Function.Call(Hash.TASK_ENTER_VEHICLE, 0, _car.Handle, 10000, -1, 2f, 1, 0);
+                    // Walking here too. Same reason as the leaving path above: 2.0 is a run,
+                    // and a courier sprinting to his own car is a man being chased.
+                    Function.Call(Hash.TASK_ENTER_VEHICLE, 0, _car.Handle, 10000, -1, 1f, 1, 0);
 
                     // A DESTINATION first, and only then a wander.
                     //

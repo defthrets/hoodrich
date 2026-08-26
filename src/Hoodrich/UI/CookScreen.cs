@@ -625,10 +625,10 @@ namespace Hoodrich.UI
                 // the cupboard reads as a number in your pocket, and the two are not the same
                 // thing the moment you walk out of the room.
                 var where = stored > 0.005f
-                    ? row.Source.Amount(have) + (_stash.BulkOf(row.Source.Id) > 0.005f
+                    ? row.Source.Bulk(have) + (_stash.BulkOf(row.Source.Id) > 0.005f
                         ? "  (some in the cupboard)"
                         : "  (in the cupboard)")
-                    : row.Source.Amount(have);
+                    : row.Source.Bulk(have);
 
                 Hud.TextRight(where, right, y, 0.30f,
                               picked ? Palette.Warn : Palette.TextDim, Hud.FontBody);
@@ -733,7 +733,10 @@ namespace Hoodrich.UI
 
             y += 0.032f;
 
-            var arrow = product.Amount(batch) + "  ->  " + made.Amount(yield);
+            // Weight in, count out. That arrow IS the press: grams of powder on the left and
+            // whatever it presses into on the right, and writing both sides the same way was
+            // what made the whole screen look like it turned pills into pills.
+            var arrow = product.Bulk(batch) + "  ->  " + made.Amount(yield);
 
             Hud.Text(arrow, x, y, 0.30f, fits ? Palette.Cash : Palette.Danger,
                      Hud.FontBody, centre: false);
