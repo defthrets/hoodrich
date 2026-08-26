@@ -1613,7 +1613,7 @@ namespace Hoodrich.Missions
                     // animation expects it and the jet points at the wall on its own.
                     Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _can.Handle, player.Handle,
                                   Function.Call<int>(Hash.GET_PED_BONE_INDEX, player.Handle, 28422),
-                                  0f, 0f, 0f, 0f, 0f, 0f,
+                                  0f, 0f, CanSeat, 0f, 0f, 0f,
                                   false, false, false, false, 2, true);
 
                     return;
@@ -1626,6 +1626,24 @@ namespace Hoodrich.Missions
 
             Log.Debug("No spray can prop in this install.");
         }
+
+        /// <summary>
+        /// A centimetre up the bone, so it sits IN the grip rather than hanging off the bottom
+        /// of it.
+        ///
+        /// Everything above about PH_R_Hand needing no offset is still true and is why this is
+        /// one number rather than a hand-tuned vector with a twist in it: the bone is right,
+        /// the rotation is right, the jet comes out of the nozzle at the wall. The can just sat
+        /// a little low in the fist, which reads as a prop resting on a hand rather than one
+        /// being held.
+        ///
+        /// Small on purpose. This is a seating tweak by eye, not a correction to the rig -- go
+        /// much past a centimetre or two and it stops being held and starts floating above the
+        /// hand instead, which is the same fault the other way up.
+        ///
+        /// Z is up the bone. If it has gone the wrong way it is this sign, and nothing else.
+        /// </summary>
+        private const float CanSeat = 0.012f;
 
         private void TakeCan()
         {
