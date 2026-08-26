@@ -1424,6 +1424,34 @@ namespace Hoodrich.Missions
                     // And he is not to be pulled out of it either.
                     Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, !FromTheCar);
 
+                    if (FromTheCar)
+                    {
+                        // DEAF, AND HOLDING THE ORDER HE WAS GIVEN.
+                        //
+                        // This is why they still climbed out for a second before being put
+                        // back. TASK_DRIVE_BY was the right task and the door was shut and the
+                        // leave-vehicle flag was off -- but none of that outranks an EVENT. A
+                        // round going past, or simply laying eyes on somebody the feud has just
+                        // made an enemy, raises one; the ped drops the task it was given,
+                        // responds to the event with ordinary combat, and ordinary combat means
+                        // getting out and walking over. The re-seat then caught him a beat
+                        // later, which is the jank -- a correction where there should have been
+                        // no decision.
+                        //
+                        // Blocked events stop him answering any of it, and KEEP_TASK stops him
+                        // drifting back to default behaviour when the drive-by has a quiet
+                        // moment. He still shoots, because the drive-by is a task he was
+                        // handed rather than a reaction he is having.
+                        //
+                        // An earlier attempt at this file set blocked events too and it did not
+                        // work -- but that one was fighting TASK_COMBAT_PED, which is an order
+                        // to go and deal with a man. Blocking events while ordering somebody to
+                        // walk over is two instructions that contradict each other. With a
+                        // drive-by as the order they agree.
+                        Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
+                        Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, true);
+                    }
+
                     // And nothing else goes on them.
                     //
                     // Blocked non-temporary events, no dragging out and the two ragdoll flags
@@ -1878,6 +1906,12 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, false);
                     Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, false);
 
+                    // Said again with the rest of it. The game clears these on its own when a
+                    // ped changes seats or is re-tasked, and one lapsed frame is one event
+                    // getting through, which is all it takes.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
+                    Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, true);
+
                     // Shooting is only for the part of the job that has somebody to shoot at.
                     // On the way home they sit there.
                     if (State != MissionState.Work) continue;
@@ -1915,6 +1949,12 @@ namespace Hoodrich.Missions
             {
                 Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 3, true);
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, homie.Handle, true);
+
+                // His ears and his own judgement back. He was made deaf for the drive-by so
+                // that nothing could talk him out of the car; on his feet he needs both, or he
+                // stands in the street ignoring the men shooting at him.
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
+                Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, false);
 
                 // And his legs. BeginWork sets a man on a car job to Stationary, which is right
                 // for a passenger and useless for the same man stood in the street -- he would
