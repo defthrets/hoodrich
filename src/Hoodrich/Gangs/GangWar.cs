@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -2243,6 +2243,87 @@ namespace Hoodrich.Gangs
             return n;
         }
 
+        /// <summary>
+        /// How few have to be left before a straggler counts as finished.
+        ///
+        /// Not applied while the fight is on. Somebody a hundred metres out with fifteen of his
+        /// mates still standing is flanking, or driving in, or has been shoved down an alley --
+        /// all of which are the fight happening. It is only at the very end, when he is the
+        /// last one or two, that distance stops meaning "busy" and starts meaning "stuck".
+        /// </summary>
+        private const int StragglerWhenLeft = 3;
+
+        /// <summary>
+        /// How far out of it he has to be. Well past the ring, not just outside it.
+        ///
+        /// DefendRange is seventy metres and men fight around its edge all the time, so the
+        /// threshold is more than double that. At this distance he is not in the fight on any
+        /// reading -- he is on a road somewhere with his pathfinding wedged, which is exactly
+        /// what the map showed: one red dot parked three streets west while the block was quiet.
+        /// </summary>
+        private const float StragglerRange = 160f;
+
+        /// <summary>
+        /// The last of them, too far away to be part of it, sent off and counted.
+        ///
+        /// He counts as DOWN but never as a kill. The bar is about whether the block is clear,
+        /// and it is -- but your kill count is your share of the work, and a man who wandered
+        /// off and was written out is not work you did.
+        ///
+        /// He is told to flee and then released rather than deleted. Deleting a ped in view is
+        /// the one thing worse than leaving him there; handed back to the game he runs off and
+        /// gets cleaned up in his own time, which is what the player would have seen if the
+        /// pathfinding had worked in the first place.
+        /// </summary>
+        private void SendStragglersHome()
+        {
+            if (_target == null) return;
+            if (_rivals.Count == 0 || _rivals.Count > StragglerWhenLeft) return;
+
+            for (var i = _rivals.Count - 1; i >= 0; i--)
+            {
+                var ped = _rivals[i];
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                float away;
+
+                try { away = ped.Position.DistanceTo(_target.Where); }
+                catch { continue; }
+
+                if (away <= StragglerRange) continue;
+
+                try
+                {
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, false);
+
+                    Function.Call(Hash.TASK_SMART_FLEE_COORD, ped.Handle,
+                                  _target.Where.X, _target.Where.Y, _target.Where.Z,
+                                  400f, -1, false, false);
+
+                    Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+
+                    ped.IsPersistent = false;
+                    ped.MarkAsNoLongerNeeded();
+                }
+                catch
+                {
+                    // He is written off either way. Being unable to task him is the strongest
+                    // possible sign he was never coming back to this fight.
+                }
+
+                _downed++;
+
+                Log.Info("A " + (_attacker == null ? "rival" : _attacker.Name) +
+                         " was stuck " + away.ToString("0") + "m out with " + _rivals.Count +
+                         " left; written off.");
+
+                Forget(ped);
+                _rivals.RemoveAt(i);
+            }
+        }
+
         private void CountKills()
         {
             for (var i = _rivals.Count - 1; i >= 0; i--)
@@ -2264,6 +2345,9 @@ namespace Hoodrich.Gangs
                 Forget(ped);
                 _rivals.RemoveAt(i);
             }
+
+            // And the ones nobody killed who are not coming back either.
+            SendStragglersHome();
         }
 
         private void Mark()
