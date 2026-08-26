@@ -159,6 +159,7 @@ namespace Hoodrich
         private readonly ParkedCar _meetTwo;
         private readonly Fixture _partyBarrel;
         private readonly Fixture _partyCouch;
+        private readonly YardDog _partyDog;
         private readonly Fixture _leaderBox;
 
         /// <summary>
@@ -849,6 +850,18 @@ namespace Hoodrich
 
                 _partyCouch = new Fixture(new Vector3(-202.400f, -1727.000f, 32.664f), 118.000f,
                                           "prop_couch_03", "prop_old_couch_01", "prop_rub_couch01");
+
+                // And somebody's dog, off the lead, doing laps of the yard nobody asked him to.
+                //
+                // Six metres, which is a dog mooching round a party rather than a dog on a
+                // beat. Placed between the barrel and the couch so his round takes him through
+                // where the people are instead of along a wall.
+                _partyDog = new YardDog(new Vector3(-200.900f, -1727.900f, 32.664f), 6f)
+                {
+                    // The yard is only a party once it is your block. Before that he is
+                    // somebody else's dog in somebody else's yard.
+                    Known = () => _crew != null && _crew.IsAffiliated
+                };
 
                 // Somebody's bag, open, on the table by the couch. Height read off the HUD stood
                 // ON the table rather than beside it, so it sits on the top rather than through
@@ -1809,6 +1822,7 @@ namespace Hoodrich
                     _meet.Update();
                     _partyBarrel.Update();
                     _partyCouch.Update();
+                    _partyDog?.Update();
                     _leaderBox.Update();
                     foreach (var prop in _scenery) prop.Update();
                     _decks.Update();
@@ -2425,6 +2439,7 @@ namespace Hoodrich
             try { _meet?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
+            try { _partyDog?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaderBox?.RestoreWorld(); } catch { /* teardown */ }
 
             try { _decks?.RestoreWorld(); } catch { /* teardown */ }
