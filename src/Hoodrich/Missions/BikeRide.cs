@@ -694,6 +694,11 @@ namespace Hoodrich.Missions
             {
                 _doorAt = Game.GameTime + DoorCheckMs;
                 OpenTheShop();
+
+                // On the same timer and for the same reason: the shop is half a mile away when
+                // this phase starts, so neither the door nor the counter has streamed in yet
+                // and both have to be asked again until they have.
+                StandUpClerk();
             }
 
             // The two lines that follow the fight, spaced so they do not stack. The laugh is
@@ -1043,6 +1048,20 @@ namespace Hoodrich.Missions
         /// <summary>
         /// Puts somebody behind the counter.
         ///
+        /// THIS COMMENT WAS AN ORPHAN. The method it describes was deleted when the home-grown
+        /// robbery was dropped in favour of the game's own, and the comment, ClerkModels,
+        /// _madeClerk and Behind() were all left behind pointing at nothing.
+        ///
+        /// It has to come back, because the game does not bring its own man back. Kill the
+        /// shopkeeper and GTA shuts that store -- "24-7 is closed, please come back later" --
+        /// and there is no native anywhere that reopens it or respawns him. So retrying the
+        /// ride put you in a shop with nobody in it and nothing to rob. The leg still ended,
+        /// because walking in and out is what finishes it, but it ended hollow.
+        ///
+        /// Only when the game has nobody there. When the real shopkeeper is present this does
+        /// nothing at all and the game's own robbery runs exactly as before -- with the alarm,
+        /// the star and the till it opens itself. This is the understudy, not the replacement.
+        ///
         /// Found rather than placed. The till is a prop with a known model and it is by
         /// definition on the counter, so the game is asked where the nearest one is and the
         /// clerk goes a step behind it -- which beats a coordinate typed into a file, because
@@ -1053,6 +1072,134 @@ namespace Hoodrich.Missions
         /// back depends on the prop, and guessing wrong puts the man on your side of the
         /// counter looking at the crisps.
         /// </summary>
+        private void StandUpClerk()
+        {
+            if (_madeClerk != null && _madeClerk.Exists() && _madeClerk.IsAlive) return;
+            _madeClerk = null;
+
+            try
+            {
+                var till = NearestTill();
+                if (till == null) return;
+
+                // SOMEBODY AT THE TILL, not somebody in the shop.
+                //
+                // Asking whether any ped is near the SHOP is the wrong question -- a 24/7 has
+                // customers, and one man buying crisps by the door would have suppressed this
+                // every time and left the counter empty anyway. The question is whether anyone
+                // is stood where a shopkeeper stands, which is arm's reach of the till.
+                foreach (var ped in World.GetNearbyPeds(till.Position, ClerkAtTill))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (ped == Game.Player.Character) continue;
+                    if (ped == _lamar) continue;
+
+                    return;
+                }
+
+                // A till faces its customer. Which of the prop's two faces that is depends on
+                // the prop, so both are tried and the one standing on floor wins.
+                var back = till.Position - till.ForwardVector * ClerkStep;
+                var front = till.Position + till.ForwardVector * ClerkStep;
+
+                var spot = Behind(back) ? back : Behind(front) ? front : back;
+
+                foreach (var name in ClerkModels)
+                {
+                    var model = new Model(name);
+
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+                    if (!model.Request(1500)) return;
+
+                    var ped = World.CreatePed(model, spot, till.Heading + 180f);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (ped == null || !ped.Exists()) continue;
+
+                    _madeClerk = ped;
+
+                    ped.IsPersistent = true;
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
+
+                    // A REAL MAN, not a statue. He can be shot, he can be scared, and the leg
+                    // already knows what to do about either -- SomebodyDown watches for him
+                    // going over and the objective changes to say so.
+                    Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped.Handle, true);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+
+                    // He does not fight you for it. He is a man on minimum wage behind a till,
+                    // and the whole beat is that he hands it over or he does not get the
+                    // chance to.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, false);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
+
+                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle,
+                                  "WORLD_HUMAN_STAND_IMPATIENT", 0, true);
+
+                    Log.Info("Stood a clerk back up behind the till: " + name + ".");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not stand a clerk up: " + ex.Message);
+            }
+        }
+
+        /// <summary>The nearest till prop, which is by definition on the counter.</summary>
+        private static Prop NearestTill()
+        {
+            Prop best = null;
+            var nearest = float.MaxValue;
+
+            try
+            {
+                foreach (var prop in World.GetNearbyProps(Shop, ClerkLook))
+                {
+                    if (prop == null || !prop.Exists()) continue;
+
+                    var name = prop.Model.Hash;
+                    var isTill = false;
+
+                    foreach (var till in TillModels)
+                    {
+                        if (name != new Model(till).Hash) continue;
+                        isTill = true;
+                        break;
+                    }
+
+                    if (!isTill) continue;
+
+                    var away = prop.Position.DistanceTo(Shop);
+                    if (away >= nearest) continue;
+
+                    nearest = away;
+                    best = prop;
+                }
+            }
+            catch
+            {
+                // No till found is no clerk stood up, which is the old behaviour.
+            }
+
+            return best;
+        }
+
+        /// <summary>Every till the game ships, all three verified against its object list.</summary>
+        private static readonly string[] TillModels =
+        {
+            "prop_till_01", "prop_till_02", "prop_till_03"
+        };
+
+        /// <summary>How far out of the shop's middle to look for a counter or a person.</summary>
+        private const float ClerkLook = 12f;
+
+        /// <summary>How far behind the till he stands.</summary>
+        private const float ClerkStep = 0.7f;
+
+        /// <summary>Close enough to the till to BE the man serving, rather than a customer.</summary>
+        private const float ClerkAtTill = 2.2f;
         /// <summary>
         /// Unlocks whatever is standing in that doorway, whatever it happens to be called.
         ///
@@ -1776,7 +1923,19 @@ namespace Hoodrich.Missions
                 // Killable now, where he is normally not. A bodyguard who cannot be shot is
                 // not a bodyguard, and the mission already fails properly if he goes down.
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped.Handle, true);
-                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+
+                // AND HE DOES NOT REACT TO BEING WALKED INTO.
+                //
+                // This was false, which left him answering every event that happened near him
+                // -- including the player's shoulder. Bump him on the way to the bikes and he
+                // squares up to the man he is about to ride across two neighbourhoods with.
+                //
+                // Blocking events does not make him unkillable; CAN_BE_TARGETTED on the line
+                // above is what decides that, and it stays. What this stops is him deciding
+                // things for himself, which is exactly what the combat attributes two lines up
+                // already say: he fights when the job says so and not before. It comes off
+                // again in ItGoesOff, at the courts, when the job says so.
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
 
                 Enlist(ped, player);
                 OnFoot(ped, player);
@@ -2442,6 +2601,11 @@ namespace Hoodrich.Missions
 
                 try
                 {
+                    // Off the leash, here and nowhere earlier. Everything on our side rode out
+                    // deaf to events on purpose so nobody started anything on the way; this is
+                    // the moment the job says otherwise.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+
                     Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, ped.Handle, true);
 
                     // Hated targets rather than a named man. Everybody our side hates is on
