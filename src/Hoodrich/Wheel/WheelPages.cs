@@ -969,14 +969,21 @@ namespace Hoodrich.Wheel
                 disabledReason: "Not wired up");
             page.WithIcon(Icons.FromFile("mobile.png"));
 
-            // A baggie, not a bong. The old one was a picture of SMOKING and this menu is
-            // about selling, which is the one thing nobody in it ever does with the product.
-            page.AddSub("Dealing", "$", BuildDrugsPage,
-                detail: "Re-up, bag up, go to work",
-                value: DrugsSummary(),
-                enabled: !_cutting.IsBusy,
-                disabledReason: "You're working the counter");
-            page.WithIcon(Icons.FromFile("baggie.png"));
+            // SECOND, right under the real phone, because it is the thing on here you open
+            // most and the one with something waiting in it. Dealing moved down to sit beside
+            // Gangs, where the rest of the work is.
+            //
+            // The unread count is the value rather than the total. A number that only ever goes
+            // up tells you nothing; the question a phone answers from across the screen is
+            // whether anything is waiting.
+            page.Add("Messages", "@", () => ShowMessages?.Invoke(),
+                detail: Inbox.Unread > 0
+                    ? Inbox.Unread == 1 ? "Somebody's texted you" : "You've got messages waiting"
+                    : "Everything anybody has texted you, and a line back to your people",
+                value: Inbox.Unread > 0 ? Inbox.Unread + " new" : "",
+                enabled: ShowMessages != null,
+                disabledReason: "Not wired up");
+            page.WithIcon(Icons.FromFile("reply.png"));
 
             // Contacts sits on the RIGHT, two slots off Socials rather than next to it. The
             // wheel fills clockwise from the top, so where a wedge is added is where it lands
@@ -987,22 +994,14 @@ namespace Hoodrich.Wheel
                 value: ContactsSummary());
             page.WithIcon(Icons.FromFile("phone.png"));
 
-            // Next to Contacts, because they are the two halves of one thing: that page is who
-            // you can reach and this one is what was said. Every text the mod sends has always
-            // gone to the game's feed and been gone eight seconds later, so a plug naming the
-            // street he is parked on was information you had one chance to catch.
-            //
-            // The unread count is the value rather than the total. A number that only ever goes
-            // up tells you nothing; the question a phone answers from across the screen is
-            // whether anything is waiting.
-            page.Add("Messages", "@", () => ShowMessages?.Invoke(),
-                detail: Inbox.Unread > 0
-                    ? Inbox.Unread == 1 ? "Somebody's texted you" : "You've got messages waiting"
-                    : "Everything anybody has texted you, and a line back to the plugs",
-                value: Inbox.Unread > 0 ? Inbox.Unread + " new" : "",
-                enabled: ShowMessages != null,
-                disabledReason: "Not wired up");
-            page.WithIcon(Icons.FromFile("reply.png"));
+            // A baggie, not a bong. The old one was a picture of SMOKING and this menu is
+            // about selling, which is the one thing nobody in it ever does with the product.
+            page.AddSub("Dealing", "$", BuildDrugsPage,
+                detail: "Re-up, bag up, go to work",
+                value: DrugsSummary(),
+                enabled: !_cutting.IsBusy,
+                disabledReason: "You're working the counter");
+            page.WithIcon(Icons.FromFile("baggie.png"));
 
             page.AddSub("Gangs", "%", BuildGangsPage,
                 detail: _crew.IsAffiliated
@@ -1220,10 +1219,7 @@ namespace Hoodrich.Wheel
 
                 page.Add(out_ ? "Send the homies home" : "Text the homies",
                          out_ ? "x" : ">",
-                         () => { var no = out_ ? Crew.Dismiss() : Crew.Call();
-                                 if (no != null) Notify.Problem(no);
-                                 else Notify.Ticker(out_ ? "~g~They headed off.~s~"
-                                                         : "~g~They comin'. Sit tight.~s~"); },
+                         RingHomies,
                     detail: coming
                         ? "They're in a cab on the way over. Stay put and it'll find you"
                         : out_
@@ -1522,6 +1518,52 @@ namespace Hoodrich.Wheel
             if (failure != null) Notify.Problem(failure);
         }
 
+        /// <summary>The id the Messages app hands back for the homies. Not a dealer.</summary>
+        public const string HomiesId = "homies";
+
+        /// <summary>
+        /// Sends for the homies, or sends them home -- whichever the state calls for.
+        ///
+        /// One function, pressed from two places: the Contacts row and the Messages thread.
+        /// The plugs learned this lesson already -- the moment the app grew its own version of
+        /// when somebody answers, the two doors start disagreeing about it.
+        ///
+        /// The state is read HERE rather than captured when the row was built. A wheel page is
+        /// built once when it opens and can be looked at for a while; they can arrive in that
+        /// time, and a row that then dismisses them because it was drawn before they got here
+        /// is a button that does the opposite of what it says.
+        /// </summary>
+        private void RingHomies()
+        {
+            if (Crew == null || !Crew.Available)
+            {
+                Notify.Problem("you ain't got nobody to call yet.");
+                return;
+            }
+
+            var away = Crew.AnyOut || Crew.Inbound;
+
+            var no = away ? Crew.Dismiss() : Crew.Call();
+
+            if (no != null)
+            {
+                Notify.Problem(no);
+                return;
+            }
+
+            // Yours first, then theirs. Same ordering the plugs need and for the same reason:
+            // a reply filed above the question reads as them answering something you have not
+            // said yet.
+            Inbox.Sent(Gangs.Homies.ContactName, away ? HomiesStand : HomiesCome);
+
+            Notify.Text(null, Gangs.Homies.ContactName, Gangs.Homies.ContactZone,
+                        away ? "aight. hit us up" : "on our way. sit tight");
+        }
+
+        /// <summary>What you say to them, shown on the send row before you press it.</summary>
+        private const string HomiesCome = "yall come thru";
+        private const string HomiesStand = "we good, head back";
+
         /// <summary>
         /// What you say when you text a plug, shown on the send row before you press it.
         ///
@@ -1545,6 +1587,27 @@ namespace Hoodrich.Wheel
         public List<PhoneContact> PhoneBook()
         {
             var book = new List<PhoneContact>();
+
+            // Your own people first, and only once they are yours to call. Before that they
+            // are not a contact you have -- Contacts says as much in its own way, and a thread
+            // you cannot use is worse here than no thread at all.
+            if (Crew != null && Crew.Available)
+            {
+                var away = Crew.AnyOut || Crew.Inbound;
+
+                book.Add(new PhoneContact
+                {
+                    Id = HomiesId,
+                    Name = Gangs.Homies.ContactName,
+
+                    // No mugshot, because there are three of them. See PhoneContact.Icon.
+                    Portrait = "",
+                    Icon = "people.png",
+
+                    Refusal = null,
+                    Line = away ? HomiesStand : HomiesCome
+                });
+            }
 
             foreach (var def in _dealers.All)
             {
@@ -1575,15 +1638,21 @@ namespace Hoodrich.Wheel
         }
 
         /// <summary>
-        /// Texts a plug from the Messages app, down the same path as the Contacts row.
+        /// Texts somebody from the Messages app, down the same path as the Contacts row.
         ///
         /// A thin wrapper on purpose. The app is a second door onto ordering a re-up, and the
         /// moment it grew its own version of the rules about when a plug answers, the two
         /// doors would start disagreeing.
         /// </summary>
-        public void TextPlug(string id)
+        public void TextContact(string id)
         {
             if (string.IsNullOrEmpty(id)) return;
+
+            if (string.Equals(id, HomiesId, StringComparison.OrdinalIgnoreCase))
+            {
+                RingHomies();
+                return;
+            }
 
             foreach (var def in _dealers.All)
             {

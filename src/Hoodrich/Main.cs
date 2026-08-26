@@ -1385,7 +1385,7 @@ namespace Hoodrich
                 // The app asks the wheel who can be reached and hands ids back to it, so both
                 // doors onto a re-up run the same call with the same refusals. See PhoneBook.
                 _messages.Contacts = pages.PhoneBook;
-                _messages.TextPlug = pages.TextPlug;
+                _messages.TextContact = pages.TextContact;
 
                 // A text arriving is a change worth saving. Without this the inbox only reaches
                 // the disk when something else happens to be dirty, so the last few messages of

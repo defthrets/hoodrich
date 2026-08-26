@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -256,6 +256,18 @@ namespace Hoodrich.Gangs
         /// set -- they are the gang's people, not yours, and somebody who has walked away does
         /// not get to keep the phone number.
         /// </summary>
+        /// <summary>
+        /// What their thread is called, and the name every text from them is filed under.
+        ///
+        /// A const rather than a string typed in three places. Threading is by sender name, so
+        /// one of those three drifting by a capital letter would quietly split them into two
+        /// conversations -- and it would look like a bug in the app rather than a typo here.
+        /// </summary>
+        public const string ContactName = "Homies";
+
+        /// <summary>Where their texts say they are. Their block, not yours.</summary>
+        public const string ContactZone = "Chamberlain Hills";
+
         public bool Available =>
             _state != null && _state.HomiesUnlocked && _crew != null && _crew.IsAffiliated;
 
@@ -794,7 +806,12 @@ namespace Hoodrich.Gangs
             _inbound = false;
             _dropping = false;
 
-            Notify.Ticker("~g~They're here.~s~");
+            // A TEXT, not a ticker, and for the same reason the plugs send one: this is the
+            // message you go back and look for. A ticker is gone in eight seconds and tells
+            // you something you may well have been looking away for -- a text is in the thread
+            // afterwards, next to the line you sent asking them to come.
+            Notify.Text(null, ContactName, ContactZone, "we outside");
+
             Log.Info("Homies arrived: " + Standing + " with the player.");
         }
 

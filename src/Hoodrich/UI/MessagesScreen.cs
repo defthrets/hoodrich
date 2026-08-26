@@ -29,6 +29,16 @@ namespace Hoodrich.UI
 
         /// <summary>What pressing send would say to him, shown before you press it.</summary>
         public string Line = "";
+
+        /// <summary>
+        /// A file icon, for a contact the game has no photograph of.
+        ///
+        /// The homies are three men rather than one, so there is no CHAR_ mugshot that is
+        /// them -- and a coloured circle with an H in it beside Gerald's actual face reads as
+        /// a contact that failed to load. The Contacts wheel has always drawn them with
+        /// people.png and this draws them with the same art.
+        /// </summary>
+        public string Icon = "";
     }
 
     /// <summary>
@@ -39,15 +49,15 @@ namespace Hoodrich.UI
     /// the list rather than closing the app, which is the one navigation rule that makes the
     /// app feel like a phone instead of a menu with a submenu.
     ///
-    /// The list is NOT just people who have texted you. Every plug is on it, whether he has
-    /// ever sent you anything or not, because the second half of this feature is being able to
-    /// text them from here -- and a contact you cannot see is a contact you cannot message.
-    /// A plug with no history reads as an empty conversation, which is exactly what it is.
+    /// The list is NOT just people who have texted you. Everybody you can reach is on it --
+    /// the plugs, and your own people -- whether they have ever sent you anything or not,
+    /// because the second half of this feature is texting THEM. A contact you cannot see is a
+    /// contact you cannot message. One with no history reads as an empty conversation, which
+    /// is exactly what it is.
     ///
-    /// It does not invent a second way to order. Pressing send here runs the same call the
+    /// It does not invent a second way to do any of it. Pressing send runs the same call the
     /// Contacts wheel has always run, refusals and all, so there is one path to a re-up and
-    /// one set of rules about when it is allowed. The app is a new door onto it, not a new
-    /// room.
+    /// one path to calling the homies over. The app is a new door onto them, not a new room.
     /// </summary>
     internal sealed class MessagesScreen
     {
@@ -110,8 +120,13 @@ namespace Hoodrich.UI
         /// <summary>Who you can reach. Set by Main; see PhoneContact.</summary>
         public Func<List<PhoneContact>> Contacts;
 
-        /// <summary>Sends the re-up. Takes the contact id and reports its own problems.</summary>
-        public Action<string> TextPlug;
+        /// <summary>
+        /// Sends the message. Takes the contact id and reports its own problems.
+        ///
+        /// Was TextPlug, and is not plugs-only any more -- the homies are on the other end of
+        /// it too, and whatever gets a thread next will be as well.
+        /// </summary>
+        public Action<string> TextContact;
 
         /// <summary>A row in the people list.</summary>
         private sealed class Row
@@ -124,6 +139,7 @@ namespace Hoodrich.UI
 
             public string Refusal;
             public string Line = "";
+            public string Icon = "";
 
             public string Preview = "";
             public string When = "";
@@ -227,6 +243,7 @@ namespace Hoodrich.UI
                     row.Id = known.Id;
                     row.Refusal = known.Refusal;
                     row.Line = known.Line;
+                    row.Icon = known.Icon;
 
                     if (string.IsNullOrEmpty(row.Portrait)) row.Portrait = known.Portrait;
                 }
@@ -250,6 +267,7 @@ namespace Hoodrich.UI
                 {
                     Name = contact.Name,
                     Portrait = contact.Portrait,
+                    Icon = contact.Icon,
                     Id = contact.Id,
                     Refusal = contact.Refusal,
                     Line = contact.Line,
@@ -542,9 +560,9 @@ namespace Hoodrich.UI
                 return;
             }
 
-            if (TextPlug == null) return;
+            if (TextContact == null) return;
 
-            TextPlug(row.Id);
+            TextContact(row.Id);
 
             // Whatever it did, the store is the thing that knows -- the send path files your
             // line itself, so the thread is rebuilt from the store rather than from a guess
@@ -700,7 +718,7 @@ namespace Hoodrich.UI
             var cx = x + Hud.ToX(AvatarSize) * 0.5f;
             var cy = top + h * 0.5f;
 
-            if (!Face(row.Portrait, cx, cy))
+            if (!Face(row.Portrait, cx, cy, AvatarSize, row.Icon))
             {
                 Hud.Disc(cx, cy, AvatarSize * 0.5f, Tint(row.Name));
 
@@ -784,8 +802,9 @@ namespace Hoodrich.UI
             var cy = y + 0.018f;
 
             var face = row == null ? "" : row.Portrait;
+            var icon = row == null ? "" : row.Icon;
 
-            if (!Face(face, cx, cy, 0.032f))
+            if (!Face(face, cx, cy, 0.032f, icon))
             {
                 Hud.Disc(cx, cy, 0.016f, Tint(_who));
 
@@ -1116,13 +1135,30 @@ namespace Hoodrich.UI
                          Palette.Alpha(Palette.Accent, 190));
         }
 
-        private bool Face(string pic, float cx, float cy, float size = AvatarSize)
+        /// <summary>
+        /// Their picture: the game's mugshot if they have one, our own art if they do not.
+        ///
+        /// Two different systems, which is why this is one function rather than two calls at
+        /// every site. A CHAR_ dictionary is streamed and drawn as a sprite; a file icon is
+        /// loaded off disk and drawn through ScaledDraw. Everything above here only wants to
+        /// know whether a picture happened.
+        /// </summary>
+        private bool Face(string pic, float cx, float cy, float size = AvatarSize,
+                          string icon = null)
         {
-            if (string.IsNullOrEmpty(pic)) return false;
-            if (!Hud.EnsureTextureDict(pic)) return false;
+            if (!string.IsNullOrEmpty(pic) && Hud.EnsureTextureDict(pic))
+            {
+                Hud.Sprite(pic, pic, cx, cy, Hud.ToX(size), size, 0f, Color.White);
+                return true;
+            }
 
-            Hud.Sprite(pic, pic, cx, cy, Hud.ToX(size), size, 0f, Color.White);
-            return true;
+            if (!string.IsNullOrEmpty(icon) && Hud.File(icon, cx, cy, size * 0.86f, 0f,
+                                                        Palette.Text))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
