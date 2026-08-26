@@ -145,6 +145,34 @@ namespace Hoodrich.Gangs
                     var group = Function.Call<int>(Hash.GET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle);
                     if (group != home.GroupHash) continue;
 
+                    // ---- said to EVERY one of ours near him, not just the ones swinging ----
+                    //
+                    // The relationship has been Companion both ways since the constructor and
+                    // it was never the gap. What starts these fights is events: a round fired
+                    // nearby, a shoulder, a car door. An event puts a man into combat on its
+                    // own account and the relationship that should have prevented it is never
+                    // consulted again -- so this used to arrive after the first punch, every
+                    // time, and only tidied up.
+                    //
+                    // Now nobody in his own set is carrying the two attributes that make a man
+                    // go looking, and none of them counts him as an enemy to begin with.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, false);
+                    Function.Call(Hash.SET_PED_AS_ENEMY, ped.Handle, false);
+                    Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
+
+                    // AND THEY STOP TALKING TO HIM LIKE A STRANGER.
+                    //
+                    // "You're in the wrong neighbourhood" is the game's own gang challenge, and
+                    // it runs off the ambient gang system rather than off any relationship --
+                    // which is why being on Companion terms never silenced it. These are his
+                    // people on his own block; there is no version of this where they warn him
+                    // off it.
+                    //
+                    // Our own chatter is unaffected: BlockTalk and BlockLife lift this the
+                    // instant before they speak, and a line already playing is not cut by it.
+                    Function.Call(Hash.BLOCK_ALL_SPEECH_FROM_PED, ped.Handle, true, false);
+
                     var target = Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0);
                     if (target != player.Handle) continue;
 

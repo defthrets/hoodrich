@@ -309,6 +309,12 @@ namespace Hoodrich.Gangs
 
             try
             {
+                // The set is kept quiet around Franklin so the game stops challenging him on
+                // his own block -- see Affiliation.CalmHome. This is OUR line, so the gag comes
+                // off for it. CalmHome puts it back on its next pass, by which time this has
+                // started, and a line already playing is not cut by the block.
+                Function.Call(Hash.BLOCK_ALL_SPEECH_FROM_PED, ped.Handle, false, false);
+
                 Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, ped.Handle);
                 Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
                               Pick(speech), "SPEECH_PARAMS_FORCE");
