@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -30,6 +30,19 @@ namespace Hoodrich.Gangs
 
         /// <summary>How far they may drift before they are put back.</summary>
         private const float DriftRange = 5f;
+
+        /// <summary>
+        /// A wanderer's own numbers, taken from YardDog, which has been doing this in the same
+        /// yard since the dog went in.
+        ///
+        /// Short hops with short pauses. A man who crosses the lot in one go and then stands
+        /// still for a minute is a man on a schedule; this is somebody at a party.
+        /// </summary>
+        private const float WanderShortestWalk = 1.5f;
+        private const float WanderPause = 4f;
+
+        /// <summary>How long a wander order is left alone before it may be given again.</summary>
+        private const int WanderHoldMs = 30000;
 
         private const int PedTypeCiv = 4;
 
@@ -161,6 +174,20 @@ namespace Hoodrich.Gangs
         private readonly List<int> _animPick = new List<int>();
         private readonly List<int> _animDue = new List<int>();
 
+        /// <summary>
+        /// How far station i is allowed to roam, or 0 for somebody on a mark.
+        ///
+        /// A yard where every single person is welded to a spot reads as a diorama. Most of
+        /// them SHOULD be still -- a man is smoking, a woman is on the decks, and those are
+        /// things you do standing in one place -- but the ones whose whole station is "holding
+        /// a drink" have no reason not to move, and two of them drifting is the difference
+        /// between a party and a set dressing.
+        /// </summary>
+        private readonly List<float> _wander = new List<float>();
+
+        /// <summary>When a wanderer may be told again, so he is not re-tasked every pass.</summary>
+        private readonly List<int> _wanderDue = new List<int>();
+
         /// <summary>How long a clip gets to visibly start before it is written off.</summary>
         private const int AnimGraceMs = 900;
 
@@ -228,7 +255,8 @@ namespace Hoodrich.Gangs
         /// <summary>Adds one of them, on his own mark, doing his own thing.</summary>
         public Entourage Stand(Vector3 where, float facing, string scenario,
                                string[] models = null, bool armed = true, bool onProp = false,
-                               string[] anim = null, string weapon = null, bool nights = false)
+                               string[] anim = null, string weapon = null, bool nights = false,
+                               float wander = 0f)
         {
             _allNight.Add(nights);
             _stations.Add(where);
@@ -240,6 +268,8 @@ namespace Hoodrich.Gangs
             _anims.Add(anim);
             _animPick.Add(-1);
             _animDue.Add(0);
+            _wander.Add(wander);
+            _wanderDue.Add(0);
 
             // Staggered at the door rather than at spawn: a fixed offset per station means the
             // yard never starts everybody's clock on the same frame, whatever order they got
@@ -450,6 +480,25 @@ namespace Hoodrich.Gangs
             if (up > 0) Log.Info(up + " of " + gang.Name + " stood with " + _who + ".");
         }
 
+        /// <summary>How far station i roams, or 0 if he is on a mark.</summary>
+        private float WanderAt(int index)
+        {
+            return index >= 0 && index < _wander.Count ? _wander[index] : 0f;
+        }
+
+        /// <summary>
+        /// How far from his mark he is allowed to get before he is walked back.
+        ///
+        /// A wanderer needs a longer leash than his own radius or the walk-back fights the
+        /// wander -- he reaches the edge of where he was told to roam, gets marched home, and
+        /// the two tasks argue for the rest of the evening.
+        /// </summary>
+        private float LeashAt(int index)
+        {
+            var roam = WanderAt(index);
+            return roam > 0f ? roam + 2f : DriftRange;
+        }
+
         /// <summary>Whether the man at that station is one of the ones who stays.</summary>
         private bool AllNight(int index)
         {
@@ -587,6 +636,31 @@ namespace Hoodrich.Gangs
         {
             try
             {
+                // A WANDERER, before anything else. He has no clip and no scenario -- the whole
+                // point of him is that he is not doing either.
+                //
+                // Issued on a timer rather than re-asserted every pass. TASK_WANDER_IN_AREA is
+                // a task he stays in, and telling a man to start wandering while he is already
+                // wandering restarts him on the spot -- which looks exactly like somebody
+                // stuck. The same reason the scenario above is only re-issued when task 118
+                // has actually gone.
+                var roam = WanderAt(index);
+
+                if (roam > 0f)
+                {
+                    if (index >= 0 && index < _wanderDue.Count)
+                    {
+                        if (Game.GameTime < _wanderDue[index]) return;
+                        _wanderDue[index] = Game.GameTime + WanderHoldMs;
+                    }
+
+                    Function.Call(Hash.TASK_WANDER_IN_AREA, ped.Handle,
+                                  at.X, at.Y, at.Z, roam, WanderShortestWalk, WanderPause);
+
+                    Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+                    return;
+                }
+
                 // An animated station tries its clips first and only falls back to the scenario
                 // if none of them are in this install.
                 if (anim != null)
@@ -773,7 +847,7 @@ namespace Hoodrich.Gangs
                 var mark = MarkAt(i);
                 var away = ped.Position.DistanceTo(mark);
 
-                if (away <= DriftRange)
+                if (away <= LeashAt(i))
                 {
                     // Home, but knocked out of what he was doing -- put him back to it once,
                     // not every pass, or he restarts the scenario forever.
@@ -808,6 +882,13 @@ namespace Hoodrich.Gangs
 
                             _animPick[i] = pick + 2 < clips.Length ? pick + 2 : -1;
                         }
+                    }
+                    else if (WanderAt(i) > 0f)
+                    {
+                        // Left alone. Idle holds its own timer for him, and there is no task id
+                        // to test here that would not be a guess -- 118 is the SCENARIO task and
+                        // a wanderer never sets it, so testing for it would re-task him several
+                        // times a second and he would never take a step.
                     }
                     else if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, ped.Handle, 118)) continue;
 

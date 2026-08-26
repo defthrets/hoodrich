@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -86,6 +86,28 @@ namespace Hoodrich.Locations
 
         private int _lastSweep;
 
+        /// <summary>
+        /// The quiet, on its own, so it can be kept up while the rest of the mod is not running.
+        ///
+        /// Every full-screen UI in this mod returns out of the main tick while it is open --
+        /// which is right for almost everything, and wrong for this. Open the phone in the
+        /// front room and the house started talking again, because the thing keeping it quiet
+        /// had stopped being called. A menu is exactly when you are stood still in there.
+        ///
+        /// Split out rather than moved, so the normal path is unchanged and the screens can
+        /// call the one piece that must not stop.
+        /// </summary>
+        public void KeepQuiet()
+        {
+            var now = Game.GameTime;
+            if (now - _lastSweep < SweepIntervalMs) return;
+
+            _lastSweep = now;
+
+            Hush();
+            QuietenHousehold();
+        }
+
         public void Update()
         {
             EnsureBlip();
@@ -94,14 +116,7 @@ namespace Hoodrich.Locations
             // full ped sweep -- so standing in your own kitchen ran two world scans every
             // frame. Four times a second is plenty for silencing a conversation and removing
             // an aunt; neither is something you can catch happening.
-            var now = Game.GameTime;
-            if (now - _lastSweep >= SweepIntervalMs)
-            {
-                _lastSweep = now;
-
-                Hush();
-                QuietenHousehold();
-            }
+            KeepQuiet();
 
             TickCutHint();
 
@@ -289,6 +304,21 @@ namespace Hoodrich.Locations
             try
             {
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
+
+                // THE ONE THAT STOPS HER STARTING, and its absence is why you could hear the
+                // first syllable of every line.
+                //
+                // Everything else here is a STOP: it ends the line that is playing and does
+                // nothing about the next one. So she would begin a line, and the sweep would
+                // cut her off a fraction of a second later -- which is audible, and is worse
+                // than either silence or letting her talk, because it sounds like the game
+                // glitching. Sweeping faster would only have shortened the syllable.
+                //
+                // This is a refusal rather than an interruption: she does not get to begin.
+                // The mod already uses it on the sets for the same reason -- see
+                // Affiliation.CalmHome and BlockTalk.
+                Function.Call(Hash.BLOCK_ALL_SPEECH_FROM_PED, ped.Handle, true, false);
+
                 Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, ped.Handle);
                 Function.Call(Hash.SET_PED_CAN_PLAY_AMBIENT_ANIMS, ped.Handle, false);
                 Function.Call(Hash.DISABLE_PED_PAIN_AUDIO, ped.Handle, true);

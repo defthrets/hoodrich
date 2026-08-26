@@ -112,6 +112,9 @@ namespace Hoodrich.UI
         /// <summary>How far a bubble is inset from the far side, so it reads as one-sided.</summary>
         private const float BubbleInset = 0.052f;
 
+        /// <summary>A bubble with three dots in it, and the gap under it.</summary>
+        private const float TypingHeight = LineHeight + BubblePad * 2f + BubbleGap;
+
         private const float FooterHeight = 0.042f;
         private const float KeysHeight = 0.026f;
 
@@ -171,6 +174,31 @@ namespace Hoodrich.UI
         /// <summary>Messages above the top of the thread view. Written by the draw, read by it.</summary>
         private int _earlier;
 
+        /// <summary>
+        /// Who is writing back, and how many of their messages there were when they started.
+        ///
+        /// The count is how we know they have finished: their reply does not arrive on the
+        /// frame you press send -- Delivery holds the phone to Franklin's ear first -- so the
+        /// only honest signal that he has answered is a new message from him turning up. When
+        /// one does, the dots go and his line takes their place.
+        /// </summary>
+        private string _typingFor;
+        private int _typingCount;
+        private int _typingSince;
+
+        /// <summary>
+        /// How long the dots are given before they are taken down.
+        ///
+        /// Not a guess at how long he takes -- his reply removes them the moment it lands, and
+        /// this only covers the case where no reply is ever coming. Dots that sit there
+        /// forever are worse than no dots, because they say something is on its way when
+        /// nothing is.
+        /// </summary>
+        private const int TypingGivesUpMs = 30000;
+
+        /// <summary>How fast the dot travels along the three.</summary>
+        private const int TypingStepMs = 260;
+
         private readonly Dictionary<Inbox.Message, string[]> _wrapped =
             new Dictionary<Inbox.Message, string[]>();
 
@@ -199,6 +227,7 @@ namespace Hoodrich.UI
 
             _curtain.Close();
             _who = null;
+            _typingFor = null;
             _wrapped.Clear();
         }
 
@@ -393,6 +422,8 @@ namespace Hoodrich.UI
                 else Steady();
             }
 
+            Typing();
+
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
             if (Pressed(Control.PhoneCancel))
@@ -418,6 +449,37 @@ namespace Hoodrich.UI
             }
 
             ListKeys();
+        }
+
+        /// <summary>Whether the dots are up for the thread you are looking at.</summary>
+        private bool IsTyping
+        {
+            get
+            {
+                return _typingFor != null && _who != null &&
+                       string.Equals(_typingFor, _who, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        /// <summary>Puts the dots away once they have done their job, or failed to.</summary>
+        private void Typing()
+        {
+            if (_typingFor == null) return;
+
+            if (Game.GameTime - _typingSince >= TypingGivesUpMs)
+            {
+                _typingFor = null;
+                return;
+            }
+
+            var his = Inbox.From(_typingFor);
+
+            // A new message that is HIS. Yours arriving in the meantime -- you can send twice --
+            // is not him answering, and should not take the dots down.
+            if (his.Count > _typingCount && !his[his.Count - 1].Mine)
+            {
+                _typingFor = null;
+            }
         }
 
         private void ListKeys()
@@ -531,6 +593,10 @@ namespace Hoodrich.UI
             _scroll = 0;
             _earlier = 0;
 
+            // A thread you have just opened is not one somebody is mid-reply on. The dots
+            // belong to the conversation they were started in.
+            if (!IsTyping) _typingFor = null;
+
             // Read on OPENING it, which is the honest moment. See the note in Inbox.MarkRead.
             Inbox.MarkRead(row.Name);
 
@@ -562,7 +628,23 @@ namespace Hoodrich.UI
 
             if (TextContact == null) return;
 
+            // Counted BEFORE the send, so his reply is the message that ends the dots.
+            //
+            // Your own line goes into the store during TextContact, which is why this cannot be
+            // read afterwards: the count would already include it and the very next frame would
+            // look like he had answered.
+            var before = Inbox.From(_who).Count;
+
             TextContact(row.Id);
+
+            // Only if the send actually put your line in. A refusal deeper down leaves the
+            // count alone, and dots for a message that was never sent are a lie.
+            if (Inbox.From(_who).Count > before)
+            {
+                _typingFor = _who;
+                _typingCount = Inbox.From(_who).Count;
+                _typingSince = Game.GameTime;
+            }
 
             // Whatever it did, the store is the thing that knows -- the send path files your
             // line itself, so the thread is rebuilt from the store rather than from a guess
@@ -630,6 +712,10 @@ namespace Hoodrich.UI
             var used = 0f;
 
             for (var i = 0; i < all.Count; i++) used += HeightOf(all[i], width);
+
+            // Gated on being at the bottom, exactly as the draw is. Reserving room for a
+            // bubble that is not drawn leaves a hole under the last message.
+            if (IsTyping && _scroll == 0) used += TypingHeight;
 
             var row = RowFor(_who);
             var footer = row != null && !string.IsNullOrEmpty(row.Id) ? FooterHeight : 0f;
@@ -869,7 +955,12 @@ namespace Hoodrich.UI
                 return;
             }
 
-            var room = bottom - top;
+            // The dots sit where his reply is about to, so the thread does not jump when it
+            // lands -- the bubble is already that size and simply gets words in it.
+            var dots = IsTyping && _scroll == 0;
+
+            var room = bottom - top - (dots ? TypingHeight : 0f);
+
             var stack = new List<Inbox.Message>();
             var used = 0f;
 
@@ -886,12 +977,14 @@ namespace Hoodrich.UI
                 used += h;
             }
 
-            var y = bottom - used;
+            var y = bottom - used - (dots ? TypingHeight : 0f);
 
             for (var i = 0; i < stack.Count; i++)
             {
                 y += DrawMessage(x, right, y, stack[i]);
             }
+
+            if (dots) DrawTyping(x, right, y);
 
             // How many are above the view, remembered for the header to say.
             //
@@ -1063,6 +1156,35 @@ namespace Hoodrich.UI
             }
 
             return h + BubbleGap;
+        }
+
+        /// <summary>
+        /// Three dots, in a bubble the shape of the one his answer will arrive in.
+        ///
+        /// The travelling dot is the whole animation: one of the three is bright and the other
+        /// two are dim, and which one is bright walks along. Every messaging app on earth does
+        /// this and it is instantly readable because of that -- there is nothing to invent
+        /// here, and inventing something would only make it take a moment to understand.
+        /// </summary>
+        private void DrawTyping(float x, float right, float top)
+        {
+            var width = right - x;
+            var w = width - BubbleInset;
+            var h = LineHeight + BubblePad * 2f;
+
+            Hud.RectFrom(x, top, w, h, Color.FromArgb(26, 255, 255, 255));
+            Hud.RectFrom(x, top, Hud.ToX(0.0022f), h, Palette.Alpha(Palette.Accent, 170));
+
+            var lit = (Game.GameTime / TypingStepMs) % 3;
+            var cy = top + h * 0.5f;
+
+            for (var i = 0; i < 3; i++)
+            {
+                var cx = x + 0.012f + Hud.ToX(0.0125f) * i;
+
+                Hud.Disc(cx, cy, 0.0030f,
+                         Palette.Alpha(Palette.Text, i == lit ? 235 : 70));
+            }
         }
 
         /// <summary>

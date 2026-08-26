@@ -805,11 +805,26 @@ namespace Hoodrich
                     .Stand(new Vector3(-194.412f, -1727.852f, 32.664f), 349.215f,
                            "WORLD_HUMAN_PARTYING", Working, armed: false, anim: DancingAlt)
 
+                    // THE TWO WHO MOVE, and they are the two with the least to do: a man whose
+                    // entire station is "holding a drink" has no reason to be welded to a spot
+                    // for twenty hours, and a yard where every single person is fixed reads as
+                    // a diorama rather than a party.
+                    //
+                    // Two, not six. The smokers, the dancers and the woman on the decks are all
+                    // doing something that happens standing still, and a crowd where everybody
+                    // mills about is just as wrong in the other direction.
+                    //
+                    // This one also un-stacks a collision: his mark is the same position AND
+                    // the same heading as the all-night smoker further down, so outside quiet
+                    // hours there were two men standing inside each other here. He walks off it
+                    // now. If you want him somewhere specific instead, stand where you want him
+                    // and read the mark off -- that is where every other number in this list
+                    // came from.
                     .Stand(new Vector3(-196.532f, -1725.500f, 32.664f), 300.596f,
-                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false)
+                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false, wander: 5f)
 
                     .Stand(new Vector3(-199.096f, -1723.577f, 32.664f), 319.476f,
-                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
+                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false, wander: 4.5f)
 
                     .Stand(new Vector3(-196.101f, -1729.308f, 32.664f), 20.826f,
                            "WORLD_HUMAN_PARTYING", Fam(1), armed: false, anim: DancingMen)
@@ -1695,6 +1710,15 @@ namespace Hoodrich
                     }
                 }
 
+                // KEPT UP THROUGH EVERY SCREEN, and above all of them on purpose.
+                //
+                // Each of the branches below returns out of the tick while its screen is open,
+                // so anything after them stops happening -- and one of the things that stopped
+                // was the house being kept quiet. Standing in Denise's front room with the
+                // phone open, she started talking again. This is the one thing that has to run
+                // whatever is on screen, so it runs before anything can return past it.
+                if (_stash != null) _stash.KeepQuiet();
+
                 if (_messages.IsOpen)
                 {
                     if (!available) _messages.Close();
@@ -1702,6 +1726,20 @@ namespace Hoodrich
                     {
                         _messages.Update();
                         _messages.Draw();
+
+                        // THE WORLD KEEPS TURNING WHILE YOU READ, which for this screen is the
+                        // whole point rather than a nicety.
+                        //
+                        // The plug's reply is not sent when you press send -- Delivery holds
+                        // the phone to Franklin's ear for a moment and posts his answer on a
+                        // later tick. This branch returns before that tick ever happens, so the
+                        // reply could not arrive until you closed the app: you sent a message
+                        // into a thread and nothing came back while you sat looking at it.
+                        //
+                        // The prompts are deliberately NOT ticked. Those draw on the world and
+                        // would paint through the panel.
+                        _dealers.Update(_turf, _crew, _state);
+                        _delivery.Update();
 
                         SlowTick();
                         _failures = 0;
