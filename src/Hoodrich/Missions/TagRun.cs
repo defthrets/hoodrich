@@ -81,7 +81,16 @@ namespace Hoodrich.Missions
 
         /// <summary>How wide the ring is drawn, which is what ArriveRange has to agree with.</summary>
         private const float MarkerSize = 2.2f;
-        private const int SprayMs = 8000;
+        /// <summary>
+        /// How long he stands there painting, start to finish.
+        ///
+        /// ONE number and everything reads it: the progress bar, the check that says he has
+        /// finished, and the length handed to all three of the animation tasks -- so the clip,
+        /// the paint jet, the stains going down and the can in his hand all end together
+        /// because they were all told the same figure. That is why three seconds more is a
+        /// three-second edit here and nowhere else.
+        /// </summary>
+        private const int SprayMs = 11000;
         private const int UpdateIntervalMs = 300;
 
         /// <summary>How far a tag is visible as a marker on the ground.</summary>
@@ -1034,7 +1043,11 @@ namespace Hoodrich.Missions
         /// <summary>
         /// How long into the clip the can starts laying down colour.
         ///
-        /// Half of SprayMs. He shakes the can and reaches up first.
+        /// It used to be half of SprayMs and is deliberately no longer tied to it. Shaking the
+        /// can and reaching up takes as long as it takes -- it did not get slower because the
+        /// job got longer -- so this stays at four seconds and the whole of the extra three
+        /// goes where it was wanted, on the paint. Held at half it would have bought three more
+        /// seconds of a man rattling a can and only a second and a half of colour.
         /// </summary>
         private const int PaintDelayMs = 4000;
 
