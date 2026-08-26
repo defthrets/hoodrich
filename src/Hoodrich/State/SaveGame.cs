@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Hoodrich.Core;
 using Hoodrich.Economy;
 using Hoodrich.Gangs;
@@ -16,7 +16,8 @@ namespace Hoodrich.State
     /// </summary>
     internal static class SaveGame
     {
-        public static void Load(PlayerState state, Affiliation affiliation, Market market, StashHouse stash)
+        public static void Load(PlayerState state, Affiliation affiliation, Market market,
+                                StashHouse stash, Missions.TagRun tags = null)
         {
             var doc = JsonFile.Read(Paths.SaveFile);
             if (doc == null)
@@ -41,10 +42,35 @@ namespace Hoodrich.State
             // written here rather than quietly loading itself from somewhere else.
             Social.Inbox.LoadFrom(doc["inbox"]);
 
+            // The paint. Optional so a caller that has not got hold of it yet still loads
+            // everything else rather than throwing.
+            if (tags != null) tags.LoadFrom(doc["tags"]);
+
             state.MarkSaved();
         }
 
-        public static bool Save(PlayerState state, Affiliation affiliation, Market market, StashHouse stash, bool force = false)
+        /// <summary>
+        /// Reads just the paint back, for a caller that could not have it at Load time.
+        ///
+        /// Main loads the save before it builds the mission runner, and the tags live inside
+        /// that runner -- so at the moment everything else is read there is nothing to hand
+        /// them to. Rather than reorder a startup sequence that other systems depend on, the
+        /// document is opened a second time for this one field. It is a few kilobytes, once,
+        /// at load.
+        /// </summary>
+        public static void LoadTags(Missions.TagRun tags)
+        {
+            if (tags == null) return;
+
+            var doc = JsonFile.Read(Paths.SaveFile);
+            if (doc == null) return;
+
+            tags.LoadFrom(doc["tags"]);
+        }
+
+        public static bool Save(PlayerState state, Affiliation affiliation, Market market,
+                                StashHouse stash, bool force = false,
+                                Missions.TagRun tags = null)
         {
             if (!state.IsDirty && !force) return false;
 
@@ -56,6 +82,8 @@ namespace Hoodrich.State
                     .Set("market", market.ToJson())
                     .Set("stashHouse", stash.ToJson())
                     .Set("inbox", Social.Inbox.ToJson());
+
+                if (tags != null) doc.Set("tags", tags.ToJson());
 
                 if (!JsonFile.Write(Paths.SaveFile, doc)) return false;
 

@@ -225,6 +225,9 @@ namespace Hoodrich.Missions
         /// rather than sending you round the same walls in the same order.
         /// </summary>
         private readonly TagRun _tags;
+
+        /// <summary>The paint on the walls. Owned here, saved by SaveGame.</summary>
+        public TagRun Paint { get { return _tags; } }
         private readonly List<TagSpot> _walls;
 
         public MissionRunner(PlayerState state, Affiliation crew, GangRegistry gangs, ZoneMap zones)

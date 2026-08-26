@@ -1485,6 +1485,15 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>
+        /// Set by Main, through MissionRunner: marks the save dirty when the wall changes.
+        ///
+        /// The save only writes when something says it has changed, and paint going up is a
+        /// change. Without this a tag laid after the last sale would be gone on the next load,
+        /// which is the whole thing this was for.
+        /// </summary>
+        public Action Changed;
+
         private void Remember(PaintMark mark)
         {
             _marks.Add(mark);
@@ -1495,6 +1504,95 @@ namespace Hoodrich.Missions
             {
                 Wipe(_marks[0]);
                 _marks.RemoveAt(0);
+            }
+
+            if (Changed != null) Changed();
+        }
+
+        // ---- the save ---------------------------------------------------------
+
+        /// <summary>
+        /// Every mark on every wall, so the block still says what you said last night.
+        ///
+        /// Decals do not survive a stream-out, which Refresh already handles by putting them
+        /// back when you come near. They do not survive a RESTART either, and nothing handled
+        /// that -- so an evening spent crossing out the Ballas was gone the next time the game
+        /// opened, and the one thing the job is FOR is that the wall stays yours.
+        ///
+        /// The handle is deliberately not written. It is this session's number for a decal the
+        /// game has already forgotten by the time anybody reads this back; what is worth
+        /// keeping is where the paint went, which way the wall faces, how big it was and what
+        /// colour. Refresh puts it up again from exactly those.
+        ///
+        /// The decal TYPE is kept with them and that is not decoration. Which of the three
+        /// candidates works is discovered by probing on the first tag of a session -- so a save
+        /// full of paint loaded on a fresh session has no idea how to draw any of it until you
+        /// happen to spray something new. Writing down the answer means it comes back knowing.
+        /// </summary>
+        public Json ToJson()
+        {
+            var doc = Json.Object();
+
+            doc.Set("decal", _decalType);
+
+            var arr = Json.Array();
+
+            for (var i = 0; i < _marks.Count; i++)
+            {
+                var m = _marks[i];
+
+                arr.Add(Json.Object()
+                    .Set("x", m.At.X).Set("y", m.At.Y).Set("z", m.At.Z)
+                    .Set("ix", m.Into.X).Set("iy", m.Into.Y).Set("iz", m.Into.Z)
+                    .Set("sx", m.Side.X).Set("sy", m.Side.Y).Set("sz", m.Side.Z)
+                    .Set("size", m.Size)
+                    .Set("r", m.R).Set("g", m.G).Set("b", m.B));
+            }
+
+            doc.Set("marks", arr);
+            return doc;
+        }
+
+        public void LoadFrom(Json node)
+        {
+            if (node == null || node.IsNull) return;
+
+            try
+            {
+                var type = node["decal"].AsInt(0);
+                if (type > 0) _decalType = type;
+
+                foreach (var item in node["marks"].Items)
+                {
+                    _marks.Add(new PaintMark
+                    {
+                        At = new Vector3(item["x"].AsFloat(0f), item["y"].AsFloat(0f),
+                                         item["z"].AsFloat(0f)),
+                        Into = new Vector3(item["ix"].AsFloat(0f), item["iy"].AsFloat(0f),
+                                           item["iz"].AsFloat(0f)),
+                        Side = new Vector3(item["sx"].AsFloat(0f), item["sy"].AsFloat(0f),
+                                           item["sz"].AsFloat(0f)),
+                        Size = item["size"].AsFloat(0.5f),
+                        R = item["r"].AsFloat(1f),
+                        G = item["g"].AsFloat(1f),
+                        B = item["b"].AsFloat(1f),
+
+                        // Nothing is on the wall yet. Away is what tells Refresh there is
+                        // something owed here, and it is what puts every restored mark back up
+                        // the first time you walk past it.
+                        Handle = 0,
+                        Away = true
+                    });
+                }
+
+                while (_marks.Count > MarkCap) _marks.RemoveAt(0);
+
+                Log.Info("Tags: " + _marks.Count + " mark(s) restored, decal type " +
+                         _decalType + ".");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not read the tags back: " + ex.Message);
             }
         }
 
@@ -1577,7 +1675,27 @@ namespace Hoodrich.Missions
         private void WipeAllMarks()
         {
             foreach (var mark in _marks) Wipe(mark);
-            _marks.Clear();
+
+            // THE PAINT COMES OFF THE WALL. THE LIST STAYS.
+            //
+            // It used to clear the list here too, and that quietly undid the whole point of
+            // saving it: OnAborted restores the world and THEN writes the save, so an empty
+            // list at this moment is an empty list on disk -- every clean unload wiping the
+            // very thing it was about to record.
+            //
+            // Saving before the restore instead is not the answer either. DroppedBags returns
+            // its contents to the stash during that same restore, and that IS a change worth
+            // keeping, so moving the save earlier trades one loss for another.
+            //
+            // Removing the decals and keeping their description costs nothing. This object is
+            // being thrown away either way; the only thing that reads the list after this is
+            // the save, and the only thing that reads the save is the next session, which
+            // wants exactly this.
+            foreach (var mark in _marks)
+            {
+                mark.Handle = 0;
+                mark.Away = true;
+            }
         }
 
         /// <summary>True when the player is trying to walk away, which cancels it.</summary>

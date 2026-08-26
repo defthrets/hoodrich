@@ -471,7 +471,7 @@ namespace Hoodrich
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
                 _stash = new StashHouse(_cfg);
-                _sleep = new SleepSpot(_state, () => SaveGame.Save(_state, _crew, _market, _stash, true));
+                _sleep = new SleepSpot(_state, () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint));
                 _market = new Market(_cfg);
 
                 SaveGame.Load(_state, _crew, _market, _stash);
@@ -504,6 +504,15 @@ namespace Hoodrich
 
                 _jobs = new MissionRunner(_state, _crew, _gangs, _zoneMap);
 
+                // The paint, read back now the runner that owns it exists. The rest of the
+                // save was read further up, before there was anything to hand this to -- see
+                // SaveGame.LoadTags.
+                SaveGame.LoadTags(_jobs.Paint);
+
+                // And the wall going up marks the save dirty, or a tag sprayed after the last
+                // sale would not survive to the next load.
+                _jobs.Paint.Changed = () => _state.Touch();
+
                 _fixer = new Fixer(_crew);
 
                 // The bike ride borrows him off his corner and rides him out with the rest.
@@ -523,7 +532,7 @@ namespace Hoodrich
                 _ownedCars = new OwnedCars(_state)
                 {
                     // A car is too much money to leave sitting in memory for two minutes.
-                    SaveNow = () => SaveGame.Save(_state, _crew, _market, _stash, true)
+                    SaveNow = () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint)
                 };
                 _hao.Owned = _ownedCars;
 
@@ -2154,7 +2163,7 @@ namespace Hoodrich
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {
                 _lastSave = now;
-                SaveGame.Save(_state, _crew, _market, _stash);
+                SaveGame.Save(_state, _crew, _market, _stash, false, _jobs.Paint);
             }
         }
 
@@ -2596,7 +2605,7 @@ namespace Hoodrich
 
             try
             {
-                SaveGame.Save(_state, _crew, _market, _stash, true);
+                SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint);
                 Log.Info(Build.Name + " unloaded cleanly.");
             }
             catch (Exception ex)
