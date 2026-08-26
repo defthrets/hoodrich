@@ -1899,6 +1899,23 @@ namespace Hoodrich.Supply
         /// </summary>
         private const float HandGrip = -0.25f;
 
+        /// <summary>
+        /// How far it is pulled in toward him, across its own width.
+        ///
+        /// The grip offset above moves it ALONG its length, which is what stops his fist being
+        /// in the middle of it. This is the other axis: the package was sitting far enough out
+        /// that his forearm went through the corner of it, so it comes in against him instead
+        /// of being held away at arm's width.
+        ///
+        /// A fraction of the prop's own width for the same reason the other one is: the port's
+        /// bale and Gerald's envelope both come through here, and a fixed number of centimetres
+        /// that suits one buries the other in his ribs.
+        ///
+        /// NEGATIVE is toward him. If it has gone out rather than in, this sign is the whole
+        /// fix -- the axis is worked out below and follows the prop round when it is turned.
+        /// </summary>
+        private const float HandIn = -0.30f;
+
         private static Vector3 HandOffset(Model model, out float yaw)
         {
             yaw = 0f;
@@ -1920,15 +1937,17 @@ namespace Hoodrich.Supply
 
             var off = -centre;
 
-            // Slid along whichever axis is now the long one. The rotation above maps the
-            // model's X onto the hand's Y, so a shift written for the unturned case has to
-            // follow it round or a long prop would slide across his palm instead of along
-            // itself.
+            // Two shifts: one along its length, one across its width. Both written for the
+            // UNTURNED case and then put through the same quarter turn the prop got, so a long
+            // prop slides along itself rather than across his palm.
             var along = (turned ? size.Y : size.X) * HandGrip;
+            var into = (turned ? size.X : size.Y) * HandIn;
 
+            // The turn above maps (x, y) onto (-y, x). Anything added afterwards has to be
+            // mapped the same way or the two disagree the moment a bale comes through.
             return turned
-                ? new Vector3(off.X, off.Y + along, off.Z)
-                : new Vector3(off.X + along, off.Y, off.Z);
+                ? new Vector3(off.X - into, off.Y + along, off.Z)
+                : new Vector3(off.X + along, off.Y + into, off.Z);
         }
 
         /// <summary>How big a model is, in its own space. Zero if it cannot be read.</summary>
