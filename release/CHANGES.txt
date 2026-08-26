@@ -1,0 +1,111 @@
+===============================================================================
+  POSTED UP  --  CHANGES
+===============================================================================
+
+
+-------------------------------------------------------------------------------
+  0.3.0
+-------------------------------------------------------------------------------
+
+  Everything below came out of playing the thing. Most of it is fixes.
+
+
+  THE PHONE
+
+  * Messages. A new app, second on the phone, holding every text anybody has
+    ever sent you. They used to go to the game's feed and be gone in seconds, so
+    a plug naming the street he was parked on was information you had one chance
+    to catch.
+  * You can text from it. Every plug is listed whether he has written to you or
+    not, and so are the homies -- send from the thread and they come, same as
+    the contacts page. Your own messages appear in the conversation.
+  * Three dots while he is writing back, and his answer arrives without you
+    having to close the phone.
+  * Messages sits second and Dealing fourth. Contacts has not moved.
+  * The settings screen lost the six sliders nobody needed, and two ways it
+    could trap you in it.
+
+
+  THE BLOCK
+
+  * The party is an evening now. Seven at night until two in the morning. In
+    daylight it is a couple of people and the man watching the back fence, which
+    is what a yard belonging to somebody looks like at two in the afternoon.
+  * The people who only come for it ARRIVE -- they park up on the road and walk
+    in through the gate, and each one starts what he came to do when he reaches
+    his own spot.
+  * The music keeps the party's hours instead of playing around the clock.
+  * A couple of them wander rather than standing on one spot all night.
+  * Somebody's dog is out in the yard.
+  * The Families never start on Franklin on his own block, and have stopped
+    telling him he is in the wrong neighbourhood.
+  * The yard talks again. A fix for the above had quietly silenced the party as
+    well, the two daytime regulars included.
+  * Nobody in this mod wears a crash helmet.
+
+
+  WORK
+
+  * Drive-bys. The homies stay in the car. They used to climb out mid-spin to
+    fight on foot, which made the job unusable -- the cause was an order the mod
+    itself was giving them, to get into a car they were already sitting in.
+  * "Get 'em off Grove" is a drive-by now rather than a job you park for, with
+    the dialogue rewritten to match.
+  * Dying on the port run ends the port run, rather than sending you back to a
+    burnt-out truck. The same goes for every job that works that way.
+  * Gerald's truck has BIG G on the plate, lives on its kerb whether or not you
+    need it, and stays locked when you do not.
+  * The tag run could get into a state where it could be neither finished nor
+    cancelled.
+  * Your graffiti now survives closing the game. It is in the save.
+  * Spraying lasts three seconds longer, and the can sits in his hand properly.
+  * The block comes out at you once per tag run rather than at every wall, and
+    they come with baseball bats or their hands instead of pistols.
+  * Burning the car is the job, so it stops handing out a wanted level for it.
+  * The store robbery cannot be declined into a dead end, the clerk comes back
+    if you kill him, and Lamar stops squaring up when you bump into him.
+  * Lamar walks to his own bike, gets on it, and follows you off-road.
+  * The drive home keeps its directions instead of losing them at the first
+    shot.
+  * Lamar stops offering a job you have finished and starts offering to run it
+    past you again. He also stopped saying it twice in a row.
+
+
+  THE TRADE
+
+  * Powder is weighed and pills are counted. What Gerald brings for the bar
+    trade is powder, so it now reads in grams -- it is what goes INTO a press,
+    and nobody presses pills out of pills.
+  * Deliveries stop announcing twenty grams as "0 kilos in the house".
+  * Gerald and Tao walk out to their vehicles rather than running, and Tao
+    actually staggers now.
+  * Cutting no longer launders your bulk up to pure by accident.
+  * The grow room and the pill press have people working in them.
+  * Cars bought from Hao are written to the save the moment they are paid for,
+    and stay where you left them across a restart.
+  * Hao's Baller is the ST-D.
+  * Cheng's men at the docks are Chinese, work out of step with each other, and
+    their subtitle draws properly.
+
+
+  THE REST
+
+  * Every marker on the map has a name, including the one that was not ours.
+  * Panels arrive and leave instead of doing neither, and stop cutting text at
+    the corners.
+  * A paragraph break could draw on top of the paragraph above it.
+  * Aunt Denise stops shouting through the door -- properly this time. She used
+    to get half a word out before being cut off, and she started again whenever
+    a menu was open.
+  * The grow room and pill press put you back where you came in, rather than in
+    the desert.
+  * Nobody smokes a xanax bar.
+  * An audit of the whole mod, which is where a good number of the above came
+    from.
+
+
+-------------------------------------------------------------------------------
+  0.2.0
+-------------------------------------------------------------------------------
+
+  First public release.

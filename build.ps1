@@ -292,8 +292,11 @@ if ($Package) {
     $stage  = Join-Path $relDir "PostedUp-$version"
     $zip    = Join-Path $relDir "PostedUp-$version.zip"
 
+    # Only the staging folder here. The ZIP is removed further down, AFTER -Full has had
+    # its say on what the zip is called -- doing it up here deleted PostedUp-x.y.z.zip on
+    # every -Full run, because at this point $zip is still the plain name whatever was asked
+    # for. Build both in either order now.
     if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
-    if (Test-Path $zip)   { Remove-Item $zip -Force }
 
     $scripts = Join-Path $stage 'scripts'
     $dataOut = Join-Path $scripts 'Hoodrich'
@@ -309,6 +312,7 @@ if ($Package) {
     Copy-Item (Join-Path $root 'data\icons') $dataOut -Recurse
 
     Copy-Item (Join-Path $relDir 'README.txt')  $stage
+    Copy-Item (Join-Path $relDir 'CHANGES.txt') $stage
     Copy-Item (Join-Path $relDir 'LICENCE.txt') $stage
 
     if ($Full) {
@@ -328,12 +332,13 @@ if ($Package) {
 
         Copy-Item (Join-Path $relDir 'READ ME FIRST.txt') $stage
         $zip = Join-Path $relDir "PostedUp-$version-full.zip"
-        if (Test-Path $zip) { Remove-Item $zip -Force }
     }
 
     # Belt and braces. A save in a release zip would overwrite the first thing a player did.
     Get-ChildItem $stage -Recurse -Include 'save.json', '*.log', '*.bak' |
         ForEach-Object { Remove-Item $_.FullName -Force }
+
+    if (Test-Path $zip) { Remove-Item $zip -Force }
 
     Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal
 

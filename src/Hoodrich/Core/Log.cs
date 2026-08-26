@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -119,7 +119,7 @@ namespace Hoodrich.Core
     /// </summary>
     internal static class Build
     {
-        public const string Version = "0.2.0";
+        public const string Version = "0.3.0";
         public const string Name = "Posted Up";
     }
 }
