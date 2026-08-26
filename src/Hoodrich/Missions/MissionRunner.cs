@@ -1466,19 +1466,17 @@ namespace Hoodrich.Missions
                         Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
                         Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, true);
 
-                        // BLIND AND DEAF FOR THE LENGTH OF THE SPIN.
+                        // HIS EYES STAY. They were briefly set to zero here, on the reasoning
+                        // that a man who cannot see the patrol car has no opinion about it --
+                        // true, and not worth the risk, because it also rests on a drive-by
+                        // being able to aim at a ped the shooter cannot perceive. That is
+                        // probably so and it is not PROVEN so, and the cost of being wrong is
+                        // three men sitting quietly in a car not shooting anybody, which is a
+                        // worse job than the one with the twitch in it.
                         //
-                        // Blocking events stops him ANSWERING what he notices. This stops him
-                        // noticing, which is the stronger half and the one that finally settles
-                        // it -- a man who cannot see the patrol car behind him has no opinion
-                        // about it, and a man with no opinion does not open a door.
-                        //
-                        // It costs nothing the job needs. The drive-by is aimed at a ped by
-                        // handle, and a named target does not have to be seen to be shot at.
-                        // Rockstar set these freely for the same reason; sixty is their own
-                        // ordinary figure and is what he gets back when he is let out.
-                        Function.Call(Hash.SET_PED_SEEING_RANGE, homie.Handle, 0f);
-                        Function.Call(Hash.SET_PED_HEARING_RANGE, homie.Handle, 0f);
+                        // He does not need to be blind. What made him want out was being told
+                        // to always fight, and that is off. Seeing a Vago he has no instruction
+                        // about and no urge to engage is a man looking out of a window.
                     }
 
                     // And nothing else goes on them.
@@ -1942,8 +1940,7 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, false);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, false);
-                    Function.Call(Hash.SET_PED_SEEING_RANGE, homie.Handle, 0f);
-                    Function.Call(Hash.SET_PED_HEARING_RANGE, homie.Handle, 0f);
+
 
                     // Shooting is only for the part of the job that has somebody to shoot at.
                     // On the way home they sit there.
@@ -1989,12 +1986,9 @@ namespace Hoodrich.Missions
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
                 Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, false);
 
-                // His eyes, his ears and his willingness to fight. All four were taken off him
-                // for the spin so that nothing could talk him out of the car; a man on the
-                // pavement needs every one of them or he stands there blind while somebody
-                // shoots at him. Sixty is Rockstar's own ordinary figure for both ranges.
-                Function.Call(Hash.SET_PED_SEEING_RANGE, homie.Handle, 60f);
-                Function.Call(Hash.SET_PED_HEARING_RANGE, homie.Handle, 60f);
+                // And his willingness to fight, which is the thing that was taken off him for
+                // the spin. On the pavement he needs it back or he stands there being shot at
+                // with no opinion about it.
                 Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, true);
                 Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, true);
 
