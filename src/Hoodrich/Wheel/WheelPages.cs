@@ -9,6 +9,7 @@ using Hoodrich.Economy;
 using Hoodrich.Gangs;
 using Hoodrich.Locations;
 using Hoodrich.Missions;
+using Hoodrich.Social;
 using Hoodrich.State;
 using Hoodrich.Supply;
 using Hoodrich.Territory;
@@ -70,6 +71,9 @@ namespace Hoodrich.Wheel
 
         /// <summary>Set by Main: opens the feed, and reads the follower count for the wedge.</summary>
         public Action ShowSocials;
+
+        /// <summary>Set by Main: opens the inbox.</summary>
+        public Action ShowMessages;
 
         /// <summary>
         /// Opens the settings screen.
@@ -983,6 +987,23 @@ namespace Hoodrich.Wheel
                 value: ContactsSummary());
             page.WithIcon(Icons.FromFile("phone.png"));
 
+            // Next to Contacts, because they are the two halves of one thing: that page is who
+            // you can reach and this one is what was said. Every text the mod sends has always
+            // gone to the game's feed and been gone eight seconds later, so a plug naming the
+            // street he is parked on was information you had one chance to catch.
+            //
+            // The unread count is the value rather than the total. A number that only ever goes
+            // up tells you nothing; the question a phone answers from across the screen is
+            // whether anything is waiting.
+            page.Add("Messages", "@", () => ShowMessages?.Invoke(),
+                detail: Inbox.Unread > 0
+                    ? Inbox.Unread == 1 ? "Somebody's texted you" : "You've got messages waiting"
+                    : "Everything anybody has texted you, and a line back to the plugs",
+                value: Inbox.Unread > 0 ? Inbox.Unread + " new" : "",
+                enabled: ShowMessages != null,
+                disabledReason: "Not wired up");
+            page.WithIcon(Icons.FromFile("reply.png"));
+
             page.AddSub("Gangs", "%", BuildGangsPage,
                 detail: _crew.IsAffiliated
                     ? "You run with " + _crew.Current.Name
@@ -1464,22 +1485,114 @@ namespace Hoodrich.Wheel
         /// </summary>
         private void Call(DealerDef def)
         {
+            // FILED HERE, not in the screen that asked for it.
+            //
+            // This is the one function both doors go through -- the Contacts row and the
+            // Messages app -- so a re-up ordered off the wheel shows up in the thread too.
+            //
+            // And filed BEFORE the call, which is the part that took a second look. Both of
+            // these calls send his reply themselves: ArrangeMeet texts you back, and so does
+            // the delivery. Recording your line afterwards put the answer above the question
+            // in a conversation read top to bottom -- he was replying to something you had not
+            // said yet.
+            //
+            // Guarded on the refusal so a plug who is not answering does not collect a wall of
+            // questions nobody was ever asked. That check is the same one the send row greys
+            // itself out with, so the button and the thread agree about what just happened.
+            var refusal = _dealers.RefusalReason(def, _state, _crew);
+
             if (def.Kind == DealerKind.Docks && Delivery != null)
             {
-                var refusal = _dealers.RefusalReason(def, _state, _crew);
                 if (refusal != null)
                 {
                     Notify.Problem(refusal.ToLowerInvariant() + ".");
                     return;
                 }
 
+                Inbox.Sent(def.Name, SayTo(def));
+
                 var failed = Delivery.Call(def);
                 if (failed != null) Notify.Problem(failed);
                 return;
             }
 
+            if (refusal == null) Inbox.Sent(def.Name, SayTo(def));
+
             var failure = _dealers.ArrangeMeet(def, _state, _crew);
             if (failure != null) Notify.Problem(failure);
+        }
+
+        /// <summary>
+        /// What you say when you text a plug, shown on the send row before you press it.
+        ///
+        /// Two lines rather than one because the docks is a different transaction: everybody
+        /// else you are asking whether they are holding, and the port you are telling to bring
+        /// it to you.
+        /// </summary>
+        private static string SayTo(DealerDef def)
+        {
+            return def.Kind == DealerKind.Docks ? "need a pickup" : "you got anything?";
+        }
+
+        /// <summary>
+        /// The plugs, as the Messages app wants them: a name, a face, and whether he will
+        /// answer right now.
+        ///
+        /// Built here rather than in the screen because everything the answer depends on --
+        /// the dealer list, your rank, who you run with -- already lives on this class. The
+        /// screen gets four strings and stays out of Supply entirely.
+        /// </summary>
+        public List<PhoneContact> PhoneBook()
+        {
+            var book = new List<PhoneContact>();
+
+            foreach (var def in _dealers.All)
+            {
+                if (def == null) continue;
+
+                book.Add(new PhoneContact
+                {
+                    Id = def.Id,
+                    Name = def.Name,
+
+                    // ASKED BY NAME, exactly as a text message asks.
+                    //
+                    // Almost nothing in dealers.json sets a portrait -- Gerald does not and
+                    // neither does Cheng -- so DealerDef.Portrait is the CHAR_DEFAULT
+                    // silhouette for nearly everybody. Their real faces have always come from
+                    // the name lookup, which is how their texts get one, and a contacts list
+                    // showing grey outlines beside messages carrying photographs would be the
+                    // app disagreeing with the notification it came from.
+                    Portrait = string.IsNullOrEmpty(Faces.For(def.Name))
+                        ? def.Portrait
+                        : Faces.For(def.Name),
+                    Refusal = _dealers.RefusalReason(def, _state, _crew),
+                    Line = SayTo(def)
+                });
+            }
+
+            return book;
+        }
+
+        /// <summary>
+        /// Texts a plug from the Messages app, down the same path as the Contacts row.
+        ///
+        /// A thin wrapper on purpose. The app is a second door onto ordering a re-up, and the
+        /// moment it grew its own version of the rules about when a plug answers, the two
+        /// doors would start disagreeing.
+        /// </summary>
+        public void TextPlug(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+
+            foreach (var def in _dealers.All)
+            {
+                if (def != null && string.Equals(def.Id, id, StringComparison.OrdinalIgnoreCase))
+                {
+                    Call(def);
+                    return;
+                }
+            }
         }
 
         /// <summary>

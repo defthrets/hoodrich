@@ -97,6 +97,9 @@ namespace Hoodrich
         private readonly SocialFeed _social;
         private readonly SocialScreen _socialScreen;
 
+        /// <summary>The inbox. Its store is static; only the screen is an object.</summary>
+        private readonly MessagesScreen _messages = new MessagesScreen();
+
         /// <summary>
         /// The people who stand near the people who matter. One each for Lamar and Stretch;
         /// their coordinates are the men's own, so the two sets never need keeping in step.
@@ -1024,7 +1027,7 @@ namespace Hoodrich
 
                     // Not over a full-screen UI. They keep queueing and keep ageing while it is
                     // up, so nothing is lost -- they are simply not drawn across a menu.
-                    Hidden = () => _phone.IsOpen || _socialScreen.IsOpen ||
+                    Hidden = () => _phone.IsOpen || _socialScreen.IsOpen || _messages.IsOpen ||
                                    _stashScreen.IsOpen || _pocketScreen.IsOpen
                                    || _settingsScreen.IsOpen
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
@@ -1166,6 +1169,7 @@ namespace Hoodrich
 
                 _patrol.Occupied = () => _phone.IsOpen || _talk.IsOpen || _info.IsOpen
                                          || _cook.IsOpen || _socialScreen.IsOpen
+                                         || _messages.IsOpen
                                          || _stashScreen.IsOpen || _pocketScreen.IsOpen
                                          || _settingsScreen.IsOpen || _gunScreen.IsOpen
                                          || _carScreen.IsOpen;
@@ -1376,6 +1380,18 @@ namespace Hoodrich
                 pages.Bags = _bags;
                 pages.Crew = _homies;
                 pages.ShowSocials = () => _socialScreen.Open();
+                pages.ShowMessages = () => _messages.Open();
+
+                // The app asks the wheel who can be reached and hands ids back to it, so both
+                // doors onto a re-up run the same call with the same refusals. See PhoneBook.
+                _messages.Contacts = pages.PhoneBook;
+                _messages.TextPlug = pages.TextPlug;
+
+                // A text arriving is a change worth saving. Without this the inbox only reaches
+                // the disk when something else happens to be dirty, so the last few messages of
+                // a session -- which are the ones you would actually want back -- are the ones
+                // that get lost.
+                Social.Inbox.Changed = () => _state.Touch();
                 pages.ShowSettings = () => _settingsScreen.Open(_cfg, pages.ResetOptions());
 
                 // The two settings that are COPIED rather than read live, pushed again whenever
@@ -1672,6 +1688,20 @@ namespace Hoodrich
                     {
                         _settingsScreen.Update();
                         _settingsScreen.Draw();
+
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
+                if (_messages.IsOpen)
+                {
+                    if (!available) _messages.Close();
+                    else
+                    {
+                        _messages.Update();
+                        _messages.Draw();
 
                         SlowTick();
                         _failures = 0;

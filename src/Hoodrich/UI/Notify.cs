@@ -73,6 +73,19 @@ namespace Hoodrich.UI
             // And whatever we settled on has to actually be in this build.
             portrait = Faces.Ready(portrait);
 
+            // FILED BEFORE IT IS SHOWN, and this is the only place it happens.
+            //
+            // Twelve callers across nine files send texts and not one of them should have to
+            // know there is somewhere to keep them. Storing it here means the inbox holds
+            // every message the mod has ever sent, including the ones written after this line
+            // was, and that the face on the message and the face in the inbox are the same
+            // face -- which is why it goes below the resolution above rather than at the top.
+            //
+            // Before the try, not inside it. If the feed post throws, you were still sent the
+            // message, and the one place you can now go to read it is the one place that must
+            // not have missed it.
+            Social.Inbox.Keep(portrait, sender, subject, body);
+
             try
             {
                 Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, "STRING");

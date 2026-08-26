@@ -35,6 +35,12 @@ namespace Hoodrich.State
             affiliation.LoadFrom(doc["affiliation"]);
             market.LoadFrom(doc["market"]);
             stash.LoadFrom(doc["stashHouse"]);
+
+            // Not passed in like the other four, because the inbox is static -- see the note
+            // on that class. It is still the save document's business, so it is still read and
+            // written here rather than quietly loading itself from somewhere else.
+            Social.Inbox.LoadFrom(doc["inbox"]);
+
             state.MarkSaved();
         }
 
@@ -48,7 +54,8 @@ namespace Hoodrich.State
                     .Set("version", Build.Version)
                     .Set("affiliation", affiliation.ToJson())
                     .Set("market", market.ToJson())
-                    .Set("stashHouse", stash.ToJson());
+                    .Set("stashHouse", stash.ToJson())
+                    .Set("inbox", Social.Inbox.ToJson());
 
                 if (!JsonFile.Write(Paths.SaveFile, doc)) return false;
 
