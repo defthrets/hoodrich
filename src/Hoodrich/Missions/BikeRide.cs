@@ -731,6 +731,9 @@ namespace Hoodrich.Missions
                 _weaselAt = Game.GameTime + 4600;
             }
 
+            // THE ONLY WAY PAST THIS LINE IS _robAccepted, so nothing may set _gotCash
+            // without it. A branch that skipped ahead used to exist and it stranded the job
+            // here permanently. See TheOffer.
             if (!_robAccepted)
             {
                 // The second line lands after the shout has cleared, so they do not stack.
@@ -893,17 +896,19 @@ namespace Hoodrich.Missions
 
             node.WithIcon(Icons.FromFile("cash.png"));
 
-            node.Say("Nah. We said hands, we did hands.", () =>
-            {
-                // Taken as done. The shop is finished with either way, and the ride home is
-                // the same ride home -- he just complains the whole way.
-                _gotCash = true;
-                LamarSays("Man... aight. AIGHT. Then I'm startin' that grow with lint.");
-                return null;
-            }, "Ride back with what you came for");
-
-            node.WithIcon(Icons.FromFile("car.png"));
-
+            // THERE IS NO SECOND ROW, and that is deliberate twice over.
+            //
+            // It froze the job. The decline set _gotCash and never set _robAccepted, and
+            // TickRob's first gate is `if (!_robAccepted) return` -- so the tick turned round
+            // at that line forever while _robOffered stopped the offer ever coming back. The
+            // objective sat on "Pull up outside the 24/7" with no way to finish and no way to
+            // cancel, exactly like the tag run without a bike.
+            //
+            // And it should not have been a choice anyway. He has already shouted you off the
+            // road, admitted he was never thirsty, walked you round the back and told you what
+            // the money is for. Turning round at that point is not a decision the ride is
+            // built to absorb -- the whole leg exists because he had a second plan the brief
+            // did not mention. You are robbing the store.
             return node;
         }
         /// <summary>
