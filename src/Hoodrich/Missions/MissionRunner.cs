@@ -1832,7 +1832,28 @@ namespace Hoodrich.Missions
                     var player = Game.Player.Character;
                     var ride = player == null ? null : player.CurrentVehicle;
 
-                    if (ride != null && ride.Exists())
+                    // A MAN ALREADY IN THE CAR IS NOT TOLD TO GET INTO THE CAR.
+                    //
+                    // THIS was the drive-by. Not the door, not the leave-vehicle flag, not the
+                    // combat attributes, not the events -- an order, from us, to board a
+                    // vehicle he was already sitting in. The game services that by putting him
+                    // through the door and back in again, which is precisely what was on
+                    // screen: two seconds of shooting, out, stand up, back in.
+                    //
+                    // The two seconds were never a ped changing its mind either. StandDown
+                    // fires the moment the corner NOTICES you, which on a spin past is about
+                    // two seconds -- so the timing was us, the exit was us, and every flag I
+                    // set to stop him leaving was arguing with an instruction of our own that
+                    // I had not read.
+                    //
+                    // Seat -2 means "any seat" and does not spare him: the enter task still
+                    // runs its approach, and the approach for a man inside is to get out first.
+                    if (ride != null && ride.Exists() && homie.IsInVehicle(ride))
+                    {
+                        // He is where he is meant to be. The task clear above already stopped
+                        // the shooting; there is nothing else to ask of him.
+                    }
+                    else if (ride != null && ride.Exists())
                     {
                         Function.Call(Hash.TASK_ENTER_VEHICLE, homie.Handle, ride.Handle,
                                       12000, -2, 2f, 1, 0);
