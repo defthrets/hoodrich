@@ -228,6 +228,15 @@ namespace Hoodrich.Missions
 
         /// <summary>The paint on the walls. Owned here, saved by SaveGame.</summary>
         public TagRun Paint { get { return _tags; } }
+
+        /// <summary>Wipes every tag. See TagRun.ForgetPaint.</summary>
+        public void ForgetPaint()
+        {
+            if (_tags != null) _tags.ForgetPaint();
+        }
+
+        /// <summary>How many marks are on the walls, for the menu to say so.</summary>
+        public int PaintCount { get { return _tags == null ? 0 : _tags.PaintCount; } }
         private readonly List<TagSpot> _walls;
 
         public MissionRunner(PlayerState state, Affiliation crew, GangRegistry gangs, ZoneMap zones)

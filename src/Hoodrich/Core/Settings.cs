@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Hoodrich.Locations;
 using GTA;
 using System.Collections.Generic;
@@ -88,6 +88,20 @@ namespace Hoodrich.Core
         public float BagY = -0.16f;
         public float BagZ = 0f;
         public float BagPitch = 0f;
+
+        /// <summary>
+        /// How dense the sprayed letters are, and how big each mark is.
+        ///
+        /// Both in the ini because they are look-and-feel numbers that want trying on a real
+        /// wall at real size rather than being reasoned about. Spacing is in letter heights,
+        /// so it does not change meaning if the tag is drawn bigger; size is in metres.
+        ///
+        /// Smaller spacing is more solid and costs more marks. It cannot go below a floor,
+        /// because somebody typing 0.001 in here would ask the engine for tens of thousands of
+        /// decals on one wall and take the game with it.
+        /// </summary>
+        public float TagDotSpacing = 0.11f;
+        public float TagDotSize = 0.50f;
         public float BagRoll = 0f;
         public float BagYaw = 0f;
 
@@ -273,6 +287,12 @@ namespace Hoodrich.Core
             s.BagY = ini.GetFloat("Dealing", "BagY", s.BagY);
             s.BagZ = ini.GetFloat("Dealing", "BagZ", s.BagZ);
             s.BagPitch = ini.GetFloat("Dealing", "BagPitch", s.BagPitch);
+
+            // Floored hard. See the note on the fields: a tiny spacing is not a bad look, it
+            // is a hang.
+            s.TagDotSpacing = Clamp(ini.GetFloat("Tags", "DotSpacing", s.TagDotSpacing),
+                                    0.05f, 0.40f);
+            s.TagDotSize = Clamp(ini.GetFloat("Tags", "DotSize", s.TagDotSize), 0.10f, 1.50f);
             s.BagRoll = ini.GetFloat("Dealing", "BagRoll", s.BagRoll);
             s.BagYaw = ini.GetFloat("Dealing", "BagYaw", s.BagYaw);
 

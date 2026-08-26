@@ -75,6 +75,9 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main: opens the inbox.</summary>
         public Action ShowMessages;
 
+        /// <summary>Set by Main. Lamar's work, and the paint on the walls that came out of it.</summary>
+        public Missions.MissionRunner Jobs;
+
         /// <summary>
         /// Opens the settings screen.
         ///
@@ -1967,6 +1970,16 @@ namespace Hoodrich.Wheel
                 Note = "He works down his list from the top again. What he already paid you stays paid",
                 Enabled = () => _state.MissionsDone.Count > 0,
                 Do = () => _state.ForgetMissions()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Your graffiti",
+                Note = "Every tag you have sprayed comes off the walls, and off the save with " +
+                       "it. The walls go back to how the game had them",
+                Enabled = () => Jobs != null && Jobs.PaintCount > 0,
+                Do = () => { if (Jobs != null) Jobs.ForgetPaint(); }
             };
 
             yield return new Opt

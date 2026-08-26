@@ -287,13 +287,22 @@ namespace Hoodrich.Missions
         /// <summary>
         /// How far apart the dots sit along a letter, in letter heights.
         ///
-        /// 0.17 rather than 0.13, and that is a LOOK decision before it is a budget one.
-        /// Tighter than this and the blobs merge into one fat even sausage that reads as a
-        /// marker pen; at this spacing you can still make out the individual passes of the can.
-        /// It also keeps a four-wall run near three hundred and forty decals rather than four
-        /// hundred and fifty, which matters -- see MarkCap.
+        /// 0.11, down from 0.17, and the offline render is what got that wrong. On a flat
+        /// preview at a few hundred pixels the wider spacing read beautifully -- you could see
+        /// the individual passes of the can. On a wall at full size the same figure leaves the
+        /// strokes beaded, because a paint splatter decal is not a solid disc: it is mostly
+        /// gaps with paint round them, so a mark covers a good deal less than its own width.
+        ///
+        /// The budget survives it because of how Refresh works rather than by being cheap.
+        /// Marks are only put back on the wall within a hundred and ten metres and dropped
+        /// past a hundred and fifty, so the tags of a four-wall run are almost never all live
+        /// at once -- what has to hold four walls is MarkCap, which is a list in memory, not
+        /// the engine's decal pool.
+        ///
+        /// Settable from the ini because this is exactly the sort of number that wants trying
+        /// in the game rather than reasoning about on a screenshot.
         /// </summary>
-        private const float TagSpacing = 0.17f;
+        public float TagSpacing = 0.11f;
 
         /// <summary>How wide and how tall the writing is on the wall, in metres.</summary>
         private const float TagWide = 2.60f;
@@ -302,8 +311,14 @@ namespace Hoodrich.Missions
         /// <summary>Where the bottom of the letters sits relative to the spot the can is at.</summary>
         private const float TagFoot = -0.55f;
 
-        /// <summary>A dot is a bit bigger than the gap, so a stroke joins up rather than beads.</summary>
-        private const float TagDotSize = 0.34f;
+        /// <summary>
+        /// How big each mark is. Comfortably wider than the gap, so a stroke joins up.
+        ///
+        /// Bigger than the arithmetic suggests it needs to be, on purpose. The gap at this
+        /// spacing is about thirteen centimetres and a mark is half a metre, which sounds like
+        /// overkill until you remember the splatter art is holes with paint around them.
+        /// </summary>
+        public float TagDotSize = 0.50f;
 
         private void OurColour(out float r, out float g, out float b)
         {
@@ -1381,7 +1396,7 @@ namespace Hoodrich.Missions
         /// The whole world shares a budget of five hundred and twelve decals with every bullet
         /// hole and tyre mark in it, so this stays well clear of being the thing that fills it.
         /// </summary>
-        private const int MarkCap = 384;
+        private const int MarkCap = 640;
 
         /// <summary>Far enough for the game to have dropped it.</summary>
         private const float MarkGoneRange = 150f;
@@ -1768,6 +1783,31 @@ namespace Hoodrich.Missions
 
                 if (mark.Handle != 0) mark.Away = false;
             }
+        }
+
+        /// <summary>How many marks are on the walls right now.</summary>
+        public int PaintCount { get { return _marks.Count; } }
+
+        /// <summary>
+        /// Every tag gone, off the walls and out of the save.
+        ///
+        /// Different from the teardown wipe, which deliberately KEEPS the list so the save can
+        /// record it -- this one is somebody asking for the walls back, so the record goes with
+        /// the paint. Marked as a change so the empty list is what reaches the disk; without
+        /// that the save would quietly put them all back on the next load, which is the exact
+        /// opposite of what the button says.
+        /// </summary>
+        public void ForgetPaint()
+        {
+            var had = _marks.Count;
+
+            foreach (var mark in _marks) Wipe(mark);
+
+            _marks.Clear();
+
+            if (Changed != null) Changed();
+
+            Log.Info("Paint wiped: " + had + " mark(s) off the walls and out of the save.");
         }
 
         /// <summary>Takes every mark off the walls. Only for the mod shutting down.</summary>

@@ -509,6 +509,11 @@ namespace Hoodrich
                 // SaveGame.LoadTags.
                 SaveGame.LoadTags(_jobs.Paint);
 
+                // How the letters are drawn, from the ini. Pushed rather than read live so the
+                // tag run does not need to know settings exist.
+                _jobs.Paint.TagSpacing = _cfg.TagDotSpacing;
+                _jobs.Paint.TagDotSize = _cfg.TagDotSize;
+
                 // And the wall going up marks the save dirty, or a tag sprayed after the last
                 // sale would not survive to the next load.
                 _jobs.Paint.Changed = () => _state.Touch();
@@ -1558,6 +1563,7 @@ namespace Hoodrich
                 pages.Crew = _homies;
                 pages.ShowSocials = () => _socialScreen.Open();
                 pages.ShowMessages = () => _messages.Open();
+                pages.Jobs = _jobs;
 
                 // The app asks the wheel who can be reached and hands ids back to it, so both
                 // doors onto a re-up run the same call with the same refusals. See PhoneBook.
