@@ -261,6 +261,50 @@ namespace Hoodrich.Missions
         /// Falls back to the Families green the jet always used, so an unaffiliated player
         /// painting a wall on Lamar's say-so gets exactly what they got before.
         /// </summary>
+        /// <summary>
+        /// What the can writes. CGF or FAM, whichever comes up.
+        ///
+        /// Both are the same set and both are what gets written on walls in Davis, so picking
+        /// between them per wall means four walls in a run are not four copies of one stencil.
+        /// Anybody else gets their own tag out of gangs.json -- and if that tag has a letter
+        /// nobody has drawn, CanWrite says so and the old random splatter takes it, which is a
+        /// worse tag but is never a blank wall.
+        /// </summary>
+        private string TagToWrite()
+        {
+            var gang = Crew == null ? null : Crew.Current;
+
+            var mine = gang == null ? "" : (gang.Tag ?? "");
+
+            if (string.Equals(mine, "FAM", StringComparison.OrdinalIgnoreCase))
+            {
+                return _rng.Next(2) == 0 ? "CGF" : "FAM";
+            }
+
+            return mine;
+        }
+
+        /// <summary>
+        /// How far apart the dots sit along a letter, in letter heights.
+        ///
+        /// 0.17 rather than 0.13, and that is a LOOK decision before it is a budget one.
+        /// Tighter than this and the blobs merge into one fat even sausage that reads as a
+        /// marker pen; at this spacing you can still make out the individual passes of the can.
+        /// It also keeps a four-wall run near three hundred and forty decals rather than four
+        /// hundred and fifty, which matters -- see MarkCap.
+        /// </summary>
+        private const float TagSpacing = 0.17f;
+
+        /// <summary>How wide and how tall the writing is on the wall, in metres.</summary>
+        private const float TagWide = 2.60f;
+        private const float TagTall = 1.15f;
+
+        /// <summary>Where the bottom of the letters sits relative to the spot the can is at.</summary>
+        private const float TagFoot = -0.55f;
+
+        /// <summary>A dot is a bit bigger than the gap, so a stroke joins up rather than beads.</summary>
+        private const float TagDotSize = 0.34f;
+
         private void OurColour(out float r, out float g, out float b)
         {
             r = 0.24f; g = 0.86f; b = 0.32f;
@@ -287,6 +331,16 @@ namespace Hoodrich.Missions
         private int _lastUpdate;
         private int _sprayingSince;
         private TagSpot _spraying;
+
+        /// <summary>
+        /// The tag being written on this wall, and how much of it is already paint.
+        ///
+        /// Laid out once when the wall is found rather than per dot, because the layout is the
+        /// same every tick and the only thing that moves is how far through it we are.
+        /// </summary>
+        private List<float[]> _tagPoints;
+        private int _tagPlaced;
+        private string _tagText = "";
         private bool _held;
 
         public TagRun(GangRegistry gangs)
@@ -861,6 +915,23 @@ namespace Hoodrich.Missions
             _spraying = spot;
             _sprayingSince = Game.GameTime;
 
+            // A fresh wall gets a fresh tag, and nothing of the last one is owed.
+            _tagText = TagToWrite();
+            _tagPoints = TagLetters.CanWrite(_tagText)
+                ? TagLetters.Layout(_tagText, TagSpacing)
+                : null;
+            _tagPlaced = 0;
+
+            if (_tagPoints != null)
+            {
+                Log.Info("Writing " + _tagText + " on this one -- " + _tagPoints.Count +
+                         " marks.");
+            }
+            else
+            {
+                Log.Info("No letters for '" + _tagText + "'; this one gets splatter.");
+            }
+
             // A different wall, so the last one's surface is forgotten rather than painted on
             // from four streets away.
             ForgetWall();
@@ -1310,7 +1381,7 @@ namespace Hoodrich.Missions
         /// The whole world shares a budget of five hundred and twelve decals with every bullet
         /// hole and tyre mark in it, so this stays well clear of being the thing that fills it.
         /// </summary>
-        private const int MarkCap = 96;
+        private const int MarkCap = 384;
 
         /// <summary>Far enough for the game to have dropped it.</summary>
         private const float MarkGoneRange = 150f;
@@ -1433,6 +1504,14 @@ namespace Hoodrich.Missions
             _nextStain = now + StainEveryMs;
 
             OurColour(out var r, out var g, out var b);
+
+            // WRITING, if this wall has letters to write. Everything below is the old random
+            // splatter, kept whole as the fallback for a tag nobody has drawn.
+            if (_tagPoints != null && _tagPoints.Count > 0)
+            {
+                Write(now, r, g, b);
+                return;
+            }
 
             // Somewhere in a patch about the size of a tag, at its own angle and its own size,
             // so six of them read as paint rather than as six copies of one sticker.
@@ -2051,6 +2130,110 @@ namespace Hoodrich.Missions
 
                 Notify.Problem("somebody saw you.");
             }
+        }
+
+        /// <summary>
+        /// Lays down however much of the tag the can has got through by now.
+        ///
+        /// PACED OFF THE BAR, not off a dot count. The number of marks in a tag depends on how
+        /// many letters it has -- CGF is three and BALL is four -- so a fixed dots-per-tick
+        /// would finish some tags early and leave others half written when the spray stops.
+        /// Working out how far through the paint we are and catching the letters up to it means
+        /// the last dot always lands as the can runs out, whatever is being written.
+        ///
+        /// Several per tick rather than one. The bar runs for seven seconds and a tag is sixty
+        /// odd marks, so one every 280ms would not get halfway.
+        /// </summary>
+        private void Write(int now, float r, float g, float b)
+        {
+            var paintFor = SprayMs - PaintDelayMs;
+            if (paintFor <= 0) return;
+
+            var done = (now - _sprayingSince - PaintDelayMs) / (float)paintFor;
+            if (done < 0f) done = 0f;
+            if (done > 1f) done = 1f;
+
+            var want = (int)Math.Round(done * _tagPoints.Count);
+            if (want > _tagPoints.Count) want = _tagPoints.Count;
+
+            while (_tagPlaced < want)
+            {
+                var p = _tagPoints[_tagPlaced];
+                _tagPlaced++;
+
+                // A hand is not a plotter. Each mark gets shifted a little off its ideal spot
+                // and given its own size, which is the whole difference between spray and a
+                // dot-matrix printer.
+                var jitter = TagSpacing * 0.30f;
+
+                var du = p[0] * TagWide + ((float)_rng.NextDouble() * 2f - 1f) * jitter;
+                var dv = TagFoot + p[1] * TagTall
+                       + ((float)_rng.NextDouble() * 2f - 1f) * jitter;
+
+                var at = _wallAt + _wallSide * du + _wallUp * dv;
+
+                var roll = (float)(_rng.NextDouble() * Math.PI * 2d);
+                var side = _wallSide * (float)Math.Cos(roll) + _wallUp * (float)Math.Sin(roll);
+
+                var size = TagDotSize * (0.80f + (float)_rng.NextDouble() * 0.45f);
+
+                if (!Put(at, side, size, r, g, b)) return;
+            }
+        }
+
+        /// <summary>
+        /// Puts one mark on the wall and remembers it. False if nothing would take.
+        ///
+        /// Split out of Stain so the writer and the old splatter share one decal path: the
+        /// three-candidate probe, the logging of which type won, the miss counter and the
+        /// persisted record are all things both want and neither should own.
+        /// </summary>
+        private bool Put(Vector3 at, Vector3 side, float size, float r, float g, float b)
+        {
+            foreach (var type in PaintDecals)
+            {
+                if (_decalType > 0 && type != _decalType) continue;
+
+                int handle;
+
+                try
+                {
+                    handle = Function.Call<int>(Hash.ADD_DECAL, type,
+                                                at.X, at.Y, at.Z,
+                                                _wallInto.X, _wallInto.Y, _wallInto.Z,
+                                                side.X, side.Y, side.Z,
+                                                size, size,
+                                                r, g, b, 0.92f,
+                                                StainForever, true, false, false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Decal type " + type + " threw: " + ex.Message);
+                    continue;
+                }
+
+                if (handle == 0) continue;
+
+                if (_decalType != type)
+                {
+                    _decalType = type;
+                    Log.Info("Tag paint lands as decal type " + type + ".");
+                }
+
+                _stains++;
+                _stainMisses = 0;
+
+                Remember(new PaintMark
+                {
+                    At = at, Into = _wallInto, Side = side, Size = size,
+                    R = r, G = g, B = b, Handle = handle
+                });
+
+                return true;
+            }
+
+            _stainMisses++;
+            return false;
         }
 
         private Ped SpawnMember(GangDef gang, Vector3 near, bool bat)
