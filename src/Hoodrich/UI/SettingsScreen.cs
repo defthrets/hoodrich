@@ -187,8 +187,18 @@ namespace Hoodrich.UI
             _curtain.Close();
             _listening = -1;
             _holdingSince = 0;
-            _rows.Clear();
-            _cfg = null;
+            _holdSpent = false;
+
+            // THE ROWS STAY UNTIL THE PANEL HAS FINISHED LEAVING.
+            //
+            // Clearing them here emptied the list while the curtain was still lifting out, and
+            // Draw bails on an empty list -- so the exit animation was dead code and the panel
+            // vanished on a single frame instead. Worse, Main keeps returning early for as long
+            // as the screen reports itself open, so that tenth of a second had no panel AND
+            // none of the mod's own HUD either, with the controls still held.
+            //
+            // They are dropped in Update once the curtain has actually gone. InfoPanel holds
+            // its own rows through the exit for exactly this reason.
         }
 
         // ---- the list ----------------------------------------------------------
@@ -424,24 +434,36 @@ namespace Hoodrich.UI
                   () => c.HideoutStashCapacity, v => c.HideoutStashCapacity = v,
                   100f, 20000f, 100f, "N0", "g");
 
-            Head("The bag on his back");
-            Slide("Across", "Dealing", "BagX", () => c.BagX, v => c.BagX = v, -1f, 1f, 0.01f, "0.00");
-            Slide("Front to back", "Dealing", "BagY", () => c.BagY, v => c.BagY = v,
-                  -1f, 1f, 0.01f, "0.00");
-            Slide("Up", "Dealing", "BagZ", () => c.BagZ, v => c.BagZ = v, -1f, 1f, 0.01f, "0.00");
-            Slide("Pitch", "Dealing", "BagPitch", () => c.BagPitch, v => c.BagPitch = v,
-                  -180f, 180f, 5f, "0");
-            Slide("Roll", "Dealing", "BagRoll", () => c.BagRoll, v => c.BagRoll = v,
-                  -180f, 180f, 5f, "0");
-            Slide("Yaw", "Dealing", "BagYaw", () => c.BagYaw, v => c.BagYaw = v,
-                  -180f, 180f, 5f, "0");
+            // "The bag on his back" lived here: six sliders for the X, Y and Z offset and the
+            // pitch, roll and yaw of the holdall prop on Franklin's shoulder.
+            //
+            // That is a calibration jig, not a setting. It exists so somebody can nudge a prop
+            // until it sits right ONCE, and then never again -- and it was sat in the player's
+            // options menu costing six rows of a list he has to scroll, next to genuine
+            // questions like how much heat a witness adds.
+            //
+            // The ini keys stay exactly as they were, so anybody who did calibrate it keeps
+            // their numbers and anybody porting the bag to a different prop can still get at
+            // them. They are simply no longer a thing the game asks the player about.
         }
 
         // ---- input -------------------------------------------------------------
 
         public void Update()
         {
-            if (!IsOpen) return;
+            if (!IsOpen)
+            {
+                // Gone for good now, so the list and the settings reference can go with it.
+                // See Close: they are kept alive through the lift-out so there is something
+                // to draw while it happens.
+                if (_rows.Count > 0)
+                {
+                    _rows.Clear();
+                    _cfg = null;
+                }
+
+                return;
+            }
 
             LockControls();
 
@@ -555,6 +577,22 @@ namespace Hoodrich.UI
             if (row == null || row.Kind != OptKind.Binding)
             {
                 _listening = -1;
+                return;
+            }
+
+            // A WAY OUT THAT IS NOT A KEYBOARD KEY.
+            //
+            // Listen runs above the cancel check in Update and only ever read keyboard input,
+            // so "PRESS A KEY" on a controller was a room with no door: the screen holds every
+            // control for as long as it is up, PhoneCancel was never reached, and nothing else
+            // closes it. The only ways out were to reach for the keyboard or to die.
+            //
+            // Deliberately first, so it beats the catch-all below that takes any key as the
+            // new binding.
+            if (Pressed(Control.PhoneCancel))
+            {
+                _listening = -1;
+                Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 return;
             }
 
