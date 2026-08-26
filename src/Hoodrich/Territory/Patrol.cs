@@ -583,7 +583,11 @@ namespace Hoodrich.Territory
 
             try
             {
-                if (Alive(who) && car.Car != null && car.Car.Exists())
+                // Same guard the drive-by needed. A man already in the car is not told to
+                // get into it -- the game services that by putting him out through the door
+                // first, so the order to come back is what sends him away.
+                if (Alive(who) && car.Car != null && car.Car.Exists() &&
+                    !who.IsInVehicle(car.Car))
                 {
                     Function.Call(Hash.CLEAR_PED_TASKS, who.Handle);
                     Function.Call(Hash.TASK_ENTER_VEHICLE, who.Handle, car.Car.Handle,

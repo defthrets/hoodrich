@@ -1553,7 +1553,11 @@ namespace Hoodrich.Supply
             {
                 _driver.Task.ClearAll();
 
-                if (_car != null && _car.Exists())
+                // Not if he never got out. Telling a man to board the car he is sitting in
+                // makes the game put him out through the door and back in -- which is what the
+                // drive-by turned out to be, and this path can reach it: if his leave-vehicle
+                // was discarded on the way in he is still belted in when the delivery ends.
+                if (_car != null && _car.Exists() && !_driver.IsInVehicle(_car))
                 {
                     Function.Call(Hash.TASK_ENTER_VEHICLE, _driver.Handle, _car.Handle,
                                   20000, -1, 2f, 1, 0);
