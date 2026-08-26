@@ -912,6 +912,15 @@ namespace Hoodrich.Missions
 
             // The death and arrest checks that used to sit here are at the top of Update now,
             // where the bike ride and the tag run get them too.
+            // THE FIRE'S GRACE WINDOW, WHATEVER STATE THE JOB IS IN.
+            //
+            // This used to sit inside TickEscape, which is only reached when the burn left you
+            // wanted. Torch the car with a clean slate and Burned() sends the job straight to
+            // Collect -- so the window was set and then never looked at again, and the stars
+            // the arson was not supposed to give you arrived a second later with nothing
+            // clamping them. Which is precisely the case it was written for.
+            if (Game.GameTime < _fireQuietUntil) KeepTheFireQuiet();
+
             CountLostHomies();
             LockThemIn();
             FollowMeOut();
@@ -2387,7 +2396,16 @@ namespace Hoodrich.Missions
         /// <summary>How long past the flames the clamp keeps running.</summary>
         private int _fireQuietUntil;
 
-        private const int FireGraceMs = 9000;
+        /// <summary>
+        /// How long the arson stays the mission's business rather than the law's.
+        ///
+        /// Long, and it has to be. Burned() fires when the car CATCHES, not when it goes up --
+        /// the tank cooks off somewhere between ten and twenty seconds later, and that bang is
+        /// the loud part, the reported part, and the part that was handing out stars after a
+        /// nine second window had already closed. Lamar told you to burn it; being wanted for
+        /// burning it is the mission arresting you for doing the mission.
+        /// </summary>
+        private const int FireGraceMs = 30000;
 
         /// <summary>True once the car has gone up, so the second escape leads to Lamar.</summary>
         private bool _burned;
@@ -2395,11 +2413,6 @@ namespace Hoodrich.Missions
         private void TickEscape()
         {
             TalkAboutIt();
-
-            // Still inside the grace window from the fire. Without this the stars the arson
-            // was not supposed to give you arrive a moment after the burn, during the escape,
-            // and look exactly like the thing that was just fixed.
-            if (Game.GameTime < _fireQuietUntil) KeepTheFireQuiet();
 
             if (Game.Player.Wanted.WantedLevel > 0) return;
 
