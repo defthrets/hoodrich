@@ -1055,7 +1055,25 @@ namespace Hoodrich.Missions
 
             if (_blip != null && _blip.Exists())
             {
-                if (_blip.Position.DistanceTo(wanted) < 1f) return;
+                if (_blip.Position.DistanceTo(wanted) < 1f)
+                {
+                    // THE ROUTE IS RE-ASSERTED, NOT JUST SET ONCE.
+                    //
+                    // ShowRoute was applied at creation and then this returned early on every
+                    // tick afterwards, so anything that cleared the line put it back on nobody.
+                    // The game clears the GPS route on its own account -- combat starting, a
+                    // wanted level, the player dropping a waypoint -- which is why the drive
+                    // home lost its directions the moment the Vagos opened up and never got
+                    // them back.
+                    //
+                    // Saying it again every tick costs one native and cannot be wrong: the
+                    // route either already points here, in which case nothing changes, or it
+                    // was taken away, in which case it comes back.
+                    try { _blip.ShowRoute = true; }
+                    catch { /* the mark is still on the map */ }
+
+                    return;
+                }
 
                 // The run changed halves, so the mark moves rather than a second one appearing.
                 try { _blip.Delete(); } catch { /* it is gone */ }
