@@ -300,10 +300,27 @@ namespace Hoodrich
             "a_m_y_hippy_01", "s_m_y_factory_01", "a_m_m_farmer_01"
         };
 
-        /// <summary>Who works the press. A chemist and two hands off the line.</summary>
+        /// <summary>
+        /// Who works the press. All women, and that is the ANIMATION's doing rather than a
+        /// casting choice.
+        ///
+        /// The game ships its drug-bench set in exactly two flavours: weed as male-only and
+        /// coke as female-only. There is no male coke variant and no female weed one. This
+        /// room uses the coke clips -- cutting and packing, which is what a press room does --
+        /// so a man stood at one of these benches is a male ped playing an animation authored
+        /// for a female frame. The first version of this list had two of them.
+        ///
+        /// It also gives the two rooms something to tell them apart. Men working plants in one
+        /// and women working the bench in the other reads as two different jobs; the same
+        /// three lads in both would have read as the same room twice.
+        ///
+        /// A sweatshop worker leads it because that model IS this: somebody sat in a back room
+        /// working a bench all day. The chem-plant model that used to be here was security --
+        /// a uniform rather than workwear, and a guard rather than staff.
+        /// </summary>
         private static readonly string[] Pressers =
         {
-            "s_f_y_factory_01", "s_m_m_chemsec_01", "s_m_y_factory_01"
+            "s_f_y_sweatshop_01", "s_f_y_factory_01", "s_f_y_migrant_01"
         };
 
         /// <summary>
