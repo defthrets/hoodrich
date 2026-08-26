@@ -75,8 +75,12 @@ namespace Hoodrich.Missions
         /// Three and a bit metres to the right of yours and seven for the homies, worked out
         /// off the one mark that was given rather than read separately: three bikes at the same
         /// coordinate is one bike and two the game has shoved somewhere.
-        private static readonly Vector3 LamarBike = new Vector3(-221.093f, -1720.061f, 32.629f);
-        private const float LamarBikeHeading = 54.779f;
+        /// <summary>
+        /// Where his bike is stood, which is on the lot beside yours rather than off round the
+        /// corner. He walks to it -- see MountLamar -- so the player watches him do it.
+        /// </summary>
+        private static readonly Vector3 LamarBike = new Vector3(-209.918f, -1729.695f, 32.614f);
+        private const float LamarBikeHeading = 43.674f;
 
         /// <summary>
         /// Where the other two are waiting, up the alley from Lamar's bike.
@@ -1840,9 +1844,14 @@ namespace Hoodrich.Missions
             if (ped == null || !ped.Exists() || !ped.IsAlive) return;
             if (ped.IsInVehicle()) return;
 
-            var infront = ped.Position + ped.ForwardVector * 1.4f;
-
-            var bike = SpawnBike(infront, ped.Heading) ?? SpawnBike(LamarBike, LamarBikeHeading);
+            // HIS BIKE IS WHERE HIS BIKE IS, and he walks to it.
+            //
+            // It used to be made a stride in front of wherever he happened to be standing and
+            // he was put straight onto it -- a bicycle appearing under a man, which is the one
+            // thing the whole walk-out was written to avoid. He is stood on the same lot as the
+            // bike, so there is nothing to teleport: he walks the few strides and gets on it
+            // like anybody would, and you can watch him do it while you get on yours.
+            var bike = SpawnBike(LamarBike, LamarBikeHeading);
             if (bike == null) return;
 
             _bikes.Add(bike);
@@ -1850,10 +1859,15 @@ namespace Hoodrich.Missions
 
             try
             {
-                ped.SetIntoVehicle(bike, VehicleSeat.Driver);
-                Escort(ped, bike, player);
+                // -1 is "no timeout", seat -1 is the driver's, 2f is a walk. He is ten metres
+                // away at most; making him run to it would look like he was late.
+                Function.Call(Hash.TASK_ENTER_VEHICLE, ped.Handle, bike.Handle,
+                              -1, (int)VehicleSeat.Driver, 2f, 1, 0);
 
-                Log.Info("Lamar is riding this one.");
+                // NOT escorted yet. There is nothing to follow until he is on it, and KeepUp
+                // picks him up the moment he is -- issuing the follow now would replace the
+                // walk he has just been given, which is the mistake this file keeps making.
+                Log.Info("Lamar is walking to his bike.");
             }
             catch (Exception ex)
             {
@@ -1892,6 +1906,19 @@ namespace Hoodrich.Missions
                     // things rather than through them.
                     Function.Call(Hash.TASK_VEHICLE_FOLLOW, ped.Handle, bike.Handle, target.Handle,
                                   25f, FollowStyle, 8);
+
+                    // AND SAID AGAIN, TO THE TASK ITSELF.
+                    //
+                    // The style handed to TASK_VEHICLE_FOLLOW is a starting condition; this is
+                    // the native that sets it on the drive task that is actually running, and
+                    // it is what makes the off-road bits stick. FollowStyle already carries
+                    // TakeShortestPath and the ignore-roads flag -- what it did not have was
+                    // anything guaranteeing they survived the task being set up.
+                    //
+                    // Which is the difference between a man who follows you across a lot and
+                    // down a drainage channel, and one who turns round at the kerb looking for
+                    // a road to do it on.
+                    Function.Call(Hash.SET_DRIVE_TASK_DRIVING_STYLE, ped.Handle, FollowStyle);
                     return;
                 }
 
@@ -1938,8 +1965,18 @@ namespace Hoodrich.Missions
                 {
                     try
                     {
-                        Function.Call(Hash.TASK_ENTER_VEHICLE, ped.Handle, bike.Handle,
-                                      -1, (int)VehicleSeat.Driver, 2f, 1, 0);
+                        // Already on his way? Then leave him alone.
+                        //
+                        // This runs on a timer, and re-issuing an enter-vehicle task restarts
+                        // the walk from the beginning -- so a man twelve strides from his bike
+                        // was sent back to step one every couple of seconds and never arrived.
+                        // The same shape as the follow task this file already throttles, and
+                        // the reason he could be left jogging on the spot beside a bicycle.
+                        if (!Function.Call<bool>(Hash.IS_PED_GETTING_INTO_A_VEHICLE, ped.Handle))
+                        {
+                            Function.Call(Hash.TASK_ENTER_VEHICLE, ped.Handle, bike.Handle,
+                                          -1, (int)VehicleSeat.Driver, 2f, 1, 0);
+                        }
                     }
                     catch { /* they will walk it */ }
 
