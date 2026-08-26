@@ -1559,6 +1559,11 @@ namespace Hoodrich
                 WatchForPillbox();
                 WatchForGunfire();
 
+                // No lid. Every frame rather than on mounting, because the game hands one out
+                // the moment he sits on a bike and would do it again on the next one -- and
+                // it is two natives on a bare head, one of which is only asked.
+                Core.Helmets.Off(Game.Player.Character);
+
                 // Before any of the full-screen UIs, every one of which returns early. A narc
                 // on the phone and a corner you are stood on both run on wall time, and a
                 // countdown that stops because you opened a menu is a countdown you can beat by

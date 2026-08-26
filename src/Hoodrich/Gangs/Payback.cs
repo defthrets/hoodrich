@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -537,6 +537,9 @@ namespace Hoodrich.Gangs
                 {
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, man.Handle, _groupHash);
                 }
+
+                // A crew that came for you on choppers does not turn up in matching lids.
+                Core.Helmets.Off(man);
 
                 _crew.Add(man);
                 Mark(man);

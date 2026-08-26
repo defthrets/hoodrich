@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -719,6 +719,11 @@ namespace Hoodrich.Gangs
                 // set that drove past a fight without looking at it would be worse than one that
                 // gets out of the car -- and the stuck watchdog covers the mess either way.
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, man.Handle, false);
+
+                // Not on a bike, and not on the bikes they are about to be put on. Set at the
+                // seat rather than after, because CREATE_PED_INSIDE_VEHICLE has already sat him
+                // down by the time this line runs and the lid goes on with the seat.
+                Core.Helmets.Off(man);
 
                 return man;
             }
