@@ -303,12 +303,29 @@ namespace Hoodrich.Gangs
         /// ones are in there too but they are outnumbered, so the yard sounds like people
         /// talking with the odd shout across it rather than fifteen arguments at once.
         /// </summary>
+        /// <summary>
+        /// What they say to each other. NOTHING AIMED AT FRANKLIN.
+        ///
+        /// GENERIC_CURSE_MED and GENERIC_INSULT_MED used to be in here, and they are the two
+        /// that produced a man at your own party calling you a punk as you walked in. They
+        /// were picked as texture -- a yard where everybody is polite does not sound like a
+        /// yard -- and that reasoning was wrong for a simple reason: this list is spoken AT the
+        /// player, because he is the one stood in earshot. There is no version of an insult
+        /// label that reads as two mates slagging each other off rather than somebody starting
+        /// on you.
+        ///
+        /// GENERIC_CHEER and GENERIC_AGREE take their slots. Both are labels Rockstar use
+        /// themselves, which is the only reason to trust either of them exists.
+        ///
+        /// This list is shared by every Entourage in the mod -- the party, the lab, the
+        /// leaders, the den -- so nobody anywhere starts on him now.
+        /// </summary>
         private static readonly string[] Talk =
         {
             "GENERIC_HI", "GENERIC_HOWS_IT_GOING", "CHAT_STATE", "GENERIC_YES",
             "GENERIC_THANKS", "GENERIC_WHATEVER", "GENERIC_NO", "CHAT_RESP",
             "GENERIC_HOWS_IT_GOING", "GENERIC_BYE", "CHAT_STATE", "GENERIC_YES",
-            "GENERIC_CURSE_MED", "CHAT_RESP", "GENERIC_HI", "GENERIC_INSULT_MED"
+            "GENERIC_CHEER", "CHAT_RESP", "GENERIC_HI", "GENERIC_AGREE"
         };
 
         /// <summary>

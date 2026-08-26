@@ -4412,10 +4412,50 @@
         "del perro pier at four in the morning. reccomend. recomend. i recommend this",
         "im not drunk im. im jetlagged. its been. how long have i been here",
         "somebody took my phone. im typing this on my phone. so we found it",
-        "the tea here is. its fine. its fine actually i was wrong about the tea"
+        "the tea here is. its fine. its fine actually i was wrong about the tea",
+        "i am not. i am not drunk i am ENJOYING. theres a differnce. difference",
+        "who keeps movin the floor. seriously. whos doing it. own up",
+        "sent that. sent that to my uncle. why did i. why would i do that",
+        "the guy at the door said no and then he said yes. thats. thats business",
+        "im gonna. im gonna get a boat. a BOAT. do you need a. is there a licence",
+        "three oclock. is that late or is that early. genuinely asking. anyone",
+        "i love. i love all of you. even the. even the ones i dont know",
+        "someone said i already posted this. i dont. i dont think i did. did i",
+        "the room is fine. i am fine. the ROOM is doing something though",
+        "bought a round for. for everyone. everyone in the. in the whole place",
+        "just did a deal i think. shook a hand. no idea whos hand. good hand though",
+        "my phone keeps. it keeps typing wrong. the phone is drunk. phones drunk",
+        "vodka is basically. its basically water with a. with a personality",
+        "cant find my car. cant find. did i have a car today. i had a car",
+        "gonna sleep for. for a year. starting tomorow. tommorow. not today",
+        "everybody in this city is so. theyre so NICE when you buy things",
+        "my uncle sent four men to find me. FOUR. i am one man. one",
+        "new club opened on the boulevard and i was there before the sign was up",
+        "they put my name on a table. a TABLE. with my name. thats respect",
+        "uncle says the port is the business. the port is a car park with boats",
+        "if you have never had breakfast at nine at night you have never lived",
+        "everyone keeps telling me to be careful. careful of WHAT. of a tuesday",
+        "the beach at sunrise is. its actually. dont tell anyone i said that",
+        "somebody tried to sell me a watch. i have a watch. i bought it anyway",
+        "my translator has started sighing before he translates. i can HEAR it",
+        "los santos has a hundred clubs and i am going to. all of them. all",
+        "you know whats underrated. the little chicken place. by the. the one",
+        "wore the same jacket three days running and got compliments all three",
+        "uncle wants me to sit in on meetings. i AM sitting. im sitting right now",
+        "the pool at the hotel closes at eleven and that is a human rights issue",
+        "made a friend last night. dont know his name. we are still friends",
+        "why does nobody here sleep. i love it. i love that nobody sleeps",
+        "back home nobody would let me do any of this. thats. thats the point",
+        "spent more on one night than my first car. worth it. worth every. worth it"
       ],
       "MissionDone": [
-        "somethin happen in {here}?? i was there. i think. probably. was i there"
+        "somethin happen in {here}?? i was there. i think. probably. was i there",
+        "somebody was busy in {here} and it wasnt me. probably wasnt me",
+        "hearing things about {here}. hearing LOTS of things. love this city",
+        "was that in {here}?? i was NEAR there. i was near. thats basically there",
+        "everyone in the club is talking about {here} and i am nodding along",
+        "whatever happened in {here} did not happen to me so its a good day",
+        "my translator went quiet when {here} came up. thats how you know"
       ]
     },
     "hao_tuner": {
@@ -4962,10 +5002,24 @@
         "They told me the weather here never changes. Neither do certain men"
       ],
       "OursGloats": [
-        "The matter is settled. It did not need to be loud"
+        "The matter is settled. It did not need to be loud",
+        "It is finished. I would rather it had never been necessary",
+        "Some business concludes quietly. That is the preferred kind",
+        "A disagreement has ended. I will not be discussing the terms",
+        "The people involved understand the position now. That is sufficient",
+        "It is done, and it is done properly. Those are two different things"
       ],
       "CopKilled": [
-        "This city cannot govern its own house and it lectures us about order"
+        "This city cannot govern its own house and it lectures us about order",
+        "A city that cannot police itself should be slower to lecture others",
+        "Every man in a uniform here believes he is the last honest one",
+        "I am told there was an incident. I am told a great many things",
+        "This will be on the news for two days and forgotten in three"
+      ],
+      "MissionDone": ["Something occurred in {here}. It is not our concern and will remain so",
+        "I have read three accounts of {here} and none of them agree",
+        "Noise in {here} again. Noise is how amateurs announce themselves",
+        "Whatever happened in {here} did not require our involvement"
       ]
     },
     "ortega_vla": {
