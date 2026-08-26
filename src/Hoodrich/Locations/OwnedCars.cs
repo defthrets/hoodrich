@@ -110,6 +110,11 @@ namespace Hoodrich.Locations
             _rebuiltAt[owned.Id ?? ""] = now;
         }
 
+        /// <summary>
+        /// Set by Main: writes the save out immediately. See Bought.
+        /// </summary>
+        public Action SaveNow;
+
         public OwnedCars(PlayerState state)
         {
             _state = state;
@@ -151,6 +156,19 @@ namespace Hoodrich.Locations
             _state.Owned.RemoveAll(o => string.Equals(o.Id, id, StringComparison.OrdinalIgnoreCase));
             _state.Owned.Add(owned);
             _state.Touch();
+
+            // WRITTEN OUT NOW, not in up to two minutes.
+            //
+            // Touch only marks the state dirty; the file is written on the autosave timer, on
+            // sleeping, and on a clean exit. So a car bought and then followed by a crash, an
+            // alt-F4, or a script reload inside that window was paid for and never recorded --
+            // twenty-two thousand of it, with Hao refusing to sell you another because
+            // CarsBought remembers in memory what the file does not.
+            //
+            // Buying a car is exactly the kind of moment worth a write of its own, and sleeping
+            // already had one for the same reason.
+            try { SaveNow?.Invoke(); }
+            catch (Exception ex) { Log.Debug("Could not save after the sale: " + ex.Message); }
 
             Log.Info("Bought car " + id + " recorded on plate " + plate + ".");
         }

@@ -441,7 +441,11 @@ namespace Hoodrich
                 _hao = new Hao(_state);
 
                 // A car you paid for outlives the session now. See OwnedCars.
-                _ownedCars = new OwnedCars(_state);
+                _ownedCars = new OwnedCars(_state)
+                {
+                    // A car is too much money to leave sitting in memory for two minutes.
+                    SaveNow = () => SaveGame.Save(_state, _crew, _market, _stash, true)
+                };
                 _hao.Owned = _ownedCars;
 
                 // Nobody sends you to a car dealer in Little Seoul before you are anybody. The
