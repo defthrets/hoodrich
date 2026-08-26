@@ -142,16 +142,16 @@
     },
     {
       "id": "hit_grove",
-      "kind": "Hit",
+      "kind": "DriveBy",
       "name": "Get 'em off Grove.",
-      "brief": "Ballas standin' on Grove. On GROVE, Frank. My granddaddy raised nine kids on that street. We buried that man out the church on the corner. And now I gotta hear about two purple suckas leanin' on the same fence he painted with his own hands. Nah, dawg. Nah.",
-      "done": "THAT'S what I'm talkin' about! Word went up and down Grove before you even parked, cuz. Old heads on the porch tellin' it to each other like they was out there watchin'. Granddaddy woulda shook my hand behind this one. Yours too. But mine first.",
+      "brief": "Ballas standin' on Grove. On GROVE, Frank. My granddaddy raised nine kids on that street. We buried that man out the church on the corner. And now I gotta hear about a whole line of purple leanin' on the same fence he painted with his own hands. Nah, dawg. Nah.",
+      "done": "THAT'S what I'm talkin' about! Didn't even slow down, cuz, just come through and it was done. Old heads on the porch tellin' it to each other like they was out there watchin', and can't none of 'em say who was in the car. Granddaddy woulda shook my hand behind this one. Yours too. But mine first.",
       "targetGang": "ballas",
       "zone": "DAVIS",
       "x": 115.921,
       "y": -1949.503,
       "z": 20.698,
-      "targets": 2,
+      "targets": 4,
       "homies": 3,
       "escapeHeat": true,
       "heatStars": 2,
@@ -165,7 +165,7 @@
       "carHeading": 54.779,
       "briefMore": [
         "And yeah, I know it's theirs on paper, everybody know that. But it's theirs on paper, and then it's them STANDIN' on it grinnin', and once the old heads quit callin' it ours it's gone for real. Then it ain't a set no more. It's just a street with a sign on it.",
-        "It's two of 'em. Take three homies and EVERYBODY carry. Hands was for the courts, this ain't the courts, I don't wanna hear one word about it today. And you gon' catch the laws comin' off that block, that's a promise, not a maybe. Don't you dare drag 'em back round here to me.",
+        "You don't stop on Grove. That's the whole thing. Take three homies, EVERYBODY carry, and you keep that car ROLLIN' -- past the fence, down the block, gone. Hands was for the courts, this ain't the courts, and a man standin' still on that street is a man on somebody porch camera. You gon' catch the laws comin' off it too, that's a promise, not a maybe. Don't you dare drag 'em back round here to me.",
         "And same as Rancho -- if that German joint is what's out front, that one don't get left nowhere. Shake the laws, run it to Hao, he swap the numbers and we split what it come back as. Then you walk to me."
       ]
     },
