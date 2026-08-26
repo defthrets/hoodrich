@@ -1701,10 +1701,11 @@ namespace Hoodrich.Supply
                     _centred = false;
 
                     {
-                        // In his hand, so it swings with his arm -- and centred ON the bone
-                        // rather than pushed off it. The push existed for the crate, where the
-                        // hand is at one END of what is being held. A package in one fist has
-                        // its middle in that fist.
+                        // In his hand, so it swings with his arm, and held a little in from
+                        // its edge rather than through its middle -- see HandGrip. It was
+                        // centred on the bone, on the reasoning that a package in one fist has
+                        // its middle in that fist, which holds for something you can close a
+                        // hand around and not for a taped envelope a quarter of a metre wide.
                         var off = HandOffset(model, out yaw);
 
                         Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
@@ -1855,6 +1856,27 @@ namespace Hoodrich.Supply
         /// A thing held IN a hand has its middle in that hand, and the only correction it needs
         /// is for the model's own pivot.
         /// </summary>
+        /// <summary>
+        /// How far along its own length the fist sits, as a fraction of that length.
+        ///
+        /// 0 is dead centre, which is what this used to be and what looked wrong: the comment
+        /// above the attach reasoned that a package in one fist has its middle in that fist,
+        /// which is true of a thing you can close your hand around and not true of a taped
+        /// envelope twenty-five centimetres across. His hand ended up in the middle of it, and
+        /// a hand in the middle of a flat package reads as the package being skewered rather
+        /// than carried. People hold a package like that nearer an edge.
+        ///
+        /// A FRACTION rather than a distance, because the prop is whichever one this install
+        /// happens to have -- the port's metre-long bale and Gerald's envelope both come
+        /// through here, and a fixed number of centimetres that suits one puts the other
+        /// somewhere silly. A quarter is a hand a little in from the edge, which is where one
+        /// naturally goes.
+        ///
+        /// NEGATIVE is toward the model's own origin end. If it has gone the wrong way it is
+        /// this sign and nothing else -- the axis is picked for you below.
+        /// </summary>
+        private const float HandGrip = -0.25f;
+
         private static Vector3 HandOffset(Model model, out float yaw)
         {
             yaw = 0f;
@@ -1864,13 +1886,27 @@ namespace Hoodrich.Supply
 
             if (size.Length() < 0.01f) return Vector3.Zero;
 
-            if (size.Y > size.X * 1.4f)
+            // Whether the long side is already pointing out of his fist, or has to be turned
+            // to. The turn is a quarter circle, and it takes the middle round with it.
+            var turned = size.Y > size.X * 1.4f;
+
+            if (turned)
             {
                 yaw = 90f;
                 centre = new Vector3(-centre.Y, centre.X, centre.Z);
             }
 
-            return -centre;
+            var off = -centre;
+
+            // Slid along whichever axis is now the long one. The rotation above maps the
+            // model's X onto the hand's Y, so a shift written for the unturned case has to
+            // follow it round or a long prop would slide across his palm instead of along
+            // itself.
+            var along = (turned ? size.Y : size.X) * HandGrip;
+
+            return turned
+                ? new Vector3(off.X, off.Y + along, off.Z)
+                : new Vector3(off.X + along, off.Y, off.Z);
         }
 
         /// <summary>How big a model is, in its own space. Zero if it cannot be read.</summary>
