@@ -767,7 +767,31 @@ namespace Hoodrich.Missions
                     Log.Debug("Could not text about being back on: " + ex.Message);
                 }
 
-                Log.Info("Lamar is done scheming.");
+                // AND THAT IS THE OFFER MADE, so the work check below does not make it again.
+                //
+                // Two texts landed on top of each other -- "come see me man, this one
+                // different" and then "aye. got somethin for you" a heartbeat later -- because
+                // these are two paths that happen to describe one event. The cooldown ending
+                // and there being a job waiting are not separate pieces of news; the moment the
+                // rest is over the work check runs on the very next pass and finds the job that
+                // was already there.
+                //
+                // The back-on lines all say come and see him, so they ARE the offer. Marking it
+                // spoken for here means he says it in his own words rather than saying it twice
+                // in two registers.
+                var waiting = NextInTheWindow(true);
+
+                if (waiting != null)
+                {
+                    _state.MarkOffered(waiting.Id);
+                    _state.Touch();
+
+                    Log.Info("Lamar is done scheming, and that covered " + waiting.Id + ".");
+                }
+                else
+                {
+                    Log.Info("Lamar is done scheming.");
+                }
             }
 
             if (Resting) return;

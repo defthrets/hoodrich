@@ -766,6 +766,13 @@ namespace Hoodrich
                 _party = new Entourage(_gangs, "families",
                                        new Vector3(-199.604f, -1728.764f, 32.664f), 186.646f, "the lot")
 
+                    // THE TWO WHO ARE ALWAYS HERE, and the only two.
+                    //
+                    // A drink and a smoke, which is what a yard belonging to somebody looks
+                    // like at two in the afternoon. Everybody below them is marked party -- see
+                    // Entourage.PartyFrom -- so in daylight this lot is these two, the man
+                    // watching the back fence, and nobody else. The decks, the dancing and the
+                    // fifteen bodies are an evening, not a permanent installation.
                     .Stand(new Vector3(-199.196f, -1726.450f, 32.664f), 190.000f,
                            "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
 
@@ -777,17 +784,17 @@ namespace Hoodrich
                     // out of the decks, which is the difference between a yard with people in
                     // it and a yard with a party in it.
                     .Stand(new Vector3(-197.722f, -1730.278f, 32.664f), 130.367f,
-                           "WORLD_HUMAN_PARTYING", Women, armed: false, anim: Dancing)
+                           "WORLD_HUMAN_PARTYING", Women, armed: false, anim: Dancing, party: true)
 
                     .Stand(new Vector3(-201.294f, -1730.396f, 32.664f), 46.000f,
-                           "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false)
+                           "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false, party: true)
 
                     .Stand(new Vector3(-201.679f, -1727.661f, 32.664f), 118.000f,
-                           "WORLD_HUMAN_DRINKING", Women, armed: false)
+                           "WORLD_HUMAN_DRINKING", Women, armed: false, party: true)
 
                     // On the decks. Facing the yard, which is the direction the music goes.
                     .Stand(new Vector3(-194.279f, -1723.069f, 32.664f), 148.079f,
-                           "WORLD_HUMAN_MUSICIAN", Women, armed: false, anim: Deejaying)
+                           "WORLD_HUMAN_MUSICIAN", Women, armed: false, anim: Deejaying, party: true)
 
                     // ---- the rest of the yard ------------------------------------------
                     //
@@ -803,7 +810,7 @@ namespace Hoodrich
                     // the women round the fire are, and she gets her own clip list so the two
                     // women dancing in the same yard are not doing the identical loop in sync.
                     .Stand(new Vector3(-194.412f, -1727.852f, 32.664f), 349.215f,
-                           "WORLD_HUMAN_PARTYING", Working, armed: false, anim: DancingAlt)
+                           "WORLD_HUMAN_PARTYING", Working, armed: false, anim: DancingAlt, party: true)
 
                     // THE TWO WHO MOVE, and they are the two with the least to do: a man whose
                     // entire station is "holding a drink" has no reason to be welded to a spot
@@ -821,26 +828,26 @@ namespace Hoodrich
                     // and read the mark off -- that is where every other number in this list
                     // came from.
                     .Stand(new Vector3(-196.532f, -1725.500f, 32.664f), 300.596f,
-                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false, wander: 5f)
+                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false, wander: 5f, party: true)
 
                     .Stand(new Vector3(-199.096f, -1723.577f, 32.664f), 319.476f,
-                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false, wander: 4.5f)
+                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false, wander: 4.5f, party: true)
 
                     .Stand(new Vector3(-196.101f, -1729.308f, 32.664f), 20.826f,
-                           "WORLD_HUMAN_PARTYING", Fam(1), armed: false, anim: DancingMen)
+                           "WORLD_HUMAN_PARTYING", Fam(1), armed: false, anim: DancingMen, party: true)
 
                     // The one by the car. PARTYING underneath rather than SMOKING_POT: the
                     // scenario is what shows if none of the clips load, and a dancer falling
                     // back to a woman smoking on her own is the wrong picture in the one place
                     // it matters.
                     .Stand(new Vector3(-198.543f, -1731.535f, 32.664f), 16.019f,
-                           "WORLD_HUMAN_PARTYING", Strippers, armed: false, anim: Stripping)
+                           "WORLD_HUMAN_PARTYING", Strippers, armed: false, anim: Stripping, party: true)
 
                     .Stand(new Vector3(-203.007f, -1729.627f, 32.664f), 251.512f,
-                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
+                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false, party: true)
 
                     .Stand(new Vector3(-206.169f, -1731.598f, 32.664f), 340.253f,
-                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false)
+                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false, party: true)
 
                     // Somebody watching the back of the lot, where the skips are and the fence
                     // is low enough to come over. Armed, and the only man here who is -- a yard
@@ -859,6 +866,19 @@ namespace Hoodrich
                 // as a party rather than as scenery that happens to be lit.
                 _party.QuietFrom = 2;
                 _party.QuietTo = 6;
+
+                // Seven at night until two in the morning, which hands straight over to the
+                // quiet hours above -- the party ends and the lot is empty, rather than there
+                // being an hour in between where a handful of people stand about in the dark
+                // having apparently not noticed it finished.
+                _party.PartyFrom = 19;
+                _party.PartyTo = 2;
+
+                // Off the road at the top of the block, which is where somebody coming to this
+                // would actually park and walk in from. They spawn along the kerb and come up
+                // through the gate on the nav mesh; the walk is the point, so it is a real
+                // route rather than a straight line through the fence.
+                _party.ArriveAt = new Vector3(-258.752f, -1696.881f, 26.937f);
 
                 // The barrel IS the fire -- it burns on its own. A camp fire was stacked on
                 // top of it as well, which is two fires a metre apart and reads as a bug even

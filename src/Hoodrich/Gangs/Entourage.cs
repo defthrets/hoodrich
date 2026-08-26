@@ -124,6 +124,78 @@ namespace Hoodrich.Gangs
         public int QuietFrom = -1;
         public int QuietTo = -1;
 
+        /// <summary>
+        /// The hours the party is on, or -1 for a place that is the same all day.
+        ///
+        /// A second window rather than a reuse of the quiet one, because they answer different
+        /// questions and only overlap by accident. Quiet is "has everybody gone to bed"; this
+        /// is "is there a party on", and between them they describe three states rather than
+        /// two: a yard with a couple of people in it during the day, a party at night, and an
+        /// empty lot at four in the morning.
+        /// </summary>
+        public int PartyFrom = -1;
+        public int PartyTo = -1;
+
+        /// <summary>Whether the party is on right now.</summary>
+        private bool PartyOn
+        {
+            get
+            {
+                if (PartyFrom < 0 || PartyTo < 0 || PartyFrom == PartyTo) return true;
+
+                try
+                {
+                    var hour = Function.Call<int>(Hash.GET_CLOCK_HOURS);
+
+                    return PartyTo > PartyFrom
+                        ? hour >= PartyFrom && hour < PartyTo
+                        : hour >= PartyFrom || hour < PartyTo;
+                }
+                catch
+                {
+                    // If the clock cannot be read, the party is on. A yard that is empty
+                    // because a native failed is worse than one that is busy at noon.
+                    return true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Per station: whether he is only there for the party.
+        ///
+        /// The DJ, the women and the extra bodies. Nobody sets up decks in an empty lot at
+        /// eleven in the morning, and a yard with fifteen people dancing in it in broad
+        /// daylight is the same set-dressing problem the quiet hours were added to solve, just
+        /// at the other end of the clock.
+        /// </summary>
+        private readonly List<bool> _partyOnly = new List<bool>();
+
+        /// <summary>Where the ones who turn up for it come FROM. Set by Main.</summary>
+        public Vector3 ArriveAt;
+
+        /// <summary>Whether the next spawn is people turning up, rather than people being there.</summary>
+        private bool _arriveOnFoot;
+
+        private bool _wasParty = true;
+
+        /// <summary>Per station: still walking in, so not yet doing what he came to do.</summary>
+        private readonly List<bool> _walkingIn = new List<bool>();
+        private readonly List<int> _walkDue = new List<int>();
+
+        /// <summary>Close enough to his mark to stop walking and start the evening.</summary>
+        private const float ArriveWithin = 1.6f;
+
+        /// <summary>
+        /// How long he is given to get there before he is simply put to work where he stands.
+        ///
+        /// The road is sixty-seven metres from the yard in a straight line and the nav route
+        /// is longer than that, because it goes round the fence and in through the gate --
+        /// call it a minute and a half at a walk. Forty-five seconds was the first number here
+        /// and it was under half the journey, so the timeout would have fired on every single
+        /// person every single night.
+        /// </summary>
+        private const int WalkInMs = 95000;
+
         /// <summary>Whether it is those hours now.</summary>
         private bool Quiet
         {
@@ -256,7 +328,7 @@ namespace Hoodrich.Gangs
         public Entourage Stand(Vector3 where, float facing, string scenario,
                                string[] models = null, bool armed = true, bool onProp = false,
                                string[] anim = null, string weapon = null, bool nights = false,
-                               float wander = 0f)
+                               float wander = 0f, bool party = false)
         {
             _allNight.Add(nights);
             _stations.Add(where);
@@ -270,6 +342,9 @@ namespace Hoodrich.Gangs
             _animDue.Add(0);
             _wander.Add(wander);
             _wanderDue.Add(0);
+            _partyOnly.Add(party);
+            _walkingIn.Add(false);
+            _walkDue.Add(0);
 
             // Staggered at the door rather than at spawn: a fixed offset per station means the
             // yard never starts everybody's clock on the same frame, whatever order they got
@@ -403,6 +478,24 @@ namespace Hoodrich.Gangs
                 if (_crew.Count > 0) Despawn();
             }
 
+            // The party starting is its own event, and the one place people ARRIVE rather than
+            // simply being there.
+            //
+            // Only on the way in. When it ends they are cleared like everybody else at closing
+            // time -- walking fifteen people back up the road one at a time would be the better
+            // scene and it is a lot of pathfinding for something you are almost never watching,
+            // because the party ends at two in the morning.
+            var party = PartyOn;
+
+            if (party != _wasParty)
+            {
+                _wasParty = party;
+
+                if (_crew.Count > 0) Despawn();
+
+                _arriveOnFoot = party;
+            }
+
             // Standing rather than Count, now the list keeps a slot for everybody. A crew of
             // fifteen nulls is not a crew.
             if (Standing() > 0)
@@ -425,6 +518,10 @@ namespace Hoodrich.Gangs
             _marks.Clear();
 
             var quiet = Quiet;
+
+            // Read here as well as in Update. Spawn is reached from more than one place and the
+            // hour is the same question wherever it is asked from.
+            var party = PartyOn;
 
             // Every station, always, whatever the hour.
             //
@@ -467,17 +564,96 @@ namespace Hoodrich.Gangs
                     continue;
                 }
 
-                var ped = SpawnMember(gang, MarkAt(i), Facing(i), ModelsFor(i, gang), ArmedAt(i),
+                // And the other end of the clock. Same trick, same reason: a slot is kept for
+                // him so every per-station list still lines up, and nobody is made.
+                if (!party && PartyOnly(i))
+                {
+                    _crew.Add(null);
+                    continue;
+                }
+
+                // WHERE HE STARTS. On his mark if he was always here, and out on the road if
+                // he is turning up -- which is only ever the frame the party starts, so
+                // arriving to a party already in progress does not send everybody back out to
+                // the kerb to walk in again while you watch.
+                var arriving = _arriveOnFoot && PartyOnly(i) && ArriveAt != Vector3.Zero;
+                var from = arriving ? ArrivalSpot(i) : MarkAt(i);
+
+                var ped = SpawnMember(gang, from, Facing(i), ModelsFor(i, gang), ArmedAt(i),
                                       WeaponAt(i));
 
                 _crew.Add(ped);
                 if (ped == null) continue;
 
+                if (arriving)
+                {
+                    WalkIn(i, ped);
+                    continue;
+                }
+
                 Idle(i, ped, Doing(i), Facing(i), MarkAt(i), Seated(i), AnimAt(i));
             }
 
+            // Spent. The next spawn is people being here, not people turning up.
+            _arriveOnFoot = false;
+
             var up = Standing();
             if (up > 0) Log.Info(up + " of " + gang.Name + " stood with " + _who + ".");
+        }
+
+        /// <summary>
+        /// A spot on the road for the man at station i, fanned out so they are not one pile.
+        ///
+        /// Fifteen people created on the same square metre spend their first second shoving
+        /// each other apart, which is the one thing more obviously wrong than them appearing on
+        /// their marks would have been. Spread along a line and staggered back from it, off the
+        /// index so it is the same every time rather than a random scatter that occasionally
+        /// puts somebody in the road.
+        /// </summary>
+        private Vector3 ArrivalSpot(int index)
+        {
+            var across = ((index % 4) - 1.5f) * 1.1f;
+            var back = (index / 4) * 1.3f;
+
+            return Ground(new Vector3(ArriveAt.X + across, ArriveAt.Y + back, ArriveAt.Z));
+        }
+
+        /// <summary>
+        /// Sends him up the road to his mark, to be put to work when he gets there.
+        ///
+        /// FOLLOW_NAV_MESH rather than a straight line, for the reason it always is: there is a
+        /// fence and a gate between the road and the yard, and a man walked straight at his
+        /// mark stands in the wire until the timeout.
+        /// </summary>
+        private void WalkIn(int index, Ped ped)
+        {
+            try
+            {
+                var mark = MarkAt(index);
+
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, ped.Handle,
+                              mark.X, mark.Y, mark.Z, 1.0f, WalkInMs, ArriveWithin, 0, 0f);
+
+                if (index < _walkingIn.Count)
+                {
+                    _walkingIn[index] = true;
+                    _walkDue[index] = Game.GameTime + WalkInMs;
+                }
+            }
+            catch
+            {
+                // He could not be sent, so he is already where he is going as far as we care.
+                if (index < _walkingIn.Count) _walkingIn[index] = false;
+
+                Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index),
+                     AnimAt(index));
+            }
+        }
+
+        /// <summary>Whether he is still on his way in.</summary>
+        private bool WalkingIn(int index)
+        {
+            return index < _walkingIn.Count && _walkingIn[index];
         }
 
         /// <summary>How far station i roams, or 0 if he is on a mark.</summary>
@@ -503,6 +679,12 @@ namespace Hoodrich.Gangs
         private bool AllNight(int index)
         {
             return index < _allNight.Count && _allNight[index];
+        }
+
+        /// <summary>Whether he only turns out for the party.</summary>
+        private bool PartyOnly(int index)
+        {
+            return index < _partyOnly.Count && _partyOnly[index];
         }
 
         /// <summary>How many of them are actually stood there, nulls and bodies aside.</summary>
@@ -846,6 +1028,42 @@ namespace Hoodrich.Gangs
 
                 var mark = MarkAt(i);
                 var away = ped.Position.DistanceTo(mark);
+
+                // ON HIS WAY IN. Everything below this is about a man who is where he is meant
+                // to be and has stopped doing what he was told -- which describes somebody
+                // walking up the road perfectly, and would march him back to a mark he has not
+                // reached yet and then re-task him into a dance in the middle of the street.
+                if (WalkingIn(i))
+                {
+                    if (away > ArriveWithin && Game.GameTime < _walkDue[i]) continue;
+
+                    _walkingIn[i] = false;
+
+                    // OUT OF TIME MEANS PUT HIM THERE, not start him where he stands.
+                    //
+                    // The timeout is for the man who has got himself wedged on a bin or shut
+                    // behind a gate, and the whole point of it is that the party is not one
+                    // person short all night. But "start the evening here" for somebody still
+                    // halfway up the road is a woman doing the deejay animation on the
+                    // pavement -- so if he has not made it, he is placed. It is the one moment
+                    // somebody appears rather than arrives, and it only happens when the
+                    // alternative is visibly broken.
+                    if (away > ArriveWithin)
+                    {
+                        try
+                        {
+                            ped.Position = mark;
+                            ped.Heading = Facing(i);
+                        }
+                        catch { /* he starts where he is, which is the old behaviour */ }
+                    }
+
+                    // Here, or placed. Either way this is where the evening starts: his
+                    // heading, his scenario and his clip, exactly as if he had been stood here
+                    // all along.
+                    Idle(i, ped, Doing(i), Facing(i), mark, Seated(i), AnimAt(i));
+                    continue;
+                }
 
                 if (away <= LeashAt(i))
                 {
