@@ -1392,8 +1392,23 @@ namespace Hoodrich.Missions
 
                 try
                 {
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, true);
-                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, true);
+                    // NOT ON A DRIVE-BY, and this was the contradiction underneath all of it.
+                    //
+                    // 5 is BF_AlwaysFight and 46 is fight-armed-men-unarmed. They were being
+                    // set on every job -- so on a car job a man was told, in the same breath,
+                    // that he may not leave the vehicle and that he always fights. With a Vago
+                    // the feud has just made an enemy fifteen metres away, he wants to go, and
+                    // the half second of open door is him trying. Locking the door and blocking
+                    // events were both arguments with a decision he had already been told to
+                    // make.
+                    //
+                    // He does not need either flag to do the job. TASK_DRIVE_BY names its
+                    // target, so the shooting is an order rather than an opinion -- which is
+                    // also why he now shoots the men on the corner and nobody else. A rival
+                    // firing back, a passing set, a patrol car: none of it is his business,
+                    // because none of it is what he was told to shoot.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, !FromTheCar);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, !FromTheCar);
 
                     // 3 is BF_CanLeaveVehicle, and the answer depends on what the job IS.
                     //
@@ -1450,6 +1465,20 @@ namespace Hoodrich.Missions
                         // drive-by as the order they agree.
                         Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
                         Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, true);
+
+                        // BLIND AND DEAF FOR THE LENGTH OF THE SPIN.
+                        //
+                        // Blocking events stops him ANSWERING what he notices. This stops him
+                        // noticing, which is the stronger half and the one that finally settles
+                        // it -- a man who cannot see the patrol car behind him has no opinion
+                        // about it, and a man with no opinion does not open a door.
+                        //
+                        // It costs nothing the job needs. The drive-by is aimed at a ped by
+                        // handle, and a named target does not have to be seen to be shot at.
+                        // Rockstar set these freely for the same reason; sixty is their own
+                        // ordinary figure and is what he gets back when he is let out.
+                        Function.Call(Hash.SET_PED_SEEING_RANGE, homie.Handle, 0f);
+                        Function.Call(Hash.SET_PED_HEARING_RANGE, homie.Handle, 0f);
                     }
 
                     // And nothing else goes on them.
@@ -1911,6 +1940,10 @@ namespace Hoodrich.Missions
                     // getting through, which is all it takes.
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, true);
                     Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, false);
+                    Function.Call(Hash.SET_PED_SEEING_RANGE, homie.Handle, 0f);
+                    Function.Call(Hash.SET_PED_HEARING_RANGE, homie.Handle, 0f);
 
                     // Shooting is only for the part of the job that has somebody to shoot at.
                     // On the way home they sit there.
@@ -1955,6 +1988,15 @@ namespace Hoodrich.Missions
                 // stands in the street ignoring the men shooting at him.
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, homie.Handle, false);
                 Function.Call(Hash.SET_PED_KEEP_TASK, homie.Handle, false);
+
+                // His eyes, his ears and his willingness to fight. All four were taken off him
+                // for the spin so that nothing could talk him out of the car; a man on the
+                // pavement needs every one of them or he stands there blind while somebody
+                // shoots at him. Sixty is Rockstar's own ordinary figure for both ranges.
+                Function.Call(Hash.SET_PED_SEEING_RANGE, homie.Handle, 60f);
+                Function.Call(Hash.SET_PED_HEARING_RANGE, homie.Handle, 60f);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 5, true);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, homie.Handle, 46, true);
 
                 // And his legs. BeginWork sets a man on a car job to Stationary, which is right
                 // for a passenger and useless for the same man stood in the street -- he would
