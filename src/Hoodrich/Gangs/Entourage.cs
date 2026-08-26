@@ -173,6 +173,34 @@ namespace Hoodrich.Gangs
         /// <summary>Where the ones who turn up for it come FROM. Set by Main.</summary>
         public Vector3 ArriveAt;
 
+        /// <summary>
+        /// Nobody exists here until the player is actually INSIDE the room.
+        ///
+        /// THIS IS WHY THE GROW ROOM AND THE PRESS STOPPED OPENING, and it is worth writing
+        /// down properly because the failure looked nothing like the cause.
+        ///
+        /// Both rooms are entered by warping the player to a coordinate out in the interior
+        /// limbo and waiting for the geometry to stream. When that wait fails, InteriorDoor
+        /// leaves him stood at that coordinate for eight seconds before giving up -- and those
+        /// coordinates are 64 and 88 metres from these two crews' spots, which is inside the
+        /// hundred-metre spawn range. So the moment a room was slow, five peds started being
+        /// created into an interior that had not loaded, while the load scene was still
+        /// running. The workers were fighting the load they needed.
+        ///
+        /// Distance is the wrong question indoors anyway. The right one is whether the player
+        /// is in the room, which the game will answer directly, and which is false for every
+        /// one of those eight seconds -- the log says "he is in interior=0" on each failure.
+        /// So with this set they cannot spawn during a failed entry at all, which is exactly
+        /// the behaviour that was wanted.
+        /// </summary>
+        public bool IndoorsOnly;
+
+        /// <summary>How near the mark he still has to be, once he is in the right room.</summary>
+        private const float IndoorRange = 30f;
+
+        /// <summary>Whether the party hours are running. Read by the music.</summary>
+        public bool IsPartyOn { get { return PartyOn; } }
+
         /// <summary>Whether the next spawn is people turning up, rather than people being there.</summary>
         private bool _arriveOnFoot;
 
@@ -463,6 +491,21 @@ namespace Hoodrich.Gangs
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
             var away = player.Position.DistanceTo(_spot);
+
+            // Indoors, the room decides, not the tape measure. See IndoorsOnly.
+            if (IndoorsOnly)
+            {
+                var room = 0;
+
+                try { room = Function.Call<int>(Hash.GET_INTERIOR_FROM_ENTITY, player.Handle); }
+                catch { room = 0; }
+
+                if (room == 0 || away > IndoorRange)
+                {
+                    if (_crew.Count > 0) Despawn();
+                    return;
+                }
+            }
 
             // Two o'clock, or six. Everybody goes at once rather than drifting off one at a
             // time, which is a compromise and worth naming: people leaving a yard individually
@@ -995,6 +1038,20 @@ namespace Hoodrich.Gangs
 
                 try
                 {
+                    // THE GAG COMES OFF FOR OUR OWN LINE, and its absence is why the yard went
+                    // silent -- the party AND the two who hold it during the day.
+                    //
+                    // Affiliation.CalmHome blocks all speech on every home-set ped near the
+                    // player, which is what stopped the Families challenging Franklin on his
+                    // own block. Everybody at that party is a home-set ped near the player, so
+                    // it blocked them too. BlockTalk and BlockLife already lift it the instant
+                    // before they speak and say so in their comments; this is the third caller
+                    // that needed to and did not.
+                    //
+                    // CalmHome puts it back on its next pass, by which time the line has
+                    // started, and a line already playing is not cut by the block.
+                    Function.Call(Hash.BLOCK_ALL_SPEECH_FROM_PED, ped.Handle, false, false);
+
                     Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
                                   Talk[at], "SPEECH_PARAMS_FORCE");
                 }

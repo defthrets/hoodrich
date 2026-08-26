@@ -873,6 +873,10 @@ namespace Hoodrich
                            "WORLD_HUMAN_SMOKING", Growers, armed: false, onProp: true,
                            anim: Processing);
 
+                // See Entourage.IndoorsOnly. Nobody is made until the room is actually there
+                // and the player is in it.
+                _growWorkers.IndoorsOnly = true;
+
                 _pressWorkers = new Entourage(_gangs, "families",
                                               new Vector3(1000.000f, -3200.000f, -38.000f),
                                               180f, "the press")
@@ -884,6 +888,8 @@ namespace Hoodrich
                     .Stand(new Vector3(997.500f, -3201.500f, -38.000f), 270f,
                            "WORLD_HUMAN_SMOKING", Pressers, armed: false, onProp: true,
                            anim: Packing);
+
+                _pressWorkers.IndoorsOnly = true;
 
                 _party = new Entourage(_gangs, "families",
                                        new Vector3(-199.604f, -1728.764f, 32.664f), 186.646f, "the lot")
@@ -1001,6 +1007,11 @@ namespace Hoodrich
                 // through the gate on the nav mesh; the walk is the point, so it is a real
                 // route rather than a straight line through the fence.
                 _party.ArriveAt = new Vector3(-258.752f, -1696.881f, 26.937f);
+
+                // The music keeps the party's hours. It played around the clock, which after
+                // the yard went quiet by day meant a stereo going at seven in the morning to
+                // three people and a barrel fire.
+                if (_partyDecks != null) _partyDecks.Playing = () => _party.IsPartyOn;
 
                 // The barrel IS the fire -- it burns on its own. A camp fire was stacked on
                 // top of it as well, which is two fires a metre apart and reads as a bug even

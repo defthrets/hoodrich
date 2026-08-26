@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -75,8 +75,26 @@ namespace Hoodrich.Locations
                    car.Handle == _speaker.Handle;
         }
 
+        /// <summary>
+        /// Set by Main: whether there is anything on to have music at.
+        ///
+        /// Null means always, which is what a speaker somebody left in a yard does. The party
+        /// decks are not that -- they came on at seven in the morning to an empty lot, which
+        /// is a stereo nobody turned off rather than a party.
+        /// </summary>
+        public Func<bool> Playing;
+
         public void Update()
         {
+            // Off out of hours, and before the prop is even considered -- the speaker itself
+            // goes with it, because a stack of PA gear in an empty daytime yard is the same
+            // problem the music was.
+            if (Playing != null && !Playing())
+            {
+                Silence();
+                return;
+            }
+
             _prop.Update();
 
             // EVERY FRAME, before the throttle, and this is what was missing.
