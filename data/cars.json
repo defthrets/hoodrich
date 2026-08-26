@@ -104,9 +104,9 @@
       "paint2": 6
     },
     {
-      "id": "baller2",
-      "model": "baller2",
-      "name": "Baller",
+      "id": "baller8",
+      "model": "baller8",
+      "name": "Baller ST-D",
       "class": "SUV",
       "note": "For when you want to be seen arriving.",
       "price": 32000,

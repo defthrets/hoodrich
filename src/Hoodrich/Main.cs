@@ -111,6 +111,18 @@ namespace Hoodrich
         private readonly Entourage _denCrew;
 
         /// <summary>
+        /// The people actually working the two rooms, inside them.
+        ///
+        /// _labCrew and _denCrew are the men stood OUTSIDE these doors and always have been.
+        /// Through the door was an empty warehouse -- the product appeared in the stash because
+        /// a number went up, and the room it supposedly came out of had nobody in it. Online
+        /// puts staff on the benches in exactly these interiors and it is most of what makes
+        /// them read as a business rather than a menu with scenery.
+        /// </summary>
+        private readonly Entourage _growWorkers;
+        private readonly Entourage _pressWorkers;
+
+        /// <summary>
         /// Men who live outside.
         ///
         /// Not the set and never armed. They are here because a pill press with nobody outside
@@ -272,6 +284,52 @@ namespace Hoodrich
         private static readonly string[] Working =
         {
             "s_f_y_hooker_01", "s_f_y_hooker_02", "s_f_y_hooker_03"
+        };
+
+        /// <summary>
+        /// Who tends the plants. Nobody's cousin, and nobody armed.
+        ///
+        /// A hippy, a factory hand and a farmer -- people who would be paid to be in a room
+        /// full of plants rather than people who would be shot for being in one. Deliberately
+        /// not the set's own models: the men outside the door are the set, and the people
+        /// inside working the room being the same faces would make it one gang standing in two
+        /// places rather than a business with staff.
+        /// </summary>
+        private static readonly string[] Growers =
+        {
+            "a_m_y_hippy_01", "s_m_y_factory_01", "a_m_m_farmer_01"
+        };
+
+        /// <summary>Who works the press. A chemist and two hands off the line.</summary>
+        private static readonly string[] Pressers =
+        {
+            "s_f_y_factory_01", "s_m_m_chemsec_01", "s_m_y_factory_01"
+        };
+
+        /// <summary>
+        /// The game's own drug-bench workers, in dictionary/clip pairs.
+        ///
+        /// anim@amb@drug_processors@ is what Rockstar put on somebody working a table of
+        /// product, and it ships as an A and a B so two people at the same bench are not the
+        /// same loop -- which is exactly what Entourage's pair rotation is for. Every one of
+        /// these dictionaries holds a single clip and that clip is called "base", so the name
+        /// repeats down the list; it looks like a mistake and is not.
+        ///
+        /// Read out of the animation dump rather than remembered. There are meth and weed
+        /// "business" sets as well with far more clips in them, but those are authored around
+        /// specific Online bench props that are not in these rooms, so they play as somebody
+        /// miming at thin air.
+        /// </summary>
+        private static readonly string[] Processing =
+        {
+            "anim@amb@drug_processors@weed@male_a@base", "base",
+            "anim@amb@drug_processors@weed@male_b@base", "base"
+        };
+
+        private static readonly string[] Packing =
+        {
+            "anim@amb@drug_processors@coke@female_a@base", "base",
+            "anim@amb@drug_processors@coke@female_b@base", "base"
         };
 
         /// <summary>
@@ -763,6 +821,53 @@ namespace Hoodrich
                 // The women are ambient South Central models rather than the set's own. There
                 // is no female Families ped in the game; all three are men. They are at the
                 // party rather than in it, which is also how a party works.
+                // ---- inside the two rooms ------------------------------------------
+                //
+                // The animations are the game's OWN business-worker set, pulled out of the
+                // dump rather than guessed: anim@amb@drug_processors@ is what Rockstar put on
+                // the people working a drug bench, and it comes in a male weed pair and a
+                // female packing pair. One clip each, called "base", which is why every entry
+                // below repeats it -- Entourage takes dictionary and clip in pairs and rotates
+                // through them by station so two men side by side are not the same loop.
+                //
+                // COORDINATES ARE ESTIMATED, and this is the one thing here I could not read
+                // off the game. What is known is where the door drops you -- those two anchors
+                // come from Settings -- so the benches are placed a few metres off them. If
+                // anybody ends up in a wall, stand where you want them and read the mark, the
+                // way every other position in this file was got.
+                //
+                // onProp is set on all of them, which is not about props: it is the flag that
+                // stops Entourage running a ground probe and overwriting the height. The grow
+                // room is the exact interior InteriorDoor warns about dropping people through
+                // the floor of, and in here the Z from the door anchor is already right.
+                _growWorkers = new Entourage(_gangs, "families",
+                                             new Vector3(1039.000f, -3098.000f, -39.000f),
+                                             180f, "the grow room")
+
+                    .Stand(new Vector3(1042.000f, -3100.500f, -39.000f), 90f,
+                           "WORLD_HUMAN_SMOKING", Growers, armed: false, onProp: true,
+                           anim: Processing)
+
+                    .Stand(new Vector3(1036.500f, -3100.000f, -39.000f), 270f,
+                           "WORLD_HUMAN_SMOKING", Growers, armed: false, onProp: true,
+                           anim: Processing)
+
+                    .Stand(new Vector3(1039.500f, -3103.000f, -39.000f), 0f,
+                           "WORLD_HUMAN_SMOKING", Growers, armed: false, onProp: true,
+                           anim: Processing);
+
+                _pressWorkers = new Entourage(_gangs, "families",
+                                              new Vector3(1000.000f, -3200.000f, -38.000f),
+                                              180f, "the press")
+
+                    .Stand(new Vector3(1003.000f, -3202.000f, -38.000f), 90f,
+                           "WORLD_HUMAN_SMOKING", Pressers, armed: false, onProp: true,
+                           anim: Packing)
+
+                    .Stand(new Vector3(997.500f, -3201.500f, -38.000f), 270f,
+                           "WORLD_HUMAN_SMOKING", Pressers, armed: false, onProp: true,
+                           anim: Packing);
+
                 _party = new Entourage(_gangs, "families",
                                        new Vector3(-199.604f, -1728.764f, 32.664f), 186.646f, "the lot")
 
@@ -1905,6 +2010,8 @@ namespace Hoodrich
                     _armourerCrew.Update();
                     _labCrew.Update();
                     _denCrew.Update();
+                    _growWorkers.Update();
+                    _pressWorkers.Update();
                     foreach (var car in _cars) car.Update();
                     _party.Update();
                     _meet.Update();
@@ -2519,6 +2626,8 @@ namespace Hoodrich
             try { _armourerCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _labCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _denCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _growWorkers?.RestoreWorld(); } catch { /* teardown */ }
+            try { _pressWorkers?.RestoreWorld(); } catch { /* teardown */ }
             foreach (var car in _cars)
             {
                 try { car.RestoreWorld(); } catch { /* teardown */ }
