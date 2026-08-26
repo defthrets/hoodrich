@@ -225,6 +225,20 @@ namespace Hoodrich.Missions
         private readonly List<Blip> _blips = new List<Blip>();
         private readonly List<Ped> _trouble = new List<Ped>();
 
+        /// <summary>
+        /// Whether the block has already come out at you this run.
+        ///
+        /// It was a dice roll on every single wall, which meant killing the two who turned up
+        /// bought you nothing -- start the next tag and there was a fair chance of two more,
+        /// out of the same doorway, for as long as the job lasted. That is not a block
+        /// reacting to you, it is a tap somebody left running.
+        ///
+        /// Once a run. They come out, you deal with them, and the rest of the afternoon is
+        /// yours. Reset in Start, so taking the job again is a fresh block with its own two --
+        /// which is the bit that keeps it from becoming a place you know is safe.
+        /// </summary>
+        private bool _troubleSpent;
+
         private readonly HashSet<string> _done =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -353,6 +367,9 @@ namespace Hoodrich.Missions
 
             _spots.Clear();
             _done.Clear();
+
+            // A new run gets its own trouble. See _troubleSpent.
+            _troubleSpent = false;
 
             // However many the job asks for, drawn from the whole list at random, so running it
             // again is not the same afternoon twice.
@@ -872,7 +889,10 @@ namespace Hoodrich.Missions
 
             // Their block, and you are stood on it with your back to the road -- unless it is
             // ours, in which case it is just a wall and nobody is coming.
-            if (!spot.Quiet && _rng.NextDouble() < TroubleChance) SpawnTrouble(player, spot);
+            if (!_troubleSpent && !spot.Quiet && _rng.NextDouble() < TroubleChance)
+            {
+                SpawnTrouble(player, spot);
+            }
         }
 
         private void TickSpraying(Ped player, int now)
@@ -2004,7 +2024,10 @@ namespace Hoodrich.Missions
 
             for (var i = 0; i < TroubleCount; i++)
             {
-                var ped = SpawnMember(gang, spot.Where.Around(TroubleSpread));
+                // One with a bat, one with his hands. Alternating rather than rolling for it,
+                // because with two of them a coin flip lands on two empty-handed men often
+                // enough to matter, and one of each is the picture every time.
+                var ped = SpawnMember(gang, spot.Where.Around(TroubleSpread), i % 2 == 0);
                 if (ped == null) continue;
 
                 _trouble.Add(ped);
@@ -2019,10 +2042,18 @@ namespace Hoodrich.Missions
                 catch { /* the AI takes over */ }
             }
 
-            if (_trouble.Count > 0) Notify.Problem("somebody saw you.");
+            if (_trouble.Count > 0)
+            {
+                // Spent whether or not both of them made it out of the model request. Two men
+                // is what the block had in it; one that failed to spawn is not a reason to roll
+                // again at the next wall.
+                _troubleSpent = true;
+
+                Notify.Problem("somebody saw you.");
+            }
         }
 
-        private Ped SpawnMember(GangDef gang, Vector3 near)
+        private Ped SpawnMember(GangDef gang, Vector3 near, bool bat)
         {
             foreach (var name in gang.MemberModels)
             {
@@ -2047,9 +2078,23 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
 
-                    Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
-                                  Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_PISTOL"),
-                                  90, false, true);
+                    // A BAT OR HIS HANDS. Never a gun.
+                    //
+                    // These are men who came out of a house because somebody is painting on
+                    // their wall. A pistol turns a scuffle over a fence into a firefight in the
+                    // middle of a stealth job -- and it was ninety rounds each, which is a
+                    // gunfight nobody asked for at every third wall.
+                    //
+                    // Combat attribute 46 above is what makes this work rather than making them
+                    // useless: it is BF_CanFightArmedPedsWhenNotArmed, so a man with a bat will
+                    // still come at Franklin while Franklin is holding a rifle, instead of
+                    // deciding the odds are bad and standing there.
+                    if (bat)
+                    {
+                        Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
+                                      Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_BAT"),
+                                      1, false, true);
+                    }
 
                     return ped;
                 }
