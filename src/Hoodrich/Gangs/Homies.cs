@@ -50,7 +50,23 @@ namespace Hoodrich.Gangs
         private const int InboundGiveUpMs = 60000;
 
         /// <summary>How long the cab gets to actually stop before they climb out regardless.</summary>
-        private const int HaltGiveUpMs = 6000;
+        private const int HaltGiveUpMs = 14000;
+
+        /// <summary>
+        /// How long the cab stands still once it has stopped.
+        ///
+        /// SIX SECONDS, and it used to be one and a half. That was the bug: three men do not
+        /// get out of a car in 1600 milliseconds, so the halt expired with somebody still
+        /// halfway through the door.
+        ///
+        /// And a halt is only a pin. The long-range drive task that brought him here was never
+        /// cancelled, so the moment the pin let go that task resumed -- with its destination
+        /// being where the player is standing, which is where everybody had just got out. He
+        /// pulled away through them, arrived at a coordinate he was already on top of, and then
+        /// ground against it because there was nowhere left to drive to. Being hit and him
+        /// getting stuck were the same fault twice.
+        /// </summary>
+        private const int CabWaitMs = 6000;
 
         /// <summary>What they turn up in.</summary>
         private static readonly string[] CabModels = { "taxi", "cavalcade", "premier" };
@@ -723,10 +739,16 @@ namespace Hoodrich.Gangs
                 {
                     try
                     {
-                        // Short. This pins the car, and it is still pinning it when the last
-                        // man climbs out -- so a long halt is a taxi that sits there being
-                        // told not to move while we are telling it to leave.
-                        Function.Call(Hash.BRING_VEHICLE_TO_HALT, _cab.Handle, 8f, 1600, false);
+                        // THE DRIVE GOES FIRST, then the pin.
+                        //
+                        // Halting a car does not cancel what it was told to do; it holds it in
+                        // place for a while and then lets go, and what it lets go into is the
+                        // task that was running all along. Clearing it means there is nothing
+                        // underneath to resume, so when the pin expires he is simply a stopped
+                        // car -- and SendCabOff hands him a fresh road to leave by.
+                        if (_cabbie != null && _cabbie.Exists()) _cabbie.Task.ClearAll();
+
+                        Function.Call(Hash.BRING_VEHICLE_TO_HALT, _cab.Handle, 5f, CabWaitMs, false);
                     }
                     catch { /* it will roll to a stop on its own */ }
                 }
@@ -767,8 +789,21 @@ namespace Hoodrich.Gangs
                 if (ped.IsInVehicle()) stillIn++;
             }
 
-            var waited = Game.GameTime - _haltedAt > HaltGiveUpMs;
-            if (stillIn > 0 && !waited) return;
+            var since = Game.GameTime - _haltedAt;
+
+            // BOTH, not either. Everybody out AND the six seconds up.
+            //
+            // It used to go the instant the last man's feet touched the road, which is the
+            // frame he is closest to the wheels and still has the door open. A driver who
+            // waits a beat after the last passenger is out is also just what a cab does.
+            var ready = stillIn == 0 && since >= CabWaitMs;
+
+            // The hard stop, for a man who cannot get out at all -- wedged against a wall,
+            // knocked down, door blocked. Above the wait, or it would fire first and the wait
+            // would never be reached.
+            var waited = since > HaltGiveUpMs;
+
+            if (!ready && !waited) return;
 
             if (stillIn > 0) Log.Info("Gave up waiting; " + stillIn + " still in the cab.");
 

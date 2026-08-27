@@ -367,57 +367,6 @@
       "lotStep": 25
     },
     {
-      "id": "families_corner",
-      "name": "Little D",
-      "tag": "LTD",
-      "kind": "GangCorner",
-      "gangId": "families",
-      "models": [
-        "g_m_y_famca_01",
-        "g_m_y_famfor_01"
-      ],
-      "drugs": [
-        "weed",
-        "ecstasy",
-        "xanax"
-      ],
-      "zones": [
-        "CHAMH",
-        "STRAW"
-      ],
-      "priceMultiplier": 0.65,
-      "purity": 0.75,
-      "purePurity": 1.0,
-      "pureMultiplier": 0.95,
-      "pureChancePercent": 12,
-      "minRank": 0,
-      "maxOrderGrams": 6000,
-      "openHour": 0,
-      "closeHour": 24,
-      "rides": [
-        "primo2",
-        "faction",
-        "chino",
-        "tornado5"
-      ],
-      "ridePaint": 49,
-      "greeting": "Aye. You family, so you get family prices. Don't make it weird.",
-      "buyLine": "Green, pills, bars. Cheap 'cause it's cut, and it's cut 'cause it's cheap.",
-      "sourceReply": "Above me is above you. Leave it.",
-      "sourceTooSoon": "Nah.",
-      "farewell": "Aight. Tell Lamar I said what's up. Actually don't.",
-      "openingText": "lil d. chamberlain, strawberry. everything the set moves, three quarter price. its been touched, thats why",
-      "textCalled": [
-        "comin round",
-        "aight, walkin",
-        "gimme a sec, im finishin somethin",
-        "on my way cuz"
-      ],
-      "lotValue": 5000,
-      "priceFloor": 3000,
-      "lotStep": 25
-    },
-    {
       "id": "ballas_corner",
       "name": "Twan",
       "tag": "TWN",
