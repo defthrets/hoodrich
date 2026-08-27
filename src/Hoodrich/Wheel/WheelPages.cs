@@ -1820,6 +1820,11 @@ namespace Hoodrich.Wheel
                 return;
             }
 
+            // AND THE SAME RULE AS STANDING IN FRONT OF HIM. A delivery of weight is weight;
+            // a small drop is whatever he has stepped it to. Two paths quoting different
+            // strengths for the same money is exactly the sort of thing nobody reports as a
+            // bug because they assume they misread it.
+            //
             // HIS purity, not a hundred per cent.
             //
             // AddBulk's purity argument is optional and defaults to pure, and this call left it
@@ -1828,7 +1833,7 @@ namespace Hoodrich.Wheel
             // else's, which meant the whole purity economy only existed on the selling side.
             // The delivery path and the face-to-face path both pass it; this was the one that
             // did not.
-            var accepted = Stash.AddBulk(product.Id, supplied, def.Purity);
+            var accepted = Stash.AddBulk(product.Id, supplied, def.PurityFor(cost));
             if (accepted <= 0f)
             {
                 // Back in his bag before we walk away. It was taken off him a few lines up so

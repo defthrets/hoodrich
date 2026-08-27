@@ -277,8 +277,6 @@ namespace Hoodrich.Supply
 
         private DialogueNode Amounts(Brick brick, DrugDef product)
         {
-            var strength = Def == null ? 1f : Def.PurityNow;
-
             var node = Node("How many? And don't say one if you mean four.");
 
             foreach (var lot in Lots)
@@ -294,12 +292,19 @@ namespace Hoodrich.Supply
                             : !fits ? "The house won't hold that"
                             : "";
 
+                // EACH ROW CARRIES ITS OWN STRENGTH, because they are no longer the same
+                // purchase at three sizes -- the small one is a bag off him and the big ones
+                // are weight, and that is the actual decision on this menu.
+                var arrives = Def == null ? 1f : Def.PurityFor(cost);
+                var clean = arrives >= 0.999f;
+
                 node.SayIf(blocked.Length == 0, blocked,
-                           Weight(product, brick, count),
+                           Weight(product, brick, count) +
+                           (clean ? "  uncut" : "  " + Stash.Percent(arrives) + "%"),
                            () => Buy(product, grams, cost),
                            "$" + cost.ToString("N0"));
 
-                node.WithMark(Stash.Mark(strength));
+                node.WithMark(Stash.Mark(arrives));
 
                 node.WithIcon(Icons.ForDrug(product.Id));
             }
@@ -376,7 +381,9 @@ namespace Hoodrich.Supply
                 // his weight before he sells it has sold you weaker WEIGHT: you still have to
                 // cut and bag it, you simply have less to work with, and cutting fifty per cent
                 // to a half again leaves you twenty-five, which is the punishment for trying.
-                var strength = Def == null ? 1f : Def.PurityNow;
+                // Weight is weight whoever sold it. A brick has not been opened; the bags in
+                // his jacket have.
+                var strength = Def == null ? 1f : Def.PurityFor(cost);
                 var cut = strength < 0.999f;
 
                 var pocket = _state.Stash.AddBulk(product.Id, grams, strength);

@@ -36,7 +36,7 @@
       "zones": [],
       "priceMultiplier": 0.75,
       "minRank": 0,
-      "maxOrderGrams": 500,
+      "maxOrderGrams": 40000,
       "openHour": 5,
       "closeHour": 21,
       "greeting": "Gerald's people. Gerald's. Yeah. Keep it quiet, keep it quick, and whatever's in the box -- I get it off the box. That's the. that's the whole business, right there.",
@@ -69,10 +69,10 @@
         "outside your house. its heavy. hurry up",
         "im here. engine running. come on. come on"
       ],
-      "lotValue": 60000,
+      "lotValue": 100000,
       "lotStep": 500,
       "drunk": true,
-      "priceFloor": 50000,
+      "priceFloor": 100000,
       "priceStep": 500,
       "purity": 1.0,
       "afterCheng": {
@@ -196,13 +196,14 @@
       ],
       "priceMultiplier": 1.15,
       "minRank": 2,
-      "maxOrderGrams": 400,
+      "maxOrderGrams": 6000,
       "openHour": 20,
       "closeHour": 6,
       "_rides": "A Sadler with the tray full of nothing in particular. Verified in the dump.",
       "rides": [
         "sadler",
-        "rebel"
+        "rebel",
+        "gburrito2"
       ],
       "ridePaint": 12,
       "greeting": "You the one Gerald talks about. Don't say nothin', I don't wanna know.",
@@ -217,7 +218,10 @@
         "on my way. leave the engine runnin",
         "aight. and come alone, i mean that part"
       ],
-      "purity": 0.95
+      "purity": 0.95,
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "beach_connect",
@@ -239,13 +243,14 @@
       ],
       "priceMultiplier": 1.35,
       "minRank": 3,
-      "maxOrderGrams": 200,
+      "maxOrderGrams": 6000,
       "openHour": 21,
       "closeHour": 5,
       "_rides": "Something with a valet ticket still in it.",
       "rides": [
-        "faction",
-        "buccaneer"
+        "faction3",
+        "buccaneer2",
+        "dominator"
       ],
       "ridePaint": 111,
       "greeting": "You're early. Nobody's early. Alright -- what are we doing.",
@@ -260,7 +265,10 @@
         "coming. and please, park properly",
         "yes. don't text me twice"
       ],
-      "purity": 1.0
+      "purity": 1.0,
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "lamesa_corner",
@@ -283,13 +291,14 @@
       ],
       "priceMultiplier": 0.9,
       "minRank": 1,
-      "maxOrderGrams": 300,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "_rides": "A Voodoo that has been round the block more than he has.",
       "rides": [
         "voodoo",
-        "manana"
+        "manana",
+        "youga2"
       ],
       "ridePaint": 147,
       "greeting": "Ay. You lost, or you here?",
@@ -304,12 +313,15 @@
         "yeah yeah. comin",
         "on it. and don't bring nobody with the flag on, it's tense out here"
       ],
-      "purity": 0.62
+      "purity": 0.62,
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "aztecas_corner",
-      "name": "Chuy",
-      "tag": "CHY",
+      "name": "Rico",
+      "tag": "RIC",
       "kind": "GangCorner",
       "gangId": "aztecas",
       "models": [
@@ -323,20 +335,21 @@
       "zones": [
         "BANNING"
       ],
-      "priceMultiplier": 0.75,
-      "purity": 0.66,
-      "purePurity": 0.98,
-      "pureMultiplier": 1.3,
+      "priceMultiplier": 0.65,
+      "purity": 0.75,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
       "pureChancePercent": 14,
       "minRank": 0,
-      "maxOrderGrams": 250,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "rides": [
-        "tornado",
-        "manana"
+        "chino",
+        "virgo2",
+        "tornado"
       ],
-      "ridePaint": 27,
+      "ridePaint": 62,
       "greeting": "Orale. You ain't from round here but you ain't nothin' either. Talk.",
       "buyLine": "Whatever the barrio moves, I move. Seventyfive on the dollar 'cause it's been touched. You know how it go.",
       "sourceReply": "Above me is above you. Leave it.",
@@ -348,7 +361,10 @@
         "yeah yeah. two minutes",
         "on my way, guero",
         "comin. be there"
-      ]
+      ],
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "families_corner",
@@ -369,20 +385,22 @@
         "CHAMH",
         "STRAW"
       ],
-      "priceMultiplier": 0.75,
-      "purity": 0.68,
-      "purePurity": 0.98,
-      "pureMultiplier": 1.3,
+      "priceMultiplier": 0.65,
+      "purity": 0.75,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
       "pureChancePercent": 12,
       "minRank": 0,
-      "maxOrderGrams": 250,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "rides": [
-        "primo",
-        "manana"
+        "primo2",
+        "faction",
+        "chino",
+        "tornado5"
       ],
-      "ridePaint": 53,
+      "ridePaint": 49,
       "greeting": "Aye. You family, so you get family prices. Don't make it weird.",
       "buyLine": "Green, pills, bars. Cheap 'cause it's cut, and it's cut 'cause it's cheap.",
       "sourceReply": "Above me is above you. Leave it.",
@@ -394,7 +412,10 @@
         "aight, walkin",
         "gimme a sec, im finishin somethin",
         "on my way cuz"
-      ]
+      ],
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "ballas_corner",
@@ -414,18 +435,20 @@
         "DAVIS",
         "STAD"
       ],
-      "priceMultiplier": 0.75,
-      "purity": 0.62,
-      "purePurity": 0.98,
-      "pureMultiplier": 1.3,
+      "priceMultiplier": 0.65,
+      "purity": 0.75,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
       "pureChancePercent": 16,
       "minRank": 0,
-      "maxOrderGrams": 250,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "rides": [
-        "voodoo",
-        "buccaneer"
+        "buccaneer2",
+        "chino2",
+        "faction2",
+        "slamvan3"
       ],
       "ridePaint": 145,
       "greeting": "You standin' on purple askin' me for somethin'. That's either brave or stupid.",
@@ -439,7 +462,10 @@
         "yeah. hurry up",
         "comin out",
         "aight, be there"
-      ]
+      ],
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "vagos_corner",
@@ -461,18 +487,20 @@
         "MURRI",
         "EBURO"
       ],
-      "priceMultiplier": 0.75,
-      "purity": 0.64,
-      "purePurity": 0.98,
-      "pureMultiplier": 1.3,
+      "priceMultiplier": 0.65,
+      "purity": 0.75,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
       "pureChancePercent": 15,
       "minRank": 0,
-      "maxOrderGrams": 250,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "rides": [
         "tornado",
-        "voodoo"
+        "buccaneer2",
+        "sabregt2",
+        "virgo2"
       ],
       "ridePaint": 88,
       "greeting": "Ey. Money first, questions never.",
@@ -486,7 +514,10 @@
         "two minutes ese",
         "walkin over",
         "yeah. be ready"
-      ]
+      ],
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "marabunta_corner",
@@ -506,20 +537,21 @@
         "CYPRE",
         "TEXTI"
       ],
-      "priceMultiplier": 0.75,
-      "purity": 0.63,
-      "purePurity": 0.98,
-      "pureMultiplier": 1.3,
+      "priceMultiplier": 0.65,
+      "purity": 0.75,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
       "pureChancePercent": 18,
       "minRank": 0,
-      "maxOrderGrams": 250,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "rides": [
         "emperor",
-        "manana"
+        "virgo2",
+        "gburrito2"
       ],
-      "ridePaint": 0,
+      "ridePaint": 51,
       "greeting": "You came all the way out to Cypress. Alright. I respect the drive.",
       "buyLine": "Glass and blanca out the flats. Cheap. It's been cut, we all cut it, next question.",
       "sourceReply": "Above me is above you. Leave it.",
@@ -531,7 +563,10 @@
         "comin. give me a minute",
         "walkin out now",
         "yeah. be there"
-      ]
+      ],
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "lost_corner",
@@ -552,20 +587,22 @@
         "GRAPES",
         "SANDY"
       ],
-      "priceMultiplier": 0.75,
-      "purity": 0.6,
-      "purePurity": 0.98,
-      "pureMultiplier": 1.3,
+      "priceMultiplier": 0.65,
+      "purity": 0.75,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
       "pureChancePercent": 20,
       "minRank": 0,
-      "maxOrderGrams": 250,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "rides": [
-        "daemon",
+        "daemon2",
+        "wolfsbane",
+        "gburrito2",
         "hexer"
       ],
-      "ridePaint": 0,
+      "ridePaint": 1,
       "greeting": "You rode all the way out here. Either you're serious or you're lost. Ha.",
       "buyLine": "Glass and brown. Cheap as anything and about as clean as you'd expect.",
       "sourceReply": "Above me is above you. Leave it.",
@@ -577,7 +614,10 @@
         "yeah. gimme a minute, im wrenchin",
         "walkin out",
         "on it"
-      ]
+      ],
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "triads_corner",
@@ -598,20 +638,21 @@
         "MIRR",
         "HAWICK"
       ],
-      "priceMultiplier": 0.75,
-      "purity": 0.7,
-      "purePurity": 0.98,
-      "pureMultiplier": 1.3,
+      "priceMultiplier": 0.65,
+      "purity": 0.75,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
       "pureChancePercent": 22,
       "minRank": 0,
-      "maxOrderGrams": 250,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "rides": [
         "schafter2",
+        "schwarzer",
         "asterope"
       ],
-      "ridePaint": 0,
+      "ridePaint": 27,
       "greeting": "Mister Cheng knows your name. That is the only reason we are talking.",
       "buyLine": "Pills, bars, brown. Below the street price, and below the street quality. Both by design.",
       "sourceReply": "Above me is above you. Leave it.",
@@ -623,12 +664,15 @@
         "Two minutes. Wait.",
         "On my way. Be present.",
         "Yes."
-      ]
+      ],
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "armenians_corner",
-      "name": "Sarkis",
-      "tag": "SRK",
+      "name": "Vahe",
+      "tag": "VAH",
       "kind": "GangCorner",
       "gangId": "armenians",
       "models": [
@@ -643,20 +687,21 @@
         "BURTON",
         "PBOX"
       ],
-      "priceMultiplier": 0.75,
-      "purity": 0.72,
-      "purePurity": 0.98,
-      "pureMultiplier": 1.3,
+      "priceMultiplier": 0.65,
+      "purity": 0.75,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
       "pureChancePercent": 25,
       "minRank": 0,
-      "maxOrderGrams": 250,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "rides": [
-        "fugitive",
-        "stanier"
+        "dominator",
+        "buffalo2",
+        "fugitive"
       ],
-      "ridePaint": 0,
+      "ridePaint": 4,
       "greeting": "You are not police. I checked. Sit down, do not sit down, whatever.",
       "buyLine": "One product. Brown. Cheap, and stepped on, and I will not pretend otherwise.",
       "sourceReply": "Above me is above you. Leave it.",
@@ -668,7 +713,10 @@
         "Give me a moment.",
         "I am walking.",
         "Yes, yes. Coming."
-      ]
+      ],
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     },
     {
       "id": "koreans_corner",
@@ -687,20 +735,21 @@
       "zones": [
         "KOREAT"
       ],
-      "priceMultiplier": 0.75,
-      "purity": 0.69,
-      "purePurity": 0.98,
-      "pureMultiplier": 1.3,
+      "priceMultiplier": 0.65,
+      "purity": 0.75,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
       "pureChancePercent": 20,
       "minRank": 0,
-      "maxOrderGrams": 250,
+      "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
       "rides": [
-        "habanero",
-        "asterope"
+        "elegy2",
+        "kuruma",
+        "sultan"
       ],
-      "ridePaint": 0,
+      "ridePaint": 12,
       "greeting": "You found Koreatown. Congratulations. What.",
       "buyLine": "Glass and blanca. Three quarters, because it is cut. I could lie. I won't.",
       "sourceReply": "Above me is above you. Leave it.",
@@ -712,7 +761,10 @@
         "one minute",
         "walking",
         "yes. be there"
-      ]
+      ],
+      "lotValue": 5000,
+      "priceFloor": 3000,
+      "lotStep": 25
     }
   ]
 }

@@ -237,6 +237,31 @@ namespace Hoodrich.Supply
         public float PriceNow => PureTonight ? PureMultiplier : PriceMultiplier;
 
         public float PurityNow => PureTonight ? PurePurity : Purity;
+
+        /// <summary>
+        /// Spend this much in one go and it comes uncut.
+        ///
+        /// MEASURED IN MONEY, NOT GRAMS, and that is the only way it works across a catalogue
+        /// where a gram of coke is fourteen grams of weed. A hundred grams is a serious order
+        /// of one and a pocketful of the other, so a gram threshold would have meant "weight"
+        /// arriving at a different point for every product and reading as random.
+        ///
+        /// What the player is actually choosing between is a bag off his person and a load out
+        /// of his boot, and the thing that separates those is what it costs. At the shipped
+        /// numbers the small lot is five grand and cut, and the two bigger ones are ten and
+        /// twenty and are not.
+        ///
+        /// It is why the corner is worth knowing at all now. Cheap AND cut was strictly worse
+        /// than Tao for anybody who could afford Tao; cheap, cut in small amounts and clean in
+        /// weight is a different shop rather than a worse one.
+        /// </summary>
+        public float UncutFromValue = 10000f;
+
+        /// <summary>What a spend of this size actually arrives at.</summary>
+        public float PurityFor(int cost)
+        {
+            return cost >= UncutFromValue ? 1f : PurityNow;
+        }
         public int MinRank;
         public float MaxOrderGrams = 100f;
 
