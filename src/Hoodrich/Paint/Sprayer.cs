@@ -52,67 +52,88 @@ namespace Hoodrich.Paint
         /// </summary>
         private sealed class Plume
         {
-            /// <summary>The named asset holding it, or null for core, which takes no name.</summary>
+            /// <summary>The named asset holding it. "core" is a named asset like any other.</summary>
             public readonly string Asset;
 
             public readonly string Name;
             public readonly float Size;
 
             /// <summary>
-            /// Whether to call USE_PARTICLE_FX_ASSET before starting it.
+            /// Whether it hangs off the can or off the man.
             ///
-            /// Rockstar's own graffiti scene does NOT call it for the core asset -- it just
-            /// requests and starts. Mods habitually call USE("core") and it usually works,
-            /// but "usually" is doing real work in that sentence, so both orders are in the
-            /// ladder and whichever starts is the one that gets remembered.
+            /// Rockstar's paint jet is authored around a can seated on PH_R_Hand, so on the
+            /// can at zero offset it points at the wall by itself.
+            ///
+            /// The core jets are not authored around anything, and a BONE is the wrong thing
+            /// to hang them off: a bone's local axes are its own and point wherever the
+            /// skeleton happens to face, so aiming off one is guesswork. That guess is exactly
+            /// what sent the spray out sideways across his shoulder. A ped's axes are not a
+            /// guess -- +Y is the way he is looking -- so they go on the man.
             /// </summary>
-            public readonly bool Select;
+            public readonly bool OnCan;
 
-            public Plume(string asset, string name, float size, bool select)
+            public readonly float X, Y, Z, Pitch;
+
+            public Plume(string asset, string name, float size, bool onCan = false,
+                         float x = 0f, float y = 0f, float z = 0f, float pitch = 0f)
             {
                 Asset = asset;
                 Name = name;
                 Size = size;
-                Select = select;
+                OnCan = onCan;
+                X = x;
+                Y = y;
+                Z = z;
+                Pitch = pitch;
+            }
+
+            public override string ToString()
+            {
+                return Name + " out of " + Asset;
             }
         }
 
-        /// <summary>The thin line, which is what tells you where the paint is about to go.</summary>
-        private static readonly Plume[] Jets =
-        {
-            // scr_playerlamgraff IS THE ASSET, and neither of the two names I tried before
-            // was it. A ptfx asked for out of the wrong asset does not throw and does not log,
-            // it plays nothing -- which is why a whole session went by with no jet and no
-            // complaint. Confirmed from a working implementation rather than guessed again.
-            new Plume("scr_playerlamgraff", "scr_lamgraff_paint_spray", 1.1f, true),
-
-            // Real core effects, all three of which exist. ent_sht_extinguisher is literally
-            // the extinguisher discharge, which is the right shape whichever tool is in hand.
-            new Plume("core", "ent_sht_extinguisher", 0.8f, true),
-            new Plume("core", "ent_sht_water", 0.7f, true),
-            new Plume("core", "ent_sht_steam", 0.6f, true)
-        };
+        /// <summary>Where a ped-mounted jet sits: out at his right hand, forward, shoulder high.</summary>
+        private const float Right = 0.20f;
+        private const float Forward = 0.42f;
+        private const float Up = 0.48f;
 
         /// <summary>
-        /// The cloud, on the extinguisher only.
+        /// Ninety degrees off vertical, which is forward.
         ///
-        /// EVERY NAME HERE IS ONE THE GAME OWN SCRIPTS ACTUALLY USE. What sat here before was
-        /// ent_amb_smoke_foundry, which appears nowhere in the decompiled set because I made it
-        /// up -- and an invented particle name does not throw or log, it plays as nothing,
-        /// which from the outside is identical to the feature being switched off.
-        ///
-        /// Ordered by how near the shape is to a discharging extinguisher: a steam cone first,
-        /// an exhaled plume behind it, then thick building smoke that has to stream in.
+        /// These effects emit UPWARDS by default -- they are authored for hydrants and hoses --
+        /// so without this the spray leaves over his head while the paint lands on the wall in
+        /// front of him, and the two disagreeing is what reads as broken.
         /// </summary>
+        private const float Level = -90f;
+
+        /// <summary>
+        /// The can's spray: Rockstar's own paint jet, on the can, AND NOTHING BEHIND IT.
+        ///
+        /// No fallback on purpose. Every other effect available here is steam, water or an
+        /// extinguisher discharge -- a cloud -- and a cloud out of a six-inch can is worse than
+        /// no effect at all: it is absurd on its face, and it hides the wall you are aiming at.
+        /// So if the paint jet will not start, the can sprays invisibly and the paint still
+        /// lands. That is a deliberate choice and the log says which happened.
+        /// </summary>
+        private static readonly Plume[] CanJets =
+        {
+            new Plume("scr_playerlamgraff", "scr_lamgraff_paint_spray", 1f, onCan: true)
+        };
+
+        /// <summary>The extinguisher's discharge, on the man, pointed where he is looking.</summary>
+        private static readonly Plume[] HoseJets =
+        {
+            new Plume("core", "ent_sht_extinguisher", 0.8f, x: Right, y: Forward, z: Up, pitch: Level),
+            new Plume("core", "ent_sht_water", 0.7f, x: Right, y: Forward, z: Up, pitch: Level),
+            new Plume("core", "ent_sht_steam", 0.6f, x: Right, y: Forward, z: Up, pitch: Level)
+        };
+
+        /// <summary>The wider cloud around it. Extinguisher only, for the same reason.</summary>
         private static readonly Plume[] Clouds =
         {
-            // The same three confirmed core effects, bigger and softer than the jet so they
-            // read as a cloud around it rather than a second line beside it. My earlier list
-            // here paired real effect names with GUESSED assets, which fails exactly as
-            // silently as an invented name does.
-            new Plume("core", "ent_sht_steam", 1.8f, true),
-            new Plume("core", "ent_sht_water", 1.6f, true),
-            new Plume("core", "ent_sht_extinguisher", 1.6f, true)
+            new Plume("core", "ent_sht_steam", 1.8f, x: Right, y: Forward, z: Up, pitch: Level),
+            new Plume("core", "ent_sht_water", 1.6f, x: Right, y: Forward, z: Up, pitch: Level)
         };
 
         private readonly PaintConfig _cfg;
@@ -166,6 +187,9 @@ namespace Hoodrich.Paint
             Spraying = spraying;
 
             if (!spraying) return;
+
+            // Every tick, because he can keep looking around with the trigger held.
+            Steer();
 
             var now = Game.GameTime;
             if (now < _nextDab) return;
@@ -246,9 +270,14 @@ namespace Hoodrich.Paint
 
         // ---- the plume ---------------------------------------------------------
 
-        /// <summary>Which candidate took, so every press after the first costs one call.</summary>
+        /// <summary>Which candidate took last, only so a change is worth one log line.</summary>
         private int _jetPick = -1;
+        private int _hosePick = -1;
         private int _cloudPick = -1;
+
+        /// <summary>What is actually running, so Steer knows where to point it.</summary>
+        private Plume _liveJet;
+        private Plume _liveCloud;
 
         private void StartPlume()
         {
@@ -263,41 +292,26 @@ namespace Hoodrich.Paint
                 var g = Colour.G / 255f;
                 var b = Colour.B / 255f;
 
-                // ON THE WEAPON, NOT THE WRIST.
-                //
-                // The whole point of a visible jet is that the paint lands where you watched it
-                // land, so the effect has to leave the nozzle and point where the nozzle points.
-                // Hung off the hand bone it comes out of his forearm at whatever angle the
-                // animation has, and then the plume and the paint disagree by a few degrees --
-                // which at five metres is most of a wall.
-                //
-                // Falls back to the hand when the weapon object cannot be had, which is the
-                // case for a frame or two around drawing it.
-                // WHATEVER IS ACTUALLY VISIBLE.
-                //
-                // Particles attached to a hidden entity are hidden along with it, and the
-                // spray can look hides the weapon on purpose. Hanging the plume off the
-                // weapon there is asking for an invisible effect, and that is exactly what
-                // it got: a whole session's log without a single Plume line, and nothing
-                // coming out of the can.
-                //
-                // The can when there is a can, the weapon when the weapon is the thing you
-                // can see. Light falls back to the hand bone when neither is available,
-                // which is the case for a frame or two around drawing it -- and the hand is
-                // visible in both looks, so that fallback is never the invisible one.
-                var gun = _cfg.SprayCanLook
-                    ? Nozzle
-                    : Function.Call<int>(Hash.GET_CURRENT_PED_WEAPON_ENTITY_INDEX, me.Handle, 0);
+                if (_cfg.SprayCanLook)
+                {
+                    // A can. One thin jet off the can itself, no cloud, nothing else.
+                    _fx = Light(CanJets, ref _jetPick, Nozzle, me.Handle,
+                                r, g, b, 0.95f, _cfg.CanJetScale, out _liveJet);
 
-                _fx = Light(Jets, ref _jetPick, gun, me.Handle, r, g, b, 0.90f);
+                    _cloud = -1;
+                    _liveCloud = null;
+                }
+                else
+                {
+                    // A pressure vessel. It discharges a volume, so it gets both.
+                    _fx = Light(HoseJets, ref _hosePick, 0, me.Handle,
+                                r, g, b, 0.90f, _cfg.JetScale, out _liveJet);
 
-                // The cloud comes off the extinguisher and nothing else, and it goes on
-                // thinner than the jet on purpose -- you still have to be able to see what you
-                // are painting through your own smoke.
-                _cloud = _cfg.SprayCanLook
-                    ? -1
-                    : Light(Clouds, ref _cloudPick, gun, me.Handle, r, g, b, 0.45f);
+                    _cloud = Light(Clouds, ref _cloudPick, 0, me.Handle,
+                                   r, g, b, 0.45f, _cfg.JetScale, out _liveCloud);
+                }
 
+                Steer();
                 Moan();
             }
             catch (Exception ex)
@@ -308,65 +322,54 @@ namespace Hoodrich.Paint
             }
         }
 
-        private int _dry;
-        private bool _moaned;
-
         /// <summary>
-        /// Says so, once, when the plume simply will not start.
+        /// Tilts the jet with the camera, every tick it is running.
         ///
-        /// SILENCE WAS THE ACTUAL BUG HERE. The ladder failing looked identical to the
-        /// feature being switched off, and a whole session went by with nothing coming out
-        /// of the can and not one line in the log to say why. A ladder that can fail has to
-        /// be able to report that it failed.
+        /// The PAINT never needed this -- it comes off a ray from the camera and has always
+        /// gone exactly where the reticle is. This is the spray agreeing with it, which matters
+        /// more than decoration: a jet visibly leaving at one angle while marks appear at
+        /// another reads as the paint being broken rather than the effect being cosmetic.
+        ///
+        /// Yaw is not touched, because he already turns to face the aim. Only the tilt is left,
+        /// and only for the ped-mounted ones -- Rockstar's can jet is authored at a fixed
+        /// rotation and nudging it is how you get paint coming out sideways.
         /// </summary>
-        private void Moan()
+        private void Steer()
         {
-            if (_fx != -1)
+            if (!_cfg.JetFollowsAim) return;
+
+            try
             {
-                _dry = 0;
-                _moaned = false;
-                return;
+                var pitch = GameplayCamera.Rotation.X;
+
+                if (_fx != -1 && _liveJet != null && !_liveJet.OnCan)
+                {
+                    Function.Call(Hash.SET_PARTICLE_FX_LOOPED_OFFSETS, _fx,
+                                  _liveJet.X, _liveJet.Y, _liveJet.Z,
+                                  _liveJet.Pitch + pitch, 0f, 0f);
+                }
+
+                if (_cloud != -1 && _liveCloud != null && !_liveCloud.OnCan)
+                {
+                    Function.Call(Hash.SET_PARTICLE_FX_LOOPED_OFFSETS, _cloud,
+                                  _liveCloud.X, _liveCloud.Y, _liveCloud.Z,
+                                  _liveCloud.Pitch + pitch, 0f, 0f);
+                }
             }
-
-            // Several goes, not one. The first few legitimately fail while the asset streams
-            // in, and complaining about those would be noise that trains you to ignore it.
-            if (++_dry < 8 || _moaned) return;
-
-            _moaned = true;
-
-            var tried = new System.Text.StringBuilder();
-
-            foreach (var p in Jets)
+            catch
             {
-                tried.Append(p.Name).Append(" out of ").Append(p.Asset ?? "core")
-                     .Append(p.Select ? " (selected)" : " (unselected)").Append("; ");
+                // It keeps the angle it started at, which is level and forward.
             }
-
-            Log.Warn("No plume will start after " + _dry + " goes. Tried: " + tried +
-                     "Paint still lands -- this is the visible spray only. Nozzle entity was " +
-                     Nozzle + ".");
         }
 
         /// <summary>
         /// Whether an effect's asset is in memory, asking for it if it is not.
         ///
-        /// THE CORE ASSET TAKES NO NAME. REQUEST_PTFX_ASSET and HAS_PTFX_ASSET_LOADED are
-        /// argument-less natives, and they are exactly what Rockstar's own graffiti scene
-        /// calls before starting scr_lamgraff_paint_spray. Asking for core through the NAMED
-        /// pair instead -- HAS_NAMED_PTFX_ASSET_LOADED("core") -- is the version of this that
-        /// never reports ready, so the effect never starts and nothing anywhere says why.
-        /// That is what was here before.
+        /// "core" goes through the NAMED pair like anything else. It is a named asset -- the
+        /// tag run in the other mod asks for it exactly this way and has for a long time.
         /// </summary>
         private static bool Ready(Plume p)
         {
-            if (p.Asset == null)
-            {
-                if (Function.Call<bool>(Hash.HAS_PTFX_ASSET_LOADED)) return true;
-
-                Function.Call(Hash.REQUEST_PTFX_ASSET);
-                return false;
-            }
-
             if (Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, p.Asset)) return true;
 
             Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, p.Asset);
@@ -374,50 +377,47 @@ namespace Hoodrich.Paint
         }
 
         /// <summary>
-        /// Starts the first effect in a ladder that will actually start, and remembers which.
+        /// Starts the best effect in a ladder that will actually start.
         ///
-        /// The remembered index is what keeps this cheap: once one has worked, every later
-        /// press tries that one alone rather than walking the ladder to be refused again.
+        /// ALWAYS FROM THE TOP, and that is the fix for a real bug rather than a style choice.
+        /// This used to lock on to the first thing that worked and try only that one ever
+        /// after -- so on the very first press, with Rockstar's paint jet still streaming in,
+        /// it fell through to an extinguisher cloud and then never gave the paint jet another
+        /// chance for the rest of the session. A candidate that is merely NOT READY YET is not
+        /// a candidate that failed, and the difference between those two is a whole feature.
+        ///
+        /// The remembered index is now only used to notice a change worth logging.
         /// </summary>
-        private static int Light(Plume[] ladder, ref int remembered, int gun, int ped,
-                                 float r, float g, float b, float alpha)
+        private int Light(Plume[] ladder, ref int remembered, int can, int ped,
+                          float r, float g, float b, float alpha, float scale,
+                          out Plume chosen)
         {
+            chosen = null;
+
             for (var i = 0; i < ladder.Length; i++)
             {
-                if (remembered >= 0 && i != remembered) continue;
-
                 var p = ladder[i];
 
-                if (!Ready(p)) continue;   // next press, once it has streamed in
+                // A can-mounted effect needs a can. Falling back to the ped would throw away
+                // the authored aim that is the whole reason for putting it on the can.
+                if (p.OnCan && can == 0) continue;
 
-                // Named assets have to be selected, and core has to be selected BACK -- or
-                // whichever named asset was used last is still current and a core effect gets
-                // looked up in the wrong place.
-                if (p.Select) Function.Call(Hash.USE_PARTICLE_FX_ASSET, p.Asset ?? "core");
+                if (!Ready(p)) continue;   // still streaming; try it again next press
+
+                Function.Call(Hash.USE_PARTICLE_FX_ASSET, p.Asset);
                 Function.Call(Hash.SET_PARTICLE_FX_NON_LOOPED_COLOUR, r, g, b);
 
-                int fx;
+                var on = p.OnCan ? can : ped;
 
-                if (gun != 0)
-                {
-                    fx = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY,
-                                            p.Name, gun,
-                                            0f, 0.15f, 0f,
-                                            0f, 0f, 0f,
-                                            p.Size, false, false, false);
-                }
-                else
-                {
-                    fx = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY_BONE,
-                                            p.Name, ped,
-                                            0.3f, 0.1f, 0f,
-                                            0f, 0f, 0f,
-                                            28422, p.Size, false, false, false);
-                }
+                var fx = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY,
+                                            p.Name, on,
+                                            p.X, p.Y, p.Z,
+                                            p.Pitch, 0f, 0f,
+                                            p.Size * scale, false, false, false);
 
-                // A HANDLE IS NOT AN EFFECT. A ptfx name the build does not have returns a
-                // handle for an effect that does not exist, so the handle alone proves nothing
-                // and the ladder would stop at the first name that merely failed politely.
+                // A HANDLE IS NOT AN EFFECT. A ptfx name the build does not have hands back a
+                // handle for an effect that does not exist, so without this the ladder stops
+                // at the first name that merely failed politely.
                 if (fx == 0 || !Function.Call<bool>(Hash.DOES_PARTICLE_FX_LOOPED_EXIST, fx))
                 {
                     continue;
@@ -429,13 +429,57 @@ namespace Hoodrich.Paint
                 if (remembered != i)
                 {
                     remembered = i;
-                    Log.Info("Plume: " + p.Name + " out of " + (p.Asset ?? "core") + ".");
+                    Log.Info("Plume: " + p + " at " + (p.Size * scale).ToString("0.00") + ".");
                 }
 
+                chosen = p;
                 return fx;
             }
 
             return -1;
+        }
+
+        private int _dry;
+        private bool _moaned;
+
+        /// <summary>
+        /// Says so, once, when the spray simply will not start.
+        ///
+        /// SILENCE WAS THE ACTUAL BUG HERE, more than once. A ladder failing quietly looks
+        /// exactly like the feature being switched off, and a whole session went by with
+        /// nothing coming out and not one line saying why.
+        ///
+        /// It is NOT a complaint when the can is out and Rockstar's jet has not arrived: that
+        /// is the deliberate no-smoke rule doing its job, and it says so differently.
+        /// </summary>
+        private void Moan()
+        {
+            if (_fx != -1)
+            {
+                _dry = 0;
+                _moaned = false;
+                return;
+            }
+
+            // Several goes, not one. The first few legitimately fail while the asset streams,
+            // and complaining about those is noise that trains you to ignore the log.
+            if (++_dry < 8 || _moaned) return;
+
+            _moaned = true;
+
+            if (_cfg.SprayCanLook)
+            {
+                Log.Warn("The can is spraying invisibly: " + CanJets[0] + " will not start, " +
+                         "and a can deliberately has no smoke fallback -- a cloud out of a " +
+                         "spray can is worse than no effect. Paint is landing normally.");
+                return;
+            }
+
+            var tried = new System.Text.StringBuilder();
+            foreach (var p in HoseJets) tried.Append(p).Append("; ");
+
+            Log.Warn("No spray effect will start after " + _dry + " goes. Tried: " + tried +
+                     "Paint still lands -- this is the visible spray only.");
         }
 
         private void StopPlume()

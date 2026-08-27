@@ -63,18 +63,22 @@
         /// is worked a foot from the wall and an extinguisher is a pressure vessel you stand
         /// back from. Sharing one curve made one of the two wrong.
         ///
-        ///     0.4m and nearer  ->  0.10m across (the floor)
-        ///     1m               ->  0.25m
-        ///     2m               ->  0.50m
-        ///     4m               ->  1.00m, and it stops there
+        ///     0.45m and nearer ->  0.08m across (the floor)
+        ///     1m               ->  0.18m
+        ///     2m               ->  0.36m
+        ///     4m               ->  0.72m, and it stops there
+        ///
+        /// Brought down about a quarter from where it started. A can lays a narrow band you
+        /// draw with, not a patch you cover with -- and the wider it was, the less the marks
+        /// read as strokes and the more they read as one blob growing.
         /// </summary>
         public bool SprayCanLook = true;
 
         public float CanRange = 4f;
-        public float CanSizeAtOneMetre = 0.25f;
+        public float CanSizeAtOneMetre = 0.18f;
         public float CanSpreadPower = 1f;
-        public float CanMinSize = 0.10f;
-        public float CanMaxSize = 1.00f;
+        public float CanMinSize = 0.08f;
+        public float CanMaxSize = 0.75f;
 
         // ---- whichever is in his hand -------------------------------------------
 
@@ -107,6 +111,29 @@
 
         /// <summary>Whether the visible jet is tinted to the colour being sprayed.</summary>
         public bool ColourTheSmoke = true;
+
+        /// <summary>
+        /// How big the spray effect is out of each tool.
+        ///
+        /// SEPARATE NUMBERS BECAUSE THEY ARE SEPARATE TOOLS. An extinguisher discharge that
+        /// fills half an alley is exactly right for an extinguisher. The same cloud out of a
+        /// six-inch can is absurd, and worse, it sits between you and the wall you are trying
+        /// to paint.
+        ///
+        /// The can also gets no cloud and no smoke fallback at all -- see Sprayer.CanJets.
+        /// </summary>
+        public float JetScale = 1f;
+        public float CanJetScale = 0.30f;
+
+        /// <summary>
+        /// Whether the spray tilts with the camera.
+        ///
+        /// The PAINT never needed this: it comes off a ray from the camera and has always gone
+        /// exactly where the reticle is. This is only the visible spray agreeing with it --
+        /// which matters more than decoration, because a jet leaving at one angle while marks
+        /// appear at another reads as the paint being broken.
+        /// </summary>
+        public bool JetFollowsAim = true;
 
         /// <summary>Whether it paints at all. There is no arming key; this is for turning it off.</summary>
         public bool PaintEnabled = true;
