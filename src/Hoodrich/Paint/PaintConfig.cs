@@ -203,14 +203,15 @@
         /// bone's axes are whatever the animators made them. The only way to know it is right
         /// is to look at it, so it is somewhere you can nudge without a rebuild.
         ///
-        /// Raised from the 0.012 the tag run uses, which seats the can in the middle of the
-        /// grip. Higher puts the nozzle up against his fingertip, which is where a hand
-        /// actually holds one -- you press the tip, so your finger has to reach it.
+        /// The tag run seats it at 0.012, which puts the can in the middle of the grip. Raised
+        /// twice by eye from there, in equal steps, to 0.048: 0.012 buried the nozzle in his
+        /// fist, 0.030 got it near his fingertip, and this puts it against it. Higher is where
+        /// a hand actually holds one -- you press the tip, so your finger has to reach it.
         ///
         /// If nudging this moves the can the WRONG way, the axis runs the other way on this
         /// build: use a negative number.
         /// </summary>
-        public float CanSeat = 0.030f;
+        public float CanSeat = 0.048f;
 
         // ---- how long it lasts ---------------------------------------------------
 
