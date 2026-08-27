@@ -273,6 +273,29 @@ namespace Hoodrich.Supply
         /// </summary>
         public float UncutFromValue = 10000f;
 
+        /// <summary>
+        /// Where he actually stands, read off the coordinate HUD.
+        ///
+        /// ZONES WERE ALWAYS AN APPROXIMATION. A dealer with only a zone list is put on
+        /// whatever stretch of pavement the game finds first, which is a different stretch
+        /// every visit -- so "go and see Poncho" meant driving round Rancho until somebody
+        /// green turned up, and you could never learn where he was because there was nothing
+        /// to learn.
+        ///
+        /// A man with an address is a place. It is also the only way the map marker can mean
+        /// anything: you cannot pin a wandering spawn.
+        ///
+        /// Zero means no address and the old behaviour, which is right for Tao -- he has never
+        /// stood anywhere, he drives to you.
+        /// </summary>
+        public float SpotX;
+        public float SpotY;
+        public float SpotZ;
+        public float SpotHeading;
+
+        /// <summary>Whether anybody wrote his address down.</summary>
+        public bool HasSpot => Math.Abs(SpotX) > 0.01f || Math.Abs(SpotY) > 0.01f;
+
         /// <summary>What a spend of this size actually arrives at.</summary>
         public float PurityFor(int cost)
         {

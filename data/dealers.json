@@ -428,7 +428,11 @@
         "outside. come get it, i aint got all night",
         "here. engine on"
       ],
-      "uncutFromValue": 7000
+      "uncutFromValue": 7000,
+      "x": 300.039,
+      "y": -1784.942,
+      "z": 28.439,
+      "heading": 209.062
     },
     {
       "id": "aztecas_corner",
@@ -445,6 +449,7 @@
         "coke"
       ],
       "zones": [
+        "RANCHO",
         "BANNING"
       ],
       "priceMultiplier": 0.65,
@@ -511,17 +516,21 @@
         "outside. come out, dont keep me sittin",
         "here. hurry up, this aint my block"
       ],
-      "uncutFromValue": 5000
+      "uncutFromValue": 5000,
+      "x": 500.6,
+      "y": -1697.562,
+      "z": 29.789,
+      "heading": 232.091
     },
     {
       "id": "ballas_corner",
-      "name": "Twan",
-      "tag": "TWN",
+      "name": "OG Reese",
+      "tag": "OGR",
       "kind": "GangCorner",
       "gangId": "ballas",
       "models": [
-        "g_m_y_ballaeast_01",
-        "g_m_y_ballaorig_01"
+        "g_m_y_ballaorig_01",
+        "g_m_y_ballaeast_01"
       ],
       "drugs": [
         "crack",
@@ -552,7 +561,7 @@
       "sourceReply": "Above me is above you. Leave it.",
       "sourceTooSoon": "Nah.",
       "farewell": "Go on. And you ain't seen me.",
-      "openingText": "you got my number somehow. fine. davis, the stadium end. rock and green, three quarters. dont get seen comin",
+      "openingText": "you got my number somehow. fine. im on the block off davis. rock and green, three quarters. dont get seen comin",
       "textCalled": [
         "walkin",
         "yeah. hurry up",
@@ -596,7 +605,11 @@
         "im here. quick, quick, quick",
         "out front. i aint sittin on this street twice"
       ],
-      "uncutFromValue": 5000
+      "uncutFromValue": 5000,
+      "x": 85.361,
+      "y": -1958.88,
+      "z": 21.122,
+      "heading": 0.0
     },
     {
       "id": "vagos_corner",
@@ -683,7 +696,11 @@
         "im here. come out",
         "out front. money first, remember"
       ],
-      "uncutFromValue": 5000
+      "uncutFromValue": 5000,
+      "x": 345.665,
+      "y": -2015.147,
+      "z": 22.395,
+      "heading": 331.735
     },
     {
       "id": "marabunta_corner",
@@ -700,6 +717,7 @@
         "coke"
       ],
       "zones": [
+        "EBURO",
         "CYPRE",
         "TEXTI"
       ],
@@ -767,7 +785,11 @@
         "here. quiet street, lets keep it that way",
         "outside now. come when youre ready"
       ],
-      "uncutFromValue": 5000
+      "uncutFromValue": 5000,
+      "x": 1295.163,
+      "y": -1739.323,
+      "z": 54.272,
+      "heading": 19.174
     },
     {
       "id": "lost_corner",
@@ -853,7 +875,11 @@
         "here! open up",
         "outside brother. hurry, im gettin looks"
       ],
-      "uncutFromValue": 5000
+      "uncutFromValue": 5000,
+      "x": 81.327,
+      "y": 3713.986,
+      "z": 40.66,
+      "heading": 78.586
     },
     {
       "id": "triads_corner",
@@ -871,6 +897,7 @@
         "xanax"
       ],
       "zones": [
+        "BURTON",
         "MIRR",
         "HAWICK"
       ],
@@ -938,7 +965,11 @@
         "I have arrived. I will not wait long.",
         "Outside. Please be prompt."
       ],
-      "uncutFromValue": 5000
+      "uncutFromValue": 5000,
+      "x": -474.548,
+      "y": -35.38,
+      "z": 45.376,
+      "heading": 184.427
     },
     {
       "id": "armenians_corner",
@@ -954,6 +985,7 @@
         "heroin"
       ],
       "zones": [
+        "BANNING",
         "ALTA",
         "BURTON",
         "PBOX"
@@ -1022,7 +1054,11 @@
         "I am here. Where are you.",
         "Front of the house. Hurry."
       ],
-      "uncutFromValue": 5000
+      "uncutFromValue": 5000,
+      "x": 132.305,
+      "y": -2205.208,
+      "z": 7.186,
+      "heading": 11.446
     },
     {
       "id": "koreans_corner",
@@ -1105,7 +1141,11 @@
         "out front. come on",
         "here. i'd rather not sit in this street"
       ],
-      "uncutFromValue": 5000
+      "uncutFromValue": 5000,
+      "x": -689.805,
+      "y": -911.477,
+      "z": 23.672,
+      "heading": 90.429
     }
   ]
 }

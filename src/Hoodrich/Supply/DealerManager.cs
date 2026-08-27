@@ -200,6 +200,11 @@ namespace Hoodrich.Supply
                 Math.Max(0f, Math.Min(100f, node["pureChancePercent"].AsFloat(def.PureChancePercent)));
             def.UncutFromValue = Math.Max(1f, node["uncutFromValue"].AsFloat(def.UncutFromValue));
 
+            def.SpotX = node["x"].AsFloat(def.SpotX);
+            def.SpotY = node["y"].AsFloat(def.SpotY);
+            def.SpotZ = node["z"].AsFloat(def.SpotZ);
+            def.SpotHeading = node["heading"].AsFloat(def.SpotHeading);
+
             ReplaceList(def.ArrivalLines, node["arrivalLines"]);
             ReplaceList(def.CarryLines, node["carryLines"]);
             ReplaceList(def.DropLines, node["dropLines"]);
@@ -584,6 +589,35 @@ namespace Hoodrich.Supply
         /// Your own crew's dealer is on your crew's turf. The dock worker is at the port, but
         /// only once someone has told you he exists.
         /// </summary>
+        /// <summary>
+        /// How near his corner you have to be for him to be standing on it.
+        ///
+        /// Generously inside DespawnRange so he is already there by the time you can see the
+        /// spot, and short enough that two pinned dealers a few streets apart never argue.
+        /// </summary>
+        private const float SpotRange = 120f;
+
+        /// <summary>Whichever pinned dealer is closest, if you are near enough to any of them.</summary>
+        private DealerDef NearestPinned(Vector3 from)
+        {
+            DealerDef best = null;
+            var bestAt = SpotRange;
+
+            for (var i = 0; i < _defs.Count; i++)
+            {
+                var def = _defs[i];
+                if (def == null || !def.HasSpot) continue;
+
+                var d = from.DistanceTo(new Vector3(def.SpotX, def.SpotY, def.SpotZ));
+                if (d > bestAt) continue;
+
+                best = def;
+                bestAt = d;
+            }
+
+            return best;
+        }
+
         public DealerDef DealerForZone(string zoneCode, Affiliation crew, PlayerState state)
         {
             if (string.IsNullOrEmpty(zoneCode)) return null;
@@ -968,9 +1002,16 @@ namespace Hoodrich.Supply
             }
 
             RollPure();
+            MarkTheOnesHeKnows();
 
             var zone = turf.ZoneCode;
-            var wanted = DealerForZone(zone, crew, state);
+
+            // AN ADDRESS BEATS A ZONE. Whoever is pinned nearest wins, and only then does the
+            // old zone lottery get a say -- so a man with a spot is at his spot whatever the
+            // game thinks the neighbourhood is called there. Several of them stand on the far
+            // side of a boundary from the zone they belong to, which is exactly the sort of
+            // thing that is true of real corners and hopeless to express as a zone list.
+            var wanted = NearestPinned(player.Position) ?? DealerForZone(zone, crew, state);
 
             // Dealer keeps shop hours.
             if (wanted != null && !wanted.IsOpenAt(Pricing.ClockHour)) wanted = null;
@@ -987,6 +1028,13 @@ namespace Hoodrich.Supply
 
             if (_livePed == null)
             {
+                if (wanted.HasSpot)
+                {
+                    SpawnAt(wanted, new Vector3(wanted.SpotX, wanted.SpotY, wanted.SpotZ),
+                            zone, player, false);
+                    return;
+                }
+
                 if (TryPitch(zone, player.Position, out var spot)) SpawnAt(wanted, spot, zone, player, false);
                 return;
             }
@@ -1133,7 +1181,14 @@ namespace Hoodrich.Supply
                 _liveBlip.Name = def.Name;
 
                 // A posted dealer is a local landmark; someone you called out gets a route.
-                _liveBlip.IsShortRange = !route;
+                // SHORT RANGE UNTIL YOU HAVE MET HIM, which is what makes the first one a
+                // search. It used to be visible at map range, so every dealer in the city
+                // announced himself the moment he loaded and there was nothing to find.
+                //
+                // Once he is somebody you know it stops mattering: the permanent mark is on
+                // the map anyway, and a long-range blip on the man himself is then just a way
+                // of seeing whether he is actually out.
+                _liveBlip.IsShortRange = !route && !HaveMet(def, State);
                 _liveBlip.ShowRoute = route;
                 _liveBlip.Scale = 0.85f;
             }
@@ -1274,6 +1329,74 @@ namespace Hoodrich.Supply
         /// UpdatePrompt is the one path into a conversation that is not handed the save.
         /// </summary>
         public PlayerState State;
+
+        /// <summary>
+        /// The permanent map marks, one per pinned dealer you have actually met.
+        ///
+        /// TWO DIFFERENT BLIPS DOING TWO DIFFERENT JOBS. The one on the ped is him being
+        /// visible while he is loaded, and it is short range now -- you have to be on the
+        /// street before it appears, which is what makes finding somebody the first time an
+        /// actual search rather than a marker appearing across the city.
+        ///
+        /// This one is the address, and it is the reward for the search. It is not on the ped
+        /// at all: it sits on the coordinate whether he is spawned or not, whether it is his
+        /// opening hours or not, forever. Learning where a man stands should not be something
+        /// you have to do twice.
+        /// </summary>
+        private readonly Dictionary<string, Blip> _marks =
+            new Dictionary<string, Blip>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Puts a permanent mark on every pinned dealer he has met, and only those.</summary>
+        private void MarkTheOnesHeKnows()
+        {
+            if (State == null) return;
+
+            for (var i = 0; i < _defs.Count; i++)
+            {
+                var def = _defs[i];
+                if (def == null || !def.HasSpot) continue;
+
+                var known = HaveMet(def, State);
+
+                Blip mark;
+                var have = _marks.TryGetValue(def.Id, out mark) && mark != null && mark.Exists();
+
+                if (!known)
+                {
+                    // Never met, or the paint got wiped -- no mark, and no mark left over.
+                    if (have) { try { mark.Delete(); } catch { } }
+                    if (_marks.ContainsKey(def.Id)) _marks.Remove(def.Id);
+                    continue;
+                }
+
+                if (have) continue;
+
+                try
+                {
+                    var at = new Vector3(def.SpotX, def.SpotY, def.SpotZ);
+
+                    mark = World.CreateBlip(at);
+                    if (mark == null || !mark.Exists()) continue;
+
+                    mark.Sprite = BlipSprite.Friend;
+                    mark.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.Green;
+                    mark.Name = def.Name;
+                    mark.Scale = 0.7f;
+
+                    // NOT short range. This is the whole point of it -- it is the thing you
+                    // earned by finding him, and it is on the map from anywhere.
+                    mark.IsShortRange = false;
+
+                    _marks[def.Id] = mark;
+
+                    Log.Info("Pinned " + def.Id + " on the map for good.");
+                }
+                catch
+                {
+                    // A blip that will not create is not worth losing the tick over.
+                }
+            }
+        }
 
         /// <summary>The save key for having stood in front of somebody.</summary>
         public static string MetKey(DealerDef def)

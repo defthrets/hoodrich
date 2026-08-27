@@ -35,20 +35,6 @@
       "sprite": 51
     },
     {
-      "gang": "ballas",
-      "name": "OG Reese",
-      "zone": "DAVIS",
-      "x": 85.361,
-      "y": -1958.88,
-      "heading": 336.333,
-      "models": [
-        "g_m_y_ballaorig_01",
-        "g_m_y_ballaeast_01",
-        "a_m_m_soucent_02"
-      ],
-      "z": 21.122
-    },
-    {
       "gang": "vagos",
       "name": "El Tio",
       "zone": "RANCHO",
