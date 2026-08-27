@@ -199,6 +199,11 @@ namespace Hoodrich.Supply
             def.PureChancePercent =
                 Math.Max(0f, Math.Min(100f, node["pureChancePercent"].AsFloat(def.PureChancePercent)));
             def.UncutFromValue = Math.Max(1f, node["uncutFromValue"].AsFloat(def.UncutFromValue));
+
+            ReplaceList(def.ArrivalLines, node["arrivalLines"]);
+            ReplaceList(def.CarryLines, node["carryLines"]);
+            ReplaceList(def.DropLines, node["dropLines"]);
+            ReplaceList(def.PartingLines, node["partingLines"]);
         }
 
         /// <summary>

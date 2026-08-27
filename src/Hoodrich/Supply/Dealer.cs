@@ -91,6 +91,22 @@ namespace Hoodrich.Supply
         ///
         /// The singular fields below are the fallback for a dealer that names nothing.
         /// </summary>
+        /// <summary>
+        /// What he says out loud on a delivery, in his own words.
+        ///
+        /// FOUR BEATS, because a delivery has four: pulling up, picking the box out of the
+        /// boot, putting it down, and going. There were two sets for all of it -- one written
+        /// for the port and one for a corner -- so eleven different men shared six lines each
+        /// and the whole run read as one courier with a wardrobe.
+        ///
+        /// Empty falls back to those two, which is right for the two they were written for:
+        /// Tao IS the port and Gerald IS the corner.
+        /// </summary>
+        public readonly List<string> ArrivalLines = new List<string>();
+        public readonly List<string> CarryLines = new List<string>();
+        public readonly List<string> DropLines = new List<string>();
+        public readonly List<string> PartingLines = new List<string>();
+
         public readonly List<string> CalledLines = new List<string>();
         public readonly List<string> LeavingLines = new List<string>();
         public readonly List<string> OutsideLines = new List<string>();

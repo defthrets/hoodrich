@@ -1339,7 +1339,7 @@ namespace Hoodrich.Supply
                 Log.Debug("Could not start the drop-off: " + ex.Message);
             }
 
-            Speak(Mine(PortCarry, CornerCarry), TakingLines);
+            Speak(Mine(_def == null ? null : _def.CarryLines, PortCarry, CornerCarry), TakingLines);
             Notify.Ticker("~g~He's bringing it in.~s~");
         }
 
@@ -1418,6 +1418,19 @@ namespace Hoodrich.Supply
         private string[] Mine(string[] port, string[] corner)
         {
             return Bales() ? port : corner;
+        }
+
+        /// <summary>
+        /// His own words if he has any, otherwise whichever house set fits him.
+        ///
+        /// The fallback is not a placeholder. The port lines were written for the man at the
+        /// port and the corner lines for the man on the corner, so the two who do not override
+        /// anything are the two the originals were about.
+        /// </summary>
+        private string[] Mine(List<string> own, string[] port, string[] corner)
+        {
+            if (own != null && own.Count > 0) return own.ToArray();
+            return Mine(port, corner);
         }
 
         /// <summary>
@@ -1549,7 +1562,7 @@ namespace Hoodrich.Supply
 
             PutDown();
             Land();
-            Speak(Mine(PortDrop, CornerDrop), DroppedLines);
+            Speak(Mine(_def == null ? null : _def.DropLines, PortDrop, CornerDrop), DroppedLines);
 
             State = DeliveryState.Leaving;
             _stateSince = Game.GameTime;
@@ -1610,7 +1623,7 @@ namespace Hoodrich.Supply
                 {
                     // Said from the driver's seat, with the door shut, the way anybody says
                     // goodbye when they are already leaving.
-                    Speak(Mine(PortParting, CornerParting), LeavingLines);
+                    Speak(Mine(_def == null ? null : _def.PartingLines, PortParting, CornerParting), LeavingLines);
 
                     try
                     {
@@ -2220,7 +2233,7 @@ namespace Hoodrich.Supply
             {
                 _greeted = true;
 
-                Speak(Mine(PortArrival, CornerArrival), TakingLines);
+                Speak(Mine(_def == null ? null : _def.ArrivalLines, PortArrival, CornerArrival), TakingLines);
 
                 OpenTheBoot();
                 WalkToMeet();

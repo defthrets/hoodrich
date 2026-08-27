@@ -109,7 +109,14 @@
           "Here. Do not keep me on this street.",
           "Outside. Bring nobody."
         ]
-      }
+      },
+      "_rides": "Off the water in something that holds a hundred grand of weight. All checked against the dump.",
+      "rides": [
+        "mule",
+        "pounder",
+        "benson"
+      ],
+      "ridePaint": 111
     },
     {
       "id": "stretch_run",
@@ -221,7 +228,41 @@
       "purity": 0.95,
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "This ain't my half of the city. Let's be quick.",
+        "Drove past twice makin' sure. Habit.",
+        "You got dogs? People never say they got dogs.",
+        "Somebody's porch light been on the whole street. Don't like it."
+      ],
+      "carryLines": [
+        "Careful. It don't like bein' shook.",
+        "Two hands. I ain't jokin' about that.",
+        "Still warm off the bench, that.",
+        "Don't breathe over the top of it neither."
+      ],
+      "dropLines": [
+        "There. Don't open it in the house, open it outside.",
+        "That's good work, that is. Better'n you'll get anywhere.",
+        "Put it somewhere dry and somewhere dark.",
+        "You'll not need much. People always use too much."
+      ],
+      "partingLines": [
+        "I'm gone 'fore it gets light.",
+        "Don't ring me in the daytime. I mean it.",
+        "Back to the shed. It don't run itself.",
+        "You never seen me and I was never here."
+      ],
+      "textLeaving": [
+        "settin off. dont ring me again till im there",
+        "on the road. this thing better be worth the drive",
+        "movin. and its dark out here so give me a minute"
+      ],
+      "textOutside": [
+        "im out front. dont put the porch light on",
+        "here. im the truck that dont belong on your street",
+        "outside. come out, i aint knockin on a door"
+      ]
     },
     {
       "id": "beach_connect",
@@ -268,7 +309,41 @@
       "purity": 1.0,
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "I have never once been to this street. It shows, doesn't it.",
+        "Right. I'm double parked, so.",
+        "Lovely area. I mean that in the way you think I mean it.",
+        "Let's not make an evening of it."
+      ],
+      "carryLines": [
+        "Don't -- I'll carry it. You'd drop it.",
+        "It's in a proper case. You'll want to keep that.",
+        "Weighed twice, sealed once. As always.",
+        "This is the good one, by the way. Not that you asked."
+      ],
+      "dropLines": [
+        "There. Test it if you like, you'll only embarrass yourself.",
+        "Untouched. Which is the entire point of me.",
+        "Nobody's had their hands in that. Nobody.",
+        "That's what people mean when they say clean."
+      ],
+      "partingLines": [
+        "I'm going. This car doesn't belong out here.",
+        "Text me. Once. Not four times.",
+        "Pleasure, genuinely. Don't waste it.",
+        "Do try not to be seen carrying that inside."
+      ],
+      "textLeaving": [
+        "leaving. i'll be a while, i'm not rushing across town",
+        "en route. traffic on the boulevard is criminal",
+        "on my way. please be there when i arrive"
+      ],
+      "textOutside": [
+        "I'm outside. I'm the one that looks like he can afford the car.",
+        "outside. hurry, this car is a lot of car for this street",
+        "here. don't make me knock"
+      ]
     },
     {
       "id": "lamesa_corner",
@@ -316,7 +391,41 @@
       "purity": 0.62,
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "Ay. I got three more of these tonight.",
+        "You want me to sit here or you want me to give you it?",
+        "Long day. Every day long.",
+        "I know the house. I know all the houses."
+      ],
+      "carryLines": [
+        "It's heavy 'cause it's cheap. That's the trade.",
+        "Bag's already split, watch the bottom.",
+        "Here. Don't look at me like that, you knew what it was.",
+        "Same as always. Nothin' fancy."
+      ],
+      "dropLines": [
+        "That's it. It ain't pretty and it ain't meant to be.",
+        "Cut already, like I told you. Cheap for a reason.",
+        "Take it. People still buy it, that's what matters.",
+        "Down. Don't ask me to bring it inside, I don't do that."
+      ],
+      "partingLines": [
+        "I got another one waitin'. Always another one.",
+        "Call whenever. I'm always awake, that's my whole problem.",
+        "Aight. Watch that end of the street.",
+        "Vamos. This car don't like sittin' still neither."
+      ],
+      "textLeaving": [
+        "comin. got two more after you so dont be slow",
+        "on my way. long night already",
+        "leavin now. traffic through rancho is nothin"
+      ],
+      "textOutside": [
+        "im out here. same as always",
+        "outside. come get it, i aint got all night",
+        "here. engine on"
+      ]
     },
     {
       "id": "aztecas_corner",
@@ -364,7 +473,41 @@
       ],
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "Orale. Long way from the barrio, this.",
+        "You said the house. This the house?",
+        "Aye, nice street. Quieter than mine.",
+        "I brought it myself. That means somethin'."
+      ],
+      "carryLines": [
+        "Wrapped it proper. My tia does the wrapping.",
+        "Heavy one. Bend your knees, guero.",
+        "Straight from us. No hands in between.",
+        "Careful -- yeah. Like that."
+      ],
+      "dropLines": [
+        "There it is. Familia price, don't tell nobody.",
+        "That's ours. Treat it right and come back.",
+        "Down easy. It's good, you'll see.",
+        "That's the whole thing. Simple, no?"
+      ],
+      "partingLines": [
+        "Back to Banning. Long drive both ways.",
+        "You need more, you know where. Ask for me.",
+        "Ya estuvo. Take care of yourself out here.",
+        "Go inside, hombre. I'll wait till the door shuts."
+      ],
+      "textLeaving": [
+        "salgo ahora. on my way",
+        "leavin banning now. give me time, its far",
+        "movin, guero. be ready"
+      ],
+      "textOutside": [
+        "estoy aqui. im out front",
+        "outside. come out, dont keep me sittin",
+        "here. hurry up, this aint my block"
+      ]
     },
     {
       "id": "ballas_corner",
@@ -414,7 +557,41 @@
       ],
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "Man, if anybody sees this car on this street.",
+        "Let's go. Quick. Real quick.",
+        "I ain't even supposed to know where you stay.",
+        "This is a favour and a risk, both."
+      ],
+      "carryLines": [
+        "Take it, take it. Don't stand there.",
+        "It's in the bag, don't check it out here.",
+        "Heavy. Yeah, that's what you paid for.",
+        "Hands. Now. Come on."
+      ],
+      "dropLines": [
+        "Done. That never happened.",
+        "That's yours. And I was never on this block.",
+        "Rock's good. Don't ask me who cooked it.",
+        "There. Now we both got somethin' on each other."
+      ],
+      "partingLines": [
+        "I'm out. I'm real out.",
+        "Don't say my name. To nobody. Ever.",
+        "Next time meet me somewhere else. Anywhere else.",
+        "Gone. And you owe me more than money for this."
+      ],
+      "textLeaving": [
+        "movin. and im takin the back way, obviously",
+        "on my way. this is stupid and im doin it anyway",
+        "leavin. dont text me again"
+      ],
+      "textOutside": [
+        "outside. come out NOW",
+        "im here. quick, quick, quick",
+        "out front. i aint sittin on this street twice"
+      ]
     },
     {
       "id": "vagos_corner",
@@ -466,7 +643,41 @@
       ],
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "Ey. Money out?",
+        "I'm here. Clock's on.",
+        "This the address. Don't make me check twice.",
+        "You alone? Good."
+      ],
+      "carryLines": [
+        "It's in the trunk. Come get it, I ain't a butler.",
+        "Grab that end. Both of us or neither.",
+        "Weight's right. It's always right.",
+        "Move. Somebody always watching out here."
+      ],
+      "dropLines": [
+        "There. Cuenta si quieres. It's right.",
+        "That's it. Cut like you knew it would be.",
+        "Down. Now it's yours and it's your problem.",
+        "Bueno. That's a clean piece of business."
+      ],
+      "partingLines": [
+        "Vete. I got somewhere else to be.",
+        "Same number. Don't ring it for small.",
+        "Aight. Don't be seen with that.",
+        "I'm gone. Wasn't never here."
+      ],
+      "textLeaving": [
+        "en camino. money ready",
+        "on my way ese. clocks runnin",
+        "leavin. dont waste my time when i get there"
+      ],
+      "textOutside": [
+        "aqui. outside",
+        "im here. come out",
+        "out front. money first, remember"
+      ]
     },
     {
       "id": "marabunta_corner",
@@ -515,7 +726,41 @@
       ],
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "Took the long way. Two of the short ones got cameras.",
+        "Alright. Quiet street. I like quiet streets.",
+        "I parked facing out. Habit, don't read into it.",
+        "You're expecting me, yes? Good."
+      ],
+      "carryLines": [
+        "Let me. I know how it's packed.",
+        "Both hands under it, not the sides.",
+        "Came in through Cypress this morning. It's fresh.",
+        "Careful at the step there."
+      ],
+      "dropLines": [
+        "There. Everything as agreed.",
+        "That's what you asked for and what you paid for.",
+        "Inside before you look at it. Please.",
+        "Good. That's the business done."
+      ],
+      "partingLines": [
+        "I'll go. You'll want your evening back.",
+        "If anything is wrong you tell me, not somebody else.",
+        "Back to the flats. Long way round again.",
+        "Cuidate. And lock that door."
+      ],
+      "textLeaving": [
+        "leaving now. taking the long way, its safer",
+        "on my way. it will be a few minutes, i dont speed",
+        "moving. i will text when im there"
+      ],
+      "textOutside": [
+        "i am outside. facing out, like always",
+        "here. quiet street, lets keep it that way",
+        "outside now. come when youre ready"
+      ]
     },
     {
       "id": "lost_corner",
@@ -566,7 +811,41 @@
       ],
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "HA! You actually live here? In a HOUSE?",
+        "Rode the whole way with this on my back, brother.",
+        "Man, the city smells. How d'you stand it.",
+        "Alright alright, where d'you want it."
+      ],
+      "carryLines": [
+        "It's in the panniers. Bit warm. Bit squashed.",
+        "Careful, some of that's mine.",
+        "Weighed it on a bathroom scale. It's close enough.",
+        "Here. Don't smell it, just take it."
+      ],
+      "dropLines": [
+        "There. Rough as a badger's elbow and twice as strong.",
+        "That's the good stuff. For a given value of good.",
+        "Down she goes. Don't do all that at once, seriously.",
+        "That's it. I'd wash my hands if I were you. And me."
+      ],
+      "partingLines": [
+        "Back to the desert. Nobody bothers you out there.",
+        "Ring me. I'll probably answer. Might not.",
+        "Right, I'm off before the police get bored.",
+        "Ha! See you when I see you, brother."
+      ],
+      "textLeaving": [
+        "settin off. its a long ride brother",
+        "on the bike now. see you in a bit maybe",
+        "leavin sandy. dont hold your breath, its miles"
+      ],
+      "textOutside": [
+        "im outside. you cant miss me",
+        "here! open up",
+        "outside brother. hurry, im gettin looks"
+      ]
     },
     {
       "id": "triads_corner",
@@ -616,7 +895,41 @@
       ],
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "I am on time. I am always on time.",
+        "This is the address I was given. Confirm it.",
+        "I would prefer not to stand in the road.",
+        "Good evening. Let us be brief."
+      ],
+      "carryLines": [
+        "I will hand it to you. Do not take it from me.",
+        "It is boxed correctly. Note that.",
+        "Support the base. Thank you.",
+        "It has not been opened since it was closed."
+      ],
+      "dropLines": [
+        "It is done. The count is exact.",
+        "You will find nothing wrong with it. There is nothing wrong with it.",
+        "Take it inside now, please.",
+        "Our arrangement is honoured. See that yours is."
+      ],
+      "partingLines": [
+        "I will report that this went well. Do not make that untrue.",
+        "Mister Cheng asks after you occasionally. I say nothing.",
+        "I am leaving. Do not follow me out.",
+        "Until next time. Be exact and there will be one."
+      ],
+      "textLeaving": [
+        "I am leaving now. I will arrive when I said.",
+        "En route. Be present.",
+        "Departing. Do not text again."
+      ],
+      "textOutside": [
+        "I am outside. Come out.",
+        "I have arrived. I will not wait long.",
+        "Outside. Please be prompt."
+      ]
     },
     {
       "id": "armenians_corner",
@@ -665,7 +978,41 @@
       ],
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "Yes. Hello. Where.",
+        "I drove across the whole city for this. Fine.",
+        "Nice house. Someone's mother's, I think.",
+        "I am not staying, so."
+      ],
+      "carryLines": [
+        "Take it. It is not heavy. You are not carrying a piano.",
+        "Do not drop it, I will not bring another.",
+        "It is in the box. Where else would it be.",
+        "Here. Two hands, like a man."
+      ],
+      "dropLines": [
+        "Done. Count it, do not count it, I do not care.",
+        "It is what I said it was. I do not lie about weight.",
+        "There. Now it is in a house and not in my car. Good.",
+        "Finished. This is the part I like."
+      ],
+      "partingLines": [
+        "I go now. Do not wave.",
+        "Call me when it is a real amount.",
+        "Yes yes. Goodbye. Close the door.",
+        "I was never here and you never met me. Standard."
+      ],
+      "textLeaving": [
+        "I am coming. Yes. Now.",
+        "Leaving. It is far. You know it is far.",
+        "On the way. Do not text me twice."
+      ],
+      "textOutside": [
+        "Outside. Come.",
+        "I am here. Where are you.",
+        "Front of the house. Hurry."
+      ]
     },
     {
       "id": "koreans_corner",
@@ -713,7 +1060,41 @@
       ],
       "lotValue": 5000,
       "priceFloor": 3000,
-      "lotStep": 25
+      "lotStep": 25,
+      "arrivalLines": [
+        "I found it. Your street signs are a suggestion.",
+        "Okay. I'm here. That's step one.",
+        "Nobody followed me. I checked. Twice.",
+        "Let's do this before someone walks past."
+      ],
+      "carryLines": [
+        "It's sealed. Don't unseal it in the driveway.",
+        "You take that side. Yes, that side.",
+        "It's lighter than it looks. That's not a complaint.",
+        "Careful. Not because it's fragile. Because it's expensive."
+      ],
+      "dropLines": [
+        "There. It is exactly what I said it was.",
+        "Cut, as discussed. I told you that up front.",
+        "Inside. Now. This is the boring part but do it.",
+        "Okay. That's transacted."
+      ],
+      "partingLines": [
+        "I'm going back to Koreatown where the food is better.",
+        "Text, don't call. I hate calls.",
+        "Good. Don't make this weird next time.",
+        "Bye. Lock the door, seriously."
+      ],
+      "textLeaving": [
+        "leaving now. traffic permitting",
+        "on my way. it's a drive",
+        "moving. don't call, i'm driving"
+      ],
+      "textOutside": [
+        "outside. i'm here",
+        "out front. come on",
+        "here. i'd rather not sit in this street"
+      ]
     }
   ]
 }
