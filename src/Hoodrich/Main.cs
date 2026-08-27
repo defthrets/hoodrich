@@ -1827,6 +1827,21 @@ namespace Hoodrich
         {
             try { _trouble.Draw(); }
             catch { /* nothing left to fall back to */ }
+
+            // AND THE DOORS, EVEN NOW.
+            //
+            // This is the one thing a dead mod must still do. HouseDoors holds Franklin's and
+            // Denise's front doors open against the game's ambient door script, which locks
+            // them back on its own schedule -- so a startup crash did not merely disable the
+            // mod, it shut somebody inside a house and left them there. That is a worse
+            // outcome than anything the mod does when it works.
+            //
+            // Safe on this path where nothing else is: it is a field initialiser rather than
+            // something built in the constructor, so it exists whatever the constructor did,
+            // and it needs no save, no settings and no world state -- it asks the game to
+            // unlock two coordinates.
+            try { _houseDoors.Update(); }
+            catch { /* then the door stays as the game left it */ }
         }
 
         private void OnTick(object sender, EventArgs e)
