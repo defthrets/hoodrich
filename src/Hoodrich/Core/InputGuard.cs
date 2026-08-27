@@ -1,4 +1,4 @@
-using Control = GTA.Control;
+﻿using Control = GTA.Control;
 using GTA;
 using GTA.Native;
 
@@ -43,6 +43,22 @@ namespace Hoodrich.Core
         public static bool Busy => Game.GameTime < _until;
 
         /// <summary>
+        /// Whether a control is down right now, asked the way that still works once it has
+        /// been disabled -- which by this point in the frame it has been.
+        /// </summary>
+        private static bool Down(Control control)
+        {
+            try
+            {
+                return Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)control);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Called every frame by Main, before anything else reads a control.
         ///
         /// Disabled rather than consumed. IS_DISABLED_CONTROL_JUST_PRESSED still sees these, so
@@ -55,6 +71,26 @@ namespace Hoodrich.Core
 
             try
             {
+                // HELD IS NOT THE SAME AS TAPPED, and the fixed window was only ever right for
+                // a tap. Two hundred and twenty milliseconds covers a press and the frames
+                // either side of it -- but somebody backing out of a screen that does not
+                // vanish instantly holds the key a beat longer to make sure, and a fifth of a
+                // second is easy to beat. The guard expired with the finger still down, the
+                // game read the button fresh, and Franklin swung at whoever was in front of
+                // him.
+                //
+                // So the clock is pushed forward for as long as anything that could do damage
+                // is still down. A tap is unaffected; a hold is simply held off until it ends,
+                // which is what the comment at the top always claimed happened.
+                if (Down(Control.Attack) || Down(Control.Attack2) ||
+                    Down(Control.MeleeAttack1) || Down(Control.MeleeAttack2) ||
+                    Down(Control.MeleeAttackAlternate) ||
+                    Down(Control.Enter) || Down(Control.VehicleExit) ||
+                    Down(Control.PhoneCancel) || Down(Control.PhoneSelect))
+                {
+                    _until = Game.GameTime + HoldMs;
+                }
+
                 Game.DisableControlThisFrame(Control.Attack);
                 Game.DisableControlThisFrame(Control.Attack2);
                 Game.DisableControlThisFrame(Control.Aim);

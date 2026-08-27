@@ -665,6 +665,14 @@ namespace Hoodrich.UI
             Game.DisableControlThisFrame(Control.Attack);
             Game.DisableControlThisFrame(Control.Attack2);
             Game.DisableControlThisFrame(Control.Aim);
+
+            // The melee three as well, which Attack does not cover. A PUNCH is not the attack
+            // control -- that is the trigger -- and every screen in here was disabling the gun
+            // and leaving the fists free, which is exactly the swing that gets noticed because
+            // it is the one that happens with no weapon out.
+            Game.DisableControlThisFrame(Control.MeleeAttack1);
+            Game.DisableControlThisFrame(Control.MeleeAttack2);
+            Game.DisableControlThisFrame(Control.MeleeAttackAlternate);
             Game.DisableControlThisFrame(Control.Jump);
             Game.DisableControlThisFrame(Control.Enter);
             Game.DisableControlThisFrame(Control.Phone);
