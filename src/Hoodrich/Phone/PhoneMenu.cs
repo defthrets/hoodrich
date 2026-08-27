@@ -1100,36 +1100,11 @@ namespace Hoodrich.Phone
         /// own texture if it has finished streaming, then a blip drawn as TEXT because blip
         /// sprites address the map and cannot be handed to DRAW_SPRITE, then the plain glyph.
         /// </summary>
-        /// <summary>How long one frame of an animated icon is held, and how many there are.</summary>
-        private const int FrameMs = 110;
-        private const int Frames = 8;
-
-        /// <summary>
-        /// Turns "name*.png" into the frame that should be on screen right now.
-        ///
-        /// A STAR IN THE FILENAME IS THE WHOLE OPT-IN, which is why this is a couple of lines
-        /// rather than an animation system. Art() already re-reads IconFile every frame, so
-        /// the only thing missing was something to vary -- no new field on WheelItem, no state
-        /// to keep, and every other icon in the set goes through the same call untouched
-        /// because it has no star in it.
-        ///
-        /// Anything without a star is returned as it came, which is all but one of them.
-        /// </summary>
-        private static string Frame(string file)
-        {
-            var star = file.IndexOf('*');
-            if (star < 0) return file;
-
-            var n = Game.GameTime / FrameMs % Frames + 1;
-
-            return file.Substring(0, star) + n + file.Substring(star + 1);
-        }
-
         private static void Art(WheelItem item, float cx, float cy, float size, Color c)
         {
             if (!string.IsNullOrEmpty(item.IconFile))
             {
-                if (Hud.File(Frame(item.IconFile), cx, cy, size, 0f, c)) return;
+                if (Hud.File(item.IconFile, cx, cy, size, 0f, c)) return;
             }
 
             if (item.HasIcon)

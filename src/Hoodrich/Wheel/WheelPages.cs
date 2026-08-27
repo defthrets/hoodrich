@@ -1072,10 +1072,7 @@ namespace Hoodrich.Wheel
             // So sprayapp.png is a separate shape of the same object: chunkier than the real
             // thing, barely tilted, no label, three bold dots. It holds down to sixteen
             // pixels, which is the only test a tile has to pass.
-            // THE STAR MAKES IT MOVE. PhoneMenu swaps the digit in for a frame number each
-            // draw, so the spray actually travels off the nozzle instead of sitting there --
-            // the one tile on this screen that is a tool rather than a place.
-            page.WithIcon(Icons.FromFile("sprayapp*.png"));
+            page.WithIcon(Icons.FromFile("sprayapp.png"));
 
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
                 detail: PaybackDue != null && PaybackDue()
