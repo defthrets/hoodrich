@@ -330,12 +330,93 @@ namespace Hoodrich.Paint
         }
 
         /// <summary>Everything gone, off the wall and out of the record.</summary>
+        /// <summary>How far a single area wipe reaches, and how coarsely they are spread.</summary>
+        private const float WipeRadius = 3.5f;
+        private const float WipeGrid = 4f;
+
+        /// <summary>Everything within this of the player goes too, tracked or not.</summary>
+        private const float WipeAround = 250f;
+
         public void Clear()
         {
+            // ---- the ones this list owns, by handle ----
             for (var i = 0; i < _marks.Count; i++) Wipe(_marks[i]);
+
+            // ---- AND EVERYTHING ELSE, BY AREA ----
+            //
+            // REMOVE_DECAL only ever reaches a decal this list still has a handle for, and
+            // that set has proven to be smaller than what is actually on the wall. Anything
+            // that lost its handle -- dropped when the list hit its cap, recycled to free a
+            // pool slot, or put there by a SECOND copy of this engine running alongside, which
+            // is what was really happening -- survived a wipe and looked like the button only
+            // clearing the most recent paint.
+            //
+            // REMOVE_DECALS_IN_RANGE does not care who placed what. It takes a point and a
+            // radius, so the wipe becomes a question about places rather than about
+            // bookkeeping, and bookkeeping is the thing that was wrong.
+            var spots = new List<Vector3>();
+
+            foreach (var m in _marks)
+            {
+                // Snapped to a coarse grid so a wall covered in four hundred marks costs a
+                // handful of calls instead of four hundred. They are clustered by nature --
+                // that is what painting IS -- so this collapses very well.
+                var cell = new Vector3((float)Math.Round(m.At.X / WipeGrid),
+                                       (float)Math.Round(m.At.Y / WipeGrid),
+                                       (float)Math.Round(m.At.Z / WipeGrid));
+
+                var seen = false;
+
+                for (var i = 0; i < spots.Count; i++)
+                {
+                    if (spots[i] != cell) continue;
+                    seen = true;
+                    break;
+                }
+
+                if (!seen) spots.Add(cell);
+            }
+
+            var swept = 0;
+
+            foreach (var cell in spots)
+            {
+                try
+                {
+                    Function.Call(Hash.REMOVE_DECALS_IN_RANGE,
+                                  cell.X * WipeGrid, cell.Y * WipeGrid, cell.Z * WipeGrid,
+                                  WipeRadius);
+                    swept++;
+                }
+                catch
+                {
+                    // One patch of wall keeps its paint. The rest still goes.
+                }
+            }
+
+            // And a wide one where he is standing, which catches anything that was never in
+            // this list at all -- the other mod's, or a session whose record was lost.
+            try
+            {
+                var me = Game.Player.Character;
+
+                if (me != null && me.Exists())
+                {
+                    var at = me.Position;
+                    Function.Call(Hash.REMOVE_DECALS_IN_RANGE, at.X, at.Y, at.Z, WipeAround);
+                    swept++;
+                }
+            }
+            catch
+            {
+                // Nothing to undo.
+            }
+
+            var had = _marks.Count;
             _marks.Clear();
 
-            Log.Info("Wiped every mark.");
+            Log.Info("Wiped every mark: " + had + " tracked, plus " + swept +
+                     " area sweep(s) for anything this list had lost track of.");
         }
 
         /// <summary>Off the wall but still remembered, for a reload.</summary>
