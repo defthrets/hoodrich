@@ -110,6 +110,7 @@ namespace Hoodrich
         private readonly Paint.Sprayer _sprayer;
         private readonly Paint.Spraycan _spraycan;
         private readonly Paint.Can _can = new Paint.Can();
+        private readonly Paint.Bystanders _street = new Paint.Bystanders();
         private readonly GraffitiScreen _graffiti;
 
         /// <summary>The inbox. Its store is static; only the screen is an object.</summary>
@@ -2216,6 +2217,9 @@ namespace Hoodrich
                     _marks.Sweep();
                     PaintChatter();
 
+                    // The street's opinion of a man with a can, instead of running from him.
+                    _street.Update(Paint.Can.Out() && _paint.PaintEnabled);
+
                     if (Paint.Can.Out() && _paint.PaintEnabled)
                     {
                         Reticle.Draw(_graffiti.Colour, Paint.Aiming.Now(), _sprayer.Spraying);
@@ -2894,6 +2898,7 @@ namespace Hoodrich
             // The can comes off his hand and the weapon becomes visible again. Leaving
             // either behind outlives the mod.
             try { _spraycan?.Away(); } catch { /* teardown */ }
+            try { _street?.Release(); } catch { /* teardown */ }
             try { _sprayer?.Stop(); } catch { /* teardown */ }
 
             try { _phone?.RestoreWorld(); }
