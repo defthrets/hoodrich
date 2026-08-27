@@ -195,6 +195,23 @@
         /// <summary>Whether the can takes the nearest of the game's eight weapon tints.</summary>
         public bool TintTheCan = true;
 
+        /// <summary>
+        /// How far up out of his fist the can sits, in metres.
+        ///
+        /// A DIAL RATHER THAN A NUMBER IN THE CODE, because this is the one measurement here
+        /// that cannot be reasoned to -- it is an offset in PH_R_Hand's own local space, and a
+        /// bone's axes are whatever the animators made them. The only way to know it is right
+        /// is to look at it, so it is somewhere you can nudge without a rebuild.
+        ///
+        /// Raised from the 0.012 the tag run uses, which seats the can in the middle of the
+        /// grip. Higher puts the nozzle up against his fingertip, which is where a hand
+        /// actually holds one -- you press the tip, so your finger has to reach it.
+        ///
+        /// If nudging this moves the can the WRONG way, the axis runs the other way on this
+        /// build: use a negative number.
+        /// </summary>
+        public float CanSeat = 0.030f;
+
         // ---- how long it lasts ---------------------------------------------------
 
         /// <summary>How much longer a tank lasts than stock, when it empties at all.</summary>

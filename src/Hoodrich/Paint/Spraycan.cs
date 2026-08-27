@@ -325,7 +325,7 @@ namespace Hoodrich.Paint
                     var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, RightHand);
 
                     Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _can.Handle, me.Handle, bone,
-                                  0f, 0f, 0.012f,
+                                  0f, 0f, _cfg.CanSeat,
                                   0f, 0f, 0f,
                                   false, false, false, false, 2, true);
 
