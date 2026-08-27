@@ -94,6 +94,13 @@ namespace Hoodrich.Paint
             if (!_cfg.SprayCanLook || !Can.Out())
             {
                 Away();
+
+                // KEPT VISIBLE, not merely restored once. Anything that re-equips the weapon
+                // -- a cutscene, an arrest, another script -- can put the model back to
+                // whatever it last was, and a one-shot restore leaves him holding an
+                // invisible extinguisher with nothing on screen to explain it.
+                if (Can.Out()) Show();
+
                 return;
             }
 
@@ -109,8 +116,11 @@ namespace Hoodrich.Paint
                 // Hidden every tick rather than once. Drawing, holstering and every animation
                 // that re-equips it puts the model back, so a one-off hide lasts until the
                 // first time he does anything with his hands.
+                // 0, 1, 1, 0 -- hidden, deselected, and the last two as Rockstar's own
+                // scripts pass them. p4 was true here, which is a value they use once in the
+                // entire decompiled set.
                 Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE,
-                              Game.Player.Character.Handle, false, true, true, true);
+                              Game.Player.Character.Handle, false, true, true, false);
             }
             catch
             {
@@ -134,6 +144,30 @@ namespace Hoodrich.Paint
 
             _spraying = spraying;
             Play(spraying ? Spray : Idle);
+        }
+
+        /// <summary>
+        /// Puts the weapon model back.
+        ///
+        /// DESELECT IS FALSE HERE AND THAT IS THE POINT. The second parameter is
+        /// deselectWeapon, not a spare flag -- so restoring visibility with it set was asking
+        /// the game to make the extinguisher visible AND take it out of his hands in the same
+        /// call, which is a good way to swap to the extinguisher and end up holding nothing.
+        /// </summary>
+        private static void Show()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE,
+                              me.Handle, true, false, true, false);
+            }
+            catch
+            {
+                // He keeps whatever visibility he had.
+            }
         }
 
         /// <summary>Turns him to look where the camera is looking.</summary>
@@ -273,7 +307,7 @@ namespace Hoodrich.Paint
 
                 if (me != null && me.Exists())
                 {
-                    Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, me.Handle, true, true, true, true);
+                    Show();
 
                     // Only the upper-body task, so this does not cancel whatever else he is
                     // doing with his legs.
