@@ -1,22 +1,25 @@
-{
+﻿{
   "_comment": [
     "Walls that already have somebody else's tag on them.",
     "",
-    "These four were stood on and read off the HUD, facing the wall. Any more you add want",
-    "the same treatment -- position AND heading, because the heading is what turns Franklin",
-    "square on to the paint.",
+    "Every one was stood on and read off the coordinate HUD, facing the wall. Any more you",
+    "add want the same treatment -- position AND heading, because the heading is what turns",
+    "Franklin square on to the paint.",
     "",
-    "KEEP THEM CLOSE. The run is done on a push bike, so a wall out in El Burro is a ten",
-    "minute ride each way and turns a short job into a commute.",
+    "KEEP THEM CLOSE-ISH. The run is done on a push bike, so a wall out in El Burro is a ten",
+    "minute ride each way and turns a short job into a commute. Rancho is about the limit.",
     "",
     "id       stable key; the run remembers which walls are done by it",
     "zone     GET_NAME_OF_ZONE code, for reference only",
     "gang     whose tag is on it -- decides the marker colour and who turns up",
     "x, y, z  where Franklin stands to paint",
     "heading  which way he faces, square on to the wall",
+    "quiet    nobody turns out to defend this one",
     "",
-    "The mission picks four at random, so more entries means a run you can do twice without",
-    "it being the same afternoon."
+    "The mission picks four at random AND skips any wall already painted -- the paint is in",
+    "the save now, so a wall you have done is a wall that is yours and there is nothing left",
+    "to go over. That means the pool shrinks as you work through it, and when it runs dry the",
+    "run has nothing to offer until the graffiti is wiped from the reset menu."
   ],
   "tags": [
     {
@@ -55,6 +58,156 @@
       "z": 29.312,
       "heading": 192.318,
       "quiet": true
+    },
+    {
+      "id": "davis_cola_wall",
+      "zone": "DAVIS",
+      "gang": "ballas",
+      "x": -67.649,
+      "y": -1808.634,
+      "z": 27.45,
+      "heading": 133.707
+    },
+    {
+      "id": "davis_rancho_low",
+      "zone": "DAVIS",
+      "gang": "ballas",
+      "x": -28.543,
+      "y": -1797.631,
+      "z": 27.188,
+      "heading": 39.678
+    },
+    {
+      "id": "davis_long_wall",
+      "zone": "DAVIS",
+      "gang": "ballas",
+      "x": -37.436,
+      "y": -1835.066,
+      "z": 26.025,
+      "heading": 130.91
+    },
+    {
+      "id": "straw_underpass",
+      "zone": "STRAW",
+      "gang": "ballas",
+      "x": -33.029,
+      "y": -1503.78,
+      "z": 30.814,
+      "heading": 139.434,
+      "quiet": true
+    },
+    {
+      "id": "straw_side_wall",
+      "zone": "STRAW",
+      "gang": "ballas",
+      "x": -30.356,
+      "y": -1491.607,
+      "z": 31.266,
+      "heading": 41.527,
+      "quiet": true
+    },
+    {
+      "id": "straw_for_rent",
+      "zone": "STRAW",
+      "gang": "ballas",
+      "x": -65.502,
+      "y": -1481.359,
+      "z": 32.13,
+      "heading": 221.167,
+      "quiet": true
+    },
+    {
+      "id": "puerta_tiled",
+      "zone": "STRAW",
+      "gang": "ballas",
+      "x": 67.218,
+      "y": -1405.812,
+      "z": 29.356,
+      "heading": 263.764,
+      "quiet": true
+    },
+    {
+      "id": "cypress_dumpster",
+      "zone": "STRAW",
+      "gang": "ballas",
+      "x": 125.282,
+      "y": -1324.005,
+      "z": 29.306,
+      "heading": 211.516,
+      "quiet": true
+    },
+    {
+      "id": "cypress_yard",
+      "zone": "STRAW",
+      "gang": "ballas",
+      "x": 156.05,
+      "y": -1309.556,
+      "z": 30.63,
+      "heading": 242.93,
+      "quiet": true
+    },
+    {
+      "id": "puerta_burrito",
+      "zone": "DAVIS",
+      "gang": "ballas",
+      "x": 97.42,
+      "y": -1432.142,
+      "z": 29.305,
+      "heading": 44.142
+    },
+    {
+      "id": "rancho_hoarding",
+      "zone": "RANCHO",
+      "gang": "ballas",
+      "x": 318.985,
+      "y": -1718.839,
+      "z": 29.308,
+      "heading": 129.176
+    },
+    {
+      "id": "rancho_garage",
+      "zone": "RANCHO",
+      "gang": "ballas",
+      "x": 320.552,
+      "y": -1769.588,
+      "z": 28.842,
+      "heading": 54.411
+    },
+    {
+      "id": "rancho_tarp",
+      "zone": "RANCHO",
+      "gang": "ballas",
+      "x": 428.13,
+      "y": -1774.404,
+      "z": 28.941,
+      "heading": 37.842
+    },
+    {
+      "id": "rancho_fence_east",
+      "zone": "RANCHO",
+      "gang": "ballas",
+      "x": 375.49,
+      "y": -1848.38,
+      "z": 27.752,
+      "heading": 220.623
+    },
+    {
+      "id": "rancho_corner",
+      "zone": "RANCHO",
+      "gang": "ballas",
+      "x": 337.408,
+      "y": -1880.925,
+      "z": 26.099,
+      "heading": 51.523
+    },
+    {
+      "id": "rancho_far_shutter",
+      "zone": "RANCHO",
+      "gang": "ballas",
+      "x": 531.544,
+      "y": -1821.216,
+      "z": 28.362,
+      "heading": 44.049
     }
   ]
 }

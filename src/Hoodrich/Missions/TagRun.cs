@@ -440,9 +440,24 @@ namespace Hoodrich.Missions
             // A new run gets its own trouble. See _troubleSpent.
             _troubleSpent = false;
 
-            // However many the job asks for, drawn from the whole list at random, so running it
-            // again is not the same afternoon twice.
-            var pool = new List<TagSpot>(all);
+            // However many the job asks for, drawn at random from the walls that are still
+            // somebody else's, so running it again is not the same afternoon twice.
+            var pool = new List<TagSpot>();
+
+            for (var i = 0; i < all.Count; i++)
+            {
+                if (AlreadyOurs(all[i])) continue;
+                pool.Add(all[i]);
+            }
+
+            // NOTHING LEFT TO GO OVER. Every wall on the list is already yours, which is a
+            // finished job rather than a broken one -- and saying so plainly is better than
+            // sending him out to paint over his own work. The reset menu wipes the paint, and
+            // wiping it puts every wall back on the table.
+            if (pool.Count == 0)
+            {
+                return "Every wall on that list is already ours.";
+            }
 
             var want = Math.Max(1, Math.Min(def.Targets, pool.Count));
 
@@ -1783,6 +1798,41 @@ namespace Hoodrich.Missions
 
                 if (mark.Handle != 0) mark.Away = false;
             }
+        }
+
+        /// <summary>
+        /// How near a mark has to be to a wall to count as that wall being done.
+        ///
+        /// The letters are laid out a couple of metres wide from the spot Franklin stands on,
+        /// with jitter on top, so a mark can sit a fair way from the spot itself. Generous
+        /// enough to catch all of them and still tight enough that two walls a street apart
+        /// are never confused -- the closest pair on the list is about eleven metres.
+        /// </summary>
+        private const float PaintedWithin = 6f;
+
+        /// <summary>
+        /// Whether this wall already has our paint on it.
+        ///
+        /// NOT called Painted -- that is already taken by the property meaning "every wall in
+        /// this run is done", which is a different question about a different thing.
+        ///
+        /// Asked of the MARKS rather than of a list of finished wall ids, and that is the whole
+        /// trick: the paint is already saved and restored, so it is the one record that cannot
+        /// disagree with what is on the wall. A separate "walls done" flag would be a second
+        /// source of truth for the same fact, and the first time somebody wiped the graffiti
+        /// from the reset menu the two would part company -- clean walls the run still refused
+        /// to offer.
+        /// </summary>
+        private bool AlreadyOurs(TagSpot spot)
+        {
+            if (spot == null) return false;
+
+            for (var i = 0; i < _marks.Count; i++)
+            {
+                if (_marks[i].At.DistanceTo(spot.Where) <= PaintedWithin) return true;
+            }
+
+            return false;
         }
 
         /// <summary>How many marks are on the walls right now.</summary>
