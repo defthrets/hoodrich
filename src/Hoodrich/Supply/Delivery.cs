@@ -95,7 +95,14 @@ namespace Hoodrich.Supply
         private const int WalkInMs = 12000;
 
         /// <summary>Once the box is down, this long before he is let go entirely.</summary>
-        private const int LeaveMs = 25000;
+        // Long enough for a walk that is now a real walk.
+        //
+        // It was 25 seconds, which was comfortable while the enter task warped him in at 20 --
+        // the state never had to wait for an actual walk across a dock yard plus the door
+        // animation. Without the warp the walk takes as long as it takes, and a state that
+        // gave up at 25 would hand him back mid-stride: no goodbye from the driver's seat, no
+        // road to drive to, just a released ped finishing his own task in silence.
+        private const int LeaveMs = 45000;
 
         /// <summary>
         /// How far the point he is driving to has to be before it is worth driving to.
@@ -1566,8 +1573,24 @@ namespace Hoodrich.Supply
                     // a WALK clipset -- a drunk running is just a man running -- so the whole
                     // second half of his delivery was sober, and only the walk up the path
                     // ever showed it.
+                    // TIMEOUT -1, AND THAT IS THE WHOLE FIX. It was 20000, and a timeout on
+                    // this task is not "give up after twenty seconds" -- it is "get in by any
+                    // means after twenty seconds", and the means is a warp. So he walked back
+                    // across the yard, ran out of clock at the door, and appeared behind the
+                    // wheel without ever opening it.
+                    //
+                    // Rockstar's own scripts are unambiguous about which knob does what. Of
+                    // 801 calls, 131 pass timeout -1 with flag 1 -- walk over, open the door,
+                    // get in, no clock. The twenty that pass a timeout of 1 pair it with flag
+                    // 16, which the native list documents as "teleport directly into vehicle":
+                    // a one millisecond clock is how you ASK for the warp. We were asking for
+                    // it on a longer fuse.
+                    //
+                    // Nothing is lost by removing the clock. TickLeaving gives up on its own
+                    // after LeaveMs and Cancel hands him and the car back to the game, so the
+                    // worst case is a courier the world recycles rather than one who pops.
                     Function.Call(Hash.TASK_ENTER_VEHICLE, _driver.Handle, _car.Handle,
-                                  20000, -1, 1f, 1, 0);
+                                  -1, -1, 1f, 1, 0);
 
                     // Said again on the way out. Nothing has taken it off him, but the walk out
                     // is the longer of the two and the one where it is worth being certain.
@@ -2379,7 +2402,10 @@ namespace Hoodrich.Supply
 
                     // Walking here too. Same reason as the leaving path above: 2.0 is a run,
                     // and a courier sprinting to his own car is a man being chased.
-                    Function.Call(Hash.TASK_ENTER_VEHICLE, 0, _car.Handle, 10000, -1, 1f, 1, 0);
+                    // Same again, and the ped argument is 0 because that is how a task goes
+                    // into a sequence rather than onto a ped -- Rockstar do it identically in
+                    // abigail2 and docks_setup. Only the clock was wrong.
+                    Function.Call(Hash.TASK_ENTER_VEHICLE, 0, _car.Handle, -1, -1, 1f, 1, 0);
 
                     // A DESTINATION first, and only then a wander.
                     //
