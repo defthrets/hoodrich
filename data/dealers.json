@@ -181,7 +181,8 @@
       "drunk": false,
       "priceFloor": 0,
       "priceStep": 5,
-      "purity": 0.75
+      "purity": 0.75,
+      "uncutFromValue": 999999
     },
     {
       "id": "sand_cook",
@@ -262,7 +263,8 @@
         "im out front. dont put the porch light on",
         "here. im the truck that dont belong on your street",
         "outside. come out, i aint knockin on a door"
-      ]
+      ],
+      "uncutFromValue": 8500
     },
     {
       "id": "beach_connect",
@@ -388,7 +390,7 @@
         "yeah yeah. comin",
         "on it. and don't bring nobody with the flag on, it's tense out here"
       ],
-      "purity": 0.62,
+      "purity": 0.55,
       "lotValue": 5000,
       "priceFloor": 3000,
       "lotStep": 25,
@@ -425,7 +427,8 @@
         "im out here. same as always",
         "outside. come get it, i aint got all night",
         "here. engine on"
-      ]
+      ],
+      "uncutFromValue": 7000
     },
     {
       "id": "aztecas_corner",
@@ -507,7 +510,8 @@
         "estoy aqui. im out front",
         "outside. come out, dont keep me sittin",
         "here. hurry up, this aint my block"
-      ]
+      ],
+      "uncutFromValue": 5000
     },
     {
       "id": "ballas_corner",
@@ -591,7 +595,8 @@
         "outside. come out NOW",
         "im here. quick, quick, quick",
         "out front. i aint sittin on this street twice"
-      ]
+      ],
+      "uncutFromValue": 5000
     },
     {
       "id": "vagos_corner",
@@ -677,7 +682,8 @@
         "aqui. outside",
         "im here. come out",
         "out front. money first, remember"
-      ]
+      ],
+      "uncutFromValue": 5000
     },
     {
       "id": "marabunta_corner",
@@ -760,7 +766,8 @@
         "i am outside. facing out, like always",
         "here. quiet street, lets keep it that way",
         "outside now. come when youre ready"
-      ]
+      ],
+      "uncutFromValue": 5000
     },
     {
       "id": "lost_corner",
@@ -845,7 +852,8 @@
         "im outside. you cant miss me",
         "here! open up",
         "outside brother. hurry, im gettin looks"
-      ]
+      ],
+      "uncutFromValue": 5000
     },
     {
       "id": "triads_corner",
@@ -929,7 +937,8 @@
         "I am outside. Come out.",
         "I have arrived. I will not wait long.",
         "Outside. Please be prompt."
-      ]
+      ],
+      "uncutFromValue": 5000
     },
     {
       "id": "armenians_corner",
@@ -1012,7 +1021,8 @@
         "Outside. Come.",
         "I am here. Where are you.",
         "Front of the house. Hurry."
-      ]
+      ],
+      "uncutFromValue": 5000
     },
     {
       "id": "koreans_corner",
@@ -1094,7 +1104,8 @@
         "outside. i'm here",
         "out front. come on",
         "here. i'd rather not sit in this street"
-      ]
+      ],
+      "uncutFromValue": 5000
     }
   ]
 }

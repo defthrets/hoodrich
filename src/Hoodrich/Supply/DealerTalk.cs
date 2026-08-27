@@ -170,10 +170,10 @@ namespace Hoodrich.Supply
             // a fact the game had and did not mention.
             var strength = Def == null ? 1f : Def.PurityNow;
 
-            var node = Node(strength >= 0.999f
+            var node = Node((strength >= 0.999f
                 ? "Ain't got time to stand here. What you taking? Nothing here's been touched."
                 : "Ain't got time to stand here. What you taking? It's all stepped on already, " +
-                  Stash.Percent(strength) + " per cent.");
+                  Stash.Percent(strength) + " per cent.") + Standing());
 
             foreach (var brick in StockToday())
             {
@@ -186,9 +186,16 @@ namespace Hoodrich.Supply
                 // The product's own words for the amount -- "40 pills", "112g" -- rather than
                 // a kilo count. Kilos are true of the port and nonsense off a bicycle, where
                 // the same routine was rendering an ounce as "0.1 of a kilo".
+                // WHAT ONE COSTS AND WHERE CLEAN STARTS, on the row you decide from.
+                //
+                // It said "200g at 50% from $4,500", which is three quarters of a sentence:
+                // true of the small lot and wrong about the two underneath it, and no way to
+                // tell from here that the bigger ones come uncut.
+                var clean = Def != null && Def.PurityFor(cost) >= 0.999f;
+
                 node.Say(product.Name + ".", () => Amounts(pick, product),
-                         product.Bulk(brick.Grams) + " at " + Stash.Percent(strength) +
-                         "%   from $" + cost.ToString("N0"));
+                         product.Bulk(brick.Grams) + "  from $" + cost.ToString("N0") +
+                         (clean ? "  uncut" : "  " + Stash.Percent(strength) + "%"));
 
                 node.WithIcon(Icons.ForDrug(product.Id));
 
@@ -275,9 +282,38 @@ namespace Hoodrich.Supply
             return node;
         }
 
+        /// <summary>
+        /// What you have got and what you can hold, under whatever he just said.
+        ///
+        /// THE THREE THINGS EVERY ROW ON THIS SCREEN IS SILENTLY ABOUT. Standing in front of a
+        /// man reading "$4,500" is a question about your wallet you have to close the menu to
+        /// answer; "200g" is a question about your house you cannot answer at all from here.
+        /// The screen was already refusing rows you could not pay for or fit, so it knew both
+        /// numbers -- it just would not say either until you had picked something and been
+        /// told no.
+        ///
+        /// The third is the one nobody would ever work out on their own: buying enough in one
+        /// go arrives uncut. That is the whole shape of the shop and it was invisible.
+        /// </summary>
+        private string Standing()
+        {
+            var cash = Game.Player.Money;
+            var room = House == null ? 0f : House.FreeSpace;
+
+            var line = "\n\n$" + cash.ToString("N0") + " on you  --  " +
+                       room.ToString("0") + "g room at the house";
+
+            if (Def != null && Def.PurityNow < 0.999f)
+            {
+                line += "  --  uncut from $" + ((int)Def.UncutFromValue).ToString("N0");
+            }
+
+            return line;
+        }
+
         private DialogueNode Amounts(Brick brick, DrugDef product)
         {
-            var node = Node("How many? And don't say one if you mean four.");
+            var node = Node("How many? And don't say one if you mean four." + Standing());
 
             foreach (var lot in Lots)
             {
