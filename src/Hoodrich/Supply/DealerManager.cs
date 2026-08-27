@@ -369,7 +369,7 @@ namespace Hoodrich.Supply
         /// fires for somebody you could reach: the offer is a race against a clock, and a race
         /// you cannot enter is just a message telling you what you are missing.
         /// </summary>
-        private void ColdCalls(PlayerState state)
+        private void ColdCalls(PlayerState state, Affiliation crew)
         {
             if (!_cfg.ColdCallsEnabled || state == null) return;
 
@@ -389,13 +389,25 @@ namespace Hoodrich.Supply
             if (ColdCall.Standing) return;
             if (_rng.NextDouble() * 100.0 >= _cfg.ColdCallChancePercent) return;
 
-            // Somebody he has actually stood in front of, and who sells something.
+            // SOMEBODY HE HAS ACTUALLY STOOD IN FRONT OF.
+            //
+            // The comment here used to say exactly that and the code did not do it -- the pool
+            // was every dealer in the file, so men the player had never met were texting him
+            // time-limited discounts on product they had never been introduced over. Which is
+            // the same bug the introduction text had, arriving through a different door.
+            //
+            // Asked through RefusalReason rather than HaveMet alone, because everything else
+            // that stops him answering the phone should stop him ringing it too: the wrong
+            // rank, the wrong hour, a run of Gerald's still in progress. A man who would refuse
+            // the call has no business making it.
             var pool = new List<DealerDef>();
+
             for (var i = 0; i < _defs.Count; i++)
             {
                 var d = _defs[i];
                 if (d == null || string.IsNullOrEmpty(d.Id)) continue;
                 if (_dry.Contains(d.Id)) continue;
+                if (RefusalReason(d, state, crew, needHome: false) != null) continue;
 
                 pool.Add(d);
             }
@@ -821,7 +833,15 @@ namespace Hoodrich.Supply
         /// <summary>Set by Main: whether the player is at the stash house right now.</summary>
         public Func<bool> AtHome;
 
-        public string RefusalReason(DealerDef def, PlayerState state, Affiliation crew)
+        /// <param name="needHome">
+        /// Whether standing at the house is required. True everywhere the player is trying to
+        /// reach HIM -- he brings a box to a door and there has to be a door. False when the
+        /// question is whether HE would ring YOU, because an offer arriving on a phone is not a
+        /// delivery and waiting until somebody happens to be stood in their aunt's front room
+        /// before telling them about it is not a cold call, it is a coincidence.
+        /// </param>
+        public string RefusalReason(DealerDef def, PlayerState state, Affiliation crew,
+                                    bool needHome = true)
         {
             if (def == null) return "No such contact.";
 
@@ -858,7 +878,7 @@ namespace Hoodrich.Supply
             // rule that used to apply only to the two Docks contacts applies to all fourteen.
             // The alternative was a phone menu where half the numbers worked anywhere and half
             // did not, with nothing on screen to say which was which.
-            if (AtHome != null && !AtHome())
+            if (needHome && AtHome != null && !AtHome())
             {
                 return "Call him from the house";
             }
@@ -930,7 +950,12 @@ namespace Hoodrich.Supply
 
                 var key = "plug:" + def.Id;
                 if (state.HasBeenOffered(key)) continue;
-                if (RefusalReason(def, state, crew) != null) continue;
+                // needHome: false for the same reason the cold calls use it. This is him
+                // texting to say he is reachable, which is a thing that happens wherever you
+                // are standing -- gating it on being at the house meant an introduction that
+                // waited for you to go home, and half the time you already had his number by
+                // then because you had walked up to him again.
+                if (RefusalReason(def, state, crew, needHome: false) != null) continue;
 
                 state.MarkOffered(key);
                 state.Touch();
@@ -957,7 +982,7 @@ namespace Hoodrich.Supply
 
         public void Update(TurfWatch turf, Affiliation crew, PlayerState state)
         {
-            ColdCalls(state);
+            ColdCalls(state, crew);
 
             TextIfNewlyOpen(state, crew);
 
