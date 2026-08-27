@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -190,6 +190,16 @@ namespace Hoodrich.Core
         // sitting next to the dll.
         public static string LogFile => Path.Combine(Writable, "Hoodrich.log");
         public static string SaveFile => Path.Combine(Writable, "save.json");
+
+        /// <summary>
+        /// Free-hand paint, kept apart from the save.
+        ///
+        /// ITS OWN FILE ON PURPOSE. The tag run's marks already ride inside save.json, and
+        /// folding thousands of loose splatters in beside them would make every ordinary save
+        /// carry a wall's worth of decals -- and would put the two at risk of each other, so a
+        /// corrupt paint list could cost somebody their money and their product.
+        /// </summary>
+        public static string PaintFile => Path.Combine(Writable, "paint.json");
 
         private static void EnsureDir(string path)
         {

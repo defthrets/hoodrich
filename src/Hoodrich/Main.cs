@@ -588,6 +588,12 @@ namespace Hoodrich
                 _spraycan = new Paint.Spraycan(_paint);
                 _graffiti = new GraffitiScreen(_paint, _marks);
 
+                // WITHOUT THIS THE TAG RUNS WOULD BE A STEP BACKWARDS. The old mechanic wrote
+                // its marks into save.json and put them back on the wall next session; the
+                // engine that replaced it had no persistence here at all, so a wall you had
+                // just been sent across the city to paint would be blank on reload.
+                LoadPaint();
+
                 // HERE, not thirty lines up where it used to be.
                 //
                 // This is a field copy, not a lambda, and it was made before _social existed --
@@ -1651,6 +1657,10 @@ namespace Hoodrich
                 pages.Crew = _homies;
                 pages.ShowSocials = () => _socialScreen.Open();
                 pages.ShowGraffiti = () => _graffiti.Open();
+
+                // The tag run borrows the same engine the app uses.
+                _jobs.PaintKit = _paint;
+                _jobs.PaintSprayer = _sprayer;
                 pages.MarksUp = () => _marks.Count;
                 pages.ShowMessages = () => _messages.Open();
                 pages.Jobs = _jobs;
@@ -2202,7 +2212,13 @@ namespace Hoodrich
                     //
                     // Nothing paints while a screen is up: the panel eats the controls, and a
                     // trigger held through a menu is a wall painted by accident.
-                    _sprayer.Colour = _graffiti.Colour;
+                    // THE RUN GETS THE SET'S GREEN, and only while it is actually asking.
+                    // Going over somebody else's tag is not a moment for whatever happened to
+                    // be loaded in the picker -- and forcing it here rather than writing it
+                    // into the picker means his own choice is still there afterwards.
+                    _sprayer.Colour = _jobs != null && _jobs.ForcingTagColour
+                        ? Missions.TagRun.TagGreen
+                        : _graffiti.Colour;
                     _sprayer.Nozzle = _spraycan.Handle;
                     _sprayer.Update();
 
@@ -2219,6 +2235,13 @@ namespace Hoodrich
 
                     // The street's opinion of a man with a can, instead of running from him.
                     _street.Update(Paint.Can.Out() && _paint.PaintEnabled);
+
+                    // Only when there is something new, and not often.
+                    if (Game.GameTime - _paintSavedAt > 30000)
+                    {
+                        _paintSavedAt = Game.GameTime;
+                        SavePaint();
+                    }
 
                     if (Paint.Can.Out() && _paint.PaintEnabled)
                     {
@@ -2356,6 +2379,34 @@ namespace Hoodrich
                               " is parked for this session.");
                     Notify.Failure("shut itself off for this session. Check the log.");
                 }
+            }
+        }
+
+        private int _paintSavedAt;
+
+        /// <summary>Free-hand paint, to and from its own file. See Paths.PaintFile.</summary>
+        private void SavePaint()
+        {
+            try
+            {
+                if (_marks != null) JsonFile.Write(Paths.PaintFile, _marks.ToJson());
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Could not save the paint.", ex);
+            }
+        }
+
+        private void LoadPaint()
+        {
+            try
+            {
+                var doc = JsonFile.Read(Paths.PaintFile);
+                if (doc != null && _marks != null) _marks.LoadFrom(doc);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Could not read the paint.", ex);
             }
         }
 
@@ -2899,6 +2950,10 @@ namespace Hoodrich
             // either behind outlives the mod.
             try { _spraycan?.Away(); } catch { /* teardown */ }
             try { _street?.Release(); } catch { /* teardown */ }
+
+            // Before the decals come off, or the record is written after the thing it records
+            // has been taken down.
+            try { SavePaint(); } catch { /* teardown */ }
             try { _sprayer?.Stop(); } catch { /* teardown */ }
 
             try { _phone?.RestoreWorld(); }

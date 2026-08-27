@@ -208,6 +208,26 @@ namespace Hoodrich.Missions
 
         private readonly BikeRide _bike;
 
+        /// <summary>
+        /// The paint engine, on its way to the tag run.
+        ///
+        /// Handed down the same way Social is rather than reached for globally: the tag run
+        /// does not paint anything itself any more, it puts the mod's own can in the player's
+        /// hand and times him.
+        /// </summary>
+        public Paint.PaintConfig PaintKit
+        {
+            set { if (_tags != null) _tags.Kit = value; }
+        }
+
+        public Paint.Sprayer PaintSprayer
+        {
+            set { if (_tags != null) _tags.Sprayer = value; }
+        }
+
+        /// <summary>Whether the run is currently insisting on the set's green.</summary>
+        public bool ForcingTagColour => _tags != null && _tags.ForcingColour;
+
         /// <summary>Set by Main. Null-checked everywhere, so the feed is never load-bearing.</summary>
         public SocialFeed Social
         {

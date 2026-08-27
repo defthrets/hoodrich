@@ -79,6 +79,19 @@ namespace Hoodrich.Missions
         /// </summary>
         private const float ArriveRange = 1.1f;
 
+        /// <summary>
+        /// How far he may stand off the marker and still be working it.
+        ///
+        /// Wider than ArriveRange, which is a metre and was sized for a man standing still in
+        /// a scripted animation. He aims and sprays himself now, and a can that reaches four
+        /// metres is no use to somebody pinned inside one -- you have to be able to step back
+        /// and see what you are doing.
+        /// </summary>
+        private const float PaintZone = 3.4f;
+
+        /// <summary>How long the trigger has to be held, in total, inside the zone.</summary>
+        private const int HoldMs = 5000;
+
         /// <summary>How wide the ring is drawn, which is what ArriveRange has to agree with.</summary>
         private const float MarkerSize = 2.2f;
         /// <summary>
@@ -246,6 +259,33 @@ namespace Hoodrich.Missions
         public SocialFeed Social;
 
         /// <summary>
+        /// The paint engine, handed over by Main.
+        ///
+        /// THE MISSION NO LONGER PAINTS ANYTHING ITSELF. It used to run its own can, its own
+        /// animation, its own particle jets and its own decals, and lay the set's initials out
+        /// letter by letter -- a whole second implementation of the thing this mod now does
+        /// properly everywhere else. What it does instead is put the tool in his hand, pick
+        /// the colour, and time him.
+        ///
+        /// Which is also a better mission. Watching a man tag a wall for eleven seconds is a
+        /// cutscene you cannot skip; doing it yourself is the game.
+        /// </summary>
+        public Paint.PaintConfig Kit;
+        public Paint.Sprayer Sprayer;
+
+        /// <summary>
+        /// Whether Main should be forcing the mission's colour rather than the player's.
+        ///
+        /// A tag run is your set going over somebody else's, so it is not a moment for
+        /// whatever was left loaded in the picker. Handed back the instant the wall is done.
+        /// </summary>
+        public bool ForcingColour { get; private set; }
+
+        /// <summary>The set's green. Same one the swatch row calls lime.</summary>
+        public static readonly System.Drawing.Color TagGreen =
+            System.Drawing.Color.FromArgb(255, 122, 214, 56);
+
+        /// <summary>
         /// Whose colour goes on the wall.
         ///
         /// Set by the runner and null-checked. The jet was a hardcoded green because the job is
@@ -346,6 +386,20 @@ namespace Hoodrich.Missions
         private int _lastUpdate;
         private int _sprayingSince;
         private TagSpot _spraying;
+
+        /// <summary>Trigger-down milliseconds banked inside the zone. Not wall-clock.</summary>
+        private int _banked;
+
+        /// <summary>
+        /// Which wall that time belongs to.
+        ///
+        /// Without this the bank is emptied every time BeginSpray runs -- which is every time
+        /// you step back onto a marker -- so leaving a wall to look at it from further away
+        /// silently threw away everything you had just done. The comment in EndSpray promised
+        /// the opposite, which is exactly the sort of thing nobody notices until they have
+        /// sprayed the same wall three times wondering why the bar keeps resetting.
+        /// </summary>
+        private string _bankedFor = "";
 
         /// <summary>
         /// The tag being written on this wall, and how much of it is already paint.
@@ -646,9 +700,10 @@ namespace Hoodrich.Missions
                 return;
             }
 
-            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to go over their tag.");
-
-            if (Tapped()) BeginSpray(player, near);
+            // ARRIVING IS THE TRIGGER. There is no button any more: walking onto the marker
+            // puts the can in his hand, because the job is "go and paint that", not "go and
+            // press a key at that".
+            BeginSpray(player, near);
         }
 
         /// <summary>Draws the ground markers, which is what actually leads you to a wall.</summary>
@@ -783,7 +838,10 @@ namespace Hoodrich.Missions
             Hud.RectFrom(barLeft, barY, barWide, SprayBarHeight,
                          System.Drawing.Color.FromArgb((int)(46 * eased), 255, 255, 255));
 
-            var done = Math.Min(1f, (Game.GameTime - _sprayingSince) / (float)SprayMs);
+            // Banked trigger-time, not wall-clock. The bar has to measure the thing the
+            // player is actually being asked for, or it fills while he stands there doing
+            // nothing and then lies to him about why the wall is not finished.
+            var done = Math.Min(1f, _banked / (float)HoldMs);
 
             _bar += (done - _bar) * SprayBarRate;
             if (Math.Abs(done - _bar) < 0.002f) _bar = done;
@@ -1000,26 +1058,12 @@ namespace Hoodrich.Missions
             _spraying = spot;
             _sprayingSince = Game.GameTime;
 
-            // A fresh wall gets a fresh tag, and nothing of the last one is owed.
-            _tagText = TagToWrite();
-            _tagPoints = TagLetters.CanWrite(_tagText)
-                ? TagLetters.Layout(_tagText, TagSpacing)
-                : null;
-            _tagPlaced = 0;
-
-            if (_tagPoints != null)
+            // A DIFFERENT wall starts from nothing. The same one picks up where it left off.
+            if (_bankedFor != spot.Id)
             {
-                Log.Info("Writing " + _tagText + " on this one -- " + _tagPoints.Count +
-                         " marks.");
+                _bankedFor = spot.Id;
+                _banked = 0;
             }
-            else
-            {
-                Log.Info("No letters for '" + _tagText + "'; this one gets splatter.");
-            }
-
-            // A different wall, so the last one's surface is forgotten rather than painted on
-            // from four streets away.
-            ForgetWall();
 
             // And the panel arrives rather than being already there.
             _cardAt = 0;
@@ -1027,20 +1071,38 @@ namespace Hoodrich.Missions
 
             try
             {
-                player.Task.ClearAll();
-                player.Heading = spot.Heading;
+                // NOT ClearAll. He is about to control this himself, and wiping his tasks is
+                // how the old version could take a man out of a sprint and stand him still --
+                // fine when the next thing was a scripted animation, wrong when the next thing
+                // is him playing.
+                //
+                // Turned to face the wall, though. The marker knows which way the tag goes and
+                // he does not, so pointing him at it saves everyone a confused half-circle.
+                Function.Call(Hash.TASK_TURN_PED_TO_FACE_COORD, player.Handle,
+                              spot.Where.X, spot.Where.Y, spot.Where.Z, 900);
 
-                GiveCan(player);
-                PlaySprayClip(player);
+                if (Kit != null)
+                {
+                    // The can, loaded, in his hand, without him asking. Lime is forced through
+                    // ForcingColour rather than written into the picker, so whatever he had
+                    // loaded is still there when the run is over.
+                    Kit.SprayCanLook = true;
+                    Kit.PaintEnabled = true;
 
-                Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PaintAsset);
+                    ForcingColour = true;
+
+                    // Fully qualified: this class has its own Paint(Ped) method from the old
+                    // mechanic, and an unqualified Paint here resolves to that rather than to
+                    // the namespace.
+                    Hoodrich.Paint.Can.Give(true);
+                }
 
                 Function.Call(Hash.PLAY_SOUND_FRONTEND, -1, "Beep_Red",
                               "DLC_HEIST_HACKING_SNAKE_SOUNDS", true);
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not start painting: " + ex.Message);
+                Log.Debug("Could not hand over the can: " + ex.Message);
             }
 
             // Their block, and you are stood on it with your back to the road -- unless it is
@@ -1053,24 +1115,38 @@ namespace Hoodrich.Missions
 
         private void TickSpraying(Ped player, int now)
         {
-            // Walking off, being knocked over, or just pressing the button again abandons it.
-            // The wall keeps their tag and you can come back -- nothing is lost but the paint
-            // and the time. An animation you cannot get out of is a cutscene, and this is not
-            // one: it is eight seconds of standing still that you chose to spend.
-            var walked = player.Position.DistanceTo(_spraying.Where) > ArriveRange + 1.2f;
-            var cancelled = Tapped() || Moving(player);
-
-            if (walked || cancelled || !player.IsAlive)
+            // WALKING OFF PAUSES, IT NO LONGER FAILS. The old mechanic was an animation you
+            // stood inside, so stepping out of it was abandoning it. This is him painting, and
+            // stepping back to look at what you have done is part of painting -- punishing
+            // that would be punishing the thing the change was made to allow.
+            //
+            // Banked time is kept. Come back and carry on.
+            if (!player.IsAlive || player.IsInVehicle())
             {
-                Notify.Problem("you left that one half done.");
                 EndSpray(player);
                 return;
             }
 
-            Paint(player);
-            Stain(player);
+            if (player.Position.DistanceTo(_spraying.Where) > PaintZone)
+            {
+                Help.ShowThisFrame("Get back to the tag to finish it.");
+                EndSpray(player);
+                return;
+            }
 
-            if (now - _sprayingSince < SprayMs) return;
+            // Only while the trigger is actually down, and only in here. Five seconds of
+            // spraying, not five seconds of standing near a wall holding a can.
+            if (Sprayer != null && Sprayer.Spraying) _banked += UpdateIntervalMs;
+
+            if (_banked < HoldMs)
+            {
+                if (Sprayer == null || !Sprayer.Spraying)
+                {
+                    Help.ShowThisFrame("Aim at their tag and hold ~INPUT_ATTACK~ to go over it.");
+                }
+
+                return;
+            }
 
             _done.Add(_spraying.Id);
 
@@ -1094,23 +1170,18 @@ namespace Hoodrich.Missions
             _spraying = null;
             _sprayingSince = 0;
 
-            StopPaint();
+            // NOT _banked. Stepping away from a wall banks what you have done rather than
+            // throwing it away -- see the note in TickSpraying. It is cleared when a NEW wall
+            // is begun, which is the only place starting from zero is right.
 
-            try
-            {
-                // CLEAR_PED_TASKS_IMMEDIATELY as well as the managed call, because a looping
-                // TASK_PLAY_ANIM does not always let go of a ped on a plain ClearAll -- which
-                // is what left Franklin painting an invisible wall after the job was done.
-                player.Task.ClearAll();
-                Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, player.Handle);
-                Function.Call(Hash.STOP_ANIM_TASK, player.Handle, "", "", 3f);
+            // The colour goes back to whatever he had loaded. The can stays in his hand: he
+            // owns it now, and taking it off him between walls would mean re-arming at every
+            // marker for no reason anybody would enjoy.
+            ForcingColour = false;
 
-                TakeCan();
-            }
-            catch
-            {
-                // He will stand up on his own.
-            }
+            // Nothing to clear. He was never put in an animation, so there is nothing holding
+            // him -- which is the whole reason the old version needed
+            // CLEAR_PED_TASKS_IMMEDIATELY here and this does not.
         }
 
         /// <summary>
