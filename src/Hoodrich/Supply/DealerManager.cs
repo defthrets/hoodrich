@@ -1611,6 +1611,21 @@ namespace Hoodrich.Supply
         {
             if (def == null || state == null) return false;
 
+            // THE TWO WHO COME TO YOU ARE NOT MEN YOU FIND.
+            //
+            // Gerald and the port are Docks kind, which is the mod's word for "drives a box to
+            // your door". Neither of them ever stands on a corner, so neither can ever be
+            // walked up to -- and the marker is only ever written by walking up to somebody.
+            // On a fresh save that made both of them permanently untextable: Gerald, who is the
+            // first contact in the mod and introduces himself by text, and Tao, who you meet in
+            // the middle of a scripted run at his own yard.
+            //
+            // They were never the point of the rule. The rule is for the eleven who stand on a
+            // corner waiting to be found, and both of these already have gates of their own --
+            // the port stays shut until DocksUnlocked, Gerald until you have moved enough for
+            // him to bother.
+            if (def.Kind == DealerKind.Docks) return true;
+
             return state.HasBeenOffered(MetKey(def)) ||
                    state.HasBeenOffered("plug:" + def.Id);
         }
