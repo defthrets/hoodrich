@@ -265,6 +265,9 @@ namespace Hoodrich.UI
 
         // ---- buying ------------------------------------------------------------
 
+        /// <summary>Set by Main. Without it a gun is only as permanent as the game feels.</summary>
+        public Weapons.GunLocker Locker;
+
         private void Buy()
         {
             var piece = Chosen;
@@ -316,6 +319,9 @@ namespace Hoodrich.UI
                     // extended magazine for (the Double Action, the sawn-offs, everything
                     // melee) is a no-op rather than a failure.
                     fitted = Weapons.ExtendedClips.GiveTo(player, piece.Weapon);
+
+                    // Written down, so it is still his after a load. See GunLocker.
+                    if (Locker != null) Locker.Bought(piece.Weapon);
                 }
 
                 Game.Player.Money -= cost;

@@ -197,6 +197,9 @@ namespace Hoodrich.Dealing
         };
 
         private readonly Settings _cfg;
+
+        /// <summary>Set by Main, so a seizure is a seizure.</summary>
+        public Weapons.GunLocker Locker;
         private readonly PlayerState _state;
         private readonly Pricing _pricing;
         private readonly Random _rng = new Random();
@@ -2147,6 +2150,11 @@ namespace Hoodrich.Dealing
             {
                 armed = Function.Call<bool>(Hash.IS_PED_ARMED, Game.Player.Character.Handle, 7);
                 Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, Game.Player.Character.Handle, true);
+
+                // AND OFF THE LIST. This is a seizure -- the one case where losing them is the
+                // whole point -- so the locker must forget them or it would hand them straight
+                // back and make the search a formality.
+                if (Locker != null) Locker.TakenOffHim("searched on the corner");
             }
             catch { /* he keeps them */ }
 

@@ -170,10 +170,25 @@ namespace Hoodrich.Supply
             // a fact the game had and did not mention.
             var strength = Def == null ? 1f : Def.PurityNow;
 
+            // THE NUMBER, ONCE. Read and cleared here, so it is said in the conversation where
+            // you met him and never again -- a man who hands you his number every time you walk
+            // up is not a contact, he is a jingle.
+            var number = "";
+
+            if (Def != null && Def.JustMet)
+            {
+                Def.JustMet = false;
+
+                if (!string.IsNullOrEmpty(Def.NumberLine))
+                {
+                    number = "\n\n" + Def.NumberLine;
+                }
+            }
+
             var node = Node((strength >= 0.999f
                 ? "Ain't got time to stand here. What you taking? Nothing here's been touched."
                 : "Ain't got time to stand here. What you taking? It's all stepped on already, " +
-                  Stash.Percent(strength) + " per cent.") + Standing());
+                  Stash.Percent(strength) + " per cent.") + number + Standing());
 
             foreach (var brick in StockToday())
             {

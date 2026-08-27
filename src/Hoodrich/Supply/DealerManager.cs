@@ -204,6 +204,7 @@ namespace Hoodrich.Supply
             def.SpotY = node["y"].AsFloat(def.SpotY);
             def.SpotZ = node["z"].AsFloat(def.SpotZ);
             def.SpotHeading = node["heading"].AsFloat(def.SpotHeading);
+            def.NumberLine = node["numberLine"].AsString(def.NumberLine);
 
             ReplaceList(def.ArrivalLines, node["arrivalLines"]);
             ReplaceList(def.CarryLines, node["carryLines"]);
@@ -839,7 +840,7 @@ namespace Hoodrich.Supply
             //
             // DocksUnlocked goes true the moment he HANDS you the run, which is right for the
             // run and wrong for everything else: it made him a contact you could ring for a
-            // delivery while you were still driving his quarter kilo across the city, and it
+            // delivery while you were still driving his load across the city, and it
             // fired his introduction text at you two minutes into the job he had just given
             // you. He is somebody you know once you have finished, not once you have agreed.
             if (def.Kind == DealerKind.Docks && !def.IsGangDealer
@@ -1465,6 +1466,9 @@ namespace Hoodrich.Supply
             {
                 State.MarkOffered(MetKey(def));
                 State.Touch();
+
+                // The greeting picks this up and puts it down again.
+                def.JustMet = true;
 
                 Log.Info("Met " + def.Id + " in person; he is a contact now.");
             }

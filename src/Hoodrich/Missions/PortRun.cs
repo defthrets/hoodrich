@@ -22,10 +22,10 @@ namespace Hoodrich.Missions
     /// Now it is a drive, in two halves, and they are deliberately different halves. Going out
     /// is an INTRODUCTION: a man you have never met is stood by his own car with the boot open,
     /// he hands you something on somebody else's word, and you leave with his number. Coming
-    /// back is a DELIVERY: you are carrying a quarter of a kilo that is not yours across half
+    /// back is a DELIVERY: you are carrying twenty kilos that is not yours across half
     /// the city to a yard, which is the job the rest of the mod is made of.
     ///
-    /// And it is done in HIS van, not in whatever you happened to arrive on. A quarter kilo
+    /// And it is done in HIS van, not in whatever you happened to arrive on. Twenty kilos
     /// does not go in a saddlebag; a filthy old Rumpo parked up a street in Chamberlain is what
     /// somebody actually moves weight in, and being handed the keys to it is the first thing
     /// Gerald has ever trusted you with.
@@ -179,7 +179,7 @@ namespace Hoodrich.Missions
         /// was about, so it should fill the bed rather than sit in the middle of it looking
         /// posted. The drug package that led this list before is a flat taped envelope
         /// twenty-five centimetres across -- correct for what Gerald hands you at a door,
-        /// laughable as a quarter kilo off a boat.
+        /// laughable as twenty kilos off a boat.
         ///
         /// Wooden crates behind them, and the old paper box last, so a model missing from an
         /// install costs the look rather than the load.
@@ -298,7 +298,20 @@ namespace Hoodrich.Missions
         };
 
         /// <summary>What is in the boot, and what it is worth for carrying it.</summary>
-        private const float Package = 250f;
+        /// <summary>
+        /// What comes off the boat, in grams.
+        ///
+        /// TWENTY KILOS, and it was 250g. A quarter of a kilo is a jacket pocket -- it is not
+        /// a sealed pallet, it is not a reason to borrow a man's truck, and it is certainly not
+        /// something a container yard has paperwork for. The whole shape of the run is that it
+        /// is too big to carry and too big to be seen with, and the number underneath it was
+        /// small enough to put in a bag.
+        ///
+        /// It is flavour rather than economy: this weight is Gerald's and never enters the
+        /// stash -- see Take -- so raising it changes what the job reads as and nothing about
+        /// what anything is worth.
+        /// </summary>
+        private const float Package = 20000f;
         private const int PayMin = 1800;
         private const int PayMax = 2500;
 
@@ -376,7 +389,7 @@ namespace Hoodrich.Missions
         /// pallet, which is a picture of an errand that did not happen.
         ///
         /// Rather than hunt for a pre-loaded pallet model and hope, the load is a second prop
-        /// stood on top of the first. Wrapped bales lead because this is a quarter kilo off a
+        /// stood on top of the first. Wrapped bales lead because this is twenty kilos off a
         /// boat and the bales are what the game already uses for exactly that; a box pile is
         /// under them so an install without the biker pack still gets something on the deck.
         /// </summary>
@@ -395,7 +408,7 @@ namespace Hoodrich.Missions
         /// <summary>Set by Main. The screen both meetings happen on.</summary>
         public Conversation Talk;
 
-        /// <summary>The block, so a quarter kilo coming off a boat gets talked about.</summary>
+        /// <summary>The block, so twenty kilos coming off a boat gets talked about.</summary>
         public SocialFeed Social;
 
         /// <summary>True while a job owns the top of the screen, so two cards never stack.</summary>
@@ -653,7 +666,7 @@ namespace Hoodrich.Missions
             }
 
             // And the van has to be here, because the van is what the weight travels in. A
-            // quarter of a kilo does not go in your pockets and it does not go on a pushbike.
+            // twenty kilos does not go in your pockets and it does not go on a pushbike.
             if (!VanIsNear(man))
             {
                 Help.ShowThisFrame(Stage == StageDeliver
@@ -700,7 +713,7 @@ namespace Hoodrich.Missions
         /// <summary>
         /// The end of the run, played rather than prompted.
         ///
-        /// The last thing you did was drive four kilometres with a quarter kilo in the back;
+        /// The last thing you did was drive four kilometres with twenty kilos in the back;
         /// being asked to press a button at the end of that is the mod handing the moment back
         /// to you to perform. So the truck stops, Franklin gets out on his own, and the man
         /// waiting for it walks over -- and the conversation opens when he arrives, because he
@@ -963,7 +976,7 @@ namespace Hoodrich.Missions
         /// <summary>
         /// The box goes in the van and the number goes in the phone.
         ///
-        /// The weight does NOT go in the stash. It is Gerald's quarter kilo off somebody
+        /// The weight does NOT go in the stash. It is Gerald's twenty kilos off somebody
         /// else's boat and you are carrying it for him -- if it landed in your house you could
         /// cut it, bag it and stand on a corner with it, and there would be nothing left to
         /// deliver.
@@ -1489,7 +1502,15 @@ namespace Hoodrich.Missions
         /// <summary>The short status on the right of the card.</summary>
         private string StepTag()
         {
-            if (Stage == StageDeliver) return Package.ToString("0") + "g";
+            // Kilos once it is kilos. "20000g" is a number off a scale; nobody carrying it
+            // would say it that way.
+            if (Stage == StageDeliver)
+            {
+                return Package >= 1000f
+                    ? (Package / 1000f).ToString("0.#") + "kg"
+                    : Package.ToString("0") + "g";
+            }
+
             if (Stage == StageBay) return "BAY 1";
 
             return InTheTruck ? "TAO" : "TRUCK";
@@ -2574,7 +2595,7 @@ namespace Hoodrich.Missions
         /// <summary>
         /// Two Vagos who know what is in the van.
         ///
-        /// The delivery leg is a four-kilometre drive with nothing in it, and a quarter kilo
+        /// The delivery leg is a four-kilometre drive with nothing in it, and twenty kilos
         /// riding in the back is exactly the kind of thing somebody would try to take. So they
         /// are sat on the road up out of the docks with the engine off, and they pull out
         /// behind you as you go past.
@@ -3544,7 +3565,7 @@ namespace Hoodrich.Missions
         /// And this takes the run away with it.
         ///
         /// The van is RELEASED rather than deleted. It is his and it is now parked in his yard
-        /// with a quarter kilo out of the back of it -- making it vanish the second he says
+        /// with twenty kilos out of the back of it -- making it vanish the second he says
         /// thanks would undo the only physical thing in the whole errand. Dropping persistence
         /// lets the game clean it up in its own time, the way it does every other car.
         /// </summary>

@@ -142,7 +142,9 @@ namespace Hoodrich.Missions
         /// business at the courts, the shop and the ride home were all silent -- which is most
         /// of the mission, and it made the one leg that did talk feel like a different scene.
         /// </summary>
-        private const int ChatterGapMs = 7000;
+        /// <summary>The floor between lines, with ChatterSpreadMs of slop on top.</summary>
+        private const int ChatterGapMs = 11000;
+        private const int ChatterSpreadMs = 9000;
 
         /// <summary>How often the escort task is put back on anybody who has lost it.</summary>
         private const int RetaskGapMs = 2500;
@@ -154,11 +156,72 @@ namespace Hoodrich.Missions
         /// come off -- whatever is being shouted is aimed at the people on the court, and the
         /// ones aimed at nobody in particular should sound like men enjoying themselves.
         /// </summary>
+        /// <summary>
+        /// What he sounds like on each leg.
+        ///
+        /// IT WAS ONE LIST FOR THE WHOLE JOB, and it had CHASE_SUSPECT and GENERIC_WAR_CRY in
+        /// it -- so the ride out to a basketball court, which is two men going somewhere on
+        /// bicycles, had Lamar occasionally screaming a battle cry at nobody. The same five
+        /// lines played coming back from an armed robbery.
+        ///
+        /// Every name here is one Rockstar's own scripts use, taken out of the decompiled set
+        /// rather than guessed -- a speech name a voice has not got plays as silence, which is
+        /// indistinguishable from the feature not working.
+        ///
+        /// No subtitles anywhere in here on purpose. These are not lines with words worth
+        /// reading; they are the noise of somebody being there.
+        /// </summary>
         private static readonly string[] RideLines =
         {
-            "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "CHASE_SUSPECT",
-            "GENERIC_WAR_CRY", "CHAT_STATE"
+            "CHAT_STATE", "CHAT_RESP", "GENERIC_HOWS_IT_GOING", "GENERIC_YES"
         };
+
+        /// <summary>Squaring up at the courts.</summary>
+        private static readonly string[] EdgyLines =
+        {
+            "CHALLENGE_THREATEN", "GENERIC_INSULT_HIGH", "PROVOKE_STARING", "GENERIC_CURSE_HIGH"
+        };
+
+        /// <summary>Rolling up on the shop with a plan he has just told you about.</summary>
+        private static readonly string[] StoreLines =
+        {
+            "GUN_COOL", "CHAT_STATE", "GENERIC_YES", "CHAT_RESP"
+        };
+
+        /// <summary>Leaving it, at speed.</summary>
+        private static readonly string[] AwayLines =
+        {
+            "GENERIC_CURSE_HIGH", "GENERIC_WAR_CRY", "CHAT_RESP", "GENERIC_INSULT_HIGH"
+        };
+
+        /// <summary>The ride home, when it is done and funny.</summary>
+        private static readonly string[] HomeLines =
+        {
+            "GENERIC_CHEER", "CHAT_STATE", "GENERIC_AGREE", "CHAT_RESP"
+        };
+
+        /// <summary>Whichever set belongs to where the job has got to.</summary>
+        private string[] LinesForNow()
+        {
+            switch (Phase)
+            {
+                case BikePhase.Words:
+                case BikePhase.Fight:
+                    return EdgyLines;
+
+                case BikePhase.Rob:
+                    return StoreLines;
+
+                case BikePhase.Escape:
+                    return AwayLines;
+
+                case BikePhase.Home:
+                    return HomeLines;
+
+                default:
+                    return RideLines;
+            }
+        }
 
         private static readonly string[] BikeModels = { "bmx", "cruiser", "scorcher", "tribike" };
 
@@ -683,6 +746,17 @@ namespace Hoodrich.Missions
         /// </summary>
         private void TickRob(Ped player)
         {
+            // AND AFTER THE FIGHT TOO.
+            //
+            // KeepUp was called from TickRiding and nowhere else, so the moment the hands went
+            // up it stopped being called for the rest of the job -- Rob, Escape and the ride
+            // home. Lamar would get back on his bike and then sit on it, because nothing was
+            // telling him to go anywhere, and the ride home was a ride home on your own.
+            //
+            // It is safe in any phase: it re-tasks anybody off his bike and follows with
+            // anybody on one, and it rate-limits itself.
+            KeepUp(player);
+
             // Keep trying the door for as long as the robbery is on.
             //
             // Once rather than repeatedly would be the obvious way and would never work: the
@@ -851,6 +925,53 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
+        /// The piece Lamar hands over for the store.
+        ///
+        /// A combat pistol with the long magazine, which is what he says it is -- the line and
+        /// the gun have to agree or the line is a lie the player catches in about four seconds.
+        ///
+        /// Through the locker, so it survives a reload like anything else bought in this mod.
+        /// He says he wants it back and never asks, which is the most Lamar thing about it.
+        /// </summary>
+        private void GiveTheGun()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                var hash = Function.Call<uint>(Hash.GET_HASH_KEY, RobberyGun);
+
+                // Not if he already has one -- topping somebody up to a full clip for free is a
+                // different favour to lending him a gun he did not have.
+                if (!Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, hash, false))
+                {
+                    Function.Call(Hash.GIVE_WEAPON_TO_PED, me.Handle, hash, RobberyRounds, false, true);
+                }
+
+                Weapons.ExtendedClips.GiveTo(me, RobberyGun);
+
+                if (Locker != null) Locker.Bought(RobberyGun);
+
+                Notify.Ticker("~g~Lamar gave you a combat pistol.~s~  Long mag.");
+                Log.Info("Lamar handed over " + RobberyGun + " for the store.");
+            }
+            catch (Exception ex)
+            {
+                // He goes in empty handed, which is survivable. Being unable to rob the shop is
+                // not worth throwing the whole job over.
+                Log.Debug("Could not hand over the robbery gun: " + ex.Message);
+            }
+        }
+
+        /// <summary>What he lends you, and how loaded.</summary>
+        private const string RobberyGun = "WEAPON_COMBATPISTOL";
+        private const int RobberyRounds = 60;
+
+        /// <summary>Set by Main, so the gun he lends you is one you keep.</summary>
+        public Weapons.GunLocker Locker;
+
+        /// <summary>
         /// The offer, as a screen rather than a prompt.
         ///
         /// A robbery is not something to walk into by accident, so it is asked properly and it
@@ -869,7 +990,11 @@ namespace Hoodrich.Missions
                 "Aight so. Hear me out. That grow I been settin' up? Lights, fans, all that " +
                 "-- that's real money, dawg, and I ain't got it. One man in there, one till, " +
                 "and them cameras been dead since we was in school. That's my seed money " +
-                "sittin' on a counter and you the one with the steady hands.")
+                "sittin' on a counter and you the one with the steady hands.\n\n" +
+                "Here -- take this. Long mag, one in the chamber, and I want it back. You " +
+                "ain't gotta USE it, cuz, you just gotta be holdin' it. Man behind that " +
+                "counter got a whole life to get back to, he ain't dyin' over forty dollars " +
+                "and a scratchie.")
             {
                 SpeakerColour = Palette.Cash
             };
@@ -877,6 +1002,17 @@ namespace Hoodrich.Missions
             node.Say("ROB THE CONVENIENCE STORE", () =>
             {
                 _robAccepted = true;
+
+                // AND HE ACTUALLY HANDS IT OVER.
+                //
+                // The offer used to send you into a robbery with whatever you happened to be
+                // carrying, which on this job is nothing: the brief was hands only, the ride
+                // out disarms nobody but nobody brings a gun to a basketball game, and a store
+                // robbery with empty hands is a man asking politely.
+                //
+                // Given on ACCEPTING rather than when the screen opens, so walking away from
+                // the offer does not leave you holding a pistol Lamar never gave you.
+                GiveTheGun();
 
                 // The law comes back on the moment you agree to this.
                 //
@@ -1269,6 +1405,17 @@ namespace Hoodrich.Missions
         /// <summary>Out the door, on the bike, and away from them.</summary>
         private void TickEscape(Ped player)
         {
+            // AND AFTER THE FIGHT TOO.
+            //
+            // KeepUp was called from TickRiding and nowhere else, so the moment the hands went
+            // up it stopped being called for the rest of the job -- Rob, Escape and the ride
+            // home. Lamar would get back on his bike and then sit on it, because nothing was
+            // telling him to go anywhere, and the ride home was a ride home on your own.
+            //
+            // It is safe in any phase: it re-tasks anybody off his bike and follows with
+            // anybody on one, and it rate-limits itself.
+            KeepUp(player);
+
             RemountHomies(player);
 
             // Still hot. Getting back to the spot with a helicopter over you is not getting
@@ -1481,6 +1628,17 @@ namespace Hoodrich.Missions
 
         private void TickHome(Ped player)
         {
+            // AND AFTER THE FIGHT TOO.
+            //
+            // KeepUp was called from TickRiding and nowhere else, so the moment the hands went
+            // up it stopped being called for the rest of the job -- Rob, Escape and the ride
+            // home. Lamar would get back on his bike and then sit on it, because nothing was
+            // telling him to go anywhere, and the ride home was a ride home on your own.
+            //
+            // It is safe in any phase: it re-tasks anybody off his bike and follows with
+            // anybody on one, and it rate-limits itself.
+            KeepUp(player);
+
             RemountHomies(player);
 
             // LAMAR has to get back, not just you.
@@ -2068,8 +2226,12 @@ namespace Hoodrich.Missions
                     // keep up" actually was. Those three come off and AllowGoingWrongWay goes
                     // on; he keeps AvoidObjects and AvoidEmptyVehicles so he still goes ROUND
                     // things rather than through them.
+                    // FOUR METRES, NOT EIGHT. The last argument is minDistance -- how far back
+                    // he is content to sit -- and eight is most of a car length past what reads
+                    // as riding WITH somebody. At four he is at your shoulder, which is the
+                    // whole picture of the two of them going to the courts together.
                     Function.Call(Hash.TASK_VEHICLE_FOLLOW, ped.Handle, bike.Handle, target.Handle,
-                                  25f, FollowStyle, 8);
+                                  25f, FollowStyle, 4);
 
                     // AND SAID AGAIN, TO THE TASK ITSELF.
                     //
@@ -2646,7 +2808,11 @@ namespace Hoodrich.Missions
         private void Chatter()
         {
             if (Game.GameTime < _nextChatter) return;
-            _nextChatter = Game.GameTime + ChatterGapMs;
+
+            // EVERY NOW AND THEN, not metronomically. A fixed seven seconds is a man with a
+            // timer in him; the spread is what makes it read as somebody occasionally saying
+            // something.
+            _nextChatter = Game.GameTime + ChatterGapMs + _rng.Next(ChatterSpreadMs);
 
             // Lamar first. He is the only one out here now, and a silent ride with the man
             // who invited you on it is worse than no chatter at all.
@@ -2658,8 +2824,10 @@ namespace Hoodrich.Missions
 
             try
             {
+                var lines = LinesForNow();
+
                 Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, speaker.Handle,
-                              RideLines[_rng.Next(RideLines.Length)], "SPEECH_PARAMS_FORCE");
+                              lines[_rng.Next(lines.Length)], "SPEECH_PARAMS_FORCE");
             }
             catch
             {

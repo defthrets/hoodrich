@@ -249,6 +249,25 @@ namespace Hoodrich.Supply
         /// </summary>
         public bool PureTonight;
 
+        /// <summary>
+        /// What he says the first time, when he hands over the number.
+        ///
+        /// THE MOMENT THE WHOLE SEARCH IS FOR. Finding a man on his corner is now what puts him
+        /// in your phone, and until this line existed the game never said so -- he was in
+        /// Messages afterwards and you were left to notice. A mechanic nobody is told about is
+        /// a mechanic nobody uses.
+        /// </summary>
+        public string NumberLine = "";
+
+        /// <summary>
+        /// RUNTIME. True for the one conversation where you have just met him.
+        ///
+        /// Set by DealerManager at the moment it writes him down, read once by the greeting and
+        /// cleared there -- the same shape as PureTonight, and for the same reason: DealerTalk
+        /// is handed a def and nothing else.
+        /// </summary>
+        public bool JustMet;
+
         /// <summary>What he is actually charging, and what it is actually worth.</summary>
         public float PriceNow => PureTonight ? PureMultiplier : PriceMultiplier;
 

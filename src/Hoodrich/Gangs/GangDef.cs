@@ -23,6 +23,16 @@ namespace Hoodrich.Gangs
         public string Tag = "";
 
         /// <summary>
+        /// The word people use for their colour on the street.
+        ///
+        /// Not the RGB -- that is for blips and text tints. This is what somebody types when
+        /// they are gloating: "purple all over the floor". It exists because that exact line
+        /// was hard-coded into a set that fires whoever attacked, so the Families announced
+        /// purple on the pavement after a fight with the Vagos.
+        /// </summary>
+        public string ColourWord = "";
+
+        /// <summary>
         /// Vanilla relationship group name, e.g. AMBIENT_GANG_FAMILY. Verified against
         /// DOES_RELATIONSHIP_GROUP_EXIST at load and created if the game does not have it.
         /// </summary>

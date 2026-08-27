@@ -215,6 +215,12 @@ namespace Hoodrich.Missions
             set { _social = value; _tags.Social = value; _bike.Social = value; }
         }
 
+        /// <summary>Passed straight through, so a gun Lamar lends you is one you keep.</summary>
+        public Weapons.GunLocker Locker
+        {
+            set { _bike.Locker = value; }
+        }
+
         private SocialFeed _social;
 
 

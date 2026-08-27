@@ -2597,7 +2597,7 @@ namespace Hoodrich.Supply
         /// _box is a prop this class makes and attaches to the driver, and only the two normal
         /// endings ever released it. Every abnormal one -- you died, you drove off, the driver
         /// was killed, the script unloaded -- went through Cancel, which tidies the phone, the
-        /// driver, the car and the blip and never mentions the box. A quarter kilo of prop
+        /// driver, the car and the blip and never mentions the box. A pallet of prop
         /// stayed welded to a corpse or floating in the front garden for the session.
         /// </summary>
         private void DropTheBox()

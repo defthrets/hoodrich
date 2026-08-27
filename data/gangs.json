@@ -44,7 +44,8 @@
       "turfHint": "a few streets round Banning",
       "joinRespect": 0,
       "joinable": false,
-      "paint": 62
+      "paint": 62,
+      "colourWord": "teal"
     },
     {
       "id": "families",
@@ -77,7 +78,8 @@
       "joinRespect": 0,
       "joinable": true,
       "paint": 49,
-      "starter": "xanax"
+      "starter": "xanax",
+      "colourWord": "green"
     },
     {
       "id": "ballas",
@@ -106,7 +108,8 @@
       ],
       "turfHint": "Davis and the blocks by the arena",
       "joinRespect": 0,
-      "paint": 145
+      "paint": 145,
+      "colourWord": "purple"
     },
     {
       "id": "vagos",
@@ -137,7 +140,8 @@
       ],
       "turfHint": "Rancho, La Mesa, Murrieta and El Burro Heights",
       "joinRespect": 0,
-      "paint": 88
+      "paint": 88,
+      "colourWord": "yellow"
     },
     {
       "id": "marabunta",
@@ -165,7 +169,8 @@
       ],
       "turfHint": "Cypress Flats and Textile City",
       "joinRespect": 250,
-      "paint": 51
+      "paint": 51,
+      "colourWord": "teal"
     },
     {
       "id": "lost",
@@ -194,7 +199,8 @@
       ],
       "turfHint": "Stab City, Sandy Shores and Grapeseed",
       "joinRespect": 250,
-      "paint": 1
+      "paint": 1,
+      "colourWord": "leather"
     },
     {
       "id": "triads",
@@ -223,7 +229,8 @@
       ],
       "turfHint": "Mirror Park and Hawick",
       "joinRespect": 900,
-      "paint": 27
+      "paint": 27,
+      "colourWord": "red"
     },
     {
       "id": "armenians",
@@ -251,7 +258,8 @@
       ],
       "turfHint": "Alta, Burton and Pillbox Hill",
       "joinRespect": 900,
-      "paint": 4
+      "paint": 4,
+      "colourWord": "black"
     },
     {
       "id": "koreans",
@@ -277,7 +285,8 @@
       "turfHint": "Ginger Street, Little Seoul",
       "joinRespect": 0,
       "joinable": false,
-      "paint": 12
+      "paint": 12,
+      "colourWord": "black"
     }
   ]
 }

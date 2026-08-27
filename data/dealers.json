@@ -116,7 +116,8 @@
         "pounder",
         "benson"
       ],
-      "ridePaint": 111
+      "ridePaint": 111,
+      "numberLine": "You got my number off Gerald, so use it off Gerald. Text me when you want weight brought to the house -- and I mean weight. Don't be textin' me about ounces."
     },
     {
       "id": "stretch_run",
@@ -182,7 +183,8 @@
       "priceFloor": 0,
       "priceStep": 5,
       "purity": 0.75,
-      "uncutFromValue": 999999
+      "uncutFromValue": 999999,
+      "numberLine": "Take my number. You want somethin', text me and I'll bring it to the house -- I ain't standin' on no corner waitin' on you."
     },
     {
       "id": "sand_cook",
@@ -264,7 +266,8 @@
         "here. im the truck that dont belong on your street",
         "outside. come out, i aint knockin on a door"
       ],
-      "uncutFromValue": 8500
+      "uncutFromValue": 8500,
+      "numberLine": "Right. Put this in your phone and don't say my name into it. You want some, you text -- I'll bring it out to the house myself, after dark, like a normal person."
     },
     {
       "id": "beach_connect",
@@ -345,7 +348,8 @@
         "I'm outside. I'm the one that looks like he can afford the car.",
         "outside. hurry, this car is a lot of car for this street",
         "here. don't make me knock"
-      ]
+      ],
+      "numberLine": "I'll give you my number, which I do not do often. Text -- don't call. Say what you want and I'll have it at your door. Do not use it before nine."
     },
     {
       "id": "lamesa_corner",
@@ -432,7 +436,8 @@
       "x": 300.039,
       "y": -1784.942,
       "z": 28.439,
-      "heading": 209.062
+      "heading": 209.062,
+      "numberLine": "Here. Take the number. Text me what you want and I'll drive it to the house, I'm out all night anyway. Ain't no difference to me."
     },
     {
       "id": "aztecas_corner",
@@ -520,7 +525,8 @@
       "x": 500.6,
       "y": -1697.562,
       "z": 29.789,
-      "heading": 232.091
+      "heading": 232.091,
+      "numberLine": "Ay, take my number, hombre. You text me, I bring it to your door myself. Save you comin' all the way out to Banning every time."
     },
     {
       "id": "ballas_corner",
@@ -609,7 +615,8 @@
       "x": 85.361,
       "y": -1958.88,
       "z": 21.122,
-      "heading": 0.0
+      "heading": 0.0,
+      "numberLine": "...aight. Take the number. But you TEXT it, you don't call it, and I'll bring it to your house 'cause I ain't doin' this on a street again."
     },
     {
       "id": "vagos_corner",
@@ -700,7 +707,8 @@
       "x": 345.665,
       "y": -2015.147,
       "z": 22.395,
-      "heading": 331.735
+      "heading": 331.735,
+      "numberLine": "Number's yours. Text what you want, I bring it. Money ready when I get there or I turn around, and I mean that."
     },
     {
       "id": "marabunta_corner",
@@ -789,7 +797,8 @@
       "x": 1295.163,
       "y": -1739.323,
       "z": 54.272,
-      "heading": 19.174
+      "heading": 19.174,
+      "numberLine": "I'll give you my number. Text me and I will drive it to your house -- it is safer for both of us than you coming out here twice a week."
     },
     {
       "id": "lost_corner",
@@ -879,7 +888,8 @@
       "x": 81.327,
       "y": 3713.986,
       "z": 40.66,
-      "heading": 78.586
+      "heading": 78.586,
+      "numberLine": "HA! Alright, take my number, brother. Text me and I'll ride it down to you. It's a long way but I like the road and I don't like visitors."
     },
     {
       "id": "triads_corner",
@@ -969,7 +979,8 @@
       "x": -474.548,
       "y": -35.38,
       "z": 45.376,
-      "heading": 184.427
+      "heading": 184.427,
+      "numberLine": "You will have my number. You will use it by message only, and you will use it for delivery to your address. Not for conversation."
     },
     {
       "id": "armenians_corner",
@@ -1058,7 +1069,8 @@
       "x": 132.305,
       "y": -2205.208,
       "z": 7.186,
-      "heading": 11.446
+      "heading": 11.446,
+      "numberLine": "Fine. My number. You text, I drive, it arrives. Do not call me, I will not answer, and then you will text anyway."
     },
     {
       "id": "koreans_corner",
@@ -1145,7 +1157,8 @@
       "x": -689.805,
       "y": -911.477,
       "z": 23.672,
-      "heading": 90.429
+      "heading": 90.429,
+      "numberLine": "Okay. Take my number. Text me -- I hate calls -- and I'll bring it to the house. Beats you driving to Koreatown every time."
     }
   ]
 }

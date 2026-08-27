@@ -332,6 +332,24 @@ namespace Hoodrich.State
         public readonly List<string> CarsBought = new List<string>();
 
         /// <summary>
+        /// Everything bought off Stretch, by weapon name.
+        ///
+        /// A GUN YOU PAID FOR IS A THING YOU OWN, and it was not surviving. GIVE_WEAPON_TO_PED
+        /// hands the piece to the ped and the ped is whatever Rockstar's own save last wrote --
+        /// so loading a save from before the purchase, or any of the several ways the game
+        /// resets a character's loadout, quietly took back something that cost real money in a
+        /// shop the mod put there.
+        ///
+        /// So the mod remembers, and hands them back. Not the ammunition: rounds are a
+        /// consumable and he sells those separately, and a locker that refilled itself would
+        /// make the ammunition half of his shop pointless.
+        ///
+        /// It is emptied when the guns are legitimately taken -- searched, arrested, dead --
+        /// because those are the times losing them is the point.
+        /// </summary>
+        public readonly List<string> GunsBought = new List<string>();
+
+        /// <summary>
         /// Cars you have actually paid for, and enough about each to stand it back up.
         ///
         /// CarsBought is only a list of ids, and its whole job is stopping Hao restocking
@@ -522,6 +540,7 @@ namespace Hoodrich.State
             MissionsDone.Clear();
             LeadersMet.Clear();
             CarsBought.Clear();
+            GunsBought.Clear();
             Owned.Clear();
 
             SeenWelcome = false;
@@ -786,6 +805,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json GunsJson()
+        {
+            var arr = Json.Array();
+            foreach (var id in GunsBought) arr.Add(Json.Str(id));
+            return arr;
+        }
+
         private Json OfferedJson()
         {
             var arr = Json.Array();
@@ -877,6 +903,7 @@ namespace Hoodrich.State
                 .Set("missionsDone", MissionsJson())
                 .Set("leadersMet", LeadersJson())
                 .Set("carsBought", CarsJson())
+                .Set("gunsBought", GunsJson())
                 .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson());
@@ -936,6 +963,7 @@ namespace Hoodrich.State
                 }
 
                 CarsBought.Clear();
+            GunsBought.Clear();
             Owned.Clear();
                 Owned.Clear();
 
@@ -962,6 +990,14 @@ namespace Hoodrich.State
                 {
                     var id = node.AsString("");
                     if (!string.IsNullOrEmpty(id) && !CarsBought.Contains(id)) CarsBought.Add(id);
+                }
+
+                GunsBought.Clear();
+
+                foreach (var node in doc["gunsBought"].Items)
+                {
+                    var id = node.AsString("");
+                    if (!string.IsNullOrEmpty(id) && !GunsBought.Contains(id)) GunsBought.Add(id);
                 }
 
                 LeadersMet.Clear();

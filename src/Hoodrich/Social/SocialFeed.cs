@@ -844,6 +844,33 @@ namespace Hoodrich.Social
         private int _warUntil;
         private int _warNext;
         private string _warRival = "";
+
+        /// <summary>Set by Main, so a gang id or name can become a name and a colour.</summary>
+        public Func<string, Gangs.GangDef> GangById;
+
+        /// <summary>Whoever is attacking right now, by name, or empty when nobody is.</summary>
+        private string LiveRivalName()
+        {
+            if (!string.IsNullOrEmpty(_warRival)) return _warRival;
+
+            var def = Def(_rivalGang);
+            return def == null ? "" : def.Name;
+        }
+
+        /// <summary>Their colour word, from whichever of the two the war happened to set.</summary>
+        private string LiveRivalColour()
+        {
+            var def = Def(_rivalGang) ?? Def(_warRival);
+            return def == null ? "" : def.ColourWord;
+        }
+
+        private Gangs.GangDef Def(string idOrName)
+        {
+            if (GangById == null || string.IsNullOrEmpty(idOrName)) return null;
+
+            try { return GangById(idOrName); }
+            catch { return null; }
+        }
         private int _warTurn;
 
         private int _argueUntil;
@@ -1832,6 +1859,28 @@ namespace Hoodrich.Social
             {
                 var gang = YourGang == null ? "" : YourGang();
                 return string.IsNullOrEmpty(gang) ? "the homies" : gang;
+            }
+
+            // WHO IS ACTUALLY OUT THERE, rather than whoever the slot list fancies.
+            //
+            // {rival} fell straight through to _slots["rival"] -- a list of gang names picked
+            // from at random -- so a post about a raid happening right now could name a set who
+            // were nowhere near it. The war tells the feed who is attacking, in two different
+            // fields, and neither of them was ever read.
+            //
+            // The slot stays as the fallback: plenty of ambient chatter mentions a rival when
+            // there is no fight on, and picking one at random is exactly right there.
+            if (string.Equals(key, "rival", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(key, "theirs", StringComparison.OrdinalIgnoreCase))
+            {
+                var live = LiveRivalName();
+                if (!string.IsNullOrEmpty(live)) return live;
+            }
+
+            if (string.Equals(key, "theircolour", StringComparison.OrdinalIgnoreCase))
+            {
+                var colour = LiveRivalColour();
+                return string.IsNullOrEmpty(colour) ? "them" : colour;
             }
 
             List<string> list;

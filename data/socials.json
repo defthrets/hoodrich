@@ -2524,7 +2524,7 @@
       "told em stay off our block.",
       "green over everything. always was. #CGF FOR LIFE",
       "that's what the set do. ask around.",
-      "purple all over the floor on {here}.",
+      "{theircolour} all over the floor on {here}.",
       "every one of them run. every single time.",
       "Chamberlain is and always was ours.",
       "we still here. we ain't going nowhere. on gang",
@@ -2554,7 +2554,11 @@
       "every one of them knew where we was. not one of them came",
       "that block been ours since before half of them could drive",
       "keep posting. we keep counting",
-      "solid work. no names, no photos, no comment"
+      "solid work. no names, no photos, no comment",
+      "that's {theirs} done for the week",
+      "{theirs} came to {here} and left lighter",
+      "{theircolour} don't hold nothing round here",
+      "tell {theirs} the block is spoken for"
     ],
     "OursMourns": [
       "my granddaddy's house is on Grove. can't even drive down it now",
@@ -2652,7 +2656,9 @@
       "They came for somebody specific. That's what it looks like from here",
       "Shots on {here}. A lot of them. Not stopping",
       "If you're anywhere near {here}, turn around",
-      "This is what everybody been saying was coming"
+      "This is what everybody been saying was coming",
+      "{theirs} deep on {here}. this is not a drive-by",
+      "{theircolour} on the corner of {here} and nobody inside is breathing"
     ],
     "WarLive": [
       "shots on {here} right now. i'm on the floor of my own kitchen",
@@ -2724,7 +2730,9 @@
       "poles out, heads down, hold the corner",
       "they brought a tracker with no plates. cute",
       "this ain't a drill, this is the get-back",
-      "keep the youngins inside. this ain't theirs yet"
+      "keep the youngins inside. this ain't theirs yet",
+      "{theirs} still out there talking. still out there losing",
+      "count how many of {theirs} go home"
     ],
     "YouDaily": [
       "back on the block. same block, different day",

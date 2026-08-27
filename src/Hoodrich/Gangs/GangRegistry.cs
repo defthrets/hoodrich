@@ -46,6 +46,31 @@ namespace Hoodrich.Gangs
             return _byId.TryGetValue(id, out var g) ? g : null;
         }
 
+        /// <summary>
+        /// By id, or failing that by display name.
+        ///
+        /// The war holds the attacker as an id in one place and as a name in another, and the
+        /// feed is handed whichever the caller had. Asking callers to normalise first is how
+        /// one of them ends up not doing it.
+        /// </summary>
+        public GangDef GetLoose(string idOrName)
+        {
+            if (string.IsNullOrEmpty(idOrName)) return null;
+
+            var byId = Get(idOrName);
+            if (byId != null) return byId;
+
+            for (var i = 0; i < _ordered.Count; i++)
+            {
+                if (string.Equals(_ordered[i].Name, idOrName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return _ordered[i];
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>Which gang, if any, a relationship-group hash belongs to.</summary>
         public GangDef ByGroupHash(int hash)
         {
@@ -112,6 +137,7 @@ namespace Hoodrich.Gangs
 
                 g.Name = node["name"].AsString(g.Name.Length > 0 ? g.Name : id);
                 g.Tag = node["tag"].AsString(g.Tag.Length > 0 ? g.Tag : id.Substring(0, Math.Min(4, id.Length)).ToUpperInvariant());
+                g.ColourWord = node["colourWord"].AsString(g.ColourWord);
                 g.RelationshipGroup = node["relationshipGroup"].AsString(g.RelationshipGroup);
                 g.BlipColour = node["blipColour"].AsInt(g.BlipColour);
                 g.Paint = node["paint"].AsInt(g.Paint);

@@ -437,6 +437,7 @@ namespace Hoodrich
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
         private GunScreen _gunScreen;
+        private Weapons.GunLocker _locker;
         private HaoTalk _haoTalk;
         private CarScreen _carScreen;
         private DealerTalk _juanTalk;
@@ -1303,7 +1304,7 @@ namespace Hoodrich
                 //
                 // Every one of these lists used to name _jobs on its own, and _jobs is Lamar's
                 // book -- it does not know the port run exists. So the whole time you were
-                // driving Gerald's quarter kilo across the city, the mod considered you idle:
+                // driving Gerald's twenty kilos across the city, the mod considered you idle:
                 // gang wars could start, a debt could come due, riders kept coming out on the
                 // block and patrols kept rolling. A war going off mid-errand is not a
                 // coincidence, it is this.
@@ -1373,6 +1374,14 @@ namespace Hoodrich
                 // the same feed you posted it to.
                 _payback.Social = _social;
                 _postUp.Social = _social;
+
+                // What he paid for stays his. Built here because it needs the save and the
+                // weapon list, and handed to the two places that can change what he is holding.
+                _locker = new Weapons.GunLocker(_state, _weapons);
+                _gunScreen.Locker = _locker;
+                _postUp.Locker = _locker;
+                _jobs.Locker = _locker;
+                _social.GangById = id => _gangs.GetLoose(id);
                 _raid.Social = _social;
                 _blocks.Social = _social;
 
@@ -2075,6 +2084,7 @@ namespace Hoodrich
                     _deadDrop.Update();
                     _market.Update(_drugs);
                     _blocks.Update(_turf == null ? "" : _turf.ZoneCode);
+                    _locker.Update();
                     _raid.Update();
                     _stash.Update();
                     _sleep.Update();
@@ -2276,6 +2286,10 @@ namespace Hoodrich
             {
                 var player = Game.Player.Character;
                 if (player == null || !player.Exists()) return;
+
+                // Dead means the hospital took everything, which is the game doing what the
+                // locker is explicitly not meant to undo.
+                if (player.IsDead && _locker != null) _locker.TakenOffHim("wasted");
 
                 if (player.IsDead)
                 {
