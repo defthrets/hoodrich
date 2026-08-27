@@ -1030,8 +1030,13 @@ namespace Hoodrich.Supply
             {
                 if (wanted.HasSpot)
                 {
-                    SpawnAt(wanted, new Vector3(wanted.SpotX, wanted.SpotY, wanted.SpotZ),
-                            zone, player, false);
+                    var pin = new Vector3(wanted.SpotX, wanted.SpotY, wanted.SpotZ);
+
+                    SpawnAt(wanted, pin, zone, player, false);
+
+                    // Only the pinned ones get people. A dealer the game puts on a different
+                    // pavement every visit has no corner for anybody to be stood on.
+                    _stoop.Gather(wanted, pin, wanted.SpotHeading);
                     return;
                 }
 
@@ -1200,6 +1205,9 @@ namespace Hoodrich.Supply
 
         private void Despawn()
         {
+            // His people go when he does.
+            _stoop.Scatter();
+
             try
             {
                 if (_liveBlip != null && _liveBlip.Exists()) _liveBlip.Delete();
@@ -1343,6 +1351,9 @@ namespace Hoodrich.Supply
         /// opening hours or not, forever. Learning where a man stands should not be something
         /// you have to do twice.
         /// </summary>
+        /// <summary>The three stood round whoever is currently out.</summary>
+        private readonly Stoop _stoop = new Stoop();
+
         private readonly Dictionary<string, Blip> _marks =
             new Dictionary<string, Blip>(StringComparer.OrdinalIgnoreCase);
 
@@ -1546,6 +1557,18 @@ namespace Hoodrich.Supply
         {
             ClearMeetBlip();
             Despawn();
+
+            // AND THE PERMANENT MARKS. They are the one thing here that is not attached to a
+            // ped or a run, so nothing else was ever going to take them off -- a reload would
+            // have left a green blip on every corner he knows and then drawn a second set on
+            // top of them.
+            foreach (var kv in _marks)
+            {
+                try { if (kv.Value != null && kv.Value.Exists()) kv.Value.Delete(); }
+                catch { /* teardown */ }
+            }
+
+            _marks.Clear();
         }
     }
 }
