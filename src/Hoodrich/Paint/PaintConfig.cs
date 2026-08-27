@@ -100,21 +100,28 @@
         /// is worked a foot from the wall and an extinguisher is a pressure vessel you stand
         /// back from. Sharing one curve made one of the two wrong.
         ///
-        ///     0.45m and nearer ->  0.08m across (the floor)
-        ///     1m               ->  0.18m
-        ///     2m               ->  0.36m
+        ///     0.6m and nearer  ->  0.04m across (the floor)
+        ///     1m               ->  0.09m
+        ///     2m               ->  0.26m
+        ///     3m               ->  0.47m
         ///     4m               ->  0.72m, and it stops there
         ///
-        /// Brought down about a quarter from where it started. A can lays a narrow band you
-        /// draw with, not a patch you cover with -- and the wider it was, the less the marks
-        /// read as strokes and the more they read as one blob growing.
+        /// A BLOOM RATHER THAN A CONE, and this is the one place the two tools genuinely
+        /// disagree about physics. The extinguisher is a straight line because it is a jet
+        /// under pressure. A can held near a wall lays a tight band and only opens out as you
+        /// back off, so its power is 1.5 -- which halves the mark at a metre and leaves four
+        /// metres exactly where it was.
+        ///
+        /// Solved for the far end deliberately: k = 0.72 / 4^1.5. Picking the near end and
+        /// letting the far end fall where it may is how you end up re-tuning the whole thing
+        /// every time one end of it feels wrong.
         /// </summary>
         public bool SprayCanLook = true;
 
         public float CanRange = 4f;
-        public float CanSizeAtOneMetre = 0.18f;
-        public float CanSpreadPower = 1f;
-        public float CanMinSize = 0.08f;
+        public float CanSizeAtOneMetre = 0.09f;
+        public float CanSpreadPower = 1.5f;
+        public float CanMinSize = 0.04f;
         public float CanMaxSize = 0.75f;
 
         // ---- whichever is in his hand -------------------------------------------
