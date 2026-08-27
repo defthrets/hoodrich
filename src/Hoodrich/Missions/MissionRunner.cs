@@ -863,7 +863,38 @@ namespace Hoodrich.Missions
                 return def;
             }
 
-            return null;
+            // THE LIST COMES ROUND AGAIN once there is nothing new on it.
+            //
+            // Everything above walks him down the list once, in order, and then he is finished
+            // for the rest of the save -- which is the whole middle of the game gone the moment
+            // you catch up with it. The Ballas do not stop standing on Grove because you moved
+            // them off it in April.
+            //
+            // Only when the whole list is done, so it never competes with a job he has not
+            // shown you yet, and picked at random rather than in order because a fixed rotation
+            // is a rota. The offered flag is what keeps him from texting about the same one
+            // twice running; it is cleared as the job is handed out.
+            if (reached < Book.All.Count - 1) return null;
+
+            var pool = new List<MissionDef>();
+
+            for (var i = 0; i < Book.All.Count; i++)
+            {
+                var def = Book.All[i];
+                if (unmentionedOnly && _state.HasBeenOffered(def.Id)) continue;
+                pool.Add(def);
+            }
+
+            // Everything has been mentioned since the last one was run, so the slate of
+            // mentions goes and he starts asking again.
+            if (pool.Count == 0)
+            {
+                if (unmentionedOnly) return null;
+
+                for (var i = 0; i < Book.All.Count; i++) pool.Add(Book.All[i]);
+            }
+
+            return pool.Count == 0 ? null : pool[_rng.Next(pool.Count)];
         }
 
         /// <summary>What he has for you, whether or not he has said so yet.</summary>

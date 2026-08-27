@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Color = System.Drawing.Color;
 using GTA;
 using GTA.Native;
@@ -36,6 +36,33 @@ namespace Hoodrich.Missions
         }
 
         private Color Tint => _crew.IsAffiliated ? _crew.Current.Colour : Palette.Text;
+
+        /// <summary>
+        /// How he opens, which depends on whether you have done this one before.
+        ///
+        /// The first telling is why it matters -- his granddad's street, corners held since
+        /// before you could reach the pedals. The fourth telling of that is what turns a
+        /// repeatable job into a loop, and he would not say it that way twice anyway. Blank
+        /// falls back, so a job with no second version is repetitive rather than broken.
+        /// </summary>
+        private string Opening(MissionDef def)
+        {
+            if (def == null) return "";
+
+            var again = _state != null && _state.HasDone(def.Id);
+
+            return again && !string.IsNullOrEmpty(def.BriefAgain) ? def.BriefAgain : def.Brief;
+        }
+
+        /// <summary>What he says when you bring it back, same rule.</summary>
+        private string Closing(MissionDef def)
+        {
+            if (def == null) return "";
+
+            var again = _state != null && _state.HasDone(def.Id);
+
+            return again && !string.IsNullOrEmpty(def.DoneAgain) ? def.DoneAgain : def.Done;
+        }
 
         private DialogueNode Node(string line) =>
             new DialogueNode(_fixer.Name, line) { SpeakerColour = Tint };
@@ -257,7 +284,7 @@ namespace Hoodrich.Missions
         {
             if (beat < def.BriefMore.Count)
             {
-                var more = Node(beat == 0 ? def.Brief : def.BriefMore[beat - 1]);
+                var more = Node(beat == 0 ? Opening(def) : def.BriefMore[beat - 1]);
 
                 var next = beat + 1;
                 more.Say("Go on.", () => Brief(def, next));
@@ -268,7 +295,7 @@ namespace Hoodrich.Missions
                 return more;
             }
 
-            var node = Node(beat == 0 ? def.Brief : def.BriefMore[beat - 1]);
+            var node = Node(beat == 0 ? Opening(def) : def.BriefMore[beat - 1]);
 
             node.Say("I'll do it.", () => Accept(def),
                      "$" + def.PayMin.ToString("N0") + "-" + def.PayMax.ToString("N0") +
@@ -338,9 +365,9 @@ namespace Hoodrich.Missions
             // smoothly, and it reads as the mod not having noticed when the man behind the
             // counter is dead. He is not going to hand the money back over it -- but he is
             // going to say something, and then get on with it, which is the whole character.
-            var line = def == null || string.IsNullOrEmpty(def.Done)
+            var line = def == null || string.IsNullOrEmpty(Closing(def))
                 ? "Good look. Come get this."
-                : def.Done;
+                : Closing(def);
 
             // AND ONLY ON THE JOB THAT HAD A SHOP IN IT.
             //

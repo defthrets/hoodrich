@@ -197,6 +197,15 @@ namespace Hoodrich.State
         public int PortRunStage;
 
         /// <summary>
+        /// How many port runs are behind him.
+        ///
+        /// The first one is a story -- Gerald puts you in front of a man who does not know you,
+        /// and the pay is almost beside the point. Every one after is a job, and both of them
+        /// talk to you completely differently for it. This is the number that tells them apart.
+        /// </summary>
+        public int PortRunsDone;
+
+        /// <summary>
         /// How many of his packages you have taken out and squared up.
         ///
         /// Not a bool, because "the first one" and "every one after" are different
@@ -378,6 +387,7 @@ namespace Hoodrich.State
 
             DocksUnlocked = false;
             PortRunStage = 0;
+            PortRunsDone = 0;
 
             // The port going back to being a rumour takes the man on it with it.
             KnowsCheng = false;
@@ -483,6 +493,7 @@ namespace Hoodrich.State
             KnowsCheng = false;
             ToldTheOldMan = false;
             PortRunStage = 0;
+            PortRunsDone = 0;
             FrontsDone = 0;
             HomiesUnlocked = false;
             MetHao = false;
@@ -518,6 +529,9 @@ namespace Hoodrich.State
         {
             DocksUnlocked = true;
             PortRunStage = 0;
+
+            // Skipped ahead rather than earned, so the first real run still plays as the first.
+            PortRunsDone = 0;
             FrontsDone = 2;
             HomiesUnlocked = true;
             MetHao = true;
@@ -830,6 +844,7 @@ namespace Hoodrich.State
                 .Set("knowsCheng", KnowsCheng)
                 .Set("toldTheOldMan", ToldTheOldMan)
                 .Set("portRunStage", PortRunStage)
+                .Set("portRunsDone", PortRunsDone)
                 .Set("frontsDone", FrontsDone)
                 .Set("homiesUnlocked", HomiesUnlocked)
                 .Set("metHao", MetHao)
@@ -868,6 +883,7 @@ namespace Hoodrich.State
                 KnowsCheng = doc["knowsCheng"].AsBool(false);
                 ToldTheOldMan = doc["toldTheOldMan"].AsBool(false);
                 PortRunStage = Math.Max(0, Math.Min(3, doc["portRunStage"].AsInt(0)));
+                PortRunsDone = Math.Max(0, doc["portRunsDone"].AsInt(0));
                 FrontsDone = Math.Max(0, doc["frontsDone"].AsInt(0));
                 HomiesUnlocked = doc["homiesUnlocked"].AsBool(false);
                 MetHao = doc["metHao"].AsBool(false);

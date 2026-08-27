@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Hoodrich.Core;
@@ -62,6 +62,24 @@ namespace Hoodrich.Missions
 
         /// <summary>Line when it lands.</summary>
         public string Done = "";
+
+        /// <summary>
+        /// What he says when he is putting you on the same job a second time, and what he says
+        /// when you come back off it.
+        ///
+        /// Separate fields rather than reusing Brief and Done, because the first telling and
+        /// the fourth are not the same speech. The first is why this matters -- his granddad's
+        /// street, the corners they have been holding since before you could reach the pedals.
+        /// Hearing that again word for word is what makes a repeatable job feel like a loop
+        /// rather than like work, and he would not say it that way twice anyway: by then you
+        /// have done it, he knows you have done it, and the pitch collapses into "same thing,
+        /// they are back, go".
+        ///
+        /// Blank falls back to the original, so a job without a second version is repeatable
+        /// and merely repetitive rather than broken.
+        /// </summary>
+        public string BriefAgain = "";
+        public string DoneAgain = "";
 
         /// <summary>Gang whose people you are going after.</summary>
         public string TargetGang = "";
@@ -217,6 +235,8 @@ namespace Hoodrich.Missions
                     Name = node["name"].AsString(id),
                     Brief = node["brief"].AsString(""),
                     Done = node["done"].AsString(""),
+                    BriefAgain = node["briefAgain"].AsString(""),
+                    DoneAgain = node["doneAgain"].AsString(""),
                     TargetGang = node["targetGang"].AsString(""),
                     Zone = node["zone"].AsString(""),
                     X = node["x"].AsFloat(),

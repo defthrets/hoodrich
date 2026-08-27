@@ -730,6 +730,17 @@ namespace Hoodrich.Gangs
                     "you go, and you handle him yourself.\n\nBring back what they load. Don't " +
                     "open it, don't stop nowhere, don't let nobody follow you in.");
 
+                // AND THE ROW THAT SENDS HIM. The recap was the only thing here, which made
+                // the one route he owns a thing he could be told about and never do again --
+                // a delivery job that works exactly once is a cutscene with driving in it.
+                //
+                // Above the recap on purpose: once a man has run it, going again is what he
+                // came to ask, and hearing it explained is the fallback.
+                known.Say("Run it again. I need the money.",
+                          () => { if (SendToThePort != null) SendToThePort(); return null; },
+                          "Take another load off Tao");
+                known.WithIcon(Icons.FromFile("cash.png"));
+
                 known.Say("Got it.", () => Root(def), "Back to it");
                 known.WithIcon(Icons.Tick);
 
@@ -1029,11 +1040,11 @@ namespace Hoodrich.Gangs
             // whose route you now run is to go over it again, so that is what the row becomes.
             var doneWithIt = _state.DocksUnlocked && _state.PortRunStage == PortRun.StageNone;
 
-            node.Say(doneWithIt ? "Run the port past me again." : "You got anything for me?",
+            node.Say(doneWithIt ? "About the port." : "You got anything for me?",
                      () => AskSource(def, gang),
                      _state.PortRunStage == PortRun.StageFetch ? "He's sent you to the port"
                      : _state.PortRunStage == PortRun.StageDeliver ? "He wants his package"
-                     : doneWithIt ? "Go over the run"
+                     : doneWithIt ? "Run it again, or go over it"
                      : "See if there's work");
 
             // Lit only while it actually is the door.

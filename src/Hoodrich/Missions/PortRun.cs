@@ -406,6 +406,16 @@ namespace Hoodrich.Missions
         public bool Running => Stage != StageNone;
 
         /// <summary>
+        /// Whether this is a run he has made before.
+        ///
+        /// Everything about the first one is an introduction: Gerald vouching for him, Tao
+        /// establishing whose yard it is, and a fence going through the front of a truck. None
+        /// of that happens twice. On a repeat they are two men who have done this before and
+        /// the whole thing is shorter for it.
+        /// </summary>
+        public bool AgainForCash => _state != null && _state.PortRunsDone > 0;
+
+        /// <summary>
         /// Whether Gerald is off his corner.
         ///
         /// GangLeaders keeps exactly one leader alive anywhere in the world, and the delivery
@@ -807,6 +817,11 @@ namespace Hoodrich.Missions
         /// </summary>
         private DialogueNode Meeting()
         {
+            // He knows the face now, and the speech about whose yard it is was only ever for
+            // somebody who did not. What is left is a man who is pleased to see you, mostly
+            // because it means he can go back inside.
+            if (AgainForCash) return MeetingAgain();
+
             var node = new DialogueNode("Tao Cheng",
                 "Ayy. You Gerald guy. Okay okay, I see you, I see you. So peep game, my dude: " +
                 "NOTHING come off a boat in this yard unless I say it come off. Nothing. My " +
@@ -954,8 +969,38 @@ namespace Hoodrich.Missions
         /// did was vouch for somebody, which is a small thing that costs him if it goes wrong,
         /// and that is the only part he mentions.
         /// </summary>
+        /// <summary>
+        /// Tao, on the second run and every one after.
+        ///
+        /// Short, because the long version was an introduction and introductions do not repeat.
+        /// He is also further gone than last time, which is the running joke of the man and the
+        /// one thing that can change every visit without needing a story to justify it.
+        /// </summary>
+        private DialogueNode MeetingAgain()
+        {
+            var node = new DialogueNode("Tao Cheng",
+                "AYY. Gerald guy! My guy. See, THIS is what I'm talkin' about -- man says a " +
+                "time, man SHOWS at the time. You know how rare that is round here? Rare, bro. " +
+                "Very rare.\n\nIt's already on the pallet. Same as last time. Don't open it, " +
+                "don't stop nowhere, don't -- you know all this, why am I sayin' it")
+            {
+                SpeakerColour = Palette.Cash
+            };
+
+            node.Say("Same as last time.", Hurry, "Get it loaded");
+            node.WithIcon(Icons.Tick);
+
+            node.Say("You alright, Tao?", Hurry, "He does not look alright");
+            node.WithIcon(Icons.FromFile("reply.png"));
+
+            return node;
+        }
+
         private DialogueNode HandOver()
         {
+            // Nothing to explain the second time. He wants the truck and he wants to pay you.
+            if (AgainForCash) return HandOverAgain();
+
             // He looks at the yard before he looks at you.
             //
             // The truck comes in off the road and there is no gentle way into that yard, so
@@ -980,13 +1025,39 @@ namespace Hoodrich.Missions
             return node;
         }
 
+        /// <summary>
+        /// Gerald on a repeat: no speech, no vouching, just the money.
+        ///
+        /// The first hand-over is him being embarrassed about his fence and telling you the
+        /// arrangement is yours now. Saying any of that twice would undo it -- the point of the
+        /// first one is that it only happens once.
+        /// </summary>
+        private DialogueNode HandOverAgain()
+        {
+            var node = new DialogueNode("Gerald",
+                "There he go. Straight there, straight back, no phone call in between -- that's " +
+                "what I like.\n\nLeave it, I got somebody comin' for it. Go on, get your money.")
+            {
+                SpeakerColour = Palette.Cash
+            };
+
+            node.Say("Appreciate it.", Drop, "Take the money");
+            node.WithIcon(Icons.FromFile("cash.png"));
+
+            return node;
+        }
+
         private DialogueNode Drop()
         {
             var pay = PayMin + _rng.Next(PayMax - PayMin);
 
             _state.PortRunStage = StageNone;
             _state.DocksUnlocked = true;
-            _state.AddRespect(15f);
+            _state.PortRunsDone++;
+
+            // Less respect for the tenth than the first. The first opened a route; the tenth is
+            // a man doing his job well, which is worth something and not worth the same.
+            _state.AddRespect(_state.PortRunsDone > 1 ? 4f : 15f);
             _state.Touch();
 
             UI.Cash.Give(pay);
