@@ -40,7 +40,15 @@
         /// fast the reticle is travelling, so any fixed rate is beads when you sweep quickly
         /// and a pile of paint in one spot when you hold still. See Continuous.
         /// </summary>
-        public float Rate = 22f;
+        /// <remarks>
+        /// Down from 22, with Overlap up to match. THE GAME'S DECAL POOL IS THE SCARCE THING
+        /// HERE -- a few hundred for the whole world, and no setting in this file changes it --
+        /// so every decal spent on overlap nobody can see is a decal not available to the next
+        /// wall. At 22 and 0.38 a five-second tag cost about 220 decals and roughly two of them
+        /// fit on screen; at 15 and 0.62 it costs about 150, and the spacing is still well
+        /// under half a mark's width at every sweep speed. Same line, a third more tags.
+        /// </remarks>
+        public float Rate = 15f;
 
         /// <summary>
         /// Whether the gap between one splatter and the next is filled in.
@@ -60,7 +68,7 @@
         /// Below about 0.5 they overlap into a solid band. Higher reads as a dotted trail,
         /// which is a legitimate look but not the one this is for.
         /// </summary>
-        public float Overlap = 0.38f;
+        public float Overlap = 0.62f;
 
         /// <summary>
         /// The most marks one dab may fill in.
