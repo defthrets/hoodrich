@@ -81,6 +81,20 @@ namespace Hoodrich.Missions
         public string BriefAgain = "";
         public string DoneAgain = "";
 
+        /// <summary>
+        /// What a repeat pays, as a fraction of the first run.
+        ///
+        /// The first time you move the Ballas off Grove it is worth what it is worth because
+        /// nobody had done it. The fourth time it is a job, and paying a job what you paid the
+        /// story is how a repeatable mission turns into a money printer nobody has a reason to
+        /// stop pressing.
+        ///
+        /// A fraction rather than a second pair of numbers, because the spread is already
+        /// tuned per mission and there is no reason for the repeat to have a different SHAPE
+        /// -- only a smaller one. Clamped on read so a typo cannot pay more than the original.
+        /// </summary>
+        public float RepeatPay = 0.6f;
+
         /// <summary>Gang whose people you are going after.</summary>
         public string TargetGang = "";
 
@@ -237,6 +251,7 @@ namespace Hoodrich.Missions
                     Done = node["done"].AsString(""),
                     BriefAgain = node["briefAgain"].AsString(""),
                     DoneAgain = node["doneAgain"].AsString(""),
+                    RepeatPay = node["repeatPay"].AsFloat(0.6f),
                     TargetGang = node["targetGang"].AsString(""),
                     Zone = node["zone"].AsString(""),
                     X = node["x"].AsFloat(),
@@ -274,6 +289,10 @@ namespace Hoodrich.Missions
                 }
 
                 if (def.PayMax < def.PayMin) def.PayMax = def.PayMin;
+
+                // Never more than the first telling, never nothing at all.
+                if (def.RepeatPay > 1f) def.RepeatPay = 1f;
+                if (def.RepeatPay < 0.1f) def.RepeatPay = 0.1f;
 
                 _allAdd(missions, def);
             }

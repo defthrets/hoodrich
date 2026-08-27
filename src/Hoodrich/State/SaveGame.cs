@@ -16,14 +16,70 @@ namespace Hoodrich.State
     /// </summary>
     internal static class SaveGame
     {
+        /// <summary>
+        /// Set when the save on disk could not be read AND neither could the backup.
+        ///
+        /// While this is true nothing writes. That is the entire safety mechanism, and it is
+        /// deliberately blunt: the alternative -- carrying on and autosaving over the top --
+        /// is what turns one bad read into a lost playthrough. Write is atomic and leaves a
+        /// .bak behind, so a save that has gone unreadable is very often still recoverable by
+        /// hand, right up until the mod saves twice more and rolls the good copy out of the
+        /// backup slot.
+        ///
+        /// It is only ever set at load, and never cleared, so a session that started badly
+        /// stays read-only until the player has dealt with the file and restarted.
+        /// </summary>
+        public static bool Blocked { get; private set; }
+
+        /// <summary>What went wrong, for the message the player actually sees.</summary>
+        public static string BlockedBecause { get; private set; }
+
         public static void Load(PlayerState state, Affiliation affiliation, Market market,
                                 StashHouse stash, Missions.TagRun tags = null)
         {
-            var doc = JsonFile.Read(Paths.SaveFile);
-            if (doc == null)
+            Core.ReadResult how;
+            var doc = JsonFile.Read(Paths.SaveFile, out how);
+
+            if (doc == null && how == Core.ReadResult.Missing)
             {
                 Log.Info("No save found; starting fresh at rank 0.");
                 return;
+            }
+
+            if (doc == null)
+            {
+                // THE SAVE IS THERE AND WE COULD NOT READ IT. Every write leaves the previous
+                // document in a .bak beside it, and until now nothing had ever opened that
+                // file -- it was written every single save and read by nobody. One save
+                // behind is a few minutes of play; a fresh start is everything.
+                var bak = JsonFile.BackupOf(Paths.SaveFile);
+
+                Core.ReadResult bakHow;
+                doc = JsonFile.Read(bak, out bakHow);
+
+                if (doc != null)
+                {
+                    Log.Error("save.json unreadable; loaded save.json.bak instead.");
+                    UI.Notify.Important(
+                        "~r~Save was damaged.~s~ Loaded the backup -- you may have lost a few minutes.");
+                }
+                else
+                {
+                    // Nothing left to read. Do NOT start fresh and do NOT write, because the
+                    // damaged file is still on disk and is still the best copy in existence.
+                    Blocked = true;
+                    BlockedBecause = bakHow == Core.ReadResult.Missing
+                        ? "save.json could not be read and there is no backup"
+                        : "neither save.json nor save.json.bak could be read";
+
+                    Log.Error("SAVING IS OFF: " + BlockedBecause + ". File: " + Paths.SaveFile);
+
+                    UI.Notify.Important(
+                        "~r~Could not read your save.~s~ Saving is OFF so nothing overwrites it. " +
+                        "Check scripts\\Hoodrich\\save.json.");
+
+                    return;
+                }
             }
 
             var version = doc["version"].AsString("0.1.0");
@@ -72,6 +128,11 @@ namespace Hoodrich.State
                                 StashHouse stash, bool force = false,
                                 Missions.TagRun tags = null)
         {
+            // NOT EVEN WHEN FORCED. The forced path is the one the sleep spot and the shutdown
+            // hook use, and those are exactly the moments a blank state would be written over
+            // a real save with the most conviction.
+            if (Blocked) return false;
+
             if (!state.IsDirty && !force) return false;
 
             try

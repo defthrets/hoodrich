@@ -168,7 +168,16 @@ namespace Hoodrich.Core
         // ---- hideouts ----------------------------------------------------------
 
         /// <summary>Grams each hideout's stash holds.</summary>
-        public float HideoutStashCapacity = 5000f;
+        // MATCHES THE SHIPPED INI, which is the whole point of a default.
+        //
+        // It was 5000 here and 300000 in Hoodrich.ini -- a sixtyfold difference decided by
+        // whether the player happened to have the ini, which is not a balance decision, it is
+        // two people disagreeing in different files. Aligned to what actually ships so that
+        // deleting the ini changes nothing.
+        //
+        // Three hundred kilos is almost certainly too generous now that the house can be
+        // raided; that is a balance question, and it is one number in one file.
+        public float HideoutStashCapacity = 300000f;
 
         // ---- posting up --------------------------------------------------------
 

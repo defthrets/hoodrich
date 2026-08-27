@@ -590,8 +590,12 @@ namespace Hoodrich.Territory
                     !who.IsInVehicle(car.Car))
                 {
                     Function.Call(Hash.CLEAR_PED_TASKS, who.Handle);
+                    // -1, for the reason set out in Delivery: a timeout on this task is
+                    // not "give up", it is "be in that seat by then", and the game keeps that
+                    // promise by warping. Rollers popping into their car is the same bug the
+                    // courier had.
                     Function.Call(Hash.TASK_ENTER_VEHICLE, who.Handle, car.Car.Handle,
-                                  20000, 0, 2f, 1, 0);
+                                  -1, 0, 2f, 1, 0);
                 }
             }
             catch { /* he can walk it off */ }

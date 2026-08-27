@@ -429,6 +429,53 @@ namespace Hoodrich.Missions
 
         // ---- starting ----------------------------------------------------------
 
+        /// <summary>
+        /// The walls we painted longest ago, with our paint taken back off them.
+        ///
+        /// ORDER IS THE CLOCK. _marks is appended to as he sprays and trimmed from the front
+        /// at MarkCap, so walking it forwards is walking backwards in time -- which means the
+        /// oldest work can be found without storing a timestamp on every dot, and without
+        /// changing the save format for a list that is already several hundred entries long.
+        ///
+        /// Their paint comes off as they are picked, because that is the event: it is not that
+        /// the wall became available, it is that somebody went over it. Leaving our marks up
+        /// would put him in front of a wall that already says CGF and ask him to write CGF.
+        /// </summary>
+        private List<TagSpot> GoneOverAgain(List<TagSpot> all, int want)
+        {
+            var picked = new List<TagSpot>();
+
+            for (var i = 0; i < _marks.Count && picked.Count < want; i++)
+            {
+                var spot = WallAt(_marks[i].At, all);
+                if (spot == null || picked.Contains(spot)) continue;
+                picked.Add(spot);
+            }
+
+            // Backwards, so removing does not shift anything still to be looked at.
+            for (var i = _marks.Count - 1; i >= 0; i--)
+            {
+                var spot = WallAt(_marks[i].At, all);
+                if (spot == null || !picked.Contains(spot)) continue;
+
+                Wipe(_marks[i]);
+                _marks.RemoveAt(i);
+            }
+
+            return picked;
+        }
+
+        /// <summary>Which wall a mark belongs to, or null if it is not near one any more.</summary>
+        private static TagSpot WallAt(Vector3 at, List<TagSpot> all)
+        {
+            for (var i = 0; i < all.Count; i++)
+            {
+                if (all[i] != null && at.DistanceTo(all[i].Where) <= PaintedWithin) return all[i];
+            }
+
+            return null;
+        }
+
         /// <summary>Returns a player-facing refusal, or null once the run is on.</summary>
         public string Start(MissionDef def, List<TagSpot> all)
         {
@@ -450,13 +497,21 @@ namespace Hoodrich.Missions
                 pool.Add(all[i]);
             }
 
-            // NOTHING LEFT TO GO OVER. Every wall on the list is already yours, which is a
-            // finished job rather than a broken one -- and saying so plainly is better than
-            // sending him out to paint over his own work. The reset menu wipes the paint, and
-            // wiping it puts every wall back on the table.
+            // EVERY WALL IS OURS -- so somebody goes back over the oldest ones.
+            //
+            // This used to be the end of the job forever: twenty walls, four a run, five runs
+            // and Lamar had nothing left to offer until the graffiti was wiped from a settings
+            // menu. A mission that can only be replayed by using a debug switch is not
+            // repeatable, and the fiction already had the answer in Lamar's own line about the
+            // busta being out again. He IS out again. He goes over the paint that has been up
+            // longest, and those walls come back on the list.
             if (pool.Count == 0)
             {
-                return "Every wall on that list is already ours.";
+                pool = GoneOverAgain(all, Math.Max(1, def.Targets));
+
+                if (pool.Count == 0) return "Every wall on that list is already ours.";
+
+                Log.Info("Tag list was dry; " + pool.Count + " of the oldest walls got done over.");
             }
 
             var want = Math.Max(1, Math.Min(def.Targets, pool.Count));

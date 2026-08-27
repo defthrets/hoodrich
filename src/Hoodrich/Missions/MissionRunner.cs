@@ -1922,8 +1922,11 @@ namespace Hoodrich.Missions
                     }
                     else if (ride != null && ride.Exists())
                     {
+                        // -1, same as everywhere else now. The reseat further down is a
+                        // different thing and stays: that one is deliberate, close-range, and
+                        // only ever catches a homie who was in this car a moment ago.
                         Function.Call(Hash.TASK_ENTER_VEHICLE, homie.Handle, ride.Handle,
-                                      12000, -2, 2f, 1, 0);
+                                      -1, -2, 2f, 1, 0);
                     }
                     else if (player != null)
                     {
@@ -2988,7 +2991,13 @@ namespace Hoodrich.Missions
 
             var def = _def;
 
+            // HasDone is still the state from BEFORE this run -- MarkDone is below -- so
+            // this is asking whether he had already finished this job once, which is exactly
+            // the question.
+            var again = _state.HasDone(def.Id);
+
             var pay = def.PayMin + _rng.Next(Math.Max(1, def.PayMax - def.PayMin + 1));
+            if (again) pay = Math.Max(1, (int)(pay * def.RepeatPay));
             var rep = Math.Max(0f, def.Rep - _homiesLost * HomieLostRep);
 
             UI.Cash.Give(pay);
