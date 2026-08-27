@@ -217,7 +217,7 @@ namespace Hoodrich.Paint
                 var got = Function.Call<uint>(Hash.GET_SELECTED_PED_WEAPON, me.Handle);
 
                 if (got != want) return false;
-                if (!_cfg.PaintEnabled) return false;
+                if (!_cfg.PaintEnabled || !_cfg.Armed) return false;
 
                 return Game.IsControlPressed(Control.Attack) ||
                        Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.Attack);

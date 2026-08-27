@@ -210,6 +210,11 @@ namespace Hoodrich.UI
         {
             _cfg.SprayCanLook = asCan;
 
+            // ARMS THE ENGINE. Until this, an extinguisher in his hands is an extinguisher --
+            // which is why one picked up in a fire station no longer turns into a spray can,
+            // and why the standalone handing him one does not make this mod grab it.
+            _cfg.Armed = true;
+
             Can.Give(true);
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");

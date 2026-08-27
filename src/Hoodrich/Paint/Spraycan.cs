@@ -124,7 +124,7 @@ namespace Hoodrich.Paint
             // same engine and may well be using that weapon for its own can, and two scripts
             // taking turns to show and hide one model every frame is a flicker with no
             // visible cause. So the teardown runs ONCE and then this leaves the world alone.
-            if (!_cfg.PaintEnabled)
+            if (!_cfg.PaintEnabled || !_cfg.Armed)
             {
                 Away();
                 return;

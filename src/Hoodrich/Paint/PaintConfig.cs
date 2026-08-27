@@ -204,6 +204,23 @@
         /// <summary>Whether it paints at all. There is no arming key; this is for turning it off.</summary>
         public bool PaintEnabled = true;
 
+        /// <summary>
+        /// Whether this mod's engine has been handed the tool.
+        ///
+        /// IT IS NOT ENOUGH TO ASK "IS AN EXTINGUISHER OUT". Two things go wrong the moment it
+        /// is: any extinguisher picked up in a fire station silently turns into a spray can,
+        /// and -- the one that was actually reported -- with both mods installed, taking an
+        /// EXTINGUISHER in one of them had the other put a CAN in the same hand 66 milliseconds
+        /// later, because both were watching the same weapon and only one of them had been
+        /// asked for anything.
+        ///
+        /// So the engine waits to be given the job. The standalone defaults to true, because
+        /// there an extinguisher paints and that is the entire mod. Posted Up sets it false at
+        /// startup and its Graffiti app and tag runs turn it on, because there the app is the
+        /// way in and an extinguisher is just an extinguisher until you ask.
+        /// </summary>
+        public bool Armed = true;
+
         /// <summary>Whether the can takes the nearest of the game's eight weapon tints.</summary>
         public bool TintTheCan = true;
 

@@ -105,7 +105,12 @@ namespace Hoodrich
         /// SAME ENGINE AS THE STANDALONE, file for file -- see tools/sync-paint.py in that
         /// repo. Only the way in differs: an app here, a hotkey there.
         /// </summary>
-        private readonly Paint.PaintConfig _paint = new Paint.PaintConfig();
+        /// <summary>
+        /// Disarmed on purpose. Here an extinguisher is just an extinguisher until the
+        /// Graffiti app or a tag run hands it over -- see PaintConfig.Armed. The standalone
+        /// defaults the other way, because there an extinguisher painting IS the mod.
+        /// </summary>
+        private readonly Paint.PaintConfig _paint = new Paint.PaintConfig { Armed = false };
         private readonly Paint.Marks _marks;
         private readonly Paint.Sprayer _sprayer;
         private readonly Paint.Spraycan _spraycan;
@@ -2234,7 +2239,7 @@ namespace Hoodrich
                     PaintChatter();
 
                     // The street's opinion of a man with a can, instead of running from him.
-                    _street.Update(Paint.Can.Out() && _paint.PaintEnabled);
+                    _street.Update(Paint.Can.Out() && _paint.PaintEnabled && _paint.Armed);
 
                     // Only when there is something new, and not often.
                     if (Game.GameTime - _paintSavedAt > 30000)
@@ -2243,7 +2248,7 @@ namespace Hoodrich
                         SavePaint();
                     }
 
-                    if (Paint.Can.Out() && _paint.PaintEnabled)
+                    if (Paint.Can.Out() && _paint.PaintEnabled && _paint.Armed)
                     {
                         Reticle.Draw(_graffiti.Colour, Paint.Aiming.Now(), _sprayer.Spraying);
                     }

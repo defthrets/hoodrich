@@ -1088,6 +1088,7 @@ namespace Hoodrich.Missions
                     // loaded is still there when the run is over.
                     Kit.SprayCanLook = true;
                     Kit.PaintEnabled = true;
+                    Kit.Armed = true;
 
                     ForcingColour = true;
 
