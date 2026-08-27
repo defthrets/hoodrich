@@ -130,6 +130,24 @@ namespace Hoodrich.Core
         /// <summary>How far either side of the base price a product can wander, as a percent.</summary>
         public float MarketMaxSwingPercent = 45f;
 
+        /// <summary>Whether a worked block goes quiet at all. Off restores the old behaviour.</summary>
+        public bool BlockSaturationEnabled = true;
+
+        /// <summary>
+        /// Grams on one block that halve how often somebody walks up there.
+        ///
+        /// Stated as the half-way point because that is the number a player can feel. Two
+        /// hundred and fifty grams is a solid evening on one corner, after which it is worth
+        /// walking two streets over.
+        /// </summary>
+        public float BlockSaturationGrams = 250f;
+
+        /// <summary>Real minutes for a half-worked block to come all the way back.</summary>
+        public float BlockRecoveryMinutes = 20f;
+
+        /// <summary>How quiet the deadest block can get. Never zero -- there is always somebody.</summary>
+        public float BlockDemandFloor = 0.25f;
+
         // ---- risk --------------------------------------------------------------
 
         /// <summary>Base chance a completed sale draws police attention.</summary>
@@ -336,6 +354,14 @@ namespace Hoodrich.Core
                 Math.Max(0f, ini.GetFloat("Economy", "MarketDriftIntervalMinutes", s.MarketDriftIntervalMinutes));
             s.MarketMaxSwingPercent =
                 Clamp(ini.GetFloat("Economy", "MarketMaxSwingPercent", s.MarketMaxSwingPercent), 0f, 80f);
+            s.BlockSaturationEnabled =
+                ini.GetBool("Economy", "BlockSaturationEnabled", s.BlockSaturationEnabled);
+            s.BlockSaturationGrams =
+                Math.Max(10f, ini.GetFloat("Economy", "BlockSaturationGrams", s.BlockSaturationGrams));
+            s.BlockRecoveryMinutes =
+                Math.Max(1f, ini.GetFloat("Economy", "BlockRecoveryMinutes", s.BlockRecoveryMinutes));
+            s.BlockDemandFloor =
+                Clamp(ini.GetFloat("Economy", "BlockDemandFloor", s.BlockDemandFloor), 0.05f, 1f);
 
             s.PoliceBustChancePercent =
                 Clamp(ini.GetFloat("Risk", "PoliceBustChancePercent", s.PoliceBustChancePercent), 0f, 100f);

@@ -66,6 +66,7 @@ namespace Hoodrich
         private readonly Delivery _delivery;
         private readonly WeaponRegistry _weapons;
         private readonly Market _market;
+        private readonly BlockDemand _blocks;
         private readonly Bust _bust;
         private readonly DeadDrop _deadDrop;
         private readonly PostUp _postUp;
@@ -471,17 +472,18 @@ namespace Hoodrich
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
                 _stash = new StashHouse(_cfg);
-                _sleep = new SleepSpot(_state, () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint));
+                _sleep = new SleepSpot(_state, () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks));
                 _market = new Market(_cfg);
+                _blocks = new BlockDemand(_cfg);
 
-                SaveGame.Load(_state, _crew, _market, _stash);
+                SaveGame.Load(_state, _crew, _market, _stash, null, _blocks);
 
                 _turf = new TurfWatch(_gangs, _crew, _state);
                 _crew.Turf = _turf;
                 _bust = new Bust(_cfg, _state) { Turf = _turf };
                 _deadDrop = new DeadDrop(_cfg, _state);
 
-                _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market };
+                _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market, Blocks = _blocks };
                 _cutting = new Cutting(_state.Stash, _state);
 
                 // Product you have put down. Its own thing rather than a corner of the stash,
@@ -537,7 +539,7 @@ namespace Hoodrich
                 _ownedCars = new OwnedCars(_state)
                 {
                     // A car is too much money to leave sitting in memory for two minutes.
-                    SaveNow = () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint)
+                    SaveNow = () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks)
                 };
                 _hao.Owned = _ownedCars;
 
@@ -2006,6 +2008,7 @@ namespace Hoodrich
                     _cutting.Update();
                     _deadDrop.Update();
                     _market.Update(_drugs);
+                    _blocks.Update();
                     _stash.Update();
                     _sleep.Update();
                     _kitchen.Update();
@@ -2169,7 +2172,7 @@ namespace Hoodrich
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {
                 _lastSave = now;
-                SaveGame.Save(_state, _crew, _market, _stash, false, _jobs.Paint);
+                SaveGame.Save(_state, _crew, _market, _stash, false, _jobs.Paint, _blocks);
             }
         }
 
@@ -2611,7 +2614,7 @@ namespace Hoodrich
 
             try
             {
-                SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint);
+                SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks);
                 Log.Info(Build.Name + " unloaded cleanly.");
             }
             catch (Exception ex)

@@ -2240,6 +2240,21 @@ namespace Hoodrich.Wheel
             page.Row("Been clocked", _turf.IsExposed ? "yes -- they have seen you" : "not yet",
                      _turf.IsExposed ? Palette.Warn : (Color?)Palette.TextDim, "warning.png");
 
+            // HOW WORKED OVER IT IS, said plainly. The trade slowing down on a block he has
+            // been standing on all evening is something he did, and a consequence the player
+            // cannot see is indistinguishable from a bug -- he would go looking for what broke
+            // rather than walking two streets over, which is the entire point of the mechanic.
+            if (_pricing != null && _pricing.Blocks != null)
+            {
+                var worked = _pricing.Blocks.Saturation(_turf.ZoneCode);
+
+                page.Row("Trade here", _pricing.Blocks.Word(_turf.ZoneCode),
+                         worked < 0.25f ? Palette.Cash
+                                        : worked < 0.5f ? (Color?)Palette.TextDim
+                                                        : Palette.Warn,
+                         "weed.png");
+            }
+
             // It is no longer only about this block, so it no longer says it is. The panel
             // behind this opens on the block and then runs through every set in the city.
             page.Add("The numbers", "=", ShowBlockNumbers,

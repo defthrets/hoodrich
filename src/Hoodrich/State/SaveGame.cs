@@ -35,7 +35,8 @@ namespace Hoodrich.State
         public static string BlockedBecause { get; private set; }
 
         public static void Load(PlayerState state, Affiliation affiliation, Market market,
-                                StashHouse stash, Missions.TagRun tags = null)
+                                StashHouse stash, Missions.TagRun tags = null,
+                                BlockDemand blocks = null)
         {
             Core.ReadResult how;
             var doc = JsonFile.Read(Paths.SaveFile, out how);
@@ -91,6 +92,7 @@ namespace Hoodrich.State
             state.LoadFrom(doc);
             affiliation.LoadFrom(doc["affiliation"]);
             market.LoadFrom(doc["market"]);
+            if (blocks != null) blocks.LoadFrom(doc["blocks"]);
             stash.LoadFrom(doc["stashHouse"]);
 
             // Not passed in like the other four, because the inbox is static -- see the note
@@ -126,7 +128,7 @@ namespace Hoodrich.State
 
         public static bool Save(PlayerState state, Affiliation affiliation, Market market,
                                 StashHouse stash, bool force = false,
-                                Missions.TagRun tags = null)
+                                Missions.TagRun tags = null, BlockDemand blocks = null)
         {
             // NOT EVEN WHEN FORCED. The forced path is the one the sleep spot and the shutdown
             // hook use, and those are exactly the moments a blank state would be written over
@@ -145,6 +147,7 @@ namespace Hoodrich.State
                     .Set("inbox", Social.Inbox.ToJson());
 
                 if (tags != null) doc.Set("tags", tags.ToJson());
+                if (blocks != null) doc.Set("blocks", blocks.ToJson());
 
                 if (!JsonFile.Write(Paths.SaveFile, doc)) return false;
 

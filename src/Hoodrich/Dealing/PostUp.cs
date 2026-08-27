@@ -1004,6 +1004,10 @@ namespace Hoodrich.Dealing
                           product.Name, payout);
             }
 
+            // And the block remembers. Enough of these and the next customer takes longer to
+            // turn up here than he would two streets over.
+            _pricing.SoldHere(sold);
+
             _state.AddRespect(1f + product.Tier * 0.4f);
             _state.GramsSold += sold;
             _state.TotalDealsMade++;

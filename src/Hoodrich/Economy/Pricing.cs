@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA.Native;
 using Hoodrich.Core;
@@ -46,6 +46,7 @@ namespace Hoodrich.Economy
         public TurfWatch Turf;
         public Affiliation Crew;
         public Market Market;
+        public BlockDemand Blocks;
 
         public Pricing(Settings cfg, PlayerState state)
         {
@@ -106,6 +107,16 @@ namespace Hoodrich.Economy
 
         public float TurfMultiplier => Turf == null ? 1f : Turf.TurfPriceMultiplier;
 
+        /// <summary>
+        /// How worked over the block under his feet is.
+        ///
+        /// Separate from TurfMultiplier, which is about whose block it is. This one is about
+        /// how much of it you have already sold today, and it is the only term here that the
+        /// player creates entirely by themselves.
+        /// </summary>
+        public float BlockMultiplier =>
+            Blocks == null || Turf == null ? 1f : Blocks.Multiplier(Turf.ZoneCode);
+
         public float LookoutMultiplier => Crew == null ? 1f : Crew.LookoutMultiplier;
 
         /// <summary>
@@ -130,12 +141,26 @@ namespace Hoodrich.Economy
         /// market is doing to that particular product. High demand means people keep walking
         /// up. It does not mean they pay more, because they do not.
         /// </summary>
+        /// <summary>
+        /// Books weight against whatever block he is stood on.
+        ///
+        /// Routed through here rather than called on BlockDemand directly, because the caller
+        /// that knows a sale happened is PostUp and the thing that knows where he is standing
+        /// is TurfWatch -- and Pricing is already holding both.
+        /// </summary>
+        public void SoldHere(float grams)
+        {
+            if (Blocks == null || Turf == null) return;
+            Blocks.Sold(Turf.ZoneCode, grams);
+        }
+
         public float Demand(DrugDef drug)
         {
             var d = NightMultiplier
                     * RankMultiplier
                     * NotorietyMultiplier
                     * TurfMultiplier
+                    * BlockMultiplier
                     * LookoutMultiplier
                     * ReputationMultiplier
                     * (Market == null || drug == null ? 1f : Market.Multiplier(drug.Id));
@@ -253,6 +278,14 @@ namespace Hoodrich.Economy
             if (Turf != null && Math.Abs(TurfMultiplier - 1f) > 0.01f)
             {
                 parts += "  turf x" + TurfMultiplier.ToString("0.00");
+            }
+
+            // Said out loud, always, once it is doing anything. An unexplained slowdown that
+            // the player caused themselves is the single easiest thing in here to mistake for
+            // a broken mod.
+            if (Blocks != null && Turf != null && Math.Abs(BlockMultiplier - 1f) > 0.01f)
+            {
+                parts += "  block " + Blocks.Word(Turf.ZoneCode);
             }
 
             if (Crew != null && Crew.NearbyAllies > 0)
