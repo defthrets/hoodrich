@@ -222,8 +222,19 @@ function Deploy-To([string]$gameDir, [string]$label) {
     Set-Content -Path (Join-Path $dataDst 'version.txt') -Value $stampVer -NoNewline -Encoding ascii
 
     # Anything the mod no longer ships has to go, or it keeps being loaded.
+    #
+    # BUT THE MOD WRITES INTO THIS FOLDER TOO, and those files are the player's, not ours.
+    # Paths.Writable is scripts\Hoodrich -- the very folder being pruned -- so every file the
+    # mod saves at runtime looks exactly like a data file we stopped shipping. paint.json was
+    # missing from this list for one deploy and -FreshData deleted somebody's graffiti.
+    #
+    # A list is the wrong shape for this and it is kept deliberately short: anything added to
+    # Paths that the mod WRITES has to be added here in the same change, or it gets destroyed
+    # by the next fresh deploy and nothing anywhere says why.
+    $ours = @('save.json', 'save.json.bak', 'paint.json', 'paint.json.bak')
+
     Get-ChildItem $dataDst -File -Filter *.json | ForEach-Object {
-        if ($_.Name -eq 'save.json' -or $_.Name -eq 'save.json.bak') { return }
+        if ($ours -contains $_.Name) { return }
         if (Test-Path (Join-Path $dataSrc $_.Name)) { return }
 
         Remove-Item $_.FullName -Force
