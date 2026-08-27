@@ -99,6 +99,19 @@ namespace Hoodrich
         private readonly SocialFeed _social;
         private readonly SocialScreen _socialScreen;
 
+        /// <summary>
+        /// The can, and the engine under it.
+        ///
+        /// SAME ENGINE AS THE STANDALONE, file for file -- see tools/sync-paint.py in that
+        /// repo. Only the way in differs: an app here, a hotkey there.
+        /// </summary>
+        private readonly Paint.PaintConfig _paint = new Paint.PaintConfig();
+        private readonly Paint.Marks _marks;
+        private readonly Paint.Sprayer _sprayer;
+        private readonly Paint.Spraycan _spraycan;
+        private readonly Paint.Can _can = new Paint.Can();
+        private readonly GraffitiScreen _graffiti;
+
         /// <summary>The inbox. Its store is static; only the screen is an object.</summary>
         private readonly MessagesScreen _messages = new MessagesScreen();
 
@@ -568,6 +581,11 @@ namespace Hoodrich
 
                 _social = SocialFeed.Load();
                 _socialScreen = new SocialScreen(_social);
+
+                _marks = new Paint.Marks(_paint);
+                _sprayer = new Paint.Sprayer(_paint, _marks);
+                _spraycan = new Paint.Spraycan(_paint);
+                _graffiti = new GraffitiScreen(_paint, _marks);
 
                 // HERE, not thirty lines up where it used to be.
                 //
@@ -1233,7 +1251,8 @@ namespace Hoodrich
                                    _stashScreen.IsOpen || _pocketScreen.IsOpen
                                    || _settingsScreen.IsOpen
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
-                                   || _gunScreen.IsOpen || _carScreen.IsOpen,
+                                   || _gunScreen.IsOpen || _carScreen.IsOpen
+                                   || _graffiti.IsOpen,
                 };
 
                 _social.Toasts = _toasts;
@@ -1374,7 +1393,7 @@ namespace Hoodrich
                                          || _messages.IsOpen
                                          || _stashScreen.IsOpen || _pocketScreen.IsOpen
                                          || _settingsScreen.IsOpen || _gunScreen.IsOpen
-                                         || _carScreen.IsOpen;
+                                         || _carScreen.IsOpen || _graffiti.IsOpen;
 
                 _copWatch.Social = _social;
 
@@ -1630,6 +1649,8 @@ namespace Hoodrich
                 pages.Bags = _bags;
                 pages.Crew = _homies;
                 pages.ShowSocials = () => _socialScreen.Open();
+                pages.ShowGraffiti = () => _graffiti.Open();
+                pages.MarksUp = () => _marks.Count;
                 pages.ShowMessages = () => _messages.Open();
                 pages.Jobs = _jobs;
 
@@ -1982,6 +2003,19 @@ namespace Hoodrich
                     }
                 }
 
+                if (_graffiti.IsOpen)
+                {
+                    if (!available) _graffiti.Close();
+                    else
+                    {
+                        _graffiti.Update();
+                        _graffiti.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_gunScreen.IsOpen)
                 {
                     if (!available || !_bigj.InReach) _gunScreen.Close();
@@ -2157,6 +2191,36 @@ namespace Hoodrich
                     _blocks.Update(_turf == null ? "" : _turf.ZoneCode);
                     _locker.Update();
                     _raid.Update();
+
+                    // ---- the can ----
+                    //
+                    // Order matters here and it is not arbitrary. The nozzle has to be handed
+                    // over BEFORE the sprayer runs, because the sprayer is what starts the
+                    // jet, and a nozzle given a frame late is a plume that comes out of his
+                    // wrist on the first press of every trigger pull.
+                    //
+                    // Nothing paints while a screen is up: the panel eats the controls, and a
+                    // trigger held through a menu is a wall painted by accident.
+                    _sprayer.Colour = _graffiti.Colour;
+                    _sprayer.Nozzle = _spraycan.Handle;
+                    _sprayer.Update();
+
+                    _spraycan.Update(_sprayer.Spraying, Paint.Aiming.Now());
+
+                    if (_paint.TintTheCan) _can.Match(_graffiti.Colour, _paint.PaintEnabled);
+
+                    // Safe unconditionally: a weapon he is not holding spends no ammo, so
+                    // there is nothing to refund and this does nothing.
+                    _can.Feed(_paint);
+
+                    _marks.Sweep();
+                    PaintChatter();
+
+                    if (Paint.Can.Out() && _paint.PaintEnabled)
+                    {
+                        Reticle.Draw(_graffiti.Colour, Paint.Aiming.Now(), _sprayer.Spraying);
+                    }
+
                     _stash.Update();
                     _sleep.Update();
                     _kitchen.Update();
@@ -2289,6 +2353,46 @@ namespace Hoodrich
                     Notify.Failure("shut itself off for this session. Check the log.");
                 }
             }
+        }
+
+        private int _paintHeldFrom;
+        private int _paintSaidAt;
+
+        /// <summary>
+        /// The block noticing a wall.
+        ///
+        /// ON A SESSION, NOT ON A DAB. Paint goes on nine times a second, so posting per mark
+        /// would be nine posts a second -- and the feed is the one part of this mod that cannot
+        /// survive being spammed, because the moment it is noise nobody reads any of it,
+        /// including the lines that took real work.
+        ///
+        /// So it waits for the trigger to come UP, asks whether that was a piece or a stray
+        /// press, and then keeps quiet for a few minutes regardless. Somebody painting all
+        /// afternoon should get remarked on now and again, not narrated.
+        /// </summary>
+        private void PaintChatter()
+        {
+            if (_social == null) return;
+
+            if (_sprayer.Spraying)
+            {
+                if (_paintHeldFrom == 0) _paintHeldFrom = Game.GameTime;
+                return;
+            }
+
+            if (_paintHeldFrom == 0) return;
+
+            var held = Game.GameTime - _paintHeldFrom;
+            _paintHeldFrom = 0;
+
+            // Held rather than counted. The mark list shrinks when the game's decal pool is
+            // recycled, so counting marks would quietly stop firing on exactly the long
+            // sessions most worth a post.
+            if (held < 3000) return;
+            if (_paintSaidAt != 0 && Game.GameTime - _paintSaidAt < 240000) return;
+
+            _paintSaidAt = Game.GameTime;
+            _social.On(Social.SocialEvent.Tagged);
         }
 
         private void SlowTick()
@@ -2786,6 +2890,11 @@ namespace Hoodrich
             // is the player being unable to attract a police car for the rest of the session
             // because the script unloaded while somebody was holding the switch.
             try { LawHold.ReleaseAll(); } catch { /* teardown */ }
+
+            // The can comes off his hand and the weapon becomes visible again. Leaving
+            // either behind outlives the mod.
+            try { _spraycan?.Away(); } catch { /* teardown */ }
+            try { _sprayer?.Stop(); } catch { /* teardown */ }
 
             try { _phone?.RestoreWorld(); }
             catch { try { Game.TimeScale = 1f; } catch { /* nothing more we can do */ } }

@@ -1,0 +1,418 @@
+﻿using System;
+using System.Drawing;
+using GTA;
+using GTA.Native;
+using Hoodrich.Paint;
+using Control = GTA.Control;
+using Hud = Hoodrich.UI.Draw;
+
+namespace Hoodrich.UI
+{
+    /// <summary>
+    /// The can, as an app.
+    ///
+    /// THE ENGINE UNDER THIS IS THE SAME ENGINE THE STANDALONE USES -- the same files, kept in
+    /// step by tools/sync-paint.py, not a port and not a rewrite. The only thing that differs
+    /// between the two mods is how you get to it: F3 and a floating panel over there, a tile on
+    /// the phone here. Everything about how paint lands, how wide it goes, what comes out of
+    /// the can and how long it lasts is one implementation.
+    ///
+    /// So this file is deliberately thin. It picks a colour, hands over a tool, and wipes the
+    /// walls. Anything it was tempted to decide for itself belongs in PaintConfig, where the
+    /// other mod can see it too.
+    ///
+    /// Laid out like every other full screen here rather than like the standalone's panel,
+    /// which is the point of doing it twice: this one has to look like it came with the phone.
+    /// </summary>
+    internal sealed class GraffitiScreen
+    {
+        private const float PanelWidthH = 0.60f;
+        private const float PadH = 0.024f;
+        private const float SwatchH = 0.062f;
+        private const float ButtonH = 0.040f;
+
+        /// <summary>Long enough that the press which opened it cannot also spend something.</summary>
+        private const int OpenGraceMs = 220;
+
+        /// <summary>
+        /// Eleven, spread round the wheel rather than picked for prettiness -- so whatever
+        /// somebody has in mind when they think "I want that colour" has something near it --
+        /// plus the two neutrals on the end, which is where most real graffiti actually lives.
+        /// </summary>
+        private static readonly Color[] Colours =
+        {
+            Color.FromArgb(255, 228,  46,  46),
+            Color.FromArgb(255, 244, 130,  30),
+            Color.FromArgb(255, 245, 218,  50),
+            Color.FromArgb(255, 122, 214,  56),
+            Color.FromArgb(255,  40, 180, 120),
+            Color.FromArgb(255,  50, 190, 226),
+            Color.FromArgb(255,  52, 110, 226),
+            Color.FromArgb(255, 140,  76, 220),
+            Color.FromArgb(255, 240, 100, 180),
+            Color.FromArgb(255, 245, 245, 245),
+
+            // NOT PURE ZERO. The decal arguments multiply the texture, so 0,0,0 reads as a hole
+            // punched in the wall rather than paint on it, and it takes the jet down with it --
+            // leaving nothing to aim by. A hair above black is indistinguishable on a wall.
+            Color.FromArgb(255,  20,  20,  22)
+        };
+
+        private static readonly string[] Names =
+        {
+            "red", "orange", "yellow", "lime", "green",
+            "cyan", "blue", "purple", "pink", "white", "black"
+        };
+
+        private enum Row { Swatches, TakeCan, TakeExt, Clear }
+
+        private readonly PaintConfig _cfg;
+        private readonly Marks _marks;
+
+        private readonly Curtain _curtain = new Curtain();
+
+        private int _pick = 3;
+        private Row _row = Row.Swatches;
+        private int _openedAt;
+
+        /// <summary>
+        /// Whether the wipe has been pressed once already.
+        ///
+        /// It throws away every mark in the world and there is no undo, so it asks. One press
+        /// arms it, the second does it, moving off the row forgets it -- the cheapest
+        /// confirmation there is, and it does not cost a second screen.
+        /// </summary>
+        private bool _armed;
+
+        public GraffitiScreen(PaintConfig cfg, Marks marks)
+        {
+            _cfg = cfg;
+            _marks = marks;
+        }
+
+        public bool IsOpen => _curtain.Showing;
+
+        public Color Colour => Colours[_pick];
+
+        public void Open()
+        {
+            _curtain.Open();
+            _openedAt = Game.GameTime;
+            _armed = false;
+
+            Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        public void Close()
+        {
+            if (!IsOpen) return;
+
+            // The button that got you out of here does not also swing at somebody.
+            Core.InputGuard.Swallow();
+
+            _curtain.Close();
+            _armed = false;
+
+            Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        // ---- input -------------------------------------------------------------
+
+        public void Update()
+        {
+            if (!IsOpen) return;
+
+            LockControls();
+
+            if (!_curtain.Taking) return;
+            if (Game.GameTime - _openedAt < OpenGraceMs) return;
+
+            if (Pressed(Control.PhoneCancel)) { Close(); return; }
+
+            if (Pressed(Control.PhoneUp)) Move(-1);
+            else if (Pressed(Control.PhoneDown)) Move(1);
+            else if (_row == Row.Swatches && Pressed(Control.PhoneLeft)) Step(-1);
+            else if (_row == Row.Swatches && Pressed(Control.PhoneRight)) Step(1);
+            else if (Pressed(Control.PhoneSelect)) Choose();
+        }
+
+        private void Choose()
+        {
+            switch (_row)
+            {
+                case Row.Swatches:
+                    // Picking IS choosing. There is nothing to confirm.
+                    Close();
+                    break;
+
+                case Row.TakeCan:
+                    Take(true);
+                    break;
+
+                case Row.TakeExt:
+                    Take(false);
+                    break;
+
+                case Row.Clear:
+                    if (!_armed)
+                    {
+                        _armed = true;
+                        Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                        break;
+                    }
+
+                    _marks.Clear();
+                    _armed = false;
+
+                    Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    Notify.Important("~g~Walls are clean.~s~");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Hands over the tool, and everything that follows from which one it is.
+        ///
+        /// The weapon underneath is the same object either way -- the extinguisher, because it
+        /// is what carries the aim camera and a trigger, and a prop can do neither. What the
+        /// choice really sets is the look and, through it, the reach and the cone: four metres
+        /// and a metre across for a can, ten and two for a hose.
+        ///
+        /// One button per tool rather than a button and a switch. Two rows for one decision let
+        /// the halves disagree, and they did: asking for an extinguisher and being handed the
+        /// can's four-metre reach presented as the mod simply not painting.
+        /// </summary>
+        private void Take(bool asCan)
+        {
+            _cfg.SprayCanLook = asCan;
+
+            Can.Give(true);
+
+            Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+            Notify.Important(asCan
+                ? "~g~Can's in your hand.~s~  Aim and hold fire."
+                : "~g~Extinguisher.~s~  Further reach, wider spray.");
+        }
+
+        private static bool Pressed(Control control)
+        {
+            return Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0, (int)control);
+        }
+
+        /// <summary>The same lock every other full screen in this mod uses.</summary>
+        private static void LockControls()
+        {
+            Function.Call(Hash.DISABLE_ALL_CONTROL_ACTIONS, 0);
+
+            foreach (var control in new[]
+                     {
+                         Control.PhoneUp, Control.PhoneDown, Control.PhoneLeft, Control.PhoneRight,
+                         Control.PhoneSelect, Control.PhoneCancel,
+                         Control.LookLeftRight, Control.LookUpDown
+                     })
+            {
+                Function.Call(Hash.ENABLE_CONTROL_ACTION, 0, (int)control, true);
+            }
+        }
+
+        private void Move(int step)
+        {
+            var n = (int)_row + step;
+            if (n < 0) n = 3;
+            if (n > 3) n = 0;
+
+            _row = (Row)n;
+
+            // Walking away from the wipe forgets that it was armed.
+            _armed = false;
+
+            Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        private void Step(int by)
+        {
+            _pick = (_pick + by + Colours.Length) % Colours.Length;
+            Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        // ---- drawing -----------------------------------------------------------
+
+        public void Draw()
+        {
+            if (!IsOpen) return;
+
+            var width = Hud.ToX(PanelWidthH);
+            var left = 0.5f - width * 0.5f;
+            var pad = Hud.ToX(PadH);
+
+            var height = 0.256f + SwatchH + ButtonH * 3f;
+            var top = 0.5f - height * 0.5f + _curtain.Lift;
+
+            Hud.RectFrom(left, top, width, height, Palette.Hub);
+            Corners(left, top, width, height);
+
+            var x = left + pad;
+            var right = left + width - pad;
+            var y = top + 0.020f;
+
+            // ---- the header ----
+            Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            Hud.TextRight(Names[_pick], right, y + 0.010f, 0.34f, Legible(Colour));
+
+            y += 0.052f;
+
+            Hud.Text("WHAT YOU'RE PUTTING UP", x, y, 0.26f, Palette.TextDim,
+                     Hud.FontLabel, centre: false);
+            Hud.TextRight(_marks.Count + (_marks.Count == 1 ? " mark" : " marks"),
+                          right, y, 0.24f, Palette.TextDim);
+
+            y += 0.026f;
+            Hud.RectFrom(x, y, right - x, 0.0016f, Legible(Colour));
+            y += 0.014f;
+
+            // ---- the eleven ----
+            var gap = Hud.ToX(0.005f);
+            var each = (right - x - gap * (Colours.Length - 1)) / Colours.Length;
+
+            for (var i = 0; i < Colours.Length; i++)
+            {
+                var sx = x + i * (each + gap);
+
+                // MARKED WHATEVER ROW YOU ARE ON. Lighting it only while the cursor is on the
+                // swatch row leaves nothing on screen saying which colour is loaded the moment
+                // you step down to a button.
+                var on = i == _pick;
+                var focused = _row == Row.Swatches;
+
+                var sh = on ? SwatchH : SwatchH - 0.012f;
+                var sy = y + (SwatchH - sh);
+
+                Hud.RectFrom(sx, sy, each, sh, Colours[i]);
+
+                // A near-black swatch on a near-black panel is an empty slot rather than a
+                // colour, so the outline brightens as the swatch darkens.
+                Outline(sx, sy, each, sh, 0.0012f,
+                        Luma(Colours[i]) < 0.18f ? Palette.TextDim
+                                                 : Color.FromArgb(70, 255, 255, 255));
+
+                if (on)
+                {
+                    Outline(sx - 0.0022f, sy - 0.0022f, each + 0.0044f, sh + 0.0044f, 0.0026f,
+                            focused ? Palette.Accent : Palette.TextDim);
+                }
+            }
+
+            y += SwatchH + 0.016f;
+
+            // ---- the two tools ----
+            //
+            // The right-hand word says which one you are already carrying, so the app answers
+            // "what have I got" without you closing it to look.
+            var has = Can.Has();
+
+            Button(x, right, y, _row == Row.TakeCan, "TAKE A SPRAY CAN",
+                   has && _cfg.SprayCanLook ? "IN HAND" : "ENTER", false);
+
+            y += ButtonH;
+
+            Button(x, right, y, _row == Row.TakeExt, "TAKE AN EXTINGUISHER",
+                   has && !_cfg.SprayCanLook ? "IN HAND" : "ENTER", false);
+
+            y += ButtonH;
+
+            // ---- wipe it all ----
+            Button(x, right, y, _row == Row.Clear,
+                   _armed ? "PRESS AGAIN -- THIS CANNOT BE UNDONE" : "CLEAR EVERY WALL",
+                   _armed ? "SURE?" : "ENTER", _armed);
+
+            Hud.Text("UP/DOWN  MOVE      LEFT/RIGHT  COLOUR      ENTER  TAKE IT      BACKSPACE  BACK",
+                     x, top + height - 0.028f, 0.22f, Palette.TextDim, Hud.FontLabel, centre: false);
+        }
+
+        private void Button(float x, float right, float y, bool active, string label,
+                            string hint, bool warn)
+        {
+            if (active)
+            {
+                Hud.RectFrom(x - Hud.ToX(0.008f), y, (right - x) + Hud.ToX(0.016f), ButtonH,
+                             Color.FromArgb(46, 255, 255, 255));
+                Hud.RectFrom(x - Hud.ToX(0.008f), y, 0.0022f, ButtonH,
+                             warn ? Palette.Danger : Legible(Colour));
+            }
+
+            var ink = warn ? Palette.Danger : active ? Palette.Text : Palette.TextDim;
+
+            Hud.Text(label, x, y + 0.010f, 0.30f, ink, Hud.FontBody, centre: false);
+
+            Hud.TextRight(hint, right, y + 0.011f, 0.24f,
+                          warn ? Palette.Danger : active ? Legible(Colour) : Palette.TextDim,
+                          Hud.FontLabel);
+        }
+
+        /// <summary>
+        /// A thin outline, as four boxes.
+        ///
+        /// Draw.Frame here takes a fill AND a rule and is for panels; this wants the rule only,
+        /// which is cheaper to write out than to talk that one into.
+        /// </summary>
+        private static void Outline(float left, float top, float w, float h, float thick, Color c)
+        {
+            Hud.RectFrom(left, top, w, thick, c);
+            Hud.RectFrom(left, top + h - thick, w, thick, c);
+            Hud.RectFrom(left, top, Hud.ToX(thick), h, c);
+            Hud.RectFrom(left + w - Hud.ToX(thick), top, Hud.ToX(thick), h, c);
+        }
+
+        /// <summary>How bright a colour reads. Rec. 601, plenty for "can I see this".</summary>
+        private static float Luma(Color c)
+        {
+            return (0.299f * c.R + 0.587f * c.G + 0.114f * c.B) / 255f;
+        }
+
+        /// <summary>
+        /// The same colour, lifted until it can be read on a dark panel.
+        ///
+        /// A SWATCH CAN BE ANY COLOUR. TEXT CANNOT. Black paint drawn as black text on a black
+        /// panel is a blank space exactly where the name of the colour should be -- and naming
+        /// it is most of what this screen is for, since the can itself only ever shows the
+        /// nearest of the game's eight tints.
+        /// </summary>
+        private static Color Legible(Color c)
+        {
+            const float Floor = 0.35f;
+
+            var l = Luma(c);
+            if (l >= Floor) return c;
+
+            var t = 1f - l / Floor;
+
+            return Color.FromArgb(c.A,
+                                  (int)(c.R + (255 - c.R) * t),
+                                  (int)(c.G + (255 - c.G) * t),
+                                  (int)(c.B + (255 - c.B) * t));
+        }
+
+        /// <summary>Corner ticks rather than a full frame, the way every panel here is edged.</summary>
+        private static void Corners(float left, float top, float w, float h)
+        {
+            var c = Palette.Accent;
+            var len = 0.022f;
+            var lenX = Hud.ToX(len);
+            var t = 0.0022f;
+            var tX = Hud.ToX(t);
+
+            Hud.RectFrom(left, top, lenX, t, c);
+            Hud.RectFrom(left, top, tX, len, c);
+
+            Hud.RectFrom(left + w - lenX, top, lenX, t, c);
+            Hud.RectFrom(left + w - tX, top, tX, len, c);
+
+            Hud.RectFrom(left, top + h - t, lenX, t, c);
+            Hud.RectFrom(left, top + h - len, tX, len, c);
+
+            Hud.RectFrom(left + w - lenX, top + h - t, lenX, t, c);
+            Hud.RectFrom(left + w - tX, top + h - len, tX, len, c);
+        }
+    }
+}

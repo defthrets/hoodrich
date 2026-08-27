@@ -2155,7 +2155,19 @@
       "somebody crossed out the wall. it's on now",
       "new paint on the corner. y'all know what that mean",
       "they hit our wall so we hitting theirs. simple",
-      "that tag gonna cost somebody"
+      "that tag gonna cost somebody",
+      "Somebody been out with a can round {here} {timeofday}. Whole block getting colourful",
+      "Every other wall on {here} got fresh paint on it now {filler}",
+      "Whoever doing the painting round {localspot}, at least pick a colour and stick to it",
+      "Council gonna love this. New paint all down {here}",
+      "Man really out here treating {localspot} like a canvas",
+      "Saw somebody spraying by {localspot} {timeofday}. Didn't even rush. Confident",
+      "Not gonna lie the wall on {here} looks better with something on it",
+      "{here} is unrecognisable. In a good way. Mostly",
+      "Whoever keeps painting round here, we see you. {reaction}",
+      "Fresh paint on {localspot} again. Somebody's got a lot of time and a lot of cans",
+      "Shopkeeper on {here} out there scrubbing a wall {timeofday}. Losing battle",
+      "That wall by {localspot} changed colour twice this week {filler}"
     ],
     "BigSale": [
       "It's busy on {here} {timeofday}. Everybody knows why",

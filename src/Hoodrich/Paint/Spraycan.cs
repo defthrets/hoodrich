@@ -1,0 +1,297 @@
+﻿using System;
+using GTA;
+using GTA.Native;
+using Hoodrich.Core;
+
+namespace Hoodrich.Paint
+{
+    /// <summary>
+    /// The same mechanic, holding a spray can instead.
+    ///
+    /// NOTHING ABOUT THE PAINT CHANGES. The extinguisher is still the weapon underneath -- it
+    /// is what gives you the aiming camera, the reticle and a trigger, and all three are things
+    /// a prop cannot do. What changes is that its model is hidden, a can is put in his hand,
+    /// and his upper body plays the game's own tagging animation over the top.
+    ///
+    /// The animation is anim@scripted@freemode@postertag@graffiti_spray@male@, which is what
+    /// GTA Online's poster tagging uses.
+    ///
+    /// Flag 51 is what makes it work at all: the native's own list says 48 to 63 is "Upper body
+    /// > Controllable", meaning it blends over whatever the legs are doing and leaves the player
+    /// in charge. A full-body clip here would plant him at a wall, which is the online version's
+    /// choreography and the opposite of aiming.
+    /// </summary>
+    internal sealed class Spraycan
+    {
+        /// <summary>
+        /// The can, in the order worth trying.
+        ///
+        /// prop_cs_spray_can first because it is the one Rockstar themselves attach to a hand:
+        /// re_monkey.c4 creates it and attaches it to bone 28422, which is exactly this. Its
+        /// cs_ prefix suggests a cutscene-only prop and it is not -- a world script uses it, so
+        /// it streams like anything else. The others are behind it in case a build disagrees.
+        /// </summary>
+        private static readonly string[] Cans =
+        {
+            "prop_cs_spray_can",
+            "prop_spray_can",
+            "prop_paint_spray01a"
+        };
+
+        private const string Dict = "anim@scripted@freemode@postertag@graffiti_spray@male@";
+
+        /// <summary>Holding it, and using it.</summary>
+        private const string Idle = "spray_can_idle_male";
+        private const string Spray = "spray_can_male";
+
+        /// <summary>Upper body, controllable. See the class note.</summary>
+        private const int UpperControllable = 51;
+
+        /// <summary>
+        /// PH_R_Hand -- and the name matters, because it is not the one I first wrote.
+        ///
+        /// SKEL_R_Hand is 57005 and is the WRIST JOINT, the thing the arm deforms around, so a
+        /// prop hung off it sits beside the hand rather than in the grip and every clip that
+        /// changes the grip moves it again. 28422 is a non-deforming helper bone the animators
+        /// put there specifically to hang props on -- which is why props attached to it want no
+        /// offset and no rotation at all.
+        ///
+        /// It is also what aims the spray. Rockstar's graffiti jet is authored to come out of a
+        /// can sitting on THIS bone at THIS rotation, so a can twisted to look right by eye
+        /// sends the paint out sideways.
+        /// </summary>
+        private const int RightHand = 28422;
+
+        private readonly PaintConfig _cfg;
+
+        private Prop _can;
+        private bool _spraying;
+        private int _nextTry;
+        private bool _moaned;
+
+        public Spraycan(PaintConfig cfg)
+        {
+            _cfg = cfg;
+        }
+
+        /// <summary>Whether the can is currently in his hand.</summary>
+        public bool Out => _can != null && _can.Exists();
+
+        /// <summary>
+        /// The can's entity, or 0.
+        ///
+        /// The plume hangs off this. It has to hang off something you can SEE, and the
+        /// weapon -- which is what it used to use -- is deliberately invisible whenever
+        /// this look is on.
+        /// </summary>
+        public int Handle => Out ? _can.Handle : 0;
+
+        /// <summary>
+        /// Called every tick. Puts the can up when the tool is out, takes it away when it is not.
+        /// </summary>
+        public void Update(bool spraying, bool aiming)
+        {
+            if (!_cfg.SprayCanLook || !Can.Out())
+            {
+                Away();
+                return;
+            }
+
+            Ready();
+
+            // THE LOOK HAPPENS WHETHER OR NOT THE PROP DID. This used to return here when the
+            // can had not spawned, which meant one failure -- a model that would not stream --
+            // silently took the hidden weapon and the whole animation down with it, and what
+            // you got was an ordinary man walking about with nothing in his hands and no clue
+            // as to why.
+            try
+            {
+                // Hidden every tick rather than once. Drawing, holstering and every animation
+                // that re-equips it puts the model back, so a one-off hide lasts until the
+                // first time he does anything with his hands.
+                Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE,
+                              Game.Player.Character.Handle, false, true, true, true);
+            }
+            catch
+            {
+                // Then he is holding an extinguisher and a spray can, which is odd but works.
+            }
+
+            // FACING THE WAY HE IS AIMING.
+            //
+            // Normally the weapon does this -- a man pointing a gun turns to point it. Here
+            // the weapon is invisible and an upper-body clip is blended over the aim pose, and
+            // between them the turn stops happening: he sprays across his own shoulder while
+            // the paint lands wherever the camera is looking, which reads as the paint being
+            // wrong rather than the man being wrong.
+            //
+            // Desired rather than SET_ENTITY_HEADING, so he turns rather than snapping, and
+            // only while he is actually aiming or painting -- forcing it the rest of the time
+            // would fight every step he takes.
+            if (aiming || spraying) FaceTheAim();
+
+            if (spraying == _spraying && Playing()) return;
+
+            _spraying = spraying;
+            Play(spraying ? Spray : Idle);
+        }
+
+        /// <summary>Turns him to look where the camera is looking.</summary>
+        private static void FaceTheAim()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                var dir = GameplayCamera.Direction;
+
+                // Heading is degrees about the vertical, zero pointing north (+Y), and it
+                // increases the other way round from atan2 -- hence the negated X.
+                var heading = (float)(Math.Atan2(-dir.X, dir.Y) * 180d / Math.PI);
+
+                Function.Call(Hash.SET_PED_DESIRED_HEADING, me.Handle, heading);
+            }
+            catch
+            {
+                // He keeps facing wherever he was. Nothing else depends on it.
+            }
+        }
+
+        /// <summary>Whether the tagging clip is still running, since anything can interrupt it.</summary>
+        private bool Playing()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return false;
+
+                return Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, Dict,
+                                           _spraying ? Spray : Idle, 3);
+            }
+            catch
+            {
+                return true;   // assume it is, rather than restarting it sixty times a second
+            }
+        }
+
+        /// <summary>Makes sure the animations and the prop are in hand.</summary>
+        private void Ready()
+        {
+            // Asked for every tick until it arrives. A single request that is dropped -- and
+            // they are dropped, under streaming pressure -- otherwise never gets made again.
+            if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, Dict))
+            {
+                Function.Call(Hash.REQUEST_ANIM_DICT, Dict);
+                return;
+            }
+
+            if (Out) return;
+
+            // Not on every single tick: a model that will not load should not cost a blocking
+            // request sixty times a second for as long as the can is out.
+            if (Game.GameTime < _nextTry) return;
+            _nextTry = Game.GameTime + 1000;
+
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                foreach (var name in Cans)
+                {
+                    var model = new Model(name);
+
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+                    if (!model.Request(500)) continue;
+
+                    _can = World.CreateProp(model, me.Position, false, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_can == null || !_can.Exists()) continue;
+
+                    // ROCKSTAR'S OWN NUMBERS. re_monkey.c4 attaches this same model to this
+                    // same bone at 0.0, 0.01, 0.02 -- practically at the bone origin, because
+                    // the hand is what carries it and the animation was authored around a can
+                    // sitting there. My first attempt pushed it 10cm along the palm, which is
+                    // how you get a can floating beside a fist.
+                    var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, RightHand);
+
+                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _can.Handle, me.Handle, bone,
+                                  0f, 0f, 0.012f,
+                                  0f, 0f, 0f,
+                                  false, false, false, false, 2, true);
+
+                    // NO PLAY_ENTITY_ANIM. The dictionary ships _spraycan clips that animate
+                    // the can, and they are for a can standing loose in a scene -- driving a
+                    // prop's own transform while it is also bolted to a moving bone is two
+                    // things writing to one matrix. Attached to the hand, the hand carries it.
+
+                    _moaned = false;
+                    Log.Info("Spray can out: " + name + ".");
+                    return;
+                }
+
+                if (_moaned) return;
+
+                _moaned = true;
+                Log.Warn("No spray can model would load -- tried " + string.Join(", ", Cans) +
+                         ". The animation and the hidden extinguisher still work, so he will " +
+                         "mime it. Paint is unaffected.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put the can up: " + ex.Message);
+            }
+        }
+
+        /// <summary>The tagging clip, over the upper body only.</summary>
+        private void Play(string clip)
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, Dict, clip,
+                              4f, -4f, -1, UpperControllable, 0f, false, false, false);
+            }
+            catch
+            {
+                // No animation is a man holding a can still, which is survivable.
+            }
+        }
+
+        /// <summary>Can gone, weapon visible again.</summary>
+        public void Away()
+        {
+            _spraying = false;
+
+            try
+            {
+                var me = Game.Player.Character;
+
+                if (me != null && me.Exists())
+                {
+                    Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, me.Handle, true, true, true, true);
+
+                    // Only the upper-body task, so this does not cancel whatever else he is
+                    // doing with his legs.
+                    Function.Call(Hash.STOP_ANIM_TASK, me.Handle, Dict, Idle, 3f);
+                    Function.Call(Hash.STOP_ANIM_TASK, me.Handle, Dict, Spray, 3f);
+                }
+            }
+            catch
+            {
+                // Teardown.
+            }
+
+            if (_can == null) return;
+
+            try { if (_can.Exists()) _can.Delete(); }
+            catch { /* the streamer gets it */ }
+
+            _can = null;
+        }
+    }
+}

@@ -72,6 +72,12 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main: opens the feed, and reads the follower count for the wedge.</summary>
         public Action ShowSocials;
 
+        /// <summary>Opens the can. See UI.GraffitiScreen.</summary>
+        public Action ShowGraffiti;
+
+        /// <summary>How many marks are up, for the tile. Null while it is not wired.</summary>
+        public Func<int> MarksUp;
+
         /// <summary>Set by Main: opens the inbox.</summary>
         public Action ShowMessages;
 
@@ -1045,6 +1051,23 @@ namespace Hoodrich.Wheel
                 enabled: ShowSettings != null,
                 disabledReason: "Not wired up");
             page.WithIcon(Icons.FromFile("scales.png"));
+
+            // Between Inventory and Settings rather than at the end. It is a thing you
+            // carry and use, not a thing you configure, so it belongs with the other two apps
+            // about what is in your hands.
+            //
+            // The value is how much is up rather than a total that only ever climbs -- the
+            // question a tile answers from across the screen is "is there anything there".
+            page.Add("Graffiti", "*", () => ShowGraffiti?.Invoke(),
+                detail: "Pick a colour, take a can, and go and put your name on something",
+                value: MarksUp == null || MarksUp() == 0 ? "" : MarksUp() + " up",
+                enabled: ShowGraffiti != null,
+                disabledReason: "Not wired up");
+
+            // The can that is already in data\icons, which exists because the tag run needed
+            // one. Same object, same picture -- a second spray-can icon drawn slightly
+            // differently would just be two tiles that look like a mistake.
+            page.WithIcon(Icons.FromFile("spray.png"));
 
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
                 detail: PaybackDue != null && PaybackDue()
