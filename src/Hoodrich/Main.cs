@@ -451,10 +451,17 @@ namespace Hoodrich
         private int _failures;
         private bool _parked;
 
+        /// <summary>The screen that says why, when there is a why.</summary>
+        private readonly Trouble _trouble = new Trouble();
+
         public Main()
         {
             // Anything thrown out of a Script constructor kills the script before it ever ticks,
             // and SHVDN reports it as a bare load failure. Fail soft and park instead.
+            // BEFORE ANYTHING ELSE, and outside the try, because the whole point of it is to
+            // have written the environment down before whatever goes wrong goes wrong.
+            Preflight.WriteEnvironment();
+
             try
             {
                 // Fully qualified: Script exposes an inherited `Settings` property that would
@@ -1714,6 +1721,12 @@ namespace Hoodrich
                 if (_state != null && _state.ToldTheOldMan) _dealers.Handover("docks");
 
 
+                // STARTED IS NOT THE SAME AS HEALTHY. A missing socials.json or an unwritable
+                // folder does not throw -- it just quietly means a feature never happens, which
+                // is the class of problem that gets reported as "half of it does not work".
+                var niggles = Preflight.Check();
+                if (niggles.Count > 0) _trouble.Raise("started, but something is wrong", niggles);
+
                 Log.Info(Build.Name + " " + Build.Version + " loaded. Phone: phone button" +
                          (_cfg.PhoneKey == System.Windows.Forms.Keys.None
                              ? ""
@@ -1724,11 +1737,55 @@ namespace Hoodrich
             {
                 _parked = true;
                 Log.Error(Build.Name + " failed to initialise and is disabled for this session.", ex);
+
+                // AND SAY SO ON SCREEN. Parking silently is indistinguishable from not being
+                // installed, and the player's next move is to reinstall -- which fixes nothing,
+                // because what was wrong was never the mod.
+                //
+                // The preflight runs here rather than at the top so that a startup which threw
+                // gets its reason attached to the crash: nine times in ten the exception is a
+                // symptom of the missing file or the wrong loader, and reporting both together
+                // is the difference between a fix and a guess.
+                var why = Preflight.Check();
+
+                why.Add(new Fault
+                {
+                    Fatal = true,
+                    What = "Startup threw: " + ex.GetType().Name + " -- " + ex.Message,
+                    Fix = "If nothing above explains it, this is one for the mod author. " +
+                          "Hoodrich.log has the full stack."
+                });
+
+                _trouble.Raise("could not start", why);
+
+                Tick += OnBrokenTick;
             }
+        }
+
+        /// <summary>
+        /// The only thing a dead mod still does: explain itself.
+        ///
+        /// Hooked instead of OnTick when startup fails, so the panel gets drawn without any of
+        /// the systems behind it existing -- most of them are null on this path, and a tick
+        /// that touched them would throw every frame and bury the reason in a wall of noise.
+        /// </summary>
+        private void OnBrokenTick(object sender, EventArgs e)
+        {
+            try { _trouble.Draw(); }
+            catch { /* nothing left to fall back to */ }
         }
 
         private void OnTick(object sender, EventArgs e)
         {
+            // BEFORE THE ENABLED CHECK, and before Franklin. Somebody whose install is broken
+            // is not necessarily playing as Franklin when they find out, and a report they can
+            // only see by switching character is a report they will not see.
+            if (_trouble.IsOpen)
+            {
+                _trouble.Draw();
+                return;
+            }
+
             if (_parked || _cfg == null || !_cfg.Enabled) return;
 
             // FRANKLIN'S MOD. Michael and Trevor get none of it.

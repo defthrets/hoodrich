@@ -1,4 +1,4 @@
-<#
+﻿<#
   Hoodrich build script.
 
   Uses the self-contained Roslyn compiler in tools\ rather than `dotnet build`,
@@ -314,6 +314,12 @@ if ($Package) {
     Copy-Item (Join-Path $relDir 'README.txt')  $stage
     Copy-Item (Join-Path $relDir 'CHANGES.txt') $stage
     Copy-Item (Join-Path $relDir 'LICENCE.txt') $stage
+
+    # The one file that matters when the mod never loads. Everything else in the zip is
+    # read by somebody whose game is working; this is read by somebody whose is not, and
+    # for that person no amount of in-game error handling exists -- our code is what did
+    # not run. It ships at the top level where they will actually see it.
+    Copy-Item (Join-Path $relDir 'TROUBLESHOOTING.txt') $stage
 
     if ($Full) {
         $need = @('ScriptHookVDotNet.asi', 'ScriptHookVDotNet2.dll',

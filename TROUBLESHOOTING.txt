@@ -1,0 +1,111 @@
+POSTED UP -- IT IS NOT WORKING
+==============================
+
+Start here, because it saves everybody time:
+
+  LOAD A SAVE AND LOOK AT THE SCREEN.
+
+If anything is wrong that the mod can see, it puts a red panel in the middle of
+the screen for 45 seconds telling you exactly what and exactly what to do about
+it. If you get that panel, do what it says and stop reading this file.
+
+If you get NOTHING -- no panel, no notifications, the phone button does nothing --
+then the mod never loaded at all, and nothing it could have been written to do
+would have told you so. Code that never runs cannot draw a message. That is what
+the rest of this file is for.
+
+
+IS IT LOADING AT ALL?
+---------------------
+
+Look for this file:
+
+    <your GTA V folder>\scripts\Hoodrich\Hoodrich.log
+
+  * File exists and has a recent "---- environment ----" block at the bottom
+        -> The mod IS loading. Whatever is wrong is inside it. Read the block:
+           it names your game build, your ScriptHookV and your ScriptHookVDotNet.
+           Send that block when you ask for help.
+
+  * File does not exist, or has not been touched since you installed
+        -> The mod is not being loaded. Carry on down.
+
+
+NOTHING IS LOADING
+------------------
+
+Three things have to work before any of this mod runs, in this order. Check them
+in this order; each one depends on the one above it.
+
+1. SCRIPTHOOKV
+
+   ScriptHookV.dll goes in the GAME folder, next to the exe -- NOT in scripts\.
+
+   It writes ScriptHookV.log next to itself. No log at all means it is not
+   loading; a log saying it does not support your game version means the game
+   updated and it has not.
+
+   *** GTA V ENHANCED NEEDS A DIFFERENT SCRIPTHOOKV TO LEGACY. ***
+
+   This is the single most common reason Enhanced does not work. The two files
+   have the SAME NAME, look identical in Explorer, and are not interchangeable.
+   Copying your working Legacy setup into the Enhanced folder gets you exactly
+   this: no log, no scripts, no explanation.
+
+   Enhanced also runs a different executable -- GTA5_Enhanced.exe -- and the
+   Enhanced install folder contains a GTA5.exe as well, which is not the one that
+   runs. Make sure you are looking at the right folder in the first place.
+
+2. SCRIPTHOOKVDOTNET
+
+   ScriptHookVDotNet.asi AND ScriptHookVDotNet3.dll. Both. In the game folder.
+
+   They are a matched pair -- a new .asi with an old .dll fails the same way as
+   having neither, and silently.
+
+   For Enhanced you need v3.6 or newer. Older builds have never heard of the
+   Enhanced game version, report it as Unknown, and then fail to resolve half the
+   game's functions. Scripts written correctly break in incomprehensible ways.
+
+   It writes ScriptHookVDotNet.log. If our mod threw while loading, the reason is
+   in there, in full.
+
+3. THE MOD ITSELF
+
+   Two things out of the zip, and people miss the second one:
+
+       scripts\Hoodrich.dll        <- the mod
+       scripts\Hoodrich\           <- the folder next to it, with the data in
+
+   The folder is not optional. Without it there is nothing to load and the mod
+   will tell you so on screen, assuming it got far enough to draw anything.
+
+   .NET Framework 4.8 must be installed. Windows 10 and 11 have it already.
+
+
+STILL NOTHING
+-------------
+
+Send these three files. Between them they contain the answer:
+
+    ScriptHookV.log                      (game folder)
+    ScriptHookVDotNet.log                (game folder)
+    scripts\Hoodrich\Hoodrich.log        (only exists if we loaded)
+
+And say which game you are on -- Legacy or Enhanced. It matters more than
+anything else in this file.
+
+
+THINGS THAT ARE NOT THE PROBLEM
+-------------------------------
+
+  * Reinstalling the mod. If the mod is not loading, the mod is not the problem,
+    and copying it again changes nothing. This is the single biggest waste of
+    time in modding and it is what silence pushes everybody towards.
+
+  * The .ini. Every setting has a working default and the mod runs correctly
+    without the file at all.
+
+  * Your save. Nothing here touches Rockstar's saves. The mod keeps its own, in
+    scripts\Hoodrich\save.json, and if it ever cannot read that it refuses to
+    write anything and tells you rather than starting you over.
