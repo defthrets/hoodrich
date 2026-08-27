@@ -31,10 +31,17 @@ namespace Hoodrich.UI
         private const float SwatchH = 0.062f;
         private const float ButtonH = 0.040f;
 
-        /// <summary>The mark and the can, and the shape of the files behind them.</summary>
-        private const float LogoH = 0.034f;
-        private const float LogoAspect = 3.50f;
-        private const float CanH = 0.055f;
+        /// <summary>
+        /// The mark and the can, and the shape of the files behind them.
+        ///
+        /// The mark is a handstyle tag now rather than a block wordmark, and it is a taller
+        /// file: the top of the box is an arrow, the bottom is drips, and the word itself gets
+        /// about half. Keeping the old height would have kept the file the same size on screen
+        /// and halved the part anybody reads.
+        /// </summary>
+        private const float LogoH = 0.066f;
+        private const float LogoAspect = 2.4014f;
+        private const float CanH = 0.052f;
         private const float CanAspect = 0.4412f;
 
         /// <summary>How long a shake lasts, how hard, and roughly how often.</summary>
@@ -263,7 +270,7 @@ namespace Hoodrich.UI
             var left = 0.5f - width * 0.5f;
             var pad = Hud.ToX(PadH);
 
-            var height = 0.311f + SwatchH + ButtonH * 3f;
+            var height = 0.340f + SwatchH + ButtonH * 3f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             Hud.RectFrom(left, top, width, height, Palette.Hub);
