@@ -1064,10 +1064,15 @@ namespace Hoodrich.Wheel
                 enabled: ShowGraffiti != null,
                 disabledReason: "Not wired up");
 
-            // The can that is already in data\icons, which exists because the tag run needed
-            // one. Same object, same picture -- a second spray-can icon drawn slightly
-            // differently would just be two tiles that look like a mistake.
-            page.WithIcon(Icons.FromFile("spray.png"));
+            // Its own can rather than the tag run's, and drawn for THIS size rather than
+            // shrunk to it. Every tile here is 64x64 and the draw call forces the square, so
+            // the tall masthead can would come out a fat little barrel; and simply tilting and
+            // scaling it thinned every stroke while the label band turned the middle to mud.
+            //
+            // So sprayapp.png is a separate shape of the same object: chunkier than the real
+            // thing, barely tilted, no label, three bold dots. It holds down to sixteen
+            // pixels, which is the only test a tile has to pass.
+            page.WithIcon(Icons.FromFile("sprayapp.png"));
 
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
                 detail: PaybackDue != null && PaybackDue()
