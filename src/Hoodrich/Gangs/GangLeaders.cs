@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -1203,6 +1203,49 @@ namespace Hoodrich.Gangs
         {
             var face = UI.Faces.For(def == null ? "" : def.Name);
             return string.IsNullOrEmpty(face) ? UI.Faces.Nobody : face;
+        }
+
+        /// <summary>
+        /// Joining, asked of a gang rather than of a man.
+        ///
+        /// THE LEADERS ARE GONE AND THIS IS WHY IT SURVIVED THEM. Every rule about being taken
+        /// on -- the respect bar, the refusal, the starter bag and the one-front-only guard --
+        /// lived correctly in here and had nothing to do with there being a leader ped stood on
+        /// a corner. What went was the man; what stayed is the arrangement, and the corner
+        /// dealer is now who you have it with.
+        ///
+        /// Lines are passed in because they belong to whoever is doing the talking.
+        /// </summary>
+        public string JoinThrough(GangDef gang, Drugs catalogue,
+                                  string speaker, string accept, string refuse, string already)
+        {
+            if (gang == null) return "Nobody here.";
+
+            if (_crew.IsAffiliated && _crew.Current.Id == gang.Id)
+            {
+                Dialogue.Say(speaker, already);
+                return null;
+            }
+
+            if (_state.Respect < gang.JoinRespect)
+            {
+                Dialogue.Say(speaker, refuse);
+                return "Need " + gang.JoinRespect.ToString("F0") + " respect. You have " +
+                       _state.Respect.ToString("F0") + ".";
+            }
+
+            var failed = _crew.Join(gang, _state.Respect);
+            if (failed != null)
+            {
+                Dialogue.Say(speaker, refuse);
+                return failed;
+            }
+
+            Dialogue.Say(speaker, accept);
+
+            if (!_state.HasFrontedWork) FrontProduct(gang, catalogue);
+
+            return null;
         }
 
         public string Join(LeaderDef def, Drugs catalogue)

@@ -228,6 +228,8 @@ namespace Hoodrich.Supply
             // So he can be asked at your own door as well, every time he stands at it, until
             // you have it. He does not mind being asked. Being asked is the best thing that
             // happens to him all week.
+            PutMeOnRow(node);
+
             OldManRow(node);
 
             node.Leave("Not today.");
@@ -324,6 +326,50 @@ namespace Hoodrich.Supply
             }
 
             return line;
+        }
+
+        /// <summary>
+        /// Set by Main: takes the dealer, returns a refusal or null.
+        ///
+        /// A callback rather than a reference to the joining code, because DealerTalk is built
+        /// per conversation and handed a def -- the same reason ColdCall is static and the pure
+        /// flag lives on the def. Everything it needs to know it is told.
+        /// </summary>
+        public Func<DealerDef, string> PutMeOn;
+
+        /// <summary>Whether this man could put you on, and whether it is worth offering.</summary>
+        public Func<DealerDef, string> JoinRefusal;
+
+        /// <summary>
+        /// Asking to be put on the set.
+        ///
+        /// THIS USED TO BE A MAN IN A CAR PARK. Joining was asked of a leader ped who existed
+        /// for that one question, and finding him was a errand with nothing in it -- he sold
+        /// you nothing, told you nothing you could not get elsewhere, and once you were in he
+        /// had no further purpose. The corner dealer is on that block every day moving their
+        /// product; if anybody is vouching for you it is him.
+        ///
+        /// Shown greyed with the reason rather than hidden, which is the opposite of what the
+        /// contacts list does with strangers and right for the same underlying rule: "get more
+        /// respect" is a thing you can go and do, so seeing it is a reason to go and do it.
+        /// </summary>
+        private void PutMeOnRow(DialogueNode node)
+        {
+            if (node == null || Def == null || PutMeOn == null) return;
+            if (!Def.IsGangDealer) return;
+            if (string.IsNullOrEmpty(Def.JoinAsk)) return;
+
+            var refusal = JoinRefusal == null ? null : JoinRefusal(Def);
+
+            node.Say(Def.JoinAsk, () =>
+            {
+                var no = PutMeOn(Def);
+                if (no != null) Notify.Problem(no.ToLowerInvariant() + ".");
+
+                return null;
+            }, refusal ?? "Ask him to put you on", refusal == null, refusal ?? "");
+
+            node.WithIcon(Icons.FromFile("crown.png"));
         }
 
         private DialogueNode Amounts(Brick brick, DrugDef product)

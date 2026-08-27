@@ -205,6 +205,10 @@ namespace Hoodrich.Supply
             def.SpotZ = node["z"].AsFloat(def.SpotZ);
             def.SpotHeading = node["heading"].AsFloat(def.SpotHeading);
             def.NumberLine = node["numberLine"].AsString(def.NumberLine);
+            def.JoinAsk = node["joinAsk"].AsString(def.JoinAsk);
+            def.JoinAccept = node["joinAccept"].AsString(def.JoinAccept);
+            def.JoinRefuse = node["joinRefuse"].AsString(def.JoinRefuse);
+            def.JoinAlready = node["joinAlready"].AsString(def.JoinAlready);
 
             ReplaceList(def.ArrivalLines, node["arrivalLines"]);
             ReplaceList(def.CarryLines, node["carryLines"]);
@@ -1071,6 +1075,49 @@ namespace Hoodrich.Supply
             }
 
             if (player.Position.DistanceTo(_livePed.Position) > DespawnRange) Despawn();
+
+            HideHimUntilYouAreClose(player);
+        }
+
+        /// <summary>
+        /// An unknown dealer has no marker until you are nearly on top of him.
+        ///
+        /// IsShortRange was not enough on its own. It only stops a blip drawing on the big map
+        /// -- the minimap still showed it from most of the way down a street, so every corner
+        /// in the city announced itself as soon as it streamed in and there was nothing left to
+        /// find. The blip has to not EXIST, which means making and unmaking it on distance.
+        ///
+        /// Only for men he has not met. Once somebody is a contact the permanent mark is on the
+        /// map anyway and hiding the live one would be hiding a fact he already owns.
+        /// </summary>
+        private void HideHimUntilYouAreClose(Ped player)
+        {
+            if (_livePed == null || !_livePed.Exists() || _liveDef == null) return;
+            if (HaveMet(_liveDef, State)) return;
+
+            // A meet he asked for keeps its route: he is coming BECAUSE you called him.
+            if (_liveBlip != null && _liveBlip.Exists() && _liveBlip.ShowRoute) return;
+
+            var near = player.Position.DistanceTo(_livePed.Position) <= ShowMarkerWithin;
+            var have = _liveBlip != null && _liveBlip.Exists();
+
+            if (near == have) return;
+
+            try
+            {
+                if (near)
+                {
+                    CreateBlip(_liveDef, false);
+                    return;
+                }
+
+                _liveBlip.Delete();
+                _liveBlip = null;
+            }
+            catch
+            {
+                // A marker that will not appear is a search that is slightly harder.
+            }
         }
 
         private void SpawnAt(DealerDef def, Vector3 spot, string zone, Ped player, bool route)
@@ -1080,7 +1127,18 @@ namespace Hoodrich.Supply
 
             try
             {
-                var heading = (float)(_rng.NextDouble() * 360.0);
+                // THE HEADING HE WAS GIVEN, if he was given one.
+                //
+                // Every pinned spot was stood on and read off the coordinate HUD facing
+                // something -- a wall, a road, a shop door -- and that facing is half of why
+                // the spot was chosen. Spawning him on the right pavement pointing a random
+                // way round is a man who happens to be there rather than a man posted there.
+                //
+                // Random stays for anybody unpinned, where there is nothing to face.
+                var heading = def.HasSpot
+                    ? def.SpotHeading
+                    : (float)(_rng.NextDouble() * 360.0);
+
                 _livePed = World.CreatePed(model.Value, spot, heading);
                 if (_livePed == null || !_livePed.Exists())
                 {
@@ -1208,8 +1266,18 @@ namespace Hoodrich.Supply
                 if (_liveBlip == null || !_liveBlip.Exists()) return;
 
                 _liveBlip.Sprite = BlipSprite.Friend;
-                _liveBlip.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.Green;
                 _liveBlip.Name = def.Name;
+
+                var gang = def.IsGangDealer && GangById != null ? GangById(def.GangId) : null;
+
+                if (gang != null && gang.BlipColour > 0)
+                {
+                    Function.Call(Hash.SET_BLIP_COLOUR, _liveBlip.Handle, gang.BlipColour);
+                }
+                else
+                {
+                    _liveBlip.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.Green;
+                }
 
                 // A posted dealer is a local landmark; someone you called out gets a route.
                 // SHORT RANGE UNTIL YOU HAVE MET HIM, which is what makes the first one a
@@ -1415,10 +1483,31 @@ namespace Hoodrich.Supply
                     mark = World.CreateBlip(at);
                     if (mark == null || !mark.Exists()) continue;
 
-                    mark.Sprite = BlipSprite.Friend;
-                    mark.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.Green;
-                    mark.Name = def.Name;
-                    mark.Scale = 0.7f;
+                    // THE CROWN, which is what the leaders had and what the leaders were for.
+                    //
+                    // 855 is radar_ped_gang_leader -- the game keeps a sprite for exactly this
+                    // and it now sits on the men who actually matter, which is these. A dealer
+                    // you have found IS the set as far as the player is concerned: he sells
+                    // their product, he stands on their corner, and he is the one who puts you
+                    // on.
+                    Function.Call(Hash.SET_BLIP_SPRITE, mark.Handle, KnownSprite);
+
+                    // And his set's own colour underneath, out of gangs.json rather than a
+                    // second palette to keep in step. The independents answer to nobody, so
+                    // they keep the plain green.
+                    var gang = def.IsGangDealer && GangById != null ? GangById(def.GangId) : null;
+
+                    if (gang != null && gang.BlipColour > 0)
+                    {
+                        Function.Call(Hash.SET_BLIP_COLOUR, mark.Handle, gang.BlipColour);
+                    }
+                    else
+                    {
+                        mark.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.Green;
+                    }
+
+                    mark.Name = def.Name + (gang == null ? "" : " -- " + gang.Name);
+                    mark.Scale = 0.85f;
 
                     // NOT short range. This is the whole point of it -- it is the thing you
                     // earned by finding him, and it is on the map from anywhere.
@@ -1434,6 +1523,24 @@ namespace Hoodrich.Supply
                 }
             }
         }
+
+        /// <summary>radar_ped_gang_leader. The crown the leaders used to carry.</summary>
+        private const int KnownSprite = 855;
+
+        /// <summary>
+        /// How close you have to be before an unknown dealer shows up at all.
+        ///
+        /// Ten to fifteen metres, which is close enough to be looking straight at him. Short
+        /// range was not nearly enough on its own -- it only stops a blip drawing on the big
+        /// map, and it still puts a marker on the minimap from most of the way down a street,
+        /// so every corner in the city announced itself the moment it streamed in.
+        ///
+        /// The point of finding somebody is that you have to find them.
+        /// </summary>
+        private const float ShowMarkerWithin = 13f;
+
+        /// <summary>Set by Main, so a dealer's mark can be his set's colour.</summary>
+        public Func<string, Gangs.GangDef> GangById;
 
         /// <summary>The save key for having stood in front of somebody.</summary>
         public static string MetKey(DealerDef def)

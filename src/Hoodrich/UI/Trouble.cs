@@ -20,9 +20,9 @@ namespace Hoodrich.UI
     /// </summary>
     internal sealed class Trouble
     {
-        private const float PanelW = 0.62f;
+        private const float PanelW = 0.56f;
         private const float Pad = 0.014f;
-        private const float LineH = 0.026f;
+        private const float LineH = 0.024f;
         private const float TitleH = 0.040f;
 
         /// <summary>Long enough to read the whole thing twice without being a wall you cannot pass.</summary>
@@ -85,7 +85,7 @@ namespace Hoodrich.UI
                 {
                     var f = _faults[i];
 
-                    Wrap(body, kind, (f.Fatal ? "STOPS IT WORKING:  " : "worth knowing:  ") + f.What, 0);
+                    Wrap(body, kind, f.What, 0);
                     Wrap(body, kind, f.Fix, 1);
 
                     if (i < _faults.Count - 1)
@@ -103,10 +103,16 @@ namespace Hoodrich.UI
                 var left = 0.5f - PanelW * 0.5f;
 
                 Hoodrich.UI.Draw.RectFrom(left, top, PanelW, h, Color.FromArgb(238, 8, 8, 8));
-                Hoodrich.UI.Draw.RectFrom(left, top, PanelW, 0.004f, Palette.Danger);
+                Hoodrich.UI.Draw.RectFrom(left, top, PanelW, 0.003f, Palette.Danger);
 
+                // LEFT ALIGNED, AND THIS IS THE WHOLE FIX FOR THE LAYOUT.
+                //
+                // Draw.Text takes centre:true by DEFAULT, so every line was being centred on a
+                // coordinate meant to be its left edge -- which threw the long ones half a
+                // screen left of the box that was supposed to contain them. Nothing was ever
+                // wrong with the box; the text was simply never inside it.
                 Hoodrich.UI.Draw.Text(Build.Name.ToUpperInvariant() + " -- " + _headline,
-                          left + Pad, top + Pad, 0.44f, Palette.Danger);
+                          left + Pad, top + Pad, 0.42f, Palette.Danger, centre: false);
 
                 var y = top + Pad + TitleH;
 
@@ -114,16 +120,18 @@ namespace Hoodrich.UI
                 {
                     if (body[i].Length > 0)
                     {
-                        Hoodrich.UI.Draw.Text(body[i], left + Pad + (kind[i] == 1 ? 0.018f : 0f), y, 0.35f,
+                        Hoodrich.UI.Draw.Text(body[i], left + Pad + (kind[i] == 1 ? 0.016f : 0f), y, 0.32f,
                                   kind[i] == 0 ? Palette.Text
                                   : kind[i] == 1 ? Palette.Cash
-                                  : Palette.TextDim);
+                                  : Palette.TextDim,
+                                  centre: false);
                     }
 
                     y += LineH;
                 }
 
-                Hoodrich.UI.Draw.Text("BACKSPACE  close", left + Pad, top + h - LineH, 0.30f, Palette.TextDim);
+                Hoodrich.UI.Draw.Text("BACKSPACE  close", left + Pad, top + h - LineH, 0.28f,
+                                      Palette.TextDim, centre: false);
 
                 // The key is read the disabled way and the control is held off, so closing this
                 // does not also do whatever backspace does in the world behind it.
@@ -156,7 +164,7 @@ namespace Hoodrich.UI
             // off the right edge of the box. Caught by laying the panel out on paper before
             // the game ever saw it, which is the only way to catch it: in game it reads as
             // text that just happens to end at the border.
-            var cols = kind == 1 ? 88 : 92;
+            var cols = kind == 1 ? 84 : 88;
 
             var words = text.Split(' ');
             var line = "";

@@ -260,6 +260,18 @@ namespace Hoodrich.Supply
         public string NumberLine = "";
 
         /// <summary>
+        /// Being put on the set, in his words.
+        ///
+        /// The corner dealer is who you ask now. He is on that block every day selling their
+        /// product -- if anybody is going to vouch for you it is him, and it was always a
+        /// slightly strange errand to go and find a boss in a car park to ask.
+        /// </summary>
+        public string JoinAsk = "";
+        public string JoinAccept = "";
+        public string JoinRefuse = "";
+        public string JoinAlready = "";
+
+        /// <summary>
         /// RUNTIME. True for the one conversation where you have just met him.
         ///
         /// Set by DealerManager at the moment it writes him down, read once by the greeting and

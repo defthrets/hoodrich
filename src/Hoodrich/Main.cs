@@ -1375,12 +1375,6 @@ namespace Hoodrich
                 _payback.Social = _social;
                 _postUp.Social = _social;
 
-                // What he paid for stays his. Built here because it needs the save and the
-                // weapon list, and handed to the two places that can change what he is holding.
-                _locker = new Weapons.GunLocker(_state, _weapons);
-                _gunScreen.Locker = _locker;
-                _postUp.Locker = _locker;
-                _jobs.Locker = _locker;
                 _social.GangById = id => _gangs.GetLoose(id);
                 _raid.Social = _social;
                 _blocks.Social = _social;
@@ -1495,6 +1489,17 @@ namespace Hoodrich
                 // walk up to a man and he says something -- but what he shows you once you have
                 // asked is a laid-out stock list rather than five pages of dialogue choices.
                 _gunScreen = new GunScreen(_state);
+
+                // AFTER _gunScreen EXISTS, which is the whole point of it being here.
+                //
+                // This block sat a hundred and sixteen lines earlier and set .Locker on a field
+                // that had not been constructed yet -- a NullReferenceException out of the
+                // constructor, which parks the mod for the session. The diagnostic panel caught
+                // it and said so, which is the one good thing about the afternoon.
+                _locker = new Weapons.GunLocker(_state, _weapons);
+                _gunScreen.Locker = _locker;
+                _postUp.Locker = _locker;
+                _jobs.Locker = _locker;
                 _bigjTalk.Rack = () => _gunScreen.Open();
 
                 // Wired at last. GunScreen has declared this since the rack became a screen,
@@ -1564,6 +1569,34 @@ namespace Hoodrich
 
                 _dealers.Talk = _talk;
                 _dealers.State = _state;
+                _dealers.GangById = id => _gangs.GetLoose(id);
+                // Joining is asked of the man on the corner now. See DealerTalk.PutMeOnRow.
+                _juanTalk.PutMeOn = def =>
+                {
+                    var gang = _gangs.Get(def.GangId);
+                    if (gang == null) return "He don't speak for nobody.";
+
+                    return _leaders.JoinThrough(gang, _drugs, def.Name,
+                                                def.JoinAccept, def.JoinRefuse, def.JoinAlready);
+                };
+
+                _juanTalk.JoinRefusal = def =>
+                {
+                    var gang = _gangs.Get(def.GangId);
+                    if (gang == null) return "He don't speak for nobody";
+
+                    if (_crew.IsAffiliated)
+                    {
+                        return _crew.Current.Id == gang.Id
+                            ? "You already run with them"
+                            : "You run with " + _crew.Current.Name;
+                    }
+
+                    return _state.Respect < gang.JoinRespect
+                        ? "Need " + gang.JoinRespect.ToString("F0") + " respect"
+                        : null;
+                };
+
                 _dealers.TalkBuilder = def =>
                 {
                     _juanTalk.Who = def;
@@ -1730,11 +1763,23 @@ namespace Hoodrich
                 if (_state != null && _state.ToldTheOldMan) _dealers.Handover("docks");
 
 
-                // STARTED IS NOT THE SAME AS HEALTHY. A missing socials.json or an unwritable
-                // folder does not throw -- it just quietly means a feature never happens, which
-                // is the class of problem that gets reported as "half of it does not work".
+                // STARTED IS NOT THE SAME AS HEALTHY -- but it is also not worth a wall across
+                // the screen. A mod that is running gets a ticker and a log; the panel is for
+                // the case where nothing is running at all, which is the only time somebody
+                // needs telling in letters that big.
                 var niggles = Preflight.Check();
-                if (niggles.Count > 0) _trouble.Raise("started, but something is wrong", niggles);
+
+                if (niggles.Count > 0)
+                {
+                    for (var i = 0; i < niggles.Count; i++)
+                    {
+                        Log.Error("  " + niggles[i].What);
+                        Log.Error("    fix: " + niggles[i].Fix);
+                    }
+
+                    Notify.Problem(niggles.Count + " thing" + (niggles.Count == 1 ? "" : "s") +
+                                   " wrong with the install -- see Hoodrich.log.");
+                }
 
                 Log.Info(Build.Name + " " + Build.Version + " loaded. Phone: phone button" +
                          (_cfg.PhoneKey == System.Windows.Forms.Keys.None
