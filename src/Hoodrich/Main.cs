@@ -1547,6 +1547,7 @@ namespace Hoodrich
                 };
 
                 _dealers.Talk = _talk;
+                _dealers.State = _state;
                 _dealers.TalkBuilder = def =>
                 {
                     _juanTalk.Who = def;

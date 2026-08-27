@@ -812,9 +812,34 @@ namespace Hoodrich.Supply
             // He brings a box to a door, so there has to be a door. Checked here as well as in
             // Delivery itself, so the wheel greys the option out and says why rather than
             // letting you press it and be told no.
-            if (def.Kind == DealerKind.Docks && AtHome != null && !AtHome())
+            // ANY of them, not just the port.
+            //
+            // They all bring it to the door now -- there is no rendezvous option left, so the
+            // rule that used to apply only to the two Docks contacts applies to all fourteen.
+            // The alternative was a phone menu where half the numbers worked anywhere and half
+            // did not, with nothing on screen to say which was which.
+            if (AtHome != null && !AtHome())
             {
                 return "Call him from the house";
+            }
+
+            // NOT A CONTACT UNTIL YOU HAVE MET HIM.
+            //
+            // Every plug used to text you his introduction the moment you cleared his rank
+            // requirement -- a stranger you had never seen, on a corner you had never been to,
+            // announcing himself and going straight into your contacts. That is a menu
+            // unlocking, not a person you know.
+            //
+            // Checked BEFORE rank so the reason reads as the real one. A man you have not met
+            // is not somebody you need a promotion to ring; he is somebody you have not met.
+            //
+            // This gates all three phone-side doors at once, because they all come through
+            // here: the introduction text, the Contacts row and the delivery. It does NOT gate
+            // him spawning on his own block, which is the whole point -- he is out there to be
+            // found, and finding him is what hands you the number.
+            if (!HaveMet(def, state))
+            {
+                return "You ain't met him";
             }
 
             if (state.Rank < def.MinRank)
@@ -1240,6 +1265,38 @@ namespace Hoodrich.Supply
         public Func<DealerDef, DialogueNode> TalkBuilder;
 
         /// <summary>
+        /// Set by Main. Needed because meeting somebody is a thing that gets remembered, and
+        /// UpdatePrompt is the one path into a conversation that is not handed the save.
+        /// </summary>
+        public PlayerState State;
+
+        /// <summary>The save key for having stood in front of somebody.</summary>
+        public static string MetKey(DealerDef def)
+        {
+            return def == null ? "" : "met:" + def.Id;
+        }
+
+        /// <summary>
+        /// Whether you have actually met him, rather than merely qualified for him.
+        ///
+        /// THE OLD MARKER COUNTS. Before this rule existed, "plug:&lt;id&gt;" was set the moment a
+        /// dealer texted his introduction -- which happened on rank alone, but it also happened
+        /// to everybody a player has ever actually dealt with. Reading it as proof of a meeting
+        /// is generous by exactly the people it is generous to: somebody mid-save who has been
+        /// buying off Gerald for hours would otherwise open his phone to find Gerald gone.
+        ///
+        /// Losing a contact you have a conversation thread with is a far worse bug than an old
+        /// save keeping one introduction it did not strictly earn.
+        /// </summary>
+        public static bool HaveMet(DealerDef def, PlayerState state)
+        {
+            if (def == null || state == null) return false;
+
+            return state.HasBeenOffered(MetKey(def)) ||
+                   state.HasBeenOffered("plug:" + def.Id);
+        }
+
+        /// <summary>
         /// Offers the trade to somebody you have walked up to.
         ///
         /// This is how you buy from a dealer you arranged to meet, and for a while there was no
@@ -1258,6 +1315,20 @@ namespace Hoodrich.Supply
             Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to talk to " + def.Name + ".");
 
             if (!WantsToTalk()) return;
+
+            // THIS IS WHERE A CONTACT COMES FROM. He is a man on a corner until you have
+            // stood in front of him; after that he is a number.
+            //
+            // Marked here rather than in Main's builder lambda, because this is the one place
+            // a conversation with a dealer can begin and a rule about meeting people should
+            // not depend on a caller remembering to say so.
+            if (State != null && !HaveMet(def, State))
+            {
+                State.MarkOffered(MetKey(def));
+                State.Touch();
+
+                Log.Info("Met " + def.Id + " in person; he is a contact now.");
+            }
 
             var root = TalkBuilder(def);
             if (root == null) return;

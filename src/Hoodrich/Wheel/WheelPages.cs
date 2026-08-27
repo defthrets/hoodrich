@@ -1260,6 +1260,10 @@ namespace Hoodrich.Wheel
                 if (def == null) continue;
 
                 var plug = def;
+                // Same as the Messages list: a man you have never met is not a greyed-out
+                // contact, he is not a contact.
+                if (!Supply.DealerManager.HaveMet(plug, _state)) continue;
+
                 var refusal = _dealers.RefusalReason(plug, _state, _crew);
 
                 // SHORT. The right-hand value is a status, not a stock list.
@@ -1508,25 +1512,32 @@ namespace Hoodrich.Wheel
             // itself out with, so the button and the thread agree about what just happened.
             var refusal = _dealers.RefusalReason(def, _state, _crew);
 
-            if (def.Kind == DealerKind.Docks && Delivery != null)
+            // EVERY PLUG DELIVERS, and the rendezvous is gone.
+            //
+            // It used to fork on kind: the two Docks contacts drove to the house and everybody
+            // else picked a street corner and blipped it. Two behaviours behind one identical
+            // row, and the corner version was the weaker of the two anyway -- it sent you to
+            // stand somewhere you had already been, to do a thing you could have done by
+            // walking up to him in the first place.
+            //
+            // Meeting him on his own block is now how you GET the number. What the number is
+            // for is having it brought to your door.
+            if (refusal != null)
             {
-                if (refusal != null)
-                {
-                    Notify.Problem(refusal.ToLowerInvariant() + ".");
-                    return;
-                }
-
-                Inbox.Sent(def.Name, SayTo(def));
-
-                var failed = Delivery.Call(def);
-                if (failed != null) Notify.Problem(failed);
+                Notify.Problem(refusal.ToLowerInvariant() + ".");
                 return;
             }
 
-            if (refusal == null) Inbox.Sent(def.Name, SayTo(def));
+            if (Delivery == null)
+            {
+                Notify.Problem("can't reach nobody right now.");
+                return;
+            }
 
-            var failure = _dealers.ArrangeMeet(def, _state, _crew);
-            if (failure != null) Notify.Problem(failure);
+            Inbox.Sent(def.Name, SayTo(def));
+
+            var failed = Delivery.Call(def);
+            if (failed != null) Notify.Problem(failed);
         }
 
         /// <summary>The id the Messages app hands back for the homies. Not a dealer.</summary>
@@ -1623,6 +1634,17 @@ namespace Hoodrich.Wheel
             foreach (var def in _dealers.All)
             {
                 if (def == null) continue;
+
+                // ONLY PEOPLE HE HAS MET. The app was listing all fourteen, nine of them
+                // reading "No messages yet" under a grey silhouette -- a contacts list of
+                // strangers, which is not a contacts list, it is a roster.
+                //
+                // Everything else on the phone greys a row out and says why, because those
+                // refusals are things the player can act on: get the rank, come back in the
+                // evening, go home first. "You have never met this man" is not that. It is not
+                // a locked door, it is a door he has not found, and putting it on screen tells
+                // him it exists.
+                if (!Supply.DealerManager.HaveMet(def, _state)) continue;
 
                 book.Add(new PhoneContact
                 {
