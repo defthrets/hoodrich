@@ -1941,6 +1941,15 @@ namespace Hoodrich
                 Log.Info("Franklin again. Back on.");
             }
 
+            // HERE, not deeper in. It was one line inside the ordinary per-tick work, which
+            // is gated on nothing being busy -- so somebody who loaded a save into a mission,
+            // a cutscene or a menu would not be told the mod was running until whatever they
+            // were doing finished. This is the one message that has to arrive.
+            //
+            // Still behind the Franklin check, though: the mod genuinely does nothing for
+            // Michael or Trevor, and announcing itself to them would be a lie.
+            Hello();
+
             try
             {
                 Draw.BeginFrame();
@@ -2385,6 +2394,50 @@ namespace Hoodrich
                     Notify.Failure("shut itself off for this session. Check the log.");
                 }
             }
+        }
+
+        private bool _saidHello;
+
+        /// <summary>
+        /// Says it is here, once, a moment after the world exists.
+        ///
+        /// THE LOG ALREADY SAID THIS AND THE LOG IS NOT WHERE ANYBODY LOOKS. A script mod that
+        /// loads silently is indistinguishable from one that did not load at all, and the
+        /// person wondering cannot tell those apart -- so they go looking for a fault that is
+        /// not there, or report the wrong one.
+        ///
+        /// NOT FROM THE CONSTRUCTOR. Scripts start while the game is still on the loading
+        /// screen and a notification posted then is posted to nothing, which would make the
+        /// one message whose entire job is to prove the mod loaded the one message nobody
+        /// sees.
+        ///
+        /// ~INPUT_PHONE~ rather than a typed key name, so the game prints whatever the button
+        /// is actually bound to on this install -- including on a pad, where naming a keyboard
+        /// key would be worse than saying nothing.
+        /// </summary>
+        private void Hello()
+        {
+            if (_saidHello) return;
+            if (Game.GameTime < 6000) return;
+
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+            }
+            catch
+            {
+                return;
+            }
+
+            _saidHello = true;
+
+            var key = _cfg.PhoneKey == System.Windows.Forms.Keys.None
+                ? "~INPUT_PHONE~"
+                : "~INPUT_PHONE~ or ~b~" + _cfg.PhoneKey + "~s~";
+
+            Notify.Ticker("~g~" + Build.Name + " " + Build.Version + "~s~ loaded.  " +
+                          key + " for the phone.");
         }
 
         private int _paintSavedAt;
