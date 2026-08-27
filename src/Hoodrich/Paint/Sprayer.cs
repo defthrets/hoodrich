@@ -182,6 +182,10 @@ namespace Hoodrich.Paint
 
                 if (spraying) StartPlume();
                 else StopPlume();
+
+                // Lifting the trigger breaks the line. Without this, letting go, walking
+                // across the street and pressing again draws a stroke between the two.
+                _hasLast = false;
             }
 
             Spraying = spraying;
@@ -224,11 +228,23 @@ namespace Hoodrich.Paint
             }
         }
 
-        /// <summary>One splatter, wherever the spray is pointing.</summary>
+        /// <summary>Where the last splatter landed, so the gap to this one can be filled.</summary>
+        private Vector3 _lastAt;
+        private Vector3 _lastNormal;
+        private bool _hasLast;
+
+        /// <summary>One splatter, wherever the spray is pointing -- and the trail behind it.</summary>
         private void Dab()
         {
             var hit = Surface.InFront(_cfg.LiveRange);
-            if (!hit.Landed) return;
+
+            if (!hit.Landed)
+            {
+                // Off the end of a wall. The next hit must not draw a line across the gap from
+                // the last thing that WAS on one.
+                _hasLast = false;
+                return;
+            }
 
             // OFF THE SURFACE BY A HAIR. A decal placed exactly on the geometry fights it for
             // the same pixels and flickers -- z-fighting, and at spray rates it flickers a
@@ -262,8 +278,57 @@ namespace Hoodrich.Paint
             if (size < _cfg.LiveMinSize) size = _cfg.LiveMinSize;
             if (size > _cfg.LiveMaxSize) size = _cfg.LiveMaxSize;
 
-            _marks.Put(at, into, side, size,
-                       Colour.R / 255f, Colour.G / 255f, Colour.B / 255f);
+            var r = Colour.R / 255f;
+            var g = Colour.G / 255f;
+            var b = Colour.B / 255f;
+
+            // ---- the trail between the last one and this one ----
+            //
+            // Only along a surface that is still FACING THE SAME WAY. Sweeping round a corner
+            // puts two hits on two walls, and a straight line drawn between them runs through
+            // open air -- so the marks would hang in space where nothing is.
+            if (_cfg.Continuous && _hasLast)
+            {
+                var gap = _lastAt.DistanceTo(at);
+
+                var samewall = Vector3.Dot(_lastNormal, hit.Normal) > 0.94f;
+
+                // And only across a sane distance. Two hits a long way apart is a flick across
+                // a courtyard, not a stroke, and joining those is a line nobody drew.
+                if (samewall && gap > 0.001f && gap < 6f)
+                {
+                    var step = Math.Max(0.02f, size * _cfg.Overlap);
+
+                    var fill = (int)(gap / step);
+                    if (fill > _cfg.MaxFill) fill = _cfg.MaxFill;
+
+                    for (var i = 1; i <= fill; i++)
+                    {
+                        var t = (float)i / (fill + 1);
+
+                        // Its own roll and its own size, exactly like a real one. Marching a
+                        // single stamp along the path is what makes a trail read as a printed
+                        // repeat rather than as paint.
+                        var mid = _lastAt + (at - _lastAt) * t;
+
+                        var midSide = Surface.Along(hit.Normal,
+                                                    (float)(_rng.NextDouble() * Math.PI * 2.0));
+
+                        var midSize = size * (0.85f + (float)_rng.NextDouble() * 0.3f);
+
+                        if (midSize < _cfg.LiveMinSize) midSize = _cfg.LiveMinSize;
+                        if (midSize > _cfg.LiveMaxSize) midSize = _cfg.LiveMaxSize;
+
+                        _marks.Put(mid, into, midSide, midSize, r, g, b);
+                    }
+                }
+            }
+
+            _marks.Put(at, into, side, size, r, g, b);
+
+            _lastAt = at;
+            _lastNormal = hit.Normal;
+            _hasLast = true;
         }
 
         private readonly Random _rng = new Random();

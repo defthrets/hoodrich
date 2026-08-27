@@ -32,8 +32,45 @@
         /// </summary>
         public float Range = 10f;
 
-        /// <summary>Splatters per second while the trigger is down.</summary>
-        public float Rate = 9f;
+        /// <summary>
+        /// Splatters per second while the trigger is down.
+        ///
+        /// RAISING THIS ALONE DOES NOT GIVE YOU A LINE, which is why it is only half of the
+        /// answer. A rate is a number of marks per SECOND; whether they join up depends on how
+        /// fast the reticle is travelling, so any fixed rate is beads when you sweep quickly
+        /// and a pile of paint in one spot when you hold still. See Continuous.
+        /// </summary>
+        public float Rate = 22f;
+
+        /// <summary>
+        /// Whether the gap between one splatter and the next is filled in.
+        ///
+        /// THIS IS WHAT MAKES A LINE. Each dab knows where the last one landed, so it can lay
+        /// marks along the path between them -- as many as the distance needs and no more.
+        /// Sweep fast and it fills; hold still and it costs nothing, because there is no gap.
+        ///
+        /// That is the whole difference between "more paint" and "a consistent line": the
+        /// spacing follows the reticle rather than the clock.
+        /// </summary>
+        public bool Continuous = true;
+
+        /// <summary>
+        /// How far apart the filled marks sit, as a fraction of their own width.
+        ///
+        /// Below about 0.5 they overlap into a solid band. Higher reads as a dotted trail,
+        /// which is a legitimate look but not the one this is for.
+        /// </summary>
+        public float Overlap = 0.38f;
+
+        /// <summary>
+        /// The most marks one dab may fill in.
+        ///
+        /// A cap rather than a budget, and it exists for the pathological case: whipping the
+        /// reticle across a courtyard puts two consecutive hits forty metres apart, and
+        /// without this that single frame would try to lay a thousand decals and empty the
+        /// game's pool in one flick.
+        /// </summary>
+        public int MaxFill = 16;
 
         /// <summary>
         /// How wide the splatter is at one metre. Everything else follows.
