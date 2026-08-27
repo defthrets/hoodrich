@@ -140,11 +140,21 @@
         /// <summary>
         /// How many marks are remembered.
         ///
-        /// The GAME'S pool is the real ceiling -- a few hundred across the whole world, and it
-        /// refuses quietly once they are gone. This number only means something because a
-        /// refusal takes the slot back off whichever mark is furthest away. See Marks.Recycle.
+        /// THIS IS THE RECORD, NOT WHAT IS ON THE WALL. The game's own decal pool is a few
+        /// hundred across the entire world and refuses quietly once they are gone -- no
+        /// setting here changes that, and nothing can.
+        ///
+        /// What this buys is everything you have EVER painted staying real. The list is the
+        /// truth and the decals are a view of it: whatever is near you is on the wall, a
+        /// refusal takes a slot back off something further away, and walking back to a piece
+        /// you did an hour ago puts it up again. At fifty thousand that is a whole city's
+        /// worth of paint you can return to, for a few megabytes of small structs.
+        ///
+        /// It is only affordable because the two loops that touch every mark were fixed to
+        /// stop doing that -- see Marks.Recycle, which used to scan the entire list on every
+        /// refused dab.
         /// </summary>
-        public int MaxMarks = 1500;
+        public int MaxMarks = 50000;
 
         /// <summary>Whether the visible jet is tinted to the colour being sprayed.</summary>
         public bool ColourTheSmoke = true;

@@ -248,6 +248,9 @@ namespace Hoodrich.Paint
         /// that check a full pool trades one visible mark for another every single dab, which
         /// is a wall that flickers rather than a wall that fills.
         /// </summary>
+        /// <summary>Where the last bounded scan left off. See Recycle.</summary>
+        private int _scan;
+
         private bool Recycle(Vector3 near)
         {
             Vector3 me;
@@ -263,24 +266,49 @@ namespace Hoodrich.Paint
                 return false;
             }
 
-            var worst = -1;
-            var worstD = -1f;
+            var n = _marks.Count;
+            if (n == 0) return false;
 
-            for (var i = 0; i < _marks.Count; i++)
+            // Squared throughout. Nothing here needs a real distance, only which of two is
+            // bigger, and at this list size the square roots are the whole cost.
+            var mine = me.DistanceToSquared(near);
+
+            // It has to beat what is being sprayed by a margin, or this trades a mark you can
+            // see for another one you can see and thrashes the pool one decal at a time.
+            var worst = -1;
+            var worstD = mine + 4f;
+
+            // A BOUNDED, ROLLING SCAN -- NOT THE WHOLE LIST.
+            //
+            // This runs on every refused dab, which once the pool is full is twenty-odd times
+            // a second, and the list can now hold fifty thousand. A full pass would be over a
+            // million distance checks a second to answer a question that does not need an
+            // exact answer: any mark comfortably behind you is a perfectly good donor.
+            //
+            // The cursor carries between calls, so successive refusals sweep different parts
+            // of the list rather than re-reading the same window forever.
+            var window = n < 256 ? n : 256;
+
+            for (var k = 0; k < window; k++)
             {
-                var m = _marks[i];
+                _scan++;
+                if (_scan >= n) _scan = 0;
+
+                var m = _marks[_scan];
 
                 if (m.Away || m.Handle == 0) continue;
 
-                var d = me.DistanceTo(m.At);
+                var d = me.DistanceToSquared(m.At);
                 if (d <= worstD) continue;
 
                 worstD = d;
-                worst = i;
+                worst = _scan;
+
+                // Far enough behind you that looking harder cannot matter. 30m, squared.
+                if (d > mine + 900f) break;
             }
 
             if (worst < 0) return false;
-            if (worstD <= me.DistanceTo(near) + 1f) return false;
 
             var victim = _marks[worst];
 
@@ -309,19 +337,24 @@ namespace Hoodrich.Paint
                 return;
             }
 
+            // Squared, against squared thresholds. A full pass over fifty thousand marks is
+            // fine; fifty thousand square roots is the part that is not.
+            var drop = FarEnough * FarEnough;
+            var restore = NearEnough * NearEnough;
+
             for (var i = 0; i < _marks.Count; i++)
             {
                 var m = _marks[i];
-                var d = me.DistanceTo(m.At);
+                var d = me.DistanceToSquared(m.At);
 
-                if (!m.Away && d > FarEnough)
+                if (!m.Away && d > drop)
                 {
                     Wipe(m);
                     m.Away = true;
                     continue;
                 }
 
-                if (m.Away && d < NearEnough)
+                if (m.Away && d < restore)
                 {
                     m.Handle = Place(m);
                     m.Away = m.Handle == 0;
@@ -356,25 +389,37 @@ namespace Hoodrich.Paint
             // bookkeeping, and bookkeeping is the thing that was wrong.
             var spots = new List<Vector3>();
 
+            // A coarser grid once there is a lot of ground to cover. Fifty thousand marks
+            // spread over a city would otherwise be thousands of sweeps in a single frame;
+            // widening the cells trades precision nobody can see for a bounded cost.
+            var grid = _marks.Count > 6000 ? WipeGrid * 3f : WipeGrid;
+            var radius = _marks.Count > 6000 ? WipeRadius * 3f : WipeRadius;
+
+            // A SET, NOT A LINEAR SEARCH. Checking each mark against every cell found so far
+            // is fine for a few hundred marks and quadratic for fifty thousand -- at that size
+            // it is billions of comparisons and the game stops dead on a button press.
+            var seen = new HashSet<long>();
+
             foreach (var m in _marks)
             {
                 // Snapped to a coarse grid so a wall covered in four hundred marks costs a
                 // handful of calls instead of four hundred. They are clustered by nature --
                 // that is what painting IS -- so this collapses very well.
-                var cell = new Vector3((float)Math.Round(m.At.X / WipeGrid),
-                                       (float)Math.Round(m.At.Y / WipeGrid),
-                                       (float)Math.Round(m.At.Z / WipeGrid));
+                var cx = (int)Math.Round(m.At.X / grid);
+                var cy = (int)Math.Round(m.At.Y / grid);
+                var cz = (int)Math.Round(m.At.Z / grid);
 
-                var seen = false;
+                // Three cell indices packed into one long. The map is about sixteen thousand
+                // metres across, so at this grid nothing comes near overflowing fourteen bits
+                // a side; the masks keep a wild coordinate from corrupting a neighbour's bits
+                // rather than guarding against a case that happens.
+                var key = ((long)(cx & 0x3FFF) << 28) |
+                          ((long)(cy & 0x3FFF) << 14) |
+                          (long)(cz & 0x3FFF);
 
-                for (var i = 0; i < spots.Count; i++)
-                {
-                    if (spots[i] != cell) continue;
-                    seen = true;
-                    break;
-                }
+                if (!seen.Add(key)) continue;
 
-                if (!seen) spots.Add(cell);
+                spots.Add(new Vector3(cx, cy, cz));
             }
 
             var swept = 0;
@@ -384,8 +429,8 @@ namespace Hoodrich.Paint
                 try
                 {
                     Function.Call(Hash.REMOVE_DECALS_IN_RANGE,
-                                  cell.X * WipeGrid, cell.Y * WipeGrid, cell.Z * WipeGrid,
-                                  WipeRadius);
+                                  cell.X * grid, cell.Y * grid, cell.Z * grid,
+                                  radius);
                     swept++;
                 }
                 catch
