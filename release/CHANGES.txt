@@ -1,6 +1,128 @@
-===============================================================================
+﻿===============================================================================
   POSTED UP  --  CHANGES
 ===============================================================================
+
+
+-------------------------------------------------------------------------------
+  0.4.0
+-------------------------------------------------------------------------------
+
+The city has an opinion now, and the mod tells you when it cannot start.
+
+Read the FIXES section first if you have been running 0.3.0 -- one of them could
+have cost you a save and it was in every build until this one.
+
+
+WHERE YOU STAND MATTERS
+
+Every gram sold on a block makes the next customer there slower to turn up, and
+it recovers while you are somewhere else. It moves how OFTEN somebody walks up,
+never what they pay -- a worked-out corner goes quiet, it does not haggle. An
+ounce barely registers; a kilo dries a block for an hour. The phone says how
+worked over the block is under Gangs > This block.
+
+And word gets round that somewhere is busy, which it genuinely is. That is the
+first time anything on the feed has been worth acting on rather than worth having
+caused. It never names the block you are already standing on.
+
+
+THE HOUSE CAN BE TAKEN FROM YOU
+
+Nothing had any claim on what was in Denise's, which made it a bank and quietly
+made the dead drop pointless. Get loud enough, hold enough, and somebody comes
+while you are out -- police if it is heat that brought them, whoever you are
+beefing with if it is not. They take a share.
+
+You are texted three minutes before anybody arrives. Move it to the drop, carry
+it, sell it, or take the hit. Being at the house when they come calls it off
+outright -- the message said come home and you came home. Under 250g nobody is
+interested, so the threat arrives with the hoard.
+
+
+TWELVE MORE PLUGS, AND A REASON TO PICK BETWEEN THEM
+
+Supply was Gerald and the port, and four of the seven products had no street
+source at all. Now: nine gang corners selling only what their set moves, and
+three independents where no set holds -- meth past the yards after dark, coke on
+the west side at night, crack and brown in La Mesa around the clock.
+
+You have to FIND them. A dealer is a man on a corner until you have stood in
+front of him; after that he is a number, and he says so in his own words. His
+blip does not exist until you are within about thirteen metres, and once you know
+him his spot is marked permanently with the crown.
+
+The corner is cheap because what he hands you has already been halved -- fine,
+until you want to cut it yourself. Buy weight in one go and it comes uncut. Tao
+is the high roller and does not get out of bed under a hundred grand; everybody
+else does five, ten and twenty. Some nights the same man has something nobody has
+touched, and he wants paying for it.
+
+Each one has his own delivery car in his set's colours, his own lines for pulling
+up, carrying it in, putting it down and leaving, and his own texts.
+
+And plugs ring you out of the blue -- a real discount on one man, with a clock on
+it, in Messages. Only ever from somebody you have met.
+
+
+IT TELLS YOU WHEN IT IS BROKEN
+
+If anything is wrong that the mod can see, you get a red panel naming the fault
+and the fix: a ScriptHookVDotNet that does not recognise your game (nearly always
+the answer on Enhanced), a data folder that did not get copied, a data folder
+from a different version than the dll, a file that is present but not valid JSON,
+a dealer pointing at a gang that no longer exists, an install Windows will not
+let it write to. A crash names what it was loading rather than an exception type.
+
+If you get NOTHING at all, the mod never loaded and no code of ours could have
+told you. Read TROUBLESHOOTING.txt in this zip -- it leads with the Enhanced trap,
+which is that Legacy and Enhanced need different ScriptHookV builds, the files
+have the same name, and copying a working Legacy setup across gets you silence.
+
+
+FIXES
+
+* A SAVE THAT COULD NOT BE READ WAS TREATED AS NO SAVE AT ALL. A locked file or
+  one truncated write, and the mod logged "starting fresh at rank 0" and then
+  autosaved a blank state over your playthrough. It now knows the difference,
+  falls back to the backup it had been writing and never reading, and if that
+  fails too it switches saving off and says so rather than starting you over.
+
+* Backing out of any screen threw a punch. The list of controls to hold was typed
+  out by hand eleven times and nine copies were missing the one that swings.
+
+* Guns bought off Stretch are yours after a reload. They still go if you are
+  searched or killed.
+
+* Tao teleported into his car; so did rollers and homies. A timeout on that task
+  does not mean "give up", it means "be in that seat by then".
+
+* Tao introduced himself on repeat port runs to a man he had handed a brick to.
+
+* The port run carries 20 kilos. It was 250 grams, which is a jacket pocket.
+
+* Lamar rides at your shoulder, follows for the whole job rather than only the
+  ride out, hands you a pistol before the store, and talks on the way.
+
+* The feed knows who is attacking. It announced purple on the pavement after a
+  fight with the Vagos.
+
+* Repeat missions pay a fraction of the first run. The tag list refills instead
+  of running dry for good. "Spin Jamestown" is called "Spin Rancho", which is
+  where it has always been.
+
+* The taxi waits six seconds at the drop instead of driving off through the men
+  getting out of it.
+
+
+UPGRADING
+
+Drop it over the top. Old saves load. Copy scripts\Hoodrich\ as well as the
+dll -- keeping an old data folder is the most common way to get a mod that half
+works, and this build now says so on screen when it spots it.
+
+Hoodrich.ini is never overwritten and every new setting has a working default.
+For 0.3.0 pressure with the fixes: BlockSaturationEnabled=false,
+StashRaidsEnabled=false, ColdCallsEnabled=false, BlockTipsEnabled=false.
 
 
 -------------------------------------------------------------------------------
