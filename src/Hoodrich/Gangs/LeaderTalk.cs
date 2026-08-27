@@ -736,9 +736,18 @@ namespace Hoodrich.Gangs
                 //
                 // Above the recap on purpose: once a man has run it, going again is what he
                 // came to ask, and hearing it explained is the fallback.
-                known.Say("Run it again. I need the money.",
-                          () => { if (SendToThePort != null) SendToThePort(); return null; },
-                          "Take another load off Tao");
+                // The return value is checked, not dropped. Send refuses while a run is
+                // already on, and a row that silently does nothing is exactly how the locked
+                // truck went unnoticed -- the offer looked live and the job never started.
+                known.Say("You got another run for me?",
+                          () => {
+                              if (SendToThePort != null && SendToThePort()) return null;
+
+                              var no = Node(def, gang, "Not right now. Finish what you on first.");
+                              no.Leave();
+                              return no;
+                          },
+                          "Run a delivery for Gerald");
                 known.WithIcon(Icons.FromFile("cash.png"));
 
                 known.Say("Got it.", () => Root(def), "Back to it");

@@ -444,23 +444,36 @@ namespace Hoodrich.Missions
         /// <summary>
         /// Gerald sends you. Called from whichever conversation asked him the question.
         ///
-        /// Returns false if the run is already on or already done, so a second ask cannot
-        /// restart a trip you are halfway through.
+        /// Returns false only if a run is already under way, so a second ask cannot restart a
+        /// trip you are halfway through.
+        ///
+        /// IT USED TO REFUSE ONCE THE DOCKS WERE OPEN, and that was right up until the run
+        /// became repeatable. DocksUnlocked is set the moment the first one is paid for, so it
+        /// doubled as "you have already done this" -- and once Gerald had a row offering the
+        /// job again, that row called this, got false back, and nothing happened. No stage
+        /// change, so no run; no run, so Idle kept the truck locked, which is the symptom that
+        /// actually got noticed. The offer looked live and the keys never worked.
         /// </summary>
         public bool Send()
         {
-            if (_state == null || _state.DocksUnlocked || Running) return false;
+            if (_state == null || Running) return false;
+
+            var again = _state.PortRunsDone > 0;
 
             _state.PortRunStage = StageFetch;
             _state.Touch();
 
             MakeVan();
 
-            // No name and nobody to ask for. Gerald gives an address and a truck and keeps
-            // the rest back -- an objective that says "ask for the dock worker" hands over the
-            // introduction he deliberately withheld two lines earlier.
-            Notify.Important("~g~Take his truck.~s~ Elysian Island, round the back of the sheds.");
-            Log.Info("Port run started after " + _state.GramsSold.ToString("0.#") + "g sold.");
+            // The first time he withholds the name on purpose -- an objective reading "ask for
+            // the dock worker" would hand over the introduction he kept back two lines earlier.
+            // By the second run there is nothing left to withhold, so it says what the job is.
+            Notify.Important(again
+                ? "~g~Delivery for Gerald.~s~ Take his truck to Elysian Island."
+                : "~g~Take his truck.~s~ Elysian Island, round the back of the sheds.");
+
+            Log.Info((again ? "Repeat port run" : "Port run") + " started; " +
+                     _state.PortRunsDone + " done before this one.");
 
             return true;
         }
