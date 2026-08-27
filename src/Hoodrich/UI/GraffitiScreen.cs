@@ -31,6 +31,18 @@ namespace Hoodrich.UI
         private const float SwatchH = 0.062f;
         private const float ButtonH = 0.040f;
 
+        /// <summary>The mark and the can, and the shape of the files behind them.</summary>
+        private const float LogoH = 0.034f;
+        private const float LogoAspect = 3.50f;
+        private const float CanH = 0.055f;
+        private const float CanAspect = 0.4412f;
+
+        /// <summary>How long a shake lasts, how hard, and roughly how often.</summary>
+        private const int ShakeMs = 900;
+        private const int ShakeSpreadMs = 3500;
+        private const float ShakeDegrees = 13f;
+        private const double ShakeCycles = 4.0;
+
         /// <summary>Long enough that the press which opened it cannot also spend something.</summary>
         private const int OpenGraceMs = 220;
 
@@ -71,9 +83,14 @@ namespace Hoodrich.UI
 
         private readonly Curtain _curtain = new Curtain();
 
+        private readonly Random _rng = new Random();
+
         private int _pick = 3;
         private Row _row = Row.Swatches;
         private int _openedAt;
+
+        private int _shakeFrom = int.MinValue / 2;
+        private int _nextShake;
 
         /// <summary>
         /// Whether the wipe has been pressed once already.
@@ -246,7 +263,7 @@ namespace Hoodrich.UI
             var left = 0.5f - width * 0.5f;
             var pad = Hud.ToX(PadH);
 
-            var height = 0.256f + SwatchH + ButtonH * 3f;
+            var height = 0.311f + SwatchH + ButtonH * 3f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             Hud.RectFrom(left, top, width, height, Palette.Hub);
@@ -256,11 +273,29 @@ namespace Hoodrich.UI
             var right = left + width - pad;
             var y = top + 0.020f;
 
-            // ---- the header ----
-            Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            // ---- the mark ----
+            //
+            // The same sprayed treatment as the standalone, in this mod's own word. A header
+            // reading OVERSPRAY inside Posted Up would be a third name for a thing that
+            // already has two -- what carries across is the look, not the wordmark.
+            //
+            // Falls back to the typed word, because a panel with a hole where its name goes is
+            // worse than a plain heading.
+            if (!Hud.File("graffiti.png", left + width * 0.5f, y + LogoH * 0.5f,
+                          Hud.ToX(LogoH) * LogoAspect, LogoH, 0f, Palette.Text))
+            {
+                Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Text,
+                         Hud.FontCursive, centre: false);
+            }
+
             Hud.TextRight(Names[_pick], right, y + 0.010f, 0.34f, Legible(Colour));
 
-            y += 0.052f;
+            y += LogoH + 0.008f;
+
+            // ---- the can, having a shake ----
+            Shaker(left + width * 0.5f, y);
+
+            y += CanH + 0.010f;
 
             Hud.Text("WHAT YOU'RE PUTTING UP", x, y, 0.26f, Palette.TextDim,
                      Hud.FontLabel, centre: false);
@@ -362,6 +397,58 @@ namespace Hoodrich.UI
             Hud.RectFrom(left, top + h - thick, w, thick, c);
             Hud.RectFrom(left, top, Hud.ToX(thick), h, c);
             Hud.RectFrom(left + w - Hud.ToX(thick), top, Hud.ToX(thick), h, c);
+        }
+
+        /// <summary>
+        /// The can under the mark, shaking every few seconds.
+        ///
+        /// THE SAME HABIT HE HAS IN THE WORLD. He shakes the real one now and then while he is
+        /// holding it, on the same sort of interval -- so this is the app showing you the tool
+        /// rather than decorating itself.
+        ///
+        /// Damped rather than a plain sine: it starts hard, rattles and settles, which is what
+        /// shaking a can looks like. Constant amplitude reads as a broken transform.
+        /// </summary>
+        private void Shaker(float cx, float top)
+        {
+            var now = Game.GameTime;
+
+            if (now >= _nextShake)
+            {
+                _shakeFrom = now;
+                _nextShake = now + ShakeMs + _rng.Next(ShakeSpreadMs);
+            }
+
+            var t = (now - _shakeFrom) / (float)ShakeMs;
+
+            var spin = 0f;
+            var bob = 0f;
+
+            if (t < 1f)
+            {
+                var decay = 1f - t;
+                decay *= decay;
+
+                spin = (float)Math.Sin(t * Math.PI * 2.0 * ShakeCycles) * ShakeDegrees * decay;
+
+                // Half the frequency on the bob, or it buzzes rather than shakes.
+                bob = (float)Math.Sin(t * Math.PI * 2.0 * ShakeCycles * 0.5) * 0.0035f * decay;
+            }
+
+            var canW = Hud.ToX(CanH) * CanAspect;
+
+            if (!Hud.File("spraycan.png", cx, top + CanH * 0.5f + bob, canW, CanH, spin,
+                          Legible(Colour)))
+            {
+                return;
+            }
+
+            // A shadow underneath, squashed by the bob, so it is standing on the panel rather
+            // than floating over it.
+            var lift = 1f - bob / 0.0035f * 0.35f;
+
+            Hud.RectFrom(cx - canW * 0.30f * lift, top + CanH + 0.002f,
+                         canW * 0.60f * lift, 0.0022f, Color.FromArgb(90, 0, 0, 0));
         }
 
         /// <summary>How bright a colour reads. Rec. 601, plenty for "can I see this".</summary>
