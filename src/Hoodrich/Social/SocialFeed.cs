@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -34,6 +34,15 @@ namespace Hoodrich.Social
 
         /// <summary>Police down. The city notices this one more than anything else you do.</summary>
         CopKilled,
+
+        /// <summary>
+        /// Somebody went through the house.
+        ///
+        /// Posted as him because it happened to him, which is the difference between this and
+        /// every other bad night in here: a bust is something he was caught doing, and this is
+        /// something that was done to him while he was somewhere else.
+        /// </summary>
+        HouseRaided,
 
         /// <summary>
         /// The port changed hands. Nobody on that feed knows why, and that is the post.
@@ -1260,6 +1269,12 @@ namespace Hoodrich.Social
 
                 case SocialEvent.Tagged:
                     follow = "BallasTaunt";
+                    break;
+
+                case SocialEvent.HouseRaided:
+                    // Either the neighbours saw a van, or the people who did it cannot help
+                    // themselves. Both are true to whoever turned up.
+                    follow = _rng.NextDouble() < 0.5 ? "RivalGloats" : "OrgEvent";
                     break;
 
                 case SocialEvent.FrontedWork:

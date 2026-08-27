@@ -148,6 +148,24 @@ namespace Hoodrich.Core
         /// <summary>How quiet the deadest block can get. Never zero -- there is always somebody.</summary>
         public float BlockDemandFloor = 0.25f;
 
+        /// <summary>Whether the house can be taken from you at all.</summary>
+        public bool StashRaidsEnabled = true;
+
+        /// <summary>
+        /// Chance per check, at full heat and a fat house, that somebody comes.
+        ///
+        /// Checked twice a minute, so this is small on purpose: 2% at full heat works out at
+        /// roughly one raid an hour of hard, loud dealing, and none at all for somebody who
+        /// keeps their head down or keeps the house light.
+        /// </summary>
+        public float StashRaidChancePercent = 2f;
+
+        /// <summary>How much of the house goes when they get in.</summary>
+        public float StashRaidTakePercent = 40f;
+
+        /// <summary>Real minutes between the text and the door.</summary>
+        public float StashRaidWarningMinutes = 3f;
+
         // ---- risk --------------------------------------------------------------
 
         /// <summary>Base chance a completed sale draws police attention.</summary>
@@ -362,6 +380,14 @@ namespace Hoodrich.Core
                 Math.Max(1f, ini.GetFloat("Economy", "BlockRecoveryMinutes", s.BlockRecoveryMinutes));
             s.BlockDemandFloor =
                 Clamp(ini.GetFloat("Economy", "BlockDemandFloor", s.BlockDemandFloor), 0.05f, 1f);
+            s.StashRaidsEnabled =
+                ini.GetBool("Hideouts", "StashRaidsEnabled", s.StashRaidsEnabled);
+            s.StashRaidChancePercent =
+                Clamp(ini.GetFloat("Hideouts", "StashRaidChancePercent", s.StashRaidChancePercent), 0f, 50f);
+            s.StashRaidTakePercent =
+                Clamp(ini.GetFloat("Hideouts", "StashRaidTakePercent", s.StashRaidTakePercent), 5f, 95f);
+            s.StashRaidWarningMinutes =
+                Math.Max(0.5f, ini.GetFloat("Hideouts", "StashRaidWarningMinutes", s.StashRaidWarningMinutes));
 
             s.PoliceBustChancePercent =
                 Clamp(ini.GetFloat("Risk", "PoliceBustChancePercent", s.PoliceBustChancePercent), 0f, 100f);

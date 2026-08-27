@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Hoodrich.Core;
 
@@ -238,6 +238,54 @@ namespace Hoodrich.Economy
                 if (PackagedOf(d.Id) > 0.005f) list.Add(d);
             }
             return list;
+        }
+
+        /// <summary>
+        /// Somebody takes a share of everything in here and this says how much they got.
+        ///
+        /// ON STASH RATHER THAN ON THE RAID, because the two dictionaries are private and
+        /// should stay that way. The alternative was handing out the drug ids so a caller
+        /// could loop and call RemoveBulk itself, which is the same thing with the invariants
+        /// moved somewhere they can be got wrong.
+        ///
+        /// Proportional across both bulk and packaged, and it does not care which is which:
+        /// a man carrying boxes out of a house is not sorting them.
+        /// </summary>
+        public float TakeShare(float share)
+        {
+            if (share <= 0f) return 0f;
+            if (share > 1f) share = 1f;
+
+            return TakeFrom(_bulk, share) + TakeFrom(_packaged, share);
+        }
+
+        private static float TakeFrom(Dictionary<string, Holding> from, float share)
+        {
+            var took = 0f;
+            List<string> emptied = null;
+
+            foreach (var kv in from)
+            {
+                var go = kv.Value.Grams * share;
+                if (go <= 0f) continue;
+
+                kv.Value.Grams -= go;
+                took += go;
+
+                // Purity is untouched on purpose. They took some of it, they did not water
+                // down what is left.
+                if (kv.Value.Grams > 0.005f) continue;
+
+                if (emptied == null) emptied = new List<string>();
+                emptied.Add(kv.Key);
+            }
+
+            if (emptied != null)
+            {
+                for (var i = 0; i < emptied.Count; i++) from.Remove(emptied[i]);
+            }
+
+            return took;
         }
 
         public void Clear()

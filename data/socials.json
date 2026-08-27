@@ -3649,6 +3649,23 @@
       "That yard used to be a mess and now it's a business. Somebody made a phone call",
       "Ain't seen Tao's car outside the sheds since whenever. That thing was always outside the sheds",
       "Whatever happened down the port, it happened quiet and it happened fast. That's how you know who did it"
+    ],
+    "HouseRaided": [
+      "Came home to my auntie's door hanging off. Ain't got no words today",
+      "Everything I had put away is gone. Every bit of it",
+      "They went through that house like they had a list",
+      "Somebody talked. That's the only way that happens",
+      "Auntie sat on the step when I pulled up. That's the part I can't shake",
+      "Lost more in twenty minutes than I made all week",
+      "Should've moved it. Kept sayin' I'd move it",
+      "Whole house turned over and they still didn't find the floor",
+      "That's what I get for keepin' it all one place",
+      "Startin' again then. Ain't the first time",
+      "Real talk -- it's just weight. Auntie's alright. That's the score that matters",
+      "They knew what room to go in. Sit with that for a minute",
+      "Cleaned out. And I got people askin' me for a re-up today of all days",
+      "Ain't nobody comfortable no more, not even indoors",
+      "Note to self: a house is a house, it ain't a safe"
     ]
   },
   "voices": {
@@ -5016,7 +5033,8 @@
         "I am told there was an incident. I am told a great many things",
         "This will be on the news for two days and forgotten in three"
       ],
-      "MissionDone": ["Something occurred in {here}. It is not our concern and will remain so",
+      "MissionDone": [
+        "Something occurred in {here}. It is not our concern and will remain so",
         "I have read three accounts of {here} and none of them agree",
         "Noise in {here} again. Noise is how amateurs announce themselves",
         "Whatever happened in {here} did not require our involvement"

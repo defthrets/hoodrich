@@ -67,6 +67,7 @@ namespace Hoodrich
         private readonly WeaponRegistry _weapons;
         private readonly Market _market;
         private readonly BlockDemand _blocks;
+        private readonly StashRaid _raid;
         private readonly Bust _bust;
         private readonly DeadDrop _deadDrop;
         private readonly PostUp _postUp;
@@ -484,6 +485,7 @@ namespace Hoodrich
                 _deadDrop = new DeadDrop(_cfg, _state);
 
                 _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market, Blocks = _blocks };
+                _raid = new StashRaid(_cfg, _state, _stash) { Crew = _crew };
                 _cutting = new Cutting(_state.Stash, _state);
 
                 // Product you have put down. Its own thing rather than a corner of the stash,
@@ -1364,6 +1366,7 @@ namespace Hoodrich
                 // the same feed you posted it to.
                 _payback.Social = _social;
                 _postUp.Social = _social;
+                _raid.Social = _social;
                 _crew.Social = _social;
 
                 // Who said what, tallied per set. The feed knows the author of every post and
@@ -2009,6 +2012,7 @@ namespace Hoodrich
                     _deadDrop.Update();
                     _market.Update(_drugs);
                     _blocks.Update();
+                    _raid.Update();
                     _stash.Update();
                     _sleep.Update();
                     _kitchen.Update();
