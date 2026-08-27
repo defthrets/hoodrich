@@ -723,12 +723,20 @@ namespace Hoodrich.Gangs
             // out how this works without reading a menu.
             if (_state.DocksUnlocked && _state.PortRunStage == PortRun.StageNone)
             {
+                // A RECAP, NOT THE BRIEFING. This node only ever shows once the docks are
+                // open, which means he has already sent you and you have already been -- so
+                // introducing Tao as a man who does not know you from nobody, to somebody who
+                // has stood in his yard and listened to the whole speech about the paperwork,
+                // reads as Gerald forgetting who he is talking to.
+                //
+                // What is left is the standing arrangement: same island, same truck, same
+                // rules, and the one rule he will keep saying however many times you do it.
                 var known = Node(def, gang,
-                    "Elysian Island, round the back of the sheds. Take the truck out front, get " +
-                    "there before dark.\n\nAsian fella down there name of Tao. He runs that " +
-                    "yard for his people, and he don't know you from nobody -- so you go when " +
-                    "you go, and you handle him yourself.\n\nBring back what they load. Don't " +
-                    "open it, don't stop nowhere, don't let nobody follow you in.");
+                    "Same as always. Elysian Island, round the back of the sheds, truck's out " +
+                    "front where it lives.\n\nTao knows you now, so that part takes care of " +
+                    "itself. Whatever he loads, you bring straight back here.\n\nAnd I'ma keep " +
+                    "sayin' it 'til one of us dies -- don't open it, don't stop nowhere, don't " +
+                    "let nobody follow you in.");
 
                 // AND THE ROW THAT SENDS HIM. The recap was the only thing here, which made
                 // the one route he owns a thing he could be told about and never do again --
@@ -753,7 +761,7 @@ namespace Hoodrich.Gangs
                 known.Say("Got it.", () => Root(def), "Back to it");
                 known.WithIcon(Icons.Tick);
 
-                known.Say("Who's Tao again?", () => WhoIsTao(def, gang), "Ask about the man");
+                known.Say("Remind me about Tao.", () => WhoIsTao(def, gang), "Ask about the man");
                 known.WithIcon(Icons.FromFile("people.png"));
 
                 known.Leave();

@@ -416,6 +416,21 @@ namespace Hoodrich.Missions
         public bool AgainForCash => _state != null && _state.PortRunsDone > 0;
 
         /// <summary>
+        /// Whether Tao has met him before.
+        ///
+        /// NOT THE SAME QUESTION AS AgainForCash, and running both off PortRunsDone is what put
+        /// the introduction speech in front of a man who had already heard it. Gerald's number
+        /// only goes up when he pays, and he pays at the end -- so a run that reached the yard
+        /// and died on the way home leaves Tao's count of faces he has met sitting at zero.
+        /// Gerald then offers "another run", because his own gate is DocksUnlocked and Tao
+        /// handed the package over before any of that went wrong, and you walk back into the
+        /// yard to be told who Tao's family is by a man you have already met.
+        ///
+        /// The yard counts the yard. The two cannot drift.
+        /// </summary>
+        public bool TaoKnowsYou => _state != null && _state.PortYardVisits > 0;
+
+        /// <summary>
         /// Whether Gerald is off his corner.
         ///
         /// GangLeaders keeps exactly one leader alive anywhere in the world, and the delivery
@@ -833,7 +848,7 @@ namespace Hoodrich.Missions
             // He knows the face now, and the speech about whose yard it is was only ever for
             // somebody who did not. What is left is a man who is pleased to see you, mostly
             // because it means he can go back inside.
-            if (AgainForCash) return MeetingAgain();
+            if (TaoKnowsYou) return MeetingAgain();
 
             var node = new DialogueNode("Tao Cheng",
                 "Ayy. You Gerald guy. Okay okay, I see you, I see you. So peep game, my dude: " +
@@ -956,6 +971,7 @@ namespace Hoodrich.Missions
         private DialogueNode Take()
         {
             _state.DocksUnlocked = true;
+            _state.PortYardVisits++;
             _state.PortRunStage = StageBay;
             _state.AddRespect(8f);
             _state.Touch();
@@ -991,11 +1007,52 @@ namespace Hoodrich.Missions
         /// </summary>
         private DialogueNode MeetingAgain()
         {
-            var node = new DialogueNode("Tao Cheng",
-                "AYY. Gerald guy! My guy. See, THIS is what I'm talkin' about -- man says a " +
-                "time, man SHOWS at the time. You know how rare that is round here? Rare, bro. " +
-                "Very rare.\n\nIt's already on the pallet. Same as last time. Don't open it, " +
-                "don't stop nowhere, don't -- you know all this, why am I sayin' it")
+            // PortYardVisits is the count BEFORE this one, because Take does the incrementing
+            // and Take is a node you only reach once he has finished talking. So one means this
+            // is the second time he has laid eyes on you.
+            var seen = _state == null ? 1 : _state.PortYardVisits;
+
+            string said;
+
+            if (seen <= 1)
+            {
+                // He remembers the face and not much else, and he is delighted about the part
+                // he does remember: you turned up when you said you would.
+                said =
+                    "AYY. Gerald guy! You came BACK. See, THIS is what I'm talkin' about -- " +
+                    "man says a time, man shows at the time. You know how rare that is round " +
+                    "here? Rare, bro. Very rare.\n\nIt's already on the pallet, go on. And " +
+                    "don't open it, don't stop nowhere, don't -- nah. You know all this. Why " +
+                    "am I still sayin' it.";
+            }
+            else if (seen == 2)
+            {
+                said =
+                    "My guy! Nah nah nah, don't -- I KNOW who you are, bro, I'm not doin' the " +
+                    "whole speech again, it's exhausting.\n\nPallet. Same one. Same everything. " +
+                    "You want a drink? No? You never want a drink. That's your problem, my " +
+                    "dude, and I say that with love.";
+            }
+            else if (seen <= 4)
+            {
+                said =
+                    "AYYYY. It's the truck man. THE TRUCK MAN.\n\nHey. Hey, listen. Listen to " +
+                    "me. You are the only person, the ONLY person in this entire yard, who " +
+                    "has never once lied to me. Not one time. I told my cousin that. He " +
+                    "didn't care.\n\nIt's loaded. Go on. Go 'fore I get emotional about it.";
+            }
+            else
+            {
+                // Fully gone. He is not briefing anybody; he is having a moment near a forklift.
+                said =
+                    "...bro. Bro. You ever think about how the boat don't know? Boat just " +
+                    "GOES. Don't know what's in it, don't care. That's -- nah, that's deep, " +
+                    "that's actually deep, I'm gonna write that down.\n\nHuh? Yeah, it's on " +
+                    "the pallet. It's ALWAYS on the pallet. Why do you always -- go on. Get " +
+                    "out my yard. Love you.";
+            }
+
+            var node = new DialogueNode("Tao Cheng", said)
             {
                 SpeakerColour = Palette.Cash
             };
@@ -1047,9 +1104,49 @@ namespace Hoodrich.Missions
         /// </summary>
         private DialogueNode HandOverAgain()
         {
-            var node = new DialogueNode("Gerald",
-                "There he go. Straight there, straight back, no phone call in between -- that's " +
-                "what I like.\n\nLeave it, I got somebody comin' for it. Go on, get your money.")
+            // THE FENCE IS THE RUNNING JOKE. There is no gentle way to put a truck into that
+            // lot, so it goes through the same fence every single time -- and on a job with no
+            // story left to tell, how tired he is of that fence is the one thing that can
+            // honestly keep changing.
+            //
+            // PortRunsDone counts the runs he has already paid for, so one means this is the
+            // second truck and the second fence.
+            var paid = _state == null ? 1 : _state.PortRunsDone;
+
+            string said;
+
+            if (paid <= 1)
+            {
+                said =
+                    "NOT THE FENCE AGAIN! Fuck, dawg! That's TWICE! I JUST had that -- you " +
+                    "know what? Nah. Nah, I ain't doin' this with you tonight.\n\nLeave it. " +
+                    "Leave the truck, leave the fence, leave all of it, I got somebody comin'. " +
+                    "Go get your money 'fore I start chargin' you for post holes.";
+            }
+            else if (paid == 2)
+            {
+                said =
+                    "THE FENCE. THE FEN -- dawg, do you AIM for it? Is that a thing you do? " +
+                    "'Cause a man could park on the STREET. Street's right there. It's " +
+                    "FREE.\n\nI ain't even mad. I'm past mad. I'm at the part where I just " +
+                    "stand here and look at it.\n\nMoney's inside. Go on.";
+            }
+            else if (paid <= 4)
+            {
+                // He has stopped repairing it, which is funnier than him still being angry.
+                said =
+                    "...nah. I ain't even lookin' this time. Told Mikey don't fix it no more, " +
+                    "what's the point, man's got a schedule.\n\nTruck's back, load's straight, " +
+                    "that's the whole thing. Get your money.";
+            }
+            else
+            {
+                said =
+                    "Aye. You left the fence alone.\n\n...I don't like it. Feels wrong. Put it " +
+                    "back how it was next time.\n\nGo on, get paid.";
+            }
+
+            var node = new DialogueNode("Gerald", said)
             {
                 SpeakerColour = Palette.Cash
             };
@@ -1075,7 +1172,12 @@ namespace Hoodrich.Missions
 
             UI.Cash.Give(pay);
 
-            Notify.Important("~g~$" + pay.ToString("N0") + "~s~ for the run. The port's yours.");
+            // THE PORT IS ONLY WON ONCE. PortRunsDone was incremented just above, so one means
+            // this is the run that opened it and the line belongs. Anything higher is a man
+            // doing a delivery he has done before, and telling him the port is his every single
+            // time turns the one thing he actually earned into a receipt footer.
+            Notify.Important("~g~$" + pay.ToString("N0") + "~s~ for the run." +
+                             (_state.PortRunsDone <= 1 ? " The port's yours." : ""));
             Log.Info("Port run finished: $" + pay + " paid, docks unlocked.");
 
             if (Social != null)

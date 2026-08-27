@@ -206,6 +206,21 @@ namespace Hoodrich.State
         public int PortRunsDone;
 
         /// <summary>
+        /// How many times you have stood in Tao's yard and had a package put in your hands.
+        ///
+        /// SEPARATE FROM PortRunsDone ON PURPOSE, because the two men are asking different
+        /// questions. Gerald wants to know whether he has paid you before; Tao only wants to
+        /// know whether he has seen your face before, and he sees it a good twenty minutes and
+        /// one freeway before Gerald gets paid.
+        ///
+        /// Counting them with the same number is what put the introduction speech in front of a
+        /// man who had already heard it: take the package, lose the truck on the way home, and
+        /// the run ends unpaid -- PortRunsDone still zero, so the next trip out Tao meets you
+        /// for the first time all over again, having handed you a brick personally.
+        /// </summary>
+        public int PortYardVisits;
+
+        /// <summary>
         /// How many of his packages you have taken out and squared up.
         ///
         /// Not a bool, because "the first one" and "every one after" are different
@@ -388,6 +403,7 @@ namespace Hoodrich.State
             DocksUnlocked = false;
             PortRunStage = 0;
             PortRunsDone = 0;
+            PortYardVisits = 0;
 
             // The port going back to being a rumour takes the man on it with it.
             KnowsCheng = false;
@@ -495,6 +511,7 @@ namespace Hoodrich.State
             PortRunStage = 0;
             PortRunsDone = 0;
             FrontsDone = 0;
+            PortYardVisits = 0;
             HomiesUnlocked = false;
             MetHao = false;
             SleptAtStashHouse = false;
@@ -532,6 +549,7 @@ namespace Hoodrich.State
 
             // Skipped ahead rather than earned, so the first real run still plays as the first.
             PortRunsDone = 0;
+            PortYardVisits = 0;
             FrontsDone = 2;
             HomiesUnlocked = true;
             MetHao = true;
@@ -845,6 +863,7 @@ namespace Hoodrich.State
                 .Set("toldTheOldMan", ToldTheOldMan)
                 .Set("portRunStage", PortRunStage)
                 .Set("portRunsDone", PortRunsDone)
+                .Set("portYardVisits", PortYardVisits)
                 .Set("frontsDone", FrontsDone)
                 .Set("homiesUnlocked", HomiesUnlocked)
                 .Set("metHao", MetHao)
@@ -884,6 +903,12 @@ namespace Hoodrich.State
                 ToldTheOldMan = doc["toldTheOldMan"].AsBool(false);
                 PortRunStage = Math.Max(0, Math.Min(3, doc["portRunStage"].AsInt(0)));
                 PortRunsDone = Math.Max(0, doc["portRunsDone"].AsInt(0));
+
+                // A save written before the yard was counted separately still knows how many
+                // runs were paid for, and a paid run always went through the yard -- so the
+                // visits are at least that, and Tao does not forget anybody on an upgrade.
+                PortYardVisits = Math.Max(PortRunsDone,
+                                          Math.Max(0, doc["portYardVisits"].AsInt(0)));
                 FrontsDone = Math.Max(0, doc["frontsDone"].AsInt(0));
                 HomiesUnlocked = doc["homiesUnlocked"].AsBool(false);
                 MetHao = doc["metHao"].AsBool(false);
