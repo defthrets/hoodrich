@@ -467,14 +467,21 @@ namespace Hoodrich
             {
                 // Fully qualified: Script exposes an inherited `Settings` property that would
                 // otherwise win name resolution over Hoodrich.Core.Settings.
+                Preflight.Step = "reading Hoodrich.ini";
                 _cfg = Core.Settings.Load();
 
+                Preflight.Step = "loading drugs.json";
                 _drugs = Drugs.Load();
+                Preflight.Step = "loading gangs.json";
                 _gangs = GangRegistry.Load();
+                Preflight.Step = "loading dealers.json";
                 _dealers = DealerManager.Load(_cfg);
                 _delivery = new Delivery();
+                Preflight.Step = "loading weapons.json";
                 _weapons = WeaponRegistry.Load();
+                Preflight.Step = "loading zones.json";
                 _zoneMap = ZoneMap.Load();
+                Preflight.Step = "loading missions.json";
                 _missions = MissionBook.Load();
 
                 // Everything the save writes into has to exist before the save is read.
@@ -485,6 +492,7 @@ namespace Hoodrich
                 _market = new Market(_cfg);
                 _blocks = new BlockDemand(_cfg);
 
+                Preflight.Step = "reading save.json";
                 SaveGame.Load(_state, _crew, _market, _stash, null, _blocks);
 
                 _turf = new TurfWatch(_gangs, _crew, _state);
@@ -1749,6 +1757,8 @@ namespace Hoodrich
 
                 pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
 
+                Preflight.Step = "starting the world up";
+
                 Interval = 0;
                 Tick += OnTick;
                 Aborted += OnAborted;
@@ -1805,7 +1815,8 @@ namespace Hoodrich
                 why.Add(new Fault
                 {
                     Fatal = true,
-                    What = "Startup threw: " + ex.GetType().Name + " -- " + ex.Message,
+                    What = "Failed while " + Preflight.Step + " -- " +
+                           ex.GetType().Name + ": " + ex.Message,
                     Fix = "If nothing above explains it, this is one for the mod author. " +
                           "Hoodrich.log has the full stack."
                 });

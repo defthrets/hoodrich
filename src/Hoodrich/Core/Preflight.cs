@@ -124,6 +124,15 @@ namespace Hoodrich.Core
             }
         }
 
+        /// <summary>
+        /// What the mod was in the middle of when it fell over.
+        ///
+        /// A breadcrumb rather than a stack, because a stack means nothing to the person
+        /// reading it and the stack is in the log anyway. "while loading dealers.json" turns
+        /// an unactionable NullReferenceException into somebody opening one file.
+        /// </summary>
+        public static string Step = "starting up";
+
         /// <summary>Everything wrong, worst first. Empty means there is nothing to say.</summary>
         public static List<Fault> Check()
         {
@@ -132,6 +141,23 @@ namespace Hoodrich.Core
             CheckLoader(faults);
             CheckData(faults);
             CheckWritable(faults);
+
+            // AND WHAT IS ACTUALLY IN THE FILES. Everything above this line asks whether things
+            // exist; this asks whether they are any good and whether they agree with each other.
+            try
+            {
+                DataCheck.Check(Paths.Data, faults);
+            }
+            catch (Exception ex)
+            {
+                faults.Add(new Fault
+                {
+                    Fatal = false,
+                    What = "Could not check the data files: " + ex.Message,
+                    Fix = "Not necessarily a problem on its own -- but if the mod is misbehaving, " +
+                          "recopy scripts\\Hoodrich\\ from the zip."
+                });
+            }
 
             return faults;
         }

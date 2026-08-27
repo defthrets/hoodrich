@@ -214,6 +214,13 @@ function Deploy-To([string]$gameDir, [string]$label) {
         Write-Host "         Re-run with -FreshData to overwrite: $($stale -join ', ')" -ForegroundColor DarkGray
     }
 
+    # WHICH BUILD THIS DATA CAME WITH, stamped on every deploy as well as every package.
+    # A dll updated without its data folder is the most common half-broken install there is
+    # and nothing about it throws -- the mod reads this back and says so on screen.
+    $stampVer = (Select-String -Path (Join-Path $root 'src\Hoodrich\Core\Log.cs') `
+                               -Pattern 'Version = "([^"]+)"').Matches[0].Groups[1].Value
+    Set-Content -Path (Join-Path $dataDst 'version.txt') -Value $stampVer -NoNewline -Encoding ascii
+
     # Anything the mod no longer ships has to go, or it keeps being loaded.
     Get-ChildItem $dataDst -File -Filter *.json | ForEach-Object {
         if ($_.Name -eq 'save.json' -or $_.Name -eq 'save.json.bak') { return }
@@ -310,6 +317,11 @@ if ($Package) {
 
     Copy-Item (Join-Path $root 'data\*.json') $dataOut
     Copy-Item (Join-Path $root 'data\icons') $dataOut -Recurse
+
+    # WHICH BUILD THIS DATA CAME WITH. Somebody dropping in a new dll and keeping the old
+    # data folder -- because their save lives in it -- is the most common half-broken
+    # install there is, and nothing about it throws. The mod reads this back and says so.
+    Set-Content -Path (Join-Path $dataOut 'version.txt') -Value $version -NoNewline -Encoding ascii
 
     Copy-Item (Join-Path $relDir 'README.txt')  $stage
     Copy-Item (Join-Path $relDir 'CHANGES.txt') $stage
