@@ -40,9 +40,25 @@ namespace Hoodrich.Paint
 
         private const string Dict = "anim@scripted@freemode@postertag@graffiti_spray@male@";
 
-        /// <summary>Holding it, and using it.</summary>
+        /// <summary>
+        /// The four things he can be doing with a can.
+        ///
+        /// Idle is arm UP, holding it at the wall ready to go -- right while he is aiming and
+        /// wrong the rest of the time, because a man walking down the street with his arm
+        /// permanently extended looks broken.
+        ///
+        /// Rest is arm DOWN, and Shake is the shake. Both come out of the same dictionary as
+        /// the spray, so they blend into each other rather than snapping.
+        /// </summary>
         private const string Idle = "spray_can_idle_male";
         private const string Spray = "spray_can_male";
+        private const string Shake = "shake_can_male";
+        private const string Rest = "shake_can_idle_male";
+
+        /// <summary>How long a shake runs, and roughly how often he bothers.</summary>
+        private const int ShakeMs = 1700;
+        private const int ShakeGapMs = 5000;
+        private const int ShakeSpreadMs = 4000;
 
         /// <summary>Upper body, controllable. See the class note.</summary>
         private const int UpperControllable = 51;
@@ -64,8 +80,15 @@ namespace Hoodrich.Paint
 
         private readonly PaintConfig _cfg;
 
+        private readonly Random _rng = new Random();
+
         private Prop _can;
         private bool _spraying;
+
+        /// <summary>Which clip is running, and the shake's timing.</summary>
+        private string _clip;
+        private int _shakeUntil;
+        private int _nextShake;
         private int _nextTry;
         private bool _moaned;
 
@@ -158,10 +181,14 @@ namespace Hoodrich.Paint
             // would fight every step he takes.
             if (aiming || spraying) FaceTheAim();
 
-            if (spraying == _spraying && Playing()) return;
+            var want = Want(spraying, aiming);
 
+            if (want == _clip && Playing(want)) return;
+
+            _clip = want;
             _spraying = spraying;
-            Play(spraying ? Spray : Idle);
+
+            Play(want);
         }
 
         /// <summary>
@@ -210,16 +237,44 @@ namespace Hoodrich.Paint
             }
         }
 
-        /// <summary>Whether the tagging clip is still running, since anything can interrupt it.</summary>
-        private bool Playing()
+        /// <summary>What he should be doing with the can right now.</summary>
+        private string Want(bool spraying, bool aiming)
+        {
+            if (spraying) return Spray;
+
+            // Arm up only while he is actually aiming. That is the pose the spray comes out
+            // of, so holding it means he is ready -- and the rest of the time it is just a
+            // man walking about with his arm stuck out.
+            if (aiming) return Idle;
+
+            var now = Game.GameTime;
+
+            // Mid-shake: let it finish rather than cutting it off every frame.
+            if (now < _shakeUntil) return Shake;
+
+            if (now >= _nextShake)
+            {
+                _shakeUntil = now + ShakeMs;
+                _nextShake = _shakeUntil + ShakeGapMs + _rng.Next(ShakeSpreadMs);
+
+                return Shake;
+            }
+
+            // NOT SHAKING CONSTANTLY. A can rattling without pause reads as a stuck animation
+            // rather than a habit, and the resting clip is what the shake is authored to fall
+            // back into -- so the two together look like somebody idly keeping it mixed.
+            return Rest;
+        }
+
+        /// <summary>Whether a given clip is still running, since anything can interrupt one.</summary>
+        private static bool Playing(string clip)
         {
             try
             {
                 var me = Game.Player.Character;
                 if (me == null || !me.Exists()) return false;
 
-                return Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, Dict,
-                                           _spraying ? Spray : Idle, 3);
+                return Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, Dict, clip, 3);
             }
             catch
             {
@@ -321,6 +376,7 @@ namespace Hoodrich.Paint
         public void Away()
         {
             _spraying = false;
+            _clip = null;
 
             // Idempotent, because the off branch above calls this on every single tick for as
             // long as the mod is switched off. Without the latch that is two STOP_ANIM_TASKs
@@ -338,8 +394,12 @@ namespace Hoodrich.Paint
 
                     // Only the upper-body task, so this does not cancel whatever else he is
                     // doing with his legs.
-                    Function.Call(Hash.STOP_ANIM_TASK, me.Handle, Dict, Idle, 3f);
-                    Function.Call(Hash.STOP_ANIM_TASK, me.Handle, Dict, Spray, 3f);
+                    // All four. Stopping only the two it used to play would leave whichever
+                    // of the others was running still going after the can was gone.
+                    foreach (var clip in new[] { Idle, Spray, Shake, Rest })
+                    {
+                        Function.Call(Hash.STOP_ANIM_TASK, me.Handle, Dict, clip, 3f);
+                    }
                 }
             }
             catch
