@@ -164,14 +164,47 @@ namespace Hoodrich.Supply
             return Faces.TryGetValue(gang, out faces) ? faces : NoSet;
         }
 
-        /// <summary>A spot beside him, out at an angle from where he is facing.</summary>
+        /// <summary>
+        /// A spot beside him, snapped to somewhere a person is allowed to stand.
+        ///
+        /// THEY WERE ENDING UP IN THE ROAD. The offsets come off the dealer's own facing, and a
+        /// dealer pinned on a kerb has carriageway on one side of him -- so a third of every
+        /// corner was a man stood in a live traffic lane looking relaxed about it.
+        ///
+        /// GET_SAFE_COORD_FOR_PED is the game's own answer and the one the population system
+        /// uses: the nearest place a pedestrian is permitted, which is pavement, forecourt or
+        /// verge and never the road. Flag 16 is the ordinary on-foot set.
+        ///
+        /// Rejected if it lands too far off, because a "safe" coordinate the other side of a
+        /// junction is safe and useless -- these are HIS people and they have to stay his. If
+        /// it refuses, the raw offset is still a spot beside him.
+        /// </summary>
         private static Vector3 Beside(Vector3 at, float heading, float outBy, float round)
         {
             var a = (heading + round) * (Math.PI / 180.0);
 
-            return new Vector3(at.X + (float)Math.Sin(a) * -outBy,
-                               at.Y + (float)Math.Cos(a) * outBy,
-                               at.Z);
+            var raw = new Vector3(at.X + (float)Math.Sin(a) * -outBy,
+                                  at.Y + (float)Math.Cos(a) * outBy,
+                                  at.Z);
+
+            try
+            {
+                var slot = new OutputArgument();
+
+                if (Function.Call<bool>(Hash.GET_SAFE_COORD_FOR_PED, raw.X, raw.Y, raw.Z,
+                                        true, slot, 16))
+                {
+                    var safe = slot.GetResult<Vector3>();
+
+                    if (safe != Vector3.Zero && safe.DistanceTo(at) <= outBy + 4f) return safe;
+                }
+            }
+            catch
+            {
+                // Then he stands where the maths put him.
+            }
+
+            return raw;
         }
 
         private Ped Put(string name, Vector3 at, float heading)
@@ -264,6 +297,103 @@ namespace Hoodrich.Supply
         /// Released rather than deleted, the same way everything else in the mod lets a ped go
         /// -- somebody vanishing in front of you is worse than somebody wandering off.
         /// </summary>
+        /// <summary>How often one of them changes what he is doing.</summary>
+        private const int ShuffleMs = 22_000;
+
+        private int _nextShuffle;
+
+        /// <summary>When each of them should pick his habit back up.</summary>
+        private readonly Dictionary<int, int> _resume = new Dictionary<int, int>();
+
+        /// <summary>
+        /// One of them moves, every twenty seconds or so.
+        ///
+        /// SCENARIOS ARE ROOTED. A man told to smoke stands exactly where he was put and smokes
+        /// there until the world ends, so three of them read as furniture the second time you
+        /// come back to a corner. Real ambient peds do not do that -- they shift a few feet,
+        /// lean somewhere else, pick the conversation back up.
+        ///
+        /// One at a time, because three men moving at once is a group leaving. And never the
+        /// one on watch: he is already wandering and re-tasking him just restarts it.
+        /// </summary>
+        public void Wander(Vector3 at, float heading)
+        {
+            if (_crew.Count == 0) return;
+
+            var now = Game.GameTime;
+
+            if (_nextShuffle == 0)
+            {
+                _nextShuffle = now + ShuffleMs;
+                return;
+            }
+
+            if (now < _nextShuffle) return;
+
+            _nextShuffle = now + ShuffleMs + _rng.Next(ShuffleMs);
+
+            var i = 1 + _rng.Next(Math.Max(1, _crew.Count - 1));
+            if (i >= _crew.Count) return;
+
+            var ped = _crew[i];
+            if (ped == null || !ped.Exists() || !ped.IsAlive) return;
+
+            try
+            {
+                var spot = Beside(at, heading,
+                                  Out[i] + (float)_rng.NextDouble() * 1.6f - 0.8f,
+                                  Round[i] + (float)_rng.NextDouble() * 50f - 25f);
+
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, ped.Handle,
+                              spot.X, spot.Y, spot.Z, 1f, 8000, 0.5f, 0, heading + 180f);
+
+                _resume[i] = now + 9000;
+            }
+            catch
+            {
+                // He stays where he is, which is what he was doing anyway.
+            }
+        }
+
+        /// <summary>Puts anybody who has finished walking back on his habit.</summary>
+        public void PickItBackUp()
+        {
+            if (_resume.Count == 0) return;
+
+            var now = Game.GameTime;
+            List<int> done = null;
+
+            foreach (var kv in _resume)
+            {
+                if (now < kv.Value) continue;
+
+                if (done == null) done = new List<int>();
+                done.Add(kv.Key);
+            }
+
+            if (done == null) return;
+
+            for (var j = 0; j < done.Count; j++)
+            {
+                var i = done[j];
+                _resume.Remove(i);
+
+                if (i < 0 || i >= _crew.Count) continue;
+
+                var ped = _crew[i];
+                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle, Doing[i], 0, true);
+                }
+                catch
+                {
+                    // Standing there is still standing there.
+                }
+            }
+        }
+
         public void Scatter()
         {
             for (var i = 0; i < _crew.Count; i++)
@@ -284,6 +414,8 @@ namespace Hoodrich.Supply
             }
 
             _crew.Clear();
+            _resume.Clear();
+            _nextShuffle = 0;
             _forDealer = "";
         }
     }

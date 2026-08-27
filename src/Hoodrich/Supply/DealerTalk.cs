@@ -201,16 +201,23 @@ namespace Hoodrich.Supply
                 // The product's own words for the amount -- "40 pills", "112g" -- rather than
                 // a kilo count. Kilos are true of the port and nonsense off a bicycle, where
                 // the same routine was rendering an ounce as "0.1 of a kilo".
-                // WHAT ONE COSTS AND WHERE CLEAN STARTS, on the row you decide from.
+                // WHAT ONE COSTS AND WHERE THE CLEAN ONE STARTS, in the label, because the
+                // detail column is invisible on every row but the highlighted one.
                 //
-                // It said "200g at 50% from $4,500", which is three quarters of a sentence:
-                // true of the small lot and wrong about the two underneath it, and no way to
-                // tell from here that the bigger ones come uncut.
+                // "Uncut from $7,000" in the greeting with three rows all reading 50% is a shop
+                // advertising something it appears not to stock. The uncut lot was always there
+                // -- it is the second one -- and nothing on this screen said which.
                 var clean = Def != null && Def.PurityFor(cost) >= 0.999f;
+                var at = clean ? 0 : FirstCleanLot(product, brick);
 
-                node.Say(product.Name + ".", () => Amounts(pick, product),
-                         product.Bulk(brick.Grams) + "  from $" + cost.ToString("N0") +
-                         (clean ? "  uncut" : "  " + Stash.Percent(strength) + "%"));
+                var strengthBit = clean
+                    ? "uncut"
+                    : Stash.Percent(strength) + "%" + (at > 0 ? ", uncut at " + at + "x" : "");
+
+                node.Say(product.Name + "  --  " + product.Bulk(brick.Grams) +
+                         "  from $" + cost.ToString("N0") + "  --  " + strengthBit,
+                         () => Amounts(pick, product),
+                         "How many");
 
                 node.WithIcon(Icons.ForDrug(product.Id));
 
@@ -318,7 +325,7 @@ namespace Hoodrich.Supply
             var room = House == null ? 0f : House.FreeSpace;
 
             var line = "\n\n$" + cash.ToString("N0") + " on you  --  " +
-                       room.ToString("0") + "g room at the house";
+                       Room(room) + " room at the house";
 
             if (Def != null && Def.PurityNow < 0.999f)
             {
@@ -372,6 +379,15 @@ namespace Hoodrich.Supply
             node.WithIcon(Icons.FromFile("crown.png"));
         }
 
+        /// <summary>Free space, said the way somebody would say it.</summary>
+        private static string Room(float grams)
+        {
+            // "300000g" is a number off a scale. Nobody describes a house that way.
+            return grams >= 1000f
+                ? (grams / 1000f).ToString("0.#") + "kg"
+                : grams.ToString("0") + "g";
+        }
+
         private DialogueNode Amounts(Brick brick, DrugDef product)
         {
             var node = Node("How many? And don't say one if you mean four." + Standing());
@@ -396,10 +412,9 @@ namespace Hoodrich.Supply
                 var clean = arrives >= 0.999f;
 
                 node.SayIf(blocked.Length == 0, blocked,
-                           Weight(product, brick, count) +
-                           (clean ? "  uncut" : "  " + Stash.Percent(arrives) + "%"),
+                           Weight(product, brick, count, cost, arrives),
                            () => Buy(product, grams, cost),
-                           "$" + cost.ToString("N0"));
+                           blocked.Length > 0 ? blocked : "Take it");
 
                 node.WithMark(Stash.Mark(arrives));
 
@@ -419,10 +434,45 @@ namespace Hoodrich.Supply
         /// deals in bricks. Off a pushbike that rendered sixty grams of weed as "0.1 kilos",
         /// and the single-lot line as nothing at all once the phrases went.
         /// </summary>
-        private static string Weight(DrugDef product, Brick brick, int lot)
+        /// <summary>
+        /// The smallest multiple of this product that arrives uncut, or 0 if none does.
+        ///
+        /// Worked out rather than assumed, because it is not always the second: a dear dealer's
+        /// single lot can already clear his own threshold and a cheap one's may need the
+        /// biggest. Telling somebody "uncut at 2x" when it is actually 4x is worse than saying
+        /// nothing.
+        /// </summary>
+        private int FirstCleanLot(DrugDef product, Brick brick)
         {
-            var amount = product.Bulk(brick.Grams * lot);
-            return lot == 1 ? amount : lot + "x  --  " + amount;
+            if (Def == null) return 0;
+
+            for (var i = 0; i < Lots.Length; i++)
+            {
+                if (Def.PurityFor(Cost(product, brick.Grams, Lots[i])) >= 0.999f) return Lots[i];
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// A whole row's worth of row.
+        ///
+        /// THE DETAIL COLUMN ONLY DRAWS ON THE HIGHLIGHTED ROW -- Conversation renders
+        /// `picked ? choice.Detail : ""` -- so anything put there is invisible until you have
+        /// already arrowed onto it. On a menu whose entire job is comparing three prices that
+        /// is the wrong column, and it is why the shop read as offering an uncut lot with
+        /// nothing uncut in it: the promise was in the greeting and the answer was two
+        /// keypresses away in a field only one row at a time could show.
+        ///
+        /// So the label carries the lot, the weight, the money and the strength, and every row
+        /// says all of itself at once.
+        /// </summary>
+        private static string Weight(DrugDef product, Brick brick, int lot, int cost, float purity)
+        {
+            var line = lot + "x  --  " + product.Bulk(brick.Grams * lot) +
+                       "  --  $" + cost.ToString("N0");
+
+            return line + (purity >= 0.999f ? "  --  uncut" : "  --  " + Stash.Percent(purity) + "%");
         }
 
         /// <summary>

@@ -614,6 +614,39 @@ namespace Hoodrich.Supply
         /// </summary>
         private const float SpotRange = 120f;
 
+        /// <summary>
+        /// Sends his number the moment the conversation shuts.
+        ///
+        /// As a TEXT rather than another line of dialogue, because that is the thing that
+        /// happened: you now have his number, and the place a number lives is the phone. It
+        /// lands in Messages under his name with his face on it, which is also the first thing
+        /// in that app that is there because you went and got it.
+        /// </summary>
+        private void HandOverTheNumber()
+        {
+            var open = Talk != null && Talk.IsOpen;
+
+            var closed = _talkWasOpen && !open;
+            _talkWasOpen = open;
+
+            if (!closed || _owesNumber == null) return;
+
+            var def = _owesNumber;
+            _owesNumber = null;
+
+            if (string.IsNullOrEmpty(def.NumberLine)) return;
+
+            try
+            {
+                UI.Notify.Text(def.Portrait, def.Name, "here's my number", def.NumberLine, true);
+                Log.Info("Handed over " + def.Id + "'s number on the way out.");
+            }
+            catch
+            {
+                // He said it out loud in the menu either way.
+            }
+        }
+
         /// <summary>Whichever pinned dealer is closest, if you are near enough to any of them.</summary>
         private DealerDef NearestPinned(Vector3 from)
         {
@@ -1276,7 +1309,7 @@ namespace Hoodrich.Supply
                 }
                 else
                 {
-                    _liveBlip.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.Green;
+                    _liveBlip.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.White;
                 }
 
                 // A posted dealer is a local landmark; someone you called out gets a route.
@@ -1445,6 +1478,20 @@ namespace Hoodrich.Supply
         /// opening hours or not, forever. Learning where a man stands should not be something
         /// you have to do twice.
         /// </summary>
+        /// <summary>
+        /// Whose number is owed, and whether the conversation was open last tick.
+        ///
+        /// THE TEXT ARRIVES AS YOU WALK AWAY, which is when it actually happens. He says the
+        /// line to your face inside the menu and then the number is in your phone -- and the
+        /// second half was missing, so the one moment the whole search pays off was a sentence
+        /// that scrolled past inside a screen you were already closing.
+        ///
+        /// Watched rather than called back, because Conversation has no close hook. Open last
+        /// tick and shut this one is the same fact from the outside.
+        /// </summary>
+        private DealerDef _owesNumber;
+        private bool _talkWasOpen;
+
         /// <summary>The three stood round whoever is currently out.</summary>
         private readonly Stoop _stoop = new Stoop();
 
@@ -1503,7 +1550,7 @@ namespace Hoodrich.Supply
                     }
                     else
                     {
-                        mark.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.Green;
+                        mark.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.White;
                     }
 
                     mark.Name = def.Name + (gang == null ? "" : " -- " + gang.Name);
@@ -1581,6 +1628,17 @@ namespace Hoodrich.Supply
         /// </summary>
         public void UpdatePrompt()
         {
+            HandOverTheNumber();
+
+            // His people shift about while he is out.
+            if (_liveDef != null && _liveDef.HasSpot)
+            {
+                _stoop.Wander(new Vector3(_liveDef.SpotX, _liveDef.SpotY, _liveDef.SpotZ),
+                              _liveDef.SpotHeading);
+            }
+
+            _stoop.PickItBackUp();
+
             var def = InReach;
             if (def == null || Talk == null || Talk.IsOpen || TalkBuilder == null) return;
 
@@ -1601,6 +1659,9 @@ namespace Hoodrich.Supply
 
                 // The greeting picks this up and puts it down again.
                 def.JustMet = true;
+
+                // And the number follows him out of the conversation.
+                _owesNumber = def;
 
                 Log.Info("Met " + def.Id + " in person; he is a contact now.");
             }
