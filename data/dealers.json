@@ -194,6 +194,7 @@
       "gangId": "",
       "models": [
         "a_m_m_hillbilly_01",
+        "a_m_m_hillbilly_02",
         "a_m_m_soucent_01"
       ],
       "drugs": [
@@ -209,11 +210,11 @@
       "maxOrderGrams": 6000,
       "openHour": 20,
       "closeHour": 6,
-      "_rides": "A Sadler with the tray full of nothing in particular. Verified in the dump.",
+      "_rides": "An old pickup or a plain van off a property nobody visits. rebel and bison are beaten farm trucks; rumpo is a work van. Nothing that says anything about anybody.",
       "rides": [
-        "sadler",
         "rebel",
-        "gburrito2"
+        "bison",
+        "rumpo"
       ],
       "ridePaint": 12,
       "greeting": "You the one Gerald talks about. Don't say nothin', I don't wanna know.",
@@ -277,6 +278,7 @@
       "gangId": "",
       "models": [
         "a_m_y_business_01",
+        "a_m_m_business_01",
         "a_m_y_beach_01"
       ],
       "drugs": [
@@ -292,11 +294,11 @@
       "maxOrderGrams": 6000,
       "openHour": 21,
       "closeHour": 5,
-      "_rides": "Something with a valet ticket still in it.",
+      "_rides": "Tidy and forgettable. He is not in a set, so he is not in anybody's car -- he is in the sort of saloon that gets waved through.",
       "rides": [
-        "faction3",
-        "buccaneer2",
-        "dominator"
+        "asterope",
+        "stanier",
+        "regina"
       ],
       "ridePaint": 111,
       "greeting": "You're early. Nobody's early. Alright -- what are we doing.",
@@ -358,8 +360,9 @@
       "kind": "Independent",
       "gangId": "",
       "models": [
-        "g_m_y_mexgoon_01",
-        "a_m_m_eastsa_02"
+        "a_m_m_eastsa_02",
+        "a_m_y_latino_01",
+        "a_m_m_soucent_02"
       ],
       "drugs": [
         "crack",
@@ -375,13 +378,13 @@
       "maxOrderGrams": 6000,
       "openHour": 0,
       "closeHour": 24,
-      "_rides": "A Voodoo that has been round the block more than he has.",
+      "_rides": "An old station wagon and two vans. regina is the estate that has been on that street longer than he has.",
       "rides": [
-        "voodoo",
-        "manana",
-        "youga2"
+        "regina",
+        "youga",
+        "speedo"
       ],
-      "ridePaint": 147,
+      "ridePaint": 0,
       "greeting": "Ay. You lost, or you here?",
       "buyLine": "I got the two nobody else wants to touch. Cheap, 'cause of what it is.",
       "sourceReply": "You want the man above me? Nah. He don't do faces.",
