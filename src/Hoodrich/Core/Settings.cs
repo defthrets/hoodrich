@@ -166,6 +166,18 @@ namespace Hoodrich.Core
         /// <summary>Real minutes between the text and the door.</summary>
         public float StashRaidWarningMinutes = 3f;
 
+        /// <summary>Whether plugs ring you with one-off deals.</summary>
+        public bool ColdCallsEnabled = true;
+
+        /// <summary>How often the game even considers making one.</summary>
+        public float ColdCallEveryMinutes = 12f;
+
+        /// <summary>Chance it actually happens when it looks.</summary>
+        public float ColdCallChancePercent = 35f;
+
+        /// <summary>How long you have got to get there.</summary>
+        public float ColdCallMinutes = 8f;
+
         // ---- risk --------------------------------------------------------------
 
         /// <summary>Base chance a completed sale draws police attention.</summary>
@@ -388,6 +400,14 @@ namespace Hoodrich.Core
                 Clamp(ini.GetFloat("Hideouts", "StashRaidTakePercent", s.StashRaidTakePercent), 5f, 95f);
             s.StashRaidWarningMinutes =
                 Math.Max(0.5f, ini.GetFloat("Hideouts", "StashRaidWarningMinutes", s.StashRaidWarningMinutes));
+            s.ColdCallsEnabled =
+                ini.GetBool("Supply", "ColdCallsEnabled", s.ColdCallsEnabled);
+            s.ColdCallEveryMinutes =
+                Math.Max(1f, ini.GetFloat("Supply", "ColdCallEveryMinutes", s.ColdCallEveryMinutes));
+            s.ColdCallChancePercent =
+                Clamp(ini.GetFloat("Supply", "ColdCallChancePercent", s.ColdCallChancePercent), 0f, 100f);
+            s.ColdCallMinutes =
+                Math.Max(2f, ini.GetFloat("Supply", "ColdCallMinutes", s.ColdCallMinutes));
 
             s.PoliceBustChancePercent =
                 Clamp(ini.GetFloat("Risk", "PoliceBustChancePercent", s.PoliceBustChancePercent), 0f, 100f);

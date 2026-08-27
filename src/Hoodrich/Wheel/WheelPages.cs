@@ -1680,14 +1680,41 @@ namespace Hoodrich.Wheel
         /// </summary>
         private WheelPage BuildDealerPage(DealerDef def)
         {
-            var mult = def.PriceMultiplier;
+            var mult = def.PriceNow;
 
             var page = new WheelPage(def.Name, def.BuyLine);
             page.PanelTitle = def.Name;
             page.Row("Cash", "$" + Game.Player.Money.ToString("N0"), Palette.Cash, "cash.png");
             page.Row("Free space", Stash.FreeSpace.ToString("0") + "g", null, "box.png");
             page.Row("Carries", Carries(def), null, "crate.png");
-            page.Row("Price", "x" + mult.ToString("0.00"), null, "cash.png");
+
+            // WHAT HE IS HANDING OVER, which on a gang corner is most of the decision. Cheap
+            // and halved or dear and clean is a real choice, and it is not one anybody can make
+            // from a price alone.
+            page.Row(def.PureTonight ? "Tonight" : "Strength",
+                     def.PureTonight
+                         ? "uncut -- " + Economy.Stash.Percent(def.PurityNow) + "%, and he knows it"
+                         : Economy.Stash.Percent(def.PurityNow) + "%",
+                     def.PureTonight ? Palette.Cash : (Color?)null,
+                     def.PureTonight ? "crown.png" : "scales.png");
+            // HIS OFFER, ON THE ROW THE OFFER IS ABOUT. A discount that only shows up in
+            // the final total is a discount the player finds out about after deciding.
+            if (Supply.ColdCall.With(def.Id))
+            {
+                var left = (int)Math.Ceiling(Supply.ColdCall.MinutesLeft);
+
+                page.Row("Price",
+                         "x" + (mult * Supply.ColdCall.Multiplier(def.Id)).ToString("0.00") +
+                         "  -" + (int)Math.Round(Supply.ColdCall.Off * 100f) + "%",
+                         Palette.Cash, "cash.png");
+
+                page.Row("Offer ends", left <= 1 ? "any minute" : "about " + left + " minutes",
+                         Palette.Warn, "warning.png");
+            }
+            else
+            {
+                page.Row("Price", "x" + mult.ToString("0.00"), null, "cash.png");
+            }
             page.Row("Max order", def.MaxOrderGrams.ToString("0") + "g", null, "crate.png");
             page.Row("Sold so far", _state.GramsSold.ToString("0.#") + "g", null, "deal.png");
 

@@ -175,6 +175,544 @@
       "priceFloor": 0,
       "priceStep": 5,
       "purity": 0.75
+    },
+    {
+      "id": "sand_cook",
+      "name": "Merle",
+      "tag": "MRL",
+      "kind": "Independent",
+      "gangId": "",
+      "models": [
+        "a_m_m_hillbilly_01",
+        "a_m_m_soucent_01"
+      ],
+      "drugs": [
+        "meth"
+      ],
+      "zones": [
+        "CYPRE",
+        "BANNING",
+        "ELYSIAN"
+      ],
+      "priceMultiplier": 1.15,
+      "minRank": 2,
+      "maxOrderGrams": 400,
+      "openHour": 20,
+      "closeHour": 6,
+      "_rides": "A Sadler with the tray full of nothing in particular. Verified in the dump.",
+      "rides": [
+        "sadler",
+        "rebel"
+      ],
+      "ridePaint": 12,
+      "greeting": "You the one Gerald talks about. Don't say nothin', I don't wanna know.",
+      "buyLine": "I do one thing and I do it better'n anybody south of here. Say a number.",
+      "sourceReply": "My source is a shed. Ain't no story in it.",
+      "sourceTooSoon": "Nope.",
+      "farewell": "Go on. And don't come back down here in daylight.",
+      "openingText": "gerald give me this number. i work nights out past the yards. one product, you know which. dont turn up before dark",
+      "textCalled": [
+        "comin out. give it a minute, i gotta walk",
+        "yeah. dont stand about lookin like police",
+        "on my way. leave the engine runnin",
+        "aight. and come alone, i mean that part"
+      ],
+      "purity": 0.95
+    },
+    {
+      "id": "beach_connect",
+      "name": "Yusuf",
+      "tag": "YSF",
+      "kind": "Independent",
+      "gangId": "",
+      "models": [
+        "a_m_y_business_01",
+        "a_m_y_beach_01"
+      ],
+      "drugs": [
+        "coke"
+      ],
+      "zones": [
+        "VESP",
+        "DELPE",
+        "MIRR"
+      ],
+      "priceMultiplier": 1.35,
+      "minRank": 3,
+      "maxOrderGrams": 200,
+      "openHour": 21,
+      "closeHour": 5,
+      "_rides": "Something with a valet ticket still in it.",
+      "rides": [
+        "faction",
+        "buccaneer"
+      ],
+      "ridePaint": 111,
+      "greeting": "You're early. Nobody's early. Alright -- what are we doing.",
+      "buyLine": "One thing, and it's clean, and it's not cheap. Those three facts are related.",
+      "sourceReply": "My people are not your people. Nothing personal, it's just true.",
+      "sourceTooSoon": "Ask me that again when you're somebody.",
+      "farewell": "Pleasure. Try not to be seen leaving.",
+      "openingText": "so you're the one from davis. fine. i'm on the west side after nine, and i deal in one product only. price is the price -- don't negotiate, it's embarrassing for both of us",
+      "textCalled": [
+        "on my way. i'll be the one who looks like he belongs there",
+        "give me ten. i'm not rushing across town for anybody",
+        "coming. and please, park properly",
+        "yes. don't text me twice"
+      ],
+      "purity": 1.0
+    },
+    {
+      "id": "lamesa_corner",
+      "name": "Poncho",
+      "tag": "PCH",
+      "kind": "Independent",
+      "gangId": "",
+      "models": [
+        "g_m_y_mexgoon_01",
+        "a_m_m_eastsa_02"
+      ],
+      "drugs": [
+        "crack",
+        "heroin"
+      ],
+      "zones": [
+        "RANCHO",
+        "LMESA",
+        "CYPRE"
+      ],
+      "priceMultiplier": 0.9,
+      "minRank": 1,
+      "maxOrderGrams": 300,
+      "openHour": 0,
+      "closeHour": 24,
+      "_rides": "A Voodoo that has been round the block more than he has.",
+      "rides": [
+        "voodoo",
+        "manana"
+      ],
+      "ridePaint": 147,
+      "greeting": "Ay. You lost, or you here?",
+      "buyLine": "I got the two nobody else wants to touch. Cheap, 'cause of what it is.",
+      "sourceReply": "You want the man above me? Nah. He don't do faces.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "Aight. Watch how you go out that end, it ain't ours.",
+      "openingText": "poncho. lamesa, rancho, all through there. i keep the two nobody wanna keep so i'm always open and i'm always cheap. figure out why on your own time",
+      "textCalled": [
+        "walkin. two minutes",
+        "here. i'm always here, that's the whole thing",
+        "yeah yeah. comin",
+        "on it. and don't bring nobody with the flag on, it's tense out here"
+      ],
+      "purity": 0.62
+    },
+    {
+      "id": "aztecas_corner",
+      "name": "Chuy",
+      "tag": "CHY",
+      "kind": "GangCorner",
+      "gangId": "aztecas",
+      "models": [
+        "g_m_y_azteca_01",
+        "g_m_y_mexgoon_02"
+      ],
+      "drugs": [
+        "weed",
+        "coke"
+      ],
+      "zones": [
+        "BANNING"
+      ],
+      "priceMultiplier": 0.75,
+      "purity": 0.66,
+      "purePurity": 0.98,
+      "pureMultiplier": 1.3,
+      "pureChancePercent": 14,
+      "minRank": 0,
+      "maxOrderGrams": 250,
+      "openHour": 0,
+      "closeHour": 24,
+      "rides": [
+        "tornado",
+        "manana"
+      ],
+      "ridePaint": 27,
+      "greeting": "Orale. You ain't from round here but you ain't nothin' either. Talk.",
+      "buyLine": "Whatever the barrio moves, I move. Seventyfive on the dollar 'cause it's been touched. You know how it go.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "Ya estuvo. Go straight out, don't wander.",
+      "openingText": "chuy. banning. i sell what we sell and i sell it cheap. its been stepped on, im not gonna lie to you about that",
+      "textCalled": [
+        "walkin over now",
+        "yeah yeah. two minutes",
+        "on my way, guero",
+        "comin. be there"
+      ]
+    },
+    {
+      "id": "families_corner",
+      "name": "Little D",
+      "tag": "LTD",
+      "kind": "GangCorner",
+      "gangId": "families",
+      "models": [
+        "g_m_y_famca_01",
+        "g_m_y_famfor_01"
+      ],
+      "drugs": [
+        "weed",
+        "ecstasy",
+        "xanax"
+      ],
+      "zones": [
+        "CHAMH",
+        "STRAW"
+      ],
+      "priceMultiplier": 0.75,
+      "purity": 0.68,
+      "purePurity": 0.98,
+      "pureMultiplier": 1.3,
+      "pureChancePercent": 12,
+      "minRank": 0,
+      "maxOrderGrams": 250,
+      "openHour": 0,
+      "closeHour": 24,
+      "rides": [
+        "primo",
+        "manana"
+      ],
+      "ridePaint": 53,
+      "greeting": "Aye. You family, so you get family prices. Don't make it weird.",
+      "buyLine": "Green, pills, bars. Cheap 'cause it's cut, and it's cut 'cause it's cheap.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "Aight. Tell Lamar I said what's up. Actually don't.",
+      "openingText": "lil d. chamberlain, strawberry. everything the set moves, three quarter price. its been touched, thats why",
+      "textCalled": [
+        "comin round",
+        "aight, walkin",
+        "gimme a sec, im finishin somethin",
+        "on my way cuz"
+      ]
+    },
+    {
+      "id": "ballas_corner",
+      "name": "Twan",
+      "tag": "TWN",
+      "kind": "GangCorner",
+      "gangId": "ballas",
+      "models": [
+        "g_m_y_ballaeast_01",
+        "g_m_y_ballaorig_01"
+      ],
+      "drugs": [
+        "crack",
+        "weed"
+      ],
+      "zones": [
+        "DAVIS",
+        "STAD"
+      ],
+      "priceMultiplier": 0.75,
+      "purity": 0.62,
+      "purePurity": 0.98,
+      "pureMultiplier": 1.3,
+      "pureChancePercent": 16,
+      "minRank": 0,
+      "maxOrderGrams": 250,
+      "openHour": 0,
+      "closeHour": 24,
+      "rides": [
+        "voodoo",
+        "buccaneer"
+      ],
+      "ridePaint": 145,
+      "greeting": "You standin' on purple askin' me for somethin'. That's either brave or stupid.",
+      "buyLine": "Rock and green. Cheap. And no, it ain't clean, ain't nobody claimed it was.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "Go on. And you ain't seen me.",
+      "openingText": "you got my number somehow. fine. davis, the stadium end. rock and green, three quarters. dont get seen comin",
+      "textCalled": [
+        "walkin",
+        "yeah. hurry up",
+        "comin out",
+        "aight, be there"
+      ]
+    },
+    {
+      "id": "vagos_corner",
+      "name": "Pelon",
+      "tag": "PLN",
+      "kind": "GangCorner",
+      "gangId": "vagos",
+      "models": [
+        "g_m_y_mexgoon_01",
+        "g_m_y_mexgoon_03"
+      ],
+      "drugs": [
+        "coke",
+        "meth"
+      ],
+      "zones": [
+        "RANCHO",
+        "LMESA",
+        "MURRI",
+        "EBURO"
+      ],
+      "priceMultiplier": 0.75,
+      "purity": 0.64,
+      "purePurity": 0.98,
+      "pureMultiplier": 1.3,
+      "pureChancePercent": 15,
+      "minRank": 0,
+      "maxOrderGrams": 250,
+      "openHour": 0,
+      "closeHour": 24,
+      "rides": [
+        "tornado",
+        "voodoo"
+      ],
+      "ridePaint": 88,
+      "greeting": "Ey. Money first, questions never.",
+      "buyLine": "Blanca and glass. Three quarters, 'cause it's been stretched. Everybody stretch it.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "Bueno. Vete.",
+      "openingText": "pelon. rancho, la mesa, all of it. blanca and glass, cheap, and stepped on. thats the trade",
+      "textCalled": [
+        "comin",
+        "two minutes ese",
+        "walkin over",
+        "yeah. be ready"
+      ]
+    },
+    {
+      "id": "marabunta_corner",
+      "name": "Nelson",
+      "tag": "NLS",
+      "kind": "GangCorner",
+      "gangId": "marabunta",
+      "models": [
+        "g_m_y_salvagoon_01",
+        "g_m_y_salvaboss_01"
+      ],
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "zones": [
+        "CYPRE",
+        "TEXTI"
+      ],
+      "priceMultiplier": 0.75,
+      "purity": 0.63,
+      "purePurity": 0.98,
+      "pureMultiplier": 1.3,
+      "pureChancePercent": 18,
+      "minRank": 0,
+      "maxOrderGrams": 250,
+      "openHour": 0,
+      "closeHour": 24,
+      "rides": [
+        "emperor",
+        "manana"
+      ],
+      "ridePaint": 0,
+      "greeting": "You came all the way out to Cypress. Alright. I respect the drive.",
+      "buyLine": "Glass and blanca out the flats. Cheap. It's been cut, we all cut it, next question.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "Go. And don't come back through the yard, use the road.",
+      "openingText": "nelson. cypress flats and textile. glass and blanca, three quarters. its cut. everybody's is cut, mine is just honest about it",
+      "textCalled": [
+        "on my way",
+        "comin. give me a minute",
+        "walkin out now",
+        "yeah. be there"
+      ]
+    },
+    {
+      "id": "lost_corner",
+      "name": "Whistle",
+      "tag": "WHS",
+      "kind": "GangCorner",
+      "gangId": "lost",
+      "models": [
+        "g_m_y_lost_01",
+        "g_m_y_lost_02"
+      ],
+      "drugs": [
+        "meth",
+        "heroin"
+      ],
+      "zones": [
+        "SLAB",
+        "GRAPES",
+        "SANDY"
+      ],
+      "priceMultiplier": 0.75,
+      "purity": 0.6,
+      "purePurity": 0.98,
+      "pureMultiplier": 1.3,
+      "pureChancePercent": 20,
+      "minRank": 0,
+      "maxOrderGrams": 250,
+      "openHour": 0,
+      "closeHour": 24,
+      "rides": [
+        "daemon",
+        "hexer"
+      ],
+      "ridePaint": 0,
+      "greeting": "You rode all the way out here. Either you're serious or you're lost. Ha.",
+      "buyLine": "Glass and brown. Cheap as anything and about as clean as you'd expect.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "Ride safe. Don't, actually. Ride however you want.",
+      "openingText": "whistle. sandy shores, grapeseed, up the slab. glass and brown, dirt cheap, dirty. dont come askin for clean",
+      "textCalled": [
+        "comin",
+        "yeah. gimme a minute, im wrenchin",
+        "walkin out",
+        "on it"
+      ]
+    },
+    {
+      "id": "triads_corner",
+      "name": "Mr Kwok",
+      "tag": "KWK",
+      "kind": "GangCorner",
+      "gangId": "triads",
+      "models": [
+        "g_m_m_chigoon_01",
+        "g_m_m_chiboss_01"
+      ],
+      "drugs": [
+        "ecstasy",
+        "heroin",
+        "xanax"
+      ],
+      "zones": [
+        "MIRR",
+        "HAWICK"
+      ],
+      "priceMultiplier": 0.75,
+      "purity": 0.7,
+      "purePurity": 0.98,
+      "pureMultiplier": 1.3,
+      "pureChancePercent": 22,
+      "minRank": 0,
+      "maxOrderGrams": 250,
+      "openHour": 0,
+      "closeHour": 24,
+      "rides": [
+        "schafter2",
+        "asterope"
+      ],
+      "ridePaint": 0,
+      "greeting": "Mister Cheng knows your name. That is the only reason we are talking.",
+      "buyLine": "Pills, bars, brown. Below the street price, and below the street quality. Both by design.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "We are finished. Do not linger in Mirror Park.",
+      "openingText": "you are on a list now, which is better than the other list. mirror park, hawick. pills, bars, brown. three quarter price and it has been cut",
+      "textCalled": [
+        "I am coming.",
+        "Two minutes. Wait.",
+        "On my way. Be present.",
+        "Yes."
+      ]
+    },
+    {
+      "id": "armenians_corner",
+      "name": "Sarkis",
+      "tag": "SRK",
+      "kind": "GangCorner",
+      "gangId": "armenians",
+      "models": [
+        "g_m_y_armgoon_02",
+        "g_m_m_armlieut_01"
+      ],
+      "drugs": [
+        "heroin"
+      ],
+      "zones": [
+        "ALTA",
+        "BURTON",
+        "PBOX"
+      ],
+      "priceMultiplier": 0.75,
+      "purity": 0.72,
+      "purePurity": 0.98,
+      "pureMultiplier": 1.3,
+      "pureChancePercent": 25,
+      "minRank": 0,
+      "maxOrderGrams": 250,
+      "openHour": 0,
+      "closeHour": 24,
+      "rides": [
+        "fugitive",
+        "stanier"
+      ],
+      "ridePaint": 0,
+      "greeting": "You are not police. I checked. Sit down, do not sit down, whatever.",
+      "buyLine": "One product. Brown. Cheap, and stepped on, and I will not pretend otherwise.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "Good. Now go and be somewhere else.",
+      "openingText": "sarkis. alta, burton, around the boxville lot. one thing only -- brown. three quarters and it is cut. i do not insult people with stories",
+      "textCalled": [
+        "Coming.",
+        "Give me a moment.",
+        "I am walking.",
+        "Yes, yes. Coming."
+      ]
+    },
+    {
+      "id": "koreans_corner",
+      "name": "Jae",
+      "tag": "JAE",
+      "kind": "GangCorner",
+      "gangId": "koreans",
+      "models": [
+        "g_m_y_korean_01",
+        "g_m_m_korboss_01"
+      ],
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "zones": [
+        "KOREAT"
+      ],
+      "priceMultiplier": 0.75,
+      "purity": 0.69,
+      "purePurity": 0.98,
+      "pureMultiplier": 1.3,
+      "pureChancePercent": 20,
+      "minRank": 0,
+      "maxOrderGrams": 250,
+      "openHour": 0,
+      "closeHour": 24,
+      "rides": [
+        "habanero",
+        "asterope"
+      ],
+      "ridePaint": 0,
+      "greeting": "You found Koreatown. Congratulations. What.",
+      "buyLine": "Glass and blanca. Three quarters, because it is cut. I could lie. I won't.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "farewell": "Done. Out the back, not the front.",
+      "openingText": "jae. koreatown. glass and blanca at three quarters. it is cut and i will tell you that every single time so nobody is surprised",
+      "textCalled": [
+        "coming",
+        "one minute",
+        "walking",
+        "yes. be there"
+      ]
     }
   ]
 }

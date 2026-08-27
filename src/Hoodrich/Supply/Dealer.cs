@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Hoodrich.Supply
@@ -203,6 +203,40 @@ namespace Hoodrich.Supply
         public int RidePaint = -1;
 
         public float PriceMultiplier = 1f;
+
+        /// <summary>
+        /// Some nights he has got hold of something that has not been touched.
+        ///
+        /// THE TRADE-OFF IS THE POINT. A gang corner is cheap because what he is handing you
+        /// has already been halved -- that is the deal, and it is a good one right up until you
+        /// want to cut it yourself and find there is nothing left to cut. So the corner is
+        /// three quarters of the price at two thirds of the strength, and the independent up
+        /// the coast is dearer and clean, and neither of them is simply better.
+        ///
+        /// The uncut night is what stops that being a fixed choice you make once. It is the
+        /// same man on the same corner with something off a boat that nobody has stepped on,
+        /// and he wants paying for it -- so the cheap option is briefly the expensive one, and
+        /// worth it, and gone tomorrow.
+        /// </summary>
+        public float PurePurity = 1f;
+
+        /// <summary>What he charges on those nights. Above 1 means dearer than the street.</summary>
+        public float PureMultiplier = 1.3f;
+
+        /// <summary>Chance, per restock, that tonight is one of them. 0 for a man it never happens to.</summary>
+        public float PureChancePercent;
+
+        /// <summary>
+        /// RUNTIME, not data. Rolled by DealerManager when he restocks and never read from
+        /// json -- it lives here because it is a fact about the man that DealerTalk needs, and
+        /// DealerTalk is handed a def and nothing else.
+        /// </summary>
+        public bool PureTonight;
+
+        /// <summary>What he is actually charging, and what it is actually worth.</summary>
+        public float PriceNow => PureTonight ? PureMultiplier : PriceMultiplier;
+
+        public float PurityNow => PureTonight ? PurePurity : Purity;
         public int MinRank;
         public float MaxOrderGrams = 100f;
 

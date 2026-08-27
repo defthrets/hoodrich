@@ -145,7 +145,16 @@ namespace Hoodrich.Supply
 
         private string Name => Def == null ? "Tao Cheng" : Def.Name;
 
-        private float Multiplier => Def == null ? 0.75f : Def.PriceMultiplier;
+        /// <summary>
+        /// His price, and whatever he has knocked off it tonight.
+        ///
+        /// The cold call multiplies rather than replaces, so a dealer who is dear stays
+        /// relatively dear -- an offer is him being generous by his own standards, not
+        /// everybody converging on the same number when a text goes out.
+        /// </summary>
+        private float Multiplier =>
+            (Def == null ? 0.75f : Def.PriceNow) *
+            (Def == null ? 1f : ColdCall.Multiplier(Def.Id));
 
         private DialogueNode Node(string line) =>
             new DialogueNode(Name, line) { SpeakerColour = Palette.Cash };
@@ -159,7 +168,7 @@ namespace Hoodrich.Supply
             // the bags; half-strength cuts once and the second cut is powder nobody will buy.
             // Standing in a menu working out why the same money bought half as much product is
             // a fact the game had and did not mention.
-            var strength = Def == null ? 1f : Def.Purity;
+            var strength = Def == null ? 1f : Def.PurityNow;
 
             var node = Node(strength >= 0.999f
                 ? "Ain't got time to stand here. What you taking? Nothing here's been touched."
@@ -268,7 +277,7 @@ namespace Hoodrich.Supply
 
         private DialogueNode Amounts(Brick brick, DrugDef product)
         {
-            var strength = Def == null ? 1f : Def.Purity;
+            var strength = Def == null ? 1f : Def.PurityNow;
 
             var node = Node("How many? And don't say one if you mean four.");
 
@@ -367,7 +376,7 @@ namespace Hoodrich.Supply
                 // his weight before he sells it has sold you weaker WEIGHT: you still have to
                 // cut and bag it, you simply have less to work with, and cutting fifty per cent
                 // to a half again leaves you twenty-five, which is the punishment for trying.
-                var strength = Def == null ? 1f : Def.Purity;
+                var strength = Def == null ? 1f : Def.PurityNow;
                 var cut = strength < 0.999f;
 
                 var pocket = _state.Stash.AddBulk(product.Id, grams, strength);

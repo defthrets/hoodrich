@@ -191,6 +191,13 @@ namespace Hoodrich.Supply
             def.Purity = Math.Max(Economy.Stash.MinPurity,
                                   Math.Min(Economy.Stash.MaxPurity,
                                            node["purity"].AsFloat(def.Purity)));
+
+            def.PurePurity = Math.Max(Economy.Stash.MinPurity,
+                                      Math.Min(Economy.Stash.MaxPurity,
+                                               node["purePurity"].AsFloat(def.PurePurity)));
+            def.PureMultiplier = Math.Max(0.2f, node["pureMultiplier"].AsFloat(def.PureMultiplier));
+            def.PureChancePercent =
+                Math.Max(0f, Math.Min(100f, node["pureChancePercent"].AsFloat(def.PureChancePercent)));
         }
 
         /// <summary>
@@ -310,6 +317,120 @@ namespace Hoodrich.Supply
 
         /// <summary>Dealers who simply have nothing this visit.</summary>
         private readonly HashSet<string> _dry = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>When somebody is next allowed to ring out of the blue.</summary>
+        private int _nextCall;
+
+        /// <summary>When every dealer next re-decides whether tonight is an uncut night.</summary>
+        private int _nextPure;
+
+        /// <summary>
+        /// Who has got hold of something clean, re-rolled on the restock clock.
+        ///
+        /// On the same timer as everything else about a dealer's day rather than its own, so a
+        /// player who has learned when the corner restocks has also learned when to check for
+        /// this. One clock is a thing you can plan around; three is weather.
+        /// </summary>
+        private void RollPure()
+        {
+            var now = Game.GameTime;
+            var everyMs = (int)(Math.Max(1f, _cfg.DealerRestockMinutes) * 60_000f);
+
+            if (_nextPure != 0 && now - _nextPure < everyMs) return;
+            _nextPure = now;
+
+            for (var i = 0; i < _defs.Count; i++)
+            {
+                var d = _defs[i];
+                if (d == null) continue;
+
+                d.PureTonight = d.PureChancePercent > 0f &&
+                                _rng.NextDouble() * 100.0 < d.PureChancePercent;
+            }
+        }
+
+        /// <summary>
+        /// A plug rings round when he wants something gone.
+        ///
+        /// Gated behind having actually met people -- an unsolicited discount from a man whose
+        /// name you do not know is not a favour, it is a menu popping up. It also only ever
+        /// fires for somebody you could reach: the offer is a race against a clock, and a race
+        /// you cannot enter is just a message telling you what you are missing.
+        /// </summary>
+        private void ColdCalls(PlayerState state)
+        {
+            if (!_cfg.ColdCallsEnabled || state == null) return;
+
+            var now = Game.GameTime;
+
+            if (_nextCall == 0)
+            {
+                // Not on the first tick of a session. Being texted a deal before the loading
+                // screen has finished reads as a mod announcing itself.
+                _nextCall = now + (int)(_cfg.ColdCallEveryMinutes * 60_000f);
+                return;
+            }
+
+            if (now < _nextCall) return;
+            _nextCall = now + (int)(Math.Max(1f, _cfg.ColdCallEveryMinutes) * 60_000f);
+
+            if (ColdCall.Standing) return;
+            if (_rng.NextDouble() * 100.0 >= _cfg.ColdCallChancePercent) return;
+
+            // Somebody he has actually stood in front of, and who sells something.
+            var pool = new List<DealerDef>();
+            for (var i = 0; i < _defs.Count; i++)
+            {
+                var d = _defs[i];
+                if (d == null || string.IsNullOrEmpty(d.Id)) continue;
+                if (_dry.Contains(d.Id)) continue;
+
+                pool.Add(d);
+            }
+
+            if (pool.Count == 0) return;
+
+            var who = pool[_rng.Next(pool.Count)];
+            var drug = who.Drugs.Count > 0 ? who.Drugs[_rng.Next(who.Drugs.Count)] : "";
+
+            var off = 0.15f + (float)_rng.NextDouble() * 0.25f;
+            var mins = Math.Max(2f, _cfg.ColdCallMinutes);
+
+            ColdCall.Open(who.Id, drug, off, (int)(mins * 60_000f));
+
+            var pct = (int)Math.Round(off * 100f);
+
+            UI.Notify.Text(UI.Faces.For(who.Name), who.Name, "you around tonight",
+                           Line(who, drug, pct, (int)mins), true);
+
+            Log.Info("Cold call: " + who.Name + " at -" + pct + "% for " + (int)mins + " min.");
+        }
+
+        /// <summary>What he says. Different men, different reasons to be in a hurry.</summary>
+        private string Line(DealerDef who, string drugId, int pct, int mins)
+        {
+            var what = string.IsNullOrEmpty(drugId) ? "what I got" : drugId;
+
+            switch (_rng.Next(5))
+            {
+                case 0:
+                    return "sittin' on more " + what + " than I got room for. " + pct +
+                           " off if you come get it in the next " + mins + " or so. after that " +
+                           "it's gone to somebody else, no hard feelings";
+                case 1:
+                    return "need this " + what + " out my hands tonight. " + pct + " off. " +
+                           "don't ask me why and don't take all night about it";
+                case 2:
+                    return "aye. " + pct + " off the " + what + ", next " + mins +
+                           " minutes only.\n\nI'm doin' you a favour so don't have me standin' here";
+                case 3:
+                    return "got a man comin' for this " + what + " at the end of the night and I " +
+                           "would rather it went to you. " + pct + " off. your call";
+                default:
+                    return "movin' house, basically. " + what + " at " + pct +
+                           " off while I'm packin'.\n\nclock's tickin' though";
+            }
+        }
 
         private int _lastRestock;
 
@@ -770,6 +891,8 @@ namespace Hoodrich.Supply
 
         public void Update(TurfWatch turf, Affiliation crew, PlayerState state)
         {
+            ColdCalls(state);
+
             TextIfNewlyOpen(state, crew);
 
             var now = Game.GameTime;
@@ -812,6 +935,8 @@ namespace Hoodrich.Supply
 
                 return;
             }
+
+            RollPure();
 
             var zone = turf.ZoneCode;
             var wanted = DealerForZone(zone, crew, state);
