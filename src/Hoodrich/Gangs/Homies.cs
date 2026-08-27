@@ -472,18 +472,44 @@ namespace Hoodrich.Gangs
 
             try
             {
+                // LET GO OF THE CAR FIRST. This is what was still holding it.
+                //
+                // BRING_VEHICLE_TO_HALT pins a vehicle in place, and a pin is not a timer that
+                // tidies up after itself -- the game keeps a halt on that vehicle until
+                // somebody says otherwise, which is what STOP_BRINGING_VEHICLE_TO_HALT is for
+                // and it was never called. So the drive task went out to a car the engine was
+                // still being told to hold still, and the cab sat there revving at a road it
+                // had been given perfectly good directions to.
+                //
+                // Worse, it was a dead heat by design: the halt is set for CabWaitMs and the
+                // send fires the instant CabWaitMs has elapsed. Even if the pin did expire on
+                // its own, this asks on the exact frame it would be doing it.
+                try { Function.Call(Hash.STOP_BRINGING_VEHICLE_TO_HALT, _cab.Handle); }
+                catch { /* older builds may not have it; the drive still goes out */ }
+
                 // Somewhere up the road, snapped to an actual street.
                 var ahead = _cab.Position + _cab.ForwardVector * 220f;
                 var away = World.GetNextPositionOnStreet(ahead);
                 if (away == Vector3.Zero) away = ahead;
+
+                // AND NOT A DESTINATION HE IS ALREADY ON. The stop radius below is twelve
+                // metres, so a node that snapped in close is a drive task that completes on
+                // the frame it is given -- the exact fault the delivery driver had, where he
+                // pulled out, went three metres and stopped dead. If there is nothing far
+                // enough away, wandering has no destination and cannot be satisfied on the
+                // spot, so he simply drives.
+                var far = _cab.Position.DistanceTo(away) > 40f;
 
                 _cabbie.Task.ClearAll();
 
                 Function.Call(Hash.OPEN_SEQUENCE_TASK, slot);
                 var seq = slot.GetResult<int>();
 
-                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, 0, _cab.Handle,
-                              away.X, away.Y, away.Z, 18f, 0, _cab.Model.Hash, 786603, 12f, 0f);
+                if (far)
+                {
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, 0, _cab.Handle,
+                                  away.X, away.Y, away.Z, 18f, 0, _cab.Model.Hash, 786603, 12f, 0f);
+                }
 
                 // And once it is out on a through road, wandering works.
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, 0, _cab.Handle, 18f, 786603);
