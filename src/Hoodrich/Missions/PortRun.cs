@@ -1139,11 +1139,21 @@ namespace Hoodrich.Missions
                     "what's the point, man's got a schedule.\n\nTruck's back, load's straight, " +
                     "that's the whole thing. Get your money.";
             }
-            else
+            else if (paid <= 6)
             {
                 said =
                     "Aye. You left the fence alone.\n\n...I don't like it. Feels wrong. Put it " +
                     "back how it was next time.\n\nGo on, get paid.";
+            }
+            else
+            {
+                // The gag has to land somewhere or it is just a loop with four voices. He was
+                // never going to let it go; he was going to itemise it.
+                said =
+                    "Before you say nothin' -- I done the math.\n\nSeven trucks. Six fences. " +
+                    "Mikey charge me two hundred a panel and he been chargin' me FRIEND rates.\n\n" +
+                    "So I took it out your money. It's still good money. But it's your fence " +
+                    "now, dawg, and I want you to feel that.";
             }
 
             var node = new DialogueNode("Gerald", said)

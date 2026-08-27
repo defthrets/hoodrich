@@ -39,8 +39,52 @@ namespace Hoodrich.Economy
             new Dictionary<string, Block>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Settings _cfg;
+        private readonly Random _rng = new Random();
+
+        /// <summary>Set by Main. Without either of these no tip ever goes out.</summary>
+        public Territory.ZoneMap Zones;
+        public Social.SocialFeed Social;
+
+        private int _nextTip;
 
         private int _last;
+
+        private string _hot = "";
+        private int _hotUntil;
+        private float _hotBoost = 1f;
+
+        /// <summary>Where it is busy tonight, or empty.</summary>
+        public string Hot => _hotUntil != 0 && Game.GameTime < _hotUntil ? _hot : "";
+
+        /// <summary>Real minutes left on it.</summary>
+        public float HotMinutesLeft =>
+            string.IsNullOrEmpty(Hot) ? 0f : Math.Max(0f, (_hotUntil - Game.GameTime) / 60_000f);
+
+        /// <summary>
+        /// Word gets round that somewhere is busy.
+        ///
+        /// THE OTHER DIRECTION, and it is what makes this class a map rather than a tax. On its
+        /// own, saturation only ever tells the player where NOT to be -- every block starts
+        /// perfect and the only information in the system is which ones you have spoiled. A
+        /// block that is briefly better than the others is a reason to go somewhere specific,
+        /// which is a different and much more interesting instruction.
+        /// </summary>
+        public void MakeHot(string zone, int lastsMs, float boost)
+        {
+            if (string.IsNullOrEmpty(zone)) return;
+
+            _hot = zone;
+            _hotUntil = Game.GameTime + Math.Max(60_000, lastsMs);
+            _hotBoost = boost < 1f ? 1f : boost > 2.5f ? 2.5f : boost;
+        }
+
+        /// <summary>Whether this is the block everybody is talking about.</summary>
+        public bool IsHot(string zone)
+        {
+            var h = Hot;
+            return !string.IsNullOrEmpty(h) && !string.IsNullOrEmpty(zone) &&
+                   string.Equals(h, zone, StringComparison.OrdinalIgnoreCase);
+        }
 
         public BlockDemand(Settings cfg)
         {
@@ -78,11 +122,16 @@ namespace Hoodrich.Economy
         {
             if (string.IsNullOrEmpty(zone) || !_cfg.BlockSaturationEnabled) return 1f;
 
+            // Busy tonight cuts through whatever you have already done to the place, but it
+            // does not erase it -- a block you have worked flat is still worked flat, it just
+            // has more people on it. The two terms multiply rather than one winning.
+            var busy = IsHot(zone) ? _hotBoost : 1f;
+
             Block b;
-            if (!_blocks.TryGetValue(zone, out b) || b.Worked <= 0f) return 1f;
+            if (!_blocks.TryGetValue(zone, out b) || b.Worked <= 0f) return busy;
 
             var m = 1f / (1f + b.Worked / Half);
-            return m < Floor ? Floor : m;
+            return (m < Floor ? Floor : m) * busy;
         }
 
         /// <summary>
@@ -152,8 +201,10 @@ namespace Hoodrich.Economy
         /// judging is "how long until I can come back", and they measure that in how long they
         /// have been away -- which is minutes of their evening, not whatever the sky is doing.
         /// </summary>
-        public void Update()
+        public void Update(string standingOn = "")
         {
+            Tip(standingOn);
+
             var now = Game.GameTime;
 
             if (_last == 0)
@@ -191,6 +242,63 @@ namespace Hoodrich.Economy
             if (cooled == null) return;
 
             for (var i = 0; i < cooled.Count; i++) _blocks.Remove(cooled[i]);
+        }
+
+        /// <summary>
+        /// Somewhere gets busy, and the feed is where you find out.
+        ///
+        /// The tip is the whole reason this is worth reading rather than a number in a menu:
+        /// the block it names is genuinely better for as long as it says, so driving over
+        /// because of something a stranger posted actually pays. That is the first time
+        /// anything on that feed has been worth acting on rather than worth having caused.
+        ///
+        /// It never names where he is already standing. A tip that says "here is good" is not
+        /// a tip, it is a compliment.
+        /// </summary>
+        private void Tip(string standingOn)
+        {
+            if (!_cfg.BlockTipsEnabled || Zones == null || Social == null) return;
+
+            var now = Game.GameTime;
+
+            if (_nextTip == 0)
+            {
+                _nextTip = now + (int)(_cfg.BlockTipEveryMinutes * 60_000f);
+                return;
+            }
+
+            if (now < _nextTip) return;
+            _nextTip = now + (int)(Math.Max(1f, _cfg.BlockTipEveryMinutes) * 60_000f);
+
+            if (!string.IsNullOrEmpty(Hot)) return;
+            if (_rng.NextDouble() * 100.0 >= _cfg.BlockTipChancePercent) return;
+
+            var codes = Zones.Codes;
+            if (codes == null || codes.Count == 0) return;
+
+            string code = null;
+
+            for (var tries = 0; tries < 8 && code == null; tries++)
+            {
+                var pick = codes[_rng.Next(codes.Count)];
+
+                if (string.IsNullOrEmpty(pick)) continue;
+                if (!string.IsNullOrEmpty(standingOn) &&
+                    string.Equals(pick, standingOn, StringComparison.OrdinalIgnoreCase)) continue;
+
+                code = pick;
+            }
+
+            if (code == null) return;
+
+            var info = Zones.Get(code);
+            var name = info != null && !string.IsNullOrEmpty(info.Name) ? info.Name : code;
+
+            MakeHot(code, (int)(Math.Max(2f, _cfg.BlockTipMinutes) * 60_000f), _cfg.BlockTipBoost);
+
+            Social.On(Hoodrich.Social.SocialEvent.Tipoff, name);
+
+            Log.Info("Tip-off: " + name + " busy for " + (int)_cfg.BlockTipMinutes + " min.");
         }
 
         /// <summary>Everything back on the table.</summary>

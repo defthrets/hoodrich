@@ -36,6 +36,16 @@ namespace Hoodrich.Social
         CopKilled,
 
         /// <summary>
+        /// Word going round that somewhere is busy tonight.
+        ///
+        /// NOT ABOUT HIM, which makes it the only event in here that is worth reading rather
+        /// than worth having done. The feed has a hundred and seventythree people on it saying
+        /// true things about a city, and none of it has ever once been a reason to drive
+        /// somewhere.
+        /// </summary>
+        Tipoff,
+
+        /// <summary>
         /// Somebody went through the house.
         ///
         /// Posted as him because it happened to him, which is the difference between this and

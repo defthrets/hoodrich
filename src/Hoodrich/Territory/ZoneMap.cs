@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using GTA;
@@ -35,6 +35,27 @@ namespace Hoodrich.Territory
             new Dictionary<string, ZoneInfo>(StringComparer.OrdinalIgnoreCase);
 
         public int Count => _byCode.Count;
+
+        /// <summary>
+        /// Every code it knows, for anything that wants to pick one at random.
+        ///
+        /// Built once and handed back as the same list, because the caller reads it on a timer
+        /// and rebuilding ninetyseven strings for that would be silly.
+        /// </summary>
+        public List<string> Codes
+        {
+            get
+            {
+                if (_codes != null) return _codes;
+
+                _codes = new List<string>(_byCode.Count);
+                foreach (var key in _byCode.Keys) _codes.Add(key);
+
+                return _codes;
+            }
+        }
+
+        private List<string> _codes;
 
         public ZoneInfo Get(string code)
         {

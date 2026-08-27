@@ -1367,6 +1367,11 @@ namespace Hoodrich
                 _payback.Social = _social;
                 _postUp.Social = _social;
                 _raid.Social = _social;
+                _blocks.Social = _social;
+
+                // Without the map there is nowhere to name, and Tip returns before it does
+                // anything -- which is a feature that ships doing nothing at all.
+                _blocks.Zones = _zoneMap;
                 _crew.Social = _social;
 
                 // Who said what, tallied per set. The feed knows the author of every post and
@@ -2011,7 +2016,7 @@ namespace Hoodrich
                     _cutting.Update();
                     _deadDrop.Update();
                     _market.Update(_drugs);
-                    _blocks.Update();
+                    _blocks.Update(_turf == null ? "" : _turf.ZoneCode);
                     _raid.Update();
                     _stash.Update();
                     _sleep.Update();

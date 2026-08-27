@@ -2275,11 +2275,15 @@ namespace Hoodrich.Wheel
             {
                 var worked = _pricing.Blocks.Saturation(_turf.ZoneCode);
 
-                page.Row("Trade here", _pricing.Blocks.Word(_turf.ZoneCode),
-                         worked < 0.25f ? Palette.Cash
+                page.Row("Trade here",
+                         _pricing.Blocks.IsHot(_turf.ZoneCode)
+                             ? "busy -- " + _pricing.Blocks.Word(_turf.ZoneCode)
+                             : _pricing.Blocks.Word(_turf.ZoneCode),
+                         _pricing.Blocks.IsHot(_turf.ZoneCode) ? Palette.Cash
+                             : worked < 0.25f ? Palette.Cash
                                         : worked < 0.5f ? (Color?)Palette.TextDim
                                                         : Palette.Warn,
-                         "weed.png");
+                         _pricing.Blocks.IsHot(_turf.ZoneCode) ? "footfall.png" : "weed.png");
             }
 
             // It is no longer only about this block, so it no longer says it is. The panel

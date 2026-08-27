@@ -178,6 +178,18 @@ namespace Hoodrich.Core
         /// <summary>How long you have got to get there.</summary>
         public float ColdCallMinutes = 8f;
 
+        /// <summary>Whether the feed ever tells you somewhere is busy.</summary>
+        public bool BlockTipsEnabled = true;
+
+        public float BlockTipEveryMinutes = 15f;
+        public float BlockTipChancePercent = 40f;
+
+        /// <summary>How long the named block stays busy.</summary>
+        public float BlockTipMinutes = 12f;
+
+        /// <summary>How much busier. 1.6 is noticeably worth the drive without being silly.</summary>
+        public float BlockTipBoost = 1.6f;
+
         // ---- risk --------------------------------------------------------------
 
         /// <summary>Base chance a completed sale draws police attention.</summary>
@@ -408,6 +420,16 @@ namespace Hoodrich.Core
                 Clamp(ini.GetFloat("Supply", "ColdCallChancePercent", s.ColdCallChancePercent), 0f, 100f);
             s.ColdCallMinutes =
                 Math.Max(2f, ini.GetFloat("Supply", "ColdCallMinutes", s.ColdCallMinutes));
+            s.BlockTipsEnabled =
+                ini.GetBool("Socials", "BlockTipsEnabled", s.BlockTipsEnabled);
+            s.BlockTipEveryMinutes =
+                Math.Max(1f, ini.GetFloat("Socials", "BlockTipEveryMinutes", s.BlockTipEveryMinutes));
+            s.BlockTipChancePercent =
+                Clamp(ini.GetFloat("Socials", "BlockTipChancePercent", s.BlockTipChancePercent), 0f, 100f);
+            s.BlockTipMinutes =
+                Math.Max(2f, ini.GetFloat("Socials", "BlockTipMinutes", s.BlockTipMinutes));
+            s.BlockTipBoost =
+                Clamp(ini.GetFloat("Socials", "BlockTipBoost", s.BlockTipBoost), 1f, 2.5f);
 
             s.PoliceBustChancePercent =
                 Clamp(ini.GetFloat("Risk", "PoliceBustChancePercent", s.PoliceBustChancePercent), 0f, 100f);

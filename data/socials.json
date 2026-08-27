@@ -3666,6 +3666,20 @@
       "Cleaned out. And I got people askin' me for a re-up today of all days",
       "Ain't nobody comfortable no more, not even indoors",
       "Note to self: a house is a house, it ain't a safe"
+    ],
+    "Tipoff": [
+      "{subject} is jumpin tonight. Whole strip is out",
+      "Something going on over {subject}. Ain't seen it this busy in months",
+      "if you got somethin to do, do it in {subject}. thats all im sayin",
+      "everybody and they mama out in {subject} right now",
+      "{subject} lookin like a whole event tonight",
+      "traffic through {subject} is mad. people just walkin about",
+      "whatever's happening in {subject}, i want in",
+      "my cousin says {subject} is the place to be. my cousin is usually wrong but",
+      "{subject} busy busy busy. take from that what you want",
+      "not one empty corner in {subject} tonight",
+      "somebody said theres somethin on in {subject}. nobody can tell me what",
+      "if you ain't in {subject} tonight where you at"
     ]
   },
   "voices": {
