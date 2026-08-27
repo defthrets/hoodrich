@@ -82,23 +82,19 @@ namespace Hoodrich.Core
                 // So the clock is pushed forward for as long as anything that could do damage
                 // is still down. A tap is unaffected; a hold is simply held off until it ends,
                 // which is what the comment at the top always claimed happened.
-                if (Down(Control.Attack) || Down(Control.Attack2) ||
-                    Down(Control.MeleeAttack1) || Down(Control.MeleeAttack2) ||
-                    Down(Control.MeleeAttackAlternate) ||
+                //
+                // Asked of the whole family through Fists rather than of a list typed out here,
+                // because a list typed out here is what the last round of this was: it named
+                // three melee controls, none of which were the one swinging, and the guard held
+                // off inputs nobody was pressing while the punch went through underneath it.
+                if (Fists.AnyDown() ||
                     Down(Control.Enter) || Down(Control.VehicleExit) ||
                     Down(Control.PhoneCancel) || Down(Control.PhoneSelect))
                 {
                     _until = Game.GameTime + HoldMs;
                 }
 
-                Game.DisableControlThisFrame(Control.Attack);
-                Game.DisableControlThisFrame(Control.Attack2);
-                Game.DisableControlThisFrame(Control.Aim);
-                Game.DisableControlThisFrame(Control.MeleeAttack1);
-                Game.DisableControlThisFrame(Control.MeleeAttack2);
-                Game.DisableControlThisFrame(Control.MeleeAttackAlternate);
-                Game.DisableControlThisFrame(Control.VehicleAttack);
-                Game.DisableControlThisFrame(Control.VehicleAttack2);
+                Fists.Off();
 
                 // And the two that put you somewhere rather than hurt somebody: B on a pad is
                 // both "back" and "get out of the car", and Enter is both "pick this" and

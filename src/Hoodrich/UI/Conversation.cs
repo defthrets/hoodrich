@@ -703,20 +703,14 @@ namespace Hoodrich.UI
         /// Every control that swings or fires. There are NINE of them.
         ///
         /// The list here had four, which is why walking out of a conversation threw a fist:
-        /// Backspace and pad B land on MeleeAttackLight and MeleeAttackAlternate, and neither
-        /// was in it. Exactly the same four were missing from the phone.
+        /// Backspace and pad B land on MeleeAttackLight and MeleeAttackAlternate, which is the
+        /// whole reason backing out of anything threw a punch. That was found here and fixed
+        /// here, and the nine screens with their own hand-typed lists never heard about it --
+        /// so the list now lives in Core.Fists and this is a name for calling it.
         /// </summary>
         private static void Swing()
         {
-            Game.DisableControlThisFrame(Control.Attack);
-            Game.DisableControlThisFrame(Control.Attack2);
-            Game.DisableControlThisFrame(Control.MeleeAttack1);
-            Game.DisableControlThisFrame(Control.MeleeAttack2);
-            Game.DisableControlThisFrame(Control.MeleeAttackLight);
-            Game.DisableControlThisFrame(Control.MeleeAttackHeavy);
-            Game.DisableControlThisFrame(Control.MeleeAttackAlternate);
-            Game.DisableControlThisFrame(Control.MeleeBlock);
-            Game.DisableControlThisFrame(Control.VehicleMeleeHold);
+            Core.Fists.Off();
         }
 
         /// <summary>
@@ -735,7 +729,6 @@ namespace Hoodrich.UI
         {
             Swing();
 
-            Game.DisableControlThisFrame(Control.Aim);
             Game.DisableControlThisFrame(Control.Jump);
             Game.DisableControlThisFrame(Control.Enter);
             Game.DisableControlThisFrame(Control.Phone);

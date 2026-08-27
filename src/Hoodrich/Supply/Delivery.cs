@@ -675,9 +675,7 @@ namespace Hoodrich.Supply
         private void HoldThePhone(Ped player)
         {
             Game.DisableControlThisFrame(Control.Phone);
-            Game.DisableControlThisFrame(Control.Aim);
-            Game.DisableControlThisFrame(Control.Attack);
-            Game.DisableControlThisFrame(Control.Attack2);
+            Core.Fists.Off();
             Game.DisableControlThisFrame(Control.SelectWeapon);
         }
 

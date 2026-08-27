@@ -464,9 +464,7 @@ namespace Hoodrich.UI
 
         private static void LockControls()
         {
-            Game.DisableControlThisFrame(Control.Attack);
-            Game.DisableControlThisFrame(Control.Attack2);
-            Game.DisableControlThisFrame(Control.Aim);
+            Core.Fists.Off();
             Game.DisableControlThisFrame(Control.Jump);
             Game.DisableControlThisFrame(Control.Sprint);
             Game.DisableControlThisFrame(Control.Context);

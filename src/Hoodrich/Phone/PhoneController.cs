@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Keys = System.Windows.Forms.Keys;
 using Control = GTA.Control;
 using GTA;
@@ -645,29 +645,19 @@ namespace Hoodrich.Phone
         /// There are NINE of these and the first pass disabled four, which is why closing the
         /// phone swung a fist: Backspace and pad B both land on melee inputs that were not in
         /// the list, so the press that put the handset away went straight through to Franklin.
-        /// Attack and MeleeAttack1/2 are the obvious ones; MeleeAttackLight, MeleeAttackHeavy,
-        /// MeleeAttackAlternate and MeleeBlock are the ones that actually fire on a pad.
+        /// Kept as a name rather than inlined, because "stop him swinging" is what the call
+        /// sites mean and TickQuiet's whole job is to say it again a frame later. The list it
+        /// used to hold lives in Core.Fists now -- it was right here and wrong in nine other
+        /// places, which is the wrong way round for a list nine screens depend on.
         /// </summary>
         private static void Swing()
         {
-            Game.DisableControlThisFrame(Control.Attack);
-            Game.DisableControlThisFrame(Control.Attack2);
-            Game.DisableControlThisFrame(Control.MeleeAttack1);
-            Game.DisableControlThisFrame(Control.MeleeAttack2);
-            Game.DisableControlThisFrame(Control.MeleeAttackLight);
-            Game.DisableControlThisFrame(Control.MeleeAttackHeavy);
-            Game.DisableControlThisFrame(Control.MeleeAttackAlternate);
-            Game.DisableControlThisFrame(Control.MeleeBlock);
-            Game.DisableControlThisFrame(Control.VehicleMeleeHold);
+            Core.Fists.Off();
         }
 
         private static void LockControlsThisFrame()
         {
             Swing();
-
-            Game.DisableControlThisFrame(Control.Aim);
-            Game.DisableControlThisFrame(Control.VehicleAttack);
-            Game.DisableControlThisFrame(Control.VehicleAttack2);
 
             Game.DisableControlThisFrame(Control.SelectNextWeapon);
             Game.DisableControlThisFrame(Control.SelectPrevWeapon);
