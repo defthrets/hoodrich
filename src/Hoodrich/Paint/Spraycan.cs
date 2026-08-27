@@ -91,18 +91,36 @@ namespace Hoodrich.Paint
         /// </summary>
         public void Update(bool spraying, bool aiming)
         {
+            // OFF MEANS INERT, NOT "OFF BUT STILL TIDYING UP".
+            //
+            // PaintEnabled is checked here as well as in the sprayer, and it gets its own
+            // branch rather than being folded into the one below, because the two cases want
+            // opposite behaviour.
+            //
+            // Switched off, this must stop touching the weapon at all -- Posted Up runs the
+            // same engine and may well be using that weapon for its own can, and two scripts
+            // taking turns to show and hide one model every frame is a flicker with no
+            // visible cause. So the teardown runs ONCE and then this leaves the world alone.
+            if (!_cfg.PaintEnabled)
+            {
+                Away();
+                return;
+            }
+
             if (!_cfg.SprayCanLook || !Can.Out())
             {
                 Away();
 
-                // KEPT VISIBLE, not merely restored once. Anything that re-equips the weapon
-                // -- a cutscene, an arrest, another script -- can put the model back to
-                // whatever it last was, and a one-shot restore leaves him holding an
-                // invisible extinguisher with nothing on screen to explain it.
+                // Kept visible here, though, rather than restored once: the mod is ON and the
+                // extinguisher is its business, so anything that re-equips it -- a cutscene,
+                // an arrest -- must not be able to leave him holding an invisible one.
                 if (Can.Out()) Show();
 
                 return;
             }
+
+            // Anything past here is the mod working, so the next teardown has work to do.
+            _down = false;
 
             Ready();
 
@@ -296,10 +314,19 @@ namespace Hoodrich.Paint
             }
         }
 
-        /// <summary>Can gone, weapon visible again.</summary>
+        /// <summary>Whether the teardown has already run, so it is not redone every tick.</summary>
+        private bool _down;
+
+        /// <summary>Can gone, weapon visible again. Safe to call every tick; does the work once.</summary>
         public void Away()
         {
             _spraying = false;
+
+            // Idempotent, because the off branch above calls this on every single tick for as
+            // long as the mod is switched off. Without the latch that is two STOP_ANIM_TASKs
+            // and a visibility call sixty times a second, forever, for a mod doing nothing.
+            if (_down) return;
+            _down = true;
 
             try
             {
