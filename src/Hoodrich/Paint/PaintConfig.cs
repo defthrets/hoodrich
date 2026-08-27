@@ -41,14 +41,18 @@
         /// and a pile of paint in one spot when you hold still. See Continuous.
         /// </summary>
         /// <remarks>
-        /// Down from 22, with Overlap up to match. THE GAME'S DECAL POOL IS THE SCARCE THING
-        /// HERE -- a few hundred for the whole world, and no setting in this file changes it --
-        /// so every decal spent on overlap nobody can see is a decal not available to the next
-        /// wall. At 22 and 0.38 a five-second tag cost about 220 decals and roughly two of them
-        /// fit on screen; at 15 and 0.62 it costs about 150, and the spacing is still well
-        /// under half a mark's width at every sweep speed. Same line, a third more tags.
+        /// BACK TO 22 AFTER A DETOUR. It was cut to 15 to fit more tags in the game's decal
+        /// pool, and that bought about one extra tag at the cost of a line you could see
+        /// through -- which is the wrong trade, because a patchy tag does not look like less
+        /// paint, it looks broken.
+        ///
+        /// Worth knowing which knob does what: at ordinary sweep speeds the RATE decides the
+        /// spacing and Overlap changes nothing, because the gap between dabs is already wider
+        /// than the fill step. Overlap only bites when the reticle is moving fast -- which is
+        /// exactly where the patchiness showed -- so it is set tighter than it ever was while
+        /// costing nothing at all when you are working slowly.
         /// </remarks>
-        public float Rate = 15f;
+        public float Rate = 22f;
 
         /// <summary>
         /// Whether the gap between one splatter and the next is filled in.
@@ -68,7 +72,7 @@
         /// Below about 0.5 they overlap into a solid band. Higher reads as a dotted trail,
         /// which is a legitimate look but not the one this is for.
         /// </summary>
-        public float Overlap = 0.62f;
+        public float Overlap = 0.30f;
 
         /// <summary>
         /// The most marks one dab may fill in.
