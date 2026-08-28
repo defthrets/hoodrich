@@ -61,6 +61,31 @@ namespace Hoodrich.UI
         private const int OpenGraceMs = 220;
 
         /// <summary>
+        /// The masthead, treated exactly as the standalone's panel treats its own.
+        ///
+        /// THE SAME LOOK, NOT THE SAME WORD. Everything below is lifted from Picker on purpose:
+        /// the mark sprays itself on when the screen opens, never sits still, and glows in
+        /// whatever is loaded in the can while the letters stay white. Two front ends onto one
+        /// engine should not feel like two mods.
+        ///
+        /// The numbers are copied rather than shared because they live in a different assembly.
+        /// If they move there they should move here, and the whole point is lost if they drift.
+        /// </summary>
+        private const int SprayFrames = 8;
+        private const int SprayFrameMs = 45;
+
+        private const float RockDegrees = 1.6f;
+        private const double RockMs = 2600.0;
+        private const float BobHeight = 0.0035f;
+        private const double BobMs = 4100.0;
+
+        private const int GlowDirs = 8;
+        private const int GlowRings = 2;
+        private const float GlowRadius = 0.0035f;
+        private const float GlowStrength = 0.30f;
+        private const double GlowMs = 2900.0;
+
+        /// <summary>
         /// The rack, which lives in the paint engine rather than here.
         ///
         /// It used to be a pair of arrays in this file and another pair in Overspray's F3
@@ -306,8 +331,58 @@ namespace Hoodrich.UI
             //
             // Falls back to the typed word, because a panel with a hole where its name goes is
             // worse than a plain heading.
-            if (!Hud.File("graffiti.png", left + width * 0.5f, y + LogoH * 0.5f,
-                          Hud.ToX(LogoH) * LogoAspect, LogoH, 0f, Palette.Text))
+            var logoW = Hud.ToX(LogoH) * LogoAspect;
+
+            var clock = Game.GameTime;
+
+            // Never still. Under two degrees and three thousandths of the screen -- small
+            // enough that nobody reading a row notices, big enough that the header is not a
+            // dead sticker when they do look at it. Two periods that do not divide into each
+            // other, so it never quite repeats.
+            var spin = (float)Math.Sin(clock / RockMs * Math.PI * 2.0) * RockDegrees;
+            var bob = (float)Math.Sin(clock / BobMs * Math.PI * 2.0) * BobHeight;
+
+            var mx = left + width * 0.5f;
+            var my = y + LogoH * 0.5f + bob;
+
+            var frame = Spraying();
+            var lit = frame ?? "graffiti.png";
+
+            // ---- the glow, in whatever is loaded ----
+            //
+            // OFFSETS AND NOT A SCALE. A wordmark is four times wider than it is tall, so
+            // growing it puts four times as many pixels on its width as its height -- a
+            // horizontal smear rather than a halo. Offsets are the same distance every way.
+            //
+            // Through Legible, so black -- a real choice on this rack -- glows a light grey
+            // rather than glowing nothing at all against a near-black screen.
+            var breath = 0.72f + 0.28f * (float)Math.Sin(clock / GlowMs * Math.PI * 2.0);
+            var halo = Legible(Colour);
+
+            for (var ring = GlowRings; ring >= 1; ring--)
+            {
+                var soft = GlowStrength * (1f - (ring - 1) / (float)GlowRings) * breath;
+
+                var ry = GlowRadius * ring;
+                var rx = Hud.ToX(ry);
+
+                for (var d = 0; d < GlowDirs; d++)
+                {
+                    var a = d * Math.PI * 2.0 / GlowDirs;
+
+                    Hud.File(lit,
+                             mx + (float)Math.Cos(a) * rx,
+                             my + (float)Math.Sin(a) * ry,
+                             logoW, LogoH, spin,
+                             Color.FromArgb((int)(halo.A * soft), halo.R, halo.G, halo.B));
+                }
+            }
+
+            // And the mark itself on top, crisp and WHITE. The colour is the glow and the mark
+            // is the word: drawn in the loaded colour too, the header becomes one hue and stops
+            // reading as a wordmark at all.
+            if ((frame == null || !Hud.File(frame, mx, my, logoW, LogoH, spin, Palette.Text)) &&
+                !Hud.File("graffiti.png", mx, my, logoW, LogoH, spin, Palette.Text))
             {
                 Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Text,
                          Hud.FontCursive, centre: false);
@@ -496,6 +571,24 @@ namespace Hoodrich.UI
             Hud.TextRight(hint, right, y + 0.011f, 0.24f,
                           warn ? Palette.Danger : active ? Legible(Colour) : Palette.TextDim,
                           Hud.FontLabel);
+        }
+
+        /// <summary>
+        /// Which frame of the reveal is up, or null once the mark is just the mark.
+        ///
+        /// Once per open and no more. The standalone re-sprayed its mark every few seconds for
+        /// a while and it turned an arrival into a tic -- the header redrawing itself while you
+        /// are trying to read the row underneath it.
+        ///
+        /// The frames are the SAME CANVAS as graffiti.png, uncropped, so handing over to it at
+        /// the end is invisible. Cropped to their own ink each one would be a different shape
+        /// drawn into the same box, and the word would slide about and jump on the last step.
+        /// </summary>
+        private string Spraying()
+        {
+            var i = (Game.GameTime - _openedAt) / SprayFrameMs;
+
+            return i >= 0 && i < SprayFrames ? "graffiti_" + i + ".png" : null;
         }
 
         /// <summary>
