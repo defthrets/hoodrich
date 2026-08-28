@@ -253,6 +253,37 @@
         public float Opacity = 1f;
 
         /// <summary>
+        /// Whether paint starts to run when you hold it on one spot.
+        ///
+        /// THE ONE THING A CAN DOES THAT NOTHING ELSE DOES. Everything else here is about
+        /// where paint lands; this is about there being too much of it in one place, which is
+        /// the mistake every real tag has somewhere on it.
+        /// </summary>
+        public bool Drips = true;
+
+        /// <summary>How long the spray has to stay on one spot before it starts to run.</summary>
+        public int DripAfterMs = 1000;
+
+        /// <summary>
+        /// How far the reticle may wander and still count as the same spot.
+        ///
+        /// Generous rather than tight. A hand on a stick is never still, and a threshold that
+        /// only a perfectly steady aim could hold is a feature nobody would ever see.
+        /// </summary>
+        public float DripArea = 0.28f;
+
+        /// <summary>How often a running drip creeps further down, and by how far.</summary>
+        public int DripStepMs = 85;
+        public float DripStep = 0.030f;
+
+        /// <summary>How long a run gets before it stops, and how many one spot will produce.</summary>
+        public float DripLength = 0.50f;
+        public int DripRuns = 3;
+
+        /// <summary>How wide a drip is, against the spray mark that started it.</summary>
+        public float DripWidth = 0.42f;
+
+        /// <summary>
         /// The decal type used when the thing hit is a VEHICLE, or 0 to use the same one as
         /// everything else.
         ///

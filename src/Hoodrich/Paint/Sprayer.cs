@@ -196,6 +196,11 @@ namespace Hoodrich.Paint
                 // Lifting the trigger breaks the line. Without this, letting go, walking
                 // across the street and pressing again draws a stroke between the two.
                 _hasLast = false;
+
+                // And it ends the dwell. Coming back to the same wall later starts the clock
+                // again -- a drip is what one long press does, not what a spot remembers.
+                _dwelling = false;
+                _running = false;
             }
 
             Spraying = spraying;
@@ -393,10 +398,130 @@ namespace Hoodrich.Paint
 
             Put(at, into, side, size, hit.Entity);
 
+            Running(hit, at, into, size);
+
             _lastAt = at;
             _lastNormal = hit.Normal;
             _hasLast = true;
         }
+
+        /// <summary>
+        /// Too much paint in one place, and what it does about it.
+        ///
+        /// A drip is not decoration here -- it is the only thing in the whole engine that
+        /// punishes holding the trigger, and holding the trigger is otherwise free. Sweeping
+        /// gives a clean line and sitting still gives a run, which is the same bargain a real
+        /// can offers.
+        ///
+        /// NOT ON FLOORS AND NOT ON CEILINGS. Down-the-surface is world-down with the part
+        /// facing out of the wall taken off it, so on anything close to level there is nothing
+        /// left of it and no drip starts. That is correct rather than a special case: paint
+        /// does not run down a pavement.
+        /// </summary>
+        private void Running(Hit hit, Vector3 at, Vector3 into, float size)
+        {
+            if (!_cfg.Drips) return;
+
+            var now = Game.GameTime;
+
+            // Moved on: this is a new spot, and whatever was running from the old one stops
+            // where it got to rather than following the reticle across the wall.
+            if (!_dwelling || _dwellAt.DistanceToSquared(at) > _cfg.DripArea * _cfg.DripArea)
+            {
+                _dwelling = true;
+                _dwellAt = at;
+                _dwellFrom = now;
+                _runsHere = 0;
+                _running = false;
+
+                return;
+            }
+
+            if (_running)
+            {
+                Creep(now);
+                return;
+            }
+
+            if (now - _dwellFrom < _cfg.DripAfterMs) return;
+            if (_runsHere >= _cfg.DripRuns) return;
+
+            // Straight down the face of whatever was hit.
+            var n = hit.Normal;
+            var down = new Vector3(0f, 0f, -1f);
+
+            down = down - n * Vector3.Dot(down, n);
+
+            if (down.LengthSquared() < 0.04f) return;   // level enough that nothing would run
+
+            down.Normalize();
+
+            // Started a little off centre, and somewhere different each time, so three runs off
+            // one spot are three runs rather than one drawn three times.
+            var side = Surface.Along(n, (float)(_rng.NextDouble() * Math.PI * 2.0));
+
+            _runAt = at + side * (float)((_rng.NextDouble() - 0.5) * size * 1.2);
+            _runDown = down;
+            _runInto = into;
+            _runNormal = n;
+            _runEntity = hit.Entity;
+            _runLen = 0f;
+            _runSize = size * _cfg.DripWidth;
+            _nextRunStep = now;
+            _running = true;
+            _runsHere++;
+        }
+
+        /// <summary>
+        /// One drip, crawling.
+        ///
+        /// PLACED A STEP AT A TIME rather than drawn as a finished line, because a drip that
+        /// appears whole is a shape and a drip that arrives over half a second is paint moving.
+        /// It also narrows as it goes and beads at the end, which is what gravity does to a
+        /// run that is running out of paint.
+        /// </summary>
+        private void Creep(int now)
+        {
+            if (now < _nextRunStep) return;
+
+            _nextRunStep = now + _cfg.DripStepMs;
+            _runLen += _cfg.DripStep;
+
+            var over = _runLen / Math.Max(0.01f, _cfg.DripLength);
+
+            if (over > 1f)
+            {
+                _running = false;
+                return;
+            }
+
+            // Thinning as it goes, then a bead where it stops -- the last of the paint pooling
+            // at the bottom of the run instead of the line simply ending.
+            var taper = 1f - 0.45f * over;
+            var bead = over > 0.86f ? 1.45f : 1f;
+
+            var spot = _runAt + _runDown * _runLen;
+            var side = Surface.Along(_runNormal, (float)(_rng.NextDouble() * Math.PI * 2.0));
+
+            Put(spot, _runInto, side, _runSize * taper * bead, _runEntity);
+        }
+
+        // ---- running paint ----
+        //
+        // Two things are being tracked and they are not the same thing. The DWELL is how long
+        // the spray has been on one spot, which is what decides that there is too much paint
+        // there. The RUN is one drip crawling down from it, which has its own life and keeps
+        // going for as long as it has left even while the dwell continues.
+        private Vector3 _dwellAt;
+        private int _dwellFrom;
+        private bool _dwelling;
+        private int _runsHere;
+
+        private bool _running;
+        private Vector3 _runAt, _runDown, _runInto, _runNormal;
+        private float _runLen, _runSize;
+        private int _nextRunStep;
+        private int _runEntity;
 
         private readonly Random _rng = new Random();
 
