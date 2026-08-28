@@ -253,6 +253,19 @@
         public float Opacity = 1f;
 
         /// <summary>
+        /// Whether police who SEE you tagging book you for it.
+        ///
+        /// One star, which in this game is the arrest: officers pursue and cuff, and only from
+        /// two do they draw. Held at one for as long as a can is the worst thing in your hands,
+        /// because a chase escalates on its own the moment you run and a tag should not become
+        /// a firefight.
+        ///
+        /// Pull an actual gun in front of them and the cap comes off. What happens next is the
+        /// game's business and it is not going to be an arrest.
+        /// </summary>
+        public bool CopsCare = true;
+
+        /// <summary>
         /// Whether a swept stroke is drawn as STRETCHED decals rather than a chain of round
         /// ones. Reversible: false is exactly what the mod did before.
         ///

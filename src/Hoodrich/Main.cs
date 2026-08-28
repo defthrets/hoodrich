@@ -590,6 +590,7 @@ namespace Hoodrich
 
                 _marks = new Paint.Marks(_paint);
                 _sprayer = new Paint.Sprayer(_paint, _marks);
+                _law = new Paint.Law(_paint);
                 _spraycan = new Paint.Spraycan(_paint);
                 _graffiti = new GraffitiScreen(_paint, _marks);
 
@@ -2265,6 +2266,9 @@ namespace Hoodrich
                     _marks.Sweep();
                     PaintChatter();
 
+                    // And the law's opinion of him, which is a different thing entirely.
+                    Booked();
+
                     // The street's opinion of a man with a can, instead of running from him.
                     _street.Update(Paint.Can.Out() && _paint.PaintEnabled && _paint.Armed);
 
@@ -2536,6 +2540,60 @@ namespace Hoodrich
             {
                 // Never let a look at the camera be the thing that stops the phone opening.
                 return false;
+            }
+        }
+
+        private Paint.Law _law;
+        private bool _capped;
+
+        /// <summary>
+        /// One star while an officer can see him tagging, and no more than one.
+        ///
+        /// THROUGH LawHold, NOT THROUGH THE NATIVE. Two systems each pushing SET_MAX_WANTED_LEVEL
+        /// behind the other's back is the precise bug LawHold was written to have fixed once, and
+        /// a gang war holding the police off entirely outranks a man with a spray can. Cap does
+        /// nothing while anything holds, which is exactly right: nothing is more capped than off.
+        ///
+        /// THE CAP IS THE FEATURE. The star on its own is useless -- a one-star chase climbs to
+        /// two the moment he runs, and at two they draw. Holding the ceiling at one for as long
+        /// as a can is the worst thing in his hands is what makes this an arrest.
+        ///
+        /// And it only ever raises TO one. Already wanted for something real and it keeps its
+        /// hands off: a man with three stars has bigger problems than a wall, and dropping him
+        /// to one because he is holding a can would be the mod rescuing him from the game.
+        /// </summary>
+        private void Booked()
+        {
+            if (_law == null) return;
+
+            _law.Update(_sprayer != null && _sprayer.Spraying);
+
+            try
+            {
+                if (_law.Drawn || !_law.Watching)
+                {
+                    if (_capped)
+                    {
+                        LawHold.Uncap();
+                        _capped = false;
+                    }
+
+                    return;
+                }
+
+                if (Game.Player.WantedLevel > 1) return;
+
+                if (!_capped)
+                {
+                    LawHold.Cap(1);
+                    _capped = true;
+                }
+
+                if (Game.Player.WantedLevel < 1) Game.Player.WantedLevel = 1;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not book him: " + ex.Message);
             }
         }
 
