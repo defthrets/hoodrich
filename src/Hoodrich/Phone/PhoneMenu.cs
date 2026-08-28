@@ -102,6 +102,22 @@ namespace Hoodrich.Phone
         private const int PopMs = 150;
 
         /// <summary>
+        /// The sway on the icon of whatever you are hovering.
+        ///
+        /// FROM _movedAt, so it starts upright every time the cursor lands rather than being
+        /// caught mid-swing on a clock that never stopped. A tile you have just arrived at
+        /// should begin at rest and set off, not be found already leaning.
+        ///
+        /// It arrives with a kick and settles to a steady sway -- the same shape as the can's
+        /// shake and for the same reason: something that starts at its resting amplitude reads
+        /// as an idle loop, and something that overshoots and settles reads as having been
+        /// nudged by you.
+        /// </summary>
+        private const double SwayMs = 1150.0;
+        private const float SwayDegrees = 5f;
+        private const int SwayKickMs = 420;
+
+        /// <summary>
         /// And how far it grows.
         ///
         /// Deliberately smaller than half the gap between tiles, RIM INCLUDED, so a grown tile
@@ -883,24 +899,27 @@ namespace Hoodrich.Phone
             // is the only tile with a shape you can actually read, so it is the only one that
             // gets the treatment.
             //
-            // SPRITE corners on the live tile, and it took three goes to arrive back here.
+            // RECTANGLE corners, at four bands each. The sprite version is gone and the
+            // reason it was ruled out the first time turned out to be the reason it had to go
+            // the second: A RUNTIME TEXTURE FLOATS ABOVE ANY RECTANGLE DRAWN AFTER IT, and
+            // that was waved away here on the grounds that nothing overlaps a tile.
             //
-            // Per-row rectangles are the smoothest a stack of rectangles gets, and they were
-            // affordable right up until they were not: one tile's four corners is a hundred and
-            // thirty-seven rectangles, and with the handset's three shells already spending
-            // four hundred and sixty on the same trick the frame ran past GTA's ceiling. Over
-            // it, the game throws away whatever was issued LAST -- and RoundRect issues its
-            // corners after its flats, so the tile arrived as a full-width middle band with
-            // narrow strips above and below it. Four square bites out of the corners. Which is
-            // precisely what has been getting reported, and why redrawing the geometry never
-            // once helped: the geometry was right and never made it to the screen.
+            // Two things do. The corner discs came up through the tile's own fill, so the live
+            // app wore four visible circles at its corners -- and they outlived the phone
+            // itself, still on screen for the frame after it closed, because a sprite in that
+            // later pass is not cleared by the rectangles below it going away.
             //
-            // The sprite costs FOUR calls, out of a different budget entirely, and is a real
-            // anti-aliased circle rather than a staircase. The reason it was ruled out here --
-            // that a runtime texture floats above any rectangle drawn after it -- does not
-            // apply to this shape: the only rectangle that follows is the shimmer, and that is
-            // inset clear of the corners on purpose. Tiles do not overlap each other.
-            if (on) Hud.RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade), sprite: true);
+            // Per-row rectangles were what blew the budget before: 208 for one tile at this
+            // radius, on top of the handset's shells, past GTA's ceiling -- and over it the
+            // game silently drops whatever was issued LAST, which is a rounded rect's corners,
+            // which is why it kept coming out with four square bites in it.
+            //
+            // Six-pixel bands are the middle that was never tried: four bands per corner, 32
+            // rectangles rather than 208, on a 13-pixel radius where four steps is a curve
+            // and not a staircase. Peak goes to about 355 in a frame, against the 460 that
+            // broke it.
+            if (on) Hud.RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade),
+                                  sprite: false, steps: 6);
             else Hud.RectFrom(gx, gy, gw, gh, Fade(back, fade));
 
             if (on) Sheen(gx, gy, gw, gh, fade, TileRound);
@@ -928,7 +947,21 @@ namespace Hoodrich.Phone
             var named = y + h - 0.024f;
             var badged = named - 0.019f;
 
-            Art(item, x + w * 0.5f, y + h * 0.31f, 0.042f, Fade(ink, fade));
+            // The hovered app's icon sways. Only the hovered one: a grid where every icon
+            // moves is a grid with nothing to look at, and the whole job of this is to say
+            // which one the cursor is on.
+            var sway = 0f;
+
+            if (on)
+            {
+                var since = Game.GameTime - _movedAt;
+
+                var kick = since < SwayKickMs ? 1f + (1f - since / (float)SwayKickMs) : 1f;
+
+                sway = (float)Math.Sin(since / SwayMs * Math.PI * 2.0) * SwayDegrees * kick;
+            }
+
+            Art(item, x + w * 0.5f, y + h * 0.31f, 0.042f, Fade(ink, fade), sway);
 
             // A badge when the tile has something to say -- a count, a price, a "3 waiting".
             // The wheel put this in its hub; a grid has no hub, so it goes with the name.
@@ -1100,17 +1133,18 @@ namespace Hoodrich.Phone
         /// own texture if it has finished streaming, then a blip drawn as TEXT because blip
         /// sprites address the map and cannot be handed to DRAW_SPRITE, then the plain glyph.
         /// </summary>
-        private static void Art(WheelItem item, float cx, float cy, float size, Color c)
+        private static void Art(WheelItem item, float cx, float cy, float size, Color c,
+                                float spin = 0f)
         {
             if (!string.IsNullOrEmpty(item.IconFile))
             {
-                if (Hud.File(item.IconFile, cx, cy, size, 0f, c)) return;
+                if (Hud.File(item.IconFile, cx, cy, size, spin, c)) return;
             }
 
             if (item.HasIcon)
             {
                 var w = Hud.ToX(size) * (item.IconAspect <= 0f ? 1f : item.IconAspect);
-                Hud.Sprite(item.IconDict, item.IconTexture, cx, cy, w, size, 0f, c);
+                Hud.Sprite(item.IconDict, item.IconTexture, cx, cy, w, size, spin, c);
                 return;
             }
 
