@@ -112,11 +112,11 @@
         /// is worked a foot from the wall and an extinguisher is a pressure vessel you stand
         /// back from. Sharing one curve made one of the two wrong.
         ///
-        ///     0.6m and nearer  ->  0.04m across (the floor)
-        ///     1m               ->  0.09m
-        ///     2m               ->  0.26m
-        ///     3m               ->  0.47m
-        ///     4m               ->  0.72m, and it stops there
+        ///     0.5m and nearer  ->  0.025m across (the floor)
+        ///     1m               ->  0.07m
+        ///     1.5m             ->  0.13m
+        ///     2m               ->  0.20m
+        ///     2.5m             ->  0.28m, and it stops there
         ///
         /// A BLOOM RATHER THAN A CONE, and this is the one place the two tools genuinely
         /// disagree about physics. The extinguisher is a straight line because it is a jet
@@ -124,17 +124,22 @@
         /// back off, so its power is 1.5 -- which halves the mark at a metre and leaves four
         /// metres exactly where it was.
         ///
-        /// Solved for the far end deliberately: k = 0.72 / 4^1.5. Picking the near end and
-        /// letting the far end fall where it may is how you end up re-tuning the whole thing
-        /// every time one end of it feels wrong.
+        /// Solved for the far end deliberately, the same way each time it has moved: pick what
+        /// the longest shot should be and derive k from it. Picking the near end and letting
+        /// the far end fall where it may is how you end up re-tuning the whole thing every
+        /// time one end of it feels wrong.
+        ///
+        /// Brought in from four metres to 2.5, and about a fifth finer at every distance with
+        /// it. Four metres was a range you could paint a garage door from; this is a can you
+        /// work close to a wall with, which is what a can is.
         /// </summary>
         public bool SprayCanLook = true;
 
-        public float CanRange = 4f;
-        public float CanSizeAtOneMetre = 0.09f;
+        public float CanRange = 2.5f;
+        public float CanSizeAtOneMetre = 0.07f;
         public float CanSpreadPower = 1.5f;
-        public float CanMinSize = 0.04f;
-        public float CanMaxSize = 0.75f;
+        public float CanMinSize = 0.025f;
+        public float CanMaxSize = 0.30f;
 
         // ---- whichever is in his hand -------------------------------------------
 
