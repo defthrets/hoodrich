@@ -101,6 +101,9 @@ namespace Hoodrich.Paint
         private int _type;
         private int _nextSweep;
         private int _refused;
+
+        /// <summary>How many nearby marks could not get a decal last sweep. See Sweep.</summary>
+        private int _stuck;
         private bool _proved;
 
         public Marks(PaintConfig cfg)
@@ -521,6 +524,8 @@ namespace Hoodrich.Paint
             var drop = FarEnough * FarEnough;
             var restore = NearEnough * NearEnough;
 
+            var stuck = 0;
+
             for (var i = 0; i < _marks.Count; i++)
             {
                 var m = _marks[i];
@@ -536,7 +541,39 @@ namespace Hoodrich.Paint
                 if (m.Away && d < restore)
                 {
                     m.Handle = Place(m);
+
+                    // THE SAME FALLBACK PLACING HAS ALWAYS HAD, and its absence here is why
+                    // tags came back cut off and why old ones stopped coming back at all.
+                    //
+                    // Put asks Recycle for a slot when the pool refuses; this did not. So the
+                    // restore filled the pool with whatever it reached first -- and the list is
+                    // oldest first, so that is the START of a piece -- and then every remaining
+                    // mark failed, stayed away, and failed again on the next sweep. Walking up
+                    // to an old tag with a full pool did nothing at all, because nothing was
+                    // ever asked to make room for it.
+                    //
+                    // Recycle only takes from marks a good margin further away than this one,
+                    // so the nearest paint wins and two marks cannot evict each other.
+                    if (m.Handle == 0 && Recycle(m.At)) m.Handle = Place(m);
+
                     m.Away = m.Handle == 0;
+
+                    if (m.Away) stuck++;
+                }
+            }
+
+            // SAID WHEN IT CHANGES, not every sweep. Paint that is near enough to be on the
+            // wall and is not is the one thing this class exists to prevent, and "some of my
+            // tag is missing" is impossible to act on without a number.
+            if (stuck != _stuck)
+            {
+                _stuck = stuck;
+
+                if (stuck > 0)
+                {
+                    Log.Info(stuck + " mark(s) near you cannot get on the wall -- the game's " +
+                             "decal pool is full. Nothing is lost; they go back up as you " +
+                             "move and free slots.");
                 }
             }
         }
