@@ -39,16 +39,22 @@
     /// fine this can gets and the caps stay relative to it. Tune the can and all three move
     /// together, which is the point of tuning the can.
     ///
-    /// Roughly doubling each step, which is about right: the gap between a skinny and a stock
-    /// is the same kind of gap as between a stock and a fat.
+    /// Doubling each step, which is about right: the gap between a skinny and a stock is the
+    /// same kind of gap as between a stock and a fat.
+    ///
+    /// THE WHOLE LADDER MOVED UP ONE. What used to be the stock cap is the thin one now, what
+    /// used to be fat is the stock, and the fat cap is new and twice the old fat again. That
+    /// was done by raising CanMinSize rather than by rewriting these three numbers, so the
+    /// ratios stay a plain doubling and there is still exactly one place saying how fine this
+    /// can gets.
     /// </summary>
     internal static class Caps
     {
         public static readonly Cap[] All =
         {
             new Cap("thin",  1.0f),
-            new Cap("stock", 2.2f),
-            new Cap("fat",   4.4f)
+            new Cap("stock", 2.0f),
+            new Cap("fat",   4.0f)
         };
 
         /// <summary>Whichever one that index means, with anything out of range treated as thin.</summary>

@@ -144,7 +144,15 @@
         public float CanRange = 2.5f;
         public float CanSizeAtOneMetre = 0.07f;
         public float CanSpreadPower = 1.5f;
-        public float CanMinSize = 0.025f;
+        /// <summary>
+        /// The finest line the can can draw -- the thin cap's floor, which the other two
+        /// multiply. Every cap moves when this does.
+        ///
+        /// WAS 0.025. The whole ladder moved up a step: the old stock cap is the thin one now,
+        /// the old fat is the stock, and there is a new fat above both. Done here rather than
+        /// by rewriting the multipliers in Caps, so those stay a plain doubling.
+        /// </summary>
+        public float CanMinSize = 0.055f;
         public float CanMaxSize = 0.30f;
 
         // ---- whichever is in his hand -------------------------------------------
