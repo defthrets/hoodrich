@@ -240,7 +240,15 @@ namespace Hoodrich.Paint
         /// <summary>What he should be doing with the can right now.</summary>
         private string Want(bool spraying, bool aiming)
         {
-            if (spraying) return Spray;
+            // THE SPRAY CLIP IS AUTHORED FOR A CAMERA BEHIND HIM. It swings the arm across the
+            // body, which is what painting a wall looks like from outside and is exactly wrong
+            // from inside his own head: the can leaves the frame and travels off to the left
+            // while paint keeps appearing under a reticle it is no longer anywhere near.
+            //
+            // So in first person he holds the ready pose instead -- can up, nozzle at the
+            // wall, which is where a hand actually is when it is spraying something in front
+            // of it. Nothing about the paint changes; this is only which arm animation plays.
+            if (spraying) return FirstPerson() ? Idle : Spray;
 
             // Arm up only while he is actually aiming. That is the pose the spray comes out
             // of, so holding it means he is ready -- and the rest of the time it is just a
@@ -264,6 +272,29 @@ namespace Hoodrich.Paint
             // rather than a habit, and the resting clip is what the shake is authored to fall
             // back into -- so the two together look like somebody idly keeping it mixed.
             return Rest;
+        }
+
+        /// <summary>
+        /// Whether he is looking out of his own eyes.
+        ///
+        /// Two questions, because they are genuinely different states: the view mode covers
+        /// somebody playing in first person, and the aim cam covers somebody in third person
+        /// whose weapon put them into a first-person sight -- and both put the camera in a
+        /// place where a swinging arm reads as the can wandering off.
+        /// </summary>
+        private static bool FirstPerson()
+        {
+            try
+            {
+                // 4 is FIRST_PERSON. 0-2 are the third-person distances, 3 is cinematic.
+                if (Function.Call<int>(Hash.GET_FOLLOW_PED_CAM_VIEW_MODE) == 4) return true;
+
+                return Function.Call<bool>(Hash.IS_FIRST_PERSON_AIM_CAM_ACTIVE);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>Whether a given clip is still running, since anything can interrupt one.</summary>
