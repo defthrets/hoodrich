@@ -102,20 +102,27 @@ namespace Hoodrich.Phone
         private const int PopMs = 150;
 
         /// <summary>
-        /// The sway on the icon of whatever you are hovering.
+        /// The jiggle on the icon of whatever you are hovering.
+        ///
+        /// A JIGGLE AND NOT A SWAY. The first version leaned five degrees over a second and a
+        /// sixth, which is a slow lean -- graceful, and it read as the tile breathing rather
+        /// than as the thing under your cursor being alive. Three and a bit a second is the
+        /// rate that reads as a shiver.
+        ///
+        /// TWO PERIODS THAT DO NOT DIVIDE INTO EACH OTHER, the smaller one a third the weight
+        /// of the larger. On a single sine an icon at this rate is a metronome and the eye
+        /// finds the loop immediately; at 300 and 470 the two drift in and out of step and it
+        /// never quite repeats.
         ///
         /// FROM _movedAt, so it starts upright every time the cursor lands rather than being
-        /// caught mid-swing on a clock that never stopped. A tile you have just arrived at
-        /// should begin at rest and set off, not be found already leaning.
-        ///
-        /// It arrives with a kick and settles to a steady sway -- the same shape as the can's
-        /// shake and for the same reason: something that starts at its resting amplitude reads
-        /// as an idle loop, and something that overshoots and settles reads as having been
-        /// nudged by you.
+        /// caught mid-swing on a clock that never stopped -- and it arrives with a kick and
+        /// settles, which is the difference between a tile that idles and one that has just
+        /// been nudged by you.
         /// </summary>
-        private const double SwayMs = 1150.0;
-        private const float SwayDegrees = 5f;
-        private const int SwayKickMs = 420;
+        private const double JiggleMs = 300.0;
+        private const double JiggleOffMs = 470.0;
+        private const float JiggleDegrees = 6f;
+        private const int JiggleKickMs = 380;
 
         /// <summary>
         /// And how far it grows.
@@ -956,9 +963,12 @@ namespace Hoodrich.Phone
             {
                 var since = Game.GameTime - _movedAt;
 
-                var kick = since < SwayKickMs ? 1f + (1f - since / (float)SwayKickMs) : 1f;
+                var kick = since < JiggleKickMs ? 1f + (1f - since / (float)JiggleKickMs) : 1f;
 
-                sway = (float)Math.Sin(since / SwayMs * Math.PI * 2.0) * SwayDegrees * kick;
+                var a = (float)Math.Sin(since / JiggleMs * Math.PI * 2.0);
+                var b = (float)Math.Sin(since / JiggleOffMs * Math.PI * 2.0);
+
+                sway = (a + b * 0.35f) * JiggleDegrees * kick;
             }
 
             Art(item, x + w * 0.5f, y + h * 0.31f, 0.042f, Fade(ink, fade), sway);

@@ -255,11 +255,17 @@
         /// <summary>
         /// Whether paint starts to run when you hold it on one spot.
         ///
-        /// THE ONE THING A CAN DOES THAT NOTHING ELSE DOES. Everything else here is about
-        /// where paint lands; this is about there being too much of it in one place, which is
-        /// the mistake every real tag has somewhere on it.
+        /// OFF. They were built, tried twice -- dotted, then solid as a single stretched
+        /// decal -- and taken out. The machinery is all still here behind this one flag rather
+        /// than deleted, because the stretched decal it taught us about is the interesting part
+        /// and Marks.Streak now exists because of it.
+        ///
+        /// What they did, for whoever turns this back on: a second on one spot started a run,
+        /// and a run was one decal 30mm by 220mm, taken down and put back longer ten times over
+        /// so it visibly travelled. Never on anything within twelve degrees of level, because
+        /// paint does not run down a pavement.
         /// </summary>
-        public bool Drips = true;
+        public bool Drips;
 
         /// <summary>How long the spray has to stay on one spot before it starts to run.</summary>
         public int DripAfterMs = 1000;
