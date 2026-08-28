@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using GTA;
 using GTA.Native;
 using Hoodrich.Core;
@@ -43,6 +44,55 @@ namespace Hoodrich.Weapons
         private readonly WeaponRegistry _guns;
 
         private int _next;
+
+        /// <summary>
+        /// What was last seen bolted to a gun. Read WHILE HE STILL HAS IT -- by the time the
+        /// locker notices one is missing there is nothing left to ask.
+        /// </summary>
+        private List<string> PartsFor(string weapon)
+        {
+            var want = weapon + "|";
+
+            for (var i = 0; i < _state.GunParts.Count; i++)
+            {
+                var row = _state.GunParts[i];
+
+                if (row == null || !row.StartsWith(want, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var bits = row.Split('|');
+                var parts = new List<string>();
+
+                for (var b = 1; b < bits.Length; b++)
+                {
+                    if (!string.IsNullOrEmpty(bits[b])) parts.Add(bits[b]);
+                }
+
+                return parts;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Writes down what is on one, replacing whatever was there.
+        ///
+        /// RECORDED EVEN WHEN IT IS EMPTY, so taking a scope OFF is remembered as well as
+        /// putting one on. Without the empty row he would be handed his old scope back on every
+        /// reload for the rest of the save.
+        /// </summary>
+        private void Remember(string weapon, List<string> parts)
+        {
+            if (_state == null || parts == null) return;
+
+            var want = weapon + "|";
+
+            _state.GunParts.RemoveAll(
+                r => r != null && r.StartsWith(want, StringComparison.OrdinalIgnoreCase));
+
+            _state.GunParts.Add(weapon + "|" + string.Join("|", parts.ToArray()));
+
+            _state.Touch();
+        }
 
         public GunLocker(PlayerState state, WeaponRegistry guns)
         {
@@ -115,6 +165,7 @@ namespace Hoodrich.Weapons
             }
 
             var back = 0;
+            var parts = 0;
 
             for (var i = 0; i < _state.GunsBought.Count; i++)
             {
@@ -126,7 +177,13 @@ namespace Hoodrich.Weapons
                     var hash = Function.Call<uint>(Hash.GET_HASH_KEY, name);
                     if (hash == 0) continue;
 
-                    if (Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, hash, false)) continue;
+                    if (Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, hash, false))
+                    {
+                        // He has it, so this is the moment to write down what is on it. Once the
+                        // gun goes, its components go with it and there is nothing left to read.
+                        Remember(name, Attachments.On(me, name));
+                        continue;
+                    }
 
                     // Ammunition is his problem. Zero would be a gun he cannot fire and a
                     // trip back to Stretch for rounds he already thought he had, so it comes
@@ -135,6 +192,11 @@ namespace Hoodrich.Weapons
 
                     var def = _guns == null ? null : _guns.Get(hash);
                     if (def != null) ExtendedClips.GiveTo(me, def.Id);
+
+                    // And everything he had bolted to it. The clip above is the one part the
+                    // shop sells; this is the scope, grip, suppressor and light he fitted
+                    // himself, which came back missing every time until now.
+                    parts += Attachments.GiveTo(me, name, PartsFor(name));
 
                     back++;
                 }
@@ -146,7 +208,8 @@ namespace Hoodrich.Weapons
 
             if (back <= 0) return;
 
-            Log.Info("Locker: handed back " + back + " gun" + (back == 1 ? "" : "s") + ".");
+            Log.Info("Locker: handed back " + back + " gun" + (back == 1 ? "" : "s") +
+                     (parts > 0 ? " with " + parts + " part(s) back on them" : "") + ".");
 
             UI.Notify.Ticker("~g~Your pieces are still yours.~s~  " + back +
                              (back == 1 ? " gun" : " guns") + " back off the shelf.");

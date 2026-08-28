@@ -350,6 +350,16 @@ namespace Hoodrich.State
         public readonly List<string> GunsBought = new List<string>();
 
         /// <summary>
+        /// What is bolted to each of them, as "WEAPON_X|COMPONENT_A|COMPONENT_B".
+        ///
+        /// FLAT STRINGS RATHER THAN A SHAPE, to match GunsBought sitting next to it and because
+        /// the save reader treats a missing key as an empty list -- so an old save loads with no
+        /// parts recorded and the next scan fills them in from the guns he is actually carrying.
+        /// Nothing to migrate.
+        /// </summary>
+        public readonly List<string> GunParts = new List<string>();
+
+        /// <summary>
         /// Cars you have actually paid for, and enough about each to stand it back up.
         ///
         /// CarsBought is only a list of ids, and its whole job is stopping Hao restocking
@@ -541,6 +551,7 @@ namespace Hoodrich.State
             LeadersMet.Clear();
             CarsBought.Clear();
             GunsBought.Clear();
+            GunParts.Clear();
             Owned.Clear();
 
             SeenWelcome = false;
@@ -805,6 +816,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json GunPartsJson()
+        {
+            var arr = Json.Array();
+            foreach (var row in GunParts) arr.Add(Json.Str(row));
+            return arr;
+        }
+
         private Json GunsJson()
         {
             var arr = Json.Array();
@@ -904,6 +922,7 @@ namespace Hoodrich.State
                 .Set("leadersMet", LeadersJson())
                 .Set("carsBought", CarsJson())
                 .Set("gunsBought", GunsJson())
+                .Set("gunParts", GunPartsJson())
                 .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson());
@@ -964,6 +983,7 @@ namespace Hoodrich.State
 
                 CarsBought.Clear();
             GunsBought.Clear();
+            GunParts.Clear();
             Owned.Clear();
                 Owned.Clear();
 
@@ -990,6 +1010,14 @@ namespace Hoodrich.State
                 {
                     var id = node.AsString("");
                     if (!string.IsNullOrEmpty(id) && !CarsBought.Contains(id)) CarsBought.Add(id);
+                }
+
+                GunParts.Clear();
+
+                foreach (var node in doc["gunParts"].Items)
+                {
+                    var row = node.AsString("");
+                    if (!string.IsNullOrEmpty(row)) GunParts.Add(row);
                 }
 
                 GunsBought.Clear();
