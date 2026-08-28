@@ -102,6 +102,25 @@ namespace Hoodrich.Phone
         private const int PopMs = 150;
 
         /// <summary>
+        /// The tiles are SQUARE, and everything below is what replaced the rounding.
+        ///
+        /// Rounding a 13-pixel corner out of rectangles is four bands of three pixels, and it
+        /// looked like four bands of three pixels. Out of a sprite it is smooth and floats
+        /// above the fill, because a runtime texture draws in a later pass -- which is where
+        /// the circles on the apps came from, and why they outlived the phone closing.
+        ///
+        /// There is no third way to round a corner here. So they are square, and the effort
+        /// goes into things rectangles are actually good at: a shadow to lift the tile off the
+        /// body, a hairline border, and a light that runs around the live one.
+        /// </summary>
+        private const float TileShadow = 0.0028f;
+        private const float TileEdge = 0.0020f;
+
+        /// <summary>How long the light takes to go once round, and how much of the way it covers.</summary>
+        private const int RunnerMs = 1500;
+        private const float RunnerFrac = 0.16f;
+
+        /// <summary>
         /// The jiggle on the icon of whatever you are hovering.
         ///
         /// A JIGGLE AND NOT A SWAY. The first version leaned five degrees over a second and a
@@ -868,37 +887,17 @@ namespace Hoodrich.Phone
             var gw = w + popX * 2f;
             var gh = h + pop * 2f;
 
-            // A green rim on the live one, concentric with it rather than beside it, so the
-            // set's colour marks the tile you are pointing at without becoming a second shape.
-            // NO SEPARATE RIM. One shape, and this is the third go at it.
+            // ---- shadow, fill, border ----
             //
-            // A bright outline under a darker fill needs the two to agree about where the
-            // corner is, and they cannot: Hud.Disc snaps its rows to a pixel grid anchored on
-            // each disc's OWN centre, and these two centres sit a few pixels apart. So the ring
-            // came out even down the straight edges and blobbed at the corners -- which is what
-            // has been getting reported as circles on the apps.
-            //
-            // A solid fill has nothing to line up with. The live app is simply green.
-            if (false)
-            {
-                var rim = 0.0026f;
-                var rimX = Hud.ToX(rim);
+            // The shadow is what a square tile has instead of a corner: it lifts the tile off
+            // the body so the grid reads as objects rather than as panels painted on. Behind
+            // every tile, not just the live one, because a grid where only one thing casts a
+            // shadow is a grid where only one thing is real.
+            Hud.RectFrom(gx + Hud.ToX(TileShadow), gy + TileShadow, gw, gh,
+                         Fade(Color.FromArgb(150, 0, 0, 0), fade));
 
-                // Stacked corners, not the sprite, for the same reason the handset uses them.
-                //
-                // This one shape on the whole screen is drawn UNDERNEATH something else -- the
-                // tile fill goes straight over it and only the rim's margin is meant to show.
-                // A sprite corner does not stay under a rectangle, so the four corners of the
-                // rim came up through the fill and the live app wore four green rings while
-                // its straight edges showed nothing at all.
-                //
-                // Every other tile keeps the sprite: a tile fill has only its own icon and
-                // label on top, and both of those are sprites and text, which do layer.
-                Hud.RoundRect(gx - rimX, gy - rim, gw + rimX * 2f, gh + rim * 2f,
-                          TileRound + rim, Fade(LitEdge, fade), sprite: false, steps: 14);
-            }
-
-            // Rounded only when it can be SEEN.
+            // Old comment kept because it is still true: a quiet tile is near-black at alpha
+            // 200 on a near-black body, and nobody has ever been able to make out its edges.
             //
             // A quiet tile is near-black at alpha 200 on a near-black body -- its corners are
             // a difference nobody has ever been able to make out, and rounding all seven of
@@ -925,11 +924,20 @@ namespace Hoodrich.Phone
             // rectangles rather than 208, on a 13-pixel radius where four steps is a curve
             // and not a staircase. Peak goes to about 355 in a frame, against the 460 that
             // broke it.
-            if (on) Hud.RoundRect(gx, gy, gw, gh, TileRound, Fade(back, fade),
-                                  sprite: false, steps: 6);
-            else Hud.RectFrom(gx, gy, gw, gh, Fade(back, fade));
+            Hud.RectFrom(gx, gy, gw, gh, Fade(back, fade));
 
-            if (on) Sheen(gx, gy, gw, gh, fade, TileRound);
+            // A hairline border on the live one, and a light that runs round it.
+            if (on)
+            {
+                Edge(gx, gy, gw, gh, TileEdge, Fade(LitEdge, fade));
+                Runner(gx, gy, gw, gh, TileEdge, fade);
+            }
+
+            // No inset any more. The shimmer used to be held out of the corners because it
+            // is a square band and the tile was not -- every pass painted the four patches the
+            // rounding had deliberately left empty and the live app grew square ears twice a
+            // second. On a square tile the band and the shape agree, so it can run edge to edge.
+            if (on) Sheen(gx, gy, gw, gh, fade);
 
             x = gx;
             y = gy;
@@ -1143,6 +1151,81 @@ namespace Hoodrich.Phone
         /// own texture if it has finished streaming, then a blip drawn as TEXT because blip
         /// sprites address the map and cannot be handed to DRAW_SPRITE, then the plain glyph.
         /// </summary>
+        /// <summary>A hairline border, as four rectangles.</summary>
+        private static void Edge(float x, float y, float w, float h, float t, Color c)
+        {
+            var tx = Hud.ToX(t);
+
+            Hud.RectFrom(x, y, w, t, c);
+            Hud.RectFrom(x, y + h - t, w, t, c);
+            Hud.RectFrom(x, y + t, tx, h - t * 2f, c);
+            Hud.RectFrom(x + w - tx, y + t, tx, h - t * 2f, c);
+        }
+
+        /// <summary>
+        /// A light running round the border of the live tile.
+        ///
+        /// WALKED IN HEIGHT UNITS, both axes, or it would crawl along the top and sprint down
+        /// the side: w is a fraction of screen WIDTH and h a fraction of screen HEIGHT, and on
+        /// a 16:9 screen those are not the same distance. Converting the width to height units
+        /// first is what makes the speed constant all the way round.
+        ///
+        /// One or two rectangles. The segment only ever spans two edges at a corner, so the
+        /// walk is clipped to the edge it started on and the remainder drawn on the next.
+        /// </summary>
+        private static void Runner(float x, float y, float w, float h, float t, int fade)
+        {
+            var wide = w * 16f / 9f;                 // the width, in height units
+            var loop = (wide + h) * 2f;
+
+            var head = (Game.GameTime % RunnerMs) / (float)RunnerMs * loop;
+            var run = loop * RunnerFrac;
+
+            var c = Fade(Color.FromArgb(255, 255, 255, 255), (int)(fade * 0.55f));
+
+            var tx = Hud.ToX(t);
+
+            // Two passes, because a segment sitting on a corner belongs to two edges.
+            for (var pass = 0; pass < 2 && run > 0f; pass++)
+            {
+                var at = head % loop;
+                var left = run;
+
+                if (at < wide)                        // along the top, left to right
+                {
+                    var span = Math.Min(left, wide - at);
+                    Hud.RectFrom(x + at * 9f / 16f, y, span * 9f / 16f, t, c);
+                    left -= span;
+                }
+                else if (at < wide + h)               // down the right
+                {
+                    var d = at - wide;
+                    var span = Math.Min(left, h - d);
+                    Hud.RectFrom(x + w - tx, y + d, tx, span, c);
+                    left -= span;
+                }
+                else if (at < wide * 2f + h)          // back along the bottom
+                {
+                    var d = at - wide - h;
+                    var span = Math.Min(left, wide - d);
+                    Hud.RectFrom(x + w - (d + span) * 9f / 16f, y + h - t, span * 9f / 16f, t, c);
+                    left -= span;
+                }
+                else                                   // up the left
+                {
+                    var d = at - wide * 2f - h;
+                    var span = Math.Min(left, h - d);
+                    Hud.RectFrom(x, y + h - (d + span), tx, span, c);
+                    left -= span;
+                }
+
+                if (left <= 0f) break;
+
+                head += run - left;
+                run = left;
+            }
+        }
+
         private static void Art(WheelItem item, float cx, float cy, float size, Color c,
                                 float spin = 0f)
         {
