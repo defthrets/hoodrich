@@ -175,6 +175,31 @@
         public float Opacity = 1f;
 
         /// <summary>
+        /// Which decal texture the SPRAY CAN lays down. 0 means the same one the extinguisher
+        /// uses, which is 1030 splatters_paint.
+        ///
+        /// The texture is what a mark actually looks like, and there is no way to author one
+        /// from a script -- PATCH_DECAL_DIFFUSE_MAP exists but Rockstar never call it anywhere
+        /// in their own scripts, so there is no valid dictionary and texture name to hand it.
+        /// Choosing between the ones the game already ships is the whole of the control there
+        /// is over the shape of a mark.
+        ///
+        /// Worth knowing before changing it: THE COLOUR ARGUMENTS MULTIPLY THE TEXTURE rather
+        /// than replacing it. 1030 is authored pale, which is why an arbitrary colour comes out
+        /// as that colour. Anything authored dark or strongly coloured tints everything toward
+        /// itself -- mud is brown, so red over it is a rust and blue over it is a murk.
+        ///
+        ///     1030  splatters_paint   pale, speckled, takes colour honestly. The default.
+        ///     1020  splatters_mud     bigger, wetter blobs. Fuller coverage, brown cast.
+        ///     1040  splatters_water   faint. Barely marks a wall.
+        ///     1010  splatters_blood   red, and it looks it.
+        ///
+        /// Marks remember which one they were placed with, so changing this leaves everything
+        /// already on a wall alone.
+        /// </summary>
+        public int CanDecal = 1030;
+
+        /// <summary>
         /// How hard the two metallics scatter, as a multiplier on their built-in sheen.
         ///
         /// 1 is as shipped. 0 turns chrome into flat grey paint and gold into flat mustard,

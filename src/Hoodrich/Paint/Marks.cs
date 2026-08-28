@@ -17,6 +17,15 @@ namespace Hoodrich.Paint
         public float Size;
         public float R, G, B;
 
+        /// <summary>
+        /// Which decal type actually put it on the wall.
+        ///
+        /// Per mark rather than per session, because the can and the extinguisher can now be
+        /// using different ones -- and a mark restored with the wrong type is a mud splat
+        /// where the player left paint.
+        /// </summary>
+        public int Type;
+
         /// <summary>The handle the game last gave it, so a stale one can be cleaned up.</summary>
         public int Handle;
 
@@ -79,6 +88,16 @@ namespace Hoodrich.Paint
             _cfg = cfg;
         }
 
+        /// <summary>
+        /// The decal type the tool about to paint would prefer, or 0 for whatever works.
+        ///
+        /// Set by the sprayer before each mark, because the two tools may not agree: the can
+        /// can be told to lay mud while the extinguisher stays on paint. A preference, not an
+        /// instruction -- if the game will not place it, the ladder still runs and something
+        /// goes on the wall.
+        /// </summary>
+        public int Wanted;
+
         public int Count => _marks.Count;
 
         /// <summary>Which decal the install actually has, once something has placed.</summary>
@@ -140,13 +159,40 @@ namespace Hoodrich.Paint
         /// <summary>Puts one up, trying each decal type until the game accepts one.</summary>
         private int Place(Mark m)
         {
-            for (var i = 0; i < Types.Length; i++)
-            {
-                var type = Types[i];
+            // A MARK THAT HAS ALREADY BEEN ON A WALL GOES BACK AS ITSELF, which is why this
+            // is not simply the ladder. The sweep takes distant marks down and puts them back
+            // as you return, and without this a mud tag comes back as paint.
+            //
+            // Failing that, whatever the tool about to paint asked for. Failing THAT, the
+            // ladder -- an install that will not take the asked-for type should still show
+            // something rather than leave a gap where the player's work was.
+            //
+            // Walked rather than built, at index -1, because this runs for every mark and a
+            // fresh array per decal at three hundred a second is litter for the collector to
+            // pick up mid-spray.
+            var first = m.Type > 0 ? m.Type : Wanted;
 
-                // Once one has worked, stop asking the others -- every refusal is a wasted call
-                // and there are a lot of these.
-                if (_type > 0 && type != _type) continue;
+            for (var i = -1; i < Types.Length; i++)
+            {
+                int type;
+
+                if (i < 0)
+                {
+                    if (first == 0) continue;
+                    type = first;
+                }
+                else
+                {
+                    type = Types[i];
+
+                    // Already tried above.
+                    if (type == first) continue;
+
+                    // Once one has worked, stop asking the others -- every refusal is a wasted
+                    // call and there are a lot of these. Only applies to the ladder: a tool
+                    // that asked for something gets to ask for it every time.
+                    if (_type > 0 && type != _type) continue;
+                }
 
                 int handle;
 
@@ -202,7 +248,13 @@ namespace Hoodrich.Paint
                     }
                 }
 
-                if (_type != type)
+                // What the mark is, from now on and through a save.
+                m.Type = type;
+
+                // The session's fallback story is about the LADDER, not about a tool that asked
+                // for something unusual. Somebody testing mud on the can has not discovered
+                // that their install lacks the paint decal.
+                if (_type != type && first == 0)
                 {
                     _type = type;
 
@@ -485,7 +537,10 @@ namespace Hoodrich.Paint
                     .Set("ix", Math.Round(m.Into.X, 3)).Set("iy", Math.Round(m.Into.Y, 3)).Set("iz", Math.Round(m.Into.Z, 3))
                     .Set("sx", Math.Round(m.Side.X, 3)).Set("sy", Math.Round(m.Side.Y, 3)).Set("sz", Math.Round(m.Side.Z, 3))
                     .Set("w", Math.Round(m.Size, 3))
-                    .Set("r", Math.Round(m.R, 3)).Set("g", Math.Round(m.G, 3)).Set("b", Math.Round(m.B, 3)));
+                    .Set("r", Math.Round(m.R, 3)).Set("g", Math.Round(m.G, 3)).Set("b", Math.Round(m.B, 3))
+                    // Only when it differs from the session's own. Most marks match it, and
+                    // ten bytes each across fifty thousand is half a megabyte of saying so.
+                    .Set("t", m.Type == _type ? 0 : m.Type));
             }
 
             var doc = Json.Object();
@@ -512,7 +567,11 @@ namespace Hoodrich.Paint
                     Size = node["w"].AsFloat(0.4f),
                     R = node["r"].AsFloat(1f),
                     G = node["g"].AsFloat(1f),
-                    B = node["b"].AsFloat(1f)
+                    B = node["b"].AsFloat(1f),
+
+                    // Absent, zero, or matching means the session's own -- which is what every
+                    // file written before mud was an option says.
+                    Type = node["t"].AsInt(0)
                 };
 
                 // Left off the wall. The sweep puts back whatever is near enough to matter,

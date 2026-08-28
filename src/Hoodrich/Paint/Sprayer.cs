@@ -262,6 +262,10 @@ namespace Hoodrich.Paint
         /// </summary>
         private void Put(Vector3 at, Vector3 into, Vector3 side, float size)
         {
+            // Which texture this tool wants. Set here rather than once per session because the
+            // player can swap tools between one mark and the next.
+            _marks.Wanted = _cfg.SprayCanLook ? _cfg.CanDecal : 0;
+
             var c = Shade();
 
             _marks.Put(at, into, side, size, c.R / 255f, c.G / 255f, c.B / 255f);
