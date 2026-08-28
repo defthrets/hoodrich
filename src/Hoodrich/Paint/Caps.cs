@@ -22,6 +22,14 @@
             Name = name;
             Width = width;
         }
+
+        /// <summary>
+        /// The art for it, in data\icons.
+        ///
+        /// Built here rather than in each front end, because there are two of those and a
+        /// filename assembled by hand in both is a filename that gets renamed in one.
+        /// </summary>
+        public string Icon { get { return "cap_" + Name + ".png"; } }
     }
 
     /// <summary>

@@ -369,8 +369,7 @@ namespace Hoodrich.UI
             // A cap sets the NARROWEST line the can can draw, not the widest -- a fat one
             // cannot do fine work however close you hold it, while the far end stays governed
             // by how far off the wall you are standing.
-            Button(x, right, y, _row == Row.Cap, "SPRAY CAP",
-                   Caps.At(_cfg.Cap).Name.ToUpperInvariant(), false);
+            CapRow(x, right, y);
 
             y += ButtonH;
 
@@ -391,6 +390,60 @@ namespace Hoodrich.UI
 
             Hud.Text("UP/DOWN  MOVE      LEFT/RIGHT  CHANGE      ENTER  TAKE IT      BACKSPACE  BACK",
                      x, top + height - 0.028f, 0.22f, Palette.TextDim, Hud.FontLabel, centre: false);
+        }
+
+        /// <summary>
+        /// The cap row: three little buttons rather than a word.
+        ///
+        /// A WORD IS THE WRONG CONTROL FOR THIS. "STOCK" says nothing about what it does until
+        /// you have tried all three and remembered, where three holes at three sizes say it
+        /// before you press anything -- and the hole IS the setting, because a cap is only ever
+        /// the narrowest line the can can draw.
+        ///
+        /// Drawn the same way every other icon in this mod is: white art on transparent,
+        /// tinted at draw time, so one file is both the dim one and the loaded colour.
+        /// </summary>
+        private void CapRow(float x, float right, float y)
+        {
+            var active = _row == Row.Cap;
+
+            // The row by the same hand that draws the others, with the hint left empty --
+            // three pictures are about to sit where that word would have been.
+            Button(x, right, y, active, "SPRAY CAP", "", false);
+
+            var caps = Caps.All;
+
+            var side = ButtonH - 0.012f;
+            var wide = Hud.ToX(side);
+            var gap = Hud.ToX(0.004f);
+
+            var edge = right;
+            var top = y + (ButtonH - side) * 0.5f;
+
+            for (var i = caps.Length - 1; i >= 0; i--)
+            {
+                var left = edge - wide;
+                var on = i == _cfg.Cap;
+
+                // A lit plate behind the chosen one and nothing behind the others -- a ring
+                // round all three would make this row louder than the swatches above it.
+                if (on) Hud.RectFrom(left, top, wide, side, Color.FromArgb(58, 255, 255, 255));
+
+                var tint = on ? Legible(Colour) : Palette.TextDim;
+
+                if (!Hud.File(caps[i].Icon, left + wide * 0.5f, top + side * 0.5f,
+                              wide * 0.80f, side * 0.80f, 0f, tint))
+                {
+                    // No art in data\icons. A plain square at the cap's own scale is the icon
+                    // with its ring taken off, and still says which of the three this is.
+                    var d = side * 0.22f * (float)Math.Sqrt(caps[i].Width);
+
+                    Hud.RectFrom(left + (wide - Hud.ToX(d)) * 0.5f, top + (side - d) * 0.5f,
+                                 Hud.ToX(d), d, tint);
+                }
+
+                edge = left - gap;
+            }
         }
 
         private void Button(float x, float right, float y, bool active, string label,
