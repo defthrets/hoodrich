@@ -210,6 +210,9 @@ namespace Hoodrich.Paint
                 // again -- a drip is what one long press does, not what a spot remembers.
                 _dwelling = false;
                 _running = false;
+
+                // A stroke does not continue across a lifted trigger either.
+                _streaking = false;
             }
 
             Spraying = spraying;
@@ -435,13 +438,108 @@ namespace Hoodrich.Paint
                 }
             }
 
+            // ---- one stretched decal instead of a run of round ones ----
+            //
+            // The saving only exists if a streak REPLACES the dabs rather than joining them, so
+            // this returns without laying the round mark below when it lays one.
+            //
+            // It waits for the reticle to travel far enough to be worth stretching. A tick is
+            // 15ms and the hand moves a millimetre or two in that time, so placing a streak per
+            // tick would be a chain of round-ish stamps again and cost exactly what it did
+            // before. StreakIdleMs is the floor underneath that: stand still and the reticle
+            // never travels, so without it holding the trigger on a wall would paint nothing.
+            if (_cfg.StrokeStreaks && Streaked(hit, at, into, size))
+            {
+                Running(hit, at, into, size);
+
+                _lastAt = at;
+                _lastNormal = hit.Normal;
+                _hasLast = true;
+                return;
+            }
+
             Put(at, into, side, size, hit.Entity);
+            _paintedAt = Game.GameTime;
 
             Running(hit, at, into, size);
 
             _lastAt = at;
             _lastNormal = hit.Normal;
             _hasLast = true;
+        }
+
+        /// <summary>
+        /// Lays the stroke as one stretched decal, or says it did not.
+        ///
+        /// Returns true when it put something down, in which case the caller must NOT also lay
+        /// its round mark -- that is the entire saving and it is easy to lose.
+        /// </summary>
+        private bool Streaked(Hit hit, Vector3 at, Vector3 into, float size)
+        {
+            var now = Game.GameTime;
+
+            // A new stroke: nothing to stretch from yet.
+            if (!_streaking || !_hasLast || Vector3.Dot(_lastNormal, hit.Normal) < 0.94f)
+            {
+                _streaking = true;
+                _streakFrom = at;
+
+                return false;
+            }
+
+            var span = _streakFrom.DistanceTo(at);
+
+            // Not far enough to be worth stretching. Let the round mark happen -- but only if
+            // one is due, or a slow hand puts down sixty a second and saves nothing.
+            if (span < size * _cfg.StreakStep)
+            {
+                return now - _paintedAt < _cfg.StreakIdleMs;
+            }
+
+            // A flick across a courtyard is not a stroke, and joining those two points draws a
+            // line through open air. Same guard the round fill has always had.
+            if (span > 6f)
+            {
+                _streakFrom = at;
+                return false;
+            }
+
+            var along = at - _streakFrom;
+            along.Normalize();
+
+            var across = Vector3.Cross(hit.Normal, along);
+
+            if (across.LengthSquared() < 0.0001f)
+            {
+                _streakFrom = at;
+                return false;
+            }
+
+            across.Normalize();
+
+            var c = Shade();
+
+            // Half a mark longer than the gap it covers, so consecutive streaks overlap at their
+            // ends instead of meeting exactly and leaving a seam at every join.
+            var wide = size;
+            var tall = span + size * 0.5f;
+
+            if (_cfg.StrokeSideways)
+            {
+                var swap = wide;
+                wide = tall;
+                tall = swap;
+            }
+
+            _marks.Streak(_streakFrom + (at - _streakFrom) * 0.5f, into,
+                          _cfg.StrokeSideways ? along : across,
+                          wide, tall,
+                          c.R / 255f, c.G / 255f, c.B / 255f, hit.Entity);
+
+            _streakFrom = at;
+            _paintedAt = now;
+
+            return true;
         }
 
         /// <summary>
@@ -584,6 +682,11 @@ namespace Hoodrich.Paint
 
             _marks.Restreak(_runMark, spot, side, tall);
         }
+
+        // Where the streak being laid started, and when anything was last put down. See Dab.
+        private Vector3 _streakFrom;
+        private bool _streaking;
+        private int _paintedAt;
 
         // ---- running paint ----
         //

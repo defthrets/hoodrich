@@ -253,6 +253,46 @@
         public float Opacity = 1f;
 
         /// <summary>
+        /// Whether a swept stroke is drawn as STRETCHED decals rather than a chain of round
+        /// ones. Reversible: false is exactly what the mod did before.
+        ///
+        /// THIS IS ABOUT THE POOL AND NOTHING ELSE. The game holds a few hundred to a couple of
+        /// thousand decals in the whole world; a measured piece here came to 2,582 marks, which
+        /// is three times the entire pool on a default Enhanced install. Nothing is lost when
+        /// that happens -- the marks are saved and restored -- but only the nearest few hundred
+        /// can be on a wall at once, so a big piece is always partly missing.
+        ///
+        /// The fix is not more slots, it is fewer marks for the same paint. ADD_DECAL takes a
+        /// width AND a height, so one decal stretched along the path covers what a run of round
+        /// ones did. The drips proved it: a run went from 42 decals to 1.
+        ///
+        /// The saving comes from each mark COVERING GROUND, so a streak has to replace the dabs
+        /// rather than sit alongside them -- see Dab.
+        /// </summary>
+        public bool StrokeStreaks = true;
+
+        /// <summary>
+        /// How far the reticle must travel before a streak is laid, as a fraction of the mark.
+        ///
+        /// THE WHOLE TRADE IS HERE. Lower is more marks and a smoother line; higher is fewer
+        /// marks and a longer stretch of the same texture. At 0.7 a stroke costs roughly a
+        /// third of what it did.
+        /// </summary>
+        public float StreakStep = 0.7f;
+
+        /// <summary>
+        /// How long the spray may put nothing down before a plain round mark is laid anyway.
+        ///
+        /// Standing still, the reticle never travels, so nothing would ever meet the step above
+        /// and holding the trigger on one spot would paint nothing at all. This is the floor
+        /// that keeps a still hand working, and it is why the streaks cost nothing there.
+        /// </summary>
+        public int StreakIdleMs = 55;
+
+        /// <summary>Which way round the stretch goes, if strokes come out square to the path.</summary>
+        public bool StrokeSideways;
+
+        /// <summary>
         /// Whether paint starts to run when you hold it on one spot.
         ///
         /// OFF. They were built, tried twice -- dotted, then solid as a single stretched
