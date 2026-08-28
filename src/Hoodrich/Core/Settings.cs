@@ -67,6 +67,23 @@ namespace Hoodrich.Core
         public bool PlaySounds = true;
 
         /// <summary>
+        /// Whether recorded dialogue plays over the conversation screen.
+        ///
+        /// Off behaves exactly as having no recordings does, which is the point -- the screen
+        /// has never needed the audio and still does not.
+        /// </summary>
+        public bool VoiceEnabled = true;
+
+        /// <summary>
+        /// How loud, 0 to 1.
+        ///
+        /// IT NEEDS ITS OWN, because this audio does not go through the game. MCI plays
+        /// straight out to the default device, so GTA's own sliders do not touch it and a
+        /// player who has turned the game down would otherwise get shouted at.
+        /// </summary>
+        public float VoiceVolume = 0.9f;
+
+        /// <summary>
         /// Tweets drawn down the right-hand side instead of posted to the game's feed.
         ///
         /// The native notification stack is anchored top-left and cannot be moved, so the feed
@@ -409,6 +426,9 @@ namespace Hoodrich.Core
                                  1000.000f, -3200.000f, -38.000f, 180f));
             s.PlaySounds = ini.GetBool("Phone", "PlaySounds",
                                         ini.GetBool("Wheel", "PlaySounds", s.PlaySounds));
+
+            s.VoiceEnabled = ini.GetBool("Voice", "Enabled", s.VoiceEnabled);
+            s.VoiceVolume = Clamp(ini.GetFloat("Voice", "Volume", s.VoiceVolume), 0f, 1f);
 
             s.BulkPurchaseDiscountPercent =
                 Clamp(ini.GetFloat("Economy", "BulkPurchaseDiscountPercent", s.BulkPurchaseDiscountPercent), 0f, 90f);

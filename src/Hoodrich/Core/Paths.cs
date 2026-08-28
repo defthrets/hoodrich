@@ -201,6 +201,23 @@ namespace Hoodrich.Core
         /// </summary>
         public static string PaintFile => Path.Combine(Writable, "paint.json");
 
+        /// <summary>
+        /// Recorded dialogue, next to the data rather than in the writable folder.
+        ///
+        /// It is CONTENT and it ships with the mod, so it belongs beside drugs.json and the
+        /// icons. The writable fallback exists for files the game writes, and nothing writes
+        /// here -- a missing folder just means nobody is talking yet.
+        /// </summary>
+        public static string Voice
+        {
+            get
+            {
+                var d = Path.Combine(Data, "voice");
+                EnsureDir(d);
+                return d;
+            }
+        }
+
         private static void EnsureDir(string path)
         {
             try

@@ -502,6 +502,11 @@ namespace Hoodrich.UI
             Subject = subject;
             _selected = FirstEnabled(node);
             _openedAt = Game.GameTime;
+
+            // And say it out loud, if somebody recorded this one. Say() stops whatever was
+            // talking before it, so arrowing down a list does not stack voices on top of each
+            // other -- every node either replaces the last line or leaves the screen quiet.
+            Core.Voice.Say(node.Speaker, node.Line);
             // The picture, and the width the words have left because of it.
             //
             // The contact texture is the FALLBACK now rather than the answer. CHAR_LAMAR draws
@@ -537,6 +542,9 @@ namespace Hoodrich.UI
         public void Close()
         {
             // The button that got you out of here does not also swing at somebody.
+            // Nothing carries on talking to an empty screen.
+            Core.Voice.Hush();
+
             if (IsOpen)
             {
                 Core.InputGuard.Swallow();

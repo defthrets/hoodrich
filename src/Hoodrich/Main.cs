@@ -489,6 +489,11 @@ namespace Hoodrich
                 Preflight.Step = "reading Hoodrich.ini";
                 _cfg = Core.Settings.Load();
 
+                // Copied rather than read live, because the conversation screen has no config
+                // of its own -- see the Changed handler below, which pushes them again.
+                Core.Voice.Enabled = _cfg.VoiceEnabled;
+                Core.Voice.Volume = _cfg.VoiceVolume;
+
                 Preflight.Step = "loading drugs.json";
                 _drugs = Drugs.Load();
                 Preflight.Step = "loading gangs.json";
@@ -1692,6 +1697,9 @@ namespace Hoodrich
                 {
                     Log.Level = _cfg.LogLevel;
                     if (_toasts != null) _toasts.Enabled = _cfg.TweetsOnTheRight;
+
+                    Core.Voice.Enabled = _cfg.VoiceEnabled;
+                    Core.Voice.Volume = _cfg.VoiceVolume;
                 };
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
