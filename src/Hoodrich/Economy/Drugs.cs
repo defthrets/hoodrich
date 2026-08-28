@@ -51,6 +51,24 @@ namespace Hoodrich.Economy
         /// </summary>
         public float BulkPrice;
 
+        /// <summary>
+        /// How much of this moves in one go at the top of the trade, in grams or in units.
+        ///
+        /// A WHOLESALE UNIT IS NOT ONE NUMBER FOR THE WHOLE CATALOGUE. Fifty kilos of marijuana
+        /// and five of cocaine are both "what a container moves": the cheap bulky thing has to
+        /// travel in quantity to be worth anybody's trip, and the dear one does not. Pills go by
+        /// the ten thousand because that is what a press run is.
+        ///
+        /// It is authored rather than worked out. There is no formula that lands on all seven of
+        /// these -- that is the point of them. Two earlier attempts both derived the weight from
+        /// the price and both said something nobody means: dividing a budget by the price gave
+        /// every row the same money for a different weight, and a flat unit for everything gave
+        /// every row the same weight with the cheap end costing pocket change.
+        ///
+        /// A dealer scales it down to his own standing. See DealerDef.LotFor.
+        /// </summary>
+        public float LotGrams = 5000f;
+
         /// <summary>1 = low-risk street weight, 3 = the stuff that brings heat.</summary>
         public int Tier = 1;
 
@@ -272,6 +290,7 @@ namespace Hoodrich.Economy
                 def.Tag = node["tag"].AsString(def.Tag.Length > 0 ? def.Tag : id.Substring(0, Math.Min(4, id.Length)));
                 def.BasePrice = Math.Max(0.01f, node["basePrice"].AsFloat(def.BasePrice));
                 def.BulkPrice = Math.Max(0f, node["bulkPrice"].AsFloat(def.BulkPrice));
+                def.LotGrams = Math.Max(1f, node["lotGrams"].AsFloat(def.LotGrams));
                 def.Tier = Math.Max(1, node["tier"].AsInt(def.Tier));
                 def.HeatFactor = Math.Max(0f, node["heatFactor"].AsFloat(def.HeatFactor));
                 def.SplitVerb = node["splitVerb"].AsString(def.SplitVerb);

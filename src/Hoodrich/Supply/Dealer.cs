@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hoodrich.Economy;
 
 namespace Hoodrich.Supply
 {
@@ -158,6 +159,39 @@ namespace Hoodrich.Supply
         public float LotStep = 500f;
 
         /// <summary>
+        /// How much of a given product he sells in one go.
+        ///
+        /// THE PRODUCT DECIDES THE SIZE AND THE MAN DECIDES THE SCALE. The size comes off the
+        /// drug -- fifty kilos of weed, five of cocaine, ten thousand pills -- and what a given
+        /// dealer does is take a fraction of it. LotValue against the port's hundred thousand
+        /// is that fraction: Tao is the whole unit, a corner is a twentieth, Gerald is about
+        /// four hundredths. So one authored catalogue reads as fifty kilos, two and a half
+        /// kilos and a hundred and twenty grams of the same weed, and nobody writes three lists.
+        ///
+        /// Rounded to his own step so it stays a number a person would say out loud, and never
+        /// below that step, because a lot of nothing is not an offer.
+        /// </summary>
+        public float LotFor(DrugDef drug)
+        {
+            if (drug == null) return LotStep < 1f ? 1f : LotStep;
+
+            var step = LotStep < 1f ? 1f : LotStep;
+            var units = (float)Math.Round(drug.LotGrams * (LotValue / PortLotValue) / step) * step;
+
+            return units < step ? step : units;
+        }
+
+        /// <summary>
+        /// The port's LotValue, which is the yardstick every other dealer is measured against.
+        ///
+        /// A SCALE, NOT A BUDGET, and the distinction is the whole history of this field. The
+        /// lot used to BE a budget -- his LotValue divided by the price of whatever you asked
+        /// for -- which is exactly what made every row on a screen cost the same money for a
+        /// different weight.
+        /// </summary>
+        private const float PortLotValue = 100000f;
+
+        /// <summary>
         /// The least a lot off him can cost, and what the price is rounded to.
         ///
         /// Both were constants belonging to the port -- a fifty thousand dollar floor and
@@ -306,18 +340,22 @@ namespace Hoodrich.Supply
         /// What the player is actually choosing between is a bag off his person and a load out
         /// of his boot, and the thing that separates those is HOW MUCH OF IT there is.
         ///
-        /// IT USED TO BE A DOLLAR FIGURE, and that only worked while a lot cost about the same
-        /// whatever was in it. Now that every lot off a man is the same weight and the price is
-        /// what moves, a money threshold says something nobody means: that cocaine arrives clean
-        /// and the identical weight of marijuana arrives stepped on, because one is dearer. He
-        /// is not cutting it according to your receipt. He cuts what he breaks up small and
-        /// leaves alone what he does not have to open.
+        /// MEASURED IN HIS OWN LOTS -- not in money, and not in grams either. Both of those
+        /// have been tried and both say something nobody means. Money says cocaine arrives clean
+        /// and the identical weight of marijuana arrives stepped on, because one is dearer. A
+        /// flat weight says the reverse the moment lots differ by product: fifty kilos of weed
+        /// clears any threshold you care to set and five of cocaine may not, so the cheap thing
+        /// is always the pure thing.
+        ///
+        /// He is not cutting it according to your receipt or to the scales. He breaks up what he
+        /// sells SMALL and leaves weight alone, and small is relative to what he normally shifts.
+        /// One lot off him is a bag; four is a delivery.
         ///
         /// It is why the corner is worth knowing at all now. Cheap AND cut was strictly worse
         /// than Tao for anybody who could afford Tao; cheap, cut in small amounts and clean in
         /// weight is a different shop rather than a worse one.
         /// </summary>
-        public float UncutFromGrams = 200f;
+        public float UncutFromLots = 2f;
 
         /// <summary>
         /// Where he actually stands, read off the coordinate HUD.
@@ -342,10 +380,14 @@ namespace Hoodrich.Supply
         /// <summary>Whether anybody wrote his address down.</summary>
         public bool HasSpot => Math.Abs(SpotX) > 0.01f || Math.Abs(SpotY) > 0.01f;
 
-        /// <summary>What an order of this size actually arrives at.</summary>
-        public float PurityFor(float grams)
+        /// <summary>What an order of this size actually arrives at. See UncutFromLots.</summary>
+        public float PurityFor(DrugDef drug, float grams)
         {
-            return grams >= UncutFromGrams ? 1f : PurityNow;
+            var lot = LotFor(drug);
+            if (lot < 0.01f) return PurityNow;
+
+            // A hair under, because four lots is four lots and a float multiply need not agree.
+            return grams >= lot * UncutFromLots - 0.01f ? 1f : PurityNow;
         }
         public int MinRank;
         public float MaxOrderGrams = 100f;

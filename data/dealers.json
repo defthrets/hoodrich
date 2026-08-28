@@ -179,7 +179,7 @@
       "priceFloor": 0,
       "priceStep": 5,
       "purity": 0.75,
-      "uncutFromGrams": 999999,
+      "uncutFromLots": 999,
       "numberLine": "Take my number. You want somethin', text me and I'll bring it to the house -- I ain't standin' on no corner waitin' on you."
     },
     {
@@ -264,7 +264,7 @@
         "here. im the truck that dont belong on your street",
         "outside. come out, i aint knockin on a door"
       ],
-      "uncutFromGrams": 100,
+      "uncutFromLots": 2,
       "numberLine": "Right. Put this in your phone and don't say my name into it. You want some, you text -- I'll bring it out to the house myself, after dark, like a normal person."
     },
     {
@@ -434,7 +434,7 @@
         "outside. come get it, i aint got all night",
         "here. engine on"
       ],
-      "uncutFromGrams": 100,
+      "uncutFromLots": 2,
       "x": 300.039,
       "y": -1784.942,
       "z": 28.439,
@@ -524,7 +524,7 @@
         "outside. come out, dont keep me sittin",
         "here. hurry up, this aint my block"
       ],
-      "uncutFromGrams": 50,
+      "uncutFromLots": 1,
       "x": 500.6,
       "y": -1697.562,
       "z": 29.789,
@@ -615,7 +615,7 @@
         "im here. quick, quick, quick",
         "out front. i aint sittin on this street twice"
       ],
-      "uncutFromGrams": 50,
+      "uncutFromLots": 1,
       "x": 85.361,
       "y": -1958.88,
       "z": 21.122,
@@ -708,7 +708,7 @@
         "im here. come out",
         "out front. money first, remember"
       ],
-      "uncutFromGrams": 50,
+      "uncutFromLots": 1,
       "x": 345.665,
       "y": -2015.147,
       "z": 22.395,
@@ -799,7 +799,7 @@
         "here. quiet street, lets keep it that way",
         "outside now. come when youre ready"
       ],
-      "uncutFromGrams": 50,
+      "uncutFromLots": 1,
       "x": 1295.163,
       "y": -1739.323,
       "z": 54.272,
@@ -891,7 +891,7 @@
         "here! open up",
         "outside brother. hurry, im gettin looks"
       ],
-      "uncutFromGrams": 50,
+      "uncutFromLots": 1,
       "x": 81.327,
       "y": 3713.986,
       "z": 40.66,
@@ -983,7 +983,7 @@
         "I have arrived. I will not wait long.",
         "Outside. Please be prompt."
       ],
-      "uncutFromGrams": 50,
+      "uncutFromLots": 1,
       "x": -474.548,
       "y": -35.38,
       "z": 45.376,
@@ -1074,7 +1074,7 @@
         "I am here. Where are you.",
         "Front of the house. Hurry."
       ],
-      "uncutFromGrams": 50,
+      "uncutFromLots": 1,
       "x": 132.305,
       "y": -2205.208,
       "z": 7.186,
@@ -1163,7 +1163,7 @@
         "out front. come on",
         "here. i'd rather not sit in this street"
       ],
-      "uncutFromGrams": 50,
+      "uncutFromLots": 1,
       "x": -689.805,
       "y": -911.477,
       "z": 23.672,
