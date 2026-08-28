@@ -201,6 +201,42 @@
         /// </summary>
         public bool JetFollowsAim = true;
 
+        /// <summary>
+        /// Where the can's jet leaves the can, in the CAN'S own space.
+        ///
+        /// Rockstar start this effect on the can at zero offset, which puts it at the model's
+        /// origin -- and that is somewhere in the body of the tin, not at the tip. From behind
+        /// him nobody notices; in first person the spray visibly leaves halfway down the can.
+        ///
+        /// Dials rather than numbers in the code, and all three axes, because which way is
+        /// "up the can" in a prop's local space is not something that can be reasoned to. Nudge
+        /// in steps of about 0.02. If one sends it the wrong way, negate it.
+        /// </summary>
+        public float CanJetUp = 0.09f;
+        public float CanJetOut = 0f;
+        public float CanJetSide = 0f;
+
+        /// <summary>
+        /// Which clip he plays while spraying in FIRST PERSON.
+        ///
+        /// The default is the ready pose, because the real spraying clip swings the arm across
+        /// the body and takes the can out of frame from inside his head.
+        ///
+        /// It is a setting because the alternatives can only be judged by looking at them, and
+        /// the dictionary has three. All come from
+        /// anim@scripted@freemode@postertag@graffiti_spray@male@:
+        ///
+        ///     spray_can_idle_male     the ready pose. Still, can up. Default.
+        ///     spray_can_var_01_male   a spray variation -- may move less than the main one
+        ///     spray_can_var_02_male   the other variation
+        ///     spray_can_male          the full clip. Correct finger, wrong arm in first person.
+        ///
+        /// A FINGER ON ITS OWN IS NOT AVAILABLE TO A SCRIPT. Peds are animation-driven and the
+        /// game exposes only GET_ENTITY_BONE_ROTATION, never a setter -- so a trigger finger
+        /// can only come from a clip that already has one, which is what this picks between.
+        /// </summary>
+        public string FirstPersonClip = "spray_can_idle_male";
+
         /// <summary>Whether it paints at all. There is no arming key; this is for turning it off.</summary>
         public bool PaintEnabled = true;
 

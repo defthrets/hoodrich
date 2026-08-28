@@ -474,9 +474,16 @@ namespace Hoodrich.Paint
 
                 var on = p.OnCan ? can : ped;
 
+                // A can-mounted jet takes its offset from the config, because the right value
+                // is one you can only find by looking at it -- the ped-mounted ones keep the
+                // fixed geometry they were tuned with.
+                var ox = p.OnCan ? _cfg.CanJetSide : p.X;
+                var oy = p.OnCan ? _cfg.CanJetOut : p.Y;
+                var oz = p.OnCan ? _cfg.CanJetUp : p.Z;
+
                 var fx = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY,
                                             p.Name, on,
-                                            p.X, p.Y, p.Z,
+                                            ox, oy, oz,
                                             p.Pitch, 0f, 0f,
                                             p.Size * scale, false, false, false);
 

@@ -248,7 +248,14 @@ namespace Hoodrich.Paint
             // So in first person he holds the ready pose instead -- can up, nozzle at the
             // wall, which is where a hand actually is when it is spraying something in front
             // of it. Nothing about the paint changes; this is only which arm animation plays.
-            if (spraying) return FirstPerson() ? Idle : Spray;
+            if (spraying)
+            {
+                // Whatever the config names, falling back to the ready pose if somebody empties
+                // the setting rather than playing a clip called "".
+                return FirstPerson()
+                    ? (string.IsNullOrEmpty(_cfg.FirstPersonClip) ? Idle : _cfg.FirstPersonClip)
+                    : Spray;
+            }
 
             // Arm up only while he is actually aiming. That is the pose the spray comes out
             // of, so holding it means he is ready -- and the rest of the time it is just a
@@ -425,10 +432,13 @@ namespace Hoodrich.Paint
 
                     // Only the upper-body task, so this does not cancel whatever else he is
                     // doing with his legs.
-                    // All four. Stopping only the two it used to play would leave whichever
-                    // of the others was running still going after the can was gone.
-                    foreach (var clip in new[] { Idle, Spray, Shake, Rest })
+                    // All four, PLUS whatever the config named -- a configured first-person
+                    // clip is not in the list of four and would otherwise carry on playing
+                    // after the can was gone, which is a man miming a spray at nothing.
+                    foreach (var clip in new[] { Idle, Spray, Shake, Rest, _cfg.FirstPersonClip })
                     {
+                        if (string.IsNullOrEmpty(clip)) continue;
+
                         Function.Call(Hash.STOP_ANIM_TASK, me.Handle, Dict, clip, 3f);
                     }
                 }
