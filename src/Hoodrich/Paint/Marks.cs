@@ -170,8 +170,18 @@ namespace Hoodrich.Paint
 
                 if (_refused == 12)
                 {
-                    Log.Warn("Nothing will place. Either the pool is full or this install has " +
-                             "none of the paint decals.");
+                    // SAID WHEN IT BITES, not at startup. Everybody hits this eventually and
+                    // nobody wants to be told about it before they have -- but the moment
+                    // twelve marks in a row are refused, the player is standing in front of a
+                    // wall that will not take paint and deserves to know it is the game's
+                    // limit and not the mod, and what actually moves it.
+                    Log.Warn("Twelve marks in a row would not place -- the game is full of " +
+                             "decals. This is its own limit, not the mod's: nothing painted is " +
+                             "lost, and it comes back as you walk up to it. What raises it is " +
+                             "a limit adjuster. On GTA V Enhanced that is DecalPatch.asi, a " +
+                             "drop-in ASI whose ini goes up to 2048 with no OpenIV and no RPF " +
+                             "editing. On Legacy it is a gameconfig with raised pools, and it " +
+                             "has to match your game build.");
                 }
 
                 return;
