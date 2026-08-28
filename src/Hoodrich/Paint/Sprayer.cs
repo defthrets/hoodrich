@@ -268,7 +268,13 @@ namespace Hoodrich.Paint
 
             var c = Shade();
 
-            _marks.Put(at, into, side, size, c.R / 255f, c.G / 255f, c.B / 255f);
+            // BAKED IN HERE, not applied at placing time. The mark keeps the final multipliers,
+            // so restoring one after a save replays exactly what went on the wall rather than
+            // driving an already-driven colour a second time.
+            var gain = _cfg.SprayCanLook ? _cfg.CanColourGain : 1f;
+
+            _marks.Put(at, into, side, size,
+                       c.R / 255f * gain, c.G / 255f * gain, c.B / 255f * gain);
         }
 
         /// <summary>

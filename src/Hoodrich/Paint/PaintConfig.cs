@@ -200,6 +200,26 @@
         public int CanDecal = 1030;
 
         /// <summary>
+        /// How hard the can's colour is driven into its decal. 1 is a plain colour and is what
+        /// everything has always passed.
+        ///
+        /// AN EXPERIMENT, AND HONESTLY LABELLED AS ONE. The colour arguments multiply the
+        /// texture, so with a dark texture like mud every colour comes out dark and brown --
+        /// multiply only goes downward and the texture is the ceiling. But the arguments are
+        /// floats and nothing in the signature says they stop at 1. Per channel, a brown times
+        /// (0, 2.6, 0) is a bright green, so IF the shader does not clamp, a dark texture can
+        /// be driven back to colour.
+        ///
+        /// It may well clamp, in which case this does nothing at all and costs nothing to have
+        /// found out. Rockstar never pass anything above 1 -- they pass 0.196, 0, 0 to darken
+        /// blood -- so there is no example either way to read.
+        ///
+        /// Left at 1 by default because on the pale paint texture anything above 1 blows every
+        /// colour out to white. Turn it up only alongside a dark CanDecal.
+        /// </summary>
+        public float CanColourGain = 1f;
+
+        /// <summary>
         /// How hard the two metallics scatter, as a multiplier on their built-in sheen.
         ///
         /// 1 is as shipped. 0 turns chrome into flat grey paint and gold into flat mustard,
