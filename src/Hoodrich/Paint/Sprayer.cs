@@ -398,7 +398,17 @@ namespace Hoodrich.Paint
                 // a courtyard, not a stroke, and joining those is a line nobody drew.
                 if (samewall && gap > 0.001f && gap < 6f)
                 {
-                    var step = Math.Max(0.02f, size * _cfg.LiveOverlap);
+                    // FLOORED AGAINST THE MARK, not against two centimetres.
+                    //
+                    // This was Math.Max(0.02f, ...) and that fixed floor quietly ate the whole
+                    // point of CanDensity. At density 3 the step wants to be 7.3mm and the
+                    // floor forced it to 20mm -- 2.7 times wider -- so below 1.3 m/s of sweep
+                    // the fill placed nothing at all and every mark was a dab. Two of the
+                    // three things CanDensity moves were working and the third was not.
+                    //
+                    // A tenth of the mark is a real floor: it stops a runaway on a tiny mark
+                    // without overriding what the setting asked for at any normal size.
+                    var step = Math.Max(size * 0.1f, size * _cfg.LiveOverlap);
 
                     var fill = (int)(gap / step);
                     if (fill > _cfg.LiveMaxFill) fill = _cfg.LiveMaxFill;
