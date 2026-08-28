@@ -485,7 +485,11 @@ namespace Hoodrich.Paint
             if (now < _nextRunStep) return;
 
             _nextRunStep = now + _cfg.DripStepMs;
-            _runLen += _cfg.DripStep;
+
+            // Stepped by a fraction of the drip's OWN width, so consecutive marks overlap and
+            // the run is a line rather than a dotted one. A fixed distance cannot do this: the
+            // width moves with the cap and with how far off the wall you are.
+            _runLen += Math.Max(0.004f, _runSize * _cfg.DripOverlap);
 
             var over = _runLen / Math.Max(0.01f, _cfg.DripLength);
 
