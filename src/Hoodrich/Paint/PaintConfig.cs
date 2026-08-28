@@ -141,9 +141,27 @@
         /// </summary>
         public bool SprayCanLook = true;
 
-        public float CanRange = 2.5f;
-        public float CanSizeAtOneMetre = 0.07f;
-        public float CanSpreadPower = 1.5f;
+        public float CanRange = 2f;
+
+        /// <summary>
+        /// The can's flare, FITTED TO THREE MARKS ON A WALL rather than guessed.
+        ///
+        /// Sprayed a line at hand height, one about half a metre above and below it, and one
+        /// at the top and bottom of a standing reach, then solved the curve to pass through
+        /// thin at the first and the ceiling at the last. Standing half a metre off, those are
+        /// 0.50, 0.72 and 1.12 metres from his hand -- the offsets are vertical but the curve
+        /// is of DISTANCE, so what matters is the hypotenuse, not the height.
+        ///
+        /// The old 0.07 and 1.5 gave 0.055 at the middle and 0.083 at the edge of his reach:
+        /// a flare of one and a half times across the whole thing, which is why it read as a
+        /// constant band. This gives five and a half.
+        ///
+        /// It is steep, and steep is the point. Anything shallower cannot both stay thin where
+        /// his hand is and reach the ceiling anywhere he can still comfortably paint.
+        /// </summary>
+        public float CanSizeAtOneMetre = 0.237f;
+
+        public float CanSpreadPower = 2.11f;
         /// <summary>
         /// The finest line the can can draw -- the thin cap's floor, which the other two
         /// multiply. Every cap moves when this does.
