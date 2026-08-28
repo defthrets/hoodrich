@@ -269,14 +269,20 @@
         /// is to look at it, so it is somewhere you can nudge without a rebuild.
         ///
         /// The tag run seats it at 0.012, which puts the can in the middle of the grip. Raised
-        /// twice by eye from there, in equal steps, to 0.048: 0.012 buried the nozzle in his
-        /// fist, 0.030 got it near his fingertip, and this puts it against it. Higher is where
-        /// a hand actually holds one -- you press the tip, so your finger has to reach it.
+        /// by eye from there in three steps to 0.060: 0.012 buried the nozzle in his fist,
+        /// 0.030 got it near his fingertip, 0.048 close, and this has the finger ON the tip.
+        /// That is where a hand actually holds one -- you press the nozzle, so the finger has
+        /// to reach it.
+        ///
+        /// THE SPRAY FOLLOWS THIS FOR FREE and needs no matching change. The jet is started ON
+        /// the can rather than in the world, so its offset is in the can's own space -- move
+        /// the can and the effect goes with it. CanJetUp positions the jet WITHIN the can, and
+        /// is a separate question from where the can sits in his hand.
         ///
         /// If nudging this moves the can the WRONG way, the axis runs the other way on this
         /// build: use a negative number.
         /// </summary>
-        public float CanSeat = 0.048f;
+        public float CanSeat = 0.060f;
 
         // ---- how long it lasts ---------------------------------------------------
 
