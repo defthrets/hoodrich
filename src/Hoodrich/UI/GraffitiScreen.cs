@@ -407,9 +407,36 @@ namespace Hoodrich.UI
         {
             var active = _row == Row.Cap;
 
-            // The row by the same hand that draws the others, with the hint left empty --
-            // three pictures are about to sit where that word would have been.
-            Button(x, right, y, active, "SPRAY CAP", "", false);
+            // CAPS ARE FOR THE CAN, and the row has to say so without saying so. The engine
+            // has always known -- an extinguisher never consults a cap -- but the screen did
+            // not show it, so the row looked like a setting that applied to whatever was in
+            // his hand.
+            //
+            // Two things say it, neither of them a word. The label is the can itself instead
+            // of the phrase, so the row reads as a can and its three nozzles. And the row goes
+            // quiet while an extinguisher is the tool, which is what every interface does with
+            // a control that is not connected to anything at the moment.
+            //
+            // Still usable while dimmed: picking your cap before you pick the can up is a
+            // reasonable thing to do.
+            var lit = _cfg.SprayCanLook ? 255 : 104;
+
+            // The row by the same hand as the others, with neither label nor hint -- a picture
+            // is going where each of those would have been.
+            Button(x, right, y, active, "", "", false);
+
+            var canH = ButtonH - 0.010f;
+            var canW = Hud.ToX(canH) * CanAspect;
+
+            var word = active ? Palette.Text : Palette.TextDim;
+
+            if (!Hud.File("spraycan.png", x + canW * 0.5f, y + ButtonH * 0.5f, canW, canH, 0f,
+                          Color.FromArgb(lit, word.R, word.G, word.B)))
+            {
+                // No art. The words come back rather than the row being blank -- a row with
+                // nothing down its left-hand side does not read as a row at all.
+                Hud.Text("SPRAY CAP", x, y + 0.010f, 0.30f, word, Hud.FontBody, centre: false);
+            }
 
             var caps = Caps.All;
 
@@ -427,9 +454,15 @@ namespace Hoodrich.UI
 
                 // A lit plate behind the chosen one and nothing behind the others -- a ring
                 // round all three would make this row louder than the swatches above it.
-                if (on) Hud.RectFrom(left, top, wide, side, Color.FromArgb(58, 255, 255, 255));
+                if (on)
+                {
+                    Hud.RectFrom(left, top, wide, side,
+                                 Color.FromArgb(58 * lit / 255, 255, 255, 255));
+                }
 
-                var tint = on ? Legible(Colour) : Palette.TextDim;
+                var chip = on ? Legible(Colour) : Palette.TextDim;
+
+                var tint = Color.FromArgb(chip.A * lit / 255, chip.R, chip.G, chip.B);
 
                 if (!Hud.File(caps[i].Icon, left + wide * 0.5f, top + side * 0.5f,
                               wide * 0.80f, side * 0.80f, 0f, tint))
