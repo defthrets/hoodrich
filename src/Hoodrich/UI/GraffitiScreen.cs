@@ -44,6 +44,9 @@ namespace Hoodrich.UI
         private const float CanH = 0.052f;
         private const float CanAspect = 0.4412f;
 
+        /// <summary>How many times wider than tall a cap icon is. Printed by tools/make_art.py.</summary>
+        private const float CapAspect = 0.6406f;
+
         /// <summary>How long a shake lasts, how hard, and roughly how often.</summary>
         private const int ShakeMs = 900;
         private const int ShakeSpreadMs = 3500;
@@ -412,37 +415,29 @@ namespace Hoodrich.UI
             // not show it, so the row looked like a setting that applied to whatever was in
             // his hand.
             //
-            // Two things say it, neither of them a word. The label is the can itself instead
-            // of the phrase, so the row reads as a can and its three nozzles. And the row goes
-            // quiet while an extinguisher is the tool, which is what every interface does with
-            // a control that is not connected to anything at the moment.
+            // It says so by GOING QUIET while an extinguisher is the tool in hand -- plate and
+            // all three caps down to a bit over a third. That is what every interface does with
+            // a control not connected to anything at the moment, and it needs no explaining.
             //
             // Still usable while dimmed: picking your cap before you pick the can up is a
             // reasonable thing to do.
             var lit = _cfg.SprayCanLook ? 255 : 104;
 
-            // The row by the same hand as the others, with neither label nor hint -- a picture
-            // is going where each of those would have been.
-            Button(x, right, y, active, "", "", false);
-
-            var canH = ButtonH - 0.010f;
-            var canW = Hud.ToX(canH) * CanAspect;
-
-            var word = active ? Palette.Text : Palette.TextDim;
-
-            if (!Hud.File("spraycan.png", x + canW * 0.5f, y + ButtonH * 0.5f, canW, canH, 0f,
-                          Color.FromArgb(lit, word.R, word.G, word.B)))
-            {
-                // No art. The words come back rather than the row being blank -- a row with
-                // nothing down its left-hand side does not read as a row at all.
-                Hud.Text("SPRAY CAP", x, y + 0.010f, 0.30f, word, Hud.FontBody, centre: false);
-            }
+            // Labelled like every other row, with no hint -- three pictures are going where
+            // that word would have been.
+            Button(x, right, y, active, "CAP SIZE", "", false);
 
             var caps = Caps.All;
 
-            var side = ButtonH - 0.012f;
+            // The plate stays square so the three read as a row of buttons; the cap inside it
+            // is drawn at its own proportions, because a cap squeezed into a square is a cap
+            // that looks like somebody stood on it.
+            var side = ButtonH - 0.010f;
             var wide = Hud.ToX(side);
             var gap = Hud.ToX(0.004f);
+
+            var capH = side * 0.88f;
+            var capW = Hud.ToX(capH) * CapAspect;
 
             var edge = right;
             var top = y + (ButtonH - side) * 0.5f;
@@ -465,7 +460,7 @@ namespace Hoodrich.UI
                 var tint = Color.FromArgb(chip.A * lit / 255, chip.R, chip.G, chip.B);
 
                 if (!Hud.File(caps[i].Icon, left + wide * 0.5f, top + side * 0.5f,
-                              wide * 0.80f, side * 0.80f, 0f, tint))
+                              capW, capH, 0f, tint))
                 {
                     // No art in data\icons. A plain square at the cap's own scale is the icon
                     // with its ring taken off, and still says which of the three this is.
