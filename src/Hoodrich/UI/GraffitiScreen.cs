@@ -62,7 +62,10 @@ namespace Hoodrich.UI
         /// </summary>
         private static readonly Paint.Swatch[] Tins = Paint.Rack.All;
 
-        private enum Row { Swatches, TakeCan, TakeExt, Clear }
+        private enum Row { Swatches, Cap, TakeCan, TakeExt, Clear }
+
+        /// <summary>Derived, because the bounds below were written out as a 3 in two places.</summary>
+        private static readonly int LastRow = Enum.GetValues(typeof(Row)).Length - 1;
 
         private readonly PaintConfig _cfg;
         private readonly Marks _marks;
@@ -139,6 +142,8 @@ namespace Hoodrich.UI
             else if (Pressed(Control.PhoneDown)) Move(1);
             else if (_row == Row.Swatches && Pressed(Control.PhoneLeft)) Step(-1);
             else if (_row == Row.Swatches && Pressed(Control.PhoneRight)) Step(1);
+            else if (_row == Row.Cap && Pressed(Control.PhoneLeft)) Cycle(-1);
+            else if (_row == Row.Cap && Pressed(Control.PhoneRight)) Cycle(1);
             else if (Pressed(Control.PhoneSelect)) Choose();
         }
 
@@ -149,6 +154,10 @@ namespace Hoodrich.UI
                 case Row.Swatches:
                     // Picking IS choosing. There is nothing to confirm.
                     Close();
+                    break;
+
+                case Row.Cap:
+                    Cycle(1);
                     break;
 
                 case Row.TakeCan:
@@ -230,8 +239,8 @@ namespace Hoodrich.UI
         private void Move(int step)
         {
             var n = (int)_row + step;
-            if (n < 0) n = 3;
-            if (n > 3) n = 0;
+            if (n < 0) n = LastRow;
+            if (n > LastRow) n = 0;
 
             _row = (Row)n;
 
@@ -239,6 +248,21 @@ namespace Hoodrich.UI
             _armed = false;
 
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>
+        /// Puts the next cap on the can.
+        ///
+        /// Not written anywhere, unlike in the standalone -- this mod keeps no ini for the
+        /// paint, so it starts on thin each session. Worth fixing the day somebody notices.
+        /// </summary>
+        private void Cycle(int by)
+        {
+            var caps = Caps.All.Length;
+
+            _cfg.Cap = (_cfg.Cap + by % caps + caps) % caps;
+
+            Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
         private void Step(int by)
@@ -257,7 +281,7 @@ namespace Hoodrich.UI
             var left = 0.5f - width * 0.5f;
             var pad = Hud.ToX(PadH);
 
-            var height = 0.340f + SwatchH + ButtonH * 3f;
+            var height = 0.340f + SwatchH + ButtonH * 4f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             Hud.RectFrom(left, top, width, height, Palette.Hub);
@@ -340,6 +364,16 @@ namespace Hoodrich.UI
             // "what have I got" without you closing it to look.
             var has = Can.Has();
 
+            // ---- the nozzle ----
+            //
+            // A cap sets the NARROWEST line the can can draw, not the widest -- a fat one
+            // cannot do fine work however close you hold it, while the far end stays governed
+            // by how far off the wall you are standing.
+            Button(x, right, y, _row == Row.Cap, "SPRAY CAP",
+                   Caps.At(_cfg.Cap).Name.ToUpperInvariant(), false);
+
+            y += ButtonH;
+
             Button(x, right, y, _row == Row.TakeCan, "TAKE A SPRAY CAN",
                    has && _cfg.SprayCanLook ? "IN HAND" : "ENTER", false);
 
@@ -355,7 +389,7 @@ namespace Hoodrich.UI
                    _armed ? "PRESS AGAIN -- THIS CANNOT BE UNDONE" : "CLEAR EVERY WALL",
                    _armed ? "SURE?" : "ENTER", _armed);
 
-            Hud.Text("UP/DOWN  MOVE      LEFT/RIGHT  COLOUR      ENTER  TAKE IT      BACKSPACE  BACK",
+            Hud.Text("UP/DOWN  MOVE      LEFT/RIGHT  CHANGE      ENTER  TAKE IT      BACKSPACE  BACK",
                      x, top + height - 0.028f, 0.22f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
 

@@ -428,7 +428,7 @@ namespace Hoodrich.Paint
                 {
                     // A can. One thin jet off the can itself, no cloud, nothing else.
                     _fx = Light(CanJets, ref _jetPick, Nozzle, me.Handle,
-                                r, g, b, 0.95f, _cfg.CanJetScale, out _liveJet);
+                                r, g, b, 0.95f, _cfg.LiveJetScale, out _liveJet);
 
                     _cloud = -1;
                     _liveCloud = null;

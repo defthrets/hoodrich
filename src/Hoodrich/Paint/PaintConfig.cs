@@ -160,7 +160,29 @@
         public float LiveRange => SprayCanLook ? CanRange : Range;
         public float LiveSizeAtOneMetre => SprayCanLook ? CanSizeAtOneMetre : SizeAtOneMetre;
         public float LiveSpreadPower => SprayCanLook ? CanSpreadPower : SpreadPower;
-        public float LiveMinSize => SprayCanLook ? CanMinSize : MinSize;
+        /// <summary>
+        /// Which nozzle is on the can: 0 thin, 1 stock, 2 fat. See Caps.
+        ///
+        /// The can only. An extinguisher does not have caps.
+        /// </summary>
+        public int Cap;
+
+        /// <summary>The nozzle's width multiplier, or 1 for anything that is not the can.</summary>
+        private float Nozzle => SprayCanLook ? Caps.At(Cap).Width : 1f;
+
+        /// <summary>
+        /// THE FLOOR MOVES AND THE CEILING DOES NOT, which is the whole of what a cap is.
+        ///
+        /// A fat cap cannot draw a fine line however close you hold it -- the paint is already
+        /// wide as it leaves the nozzle. It can still only manage what the distance allows at
+        /// the far end, and so can a thin one, which is why the ceiling is shared.
+        ///
+        /// The visible consequence is that the caps converge as you step back: past the point
+        /// where the distance curve has risen above the floor, they are the same can. That is
+        /// correct rather than a simplification -- a metre off a wall the cap stops being the
+        /// thing deciding how wide the band is.
+        /// </summary>
+        public float LiveMinSize => SprayCanLook ? CanMinSize * Nozzle : MinSize;
         public float LiveMaxSize => SprayCanLook ? CanMaxSize : MaxSize;
 
         /// <summary>
@@ -309,6 +331,15 @@
         /// The can also gets no cloud and no smoke fallback at all -- see Sprayer.CanJets.
         /// </summary>
         public float JetScale = 1f;
+
+        /// <summary>
+        /// The plume, widened with the cap.
+        ///
+        /// Gently -- a quarter of the cap's multiplier rather than all of it. The plume is what
+        /// you aim by and a fat cap that fills the screen with mist is a fat cap you cannot see
+        /// past. Enough that the tool in his hand looks like the tool that is painting.
+        /// </summary>
+        public float LiveJetScale => CanJetScale * (0.75f + 0.25f * Nozzle);
         public float CanJetScale = 0.42f;
 
         /// <summary>
