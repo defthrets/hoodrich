@@ -14,7 +14,7 @@ namespace Hoodrich.Paint
         /// <summary>Straight out of the surface. This is the whole reason any of it works.</summary>
         public Vector3 Normal;
 
-        /// <summary>How far the wall is from the PLAYER. See InFront.</summary>
+        /// <summary>How far the wall is from his SPRAYING HAND. See Nozzle and InFront.</summary>
         public float Away;
 
         public int Entity;
@@ -76,11 +76,11 @@ namespace Hoodrich.Paint
                 // So the camera's own distance is added back on. The tag run in the other mod
                 // casts from the player for this exact reason; this keeps the reticle honest
                 // AND gives the advertised reach.
-                var me2 = Game.Player.Character;
-
-                var lead = me2 != null && me2.Exists()
-                    ? me2.Position.DistanceTo(cam)
-                    : 0f;
+                // From the hand, so that the reach in the ini means what it says: CanRange is
+                // how far the can sprays, measured from the can. It used to be measured from
+                // his feet, which on a wall you are standing square to is most of a metre of
+                // the budget spent going nowhere.
+                var lead = Nozzle().DistanceTo(cam);
 
                 var from = cam;
                 var to = cam + dir * (metres + lead);
@@ -104,12 +104,21 @@ namespace Hoodrich.Paint
                 hit.Landed = true;
                 hit.At = end.GetResult<Vector3>();
 
-                // How far it is from HIM, for the same reason. The splatter grows with
-                // distance, and measuring that from the camera made every mark two or three
-                // metres' worth too big -- point blank came out the size of arm's length.
-                hit.Away = me2 != null && me2.Exists()
-                    ? me2.Position.DistanceTo(hit.At)
-                    : cam.DistanceTo(hit.At);
+                // How far it is from HIS HAND, and the hand is the point.
+                //
+                // This was measured from me2.Position, and a ped's Position is its ROOT --
+                // which is on the floor between its feet. So the nearest part of any wall was
+                // its skirting board, and the splatter grew with height from there: finest at
+                // the bottom of a piece and fattest at the top, on a wall the player was
+                // standing square to the whole time. It looks like a deliberate effect until
+                // you notice the thinnest paint is always at ankle height.
+                //
+                // From the can, the geometry comes out right on its own. The closest point of
+                // the wall is the one level with his hands, so a piece is finest across the
+                // middle where he is actually working and opens up above his reach and below
+                // it -- which is what a can does, because that is when the can is furthest from
+                // the wall.
+                hit.Away = Nozzle().DistanceTo(hit.At);
                 hit.Normal = normal.GetResult<Vector3>();
                 hit.Entity = entity.GetResult<int>();
             }
@@ -120,6 +129,43 @@ namespace Hoodrich.Paint
 
             return hit;
         }
+
+        /// <summary>
+        /// Where the paint is actually leaving from: his right hand.
+        ///
+        /// The prop helper bone rather than the wrist -- 28422 is PH_R_Hand, the non-deforming
+        /// bone the animators hang props off, which is where the can is attached and therefore
+        /// where its nozzle is. It moves with the animation, so crouching, leaning and the
+        /// first-person pose all come out right without any of them being special cases.
+        ///
+        /// Falls back to a metre above his feet, which is roughly where a hand is on a standing
+        /// man -- still far better than the floor, which is what this used to use.
+        /// </summary>
+        private static Vector3 Nozzle()
+        {
+            var me = Game.Player.Character;
+
+            if (me == null || !me.Exists()) return GameplayCamera.Position;
+
+            try
+            {
+                var at = Function.Call<Vector3>(Hash.GET_PED_BONE_COORDS, me.Handle, RightHand,
+                                                0f, 0f, 0f);
+
+                // A bone that is not there comes back as the world origin, which would put
+                // every wall in Los Santos a few thousand metres away.
+                if (at != Vector3.Zero) return at;
+            }
+            catch
+            {
+                // Fall through to the estimate.
+            }
+
+            return me.Position + new Vector3(0f, 0f, 1f);
+        }
+
+        /// <summary>PH_R_Hand. The same bone the can is attached to -- see Spraycan.</summary>
+        private const int RightHand = 28422;
 
         /// <summary>
         /// Any direction lying flat along the surface.
