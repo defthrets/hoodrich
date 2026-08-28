@@ -40,7 +40,7 @@ namespace Hoodrich.UI
         /// and halved the part anybody reads.
         /// </summary>
         private const float LogoH = 0.066f;
-        private const float LogoAspect = 4.3730f;
+        private const float LogoAspect = 5.6316f;
         private const float CanH = 0.052f;
         private const float CanAspect = 0.4412f;
 
