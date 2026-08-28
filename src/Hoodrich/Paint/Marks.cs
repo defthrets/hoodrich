@@ -422,6 +422,18 @@ namespace Hoodrich.Paint
         /// <summary>Everything within this of the player goes too, tracked or not.</summary>
         private const float WipeAround = 250f;
 
+        /// <summary>
+        /// Drops every mark and its decal, and says nothing about it.
+        ///
+        /// The quiet half of Clear, for when the list is being replaced rather than destroyed.
+        /// </summary>
+        private void Forget()
+        {
+            for (var i = 0; i < _marks.Count; i++) Wipe(_marks[i]);
+
+            _marks.Clear();
+        }
+
         public void Clear()
         {
             // ---- the ones this list owns, by handle ----
@@ -551,7 +563,16 @@ namespace Hoodrich.Paint
 
         public void LoadFrom(Json doc)
         {
-            Clear();
+            // FORGET, NOT WIPE. This used to call Clear, which is the CLEAR EVERY WALL button:
+            // it sweeps whole areas of the map for decals it has lost track of and it announces
+            // itself in the log.
+            //
+            // At load there is nothing to sweep -- the list is empty and the session has not
+            // painted anything -- so all that reached the log was a line saying every mark had
+            // been wiped, sitting one millisecond before the line saying how many had been
+            // loaded. Reading that back it looks exactly like the mod destroying a save on
+            // startup, which cost an hour of chasing a bug that was not there.
+            Forget();
             if (doc == null || doc.IsNull) return;
 
             var type = doc["decal"].AsInt(0);
