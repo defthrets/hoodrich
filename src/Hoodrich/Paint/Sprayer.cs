@@ -487,9 +487,16 @@ namespace Hoodrich.Paint
 
             // Started a little off centre, and somewhere different each time, so three runs off
             // one spot are three runs rather than one drawn three times.
-            var side = Surface.Along(n, (float)(_rng.NextDouble() * Math.PI * 2.0));
+            // Across the wall, square to the way the drip will run. This is the decal's
+            // side vector, and the long axis comes out perpendicular to it.
+            var across = Vector3.Cross(n, down);
 
-            _runAt = at + side * (float)((_rng.NextDouble() - 0.5) * size * 1.2);
+            if (across.LengthSquared() < 0.0001f) return;
+
+            across.Normalize();
+
+            _runAcross = across;
+            _runAt = at + across * (float)((_rng.NextDouble() - 0.5) * size * 1.2);
             _runDown = down;
             _runInto = into;
             _runNormal = n;
@@ -497,6 +504,7 @@ namespace Hoodrich.Paint
             _runLen = 0f;
             _runSize = size * _cfg.DripWidth;
             _nextRunStep = now;
+            _runMark = null;
             _running = true;
             _runsHere++;
         }
@@ -504,10 +512,20 @@ namespace Hoodrich.Paint
         /// <summary>
         /// One drip, crawling.
         ///
-        /// PLACED A STEP AT A TIME rather than drawn as a finished line, because a drip that
-        /// appears whole is a shape and a drip that arrives over half a second is paint moving.
-        /// It also narrows as it goes and beads at the end, which is what gravity does to a
-        /// run that is running out of paint.
+        /// ONE DECAL, STRETCHED, not a row of round ones. The first version marched splatters
+        /// down the wall and they read as a dotted line however much they were made to overlap
+        /// -- because a splatter is not a disc, it is mostly transparent speckle, and two of
+        /// them on top of each other is more speckle rather than a solid mark. The main strokes
+        /// only look solid because the line fill puts one down every 3.7mm for a 55mm mark,
+        /// which is ninety-three percent overlap and forty times the cost.
+        ///
+        /// ADD_DECAL takes a width AND a height, and every mark in this engine handed it the
+        /// same number twice -- which is why a decal was only ever a blob. Told two different
+        /// numbers it draws a streak, and a streak is a drip: one decal for the whole run
+        /// instead of forty, so it is both solid and far cheaper.
+        ///
+        /// It still arrives rather than appearing. The same decal is taken down and put back
+        /// longer about ten times over, so the run visibly travels down the wall.
         /// </summary>
         private void Creep(int now)
         {
@@ -515,28 +533,46 @@ namespace Hoodrich.Paint
 
             _nextRunStep = now + _cfg.DripStepMs;
 
-            // Stepped by a fraction of the drip's OWN width, so consecutive marks overlap and
-            // the run is a line rather than a dotted one. A fixed distance cannot do this: the
-            // width moves with the cap and with how far off the wall you are.
-            _runLen += Math.Max(0.004f, _runSize * _cfg.DripOverlap);
+            // A tenth of the run per step, so it arrives in about ten of them however long the
+            // run is set to be. The old version stepped by a mark width, which tied how fast a
+            // drip travelled to how wide it was.
+            _runLen += Math.Max(0.006f, _cfg.DripLength * 0.1f);
 
-            var over = _runLen / Math.Max(0.01f, _cfg.DripLength);
-
-            if (over > 1f)
+            if (_runLen >= _cfg.DripLength)
             {
+                _runLen = _cfg.DripLength;
                 _running = false;
+            }
+
+            // Centred on the run. A decal is drawn AROUND its point rather than from it, so a
+            // streak that starts at the spray has to sit half its own length below it.
+            var spot = _runAt + _runDown * (_runLen * 0.5f);
+
+            var wide = _runSize;
+            var tall = _runLen;
+
+            if (_cfg.DripSideways)
+            {
+                var swap = wide;
+                wide = tall;
+                tall = swap;
+            }
+
+            var side = _cfg.DripSideways ? _runDown : _runAcross;
+
+            if (_runMark == null)
+            {
+                var c = Shade();
+
+                _runMark = _marks.Streak(spot, _runInto, side, wide, tall,
+                                         c.R / 255f, c.G / 255f, c.B / 255f, _runEntity);
+
+                if (_runMark == null) _running = false;
+
                 return;
             }
 
-            // Thinning as it goes, then a bead where it stops -- the last of the paint pooling
-            // at the bottom of the run instead of the line simply ending.
-            var taper = 1f - 0.45f * over;
-            var bead = over > 0.86f ? 1.45f : 1f;
-
-            var spot = _runAt + _runDown * _runLen;
-            var side = Surface.Along(_runNormal, (float)(_rng.NextDouble() * Math.PI * 2.0));
-
-            Put(spot, _runInto, side, _runSize * taper * bead, _runEntity);
+            _marks.Restreak(_runMark, spot, side, tall);
         }
 
         // ---- running paint ----
@@ -551,10 +587,13 @@ namespace Hoodrich.Paint
         private int _runsHere;
 
         private bool _running;
-        private Vector3 _runAt, _runDown, _runInto, _runNormal;
+        private Vector3 _runAt, _runDown, _runInto, _runNormal, _runAcross;
         private float _runLen, _runSize;
         private int _nextRunStep;
         private int _runEntity;
+
+        /// <summary>The one decal this drip is, while it is still growing.</summary>
+        private Mark _runMark;
 
         private readonly Random _rng = new Random();
 

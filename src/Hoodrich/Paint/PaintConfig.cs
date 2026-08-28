@@ -276,17 +276,14 @@
         public int DripStepMs = 45;
 
         /// <summary>
-        /// How far a drip moves between marks, as a fraction of its own width.
+        /// Which way round the stretch goes, for if the drip comes out lying on its side.
         ///
-        /// A FRACTION AND NOT A DISTANCE, and that is the whole of why the first version came
-        /// out dotted. It stepped a fixed 30mm while a thin-cap drip mark is 23mm across, so
-        /// the marks never touched -- and no fixed distance can be right anyway, because the
-        /// width changes with the cap and with how far off the wall you are standing.
-        ///
-        /// Under 1 means every mark overlaps the one before it, which is the same trick the
-        /// line fill uses to turn a row of splatters into a stroke.
+        /// ADD_DECAL is given a side vector and a width and a height, and which of the two the
+        /// side vector governs is not written down anywhere R* left behind. False puts the long
+        /// axis down the wall, which is the way round that should be right. If drips come out
+        /// horizontal, this is the switch.
         /// </summary>
-        public float DripOverlap = 0.5f;
+        public bool DripSideways;
 
         /// <summary>How long a run gets before it stops, and how many one spot will produce.</summary>
         public float DripLength = 0.22f;

@@ -15,6 +15,17 @@ namespace Hoodrich.Paint
         public Vector3 Side;
 
         public float Size;
+
+        /// <summary>
+        /// How tall it is drawn, or 0 for as wide as it is.
+        ///
+        /// ADD_DECAL TAKES A WIDTH AND A HEIGHT and every mark until now handed it the same
+        /// number twice, which is why a decal was only ever a blob. Told two different numbers
+        /// it draws a streak -- and a streak is a drip, done as ONE decal instead of forty
+        /// round ones chasing each other down a wall.
+        /// </summary>
+        public float Tall;
+
         public float R, G, B;
 
         /// <summary>
@@ -188,6 +199,55 @@ namespace Hoodrich.Paint
 
         private bool _saidAboutCars;
 
+        /// <summary>
+        /// Lays a STRETCHED mark and hands it back, so whoever owns it can keep changing it.
+        ///
+        /// The only thing here that returns its mark. A drip is one decal that grows, not a
+        /// trail of decals that accumulate, so the thing drawing it has to be able to reach
+        /// back and make it longer.
+        /// </summary>
+        public Mark Streak(Vector3 at, Vector3 into, Vector3 side, float wide, float tall,
+                           float r, float g, float b, int hit = 0)
+        {
+            while (_marks.Count >= Math.Max(16, _cfg.MaxMarks))
+            {
+                Wipe(_marks[0]);
+                _marks.RemoveAt(0);
+            }
+
+            var m = new Mark
+            {
+                At = at, Into = into, Side = side,
+                Size = wide, Tall = tall,
+                R = r, G = g, B = b,
+                OnVehicle = _cfg.VehicleDecal > 0 && IsVehicle(hit)
+            };
+
+            m.Handle = Place(m);
+
+            if (m.Handle == 0 && Recycle(at)) m.Handle = Place(m);
+            if (m.Handle == 0) return null;
+
+            _marks.Add(m);
+
+            return m;
+        }
+
+        /// <summary>Moves and re-stretches one, for a drip that is still running.</summary>
+        public void Restreak(Mark m, Vector3 at, Vector3 side, float tall)
+        {
+            if (m == null) return;
+
+            Wipe(m);
+
+            m.At = at;
+            m.Side = side;
+            m.Tall = tall;
+
+            m.Handle = Place(m);
+            m.Away = m.Handle == 0;
+        }
+
         /// <summary>Puts one up, trying each decal type until the game accepts one.</summary>
         private int Place(Mark m)
         {
@@ -234,7 +294,7 @@ namespace Hoodrich.Paint
                                                 m.At.X, m.At.Y, m.At.Z,
                                                 m.Into.X, m.Into.Y, m.Into.Z,
                                                 m.Side.X, m.Side.Y, m.Side.Z,
-                                                m.Size, m.Size,
+                                                m.Size, m.Tall > 0f ? m.Tall : m.Size,
                                                 m.R, m.G, m.B, _cfg.Opacity,
                                                 // FALSE, FALSE, FALSE -- what every single
                                                 // ADD_DECAL call in the game's own scripts
@@ -611,6 +671,7 @@ namespace Hoodrich.Paint
                     .Set("ix", Math.Round(m.Into.X, 3)).Set("iy", Math.Round(m.Into.Y, 3)).Set("iz", Math.Round(m.Into.Z, 3))
                     .Set("sx", Math.Round(m.Side.X, 3)).Set("sy", Math.Round(m.Side.Y, 3)).Set("sz", Math.Round(m.Side.Z, 3))
                     .Set("w", Math.Round(m.Size, 3))
+                    .Set("h", m.Tall > 0f ? Math.Round(m.Tall, 3) : 0.0)
                     .Set("r", Math.Round(m.R, 3)).Set("g", Math.Round(m.G, 3)).Set("b", Math.Round(m.B, 3))
                     // Only when it differs from the session's own. Most marks match it, and
                     // ten bytes each across fifty thousand is half a megabyte of saying so.
@@ -648,6 +709,7 @@ namespace Hoodrich.Paint
                     Into = new Vector3(node["ix"].AsFloat(), node["iy"].AsFloat(), node["iz"].AsFloat()),
                     Side = new Vector3(node["sx"].AsFloat(), node["sy"].AsFloat(), node["sz"].AsFloat()),
                     Size = node["w"].AsFloat(0.4f),
+                    Tall = node["h"].AsFloat(0f),
                     R = node["r"].AsFloat(1f),
                     G = node["g"].AsFloat(1f),
                     B = node["b"].AsFloat(1f),
