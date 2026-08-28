@@ -27,7 +27,27 @@ namespace Hoodrich.Core
         /// over the way it used to take over the weapon wheel, except this time it is giving
         /// something back rather than only taking.
         /// </summary>
-        public Keys PhoneKey = Keys.None;
+        /// <summary>
+        /// A key that opens the phone, as well as the game's phone button.
+        ///
+        /// F2 by default now rather than None. It also happens to be the rescue key below, and
+        /// that is deliberate -- one key that always does the obvious thing beats two.
+        /// </summary>
+        public Keys PhoneKey = Keys.F2;
+
+        /// <summary>
+        /// The way back in when the mod has been switched off.
+        ///
+        /// THE SETTINGS SCREEN COULD LOCK YOU OUT OF ITSELF. Turning "Posted Up on" off makes
+        /// the tick return before anything reads a button, including the phone -- so the
+        /// screen holding the switch became unreachable, and the only way back was editing a
+        /// file. Somebody who flicks a toggle to see what it does should not need a text
+        /// editor to undo it.
+        ///
+        /// So this is read BEFORE the enabled check, it turns the mod back on, and it writes
+        /// that to the ini so it stays on.
+        /// </summary>
+        public Keys RescueKey = Keys.F2;
         public Keys PhoneModifier = Keys.None;
 
         /// <summary>
@@ -339,6 +359,7 @@ namespace Hoodrich.Core
                 (int)Clamp(ini.GetInt("Phone", "VanillaPhoneSeconds", s.VanillaPhoneSeconds), 1f, 30f);
 
             s.PhoneKey = ini.GetKey("Phone", "Key", ini.GetKey("Wheel", "Key", s.PhoneKey));
+            s.RescueKey = ini.GetKey("General", "RescueKey", s.RescueKey);
             s.PhoneModifier = ini.GetKey("Phone", "Modifier",
                                          ini.GetKey("Wheel", "Modifier", s.PhoneModifier));
 

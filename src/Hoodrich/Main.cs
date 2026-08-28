@@ -1903,6 +1903,14 @@ namespace Hoodrich
                 return;
             }
 
+            // BEFORE THE ENABLED CHECK, and that is the whole point of it.
+            //
+            // Turning "Posted Up on" off in the settings made this tick return before anything
+            // read a button -- including the phone, which is the only way back to the screen
+            // holding the switch. Flicking a toggle to see what it does should not cost you a
+            // text editor.
+            if (!_parked && _cfg != null) Rescue();
+
             if (_parked || _cfg == null || !_cfg.Enabled) return;
 
             // FRANKLIN'S MOD. Michael and Trevor get none of it.
@@ -2397,6 +2405,42 @@ namespace Hoodrich
         }
 
         private bool _saidHello;
+        private bool _rescueDown;
+
+        /// <summary>
+        /// The way back in.
+        ///
+        /// Polled rather than hooked, because nothing here uses KeyDown -- and edge-detected,
+        /// or holding the key would rewrite the ini sixty times a second.
+        ///
+        /// It only ever turns the mod ON. There is no way to switch it off from here, because
+        /// a key that toggles is a key that can leave you exactly where you started.
+        /// </summary>
+        private void Rescue()
+        {
+            bool down;
+
+            try { down = _cfg.RescueKey != System.Windows.Forms.Keys.None &&
+                         Game.IsKeyPressed(_cfg.RescueKey); }
+            catch { return; }
+
+            var pressed = down && !_rescueDown;
+            _rescueDown = down;
+
+            if (!pressed || _cfg.Enabled) return;
+
+            _cfg.Enabled = true;
+
+            var kept = false;
+
+            try { kept = IniFile.SetValue(Paths.Ini, "General", "Enabled", "true"); }
+            catch (Exception ex) { Log.Debug("Could not write the ini: " + ex.Message); }
+
+            Log.Info("Switched back on with " + _cfg.RescueKey +
+                     (kept ? ", and the ini remembers it." : " -- the ini could not be written."));
+
+            Notify.Ticker("~g~" + Build.Name + "~s~ back on.");
+        }
 
         /// <summary>
         /// Says it is here, once, a moment after the world exists.
