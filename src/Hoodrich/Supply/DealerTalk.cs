@@ -26,27 +26,28 @@ namespace Hoodrich.Supply
     /// <summary>
     /// Buying weight off Tao Cheng.
     ///
-    /// He does not do grams and he does not do ounces. Everything on this list is a brick or
-    /// several, and nothing on it comes to less than fifty thousand dollars -- that is the whole
-    /// point of him. Gerald sells you enough to work a corner tonight; Tao Cheng sells you enough
-    /// that the corner stops being the interesting part.
+    /// He does not do grams and he does not do ounces. Every line on his list is a kilo, and
+    /// what changes down the column is the money -- that is the whole point of him. Gerald sells
+    /// you enough to work a corner tonight; Tao Cheng sells you enough that the corner stops
+    /// being the interesting part.
     ///
     /// It all goes to the house, not your pockets. You cannot walk around with twelve kilos of
     /// anything, and pretending otherwise would make the stash house decorative.
     /// </summary>
     internal sealed class DealerTalk
     {
-        /// <summary>Nothing he sells comes in under this.</summary>
-        public const int Floor = 50000;
+        /// <summary>The guard for a man with no numbers of his own. See DealerDef.PriceFloor.</summary>
+        public const int Floor = 500;
 
         /// <summary>
         /// What he is holding today: the written six, then everything else in the catalogue.
         ///
-        /// A load is sized by what it is WORTH rather than by weight, because the six that
-        /// were written by hand already work that way -- they come to somewhere between forty
-        /// and eighty thousand a brick whatever the product is, which is what makes them read
-        /// as one man's van rather than as six unrelated numbers. Rounded to the nearest half
-        /// kilo so the figure still sounds like something a person would say.
+        /// A load is sized BY WEIGHT and priced by what is in it, which is the way it is
+        /// actually sold: you are offered a kilo, and a kilo of one thing costs more than a
+        /// kilo of another. It used to be the other way round -- sized by what it was worth --
+        /// so a fixed spend came back as a different weight on every row, twenty-five kilos of
+        /// weed against two of cocaine at the same hundred thousand dollars. Rounded to his own
+        /// step so the figure still sounds like something a person would say.
         ///
         /// Made-only products are skipped. Nobody buys rolled joints off a container.
         /// </summary>
@@ -86,11 +87,22 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>
-        /// One lot of this off this man, in grams.
+        /// One lot off this man -- the same size whatever it is, because that is how it is sold.
         ///
-        /// Sized from what he deals in rather than from a constant, and rounded to his own
-        /// step -- half a kilo for the port, five grams for somebody on a pushbike -- so the
-        /// number is always one a person would actually say out loud.
+        /// THE UNIT IS FIXED AND THE PRICE IS WHAT MOVES. Nobody offers you "a hundred thousand
+        /// dollars' worth"; they offer you a kilo, and a kilo of one thing costs more than a
+        /// kilo of another. This used to divide his budget by the drug's price, so the weight
+        /// came out different for every row -- twenty-five kilos of weed against two of coke,
+        /// all at the same money -- which is a spreadsheet, not a deal.
+        ///
+        /// A THOUSAND IS THE UNIT AT BOTH ENDS, which is the tidy part: a thousand grams is a
+        /// kilo and a thousand pills is a thousand pills. So the same number serves the weighed
+        /// and the counted without a special case, and Bulk decides which words to put on it.
+        ///
+        /// SCALED TO THE MAN, still. LotValue over a hundred puts the port on a kilo, most of
+        /// the list on fifty, and somebody on a pushbike on five grams -- so the tiers survive
+        /// and nobody is offering kilos out of a rucksack. Rounded to his own step, so it stays
+        /// a number a person would say out loud.
         /// </summary>
         private static float LotOf(DealerDef def, DrugDef drug)
         {
@@ -98,9 +110,18 @@ namespace Hoodrich.Supply
             var step = def == null ? 500f : def.LotStep;
             if (step < 1f) step = 1f;
 
-            var grams = (float)Math.Round(value / Math.Max(1f, drug.BulkPrice) / step) * step;
-            return grams < step ? step : grams;
+            var units = (float)Math.Round(value / LotScale / step) * step;
+            return units < step ? step : units;
         }
+
+        /// <summary>
+        /// What turns a dealer's LotValue into the size of one lot.
+        ///
+        /// A hundred, because it lands the port on exactly a kilo and everybody else in
+        /// proportion. It is a scale and not a price -- the money now comes from the weight
+        /// rather than the weight coming from the money.
+        /// </summary>
+        private const float LotScale = 100f;
 
         /// <summary>Roughly what one load off him is worth, before his own multiplier.</summary>
         private const float BrickValue = 60000f;
@@ -207,7 +228,7 @@ namespace Hoodrich.Supply
                 // "Uncut from $7,000" in the greeting with three rows all reading 50% is a shop
                 // advertising something it appears not to stock. The uncut lot was always there
                 // -- it is the second one -- and nothing on this screen said which.
-                var clean = Def != null && Def.PurityFor(cost) >= 0.999f;
+                var clean = Def != null && Def.PurityFor(brick.Grams) >= 0.999f;
                 var at = clean ? 0 : FirstCleanLot(product, brick);
 
                 var strengthBit = clean
@@ -329,7 +350,7 @@ namespace Hoodrich.Supply
 
             if (Def != null && Def.PurityNow < 0.999f)
             {
-                line += "  --  uncut from $" + ((int)Def.UncutFromValue).ToString("N0");
+                line += "  --  uncut from " + ((int)Def.UncutFromGrams).ToString("N0") + "g";
             }
 
             return line;
@@ -408,7 +429,7 @@ namespace Hoodrich.Supply
                 // EACH ROW CARRIES ITS OWN STRENGTH, because they are no longer the same
                 // purchase at three sizes -- the small one is a bag off him and the big ones
                 // are weight, and that is the actual decision on this menu.
-                var arrives = Def == null ? 1f : Def.PurityFor(cost);
+                var arrives = Def == null ? 1f : Def.PurityFor(grams);
                 var clean = arrives >= 0.999f;
 
                 node.SayIf(blocked.Length == 0, blocked,
@@ -448,7 +469,7 @@ namespace Hoodrich.Supply
 
             for (var i = 0; i < Lots.Length; i++)
             {
-                if (Def.PurityFor(Cost(product, brick.Grams, Lots[i])) >= 0.999f) return Lots[i];
+                if (Def.PurityFor(brick.Grams * Lots[i]) >= 0.999f) return Lots[i];
             }
 
             return 0;
@@ -530,7 +551,7 @@ namespace Hoodrich.Supply
                 // to a half again leaves you twenty-five, which is the punishment for trying.
                 // Weight is weight whoever sold it. A brick has not been opened; the bags in
                 // his jacket have.
-                var strength = Def == null ? 1f : Def.PurityFor(cost);
+                var strength = Def == null ? 1f : Def.PurityFor(grams);
                 var cut = strength < 0.999f;
 
                 var pocket = _state.Stash.AddBulk(product.Id, grams, strength);

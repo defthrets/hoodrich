@@ -198,7 +198,7 @@ namespace Hoodrich.Supply
             def.PureMultiplier = Math.Max(0.2f, node["pureMultiplier"].AsFloat(def.PureMultiplier));
             def.PureChancePercent =
                 Math.Max(0f, Math.Min(100f, node["pureChancePercent"].AsFloat(def.PureChancePercent)));
-            def.UncutFromValue = Math.Max(1f, node["uncutFromValue"].AsFloat(def.UncutFromValue));
+            def.UncutFromGrams = Math.Max(1f, node["uncutFromGrams"].AsFloat(def.UncutFromGrams));
 
             def.SpotX = node["x"].AsFloat(def.SpotX);
             def.SpotY = node["y"].AsFloat(def.SpotY);

@@ -1886,7 +1886,7 @@ namespace Hoodrich.Wheel
             // else's, which meant the whole purity economy only existed on the selling side.
             // The delivery path and the face-to-face path both pass it; this was the one that
             // did not.
-            var accepted = Stash.AddBulk(product.Id, supplied, def.PurityFor(cost));
+            var accepted = Stash.AddBulk(product.Id, supplied, def.PurityFor(supplied));
             if (accepted <= 0f)
             {
                 // Back in his bag before we walk away. It was taken off him a few lines up so

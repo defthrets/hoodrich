@@ -165,8 +165,18 @@ namespace Hoodrich.Supply
         /// selling thirty five pills that turned a two hundred and eighty dollar bag into fifty
         /// thousand dollars: the floor is larger than anything he sells, so every line on his
         /// menu quoted the same absurd number.
+        ///
+        /// THE SAME TRAP A SECOND TIME, and worth writing down. These were then set per dealer
+        /// to roughly what one lot cost -- which was safe only while a lot was priced by being
+        /// worth about that much. The moment the lot became a fixed WEIGHT and the price began
+        /// to follow the product, every real price dropped below the floor and all seven rows
+        /// quoted the floor instead. A minimum sized like a typical price is not a minimum, it
+        /// is the price.
+        ///
+        /// So it is a guard and nothing else: well under the cheapest thing on his own list, so
+        /// that it only ever catches an edge case nobody would say out loud.
         /// </summary>
-        public int PriceFloor = 50000;
+        public int PriceFloor = 500;
         public int PriceStep = 500;
 
         /// <summary>
@@ -294,15 +304,20 @@ namespace Hoodrich.Supply
         /// arriving at a different point for every product and reading as random.
         ///
         /// What the player is actually choosing between is a bag off his person and a load out
-        /// of his boot, and the thing that separates those is what it costs. At the shipped
-        /// numbers the small lot is five grand and cut, and the two bigger ones are ten and
-        /// twenty and are not.
+        /// of his boot, and the thing that separates those is HOW MUCH OF IT there is.
+        ///
+        /// IT USED TO BE A DOLLAR FIGURE, and that only worked while a lot cost about the same
+        /// whatever was in it. Now that every lot off a man is the same weight and the price is
+        /// what moves, a money threshold says something nobody means: that cocaine arrives clean
+        /// and the identical weight of marijuana arrives stepped on, because one is dearer. He
+        /// is not cutting it according to your receipt. He cuts what he breaks up small and
+        /// leaves alone what he does not have to open.
         ///
         /// It is why the corner is worth knowing at all now. Cheap AND cut was strictly worse
         /// than Tao for anybody who could afford Tao; cheap, cut in small amounts and clean in
         /// weight is a different shop rather than a worse one.
         /// </summary>
-        public float UncutFromValue = 10000f;
+        public float UncutFromGrams = 200f;
 
         /// <summary>
         /// Where he actually stands, read off the coordinate HUD.
@@ -327,10 +342,10 @@ namespace Hoodrich.Supply
         /// <summary>Whether anybody wrote his address down.</summary>
         public bool HasSpot => Math.Abs(SpotX) > 0.01f || Math.Abs(SpotY) > 0.01f;
 
-        /// <summary>What a spend of this size actually arrives at.</summary>
-        public float PurityFor(int cost)
+        /// <summary>What an order of this size actually arrives at.</summary>
+        public float PurityFor(float grams)
         {
-            return cost >= UncutFromValue ? 1f : PurityNow;
+            return grams >= UncutFromGrams ? 1f : PurityNow;
         }
         public int MinRank;
         public float MaxOrderGrams = 100f;

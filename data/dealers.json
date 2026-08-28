@@ -72,7 +72,7 @@
       "lotValue": 100000,
       "lotStep": 500,
       "drunk": true,
-      "priceFloor": 100000,
+      "priceFloor": 3000,
       "priceStep": 500,
       "purity": 1.0,
       "afterCheng": {
@@ -179,7 +179,7 @@
       "priceFloor": 0,
       "priceStep": 5,
       "purity": 0.75,
-      "uncutFromValue": 999999,
+      "uncutFromGrams": 999999,
       "numberLine": "Take my number. You want somethin', text me and I'll bring it to the house -- I ain't standin' on no corner waitin' on you."
     },
     {
@@ -227,7 +227,8 @@
       ],
       "purity": 0.95,
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "This ain't my half of the city. Let's be quick.",
@@ -263,7 +264,7 @@
         "here. im the truck that dont belong on your street",
         "outside. come out, i aint knockin on a door"
       ],
-      "uncutFromValue": 8500,
+      "uncutFromGrams": 100,
       "numberLine": "Right. Put this in your phone and don't say my name into it. You want some, you text -- I'll bring it out to the house myself, after dark, like a normal person."
     },
     {
@@ -311,7 +312,8 @@
       ],
       "purity": 1.0,
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "I have never once been to this street. It shows, doesn't it.",
@@ -395,7 +397,8 @@
       ],
       "purity": 0.55,
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "Ay. I got three more of these tonight.",
@@ -431,7 +434,7 @@
         "outside. come get it, i aint got all night",
         "here. engine on"
       ],
-      "uncutFromValue": 7000,
+      "uncutFromGrams": 100,
       "x": 300.039,
       "y": -1784.942,
       "z": 28.439,
@@ -484,7 +487,8 @@
         "comin. be there"
       ],
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "Orale. Long way from the barrio, this.",
@@ -520,7 +524,7 @@
         "outside. come out, dont keep me sittin",
         "here. hurry up, this aint my block"
       ],
-      "uncutFromValue": 5000,
+      "uncutFromGrams": 50,
       "x": 500.6,
       "y": -1697.562,
       "z": 29.789,
@@ -574,7 +578,8 @@
         "aight, be there"
       ],
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "Man, if anybody sees this car on this street.",
@@ -610,7 +615,7 @@
         "im here. quick, quick, quick",
         "out front. i aint sittin on this street twice"
       ],
-      "uncutFromValue": 5000,
+      "uncutFromGrams": 50,
       "x": 85.361,
       "y": -1958.88,
       "z": 21.122,
@@ -666,7 +671,8 @@
         "yeah. be ready"
       ],
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "Ey. Money out?",
@@ -702,7 +708,7 @@
         "im here. come out",
         "out front. money first, remember"
       ],
-      "uncutFromValue": 5000,
+      "uncutFromGrams": 50,
       "x": 345.665,
       "y": -2015.147,
       "z": 22.395,
@@ -756,7 +762,8 @@
         "yeah. be there"
       ],
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "Took the long way. Two of the short ones got cameras.",
@@ -792,7 +799,7 @@
         "here. quiet street, lets keep it that way",
         "outside now. come when youre ready"
       ],
-      "uncutFromValue": 5000,
+      "uncutFromGrams": 50,
       "x": 1295.163,
       "y": -1739.323,
       "z": 54.272,
@@ -847,7 +854,8 @@
         "on it"
       ],
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "HA! You actually live here? In a HOUSE?",
@@ -883,7 +891,7 @@
         "here! open up",
         "outside brother. hurry, im gettin looks"
       ],
-      "uncutFromValue": 5000,
+      "uncutFromGrams": 50,
       "x": 81.327,
       "y": 3713.986,
       "z": 40.66,
@@ -938,7 +946,8 @@
         "Yes."
       ],
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "I am on time. I am always on time.",
@@ -974,7 +983,7 @@
         "I have arrived. I will not wait long.",
         "Outside. Please be prompt."
       ],
-      "uncutFromValue": 5000,
+      "uncutFromGrams": 50,
       "x": -474.548,
       "y": -35.38,
       "z": 45.376,
@@ -1028,7 +1037,8 @@
         "Yes, yes. Coming."
       ],
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "Yes. Hello. Where.",
@@ -1064,7 +1074,7 @@
         "I am here. Where are you.",
         "Front of the house. Hurry."
       ],
-      "uncutFromValue": 5000,
+      "uncutFromGrams": 50,
       "x": 132.305,
       "y": -2205.208,
       "z": 7.186,
@@ -1116,7 +1126,8 @@
         "yes. be there"
       ],
       "lotValue": 5000,
-      "priceFloor": 3000,
+      "priceFloor": 150,
+      "priceStep": 25,
       "lotStep": 25,
       "arrivalLines": [
         "I found it. Your street signs are a suggestion.",
@@ -1152,7 +1163,7 @@
         "out front. come on",
         "here. i'd rather not sit in this street"
       ],
-      "uncutFromValue": 5000,
+      "uncutFromGrams": 50,
       "x": -689.805,
       "y": -911.477,
       "z": 23.672,

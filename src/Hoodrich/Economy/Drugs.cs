@@ -148,9 +148,19 @@ namespace Hoodrich.Economy
         /// Deliberately identical to Amount() for everything that is not counted, so this
         /// changes the two pill entries in the catalogue and nothing else in the game.
         /// </summary>
-        public string Bulk(float grams)
+        public string Bulk(float quantity)
         {
-            return grams.ToString("0.#") + "g";
+            // COUNTED THINGS ARE NOT WEIGHED. Oxycodone and Alprazolam are pills and bars; the
+            // data has said so all along and this stamped a g on them anyway, so a supplier was
+            // offering fourteen and a half thousand GRAMS of pills.
+            if (Counted) return quantity.ToString("N0") + " " + UnitName;
+
+            // And above a kilo, say kilos. Nobody selling weight at this end says 25000g, and
+            // the stash readout at the top of the same screen has been saying kg for as long as
+            // the row under it has been saying grams.
+            if (quantity >= 1000f) return (quantity / 1000f).ToString("0.##") + "kg";
+
+            return quantity.ToString("0.#") + "g";
         }
 
         /// <summary>Short form, for a corner readout where there is no room for a word.</summary>
