@@ -1790,7 +1790,11 @@ namespace Hoodrich
 
                 // A conversation is not a "screen" as far as the frame chain is concerned, so
                 // it would otherwise be talked over by a handset appearing in front of it.
-                _phone.Busy = () => _talk.IsOpen;
+                // NOT WHILE HE IS AIMING, and a scope is the case that made it obvious. A
+                // phone opening over a sniper sight covers the one thing you were using it for
+                // -- and on PC the two are the same key: the game's phone button is the up
+                // arrow, which is exactly what a hand reaches for while scoped.
+                _phone.Busy = () => _talk.IsOpen || Aiming();
 
                 pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
 
@@ -2500,6 +2504,39 @@ namespace Hoodrich
 
             Notify.Ticker("~g~" + Build.Name + " " + Build.Version + " - by " + Build.By +
                           "~s~ loaded.  " + how);
+        }
+
+        /// <summary>
+        /// Whether he is aiming at something, by either route.
+        ///
+        /// AIMING RATHER THAN SCOPED SPECIFICALLY, and that is a decision rather than a
+        /// shortcut. No native says "a scope is up" -- working it out means asking the weapon
+        /// for its components and comparing hashes, which is a list that has to be maintained
+        /// against every scoped weapon in the game and every one a DLC adds.
+        ///
+        /// Aiming is the superset that contains it, and a phone coming out mid-aim is wrong in
+        /// every one of those cases and not only through a scope.
+        ///
+        /// BOTH NATIVES, because they answer different questions. Free-aiming goes false the
+        /// moment somebody on a pad locks on to a target, and the aim camera is what is
+        /// actually up either way.
+        /// </summary>
+        private static bool Aiming()
+        {
+            try
+            {
+                var me = Game.Player;
+                if (me == null) return false;
+
+                if (Function.Call<bool>(Hash.IS_PLAYER_FREE_AIMING, me.Handle)) return true;
+
+                return Function.Call<bool>(Hash.IS_AIM_CAM_ACTIVE);
+            }
+            catch
+            {
+                // Never let a look at the camera be the thing that stops the phone opening.
+                return false;
+            }
         }
 
         private int _paintSavedAt;
