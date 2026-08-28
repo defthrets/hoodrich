@@ -1064,15 +1064,18 @@ namespace Hoodrich.Wheel
                 enabled: ShowGraffiti != null,
                 disabledReason: "Not wired up");
 
-            // Its own can rather than the tag run's, and drawn for THIS size rather than
-            // shrunk to it. Every tile here is 64x64 and the draw call forces the square, so
-            // the tall masthead can would come out a fat little barrel; and simply tilting and
-            // scaling it thinned every stroke while the label band turned the middle to mud.
+            // A CAP, not a can, and drawn for THIS size rather than shrunk to it.
             //
-            // So sprayapp.png is a separate shape of the same object: chunkier than the real
-            // thing, barely tilted, no label, three bold dots. It holds down to sixteen
-            // pixels, which is the only test a tile has to pass.
-            page.WithIcon(Icons.FromFile("sprayapp.png"));
+            // Every tile here is 64x64 and the draw call forces the square. The cap icons the
+            // picker uses are two thirds as wide as they are tall, so handing one of those
+            // straight to the wheel gives a squat, stretched cap -- the same trap the can tile
+            // was made to dodge, and its stroke is drawn for a thirty-pixel chip and vanishes
+            // at sixteen anyway.
+            //
+            // So capapp.png is a separate shape of the same object: squarer, much heavier in
+            // the line, bigger hole. It holds down to sixteen pixels, which is the only test a
+            // tile has to pass.
+            page.WithIcon(Icons.FromFile("capapp.png"));
 
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
                 detail: PaybackDue != null && PaybackDue()
