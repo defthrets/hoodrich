@@ -18,6 +18,15 @@ namespace Hoodrich.Paint
         public float R, G, B;
 
         /// <summary>
+        /// Whether it landed on a vehicle rather than on the world.
+        ///
+        /// Not saved. A decal is placed in world space, so this one is hanging where the car
+        /// was the moment it was sprayed -- putting it back next session would put it in the
+        /// middle of a road.
+        /// </summary>
+        public bool OnVehicle;
+
+        /// <summary>
         /// Which decal type actually put it on the wall.
         ///
         /// Per mark rather than per session, because the can and the extinguisher can now be
@@ -108,8 +117,12 @@ namespace Hoodrich.Paint
 
         /// <summary>Puts one on the wall and remembers it.</summary>
         public void Put(Vector3 at, Vector3 into, Vector3 side, float size,
-                        float r, float g, float b)
+                        float r, float g, float b, int hit = 0)
         {
+            // A CAR IS NOT A WALL. The probe has always included vehicles and the paint has
+            // never appeared on one, because the decal type walls use does not apply to them.
+            // Vehicles get their own, and Place says in the log whether it actually stuck.
+            var onCar = _cfg.VehicleDecal > 0 && IsVehicle(hit);
             // OLDEST FIRST, and taken off the wall rather than merely forgotten. Dropping it
             // from the list alone would leave a decal nothing owns, which is a slot gone for
             // the rest of the session.
@@ -122,7 +135,8 @@ namespace Hoodrich.Paint
             var mark = new Mark
             {
                 At = at, Into = into, Side = side,
-                Size = size, R = r, G = g, B = b
+                Size = size, R = r, G = g, B = b,
+                OnVehicle = onCar
             };
 
             mark.Handle = Place(mark);
@@ -156,6 +170,24 @@ namespace Hoodrich.Paint
             _marks.Add(mark);
         }
 
+        /// <summary>Whether what the ray hit was a vehicle.</summary>
+        private static bool IsVehicle(int entity)
+        {
+            if (entity == 0) return false;
+
+            try
+            {
+                return Function.Call<bool>(Hash.DOES_ENTITY_EXIST, entity) &&
+                       Function.Call<bool>(Hash.IS_ENTITY_A_VEHICLE, entity);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool _saidAboutCars;
+
         /// <summary>Puts one up, trying each decal type until the game accepts one.</summary>
         private int Place(Mark m)
         {
@@ -170,7 +202,7 @@ namespace Hoodrich.Paint
             // Walked rather than built, at index -1, because this runs for every mark and a
             // fresh array per decal at three hundred a second is litter for the collector to
             // pick up mid-spray.
-            var first = m.Type > 0 ? m.Type : Wanted;
+            var first = m.Type > 0 ? m.Type : (m.OnVehicle ? _cfg.VehicleDecal : Wanted);
 
             for (var i = -1; i < Types.Length; i++)
             {
@@ -250,6 +282,31 @@ namespace Hoodrich.Paint
 
                 // What the mark is, from now on and through a save.
                 m.Type = type;
+
+                // SAID ONCE, AND SAID EITHER WAY. Whether any decal type at all sticks to a
+                // vehicle is the open question here, and the answer is worth one line in the
+                // log rather than a report of "nothing happens" with nothing to go on.
+                if (m.OnVehicle && !_saidAboutCars)
+                {
+                    _saidAboutCars = true;
+
+                    var alive = false;
+                    try { alive = Function.Call<bool>(Hash.IS_DECAL_ALIVE, handle); }
+                    catch { }
+
+                    if (alive)
+                    {
+                        Log.Info("Paint landed on a VEHICLE with decal type " + type +
+                                 " and the game says it is there.");
+                    }
+                    else
+                    {
+                        Log.Warn("Decal type " + type + " was accepted on a VEHICLE but " +
+                                 "IS_DECAL_ALIVE says nothing is on it. If nothing ever shows " +
+                                 "on cars, this is why -- try another VehicleDecal, and if none " +
+                                 "of them take then no decal type works on a vehicle.");
+                    }
+                }
 
                 // The session's fallback story is about the LADDER, not about a tool that asked
                 // for something unusual. Somebody testing mud on the can has not discovered
@@ -543,6 +600,11 @@ namespace Hoodrich.Paint
             for (var i = 0; i < _marks.Count; i++)
             {
                 var m = _marks[i];
+
+                // Paint on a car is not saved. The decal is in world space, so it is hanging
+                // where the car was standing -- restoring it next session puts it in the
+                // middle of whatever road that was.
+                if (m.OnVehicle) continue;
 
                 arr.Add(Json.Object()
                     .Set("x", Math.Round(m.At.X, 3)).Set("y", Math.Round(m.At.Y, 3)).Set("z", Math.Round(m.At.Z, 3))

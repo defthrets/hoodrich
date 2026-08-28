@@ -253,6 +253,29 @@
         public float Opacity = 1f;
 
         /// <summary>
+        /// The decal type used when the thing hit is a VEHICLE, or 0 to use the same one as
+        /// everything else.
+        ///
+        /// A CAR IS NOT A WALL as far as the decal system is concerned. splatters_paint goes on
+        /// the map perfectly and appears to do nothing at all on a vehicle -- which is what got
+        /// reported: paint that simply never showed up.
+        ///
+        /// The game clearly CAN mark a car, because bullet holes and blood land on one and stay
+        /// there while it drives. Those are the weapImpact family, so that is what this tries.
+        /// 4010 is weapImpact_metal, which is the one a car panel is.
+        ///
+        /// Unproven, which is why it is a setting and why the first one to land says so in the
+        /// log either way. If none of them take, no decal type works on a vehicle and the
+        /// honest fix is to stop probing them at all rather than to let the trigger do nothing.
+        ///
+        ///     4010  weapImpact_metal      a car panel
+        ///     4020  weapImpact_concrete
+        ///     4050  weapImpact_wood
+        ///     1030  splatters_paint       what walls use, and what does not appear here
+        /// </summary>
+        public int VehicleDecal = 4010;
+
+        /// <summary>
         /// Which decal texture the SPRAY CAN lays down. 0 means the same one the extinguisher
         /// uses, which is 1030 splatters_paint.
         ///

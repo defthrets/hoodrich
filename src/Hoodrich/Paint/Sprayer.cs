@@ -260,7 +260,7 @@ namespace Hoodrich.Paint
         /// worked before: the dab and the whole trail behind it shared one r,g,b, so all of
         /// them were the same shade by construction.
         /// </summary>
-        private void Put(Vector3 at, Vector3 into, Vector3 side, float size)
+        private void Put(Vector3 at, Vector3 into, Vector3 side, float size, int hit)
         {
             // Which texture this tool wants. Set here rather than once per session because the
             // player can swap tools between one mark and the next.
@@ -274,7 +274,7 @@ namespace Hoodrich.Paint
             var gain = _cfg.SprayCanLook ? _cfg.CanColourGain : 1f;
 
             _marks.Put(at, into, side, size,
-                       c.R / 255f * gain, c.G / 255f * gain, c.B / 255f * gain);
+                       c.R / 255f * gain, c.G / 255f * gain, c.B / 255f * gain, hit);
         }
 
         /// <summary>
@@ -386,12 +386,12 @@ namespace Hoodrich.Paint
                         if (midSize < _cfg.LiveMinSize) midSize = _cfg.LiveMinSize;
                         if (midSize > _cfg.LiveMaxSize) midSize = _cfg.LiveMaxSize;
 
-                        Put(mid, into, midSide, midSize);
+                        Put(mid, into, midSide, midSize, hit.Entity);
                     }
                 }
             }
 
-            Put(at, into, side, size);
+            Put(at, into, side, size, hit.Entity);
 
             _lastAt = at;
             _lastNormal = hit.Normal;
