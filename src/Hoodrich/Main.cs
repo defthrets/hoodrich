@@ -3167,6 +3167,13 @@ namespace Hoodrich
             // First, and outside every other try. Everything else in here is litter; this one
             // is the player being unable to attract a police car for the rest of the session
             // because the script unloaded while somebody was holding the switch.
+            // FIRST, because it is the only one that outlives the process that started it.
+            // MCI holds the device, not this script -- so a reload part way through a line
+            // leaves it playing with the alias gone and nothing left that knows how to stop
+            // it. Every other handle here dies with the assembly; this one does not, and the
+            // only cure would be restarting the game.
+            try { Core.Voice.Hush(); } catch { /* teardown */ }
+
             try { LawHold.ReleaseAll(); } catch { /* teardown */ }
 
             // The can comes off his hand and the weapon becomes visible again. Leaving
