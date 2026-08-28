@@ -2238,9 +2238,15 @@ namespace Hoodrich
                     // Going over somebody else's tag is not a moment for whatever happened to
                     // be loaded in the picker -- and forcing it here rather than writing it
                     // into the picker means his own choice is still there afterwards.
-                    _sprayer.Colour = _jobs != null && _jobs.ForcingTagColour
-                        ? Missions.TagRun.TagGreen
-                        : _graffiti.Colour;
+                    var forced = _jobs != null && _jobs.ForcingTagColour;
+
+                    _sprayer.Colour = forced ? Missions.TagRun.TagGreen : _graffiti.Colour;
+
+                    // FLAT WHILE THE RUN IS ASKING. Chrome and gold scatter their shade from
+                    // mark to mark, which is what makes them read as metal -- but a set's tag
+                    // is a set's colour, and shimmering it because that happened to be loaded
+                    // in the picker is the mod editing somebody else's graffiti.
+                    _sprayer.Sheen = forced ? 0f : _graffiti.Sheen;
                     _sprayer.Nozzle = _spraycan.Handle;
                     _sprayer.Update();
 

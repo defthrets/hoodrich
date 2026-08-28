@@ -175,6 +175,19 @@
         public float Opacity = 1f;
 
         /// <summary>
+        /// How hard the two metallics scatter, as a multiplier on their built-in sheen.
+        ///
+        /// 1 is as shipped. 0 turns chrome into flat grey paint and gold into flat mustard,
+        /// which is what they would have been without any of this. Above about 1.6 the marks
+        /// stop reading as one colour catching the light and start reading as somebody
+        /// spraying at random, so that is roughly the useful ceiling.
+        ///
+        /// Only touches the two metallic swatches. Every other colour has a sheen of zero and
+        /// nothing multiplied by zero cares what the multiplier is.
+        /// </summary>
+        public float MetallicShine = 1f;
+
+        /// <summary>
         /// How much each mark varies in size, as a fraction either way.
         ///
         /// DENSITY WITHOUT MORE DECALS COMES FROM HERE. It was 0.15, so marks ranged from 85%

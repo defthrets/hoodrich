@@ -154,6 +154,16 @@ namespace Hoodrich.Paint
         public Color Colour = Color.FromArgb(255, 40, 200, 90);
 
         /// <summary>
+        /// How far each mark's shade is allowed to wander either side of Colour. 0 is flat
+        /// paint, which is what almost everything is.
+        ///
+        /// Set alongside Colour by whoever owns the picker, and left at zero by anything that
+        /// forces a colour for its own reasons -- a gang's tag is a gang's colour, not a
+        /// shimmering approximation of one.
+        /// </summary>
+        public float Sheen;
+
+        /// <summary>
         /// The picker's dial, as a MULTIPLIER rather than a width.
         ///
         /// The width itself comes from how far away the wall is -- see Dab -- so a fixed
@@ -242,6 +252,43 @@ namespace Hoodrich.Paint
             return 1f - j + (float)_rng.NextDouble() * j * 2f;
         }
 
+        /// <summary>
+        /// Lays one mark down in whatever shade it happens to come out.
+        ///
+        /// Every mark goes through here rather than the caller working a colour out once and
+        /// reusing it, which is what used to happen -- and it is why a metallic could not have
+        /// worked before: the dab and the whole trail behind it shared one r,g,b, so all of
+        /// them were the same shade by construction.
+        /// </summary>
+        private void Put(Vector3 at, Vector3 into, Vector3 side, float size)
+        {
+            var c = Shade();
+
+            _marks.Put(at, into, side, size, c.R / 255f, c.G / 255f, c.B / 255f);
+        }
+
+        /// <summary>
+        /// The shade this one mark lands in.
+        ///
+        /// Flat paint is one colour and returns it, which is the case that matters and is the
+        /// first line. A metallic scatters: see Rack for why that scatter is the only thing
+        /// that can make chrome read as chrome on a surface the game will not let anything
+        /// reflect off.
+        ///
+        /// Uniform across the range, not clustered in the middle. A bell curve would put most
+        /// marks near the base colour and make the extremes rare -- which is a slightly dirty
+        /// flat colour, not metal. Metal wants the light and the dark ones to be as common as
+        /// the mid ones.
+        /// </summary>
+        private Color Shade()
+        {
+            var sheen = Sheen * _cfg.MetallicShine;
+
+            if (sheen <= 0f) return Colour;
+
+            return Rack.Lit(Colour, (float)(_rng.NextDouble() * 2.0 - 1.0) * sheen);
+        }
+
         /// <summary>Where the last splatter landed, so the gap to this one can be filled.</summary>
         private Vector3 _lastAt;
         private Vector3 _lastNormal;
@@ -292,10 +339,6 @@ namespace Hoodrich.Paint
             if (size < _cfg.LiveMinSize) size = _cfg.LiveMinSize;
             if (size > _cfg.LiveMaxSize) size = _cfg.LiveMaxSize;
 
-            var r = Colour.R / 255f;
-            var g = Colour.G / 255f;
-            var b = Colour.B / 255f;
-
             // ---- the trail between the last one and this one ----
             //
             // Only along a surface that is still FACING THE SAME WAY. Sweeping round a corner
@@ -333,12 +376,12 @@ namespace Hoodrich.Paint
                         if (midSize < _cfg.LiveMinSize) midSize = _cfg.LiveMinSize;
                         if (midSize > _cfg.LiveMaxSize) midSize = _cfg.LiveMaxSize;
 
-                        _marks.Put(mid, into, midSide, midSize, r, g, b);
+                        Put(mid, into, midSide, midSize);
                     }
                 }
             }
 
-            _marks.Put(at, into, side, size, r, g, b);
+            Put(at, into, side, size);
 
             _lastAt = at;
             _lastNormal = hit.Normal;

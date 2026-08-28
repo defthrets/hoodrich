@@ -54,34 +54,13 @@ namespace Hoodrich.UI
         private const int OpenGraceMs = 220;
 
         /// <summary>
-        /// Eleven, spread round the wheel rather than picked for prettiness -- so whatever
-        /// somebody has in mind when they think "I want that colour" has something near it --
-        /// plus the two neutrals on the end, which is where most real graffiti actually lives.
+        /// The rack, which lives in the paint engine rather than here.
+        ///
+        /// It used to be a pair of arrays in this file and another pair in Overspray's F3
+        /// panel -- two hand-kept copies of one list that no tool compared, which is the exact
+        /// thing the shared engine exists to stop. Adding a colour is one edit now.
         /// </summary>
-        private static readonly Color[] Colours =
-        {
-            Color.FromArgb(255, 228,  46,  46),
-            Color.FromArgb(255, 244, 130,  30),
-            Color.FromArgb(255, 245, 218,  50),
-            Color.FromArgb(255, 122, 214,  56),
-            Color.FromArgb(255,  40, 180, 120),
-            Color.FromArgb(255,  50, 190, 226),
-            Color.FromArgb(255,  52, 110, 226),
-            Color.FromArgb(255, 140,  76, 220),
-            Color.FromArgb(255, 240, 100, 180),
-            Color.FromArgb(255, 245, 245, 245),
-
-            // NOT PURE ZERO. The decal arguments multiply the texture, so 0,0,0 reads as a hole
-            // punched in the wall rather than paint on it, and it takes the jet down with it --
-            // leaving nothing to aim by. A hair above black is indistinguishable on a wall.
-            Color.FromArgb(255,  20,  20,  22)
-        };
-
-        private static readonly string[] Names =
-        {
-            "red", "orange", "yellow", "lime", "green",
-            "cyan", "blue", "purple", "pink", "white", "black"
-        };
+        private static readonly Paint.Swatch[] Tins = Paint.Rack.All;
 
         private enum Row { Swatches, TakeCan, TakeExt, Clear }
 
@@ -116,7 +95,10 @@ namespace Hoodrich.UI
 
         public bool IsOpen => _curtain.Showing;
 
-        public Color Colour => Colours[_pick];
+        public Color Colour => Tins[_pick].Colour;
+
+        /// <summary>How far the loaded paint scatters its shade. Zero for all but the two metallics.</summary>
+        public float Sheen => Tins[_pick].Sheen;
 
         public void Open()
         {
@@ -261,7 +243,7 @@ namespace Hoodrich.UI
 
         private void Step(int by)
         {
-            _pick = (_pick + by + Colours.Length) % Colours.Length;
+            _pick = (_pick + by + Tins.Length) % Tins.Length;
             Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
@@ -300,7 +282,7 @@ namespace Hoodrich.UI
                          Hud.FontCursive, centre: false);
             }
 
-            Hud.TextRight(Names[_pick], right, y + 0.010f, 0.34f, Legible(Colour));
+            Hud.TextRight(Tins[_pick].Name, right, y + 0.010f, 0.34f, Legible(Colour));
 
             y += LogoH + 0.008f;
 
@@ -318,11 +300,11 @@ namespace Hoodrich.UI
             Hud.RectFrom(x, y, right - x, 0.0016f, Legible(Colour));
             y += 0.014f;
 
-            // ---- the eleven ----
+            // ---- the rack ----
             var gap = Hud.ToX(0.005f);
-            var each = (right - x - gap * (Colours.Length - 1)) / Colours.Length;
+            var each = (right - x - gap * (Tins.Length - 1)) / Tins.Length;
 
-            for (var i = 0; i < Colours.Length; i++)
+            for (var i = 0; i < Tins.Length; i++)
             {
                 var sx = x + i * (each + gap);
 
@@ -335,12 +317,12 @@ namespace Hoodrich.UI
                 var sh = on ? SwatchH : SwatchH - 0.012f;
                 var sy = y + (SwatchH - sh);
 
-                Hud.RectFrom(sx, sy, each, sh, Colours[i]);
+                Chip(sx, sy, each, sh, Tins[i]);
 
                 // A near-black swatch on a near-black panel is an empty slot rather than a
                 // colour, so the outline brightens as the swatch darkens.
                 Outline(sx, sy, each, sh, 0.0012f,
-                        Luma(Colours[i]) < 0.18f ? Palette.TextDim
+                        Luma(Tins[i].Colour) < 0.18f ? Palette.TextDim
                                                  : Color.FromArgb(70, 255, 255, 255));
 
                 if (on)
@@ -395,6 +377,37 @@ namespace Hoodrich.UI
             Hud.TextRight(hint, right, y + 0.011f, 0.24f,
                           warn ? Palette.Danger : active ? Legible(Colour) : Palette.TextDim,
                           Hud.FontLabel);
+        }
+
+        /// <summary>
+        /// One square on the rack.
+        ///
+        /// A METALLIC IS DRAWN AS THE RANGE IT SPRAYS, not as its middle. Chrome's middle is a
+        /// mid-grey, and a flat mid-grey square next to the white one says "grey paint" -- the
+        /// player would only find out it was chrome by going and covering a wall with it. Five
+        /// bands lit from the top is the least a gradient can be and still read as metal.
+        /// </summary>
+        private static void Chip(float x, float y, float w, float h, Paint.Swatch s)
+        {
+            if (!s.Metallic)
+            {
+                Hud.RectFrom(x, y, w, h, s.Colour);
+                return;
+            }
+
+            const int bands = 5;
+
+            for (var i = 0; i < bands; i++)
+            {
+                // Brightest at the top down to darkest at the bottom, because light comes from
+                // above and a chrome swatch shaded the other way reads as a hole in the panel.
+                var t = 1f - i * 2f / (bands - 1);
+
+                // A hair taller than its share, so rounding cannot leave a seam of phone
+                // showing between two of them.
+                Hud.RectFrom(x, y + h * i / bands, w, h / bands + 0.0004f,
+                             Paint.Rack.Lit(s.Colour, t * s.Sheen));
+            }
         }
 
         /// <summary>
