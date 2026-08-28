@@ -210,7 +210,7 @@ namespace Hoodrich.Paint
 
             // Rate rather than every frame. A dab per frame at 60fps empties the decal pool in
             // about seven seconds and puts three hundred splatters inside one square metre.
-            _nextDab = now + (int)(1000f / Math.Max(1f, _cfg.Rate));
+            _nextDab = now + (int)(1000f / Math.Max(1f, _cfg.LiveRate));
 
             Dab();
         }
@@ -364,10 +364,10 @@ namespace Hoodrich.Paint
                 // a courtyard, not a stroke, and joining those is a line nobody drew.
                 if (samewall && gap > 0.001f && gap < 6f)
                 {
-                    var step = Math.Max(0.02f, size * _cfg.Overlap);
+                    var step = Math.Max(0.02f, size * _cfg.LiveOverlap);
 
                     var fill = (int)(gap / step);
-                    if (fill > _cfg.MaxFill) fill = _cfg.MaxFill;
+                    if (fill > _cfg.LiveMaxFill) fill = _cfg.LiveMaxFill;
 
                     for (var i = 1; i <= fill; i++)
                     {

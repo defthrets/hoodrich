@@ -163,6 +163,36 @@
         public float LiveMinSize => SprayCanLook ? CanMinSize : MinSize;
         public float LiveMaxSize => SprayCanLook ? CanMaxSize : MaxSize;
 
+        /// <summary>
+        /// How many times more paint the CAN lays than the extinguisher does.
+        ///
+        /// ONE DIAL RATHER THAN THREE, because density is not one number -- it comes out of
+        /// three that have to move together or the result is uneven rather than denser:
+        ///
+        ///   Rate      marks a second, which is what you get standing still
+        ///   Overlap   the spacing of the trail marks, which is what you get sweeping
+        ///   MaxFill   the ceiling on that trail, which is what stops a fast sweep clipping
+        ///
+        /// Turn up the rate alone and a slow hand gets denser while a fast sweep does not.
+        /// Tighten the overlap alone and it is the other way round. Halving the spacing without
+        /// raising the ceiling means a fast sweep hits the cap and thins out exactly when you
+        /// are moving quickest, which reads as the mod failing under speed.
+        ///
+        /// So all three move off this. At 2 the can lays twice the paint per stroke at any
+        /// hand speed, and spends the decal budget twice as fast for it -- which is the whole
+        /// of the trade and there is no version of this where it is not.
+        ///
+        /// The extinguisher is untouched. It already covers a garage door in a second and
+        /// doubling that empties the game's pool faster than the sweep can recycle it.
+        /// </summary>
+        public float CanDensity = 2f;
+
+        private float Denser => SprayCanLook ? (CanDensity < 0.25f ? 0.25f : CanDensity) : 1f;
+
+        public float LiveRate => Rate * Denser;
+        public float LiveOverlap => Overlap / Denser;
+        public int LiveMaxFill => (int)(MaxFill * Denser);
+
         // ---- paint ---------------------------------------------------------------
 
         /// <summary>
