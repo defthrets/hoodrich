@@ -2498,7 +2498,8 @@ namespace Hoodrich
                 ? "It is on your phone."
                 : "Press ~b~" + _cfg.PhoneKey + "~s~ for the phone.";
 
-            Notify.Ticker("~g~" + Build.Name + " " + Build.Version + "~s~ loaded.  " + how);
+            Notify.Ticker("~g~" + Build.Name + " " + Build.Version + " - by " + Build.By +
+                          "~s~ loaded.  " + how);
         }
 
         private int _paintSavedAt;
