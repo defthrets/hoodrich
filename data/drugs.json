@@ -30,7 +30,7 @@
       "tier": 0,
       "basePrice": 20,
       "bulkPrice": 4,
-      "lotGrams": 50000,
+      "lotGrams": 20000,
       "heatFactor": 0.55,
       "splitVerb": "Bag up",
       "unitName": "baggies",
