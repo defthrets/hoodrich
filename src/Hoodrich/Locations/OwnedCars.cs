@@ -591,6 +591,39 @@ namespace Hoodrich.Locations
         /// stable for a given car, different for every other one, and it reads as a plate
         /// rather than as a serial number if anybody looks at it.
         /// </summary>
+        /// <summary>
+        /// The plate a given lot id wears, for anybody who needs to recognise the car rather
+        /// than record it. Hao uses it to work out which of his own cars you have driven back.
+        /// </summary>
+        public static string Plate(string id)
+        {
+            return PlateFor(id);
+        }
+
+        /// <summary>
+        /// Forgets a car, because it is not yours any more.
+        ///
+        /// THE REMOVAL FROM _state.Owned IS THE LOAD-BEARING PART. Update puts back anything on
+        /// that list the world has lost, so a car sold back and left on it is a car Hao parks on
+        /// his lot and this class then teleports to wherever you are standing.
+        /// </summary>
+        public void Sold(string id)
+        {
+            if (_state == null || string.IsNullOrEmpty(id)) return;
+
+            _state.Owned.RemoveAll(o => string.Equals(o.Id, id, StringComparison.OrdinalIgnoreCase));
+            _state.Touch();
+
+            _rebuiltAt.Remove(id);
+
+            // Written out now for the same reason buying one is: a sale followed by a crash
+            // inside the autosave window is money taken and a car still recorded as yours.
+            try { SaveNow?.Invoke(); }
+            catch (Exception ex) { Log.Debug("Could not save after the buy-back: " + ex.Message); }
+
+            Log.Info("Sold car " + id + " back; forgotten.");
+        }
+
         private static string PlateFor(string id)
         {
             var hash = 5381;

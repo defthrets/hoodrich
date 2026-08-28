@@ -154,11 +154,7 @@ namespace Hoodrich.Locations
                 var id = node["id"].AsString("");
                 if (string.IsNullOrEmpty(id)) continue;
 
-                // Sold is remembered, so his lot does not quietly restock the thing you are
-                // currently driving around in.
-                if (_state != null && _state.CarsBought.Contains(id)) continue;
-
-                _stock.Add(new CarLot
+                var lot = new CarLot
                 {
                     Id = id,
                     Model = node["model"].AsString(id),
@@ -170,11 +166,44 @@ namespace Hoodrich.Locations
                     Heading = node["heading"].AsFloat(),
                     Paint = node["paint"].AsInt(-1),
                     Paint2 = node["paint2"].AsInt(-1)
-                });
+                };
+
+                // EVERY CAR IS KEPT, not only the ones for sale. The catalogue is what a
+                // buy-back is put back into: the spot, the heading and the paint all live in
+                // cars.json, and a car that has been bought is gone from _stock -- so without a
+                // full list there is nothing left to say where it belongs.
+                _all.Add(lot);
+
+                // Sold is remembered, so his lot does not quietly restock the thing you are
+                // currently driving around in.
+                if (_state != null && _state.CarsBought.Contains(id)) continue;
+
+                _stock.Add(lot);
             }
 
             Log.Info("Hao's lot: " + _stock.Count + " for sale.");
         }
+
+        /// <summary>
+        /// Every car on the books, sold or not. See Load.
+        /// </summary>
+        private readonly List<CarLot> _all = new List<CarLot>();
+
+        /// <summary>
+        /// When each car was bought, by lot id.
+        ///
+        /// IN MEMORY AND NOT IN THE SAVE, deliberately. It exists for one thing -- the window in
+        /// which he gives you your money back rather than half of it -- and that window is about
+        /// having just done something you did not mean to do. Carrying it across a reload would
+        /// turn "I have just bought the wrong car" into a thing you could bank and come back to.
+        ///
+        /// So a car bought last session sells for half, which is also what a car is worth once
+        /// you have owned it for a while.
+        /// </summary>
+        private readonly Dictionary<string, int> _boughtAt = new Dictionary<string, int>();
+
+        /// <summary>How long he will pretend the sale never happened.</summary>
+        private const int RegretMs = 10 * 60 * 1000;
 
         /// <summary>The one you are standing next to, if any.</summary>
         public CarLot NearestCar()
@@ -265,7 +294,153 @@ namespace Hoodrich.Locations
                 _state.Touch();
             }
 
+            // Stamped for the buy-back window. See _boughtAt.
+            _boughtAt[car.Id] = Game.GameTime;
+
             Log.Info("Bought " + car.Id + " off Hao for $" + car.Price + ".");
+            return null;
+        }
+
+        /// <summary>
+        /// Which of his cars this is, or null if he never sold it to you.
+        ///
+        /// BY PLATE. Every car he sells gets one stamped on it out of the lot id, so the plate
+        /// is the only thing that survives being driven off, parked, saved and loaded -- the
+        /// handle does not and the position certainly does not.
+        /// </summary>
+        public CarLot His(Vehicle car)
+        {
+            if (car == null || !car.Exists() || _state == null) return null;
+
+            string plate;
+
+            // The native, not the wrapper property, which this build of SHVDN does not have --
+            // and it matches how OwnedCars WRITES the plate in the first place.
+            try
+            {
+                plate = Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle);
+            }
+            catch
+            {
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(plate)) return null;
+
+            plate = plate.Trim();
+
+            foreach (var id in _state.CarsBought)
+            {
+                if (!string.Equals(OwnedCars.Plate(id), plate, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                foreach (var lot in _all)
+                {
+                    if (string.Equals(lot.Id, id, StringComparison.OrdinalIgnoreCase)) return lot;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>What he will give you for it, and whether that is the full price.</summary>
+        public int Offer(CarLot car, out bool full)
+        {
+            full = false;
+
+            if (car == null) return 0;
+
+            int at;
+
+            if (_boughtAt.TryGetValue(car.Id, out at) && Game.GameTime - at < RegretMs)
+            {
+                full = true;
+                return car.Price;
+            }
+
+            return Math.Max(1, car.Price / 2);
+        }
+
+        /// <summary>
+        /// Buys one back. Returns what to tell the player, or null if it went through.
+        ///
+        /// THE CAR GOES BACK ON THE LOT RATHER THAN BEING DELETED, which is the whole difference
+        /// between this and a bin. It is driven into its own space, locked, stripped of every
+        /// flag that made it yours, and put back on the board at its old price -- so the yard
+        /// after a buy-back looks exactly like the yard before you ever touched it.
+        /// </summary>
+        public string SellBack(Vehicle car, CarLot lot)
+        {
+            if (lot == null) return "that ain't one of mine.";
+            if (car == null || !car.Exists()) return "bring it here first.";
+
+            bool full;
+            var paid = Offer(lot, out full);
+
+            var me = Game.Player.Character;
+            var stood = me != null && me.Exists() ? me.Position : lot.Spot;
+
+            try
+            {
+                // OUT FIRST, AND INSTANTLY. TASK_LEAVE_VEHICLE is a task -- it queues an
+                // animation of him opening the door and climbing out, which takes a couple of
+                // seconds. The car moves on the next line, so with the ordinary flag he is
+                // still sat in it and gets driven across the yard with it.
+                //
+                // Flag 16 is the warp, and then he is put back where he was standing anyway,
+                // because a warp out leaves him beside the car and the car is about to leave.
+                if (me != null && me.Exists())
+                {
+                    Function.Call(Hash.TASK_LEAVE_VEHICLE, me.Handle, car.Handle, 16);
+                }
+
+                car.Position = lot.Spot;
+                car.Heading = lot.Heading;
+
+                car.Speed = 0f;
+
+                // Back to being stock. Every one of these is something Buy turned on, and a car
+                // left persistent and owned is a car the population manager will not touch and
+                // OwnedCars will keep standing back up.
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, car.Handle, 2);
+                Function.Call(Hash.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER, car.Handle, false);
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, car.Handle, true, true);
+
+                car.IsPersistent = true;
+                car.PlaceOnGround();
+
+                // Back on the pavement where he was, not wherever the warp dropped him -- which
+                // is beside a car that has just been driven to the other end of the lot.
+                if (me != null && me.Exists()) me.Position = stood;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not park " + lot.Id + " back up: " + ex.Message);
+            }
+
+            Game.Player.Money += paid;
+
+            // Off the books, in both places that remember it.
+            if (Owned != null) Owned.Sold(lot.Id);
+
+            if (_state != null)
+            {
+                _state.CarsBought.RemoveAll(
+                    id => string.Equals(id, lot.Id, StringComparison.OrdinalIgnoreCase));
+
+                _state.Touch();
+            }
+
+            ClearSoldBlips();
+
+            // And back on the board, as the very car you drove in.
+            lot.Live = car;
+
+            if (!_stock.Contains(lot)) _stock.Add(lot);
+
+            Log.Info("Sold " + lot.Id + " back to Hao for $" + paid +
+                     (full ? " (full price, inside the window)." : " (half price)."));
+
             return null;
         }
 
@@ -580,6 +755,32 @@ namespace Hoodrich.Locations
 
                 Help.ShowThisFrame(car.Name + "  ·  ~g~$" + car.Price.ToString("N0") + "~s~  ·  " +
                                    "see Hao at the shutter");
+                return;
+            }
+
+            // SAT IN ONE OF HIS, the prompt is about that instead. Driving a car you bought
+            // up to the man you bought it from is the whole of the interaction -- there is
+            // nothing to open and nothing to find in a menu.
+            var mine = His(Game.Player.Character == null ? null
+                                                        : Game.Player.Character.CurrentVehicle);
+
+            if (mine != null)
+            {
+                bool full;
+                var offer = Offer(mine, out full);
+
+                Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to sell the " + mine.Name +
+                                   " back for ~g~$" + offer.ToString("N0") + "~s~" +
+                                   (full ? "  ·  he'll pretend it never happened" : ""));
+
+                if (!WantsToTalk()) return;
+
+                var no = SellBack(Game.Player.Character.CurrentVehicle, mine);
+
+                Notify.Important(no == null
+                    ? "~g~Sold.~s~  $" + offer.ToString("N0") + " back off Hao."
+                    : "~y~Hao:~s~ " + no);
+
                 return;
             }
 
