@@ -2461,9 +2461,19 @@ namespace Hoodrich
         /// one message whose entire job is to prove the mod loaded the one message nobody
         /// sees.
         ///
-        /// ~INPUT_PHONE~ rather than a typed key name, so the game prints whatever the button
-        /// is actually bound to on this install -- including on a pad, where naming a keyboard
-        /// key would be worse than saying nothing.
+        /// IT NAMES THE KEY. This used to say ~INPUT_PHONE~, on the reasoning that the game
+        /// would print whatever the button is bound to on this install, pad included. Two
+        /// things were wrong with that and the result shipped:
+        ///
+        ///     Posted Up 0.4.0 loaded.  b__194 or F2 for the phone.
+        ///
+        /// INPUT_PHONE is not a control the game has -- the real ones are INPUT_CELLPHONE_*,
+        /// which is written down two files away in GangLeaders after the same mistake there.
+        /// An unknown control name does not fall back to anything, it prints the junk the
+        /// lookup landed on. And a ~INPUT_~ tag belongs in help text, not in a ticker.
+        ///
+        /// The one message whose entire job is to prove the mod loaded cannot be the message
+        /// that looks like a crash. So it says the key, the way the standalone's does.
         /// </summary>
         private void Hello()
         {
@@ -2482,12 +2492,13 @@ namespace Hoodrich
 
             _saidHello = true;
 
-            var key = _cfg.PhoneKey == System.Windows.Forms.Keys.None
-                ? "~INPUT_PHONE~"
-                : "~INPUT_PHONE~ or ~b~" + _cfg.PhoneKey + "~s~";
+            // With no key bound there is nothing honest to name -- the phone is still where
+            // the mod lives, so it says that rather than naming a button that is not there.
+            var how = _cfg.PhoneKey == System.Windows.Forms.Keys.None
+                ? "It is on your phone."
+                : "Press ~b~" + _cfg.PhoneKey + "~s~ for the phone.";
 
-            Notify.Ticker("~g~" + Build.Name + " " + Build.Version + "~s~ loaded.  " +
-                          key + " for the phone.");
+            Notify.Ticker("~g~" + Build.Name + " " + Build.Version + "~s~ loaded.  " + how);
         }
 
         private int _paintSavedAt;

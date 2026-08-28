@@ -39,7 +39,11 @@ namespace Hoodrich.UI
         /// about half. Keeping the old height would have kept the file the same size on screen
         /// and halved the part anybody reads.
         /// </summary>
-        private const float LogoH = 0.066f;
+        /// <summary>
+        /// A masthead, not a billboard -- the same call as the standalone's panel. At 0.066 the
+        /// app's name was the loudest thing on a screen whose job is choosing a colour.
+        /// </summary>
+        private const float LogoH = 0.034f;
         private const float LogoAspect = 4.6174f;
         private const float CanH = 0.052f;
         private const float CanAspect = 0.4412f;
