@@ -139,6 +139,15 @@ namespace Hoodrich.Paint
         private readonly PaintConfig _cfg;
         private readonly Marks _marks;
 
+        /// <summary>
+        /// How many dabs one tick may place.
+        ///
+        /// The ceiling on catching up. Four at sixty frames a second is 240 marks a second
+        /// standing still, which is already more than the decal pool holds -- past this the
+        /// only thing a higher rate buys is recycling your own paint faster.
+        /// </summary>
+        private const int MaxDabsPerTick = 4;
+
         private int _nextDab;
         private int _fx = -1;
         private int _cloud = -1;
@@ -215,9 +224,29 @@ namespace Hoodrich.Paint
 
             // Rate rather than every frame. A dab per frame at 60fps empties the decal pool in
             // about seven seconds and puts three hundred splatters inside one square metre.
-            _nextDab = now + (int)(1000f / Math.Max(1f, _cfg.LiveRate));
+            var gap = (int)(1000f / Math.Max(1f, _cfg.LiveRate));
+            if (gap < 1) gap = 1;
 
-            Dab();
+            // MORE THAN ONE DAB A TICK WHEN THE RATE ASKS FOR IT, which it now does. This ran
+            // one dab per tick, so sixty frames a second was a hard ceiling of sixty marks a
+            // second however high Rate was set -- turning the dial past that changed nothing
+            // and said nothing, which is the worst kind of setting.
+            //
+            // Catching up rather than free-running: the clock advances by one gap per dab, so
+            // the marks land at the spacing the rate asked for rather than in a clump.
+            var dabs = 0;
+
+            while (now >= _nextDab && dabs < MaxDabsPerTick)
+            {
+                Dab();
+
+                _nextDab += gap;
+                dabs++;
+            }
+
+            // A frame that took a long time -- a load, an alt-tab -- must not leave the clock
+            // owing hundreds of dabs that then arrive over the following seconds.
+            if (_nextDab < now) _nextDab = now + gap;
         }
 
         /// <summary>Extinguisher out, trigger down.</summary>

@@ -233,7 +233,7 @@
         /// The extinguisher is untouched. It already covers a garage door in a second and
         /// doubling that empties the game's pool faster than the sweep can recycle it.
         /// </summary>
-        public float CanDensity = 2f;
+        public float CanDensity = 3f;
 
         private float Denser => SprayCanLook ? (CanDensity < 0.25f ? 0.25f : CanDensity) : 1f;
 
