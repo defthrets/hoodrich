@@ -71,8 +71,14 @@
         ///
         /// Below about 0.5 they overlap into a solid band. Higher reads as a dotted trail,
         /// which is a legitimate look but not the one this is for.
+        ///
+        /// IT MOVES IN STEPS, NOT SMOOTHLY, and that is worth knowing before nudging it. The
+        /// fill count is an integer division, so most changes do nothing at all: with 0.070m
+        /// marks on an ordinary sweep, everything from 0.30 to 0.38 gives the same 66 marks,
+        /// and 0.40 is where it drops to 44. Tuning this by small amounts and watching for a
+        /// difference is a way to conclude the setting does not work.
         /// </summary>
-        public float Overlap = 0.30f;
+        public float Overlap = 0.40f;
 
         /// <summary>
         /// The most marks one dab may fill in.
