@@ -228,6 +228,20 @@ namespace Hoodrich.Paint
             }
         }
 
+        /// <summary>
+        /// A size multiplier around 1, by however much SizeJitter allows.
+        ///
+        /// One place rather than two. The trail marks and the dab were rolling their own
+        /// identical expression, which is exactly the shape of thing that gets tuned in one
+        /// spot and not the other.
+        /// </summary>
+        private float Vary()
+        {
+            var j = _cfg.SizeJitter;
+
+            return 1f - j + (float)_rng.NextDouble() * j * 2f;
+        }
+
         /// <summary>Where the last splatter landed, so the gap to this one can be filled.</summary>
         private Vector3 _lastAt;
         private Vector3 _lastNormal;
@@ -273,7 +287,7 @@ namespace Hoodrich.Paint
 
             // A little variation, or a held trigger paints one splatter repeatedly in place and
             // reads as a decal rather than as spray.
-            size *= 0.85f + (float)_rng.NextDouble() * 0.3f;
+            size *= Vary();
 
             if (size < _cfg.LiveMinSize) size = _cfg.LiveMinSize;
             if (size > _cfg.LiveMaxSize) size = _cfg.LiveMaxSize;
@@ -314,7 +328,7 @@ namespace Hoodrich.Paint
                         var midSide = Surface.Along(hit.Normal,
                                                     (float)(_rng.NextDouble() * Math.PI * 2.0));
 
-                        var midSize = size * (0.85f + (float)_rng.NextDouble() * 0.3f);
+                        var midSize = size * Vary();
 
                         if (midSize < _cfg.LiveMinSize) midSize = _cfg.LiveMinSize;
                         if (midSize > _cfg.LiveMaxSize) midSize = _cfg.LiveMaxSize;

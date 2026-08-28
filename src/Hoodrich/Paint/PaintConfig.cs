@@ -165,7 +165,28 @@
 
         // ---- paint ---------------------------------------------------------------
 
-        public float Opacity = 0.92f;
+        /// <summary>
+        /// How solid each mark goes on. 1 is fully opaque.
+        ///
+        /// Was 0.92, which let the wall through every mark. Overlapping translucent marks do
+        /// build up, but the FIRST pass over clean wall is the one you look at, and at 0.92
+        /// that pass is visibly thin.
+        /// </summary>
+        public float Opacity = 1f;
+
+        /// <summary>
+        /// How much each mark varies in size, as a fraction either way.
+        ///
+        /// DENSITY WITHOUT MORE DECALS COMES FROM HERE. It was 0.15, so marks ranged from 85%
+        /// to 115% of the size -- and a mark at 85% covers only 72% of the area of a full one,
+        /// so roughly one in six was doing three-quarters of a job and leaving a thin patch
+        /// where it landed.
+        ///
+        /// At 0.06 the coverage is even and the same number of decals reads noticeably fuller.
+        /// It is not free of cost: variation is what stops a line looking stamped, so this is
+        /// as low as it can go before the marks start looking identical.
+        /// </summary>
+        public float SizeJitter = 0.06f;
 
         /// <summary>
         /// How many marks are remembered.
@@ -200,7 +221,7 @@
         /// The can also gets no cloud and no smoke fallback at all -- see Sprayer.CanJets.
         /// </summary>
         public float JetScale = 1f;
-        public float CanJetScale = 0.30f;
+        public float CanJetScale = 0.42f;
 
         /// <summary>
         /// Whether the spray tilts with the camera.
