@@ -395,15 +395,38 @@ namespace Hoodrich.Gangs
             return node;
         }
 
+        /// <summary>
+        /// Who holds the blocks round here.
+        ///
+        /// GERALD ANSWERS FOR HIMSELF; everybody else is assembled from their own data. This
+        /// method is shared by every leader in the game, so a line naming the Chamberlain and
+        /// Forum Drive sets would come out of El Tio's mouth as readily as his -- which is why
+        /// the generic version reads turf and rivals off the gang rather than saying anything
+        /// specific. His is written; theirs is built.
+        /// </summary>
         private DialogueNode WhoRuns(LeaderDef def, GangDef gang)
         {
-            var rivals = gang.Rivals.Count == 0
-                ? "Nobody worth naming."
-                : "We got problems with " + JoinNames(gang) + ".";
+            DialogueNode node;
 
-            var node = Node(def, gang,
-                "We do. " + gang.TurfHint + ", all of it. " + rivals +
-                " You walk them blocks wearing the wrong thing, that's on you.");
+            if (string.Equals(gang.Id, "families", StringComparison.OrdinalIgnoreCase))
+            {
+                node = Node(def, gang,
+                    "We do, Franklin! You know this. You and Lamar and your cute little 88 "
+                  + "set... are considered family, but the real big dawgs are Chamberlain "
+                  + "Gangster Families and the Forum Drive Families, we all know this... Our "
+                  + "ops are ballas and vagos mainly... but we ain't exactly on good terms "
+                  + "with the lost and the aztecas as well. Little scary ass bitches.");
+            }
+            else
+            {
+                var rivals = gang.Rivals.Count == 0
+                    ? "Nobody worth naming."
+                    : "We got problems with " + JoinNames(gang) + ".";
+
+                node = Node(def, gang,
+                    "We do. " + gang.TurfHint + ", all of it. " + rivals +
+                    " You walk them blocks wearing the wrong thing, that's on you.");
+            }
 
             node.Say("Back up.", () => Root(def));
             node.Leave();
