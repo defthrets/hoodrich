@@ -329,6 +329,23 @@ if ($Package) {
     Copy-Item (Join-Path $root 'data\*.json') $dataOut
     Copy-Item (Join-Path $root 'data\icons') $dataOut -Recurse
 
+    # The voice pack, which was quietly not shipping.
+    #
+    # data\*.json catches the data and icons is named outright, so the folder added
+    # after both of them went to nobody -- every download was a silent mod, and the
+    # one machine that could not notice is this one, where the files are already in
+    # place from being deployed.
+    #
+    # wav ONLY. The mp3 masters are not in the tree and would not play anyway: MCI's
+    # mpeg driver refuses to load inside GTA, so an mp3 beside a wav is two failed
+    # opens and then the wav regardless.
+    $voice = Join-Path $root 'data\voice'
+    if (Test-Path $voice) {
+        $voiceOut = Join-Path $dataOut 'voice'
+        New-Item -ItemType Directory -Force -Path $voiceOut | Out-Null
+        Copy-Item (Join-Path $voice '*.wav') $voiceOut
+    }
+
     # WHICH BUILD THIS DATA CAME WITH. Somebody dropping in a new dll and keeping the old
     # data folder -- because their save lives in it -- is the most common half-broken
     # install there is, and nothing about it throws. The mod reads this back and says so.

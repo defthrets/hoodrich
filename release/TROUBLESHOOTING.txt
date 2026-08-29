@@ -1,4 +1,4 @@
-POSTED UP -- IT IS NOT WORKING
+﻿POSTED UP -- IT IS NOT WORKING
 ==============================
 
 Start here, because it saves everybody time:
@@ -13,6 +13,24 @@ If you get NOTHING -- no panel, no notifications, the phone button does nothing 
 then the mod never loaded at all, and nothing it could have been written to do
 would have told you so. Code that never runs cannot draw a message. That is what
 the rest of this file is for.
+
+
+WINDOWS BLOCKED THE FILE
+------------------------
+
+Check this FIRST if you downloaded the zip and nothing happens at all.
+
+Windows marks every file that came out of a downloaded archive, and ScriptHookVDotNet
+silently refuses to load a marked dll. No error, no log, no panel -- the mod simply
+is not there. It is the single most common reason a working mod does nothing on
+somebody else's machine, and the author can never reproduce it, because their own
+copy was never downloaded.
+
+Fix it before you extract:
+
+  Right-click the ZIP -> Properties -> tick "Unblock" -> OK -> then extract.
+
+If you already extracted, do the same on scripts\Hoodrich.dll itself.
 
 
 IS IT LOADING AT ALL?
