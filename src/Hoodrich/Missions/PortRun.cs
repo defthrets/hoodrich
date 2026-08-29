@@ -1328,6 +1328,21 @@ namespace Hoodrich.Missions
             // van and the other is a man stood in the middle of it.
             var radius = Stage == StageBay ? 3.6f : 5f;
 
+            // ONCE HE IS IN IT, IT HAS DONE ITS JOB.
+            //
+            // A marker is somewhere to aim at, and the moment he is stood in it there is
+            // nothing left to aim at -- so leaving it drawn paints a bright green disc over
+            // the truck he is trying to line up, at exactly the moment the lining up is the
+            // hard part. The prompt takes over and says what to do next.
+            //
+            // FLAT DISTANCE, ignoring height. The marker is a cylinder stood on the ground
+            // and he is sat in a lorry cab well above its floor, so measuring in three
+            // dimensions would keep it drawn for the one man most likely to be inside it.
+            var dx = player.Position.X - where.X;
+            var dy = player.Position.Y - where.Y;
+
+            if (dx * dx + dy * dy <= radius * radius) return;
+
             try
             {
                 Function.Call(Hash.DRAW_MARKER, (int)MarkerType.Cylinder,
