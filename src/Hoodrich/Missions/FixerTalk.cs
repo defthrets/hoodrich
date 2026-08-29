@@ -112,9 +112,10 @@ namespace Hoodrich.Missions
                 return busy;
             }
 
-            var node = Node("What up Franklin. Got rid of that yee yee ass haircut I see. Bout time you "
-                            + "came around to see your old friend Lamar, the one you done forgot... "
-                            + "Nah man, it's all love dawg.");
+            var node = Node("What up Franklin! Bout time you came around to see your old friend Lamar, "
+                           + "the one you done forgot about... Nah man, it's all love dawg. Got rid "
+                           + "of that yee yee ass haircut I see nigga... come here I gots some shit "
+                           + "we gotta work on.");
 
             // The NEW thing comes first and on its own terms: he works down his list in order,
             // and until you have been through it he tells you what needs doing rather than
