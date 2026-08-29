@@ -298,6 +298,8 @@ namespace Hoodrich.Territory
 
         public void Update()
         {
+            LateFinger();
+
             var now = Game.GameTime;
             if (now - _lastTick < TickMs) return;
             _lastTick = now;
@@ -758,11 +760,78 @@ namespace Hoodrich.Territory
         /// the one-handed version is a single gesture with its own beginning and end, so there
         /// is nothing left to sequence and the whole stage walk went with it.
         ///
-        /// The dict is requested here and played here, which is a race the first time and only
-        /// the first time -- REQUEST_ANIM_DICT is asynchronous, so a cold dictionary costs the
-        /// player the animation on his first press and nothing after that. Worth it against
-        /// holding a streaming request open for a gesture nobody may ever use.
+        /// THE FIRST ONE USED TO DO NOTHING. The dictionary was requested here and played in
+        /// the same breath, and REQUEST_ANIM_DICT is asynchronous -- so the first press went to
+        /// a clip that had not streamed, and only the second landed. It was written down as an
+        /// accepted cost, against holding a request open for a gesture nobody may use. That was
+        /// the wrong trade: the first time somebody does this is the time they are finding out
+        /// whether it works at all.
+        ///
+        /// Warm asks for it while the prompt is on screen -- only while a car is close enough to
+        /// be told, so nothing is held open for a gesture nobody uses, and there is a long time
+        /// in streaming terms between seeing the prompt and pressing. If a press still beats it,
+        /// LateFinger honours it the moment the clip lands.
         /// </summary>
+        /// <summary>Ask for the clip early, so pressing does not have to wait for it.</summary>
+        private static void Warm(Ped player)
+        {
+            try
+            {
+                var dict = Female(player) ? FingerDictFemale : FingerDictMale;
+
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+                }
+            }
+            catch
+            {
+                // He can still mean it.
+            }
+        }
+
+        /// <summary>
+        /// The press that arrived before the animation did.
+        ///
+        /// Above the tick throttle on purpose: this wants the very next frame after the clip
+        /// lands, not the next slice of the throttle, or the gesture arrives visibly late and
+        /// reads as a stutter rather than as him doing it.
+        /// </summary>
+        private void LateFinger()
+        {
+            if (_wantedAt == 0) return;
+
+            if (Game.GameTime - _wantedAt > WantedForMs)
+            {
+                _wantedAt = 0;
+                return;
+            }
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, _wantedDict)) return;
+
+                var me = Game.Player.Character;
+
+                _wantedAt = 0;
+
+                if (me != null && me.Exists() && me.IsAlive)
+                {
+                    Clip(me, _wantedDict, FingerClip, 48);
+                }
+            }
+            catch
+            {
+                _wantedAt = 0;
+            }
+        }
+
+        /// <summary>How long a press waits for its clip before it is simply let go.</summary>
+        private const int WantedForMs = 1500;
+
+        private int _wantedAt;
+        private string _wantedDict = "";
+
         private void Hand(Ped player)
         {
             var dict = Female(player) ? FingerDictFemale : FingerDictMale;
@@ -772,6 +841,14 @@ namespace Hoodrich.Territory
                 if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict))
                 {
                     Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+
+                    // He pressed before it landed. Rather than eat the press, remember he meant
+                    // it and put the hand up the moment the clip is there -- a frame or two, which
+                    // reads as him doing it.
+                    _wantedAt = Game.GameTime;
+                    _wantedDict = dict;
+
+                    return;
                 }
             }
             catch
@@ -779,6 +856,7 @@ namespace Hoodrich.Territory
                 // It will be there by the time it is asked for again.
             }
 
+            _wantedAt = 0;
             Clip(player, dict, FingerClip, 48);
         }
 
@@ -1000,6 +1078,17 @@ namespace Hoodrich.Territory
             // Down() reads IS_DISABLED_CONTROL_PRESSED as well as the live one, so disabling it
             // costs us nothing -- the gesture still fires, the whistle does not.
             Game.DisableControlThisFrame(Control.PhoneRight);
+
+            // ASKED FOR WHILE THE PROMPT IS UP, which is the whole fix for the first one never
+            // working. Hand() used to request the dictionary and play it in the same breath, and
+            // REQUEST_ANIM_DICT is asynchronous -- so the first press always went to a dictionary
+            // that had not streamed, and only the second one landed.
+            //
+            // This runs every frame a car is close enough to be told, which is a long time in
+            // streaming terms before anybody reacts to the prompt and presses. And it only holds
+            // the request while a car is actually there, so nothing is kept warm for a gesture
+            // nobody uses -- which was the objection that put it in Hand() in the first place.
+            Warm(player);
 
             Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to let them know how you feel.");
 
