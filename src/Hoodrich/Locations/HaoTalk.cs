@@ -318,6 +318,11 @@ namespace Hoodrich.Locations
                   "mornin' wearin' a different number, and somebody else'll pay full for it. " +
                   "That's the business, that's not me bein' clever.");
 
+            // Both halves quote what he just paid you, so neither is ever the same twice
+            // and no hash could name either. They name themselves, and the recording
+            // leaves the figure out -- the screen has it, and it is already correct.
+            node.Voiced(Voice.Named("Hao", full ? "soldfull" : "soldhalf"));
+
             node.Say("Show me the lot.", () => Lot(), "See what's out front");
             node.Leave();
             return node;
