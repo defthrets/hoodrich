@@ -89,6 +89,25 @@ namespace Hoodrich.UI
     {
         public string Speaker = "";
         public string Line = "";
+
+        /// <summary>
+        /// The recording to play for this node, when its words cannot name one themselves.
+        ///
+        /// NAMING A FILE BY WHAT IS SAID ONLY WORKS IF WHAT IS SAID IS FIXED. Most lines are,
+        /// including many that look otherwise -- a turf name or a product word pasted in from
+        /// the data comes out identical every time, so the hash lands on it. But a handful
+        /// genuinely differ per utterance: how much of his work you are still carrying, what
+        /// he just paid you. Those hash to a new name every single time they are spoken and no
+        /// file could ever match them.
+        ///
+        /// So the line names its own file instead, and the recording is written to suit -- say
+        /// the sentence without the number in it, and the number stays on screen where it is
+        /// accurate. Which is the honest split anyway: the screen carries the arithmetic and
+        /// the voice carries the man.
+        ///
+        /// Empty means the usual thing, and the usual thing is what nearly everything uses.
+        /// </summary>
+        public string VoiceKey = "";
         public Color SpeakerColour = Palette.Text;
 
         /// <summary>
@@ -171,6 +190,13 @@ namespace Hoodrich.UI
         }
 
         /// <summary>Gives the choice just added one of the wheel's icons.</summary>
+        /// <summary>Name the recording for this line. See VoiceKey.</summary>
+        public DialogueNode Voiced(string key)
+        {
+            VoiceKey = key ?? "";
+            return this;
+        }
+
         public DialogueNode WithIcon(Icon icon)
         {
             if (Choices.Count == 0 || !icon.IsSet) return this;
@@ -506,7 +532,7 @@ namespace Hoodrich.UI
             // And say it out loud, if somebody recorded this one. Say() stops whatever was
             // talking before it, so arrowing down a list does not stack voices on top of each
             // other -- every node either replaces the last line or leaves the screen quiet.
-            Core.Voice.Say(node.Speaker, node.Line);
+            Core.Voice.Say(node.Speaker, node.Line, node.VoiceKey);
             // The picture, and the width the words have left because of it.
             //
             // The contact texture is the FALLBACK now rather than the answer. CHAR_LAMAR draws

@@ -1403,6 +1403,10 @@ namespace Hoodrich.Gangs
             var node = Node(def, gang,
                 "You still holding " + left.ToString("0") + " of it. Come back when it's gone.");
 
+            // The amount is his whole point and it changes every time, so no hash could name
+            // this. Recorded without the number; the screen still shows it.
+            node.Voiced("gerald_holding");
+
             // There has to be a way out of this. Product can be lost -- robbed, arrested, wiped
             // by a reset -- and without this the promise stays open forever, which locks the one
             // option in the mod that exists for players with nothing, behind having lost
@@ -1550,6 +1554,9 @@ namespace Hoodrich.Gangs
             // row -- the money is just handed over on the way past.
             var node = Node(def, gang,
                 "There you go. " + pay.ToString("N0") + ". Don't spend it all on nothing stupid.");
+
+            // Rolled between FrontPayMin and FrontPayMax, so likewise.
+            node.Voiced("gerald_payday");
 
             node.Say("What now?", () => Cleared(def, gang), PackageProgress());
             node.Leave("Appreciate it.");

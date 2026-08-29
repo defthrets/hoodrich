@@ -188,7 +188,7 @@ namespace Hoodrich.Core
         /// Returns whether anything is playing, which callers are free to ignore -- the screen
         /// draws its text either way and nothing about the conversation waits on audio.
         /// </summary>
-        public static bool Say(string speaker, string line)
+        public static bool Say(string speaker, string line, string named = null)
         {
             Hush();
 
@@ -196,7 +196,10 @@ namespace Hoodrich.Core
 
             try
             {
-                var key = Key(speaker, line);
+                // A name the line chose beats one worked out from its words. See
+                // DialogueNode.VoiceKey -- it is how a sentence with a live number in it can
+                // still have a voice.
+                var key = string.IsNullOrEmpty(named) ? Key(speaker, line) : named;
 
                 // Once. The text stays on screen either way; only the performance is spent.
                 if (!Repeat && Heard != null && Heard(key)) return false;
