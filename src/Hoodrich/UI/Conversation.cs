@@ -542,8 +542,10 @@ namespace Hoodrich.UI
         public void Close()
         {
             // The button that got you out of here does not also swing at somebody.
-            // Nothing carries on talking to an empty screen.
+            // Nothing carries on talking to an empty screen, and nothing carries on
+            // mouthing at one either.
             Core.Voice.Hush();
+            Core.Lips.Rest();
 
             if (IsOpen)
             {
@@ -595,6 +597,12 @@ namespace Hoodrich.UI
             }
 
             LockControls();
+
+            // And his mouth, for as long as the recording lasts. Every screen already sets
+            // Speaker so the mugshot and the parting lines work, so there is nothing to wire
+            // up per conversation -- if the line has audio the face moves, and if it does not
+            // this costs one comparison.
+            Core.Lips.Update(Speaker);
 
             // His answer, once the beat after your line has passed.
             TickReply();

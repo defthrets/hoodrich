@@ -3173,6 +3173,7 @@ namespace Hoodrich
             // it. Every other handle here dies with the assembly; this one does not, and the
             // only cure would be restarting the game.
             try { Core.Voice.Hush(); } catch { /* teardown */ }
+            try { Core.Lips.Rest(); } catch { /* teardown */ }
 
             try { LawHold.ReleaseAll(); } catch { /* teardown */ }
 
