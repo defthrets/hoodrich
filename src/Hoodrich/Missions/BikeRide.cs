@@ -689,12 +689,54 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>A named line on screen. The colour is the tag, not the whole sentence.</summary>
+        /// <summary>
+        /// The subtitle, said out loud, if somebody recorded it.
+        ///
+        /// CUE RATHER THAN SAY, and the difference is the point. Say honours the once-only
+        /// rule, which is right for a conversation -- hearing a man's explanation of the
+        /// business a fourth time is a speech shouted at somebody re-reading a menu. These
+        /// are not that. They are barks on a job you can run again, and a shout that only
+        /// ever happens on your first ride is a bug rather than restraint.
+        ///
+        /// Same key, worked out the same way, handed to Cue -- which skips the heard list.
+        /// </summary>
+        private static void Aloud(string who, string line)
+        {
+            try
+            {
+                Core.Voice.Cue(Core.Voice.Key(who, line));
+            }
+            catch
+            {
+                // The subtitle already said it.
+            }
+        }
+
+        /// <summary>"~y~LAMAR" -> "LAMAR". Colour tags are layout, not who is speaking.</summary>
+        private static string Plain(string tagged)
+        {
+            if (string.IsNullOrEmpty(tagged)) return "";
+
+            var sb = new System.Text.StringBuilder(tagged.Length);
+            var skip = false;
+
+            foreach (var c in tagged)
+            {
+                if (c == '~') { skip = !skip; continue; }
+                if (!skip) sb.Append(c);
+            }
+
+            return sb.ToString().Trim();
+        }
+
         private void Says(string who, string line, int ms)
         {
             if (string.IsNullOrEmpty(line)) return;
 
             try { GTA.UI.Screen.ShowSubtitle(who + ":~s~ " + line, ms); }
             catch { /* the objective still says what to do */ }
+
+            Aloud(Plain(who), line);
         }
 
         private void TickFight()
@@ -806,7 +848,7 @@ namespace Hoodrich.Missions
             {
                 _shouted = true;
 
-                GTA.UI.Screen.ShowSubtitle("~y~LAMAR:~s~ AYO! FRANKLIN HOL UP!", 4500);
+                LamarSays("AYO! FRANKLIN HOL UP!");
                 _weaselAt = Game.GameTime + 4600;
             }
 
@@ -1567,6 +1609,8 @@ namespace Hoodrich.Missions
 
             try { GTA.UI.Screen.ShowSubtitle("~y~LAMAR:~s~ " + line, 3500); }
             catch { /* the objective still says what to do */ }
+
+            Aloud("Lamar", line);
 
             // And a noise out of him at the same time. The words are written and the sound is
             // not -- there is no recording of these lines and there never will be -- but a man
