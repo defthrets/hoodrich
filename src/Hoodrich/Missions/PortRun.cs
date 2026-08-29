@@ -956,13 +956,11 @@ namespace Hoodrich.Missions
         private DialogueNode Hurry()
         {
             var node = new DialogueNode("Tao Cheng",
-                "BET. Okay so -- you get a number, you call the number, thing show up, you pay " +
-                "for the thing. Congratulations, you in the import business, my guy. Now go " +
-                "round the back of the sheds, near bay one, back it in, nose out. My guys ain't " +
-                "carryin' nothin' further than they gotta and they ain't gonna ASK you to " +
-                "move, they just gonna stand there and hate you. And listen -- it's gone five. " +
-                "I got a bottle at the crib older than you with my actual name on the label. " +
-                "So park it correct and don't make this my whole evening. Please.")
+                "Okay okay. -- you get a number, you call the number, thing show up, you " +
+                "pay for thing. Congratulations, you in import business my guy. Now go round " +
+                "the back of dock, near bay one, back it in, nose out. My guys no carry " +
+                "nothing further than have to. And listen -- it's gone at five o clock. So " +
+                "park correct and don't make this my whole evening. okay. okay. go.")
             {
                 SpeakerColour = Palette.Cash
             };
