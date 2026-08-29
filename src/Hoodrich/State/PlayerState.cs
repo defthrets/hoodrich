@@ -342,6 +342,11 @@ namespace Hoodrich.State
         /// An introduction is something you get once. He tells you who vouched for you the
         /// first time; every visit after that he just looks up, because a man who greets you
         /// identically forever is furniture.
+        ///
+        /// NOT ONLY LEADERS ANY MORE, despite the name -- the name is kept because it is also
+        /// the save key, and renaming it would quietly re-introduce every leader in every
+        /// existing save. Anyone who introduces themselves once belongs in here; entries that
+        /// are not gangs carry a prefix ("fixer:Lamar") so they cannot collide with a gang id.
         /// </summary>
         public readonly List<string> LeadersGreeted = new List<string>();
 

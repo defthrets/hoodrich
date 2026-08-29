@@ -64,6 +64,15 @@ namespace Hoodrich.Missions
             return again && !string.IsNullOrEmpty(def.DoneAgain) ? def.DoneAgain : def.Done;
         }
 
+        /// <summary>
+        /// His slot in the greeted list.
+        ///
+        /// Prefixed, because that list is keyed by gang id and he is not a gang -- an
+        /// unprefixed "Lamar" would be a made-up gang id sat among real ones, and the day
+        /// somebody adds a set called that, one of the two silently stops working.
+        /// </summary>
+        private string GreetKey => "fixer:" + _fixer.Name;
+
         private DialogueNode Node(string line) =>
             new DialogueNode(_fixer.Name, line) { SpeakerColour = Tint };
 
@@ -112,10 +121,27 @@ namespace Hoodrich.Missions
                 return busy;
             }
 
-            var node = Node("What up Franklin! Bout time you came around to see your old friend Lamar, "
-                           + "the one you done forgot about... Nah man, it's all love dawg. Got rid "
-                           + "of that yee yee ass haircut I see nigga... come here I gots some shit "
-                           + "we gotta work on.");
+            // THE INTRODUCTION IS SPENT THE FIRST TIME HE GIVES IT.
+            //
+            // "Bout time you came around to see your old friend Lamar" is a man who has not
+            // seen you in a while. It is the wrong sentence the second time you walk up to him
+            // -- and on his own job list that is every few minutes, so said forever it stops
+            // being a greeting and becomes the noise the menu makes when it opens.
+            //
+            // After that he is just a man stood at his yard: are you working or walking past.
+            //
+            // MARKED HERE BECAUSE THIS IS WHERE HE SAYS IT. Everything above this line returns
+            // early -- mid-job, resting, block under attack -- and in none of those has he
+            // greeted you, so none of them should spend it. Same list the gang leaders use and
+            // cleared by the same reset, because it is the same question about a different man.
+            var first = _state == null || _state.MarkGreeted(GreetKey);
+
+            var node = Node(first
+                ? "What up Franklin! Bout time you came around to see your old friend Lamar, "
+                  + "the one you done forgot about... Nah man, it's all love dawg. Got rid "
+                  + "of that yee yee ass haircut I see nigga... come here I gots some shit "
+                  + "we gotta work on."
+                : "What's happening. You looking for work, or you just walking past?");
 
             // The NEW thing comes first and on its own terms: he works down his list in order,
             // and until you have been through it he tells you what needs doing rather than
