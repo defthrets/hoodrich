@@ -1,0 +1,211 @@
+using System;
+using GTA;
+using GTA.Native;
+using Hoodrich.Core;
+using Hoodrich.UI;
+
+namespace Hoodrich.Phone
+{
+    /// <summary>
+    /// Somebody ringing you, and you deciding whether to pick up.
+    ///
+    /// A CALL IS A CONVERSATION WITH NOBODY IN FRONT OF YOU, which is why this is small. The
+    /// panel already draws a portrait, a name and a line, and it already plays a recording for
+    /// whatever it is showing -- so answering is just opening one with no ped attached. All
+    /// that is genuinely new is the ringing: a noise, a prompt, and a decision.
+    ///
+    /// THE LINE IS NAMED RATHER THAN HASHED. A call is authored as a one-off, so it gets an
+    /// explicit key and the subtitle can be corrected afterwards without the audio going quiet
+    /// -- which matters here more than anywhere, because the words on screen and the words in
+    /// the recording were written at different times by different hands.
+    ///
+    /// AND IT CAN BE MISSED. A phone that will not stop until you answer it is not a phone, it
+    /// is a modal dialog with a ringtone. Let it ring out and he texts instead, which loses the
+    /// performance but keeps the information -- and is a truer thing for the character to do
+    /// than stand there redialling.
+    /// </summary>
+    internal sealed class PhoneCall
+    {
+        /// <summary>Long enough to read as a phone, short enough not to nag.</summary>
+        private const int RingGapMs = 2400;
+
+        /// <summary>How long he lets it ring before giving up on you.</summary>
+        private const int GivesUpMs = 25000;
+
+        /// <summary>Set by Main: the panel a picked-up call opens in.</summary>
+        public Conversation Talk;
+
+        /// <summary>Set by Main: what to do when it rings out. Usually a text instead.</summary>
+        public Action Missed;
+
+        /// <summary>Set by Main: called once it is over either way, so it never comes twice.</summary>
+        public Action Done;
+
+        private string _who = "";
+        private string _portrait = "";
+        private string _key = "";
+        private string _text = "";
+
+        private int _dueAt;
+        private int _startedAt;
+        private int _nextRing;
+
+        private bool _armed;
+        private bool _held;
+
+        public bool Ringing { get; private set; }
+
+        /// <summary>
+        /// Line one up to come in after a delay.
+        ///
+        /// A DELAY RATHER THAN NOW, because a phone that rings in the same breath as the thing
+        /// that caused it reads as a script firing rather than as somebody hearing your news
+        /// and picking up their phone about it.
+        /// </summary>
+        public void Arm(string who, string portrait, string key, string text, int delayMs)
+        {
+            if (_armed || Ringing) return;
+
+            _who = who ?? "";
+            _portrait = portrait ?? "";
+            _key = key ?? "";
+            _text = text ?? "";
+
+            _dueAt = Game.GameTime + Math.Max(0, delayMs);
+            _armed = true;
+
+            Log.Info("Call from " + _who + " armed for " + (delayMs / 1000) + "s.");
+        }
+
+        public void Update(Ped player)
+        {
+            try
+            {
+                if (!_armed && !Ringing) return;
+
+                // Not while he is dead, mid-cutscene, or already talking to somebody. A call
+                // arriving over the top of a conversation would fight it for the same panel.
+                if (player == null || !player.Exists() || !player.IsAlive) return;
+                if (Talk != null && Talk.IsOpen) return;
+                if (Function.Call<bool>(Hash.IS_CUTSCENE_PLAYING)) return;
+
+                var now = Game.GameTime;
+
+                if (_armed && !Ringing)
+                {
+                    if (now < _dueAt) return;
+
+                    _armed = false;
+                    Ringing = true;
+                    _startedAt = now;
+                    _nextRing = 0;
+                }
+
+                if (!Ringing) return;
+
+                if (now >= _nextRing)
+                {
+                    _nextRing = now + RingGapMs;
+
+                    try
+                    {
+                        Draw.PlaySound("Remote_Ring", "Phone_SoundSet_Default");
+                    }
+                    catch
+                    {
+                        // A silent phone still shows its prompt.
+                    }
+                }
+
+                Help.ShowThisFrame("~y~" + _who + "~s~ is calling.  " +
+                                   "Press ~INPUT_CELLPHONE_RIGHT~ to answer.");
+
+                if (Answered())
+                {
+                    Answer();
+                    return;
+                }
+
+                if (now - _startedAt >= GivesUpMs) Miss();
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Call went wrong: " + ex.Message);
+
+                Ringing = false;
+                _armed = false;
+            }
+        }
+
+        /// <summary>Drop it without answering -- for a wipe, or the mod being switched off.</summary>
+        public void Cancel()
+        {
+            _armed = false;
+            Ringing = false;
+        }
+
+        private void Answer()
+        {
+            Ringing = false;
+
+            var node = new DialogueNode(_who, _text) { Portrait = _portrait };
+
+            // The panel plays whatever it is showing, so naming the recording here is the whole
+            // of "and then the audio plays".
+            node.Voiced(_key);
+            node.Leave("Hang up.");
+
+            if (Talk != null)
+            {
+                // NOBODY IS STOOD THERE. Speaker drives the mugshot and the ambient grunts of a
+                // real man in front of you; on a call both are wrong, and the portrait carries
+                // it instead.
+                Talk.Speaker = null;
+                Talk.Title = "Call";
+                Talk.Open(node);
+            }
+
+            Log.Info("Answered " + _who + ".");
+
+            if (Done != null) Done();
+        }
+
+        private void Miss()
+        {
+            Ringing = false;
+
+            Log.Info("Missed a call from " + _who + ".");
+
+            if (Missed != null) Missed();
+            if (Done != null) Done();
+        }
+
+        /// <summary>
+        /// The same press that talks to anybody else.
+        ///
+        /// Held rather than tapped would answer it the moment you walked up to somebody with
+        /// the button down, so it wants the edge -- and it reads the disabled control too,
+        /// because the phone menu turns that one off while it is open.
+        /// </summary>
+        private bool Answered()
+        {
+            var down = false;
+
+            try
+            {
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E);
+            }
+            catch
+            {
+            }
+
+            var pressed = down && !_held;
+            _held = down;
+
+            return pressed;
+        }
+    }
+}

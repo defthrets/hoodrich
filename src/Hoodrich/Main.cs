@@ -75,6 +75,7 @@ namespace Hoodrich
         private readonly GangLeaders _leaders;
         private readonly LeaderTalk _leaderTalk;
         private readonly Conversation _talk;
+        private readonly Phone.PhoneCall _call = new Phone.PhoneCall();
         private BlockTalk _blockTalk;
         private readonly InfoPanel _info;
         private readonly StashScreen _stashScreen;
@@ -1457,6 +1458,24 @@ namespace Hoodrich
 
                 _talk = new Conversation();
 
+                // A call is a conversation with nobody in front of you, so it borrows the panel.
+                _call.Talk = _talk;
+
+                // Rings out rather than nagging. He loses the performance and keeps the point,
+                // which is a truer thing for him to do than stand there redialling.
+                _call.Missed = () => Social.Inbox.Keep(
+                    "CHAR_LAMAR", "Lamar", "Missed call",
+                    "you gon answer your phone or nah. anyway. gerald told me. we good");
+
+                // Set when it is OVER either way, so it never comes twice.
+                _call.Done = () =>
+                {
+                    if (_state == null) return;
+
+                    _state.LamarCalled = true;
+                    _state.Touch();
+                };
+
                 // The context key pointed at people rather than at places: a nod for one of
                 // yours in passing, a conversation with one who is posted up, and something to
                 // say over anybody on the pavement.
@@ -2317,6 +2336,18 @@ namespace Hoodrich
                     _leaders.UpdatePrompt();
                     _fixer.Update();
                     _fixer.UpdatePrompt();
+
+                    // He rings once you have signed on, half a minute later -- long enough that it
+                    // reads as him hearing about it rather than as a script firing on the handshake.
+                    // Arm is idempotent and Done sets the flag, so this asks every frame and acts once.
+                    if (_state != null && !_state.LamarCalled && _crew != null && _crew.IsAffiliated)
+                    {
+                        _call.Arm("Lamar", "CHAR_LAMAR", "lamar_call_signed",
+                                  "Yo, Franklin. Gerald just told me you runnin' with us now. After all "
+                                + "them months of me pesterin' you to slang with us.", 30000);
+                    }
+
+                    _call.Update(Game.Player.Character);
                     _blockTalk.Update();
                     _bigj.Update();
                     _bigj.UpdatePrompt();

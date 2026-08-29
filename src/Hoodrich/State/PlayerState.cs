@@ -243,6 +243,15 @@ namespace Hoodrich.State
         public bool MetHao;
 
         /// <summary>
+        /// Whether Lamar has rung about you signing on. Once ever, per save.
+        ///
+        /// Marked when the call is OVER rather than when it is armed, and set whether you
+        /// picked up or let it ring out -- so quitting between joining and the phone going
+        /// leaves it still owed, and hearing it once means never again.
+        /// </summary>
+        public bool LamarCalled;
+
+        /// <summary>
         /// True when the last thing you did was sleep at the stash house.
         ///
         /// The game puts Franklin back at whichever house it thinks is his, which after the
@@ -593,6 +602,7 @@ namespace Hoodrich.State
             PortYardVisits = 0;
             HomiesUnlocked = false;
             MetHao = false;
+            LamarCalled = false;
             SleptAtStashHouse = false;
             Followers = 0;
 
@@ -978,6 +988,7 @@ namespace Hoodrich.State
                 .Set("frontsDone", FrontsDone)
                 .Set("homiesUnlocked", HomiesUnlocked)
                 .Set("metHao", MetHao)
+                .Set("lamarCalled", LamarCalled)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("followers", Followers)
                 .Set("frontedDrug", FrontedDrug)
@@ -1027,6 +1038,7 @@ namespace Hoodrich.State
                 FrontsDone = Math.Max(0, doc["frontsDone"].AsInt(0));
                 HomiesUnlocked = doc["homiesUnlocked"].AsBool(false);
                 MetHao = doc["metHao"].AsBool(false);
+                LamarCalled = doc["lamarCalled"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
 
                 // Defaults to FALSE, so a save from before this existed shows the guide once
