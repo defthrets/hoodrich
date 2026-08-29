@@ -92,6 +92,14 @@ namespace Hoodrich.Social
         /// </summary>
         public static Action Changed;
 
+        /// <summary>
+        /// Whether an arriving text makes a sound. Set by Main from the phone's PlaySounds.
+        ///
+        /// One switch for both, because somebody who turned the phone's clicks off has already
+        /// said what they think about it making noises at them.
+        /// </summary>
+        public static bool Chime = true;
+
         public static int Unread
         {
             get
@@ -133,6 +141,28 @@ namespace Hoodrich.Social
             });
 
             while (Kept.Count > Keeps) Kept.RemoveAt(0);
+
+            // The little noise a phone makes.
+            //
+            // HERE rather than on Changed, which also fires for messages you SEND and for a
+            // wipe, and neither of those should chirp at you. Not in LoadFrom either: that
+            // adds straight to the list without coming through here, so restoring a save
+            // does not play thirty texts arriving at once.
+            //
+            // The game's own tone rather than a file of ours. It is the sound a player
+            // already reads as "text", it costs nothing to ship, and it goes through GTA's
+            // mixer -- so it sits under the game volume in a way our recordings cannot.
+            if (Chime)
+            {
+                try
+                {
+                    Hoodrich.UI.Draw.PlaySound("Text_Arrive_Tone", "Phone_SoundSet_Default");
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not chime: " + ex.Message);
+                }
+            }
 
             if (Changed != null) Changed();
         }

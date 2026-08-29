@@ -494,6 +494,8 @@ namespace Hoodrich
                 Core.Voice.Enabled = _cfg.VoiceEnabled;
                 Core.Voice.Volume = _cfg.VoiceVolume;
                 Core.Voice.Repeat = _cfg.VoiceRepeat;
+                    Social.Inbox.Chime = _cfg.PlaySounds;
+                Social.Inbox.Chime = _cfg.PlaySounds;
 
                 Preflight.Step = "loading drugs.json";
                 _drugs = Drugs.Load();
@@ -1714,6 +1716,7 @@ namespace Hoodrich
                     Core.Voice.Enabled = _cfg.VoiceEnabled;
                     Core.Voice.Volume = _cfg.VoiceVolume;
                     Core.Voice.Repeat = _cfg.VoiceRepeat;
+                    Social.Inbox.Chime = _cfg.PlaySounds;
                 };
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
