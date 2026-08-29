@@ -1,4 +1,4 @@
-# Build output
+﻿# Build output
 build/
 bin/
 obj/
@@ -20,3 +20,10 @@ __pycache__/
 # time. release/README.txt and release/LICENCE.txt are sources and stay tracked.
 release/*/
 release/*.zip
+
+# Voice masters. ElevenLabs hands back mp3; the game plays wav and only wav --
+# MCI's mpeg driver refuses to load inside GTA, so an mp3 in the pack is two
+# failed opens per line and then the wav anyway. The masters are kept out of the
+# tree at ..\hoodrich-voice-masters so re-encoding is always possible without
+# putting a second copy of every line into git.
+data/voice/*.mp3
