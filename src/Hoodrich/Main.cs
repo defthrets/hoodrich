@@ -2340,7 +2340,10 @@ namespace Hoodrich
                     // He rings once you have signed on, half a minute later -- long enough that it
                     // reads as him hearing about it rather than as a script firing on the handshake.
                     // Arm is idempotent and Done sets the flag, so this asks every frame and acts once.
-                    if (_state != null && !_state.LamarCalled && _crew != null && _crew.IsAffiliated)
+                    // BOTH, not either. Signing on is half of it -- he is ringing about you actually
+                        // working, so both of Gerald's packages have to be behind you too.
+                        if (_state != null && !_state.LamarCalled && _state.FrontsDone >= 2 &&
+                            _crew != null && _crew.IsAffiliated)
                     {
                         _call.Arm("Lamar", "CHAR_LAMAR", "lamar_call_signed",
                                   "Yo, Franklin. Gerald just told me you running with us now. "
@@ -3224,6 +3227,8 @@ namespace Hoodrich
             // it. Every other handle here dies with the assembly; this one does not, and the
             // only cure would be restarting the game.
             try { Core.Voice.Hush(); } catch { /* teardown */ }
+            // A looping ring outlives the script that started it, same as an MCI alias.
+            try { _call.Cancel(); } catch { /* teardown */ }
             try { Core.Lips.Rest(); } catch { /* teardown */ }
 
             try { LawHold.ReleaseAll(); } catch { /* teardown */ }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Native;
 using Hoodrich.Core;
@@ -26,8 +26,15 @@ namespace Hoodrich.Phone
     /// </summary>
     internal sealed class PhoneCall
     {
-        /// <summary>Long enough to read as a phone, short enough not to nag.</summary>
-        private const int RingGapMs = 2400;
+        /// <summary>
+        /// The ring, held by id rather than fired and forgotten.
+        ///
+        /// Remote_Ring LOOPS. Played through the fire-and-forget form there is no handle to
+        /// stop it with, so it carries on through the answer, through the conversation, and
+        /// out the other side of hanging up -- which is exactly what it did. A looping sound
+        /// has to be owned: an id, a stop, and a release.
+        /// </summary>
+        private int _sound = -1;
 
         /// <summary>How long he lets it ring before giving up on you.</summary>
         private const int GivesUpMs = 25000;
@@ -48,7 +55,6 @@ namespace Hoodrich.Phone
 
         private int _dueAt;
         private int _startedAt;
-        private int _nextRing;
 
         private bool _armed;
         private bool _held;
@@ -98,24 +104,11 @@ namespace Hoodrich.Phone
                     _armed = false;
                     Ringing = true;
                     _startedAt = now;
-                    _nextRing = 0;
+
+                    StartRinging();
                 }
 
                 if (!Ringing) return;
-
-                if (now >= _nextRing)
-                {
-                    _nextRing = now + RingGapMs;
-
-                    try
-                    {
-                        Draw.PlaySound("Remote_Ring", "Phone_SoundSet_Default");
-                    }
-                    catch
-                    {
-                        // A silent phone still shows its prompt.
-                    }
-                }
 
                 Help.ShowThisFrame("~y~" + _who + "~s~ is calling.  " +
                                    "Press ~INPUT_CELLPHONE_RIGHT~ to answer.");
@@ -134,6 +127,8 @@ namespace Hoodrich.Phone
 
                 Ringing = false;
                 _armed = false;
+
+                StopRinging();
             }
         }
 
@@ -142,11 +137,46 @@ namespace Hoodrich.Phone
         {
             _armed = false;
             Ringing = false;
+
+            StopRinging();
+        }
+
+        private void StartRinging()
+        {
+            try
+            {
+                _sound = Function.Call<int>(Hash.GET_SOUND_ID);
+                Function.Call(Hash.PLAY_SOUND_FRONTEND, _sound,
+                              "Remote_Ring", "Phone_SoundSet_Default", false);
+            }
+            catch
+            {
+                // A silent phone still shows its prompt.
+                _sound = -1;
+            }
+        }
+
+        private void StopRinging()
+        {
+            if (_sound < 0) return;
+
+            try
+            {
+                Function.Call(Hash.STOP_SOUND, _sound);
+                Function.Call(Hash.RELEASE_SOUND_ID, _sound);
+            }
+            catch
+            {
+                // Teardown.
+            }
+
+            _sound = -1;
         }
 
         private void Answer()
         {
             Ringing = false;
+            StopRinging();
 
             var node = new DialogueNode(_who, _text) { Portrait = _portrait };
 
@@ -173,6 +203,7 @@ namespace Hoodrich.Phone
         private void Miss()
         {
             Ringing = false;
+            StopRinging();
 
             Log.Info("Missed a call from " + _who + ".");
 
