@@ -1880,6 +1880,10 @@ namespace Hoodrich.Dealing
             State = PostState.Investigated;
             _investigateAt = Game.GameTime;
 
+            // The call that put him on you, heard as he starts walking over. Fired here rather
+            // than when he arrives, because the radio goes out before the officer does.
+            Voice.Cue("police_dispatch");
+
             // Asked for while he is still walking over. A dictionary requested and checked in
             // the same frame has not loaded; the walk is the streaming budget.
             Territory.StopSearch.Want();

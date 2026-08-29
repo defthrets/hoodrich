@@ -269,6 +269,43 @@ namespace Hoodrich.Core
             }
         }
 
+        /// <summary>
+        /// Play a named sound outright, for something that HAPPENS rather than something said.
+        ///
+        /// None of Say's machinery applies here. There is no text to hash, because the caller
+        /// already knows what the file is called -- and the once-only rule is deliberately
+        /// skipped, because a dispatch call going out over the radio is an event, and an event
+        /// that only ever happens the first time is a bug rather than a performance.
+        ///
+        /// Shares the one channel with dialogue, which is right: you are not stood in a
+        /// conversation while a patrol car is deciding about you.
+        /// </summary>
+        public static bool Cue(string key)
+        {
+            Hush();
+
+            if (!Enabled || string.IsNullOrEmpty(key)) return false;
+
+            try
+            {
+                var path = Find(key);
+
+                if (path == null)
+                {
+                    Log.Debug("Voice: no cue named " + key);
+                    return false;
+                }
+
+                Log.Info("Voice: cue " + Path.GetFileName(path));
+                return Start(path);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Voice: cue failed: " + ex.Message);
+                return false;
+            }
+        }
+
         /// <summary>Stop whatever is talking. Safe to call when nothing is.</summary>
         public static void Hush()
         {
