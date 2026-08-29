@@ -2343,8 +2343,11 @@ namespace Hoodrich
                     if (_state != null && !_state.LamarCalled && _crew != null && _crew.IsAffiliated)
                     {
                         _call.Arm("Lamar", "CHAR_LAMAR", "lamar_call_signed",
-                                  "Yo, Franklin. Gerald just told me you runnin' with us now. After all "
-                                + "them months of me pesterin' you to slang with us.", 30000);
+                                  "Yo, Franklin. Gerald just told me you running with us now. "
+                                + "After the months of me pestering you to slang with us, an you "
+                                + "gon' have one lil' talk with Gerald then he done change your "
+                                + "mind. Pfft. Nah man, nah that how it be. Best get yo ass over "
+                                + "an come see me.", 30000);
                     }
 
                     _call.Update(Game.Player.Character);
