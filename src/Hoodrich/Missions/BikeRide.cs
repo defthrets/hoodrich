@@ -2279,6 +2279,40 @@ namespace Hoodrich.Missions
             if (Game.GameTime < _nextRetask) return;
             _nextRetask = Game.GameTime + RetaskGapMs;
 
+            // THE MOMENT YOU GET ON IS THE MOMENT THERE IS SOMETHING TO FOLLOW.
+            //
+            // Escort is issued once, as each man mounts -- which is while you are still walking
+            // to your own bike. With nothing to follow yet it takes its no-vehicle branch and
+            // parks him for four seconds, and after that nobody tells him again: the retask
+            // below only fires for somebody already TrailingRange behind, and a man stood at
+            // your shoulder never is. So he sat out his four seconds and then rode wherever the
+            // game felt like, which is the whole of "Lamar doesn't follow at the start".
+            //
+            // Watching the vehicle HANDLE rather than a flag, so swapping bikes mid-ride issues
+            // it again, and stepping off resets it for when you get back on.
+            var riding = player.CurrentVehicle;
+            var seat = riding != null && riding.Exists() ? riding.Handle : 0;
+
+            if (seat == 0)
+            {
+                _followingFor = 0;
+            }
+            else if (seat != _followingFor)
+            {
+                _followingFor = seat;
+
+                for (var i = 0; i < _homies.Count; i++)
+                {
+                    var man = _homies[i];
+                    if (man == null || !man.Exists() || !man.IsAlive) continue;
+
+                    var his = BikeFor(man);
+                    if (his == null || !his.Exists() || !man.IsInVehicle(his)) continue;
+
+                    Escort(man, his, player);
+                }
+            }
+
             for (var i = 0; i < _homies.Count; i++)
             {
                 var ped = _homies[i];
@@ -2338,6 +2372,9 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>Far enough back to be worth telling again. Anything closer is riding with you.</summary>
+        /// <summary>The bike they were last told to follow, so it is issued once per mount.</summary>
+        private int _followingFor;
+
         private const float TrailingRange = 28f;
 
         /// <summary>
