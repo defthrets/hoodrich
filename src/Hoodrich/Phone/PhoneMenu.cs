@@ -221,6 +221,22 @@ namespace Hoodrich.Phone
 
         public bool IsOpen { get; private set; }
 
+        /// <summary>
+        /// Whether the handset is showing an incoming call rather than the apps.
+        ///
+        /// The SAME phone, with its screen replaced. Everything below the glass -- the body, the
+        /// bezel, the status bar, the way it rises into frame -- is what makes it read as his
+        /// phone rather than as a panel, and none of it wants rebuilding for this.
+        ///
+        /// It is deliberately NOT opened through PhoneController.OpenPhone, because that slows
+        /// time and blurs the world for somebody about to browse a menu. A phone ringing is not a
+        /// menu: the street should carry on around it.
+        /// </summary>
+        public bool InCall { get; private set; }
+
+        private string _callWho = "";
+        private string _callPic = "";
+
         /// <summary>True while the home grid is showing rather than a list.</summary>
         public bool AtHome => _stack.Count == 1;
 
@@ -263,6 +279,27 @@ namespace Hoodrich.Phone
 
             IsOpen = false;
             _stack.Clear();
+        }
+
+        /// <summary>Bring it out ringing, with no page stack behind it.</summary>
+        public void OpenCall(string who, string pic)
+        {
+            _callWho = who ?? "";
+            _callPic = pic ?? "";
+
+            _stack.Clear();
+
+            InCall = true;
+            IsOpen = true;
+            _openedAt = Game.GameTime;
+        }
+
+        public void CloseCall()
+        {
+            if (!InCall) return;
+
+            InCall = false;
+            IsOpen = false;
         }
 
         private static int FirstPickable(WheelPage page)
@@ -434,7 +471,8 @@ namespace Hoodrich.Phone
 
         public void Render()
         {
-            if (!IsOpen || _stack.Count == 0) return;
+            if (!IsOpen) return;
+            if (!InCall && _stack.Count == 0) return;
 
             var t = Ease();
 
@@ -453,6 +491,12 @@ namespace Hoodrich.Phone
             var scrH = BodyH - Bezel * 2f;
 
             StatusBar(scrLeft, scrTop, scrW, fade);
+
+            if (InCall)
+            {
+                CallScreen(scrLeft, scrTop + StatusH, scrW, scrH - StatusH, fade);
+                return;
+            }
 
             var headTop = scrTop + StatusH;
             Header(scrLeft, headTop, scrW, fade);
@@ -599,6 +643,57 @@ namespace Hoodrich.Phone
             Hud.RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
                       ScreenRound, Fade(Color.FromArgb(252, 13, 15, 17), fade),
                       sprite: false, steps: 0);
+        }
+
+        /// <summary>
+        /// Who is ringing, and the two things you can do about it.
+        ///
+        /// No apps, no rows, no footer. A phone showing a call shows a face, a name and two
+        /// buttons; anything else on that screen is the mod talking over him.
+        /// </summary>
+        private void CallScreen(float left, float top, float w, float h, int fade)
+        {
+            var pad = Hud.ToX(0.013f);
+            var mid = left + w * 0.5f;
+
+            Hud.Text("INCOMING CALL", mid, top + 0.026f, 0.30f,
+                     Fade(Palette.TextDim, fade), Hud.FontLabel, centre: true);
+
+            // A plain block behind the face, so a texture that will not stream is a shape
+            // rather than a hole.
+            var picH = 0.150f;
+            var picW = Hud.ToX(picH);
+            var picY = top + 0.070f;
+
+            Hud.RectFrom(mid - picW * 0.5f, picY, picW, picH, Fade(Palette.PanelHeader, fade));
+
+            if (!string.IsNullOrEmpty(_callPic) && Hud.EnsureTextureDict(_callPic))
+            {
+                Hud.Sprite(_callPic, _callPic, mid, picY + picH * 0.5f, picW, picH, 0f,
+                           Color.FromArgb(fade, 255, 255, 255));
+            }
+
+            Hud.Text(_callWho, mid, picY + picH + 0.020f, 0.68f,
+                     Fade(Palette.Text, fade), Hud.FontLabel, centre: true);
+
+            // Breathing, so a still screen still reads as a phone that is ringing.
+            var turn = (Game.GameTime % PulseMs) / (double)PulseMs * Math.PI * 2d;
+            var breath = 0.35f + 0.65f * (float)Math.Sin(turn);
+
+            Hud.Text("calling", mid, picY + picH + 0.062f, 0.34f,
+                     Fade(Palette.TextDim, (int)(fade * breath)), Hud.FontBody, centre: true);
+
+            var bw = (w - pad * 3f) * 0.5f;
+            var bh = 0.055f;
+            var by = top + h - bh - 0.030f;
+
+            Hud.RectFrom(left + pad, by, bw, bh, Fade(Palette.Cash, fade));
+            Hud.Text("ANSWER", left + pad + bw * 0.5f, by + 0.014f, 0.40f,
+                     Fade(Palette.TextOnHover, fade), Hud.FontLabel, centre: true);
+
+            Hud.RectFrom(left + pad * 2f + bw, by, bw, bh, Fade(Palette.Warn, fade));
+            Hud.Text("DECLINE", left + pad * 2f + bw * 1.5f, by + 0.014f, 0.40f,
+                     Fade(Palette.TextOnHover, fade), Hud.FontLabel, centre: true);
         }
 
         private void StatusBar(float left, float top, float w, int fade)

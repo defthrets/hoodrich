@@ -82,6 +82,17 @@ namespace Hoodrich.Phone
             _rootBuilder = rootBuilder;
         }
 
+        /// <summary>
+        /// Show and hide the ringing screen.
+        ///
+        /// Deliberately NOT through OpenPhone. That one slows time and blurs the world for
+        /// somebody about to read a menu; a phone ringing wants the street carrying on around
+        /// it, so this goes straight to the handset.
+        /// </summary>
+        public void ShowIncoming(string who, string pic) { _menu.OpenCall(who, pic); }
+
+        public void HideIncoming() { _menu.CloseCall(); }
+
         public bool IsOpen => _menu.IsOpen;
 
         /// <summary>
@@ -441,6 +452,10 @@ namespace Hoodrich.Phone
 
             // Up and down always move. On the home grid that is a whole row of apps; in a list
             // it is one line.
+            // A ringing phone is not a menu. Answer and decline belong to the call, and the
+            // navigation below would be walking a page stack that is not there.
+            if (_menu.InCall) return;
+
             if (Repeat(1, Pressed(Control.PhoneUp))) _menu.MoveRow(-1);
             else if (Repeat(2, Pressed(Control.PhoneDown))) _menu.MoveRow(1);
             else if (Repeat(3, Pressed(Control.PhoneLeft))) _menu.MoveColumn(-1);

@@ -1460,6 +1460,8 @@ namespace Hoodrich
 
                 // A call is a conversation with nobody in front of you, so it borrows the panel.
                 _call.Talk = _talk;
+                _call.ShowCall = (who, pic) => _phone.ShowIncoming(who, pic);
+                _call.HideCall = () => _phone.HideIncoming();
 
                 // Rings out rather than nagging. He loses the performance and keeps the point,
                 // which is a truer thing for him to do than stand there redialling.

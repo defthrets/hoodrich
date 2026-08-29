@@ -39,6 +39,10 @@ namespace Hoodrich.Phone
         /// <summary>How long he lets it ring before giving up on you.</summary>
         private const int GivesUpMs = 25000;
 
+        /// <summary>Set by Main: brings the handset out ringing, and puts it away.</summary>
+        public Action<string, string> ShowCall;
+        public Action HideCall;
+
         /// <summary>Set by Main: the panel a picked-up call opens in.</summary>
         public Conversation Talk;
 
@@ -110,12 +114,23 @@ namespace Hoodrich.Phone
 
                 if (!Ringing) return;
 
-                Help.ShowThisFrame("~y~" + _who + "~s~ is calling.  " +
-                                   "Press ~INPUT_CELLPHONE_RIGHT~ to answer.");
+                // The handset shows who it is and the two buttons; this only says which
+                // keys press them.
+                Help.ShowThisFrame("~INPUT_CELLPHONE_RIGHT~  answer          " +
+                                   "~INPUT_CELLPHONE_CANCEL~  decline");
 
                 if (Answered())
                 {
                     Answer();
+                    return;
+                }
+
+                // Turning him down is a choice, and it lands where letting it ring out lands:
+                // he texts. Refusing to pick up and hearing nothing at all would just read as
+                // the mod having lost the call.
+                if (Declined())
+                {
+                    Miss();
                     return;
                 }
 
@@ -147,13 +162,50 @@ namespace Hoodrich.Phone
             {
                 _sound = Function.Call<int>(Hash.GET_SOUND_ID);
                 Function.Call(Hash.PLAY_SOUND_FRONTEND, _sound,
-                              "Remote_Ring", "Phone_SoundSet_Default", false);
+                              "Remote_Ring", RingSet(), false);
+
+                if (ShowCall != null) ShowCall(_who, _portrait);
             }
             catch
             {
                 // A silent phone still shows its prompt.
                 _sound = -1;
             }
+        }
+
+        /// <summary>
+        /// Whose phone is ringing, so it is his own ringtone.
+        ///
+        /// Each protagonist has his own phone soundset and the game uses it for their calls --
+        /// Phone_SoundSet_Default is the generic bleep nobody in the story ever hears. Since
+        /// this is Franklin's phone being rung by Franklin's friend, it should sound like it.
+        ///
+        /// Picked off the model rather than hardcoded, so the one player who swapped character
+        /// before answering does not get somebody else's ringtone. Anything that is not one of
+        /// the three falls back to the generic, which is right for a phone that is not theirs.
+        /// </summary>
+        private static string RingSet()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+
+                if (me != null && me.Exists())
+                {
+                    // Model.Hash is signed and these hashes are not, so the casts have to
+                    // be unchecked or they will not compile.
+                    var model = me.Model.Hash;
+
+                    if (model == unchecked((int)PedHash.Michael)) return "Phone_SoundSet_Michael";
+                    if (model == unchecked((int)PedHash.Franklin)) return "Phone_SoundSet_Franklin";
+                    if (model == unchecked((int)PedHash.Trevor)) return "Phone_SoundSet_Trevor";
+                }
+            }
+            catch
+            {
+            }
+
+            return "Phone_SoundSet_Default";
         }
 
         private void StopRinging()
@@ -171,6 +223,8 @@ namespace Hoodrich.Phone
             }
 
             _sound = -1;
+
+            if (HideCall != null) HideCall();
         }
 
         private void Answer()
@@ -218,6 +272,28 @@ namespace Hoodrich.Phone
         /// the button down, so it wants the edge -- and it reads the disabled control too,
         /// because the phone menu turns that one off while it is open.
         /// </summary>
+        private bool Declined()
+        {
+            var down = false;
+
+            try
+            {
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneCancel)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneCancel)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Back);
+            }
+            catch
+            {
+            }
+
+            var pressed = down && !_declineHeld;
+            _declineHeld = down;
+
+            return pressed;
+        }
+
+        private bool _declineHeld;
+
         private bool Answered()
         {
             var down = false;
