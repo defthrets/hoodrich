@@ -4,6 +4,124 @@
 
 
 -------------------------------------------------------------------------------
+  0.5.0
+-------------------------------------------------------------------------------
+
+They talk now.
+
+
+A HUNDRED AND FIFTY-TWO RECORDED LINES
+
+Gerald, Lamar, Tao Cheng, Hao and Stretch say what the screen says. The whole
+tutorial, both of Gerald's packages, the port run end to end, Lamar's six jobs
+and the barks on the ride out, Hao's yard, the shop when a plug drives to your
+door -- spoken.
+
+It degrades cleanly and it is optional. A line with no recording is text, which
+is what every line was until now, so nothing depends on it. [Voice] in
+Hoodrich.ini turns it off, sets the level or makes it repeat.
+
+A performance is spent once. Hearing a man explain the business a fourth time is
+a speech being shouted at somebody re-reading a menu, so a line you have heard is
+remembered per save and the screen simply shows it. Mission barks are the
+exception -- they belong to a job you can run again, and they play every time.
+
+And the speaker's mouth moves while he is talking.
+
+
+THE PHONE RINGS
+
+Lamar calls fifteen seconds after you sign on with the Families. The handset
+comes out with his name and his face on it, no apps, and two buttons. It rings
+with your own character's ringtone, and it does not slow time or blur the world:
+a phone going off is not a menu, and the street should carry on around it.
+
+Let it ring out and he texts instead. He is not a man who stands there redialling.
+
+
+NOISES THAT MEAN SOMETHING
+
+A text arriving chimes. A patrol taking an interest in you while you are posted
+up puts a dispatch call out over the radio -- before the officer starts walking,
+which is the point of it.
+
+
+THE SPRAY CAN IS ON THE PHONE
+
+Overspray's paint engine, as an app. Free-hand spraying with the real thing:
+thirteen colours including chrome and gold, three cap sizes that change how fine
+the line goes, strokes drawn as stretched decals rather than chains of dots, and
+paint that runs if you hold it on one spot.
+
+Lamar's tag jobs use it. You walk in, the can appears in his hand, and you spray
+the wall yourself.
+
+Marks survive a reload, and the decal budget is the real limit -- the app says so
+and names the file that raises it.
+
+
+WEIGHT IS SOLD THE WAY WEIGHT IS SOLD
+
+Every row on a buy screen used to cost the same money for a different amount,
+because a lot was a budget divided by a price. Nobody is offered a hundred
+thousand dollars' worth of anything; they are offered a kilo, and a kilo of one
+thing costs more than a kilo of another.
+
+The unit belongs to the product now. Fifty kilos of weed and five of cocaine are
+both what a container moves -- the cheap bulky thing has to travel in quantity to
+be worth the trip. A dealer takes his own fraction of it, so the same catalogue
+reads as kilos off the port, a quarter of that on a corner, and grams off a man
+on a pushbike.
+
+Purity followed it. It is measured in his own lots rather than in money: he
+breaks up what he sells small and leaves weight alone.
+
+
+HAO BUYS THEM BACK
+
+Sell a car back to him from the conversation rather than only from the driver's
+seat. Half of what you paid, or all of it inside ten minutes -- not because he is
+soft, because it is not in the book yet. It goes back on its spot, locked and up
+for sale.
+
+
+THE LAW HAS OPINIONS ABOUT PAINT
+
+An officer who SEES you tagging arrests you rather than shooting at you. One
+star, held at one for as long as a can is the worst thing in your hands. Pull an
+actual gun and that stops applying.
+
+It wants a clear line of sight and an officer roughly facing you. One the other
+side of the wall you are painting has not seen anything.
+
+
+FIXES
+
+Your guns come back with what was bolted to them. The locker returned the weapon
+and dropped the scope, the grip, the suppressor and the light every time.
+
+The homies follow you the moment you get on the bike. They were told to follow
+while you were still walking to yours, took the no-vehicle branch, and rode off
+on their own.
+
+The first press of "let them know how you feel" works. The animation was asked
+for and played in the same breath, so the first one always went to a clip that
+had not loaded and only the second landed.
+
+Resetting the mod clears your messages. The feed and the inbox are separate
+stores and only one of them was named, so a man wiped back to nobody still had
+Gerald texting him about work he had never done.
+
+The bay marker stops drawing once you are stood in it, instead of painting a
+green disc over the truck you are reversing.
+
+Tao walks to your door straight. The drunk stagger was his and it is gone.
+
+A leader introduces himself once. After that he looks up and says what's up,
+rather than greeting you identically forever.
+
+
+-------------------------------------------------------------------------------
   0.4.0
 -------------------------------------------------------------------------------
 
