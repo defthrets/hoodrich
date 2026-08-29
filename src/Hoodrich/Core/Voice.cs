@@ -48,6 +48,13 @@ namespace Hoodrich.Core
         [DllImport("winmm.dll", CharSet = CharSet.Unicode, EntryPoint = "mciGetErrorStringW")]
         private static extern bool mciGetErrorString(int error, StringBuilder ret, int retLength);
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "LoadLibraryW",
+                   SetLastError = true)]
+        private static extern IntPtr LoadLibrary(string path);
+
+        [DllImport("ole32.dll")]
+        private static extern int CoInitializeEx(IntPtr reserved, int flags);
+
         /// <summary>
         /// What MCI actually objected to, in words.
         ///
@@ -67,6 +74,64 @@ namespace Hoodrich.Core
             catch
             {
                 return "MCI error " + code;
+            }
+        }
+
+        private static bool _primed;
+
+        /// <summary>
+        /// Everything the MPEG driver needs that a game process does not necessarily give it.
+        ///
+        /// THE DRIVER IS NOT MISSING. mciqtz32.dll is present, MPEGVideo is registered, and the
+        /// very same open on the very same file succeeds from an ordinary sixty-four bit
+        /// process. It fails only inside GTA -- so this is about the process, not the machine,
+        /// and there are two things a host process can take away that MCI quietly needs.
+        ///
+        /// COM, because MPEGVideo is a DirectShow wrapper and DirectShow cannot build a graph on
+        /// a thread with no apartment. WaveAudio needs none of that, which is exactly why WAV
+        /// would work where MP3 does not. Asked for apartment-threaded first and multi-threaded
+        /// if the thread is already committed the other way, because refusing to change an
+        /// existing apartment is a normal answer and not a failure.
+        ///
+        /// And the DLL by ABSOLUTE PATH, because MCI loads its driver with a bare name. A host
+        /// that has narrowed the library search path -- which games do, deliberately -- turns
+        /// that bare name into nothing, while the identical call from a normal process resolves
+        /// it from System32. Loading it once by full path puts the module in the process, and
+        /// MCI's own by-name load then finds it already there.
+        ///
+        /// Both are logged. One game cycle should say which of them it was, and if it was
+        /// neither, the WAV fallback below says that instead.
+        /// </summary>
+        private static void Prime()
+        {
+            if (_primed) return;
+            _primed = true;
+
+            try
+            {
+                // 2 = apartment threaded. 0x80010106 is RPC_E_CHANGED_MODE: already MTA.
+                var hr = CoInitializeEx(IntPtr.Zero, 2);
+                if (hr == unchecked((int)0x80010106)) hr = CoInitializeEx(IntPtr.Zero, 0);
+
+                Log.Info("Voice: COM apartment 0x" + hr.ToString("X8"));
+            }
+            catch (Exception ex)
+            {
+                Log.Info("Voice: could not set a COM apartment: " + ex.Message);
+            }
+
+            try
+            {
+                var dll = Path.Combine(Environment.SystemDirectory, "mciqtz32.dll");
+                var h = LoadLibrary(dll);
+
+                Log.Info("Voice: " + (h == IntPtr.Zero
+                    ? "mciqtz32.dll would NOT load from " + dll
+                    : "mciqtz32.dll preloaded"));
+            }
+            catch (Exception ex)
+            {
+                Log.Info("Voice: could not preload the MPEG driver: " + ex.Message);
             }
         }
 
@@ -128,7 +193,23 @@ namespace Hoodrich.Core
                 // mode; it has to be able to explain itself on the log people already have.
                 Log.Info("Voice: playing " + Path.GetFileName(path));
 
-                return Start(path);
+                if (Start(path)) return true;
+
+                // THE SAME LINE IN THE OTHER FORMAT, if the pack happens to carry it.
+                //
+                // MP3 goes through a DirectShow driver and WAV does not, so a machine or a host
+                // process that cannot manage the first can very often still manage the second.
+                // Shipping both for every line would be daft, but honouring one when it is there
+                // costs nothing and turns a dead subsystem into a working one.
+                var other = Other(path);
+
+                if (other != null)
+                {
+                    Log.Info("Voice: trying " + Path.GetFileName(other) + " instead.");
+                    return Start(other);
+                }
+
+                return false;
             }
             catch (Exception ex)
             {
@@ -177,6 +258,8 @@ namespace Hoodrich.Core
 
         private static bool Start(string path)
         {
+            Prime();
+
             var alias = "hrvox" + (++_next).ToString(CultureInfo.InvariantCulture);
 
             // TWO WAYS IN, because neither is reliable on its own.
@@ -232,6 +315,23 @@ namespace Hoodrich.Core
             }
 
             return true;
+        }
+
+        /// <summary>The same recording in the other format, if the pack ships one.</summary>
+        private static string Other(string path)
+        {
+            try
+            {
+                var swap = path.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+                    ? Path.ChangeExtension(path, ".wav")
+                    : Path.ChangeExtension(path, ".mp3");
+
+                return File.Exists(swap) ? swap : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>An .mp3 if there is one, an .wav if there is not, otherwise null.</summary>
