@@ -94,6 +94,11 @@ namespace Hoodrich.Missions
                                 _runner.RestLeft + (_runner.RestLeft == 1 ? " minute" : " minutes") +
                                 " and I'll hit your line.");
 
+                // The minutes left change every time he says it, so there is nothing stable to
+                // hash. Named instead, and the recording keeps the number out of it -- the
+                // screen is still showing how long.
+                wait.Voiced(Voice.Named(_fixer.Name, "schemin"));
+
                 wait.Leave("Aight, later.");
                 return wait;
             }
@@ -250,6 +255,9 @@ namespace Hoodrich.Missions
             var node = Node("Nah, not right now. The whole thing ends up at that store and " +
                             "they got the shutter down. Come see me between " + Hours(def) +
                             " and we'll go.");
+
+            // Same again: the opening hours come off the job, so this is not fixed text.
+            node.Voiced(Voice.Named(_fixer.Name, "shut"));
 
             node.Say("Alright, later.", Root);
             node.Leave("Cool.");
