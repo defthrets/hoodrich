@@ -1,5 +1,5 @@
-===============================================================================
-  POSTED UP 0.2.0  --  FULL PACKAGE
+﻿===============================================================================
+  POSTED UP 0.5.0  --  FULL PACKAGE
 ===============================================================================
 
   DRAG EVERYTHING IN THIS ZIP INTO YOUR GTA V FOLDER. SAY YES TO MERGING.
@@ -33,7 +33,9 @@
 
   scripts\Hoodrich.dll        the mod
   scripts\Hoodrich.ini        every setting, commented
-  scripts\Hoodrich\           its data: 10 json files and 105 icons
+  scripts\Hoodrich\           its data: 10 json files and 95 icons
+  scripts\Hoodrich\voice\     152 recordings. Gerald, Lamar, Tao, Hao and
+                              Stretch saying what the screen says.
 
   ScriptHookVDotNet.asi       ScriptHookVDotNet, which runs .NET mods. Included
   ScriptHookVDotNet2.dll      because its licence expressly allows it. Not our
@@ -42,6 +44,7 @@
   Licenses\                   their licence and notices, kept with the binaries
 
   README.txt                  how the mod works, controls, configuring it
+  TROUBLESHOOTING.txt         read this if the mod never loads
   LICENCE.txt                 ours
 
   ALREADY RUN OTHER .NET MODS? Then you already have ScriptHookVDotNet, and
