@@ -493,6 +493,7 @@ namespace Hoodrich
                 // of its own -- see the Changed handler below, which pushes them again.
                 Core.Voice.Enabled = _cfg.VoiceEnabled;
                 Core.Voice.Volume = _cfg.VoiceVolume;
+                Core.Voice.Repeat = _cfg.VoiceRepeat;
 
                 Preflight.Step = "loading drugs.json";
                 _drugs = Drugs.Load();
@@ -518,6 +519,18 @@ namespace Hoodrich
 
                 Preflight.Step = "reading save.json";
                 SaveGame.Load(_state, _crew, _market, _stash, null, _blocks);
+
+                // Wired after the save is read, not before, or the first conversation of a
+                // session would decide nothing had ever been heard.
+                Core.Voice.Heard = key => _state.VoiceHeard.Contains(key);
+
+                Core.Voice.Remember = key =>
+                {
+                    if (_state.VoiceHeard.Contains(key)) return;
+
+                    _state.VoiceHeard.Add(key);
+                    _state.Touch();
+                };
 
                 _turf = new TurfWatch(_gangs, _crew, _state);
                 _crew.Turf = _turf;
@@ -1700,6 +1713,7 @@ namespace Hoodrich
 
                     Core.Voice.Enabled = _cfg.VoiceEnabled;
                     Core.Voice.Volume = _cfg.VoiceVolume;
+                    Core.Voice.Repeat = _cfg.VoiceRepeat;
                 };
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();

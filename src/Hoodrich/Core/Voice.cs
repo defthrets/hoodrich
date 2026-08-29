@@ -41,6 +41,31 @@ namespace Hoodrich.Core
         /// <summary>0..1. MCI's own scale is 0..1000 and is set per alias, after opening.</summary>
         public static float Volume = 0.9f;
 
+        /// <summary>
+        /// Whether a line you have already heard plays again.
+        ///
+        /// Off, because a recording is a performance rather than a sound effect: the first time
+        /// he explains the business it is worth hearing, and the fourth time you open that
+        /// branch to check one sentence it is a speech being shouted at somebody who is
+        /// skim-reading.
+        ///
+        /// ON IS FOR RECORDING. Replacing a take does not change the line, so it does not change
+        /// the key, so a save that has already heard the old take will never play the new one.
+        /// Turn this on while working and every line speaks every time.
+        /// </summary>
+        public static bool Repeat;
+
+        /// <summary>
+        /// Set by Main: whether this save has heard a key, and a note that it now has.
+        ///
+        /// Delegates rather than a reference to the save, because this class is one step above
+        /// winmm and has no business knowing what a PlayerState is. Both are null-checked, so
+        /// with nothing wired up every line simply plays -- which is the right answer for a
+        /// screen opened before the save has loaded.
+        /// </summary>
+        public static Func<string, bool> Heard;
+        public static Action<string> Remember;
+
         [DllImport("winmm.dll", CharSet = CharSet.Unicode, EntryPoint = "mciSendStringW")]
         private static extern int mciSendString(string command, StringBuilder ret,
                                                 int retLength, IntPtr callback);
@@ -172,6 +197,10 @@ namespace Hoodrich.Core
             try
             {
                 var key = Key(speaker, line);
+
+                // Once. The text stays on screen either way; only the performance is spent.
+                if (!Repeat && Heard != null && Heard(key)) return false;
+
                 var path = Find(key);
 
                 if (path == null)
@@ -193,7 +222,7 @@ namespace Hoodrich.Core
                 // mode; it has to be able to explain itself on the log people already have.
                 Log.Info("Voice: playing " + Path.GetFileName(path));
 
-                if (Start(path)) return true;
+                if (Start(path)) { Kept(key); return true; }
 
                 // THE SAME LINE IN THE OTHER FORMAT, if the pack happens to carry it.
                 //
@@ -206,7 +235,8 @@ namespace Hoodrich.Core
                 if (other != null)
                 {
                     Log.Info("Voice: trying " + Path.GetFileName(other) + " instead.");
-                    return Start(other);
+
+                    if (Start(other)) { Kept(key); return true; }
                 }
 
                 return false;
@@ -215,6 +245,24 @@ namespace Hoodrich.Core
             {
                 Log.Debug("Voice: could not speak: " + ex.Message);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Written down as heard, but only once it actually made a sound.
+        ///
+        /// A line whose file is missing is NOT heard -- otherwise recording it later would find
+        /// the save already convinced you had listened to it, and it would never play at all.
+        /// </summary>
+        private static void Kept(string key)
+        {
+            try
+            {
+                if (Remember != null) Remember(key);
+            }
+            catch
+            {
+                // Not being able to write it down is not a reason to stop talking.
             }
         }
 

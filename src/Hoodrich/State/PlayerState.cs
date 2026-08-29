@@ -360,6 +360,20 @@ namespace Hoodrich.State
         public readonly List<string> GunParts = new List<string>();
 
         /// <summary>
+        /// Recorded lines this save has already heard, by their file key.
+        ///
+        /// A performance is not a sound effect. The first time Gerald explains the business it
+        /// is worth hearing; the fourth time you open that branch to re-read one sentence it is
+        /// a man shouting a speech at somebody who is skim-reading, and you start avoiding the
+        /// menu that does it.
+        ///
+        /// KEYS, NOT TEXT, so this stays small and stays true. It records that a particular
+        /// recording has been played, which is what "heard it" actually means -- rewrite the
+        /// line and the key changes, so the new wording is new again and gets its turn.
+        /// </summary>
+        public readonly List<string> VoiceHeard = new List<string>();
+
+        /// <summary>
         /// Cars you have actually paid for, and enough about each to stand it back up.
         ///
         /// CarsBought is only a list of ids, and its whole job is stopping Hao restocking
@@ -552,6 +566,7 @@ namespace Hoodrich.State
             CarsBought.Clear();
             GunsBought.Clear();
             GunParts.Clear();
+            VoiceHeard.Clear();
             Owned.Clear();
 
             SeenWelcome = false;
@@ -816,6 +831,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json VoiceHeardJson()
+        {
+            var arr = Json.Array();
+            foreach (var key in VoiceHeard) arr.Add(Json.Str(key));
+            return arr;
+        }
+
         private Json GunPartsJson()
         {
             var arr = Json.Array();
@@ -923,6 +945,7 @@ namespace Hoodrich.State
                 .Set("carsBought", CarsJson())
                 .Set("gunsBought", GunsJson())
                 .Set("gunParts", GunPartsJson())
+                .Set("voiceHeard", VoiceHeardJson())
                 .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson());
@@ -984,6 +1007,7 @@ namespace Hoodrich.State
                 CarsBought.Clear();
             GunsBought.Clear();
             GunParts.Clear();
+            VoiceHeard.Clear();
             Owned.Clear();
                 Owned.Clear();
 
@@ -1018,6 +1042,14 @@ namespace Hoodrich.State
                 {
                     var row = node.AsString("");
                     if (!string.IsNullOrEmpty(row)) GunParts.Add(row);
+                }
+
+                VoiceHeard.Clear();
+
+                foreach (var node in doc["voiceHeard"].Items)
+                {
+                    var key = node.AsString("");
+                    if (!string.IsNullOrEmpty(key) && !VoiceHeard.Contains(key)) VoiceHeard.Add(key);
                 }
 
                 GunsBought.Clear();

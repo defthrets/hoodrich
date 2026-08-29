@@ -84,6 +84,11 @@ namespace Hoodrich.Core
         public float VoiceVolume = 0.9f;
 
         /// <summary>
+        /// Whether an already-heard line speaks again. See Voice.Repeat -- on is for recording.
+        /// </summary>
+        public bool VoiceRepeat;
+
+        /// <summary>
         /// Tweets drawn down the right-hand side instead of posted to the game's feed.
         ///
         /// The native notification stack is anchored top-left and cannot be moved, so the feed
@@ -429,6 +434,7 @@ namespace Hoodrich.Core
 
             s.VoiceEnabled = ini.GetBool("Voice", "Enabled", s.VoiceEnabled);
             s.VoiceVolume = Clamp(ini.GetFloat("Voice", "Volume", s.VoiceVolume), 0f, 1f);
+            s.VoiceRepeat = ini.GetBool("Voice", "RepeatLines", s.VoiceRepeat);
 
             s.BulkPurchaseDiscountPercent =
                 Clamp(ini.GetFloat("Economy", "BulkPurchaseDiscountPercent", s.BulkPurchaseDiscountPercent), 0f, 90f);
