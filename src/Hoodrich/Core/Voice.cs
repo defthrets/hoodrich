@@ -407,6 +407,24 @@ namespace Hoodrich.Core
         /// any language can reproduce exactly, which is the whole point -- the script that
         /// generates the recording list has to agree with this to the character.
         /// </summary>
+        /// <summary>
+        /// A name a line picks for itself, scoped to whoever says it.
+        ///
+        /// For the lines a hash can never reach -- the ones carrying a price, a count, or how
+        /// much room is left at the house. The words differ every telling, so there is nothing
+        /// stable to hash, but the LINE is still the same line and the man saying it is still
+        /// the same man.
+        ///
+        /// Scoped by speaker because the screens that need this are shared: every dealer says
+        /// the same sentence with their own numbers in it, so "shop" alone would have them all
+        /// fighting over one recording. tao_cheng_shop and merle_shop are different men saying
+        /// the same words, which is exactly right.
+        /// </summary>
+        public static string Named(string speaker, string tag)
+        {
+            return Slug(speaker) + "_" + tag;
+        }
+
         public static string Key(string speaker, string line)
         {
             return Slug(speaker) + "_" + Hash(Tidy(line)).ToString("x8", CultureInfo.InvariantCulture);

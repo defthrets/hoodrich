@@ -71,7 +71,7 @@
       ],
       "lotValue": 100000,
       "lotStep": 500,
-      "drunk": true,
+      "drunk": false,
       "priceFloor": 3000,
       "priceStep": 500,
       "purity": 1.0,

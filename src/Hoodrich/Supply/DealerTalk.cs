@@ -191,6 +191,15 @@ namespace Hoodrich.Supply
                 : "Ain't got time to stand here. What you taking? It's all stepped on already, " +
                   Stash.Percent(strength) + " per cent.") + number + Standing());
 
+                // NO HASH CAN REACH THIS ONE. What he says is fixed, but the money on you and
+                // the room at the house are stapled to the end of it and change every time -- so
+                // the words are never twice the same and no file could be named after them.
+                //
+                // The line names itself instead, per dealer and per which of the two things he
+                // says, and the recording just leaves the arithmetic out. The screen is already
+                // showing it.
+                node.Voiced(Voice.Named(Name, strength >= 0.999f ? "shop" : "shopcut"));
+
             foreach (var brick in StockToday())
             {
                 var product = _drugs.Get(brick.DrugId);
