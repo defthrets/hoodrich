@@ -411,11 +411,12 @@ namespace Hoodrich.Gangs
             if (string.Equals(gang.Id, "families", StringComparison.OrdinalIgnoreCase))
             {
                 node = Node(def, gang,
-                    "We do, Franklin! You know this. You and Lamar and your cute little 88 "
-                  + "set... are considered family, but the real big dawgs are Chamberlain "
-                  + "Gangster Families and the Forum Drive Families, we all know this... Our "
-                  + "ops are ballas and vagos mainly... but we ain't exactly on good terms "
-                  + "with the lost and the aztecas as well. Little scary ass bitches.");
+                    "We do Franklin! You know this nigga. You and Lamar and your cute little "
+                  + "88 set are family, but the real big dawgs are Chamberlain Gangster "
+                  + "Families and the Forum Drive Families, we all know this... Our ops "
+                  + "are Ballers and the Vagos mainly... but we ain't exactly on good "
+                  + "terms with the lost and the aztecas as well. Little scary ass "
+                  + "bitches always complainin' about somethin'");
             }
             else
             {
