@@ -1268,7 +1268,7 @@ namespace Hoodrich.Gangs
             // a different product from the first, which a generic word erases.
             var node = Node(def, gang,
                 "Aight, you been out there once and you came back. Second one's different -- " +
-                FrontGrams.ToString("0") + " oxys. Oxycodone, straight out the bag, they don't " +
+                FrontGrams.ToString("0") + " percs. Oxycodone, straight out the bag, they don't " +
                 "need nothin' doin' to 'em same as the bars. All of it gone, then you see me, " +
                 "and after that we talk about where it comes from.");
 
