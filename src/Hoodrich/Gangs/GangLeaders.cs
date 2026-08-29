@@ -81,6 +81,14 @@ namespace Hoodrich.Gangs
 
         /// <summary>Said when you already run with him.</summary>
         public string Already = "";
+
+        /// <summary>
+        /// What he says on every visit after the first, before you run with him.
+        ///
+        /// Empty keeps the old behaviour and repeats the introduction, which is right for
+        /// anybody who has not been given a second line yet.
+        /// </summary>
+        public string Seen = "";
     }
 
     /// <summary>
@@ -185,6 +193,7 @@ namespace Hoodrich.Gangs
                 def.Accept = node["accept"].AsString(def.Accept);
                 def.Refuse = node["refuse"].AsString(def.Refuse);
                 def.Already = node["already"].AsString(def.Already);
+                def.Seen = node["seen"].AsString(def.Seen);
 
                 var zone = node["zone"].AsString("");
                 if (!string.IsNullOrEmpty(zone)) def.HomeZone = zone;
@@ -409,7 +418,8 @@ namespace Hoodrich.Gangs
                 "ceremony. Now -- I don't wanna see you again til that bag's empty. Not " +
                 "halfway. Empty.",
                 "Lamar talk about you like you somebody. I ain't seen it yet. Go make him right.",
-                "We already did this part. Go work.");
+                "We already did this part. Go work.",
+                "Yeah? What's up.");
 
             // OG Reese. Asks rather than tells, because he is old enough to have watched
             // everybody out here come up and he places you by who your people are.
@@ -503,7 +513,8 @@ namespace Hoodrich.Gangs
         }
 
         private void Add(string gangId, string name, string zone, string[] models,
-                         string greeting, string accept, string refuse, string already)
+                         string greeting, string accept, string refuse, string already,
+                         string seen = "")
         {
             var def = new LeaderDef
             {
@@ -513,7 +524,8 @@ namespace Hoodrich.Gangs
                 Greeting = greeting,
                 Accept = accept,
                 Refuse = refuse,
-                Already = already
+                Already = already,
+                Seen = seen
             };
             def.Models.AddRange(models);
             _defs.Add(def);

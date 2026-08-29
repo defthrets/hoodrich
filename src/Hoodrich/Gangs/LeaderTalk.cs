@@ -219,7 +219,15 @@ namespace Hoodrich.Gangs
 
         private DialogueNode StrangerRoot(LeaderDef def, GangDef gang)
         {
-            var node = Node(def, gang, def.Greeting);
+            // THE INTRODUCTION IS SPENT THE FIRST TIME IT IS GIVEN.
+            //
+            // Marked here rather than read from LeadersMet, which went true when he streamed
+            // into range and put himself on your map -- long before he had said anything. This
+            // is the moment he actually says it, so this is the moment it stops being new.
+            var first = _state == null || _state.MarkGreeted(gang.Id);
+
+            var node = Node(def, gang,
+                first || string.IsNullOrEmpty(def.Seen) ? def.Greeting : def.Seen);
 
             // Icons on every row, the way the wheel and the rack have them. A list of
             // plain sentences is a menu; the same list with the shape of each answer next to it

@@ -323,6 +323,43 @@ namespace Hoodrich.State
         public readonly List<string> LeadersMet = new List<string>();
 
         /// <summary>
+        /// Leaders who have already introduced themselves, by gang id.
+        ///
+        /// NOT THE SAME AS HAVING MET THEM. LeadersMet is set the moment a leader streams into
+        /// range, because that is what puts him on the map -- so by the time you walk up and
+        /// he opens his mouth, it has been true for a while. It cannot answer "has he said this
+        /// to me before", which is a different question and the one an introduction cares about.
+        ///
+        /// An introduction is something you get once. He tells you who vouched for you the
+        /// first time; every visit after that he just looks up, because a man who greets you
+        /// identically forever is furniture.
+        /// </summary>
+        public readonly List<string> LeadersGreeted = new List<string>();
+
+        public bool HasGreeted(string gangId)
+        {
+            if (string.IsNullOrEmpty(gangId)) return false;
+
+            foreach (var id in LeadersGreeted)
+            {
+                if (string.Equals(id, gangId, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Returns true only the first time, so the caller can say the long one.</summary>
+        public bool MarkGreeted(string gangId)
+        {
+            if (string.IsNullOrEmpty(gangId) || HasGreeted(gangId)) return false;
+
+            LeadersGreeted.Add(gangId);
+            Touch();
+
+            return true;
+        }
+
+        /// <summary>
         /// Cars bought off Hao, by id.
         ///
         /// Saved, because his lot is rebuilt from cars.json every load and without this it
@@ -563,6 +600,7 @@ namespace Hoodrich.State
 
             MissionsDone.Clear();
             LeadersMet.Clear();
+            LeadersGreeted.Clear();
             CarsBought.Clear();
             GunsBought.Clear();
             GunParts.Clear();
@@ -802,6 +840,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json GreetedJson()
+        {
+            var arr = Json.Array();
+            foreach (var id in LeadersGreeted) arr.Add(Json.Str(id));
+            return arr;
+        }
+
         private Json OwnedJson()
         {
             var arr = Json.Array();
@@ -942,6 +987,7 @@ namespace Hoodrich.State
                 .Set("lastJobAt", LastJobAtUtc)
                 .Set("missionsDone", MissionsJson())
                 .Set("leadersMet", LeadersJson())
+                .Set("leadersGreeted", GreetedJson())
                 .Set("carsBought", CarsJson())
                 .Set("gunsBought", GunsJson())
                 .Set("gunParts", GunPartsJson())
@@ -1065,6 +1111,14 @@ namespace Hoodrich.State
                 {
                     var id = node.AsString("");
                     if (!string.IsNullOrEmpty(id) && !HasMet(id)) LeadersMet.Add(id);
+                }
+
+                LeadersGreeted.Clear();
+
+                foreach (var node in doc["leadersGreeted"].Items)
+                {
+                    var id = node.AsString("");
+                    if (!string.IsNullOrEmpty(id) && !HasGreeted(id)) LeadersGreeted.Add(id);
                 }
 
                 // Read back, or Lamar texts about the same job every time you load.
