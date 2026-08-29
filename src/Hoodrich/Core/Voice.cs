@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -45,6 +45,31 @@ namespace Hoodrich.Core
         private static extern int mciSendString(string command, StringBuilder ret,
                                                 int retLength, IntPtr callback);
 
+        [DllImport("winmm.dll", CharSet = CharSet.Unicode, EntryPoint = "mciGetErrorStringW")]
+        private static extern bool mciGetErrorString(int error, StringBuilder ret, int retLength);
+
+        /// <summary>
+        /// What MCI actually objected to, in words.
+        ///
+        /// Worth the extra import. "It would not open" is the same message whether the file is
+        /// missing, the path is mangled, the device is not registered on this Windows, or the
+        /// encoding is one the decoder will not take -- and those want four different fixes.
+        /// </summary>
+        private static string Why(int code)
+        {
+            try
+            {
+                var buf = new StringBuilder(256);
+                return mciGetErrorString(code, buf, buf.Capacity)
+                    ? buf.ToString()
+                    : "MCI error " + code;
+            }
+            catch
+            {
+                return "MCI error " + code;
+            }
+        }
+
         /// <summary>
         /// The alias currently open, or null.
         ///
@@ -86,6 +111,8 @@ namespace Hoodrich.Core
 
                 if (path == null)
                 {
+                    // Named, so the log says what to call the file rather than making somebody
+                    // work it out. This is the line to grep for when a recording does nothing.
                     // The to-record list writes itself. Play through with logging on and the
                     // log holds every line that wanted audio and did not have it, already
                     // named -- which beats trying to work the list out by reading the source,
@@ -93,6 +120,13 @@ namespace Hoodrich.Core
                     Log.Debug("Voice: nothing for " + key + " -- " + Snip(line));
                     return false;
                 }
+
+                // AT INFO, NOT DEBUG. A recording that exists is rare -- one line per
+                // conversation at most -- so this costs nothing, and it is the only way to tell
+                // "the name was wrong" apart from "the codec refused it" without asking somebody
+                // to go and change their log level first. Silence is this thing's only failure
+                // mode; it has to be able to explain itself on the log people already have.
+                Log.Info("Voice: playing " + Path.GetFileName(path));
 
                 return Start(path);
             }
@@ -145,19 +179,37 @@ namespace Hoodrich.Core
         {
             var alias = "hrvox" + (++_next).ToString(CultureInfo.InvariantCulture);
 
-            // MPEGVIDEO for MP3 and WAVEAUDIO for WAV. Naming the device rather than letting
-            // MCI infer it from the extension, because inference goes through file-type
-            // registry entries that a stripped or locked-down Windows may not have.
+            // TWO WAYS IN, because neither is reliable on its own.
+            //
+            // Naming the device is the documented way and does not depend on the file-type
+            // registry, which a stripped or locked-down Windows may not have. But MPEGVIDEO is
+            // a legacy driver and is NOT registered on every Windows 11 -- where naming it is
+            // the thing that fails, and letting MCI work it out from the extension is what
+            // succeeds. So: name it, and if that is refused, ask again without.
+            //
+            // Quoted either way, because the path runs through Program Files (x86) on nearly
+            // every install and an unquoted space ends the argument early.
+            var file = "\"" + path + "\"";
+
             var kind = path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)
                 ? "waveaudio"
                 : "mpegvideo";
 
-            // Quoted, because the path runs through Program Files (x86) on nearly every
-            // install and an unquoted space ends the argument early.
-            if (mciSendString("open \"" + path + "\" type " + kind + " alias " + alias,
-                              null, 0, IntPtr.Zero) != 0)
+            var err = mciSendString("open " + file + " type " + kind + " alias " + alias,
+                                    null, 0, IntPtr.Zero);
+
+            if (err != 0)
             {
-                Log.Debug("Voice: MCI would not open " + Path.GetFileName(path));
+                Log.Info("Voice: MCI refused " + Path.GetFileName(path) + " as " + kind +
+                         " -- " + Why(err) + ". Trying it without a device.");
+
+                err = mciSendString("open " + file + " alias " + alias, null, 0, IntPtr.Zero);
+            }
+
+            if (err != 0)
+            {
+                Log.Info("Voice: MCI would not open " + Path.GetFileName(path) +
+                         " -- " + Why(err));
                 return false;
             }
 
@@ -169,8 +221,12 @@ namespace Hoodrich.Core
 
             // No "wait" -- that would block the script thread for the length of the line and
             // freeze the game while somebody talks.
-            if (mciSendString("play " + alias, null, 0, IntPtr.Zero) != 0)
+            var played = mciSendString("play " + alias, null, 0, IntPtr.Zero);
+
+            if (played != 0)
             {
+                Log.Info("Voice: opened but would not play " + Path.GetFileName(path) +
+                         " -- " + Why(played));
                 Hush();
                 return false;
             }
