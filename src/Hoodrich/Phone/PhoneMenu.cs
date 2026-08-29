@@ -678,7 +678,11 @@ namespace Hoodrich.Phone
 
             // Breathing, so a still screen still reads as a phone that is ringing.
             var turn = (Game.GameTime % PulseMs) / (double)PulseMs * Math.PI * 2d;
-            var breath = 0.35f + 0.65f * (float)Math.Sin(turn);
+            // 0..1, NOT -1..1. Sin swings negative and this used to be written as a plain
+    // 0.35 + 0.65 * sin, which dips to minus a third -- a negative alpha, which is an
+    // ArgumentException out of the draw and takes the whole tick with it. The status
+    // bar above already had this right; I did not copy it properly.
+    var breath = 0.35f + 0.65f * (0.5f + 0.5f * (float)Math.Sin(turn));
 
             Hud.Text("calling", mid, picY + picH + 0.062f, 0.34f,
                      Fade(Palette.TextDim, (int)(fade * breath)), Hud.FontBody, centre: true);

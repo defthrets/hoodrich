@@ -76,6 +76,10 @@ namespace Hoodrich
         private readonly LeaderTalk _leaderTalk;
         private readonly Conversation _talk;
         private readonly Phone.PhoneCall _call = new Phone.PhoneCall();
+
+        /// <summary>Whether he ran with them last frame, so joining is an edge.</summary>
+        private bool _wasJoined;
+        private bool _joinSeen;
         private BlockTalk _blockTalk;
         private readonly InfoPanel _info;
         private readonly StashScreen _stashScreen;
@@ -2344,16 +2348,30 @@ namespace Hoodrich
                     // Arm is idempotent and Done sets the flag, so this asks every frame and acts once.
                     // BOTH, not either. Signing on is half of it -- he is ringing about you actually
                         // working, so both of Gerald's packages have to be behind you too.
-                        if (_state != null && !_state.LamarCalled && _state.FrontsDone >= 2 &&
-                            _crew != null && _crew.IsAffiliated)
-                    {
-                        _call.Arm("Lamar", "CHAR_LAMAR", "lamar_call_signed",
-                                  "Yo, Franklin. Gerald just told me you running with us now. "
-                                + "After the months of me pestering you to slang with us, an you "
-                                + "gon' have one lil' talk with Gerald then he done change your "
-                                + "mind. Pfft. Nah man, nah that how it be. Best get yo ass over "
-                                + "an come see me.", 30000);
-                    }
+                        // ON THE JOIN, not on being joined.
+                        //
+                        // This asked "are you affiliated" every frame, which is a state and not an event -- so
+                        // loading any save where you already run with them armed it on the spot, and the call
+                        // came in before you had signed on to anything in that session. Watching the EDGE means
+                        // it fires the moment you actually shake his hand and never again.
+                        //
+                        // The first tick only records where you started, or loading an affiliated save would
+                        // read as having just joined.
+                        var joined = _crew != null && _crew.IsAffiliated;
+
+                        if (_joinSeen && joined && !_wasJoined && _state != null &&
+                            !_state.LamarCalled && _state.FrontsDone >= 2)
+                        {
+                            _call.Arm("Lamar", "CHAR_LAMAR", "lamar_call_signed",
+                                      "Yo, Franklin. Gerald just told me you running with us now. "
+                                    + "After the months of me pestering you to slang with us, an you "
+                                    + "gon' have one lil' talk with Gerald then he done change your "
+                                    + "mind. Pfft. Nah man, nah that how it be. Best get yo ass over "
+                                    + "an come see me.", 15000);
+                        }
+
+                        _wasJoined = joined;
+                        _joinSeen = true;
 
                     _call.Update(Game.Player.Character);
                     _blockTalk.Update();

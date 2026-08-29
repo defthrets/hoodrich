@@ -2176,6 +2176,11 @@ namespace Hoodrich.Wheel
                     if (_crew != null) _crew.Leave();
 
                     WipeSocials?.Invoke();
+                    // The feed and the inbox are separate stores and only the feed was being cleared,
+                    // so a man who had wiped himself back to nobody still had Gerald texting him about
+                    // work he had never done.
+                    Social.Inbox.Wipe();
+
                     Notify.Important("~o~Back to nobody.~s~");
                 }
             };
@@ -2236,6 +2241,8 @@ namespace Hoodrich.Wheel
                     _state.ForgetName();
 
                     WipeSocials?.Invoke();
+
+                    Social.Inbox.Wipe();
 
                     Game.Player.Money = 0;
                     DropAllGuns();
