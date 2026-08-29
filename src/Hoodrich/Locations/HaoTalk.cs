@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using GTA;
 using Hoodrich.Core;
 using Hoodrich.State;
 using Hoodrich.UI;
@@ -213,9 +214,111 @@ namespace Hoodrich.Locations
 
             node.Say("Show me the lot.", () => Lot(), "See what's out front");
 
+            SellRow(node);
+
             node.Say("That other thing you mentioned.", () => StillNotYet(),
                      "Ask about the work");
 
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>
+        /// The row that offers one back, when there is one to offer.
+        ///
+        /// SHOWN LOCKED rather than hidden when he has sold you something and none of it is
+        /// parked here. A row that only exists while you happen to be stood in the right place
+        /// is a feature nobody ever finds -- and the player who bought a car off him and wants
+        /// rid of it has no way to learn that he takes them back. The reason sits on the row
+        /// instead: bring it to the lot.
+        ///
+        /// Nothing at all if he has never sold you one, because then it is not a locked door,
+        /// it is a door to a room that does not exist yet.
+        /// </summary>
+        private void SellRow(DialogueNode node)
+        {
+            if (_hao == null || _state == null || _state.CarsBought.Count == 0) return;
+
+            CarLot lot;
+            var car = _hao.MineNearby(out lot);
+
+            if (car == null || lot == null)
+            {
+                node.SayIf(false, "It's not here -- bring it to the lot",
+                           "I want to sell one back.", () => null, "");
+                node.WithIcon(Icons.Locked);
+                return;
+            }
+
+            bool full;
+            var offer = _hao.Offer(lot, out full);
+
+            node.Say("I want to sell the " + lot.Name + " back.",
+                     () => SellIt(car, lot),
+                     "$" + offer.ToString("N0") + (full ? "  --  full price, he's still in the window"
+                                                        : "  --  half of what you paid"));
+            node.WithIcon(Icons.Money);
+        }
+
+        /// <summary>
+        /// What he says to the number before you agree to it.
+        ///
+        /// TWO DIFFERENT MEN depending on the clock. Inside ten minutes he gives all of it back
+        /// and the reason is bookkeeping rather than kindness, which is the only way he would
+        /// ever do a favour. After that it is half, and he does not apologise for it.
+        /// </summary>
+        private DialogueNode SellIt(Vehicle car, CarLot lot)
+        {
+            bool full;
+            var offer = _hao.Offer(lot, out full);
+
+            var node = Node(full
+                ? "That was quick. Seat's not even warm.\n\nGo on then, all of it back. Not " +
+                  "'cause I'm soft -- 'cause I've not put it in the book yet, and a car that " +
+                  "was never in the book was never sold. Far as anyone's concerned you had a " +
+                  "look and you walked."
+                : "Half. Same as anybody.\n\nA motor's worth what it's worth the second it's " +
+                  "off my gate, and you knew that when you drove it off. I'm not hagglin' and " +
+                  "I'm not bein' funny about it. That's the number.");
+
+            node.Say("Done. $" + offer.ToString("N0") + ".", () => Sold(car, lot),
+                     "Hand him the keys");
+            node.WithIcon(Icons.Tick);
+
+            node.Say("Keep it, then.", () => Again(), "Change your mind");
+            node.Leave();
+            return node;
+        }
+
+        /// <summary>
+        /// Taking it off you, or telling you why he cannot.
+        ///
+        /// The price is read BEFORE the sale goes through, because selling it is what clears
+        /// the stamp that decides whether the price was full -- ask afterwards and he quotes
+        /// you half of what he just paid.
+        /// </summary>
+        private DialogueNode Sold(Vehicle car, CarLot lot)
+        {
+            bool full;
+            var offer = _hao.Offer(lot, out full);
+
+            var refused = _hao.SellBack(car, lot);
+
+            if (refused != null)
+            {
+                var no = Node(refused);
+                no.Leave();
+                return no;
+            }
+
+            var node = Node(full
+                ? "Never happened.\n\n$" + offer.ToString("N0") + ", and don't make a habit " +
+                  "of it. I've got a lot to run, not a lending library."
+                : "$" + offer.ToString("N0") + ". Pleasure.\n\nIt'll be back out front by " +
+                  "mornin' wearin' a different number, and somebody else'll pay full for it. " +
+                  "That's the business, that's not me bein' clever.");
+
+            node.Say("Show me the lot.", () => Lot(), "See what's out front");
             node.Leave();
             return node;
         }

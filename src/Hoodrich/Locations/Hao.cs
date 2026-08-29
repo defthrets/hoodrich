@@ -344,6 +344,63 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>What he will give you for it, and whether that is the full price.</summary>
+        /// <summary>
+        /// The closest car of his that you have, whether you are sat in it or stood by it.
+        ///
+        /// IN IT OR BESIDE IT, and the difference is the whole reason this exists. The prompt
+        /// on the windscreen can ask CurrentVehicle and be finished, because you are sat in the
+        /// thing when it shows. The CONVERSATION cannot: you talk to him on foot at the
+        /// shutter, so by the time that menu is up the car is parked a few metres away with
+        /// nobody in it -- and a sell row that only worked from the driver's seat would never
+        /// once have appeared on the screen that offers it.
+        ///
+        /// Sat in one still wins. If you drove it here that is plainly the one you mean, even
+        /// with three others of his parked closer.
+        /// </summary>
+        public Vehicle MineNearby(out CarLot lot, float radius = 25f)
+        {
+            lot = null;
+
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return null;
+
+                var seat = His(me.CurrentVehicle);
+                if (seat != null)
+                {
+                    lot = seat;
+                    return me.CurrentVehicle;
+                }
+
+                Vehicle best = null;
+                var nearest = float.MaxValue;
+
+                foreach (var v in World.GetNearbyVehicles(me, radius))
+                {
+                    if (v == null || !v.Exists()) continue;
+
+                    var his = His(v);
+                    if (his == null) continue;
+
+                    var d = me.Position.DistanceTo(v.Position);
+                    if (d >= nearest) continue;
+
+                    nearest = d;
+                    best = v;
+                    lot = his;
+                }
+
+                return best;
+            }
+            catch
+            {
+                // Nothing to sell is a fine answer to give when the scan falls over.
+                lot = null;
+                return null;
+            }
+        }
+
         public int Offer(CarLot car, out bool full)
         {
             full = false;
