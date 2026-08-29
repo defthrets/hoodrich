@@ -112,7 +112,9 @@ namespace Hoodrich.Missions
                 return busy;
             }
 
-            var node = Node("What's happening. You looking for work, or you just walking past?");
+            var node = Node("What up Franklin. Got rid of that yee yee ass haircut I see. Bout time you "
+                            + "came around to see your old friend Lamar, the one you done forgot... "
+                            + "Nah man, it's all love dawg.");
 
             // The NEW thing comes first and on its own terms: he works down his list in order,
             // and until you have been through it he tells you what needs doing rather than

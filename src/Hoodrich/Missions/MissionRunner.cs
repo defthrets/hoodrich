@@ -753,6 +753,26 @@ namespace Hoodrich.Missions
         public Func<float> RestMinutes;
 
         /// <summary>
+        /// Hold him off for a while, for something that was not one of his own jobs.
+        ///
+        /// The rest window already exists and already does exactly this -- it is what stops him
+        /// texting about the next job the moment you finish the last. What it never covered was
+        /// work done for somebody ELSE: sign on with Gerald and Lamar has nothing to rest from,
+        /// so his offer went out on the next ten-second check, while you were still stood there.
+        ///
+        /// Never shortens an existing rest. If he is already sitting one out, the longer of the
+        /// two wins, or a small nudge could cut short a long one.
+        /// </summary>
+        public void RestFor(float minutes)
+        {
+            if (minutes <= 0f) return;
+
+            var until = Game.GameTime + (int)(minutes * 60000f);
+
+            if (until > _restUntil) _restUntil = until;
+        }
+
+        /// <summary>
         /// What he sends when he has had his think.
         ///
         /// One of several, because the same sentence arriving after every job is a reminder

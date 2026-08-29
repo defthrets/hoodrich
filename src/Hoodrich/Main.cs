@@ -2360,7 +2360,7 @@ namespace Hoodrich
                         var joined = _crew != null && _crew.IsAffiliated;
 
                         if (_joinSeen && joined && !_wasJoined && _state != null &&
-                            !_state.LamarCalled && _state.FrontsDone >= 2)
+                            !_state.LamarCalled && _state.FrontsDone >= 1)
                         {
                             _call.Arm("Lamar", "CHAR_LAMAR", "lamar_call_signed",
                                       "Yo, Franklin. Gerald just told me you running with us now. "
@@ -2368,6 +2368,11 @@ namespace Hoodrich
                                     + "gon' have one lil' talk with Gerald then he done change your "
                                     + "mind. Pfft. Nah man, nah that how it be. Best get yo ass over "
                                     + "an come see me.", 15000);
+
+                                    // And he holds his own work back while that lands. Signing on is not one of his
+                                    // jobs, so nothing was resting him -- his offer went out ten seconds later, with
+                                    // you still stood in front of Gerald, on top of the call and two other texts.
+                                    if (_jobs != null) _jobs.RestFor(7f);
                         }
 
                         _wasJoined = joined;
