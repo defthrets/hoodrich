@@ -200,7 +200,8 @@ namespace Hoodrich
         private readonly ParkedCar _meetTwo;
         private readonly Fixture _partyBarrel;
         private readonly Fixture _partyCouch;
-        private readonly YardDog _partyDog;
+        /// <summary>The dog in the yard, and yours once you have petted him.</summary>
+        private readonly Trigger _partyDog;
         private readonly Fixture _leaderBox;
 
         /// <summary>
@@ -1192,7 +1193,7 @@ namespace Hoodrich
                 // Six metres, which is a dog mooching round a party rather than a dog on a
                 // beat. Placed between the barrel and the couch so his round takes him through
                 // where the people are instead of along a wall.
-                _partyDog = new YardDog(new Vector3(-200.900f, -1727.900f, 32.664f), 6f)
+                _partyDog = new Trigger(new Vector3(-200.900f, -1727.900f, 32.664f), 6f, _state)
                 {
                     // The yard is only a party once it is your block. Before that he is
                     // somebody else's dog in somebody else's yard.

@@ -271,6 +271,14 @@ namespace Hoodrich.State
         /// story is the one in the hills -- so sleeping at Aunt Denise's and loading back in
         /// dropped you across the map from everything the mod is about.
         /// </summary>
+        /// <summary>
+        /// Whether the dog in the yard has been petted and is coming with you.
+        ///
+        /// Saved, because a dog you have to re-adopt every session is not your dog. Cleared
+        /// when he dies, which is the only way it goes back to false -- see Locations.Trigger.
+        /// </summary>
+        public bool TriggerIsYours;
+
         public bool SleptAtStashHouse;
 
         /// <summary>
@@ -622,6 +630,7 @@ namespace Hoodrich.State
             MetHao = false;
             LamarCalled = false;
             SleptAtStashHouse = false;
+            TriggerIsYours = false;
             Followers = 0;
 
             ClearFronted();
@@ -1022,6 +1031,7 @@ namespace Hoodrich.State
                 .Set("gunsBought", GunsJson())
                 .Set("gunParts", GunPartsJson())
                 .Set("voiceHeard", VoiceHeardJson())
+                .Set("triggerIsYours", TriggerIsYours)
                 .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson());
@@ -1059,6 +1069,7 @@ namespace Hoodrich.State
                 MetHao = doc["metHao"].AsBool(false);
                 LamarCalled = doc["lamarCalled"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
+                TriggerIsYours = doc["triggerIsYours"].AsBool(false);
 
                 // Defaults to FALSE, so a save from before this existed shows the guide once
                 // and then never again. That is the right way round: somebody who has been
