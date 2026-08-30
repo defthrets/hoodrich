@@ -218,6 +218,15 @@ namespace Hoodrich.UI
         /// a single row reads like something failed to load. A second line is one entry here
         /// plus one set in the json.
         /// </summary>
+        /// <summary>
+        /// Set by Main: what he would post about right now, as set, subject and label.
+        ///
+        /// A hook rather than a lookup, because the answer depends on the mission runner, the
+        /// corner and the clock -- none of which this screen knows about, and none of which it
+        /// should learn.
+        /// </summary>
+        public Func<string[]> Topic;
+
         private static readonly Sayable[] Says =
         {
             new Sayable { Label = "About the day", Set = "YouDaily",
@@ -1073,6 +1082,29 @@ namespace Hoodrich.UI
                 if (_tab == TabPost)
                 {
                     label = Says[i].Label;
+
+                    // THE BUTTON NAMES WHAT IS ACTUALLY GOING OUT.
+                    //
+                    // It always read "About the day" and then posted about the corner you were
+                    // stood on, which is the one thing a compose button must not do -- you
+                    // press it to say a particular thing and it says a different one. Now the
+                    // row is rewritten from the same resolver that picks the post, so the two
+                    // cannot disagree.
+                    if (i == 0 && Topic != null)
+                    {
+                        try
+                        {
+                            var topic = Topic();
+                            if (topic != null && topic.Length > 2 && topic[2].Length > 0)
+                            {
+                                label = topic[2];
+                            }
+                        }
+                        catch
+                        {
+                            // The written label is a perfectly good fallback.
+                        }
+                    }
                     value = "FREE";
                     valueInk = Palette.Cash;
                 }
@@ -1291,6 +1323,31 @@ namespace Hoodrich.UI
                 headInk = Palette.TextDim;
                 icon = "reply.png";
                 l1 = Says[_pick].Line;
+
+                // The strip explains the row above it, so it has to be told the same thing the
+                // row was. A button reading "About the job you just did" over a heading reading
+                // ABOUT THE DAY is two answers to one question.
+                if (_pick == 0 && Topic != null)
+                {
+                    try
+                    {
+                        var topic = Topic();
+
+                        if (topic != null && topic.Length > 2 && topic[2].Length > 0)
+                        {
+                            headTxt = topic[2].ToUpperInvariant();
+
+                            if (topic.Length > 1 && topic[1].Length > 0)
+                            {
+                                l1 = "Costs you nothing. Goes out about " + topic[1] + ".";
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // The written pair is still correct, just less specific.
+                    }
+                }
             }
             else if (_tab == TabDiss)
             {

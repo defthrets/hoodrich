@@ -299,6 +299,18 @@ namespace Hoodrich.Missions
 
         public MissionDef Current => _def;
 
+        /// <summary>
+        /// The last job finished, so anything else can talk about it afterwards.
+        ///
+        /// The runner already knew which post set belongs to which kind of job -- it uses it
+        /// the instant the job ends and then forgets. Which meant the one screen where you are
+        /// the author had nothing to say about the thing you had just spent ten minutes doing,
+        /// and offered you the weather instead.
+        /// </summary>
+        public string LastDoneSet { get; private set; } = "";
+        public string LastDoneName { get; private set; } = "";
+        public int LastDoneAt { get; private set; }
+
         /// <summary>What the player is meant to be doing, in one line.</summary>
         public string Objective
         {
@@ -3089,6 +3101,12 @@ namespace Hoodrich.Missions
                     Social.PostAsYou("YouDidTheJob", def.Name);
                 }
             }
+
+            // Remembered whether or not the feed is switched on, because the composer reads it
+            // and that is a different question from whether the block narrated it.
+            LastDoneSet = SaidAbout(def.Kind);
+            LastDoneName = def.Name ?? "";
+            LastDoneAt = Game.GameTime;
 
             // And then he wants a minute. Set before Clear, because Clear is where the job
             // stops existing and this is a fact about the man rather than about the job.

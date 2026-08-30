@@ -1762,25 +1762,50 @@ namespace Hoodrich
                 _socialScreen.Crew = _crew;
                 _socialScreen.PaybackDue = () => _payback != null && _payback.IsOwed;
 
-                _socialScreen.Say = set =>
+                // What he would actually be posting about, in the order a man would think of
+                // it. The composer asks this instead of always reaching for the weather.
+                //
+                // A JOB HE HAS JUST DONE BEATS THE CORNER HE IS STOOD ON. Both are true at
+                // once often enough -- you finish a run for Lamar and go straight back out --
+                // and of the two, the thing that happened is news and the thing that is
+                // ongoing is not. It stops being news after ten minutes, which is roughly how
+                // long anybody stays pleased with themselves.
+                _socialScreen.Topic = () =>
                 {
+                    if (_jobs != null && !string.IsNullOrEmpty(_jobs.LastDoneSet) &&
+                        Game.GameTime - _jobs.LastDoneAt < JustDidItMs)
+                    {
+                        return new[] { _jobs.LastDoneSet, _jobs.LastDoneName, "About the job you just did" };
+                    }
+
                     // Stood on a corner, the day post is about the corner.
                     //
                     // Not spelled out. It goes up as the product's street name and the
                     // neighbourhood, which is what somebody actually posts -- a man announcing
                     // his inventory to a public feed is a man who gets a visit.
-                    if (set == "YouDaily" && _postUp != null && _postUp.IsPosted)
+                    if (_postUp != null && _postUp.IsPosted)
                     {
                         var code = _postUp.CodeWord;
 
-                        if (!string.IsNullOrEmpty(code) &&
-                            _social.PostAsYou("YouPosted", code) != null)
+                        if (!string.IsNullOrEmpty(code))
                         {
-                            return true;
+                            return new[] { "YouPosted", code, "About where you're stood" };
                         }
                     }
 
-                    return _social.PostAsYou(set, "") != null;
+                    return new[] { "YouDaily", "", "About the day" };
+                };
+
+                _socialScreen.Say = set =>
+                {
+                    var topic = _socialScreen.Topic == null ? null : _socialScreen.Topic();
+
+                    // The resolved topic first, and the plain day post behind it -- so a set
+                    // nobody has written lines for still puts something out rather than
+                    // swallowing the button press.
+                    if (topic != null && _social.PostAsYou(topic[0], topic[1]) != null) return true;
+
+                    return _social.PostAsYou("YouDaily", "") != null;
                 };
 
                 // Naming a set does three things at once and they have to happen together: the
@@ -2504,6 +2529,9 @@ namespace Hoodrich
                 }
             }
         }
+
+        /// <summary>How long a finished job stays the thing you would post about.</summary>
+        private const int JustDidItMs = 600000;
 
         private bool _saidHello;
         private bool _rescueDown;
