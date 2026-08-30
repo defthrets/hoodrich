@@ -19,6 +19,18 @@ param(
     [string]$Configuration = 'Release',
     [switch]$Deploy,
 
+    # Deploy over a RUNNING game, then press Insert in game to reload.
+    #
+    # ScriptHookVDotNet does not hold the dll open -- it reads the file and loads the assembly
+    # from the bytes, then throws the whole app domain away and builds a new one when you press
+    # its reload key. That is what makes this possible at all, and it is why the ordinary guard
+    # below is a courtesy rather than a law: the file is not actually locked.
+    #
+    # The cost is that a reload restarts the mod, so it re-reads the save from disk. Anything
+    # since the last autosave is gone. Fine for trying a change, wrong for a session you care
+    # about -- which is why it is a switch and not the default.
+    [switch]$Hot,
+
     # Build a zip anybody can drop into their GTA V folder. Ships the dll, a DEFAULT ini and
     # the data -- never this machine's tuned ini and never a save. See the packaging section.
     [switch]$Package,
@@ -289,12 +301,22 @@ function Deploy-To([string]$gameDir, [string]$label) {
 
 if ($Deploy) {
     $running = Get-Process GTA5, GTA5_Enhanced -ErrorAction SilentlyContinue
-    if ($running) { throw "GTA V is running - close it before deploying (the dll is locked)." }
+
+    if ($running -and -not $Hot) {
+        throw "GTA V is running. Close it, or pass -Hot to write over it and press Insert in game."
+    }
 
     if ($Target -in 'Legacy', 'Both')   { Deploy-To $GtaDir      'Legacy' }
     if ($Target -in 'Enhanced', 'Both') { Deploy-To $EnhancedDir 'Enhanced' }
 
     Write-Host "Deploy complete." -ForegroundColor Green
+
+    if ($running) {
+        Write-Host ""
+        Write-Host "  PRESS INSERT IN GAME to load it." -ForegroundColor Yellow
+        Write-Host "  That restarts the mod and it re-reads the save, so anything since the" -ForegroundColor DarkGray
+        Write-Host "  last autosave is lost. Hoodrich.ini is re-read too." -ForegroundColor DarkGray
+    }
 }
 
 # --- packaging ---------------------------------------------------------------

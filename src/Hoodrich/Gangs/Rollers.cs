@@ -61,6 +61,9 @@ namespace Hoodrich.Gangs
 
         /// <summary>And not another one before this, so it is a moment and not a stance.</summary>
         public int WheelieAfter;
+
+        /// <summary>When they were first noticed off the blocks, or nought while they are on.</summary>
+        public int StrayedAt;
     }
 
     /// <summary>
@@ -97,6 +100,14 @@ namespace Hoodrich.Gangs
 
         /// <summary>Past this they are somebody else's problem, so they are handed back.</summary>
         private const float LetGoRange = 260f;
+
+        /// <summary>
+        /// How long one gets to find its way back onto the blocks before it is let go.
+        ///
+        /// Long enough to drive round a corner and short enough that nobody follows a green
+        /// Manchez onto the freeway wondering where it thinks it is going.
+        /// </summary>
+        private const int StrayMs = 20000;
 
         private const int GapMinMs = 8000;
         private const int GapMaxMs = 24000;
@@ -436,6 +447,38 @@ namespace Hoodrich.Gangs
 
             var here = roll.Car.Position;
 
+            // OFF THE BLOCKS.
+            //
+            // Everything about these people is that they are FROM somewhere -- they spawn on
+            // Chamberlain Hills and Strawberry, they are painted the set's green, and a green
+            // Manchez three districts away is not the set, it is a stray car with a story
+            // nobody wrote. Every destination they are given is already checked against the
+            // turf, so the only way out is drift: a wander that had nowhere better to go, or a
+            // driver taking a wide line round a junction on the boundary.
+            //
+            // Noticed once, pointed home once, and handed back if it cannot get there. Not
+            // teleported and not deleted -- a car that vanishes while you are looking at it is
+            // worse than one that drives off.
+            if (Ours(here))
+            {
+                roll.StrayedAt = 0;
+            }
+            else
+            {
+                if (roll.StrayedAt == 0)
+                {
+                    roll.StrayedAt = now;
+                    Aim(roll, now);
+                    return false;
+                }
+
+                if (now - roll.StrayedAt > StrayMs)
+                {
+                    Log.Debug("Rollers: one wandered off the blocks and was handed back.");
+                    return true;
+                }
+            }
+
             if (roll.Target != Vector3.Zero && here.DistanceTo(roll.Target) < ArrivedRange)
             {
                 if (roll.StopThere)
@@ -512,6 +555,19 @@ namespace Hoodrich.Gangs
             // one place a bike is least interesting -- the service roads and the cut-throughs
             // behind the buildings are where anybody round here actually rides, and the road
             // network already knows which ones those are.
+            // WHERE THE PROBES START, which is not always where the vehicle is.
+            //
+            // Every one of them looks for somewhere within a hundred metres or so and throws
+            // out anything off our turf. That works perfectly while they are ON it and fails
+            // completely the moment they are not: a car sat one street outside the zone probes
+            // around itself, every probe lands outside as well, nothing is found, and the only
+            // thing left is a wander -- which takes it further out, so the next tick fails
+            // harder. It cannot look its way home from where it is standing.
+            //
+            // So a stray probes around the PLAYER instead. He is the one position known to be
+            // on our blocks, because nothing is put out at all unless he is stood on them.
+            var from = Anchor(roll);
+
             Vector3 where;
 
             if (following)
@@ -521,26 +577,31 @@ namespace Hoodrich.Gangs
             else if (roll.OnFoot && stop)
             {
                 // Somewhere to stand about, rather than somewhere to ride to.
-                where = Hangout(roll.Car.Position);
+                where = Hangout(from);
             }
             else if (roll.OnFoot)
             {
-                where = _rng.Next(100) < 55
-                    ? Node(roll.Car.Position, true)
-                    : Pavement(roll.Car.Position);
+                where = _rng.Next(100) < 55 ? Node(from, true) : Pavement(from);
             }
             else
             {
-                where = Node(roll.Car.Position, stop);
+                where = Node(from, stop);
             }
 
             // Whichever it asked for, take the other rather than stand still.
-            if (where == Vector3.Zero && roll.OnFoot) where = Pavement(roll.Car.Position);
+            if (where == Vector3.Zero && roll.OnFoot) where = Pavement(from);
+
+            // Still nothing, and already off the blocks. Anywhere on them will do -- getting
+            // back is the whole job at this point and which street it is does not matter.
+            if (where == Vector3.Zero && !Ours(roll.Car.Position)) where = Homeward();
 
             // Nowhere to send them this tick -- the probes all landed off our turf, or off the
             // road network entirely. They wander instead of standing still, because a car
             // stopped in a live lane is the exact thing the traffic watchdog exists to remove
             // and this one has a driver in it, so nothing would remove it.
+            // Only ever reached ON our turf now, or with no player to steer back to. That
+            // matters: wander has no idea where Chamberlain Hills is, and handing it to a car
+            // that has already drifted out is an instruction to keep going.
             if (where == Vector3.Zero)
             {
                 try
@@ -686,6 +747,48 @@ namespace Hoodrich.Gangs
             }
 
             return Vector3.Zero;
+        }
+
+        /// <summary>
+        /// Where to look from: themselves while they are on the blocks, the player once they
+        /// are not. See the note in Aim for why looking from where they are stood cannot work.
+        /// </summary>
+        private Vector3 Anchor(Roll roll)
+        {
+            try
+            {
+                var here = roll.Car.Position;
+                if (Ours(here)) return here;
+
+                var player = Game.Player.Character;
+                if (player != null && player.Exists() && Ours(player.Position)) return player.Position;
+
+                return here;
+            }
+            catch
+            {
+                return roll.Car.Position;
+            }
+        }
+
+        /// <summary>Anywhere at all back on our blocks, for one that has drifted off them.</summary>
+        private Vector3 Homeward()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+
+                if (player == null || !player.Exists()) return Vector3.Zero;
+                if (!Ours(player.Position)) return Vector3.Zero;
+
+                var back = Node(player.Position, false);
+
+                return back != Vector3.Zero ? back : player.Position;
+            }
+            catch
+            {
+                return Vector3.Zero;
+            }
         }
 
         /// <summary>Near a spot rather than on it.</summary>
