@@ -1842,6 +1842,8 @@ namespace Hoodrich
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
 
+                if (_partyDog != null) pages.ResetTrigger = () => _partyDog.Reset();
+
                 pages.AllJobs = () =>
                 {
                     var ids = new List<string>();

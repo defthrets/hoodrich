@@ -120,6 +120,9 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main: clears the feed and the follower count.</summary>
         public Action WipeSocials;
 
+        /// <summary>Put the dog back in the yard. Set by Main.</summary>
+        public Action ResetTrigger;
+
         /// <summary>
         /// Every job in the book, for the unlock-everything row.
         ///
@@ -2237,6 +2240,17 @@ namespace Hoodrich.Wheel
                        "of asking again",
                 Enabled = () => _state.FrontsDone < 2,
                 Do = () => _state.CreditFronts()
+            };
+
+            yield return new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Trigger",
+                Note = "The dog forgets he is yours and goes back to the yard, ready to be " +
+                       "petted again. For a dog that is lost, stuck, or on a save that thinks " +
+                       "you have one when you cannot find him",
+                Enabled = () => ResetTrigger != null,
+                Do = () => ResetTrigger?.Invoke()
             };
 
             yield return new Opt

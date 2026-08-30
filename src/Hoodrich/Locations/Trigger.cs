@@ -24,8 +24,16 @@ namespace Hoodrich.Locations
     /// for two native calls. Writing a follow behaviour by hand would be several hundred lines
     /// that behave worse, and the homies already ride on the same mechanism.
     ///
-    /// HE IS NOT IMMORTAL AND THAT IS ON PURPOSE. He can be shot, and if he is he is gone --
-    /// there is no respawn and the save remembers. A bodyguard you cannot lose is a turret.
+    /// HE DOES NOT DIE. That is a reversal: he used to be mortal on the reasoning that a
+    /// bodyguard you cannot lose is a turret, which is a good argument about a bodyguard and
+    /// the wrong argument about this. He is a dog you petted at a party, he walks into the same
+    /// gunfights you do because he follows you into them, and losing him permanently to a
+    /// stray round from something you did not start is not a consequence -- it is an accident
+    /// with a save file attached.
+    ///
+    /// So he takes damage, he limps, he goes down and he gets back up, and his health is held
+    /// above a floor rather than switched off: shooting him still does something, it just does
+    /// not do that.
     /// </summary>
     internal sealed class Trigger
     {
@@ -109,20 +117,11 @@ namespace Hoodrich.Locations
                 var player = Game.Player.Character;
                 if (player == null || !player.Exists() || !player.IsAlive) return;
 
-                // GONE IS GONE. He is not invincible and there is no second one -- a dog that
-                // reappears after being shot is a prop, and the save remembers so it is not
-                // undone by walking away and coming back.
-                if (_dog != null && (!_dog.Exists() || !_dog.IsAlive))
+                // Only actually gone if the entity itself has gone -- streamed out, deleted
+                // by another script, cleaned up by the game. Being hurt is handled below and
+                // is not this.
+                if (_dog != null && !_dog.Exists())
                 {
-                    if (Yours && _dog != null && _dog.Exists() && !_dog.IsAlive)
-                    {
-                        _state.TriggerIsYours = false;
-                        _state.Touch();
-
-                        Notify.Failure(Name + " is gone.");
-                        Log.Info("Trigger is dead.");
-                    }
-
                     Release();
                     return;
                 }
@@ -175,9 +174,12 @@ namespace Hoodrich.Locations
                 if (_dog == null) return;
             }
 
+            Alive();
             Join();
+            Bite(player);
             Offer(player);
             Ride(player);
+            Idle(player, now);
         }
 
         /// <summary>
@@ -207,6 +209,275 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// He gets hurt. He does not die.
+        ///
+        /// Three things, because one of them on its own is not enough. The flags stop the game
+        /// deciding he is finished -- an injured ped normally dies where it lies, and a
+        /// critical hit skips the injury and goes straight to dead. The floor is the backstop
+        /// under both: whatever took the health down, it stops going down here.
+        ///
+        /// And if something got through anyway -- an explosion, a script that killed everything
+        /// nearby, a fall -- he is stood back up rather than mourned. RESURRECT_PED leaves a
+        /// ped out of its group and with none of its flags, so all of that is put back on;
+        /// resurrecting without re-arming him is a dog that follows nobody and fights nothing.
+        /// </summary>
+        private void Alive()
+        {
+            if (_dog == null || !_dog.Exists()) return;
+
+            try
+            {
+                var h = _dog.Handle;
+
+                var max = Function.Call<int>(Hash.GET_PED_MAX_HEALTH, h);
+                if (max <= 0) max = 200;
+
+                var floor = Math.Max(25, max / 3);
+
+                if (!_dog.IsAlive)
+                {
+                    Function.Call(Hash.RESURRECT_PED, h);
+                    Function.Call(Hash.SET_ENTITY_HEALTH, h, floor);
+
+                    Arm(h);
+                    _inGroup = false;
+
+                    Notify.Failure(Name + "'s hurt bad.");
+                    Log.Info("Trigger went down and got back up.");
+                    return;
+                }
+
+                if (Function.Call<int>(Hash.GET_ENTITY_HEALTH, h) < floor)
+                {
+                    Function.Call(Hash.SET_ENTITY_HEALTH, h, floor);
+                }
+            }
+            catch
+            {
+                // Next tick.
+            }
+        }
+
+        /// <summary>
+        /// The flags that make him yours, in one place.
+        ///
+        /// Called from two sides -- when he is made, and when he is stood back up -- because a
+        /// resurrected ped is a blank one. Two copies of this list would drift apart, and the
+        /// copy that drifted would be the one nobody tested.
+        /// </summary>
+        private static void Arm(int h)
+        {
+            try
+            {
+                Function.Call(Hash.SET_PED_DIES_WHEN_INJURED, h, false);
+                Function.Call(Hash.SET_PED_SUFFERS_CRITICAL_HITS, h, false);
+                Function.Call(Hash.SET_PED_DIES_IN_WATER, h, false);
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL, h, true);
+
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, h, 5, true);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, h, 46, true);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, h, 17, false);
+
+                Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, h, Game.GenerateHash("PLAYER"));
+            }
+            catch
+            {
+                // He is still a dog.
+            }
+        }
+
+        /// <summary>
+        /// Whoever is on you is on him.
+        ///
+        /// THE GROUP ALONE DOES NOT DO THIS. Group members defend, but defending is a
+        /// disposition rather than an order -- it decides for itself whether a threat is worth
+        /// crossing the street for, and an animal weighs that differently to a man with a gun.
+        /// The result was a dog that watched a shootout he was stood in the middle of.
+        ///
+        /// So he is TOLD. Anybody already in combat with you, or who has put a round into you
+        /// in the last few seconds, gets pointed out by name -- nearest first, since a dog can
+        /// only bite one person at a time and the near one is the one about to be a problem.
+        ///
+        /// Not while he is in a car, for the obvious reason.
+        /// </summary>
+        private void Bite(Ped player)
+        {
+            if (_dog == null || !_dog.Exists() || !_dog.IsAlive) return;
+            if (_dog.IsInVehicle()) return;
+
+            try
+            {
+                Ped worst = null;
+                var nearest = BiteRange;
+
+                foreach (var other in World.GetNearbyPeds(player.Position, BiteRange))
+                {
+                    if (other == null || !other.Exists() || !other.IsAlive) continue;
+                    if (other.Handle == _dog.Handle || other.Handle == player.Handle) continue;
+                    if (other.IsPlayer) continue;
+
+                    var onYou =
+                        Function.Call<bool>(Hash.IS_PED_IN_COMBAT, other.Handle, player.Handle)
+                        || Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY,
+                                               player.Handle, other.Handle, true);
+
+                    if (!onYou) continue;
+
+                    var gap = other.Position.DistanceTo(_dog.Position);
+                    if (gap > nearest) continue;
+
+                    nearest = gap;
+                    worst = other;
+                }
+
+                if (worst == null)
+                {
+                    // Nothing on you, so the record of who hit you is cleared -- otherwise the
+                    // damage flag above stays set for the rest of the session and he keeps
+                    // hunting somebody who stopped ten minutes ago.
+                    if (_biting != 0)
+                    {
+                        _biting = 0;
+
+                        try { Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, player.Handle); }
+                        catch { }
+                    }
+
+                    return;
+                }
+
+                // Already on this one. Re-issuing the task every tick restarts the approach and
+                // he trots at the same man for ever without arriving.
+                if (_biting == worst.Handle
+                    && Function.Call<bool>(Hash.IS_PED_IN_COMBAT, _dog.Handle, worst.Handle))
+                {
+                    return;
+                }
+
+                _biting = worst.Handle;
+
+                Function.Call(Hash.CLEAR_PED_TASKS, _dog.Handle);
+                Function.Call(Hash.TASK_COMBAT_PED, _dog.Handle, worst.Handle, 0, 16);
+                Function.Call(Hash.SET_PED_KEEP_TASK, _dog.Handle, true);
+            }
+            catch
+            {
+                // He barks about it instead.
+            }
+        }
+
+        /// <summary>How far out he will go for somebody who is on you.</summary>
+        private const float BiteRange = 35f;
+
+        /// <summary>
+        /// Dog things, when nothing else is going on.
+        ///
+        /// ON FOOT ONLY, and that is not a rule about animation -- it is a rule about what
+        /// these clips are. They are authored for a dog stood on the ground, so playing one on
+        /// a dog in a passenger seat is a dog barking through the roof of the car. He already
+        /// has an in-vehicle animation and it is the seated pose; that is the car-specific one,
+        /// and it is the whole of what belongs in there.
+        ///
+        /// AND ONLY WHEN YOU HAVE STOPPED. An animation is a task, and a task interrupts the
+        /// follow -- so a dog that decides to have a scratch while you are walking away is a
+        /// dog you leave behind, which is worse than a dog that does nothing. He does it when
+        /// you are stood still, near him, and nobody is shooting.
+        ///
+        /// The task is not cleared afterwards. It runs its length and ends, and the group picks
+        /// him straight back up -- clearing it would fight the same group on the frame it was
+        /// already handing him back.
+        /// </summary>
+        private void Idle(Ped player, int now)
+        {
+            if (_dog == null || !_dog.Exists() || !_dog.IsAlive) return;
+
+            // Everything that is more important than a dog scratching itself.
+            if (_dog.IsInVehicle() || player.IsInVehicle()) return;
+            if (_biting != 0 || _jumpingAt != 0 || _outAt != 0) return;
+            if (now < _petUntil) return;
+
+            if (now < _idleAt)
+            {
+                return;
+            }
+
+            // First time through, the clock has never been set -- give him one gap rather than
+            // having him perform the instant he is created.
+            if (_idleAt == 0)
+            {
+                _idleAt = now + _rng.Next(IdleMinMs, IdleMaxMs);
+                return;
+            }
+
+            if (player.Position.DistanceTo(_dog.Position) > IdleNear) return;
+
+            try
+            {
+                if (player.Velocity.Length() > 0.6f) return;
+            }
+            catch
+            {
+                return;
+            }
+
+            _idleAt = now + _rng.Next(IdleMinMs, IdleMaxMs);
+
+            var start = _rng.Next(Idles.Length);
+
+            for (var i = 0; i < Idles.Length; i++)
+            {
+                var pair = Idles[(start + i) % Idles.Length];
+
+                try
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, pair[0]);
+
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pair[0])) continue;
+
+                    Function.Call(Hash.TASK_PLAY_ANIM, _dog.Handle, pair[0], pair[1],
+                                  2f, -2f, _rng.Next(IdleShortMs, IdleLongMs), 0, 0f,
+                                  false, false, false);
+                    return;
+                }
+                catch
+                {
+                    // Next one.
+                }
+            }
+        }
+
+        /// <summary>
+        /// The ambient dog set, tried in a random order.
+        ///
+        /// Random rather than in order, because a fixed list plus a fallback chain is a dog
+        /// that only ever does the first thing on it -- which is the same fault the takeover
+        /// cars had, where the list was read as a preference and behaved as a single choice.
+        /// </summary>
+        private static readonly string[][] Idles =
+        {
+            new[] { "creatures@rottweiler@amb@world_dog_barking@idle_a", "idle_a" },
+            new[] { "creatures@rottweiler@amb@world_dog_barking@idle_a", "idle_b" },
+            new[] { "creatures@rottweiler@amb@world_dog_barking@idle_a", "idle_c" },
+            new[] { "creatures@rottweiler@amb@world_dog_barking@base", "base" },
+            new[] { "creatures@rottweiler@amb@world_dog_sitting@idle_a", "idle_a" },
+            new[] { "creatures@rottweiler@amb@world_dog_sitting@base", "base" },
+            new[] { "creatures@rottweiler@amb@world_dog_sitting@enter", "enter" }
+        };
+
+        /// <summary>How often, how close, and how long each one runs.</summary>
+        private const int IdleMinMs = 14000;
+        private const int IdleMaxMs = 34000;
+        private const float IdleNear = 7f;
+        private const int IdleShortMs = 2600;
+        private const int IdleLongMs = 5200;
+
+        private int _idleAt;
+
+        /// <summary>Who he is currently going for.</summary>
+        private int _biting;
+
         // ---- petting ------------------------------------------------------------
 
         private void Offer(Ped player)
@@ -220,13 +491,137 @@ namespace Hoodrich.Locations
             if (_dog.Position.DistanceTo(player.Position) > PetRange) return;
 
             Help.ShowThisFrame(Yours
-                ? "Hold ~INPUT_CELLPHONE_RIGHT~ to pet " + Name + "."
+                ? "Hold ~INPUT_CELLPHONE_RIGHT~ to pet " + Name + ", or ~INPUT_CELLPHONE_LEFT~ "
+                  + "to send him back to the yard."
                 : "Hold ~INPUT_CELLPHONE_RIGHT~ to pet him.");
+
+            // SENDING HIM HOME IS A TAP, not a hold. It is the opposite of the pet in every
+            // way that matters and it wants to feel like it: one is a thing you lean on him
+            // to do, the other is a thing you wave him off with.
+            if (Yours && Away())
+            {
+                Dismiss();
+                return;
+            }
 
             if (!Held()) return;
             if (now < _petAgainAt) return;
 
             Pet(player, now);
+        }
+
+        /// <summary>The wave-off, on its own edge so holding it does not fire it twice.</summary>
+        private bool Away()
+        {
+            var down = false;
+
+            try
+            {
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneLeft)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneLeft);
+            }
+            catch
+            {
+            }
+
+            var hit = down && !_awayDown;
+            _awayDown = down;
+
+            return hit;
+        }
+
+        private bool _awayDown;
+
+        /// <summary>
+        /// Off you go, then.
+        ///
+        /// He is put back to being the yard dog rather than deleted: out of the group, off the
+        /// save, and handed to the game where he stands. He is at the party again next time you
+        /// go there, because that is where the yard puts him -- walking him across the map in
+        /// real time would be a dog trotting through traffic for ten minutes to arrive at a
+        /// place you are not.
+        /// </summary>
+        private void Dismiss()
+        {
+            try
+            {
+                if (_state != null)
+                {
+                    _state.TriggerIsYours = false;
+                    _state.Touch();
+                }
+
+                if (_dog != null && _dog.Exists())
+                {
+                    var h = _dog.Handle;
+
+                    Function.Call(Hash.REMOVE_PED_FROM_GROUP, h);
+                    Function.Call(Hash.SET_PED_NEVER_LEAVES_GROUP, h, false);
+                    Function.Call(Hash.CLEAR_PED_TASKS, h);
+
+                    Function.Call(Hash.TASK_WANDER_STANDARD, h, 10f, 10);
+                    Function.Call(Hash.SET_PED_KEEP_TASK, h, true);
+                }
+
+                _inGroup = false;
+                _sitting = false;
+
+                Release();
+
+                Notify.Important("~o~" + Name + " heads back to the yard.~s~");
+                Log.Info("Trigger was sent home.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not send Trigger home: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Start him over: forget he was ever yours and put him back in the yard.
+        ///
+        /// For the settings screen. The difference from a dismiss is that this one works from
+        /// anywhere and does not need him to be stood next to you -- it is the row you press
+        /// when he is lost, stuck inside a wall, or a save has him marked as yours with no dog
+        /// anywhere on the map.
+        /// </summary>
+        public void Reset()
+        {
+            try
+            {
+                if (_state != null)
+                {
+                    _state.TriggerIsYours = false;
+                    _state.Touch();
+                }
+
+                if (_dog != null && _dog.Exists())
+                {
+                    try
+                    {
+                        Function.Call(Hash.REMOVE_PED_FROM_GROUP, _dog.Handle);
+                        _dog.Delete();
+                    }
+                    catch
+                    {
+                        Release();
+                    }
+                }
+
+                _dog = null;
+                _inGroup = false;
+                _sitting = false;
+                _jumpingAt = 0;
+                _outAt = 0;
+                _doorOn = -1;
+
+                Notify.Important("~o~" + Name + "'s back in the yard.~s~");
+                Log.Info("Trigger was reset.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not reset Trigger: " + ex.Message);
+            }
         }
 
         private void Pet(Ped player, int now)
@@ -296,10 +691,19 @@ namespace Hoodrich.Locations
                 {
                     _jumpingAt = 0;
 
-                    // OUT WITH YOU. The seated pose is a looped animation, and a loop with no
-                    // end time outlives the reason it was started -- so a dog left holding it
-                    // sits in an abandoned car while you walk away. Cleared once, on the frame
-                    // the car goes, and the group brings him after you.
+                    // STILL SAT IN A CAR YOU HAVE GOT OUT OF. He gets out the way he got in,
+                    // through a door that opens for him, rather than being deleted off the
+                    // seat and re-materialised on the pavement.
+                    if (_dog.IsInVehicle())
+                    {
+                        Hop();
+                        return;
+                    }
+
+                    // The seated pose is a looped animation, and a loop with no end time
+                    // outlives the reason it was started -- so a dog left holding it sits in an
+                    // abandoned car while you walk away. Cleared once, on the frame the car
+                    // goes, and the group brings him after you.
                     if (_sitting)
                     {
                         _sitting = false;
@@ -311,15 +715,28 @@ namespace Hoodrich.Locations
                     return;
                 }
 
+                _outAt = 0;
+
                 if (_dog.IsInVehicle(car))
                 {
                     _jumpingAt = 0;
+
+                    // IN AND SEATED, so the door he came through goes back. Held as a door
+                    // index rather than a flag, because shutting "the passenger door" is wrong
+                    // on the trip where he took a back one.
+                    Shut(car);
                     Sit();
                     return;
                 }
 
                 var seat = Free(car);
                 if (seat == int.MinValue) return;
+
+                // AND THE DOOR OPENS FOR HIM. Only ever reached when he is yours and alive --
+                // this whole method hangs off Mine(), which is the branch for a dog that has
+                // been petted and is following you -- so a car you get into without him keeps
+                // its doors shut.
+                Open(car, seat);
 
                 // MID-JUMP. The seat is taken at the END of the animation, so this branch is
                 // the one that does nothing -- and it has to come before the task check below
@@ -478,6 +895,164 @@ namespace Hoodrich.Locations
         private int _sitAgainAt;
         private bool _sitting;
 
+        /// <summary>
+        /// Swing the right door for the seat he is heading to.
+        ///
+        /// Seat to door is an offset of one -- seat 0 is the front passenger and that is door
+        /// 1, because door 0 is the one you are sat in. Remembered so the same one is shut
+        /// again, and only opened once, since re-opening an open door every tick stops it
+        /// closing at all.
+        /// </summary>
+        private void Open(Vehicle car, int seat)
+        {
+            var door = seat + 1;
+            if (_doorOn == door) return;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, car.Handle, door, false, false);
+                _doorOn = door;
+            }
+            catch
+            {
+                // He gets in through it anyway.
+            }
+        }
+
+        /// <summary>And shut it behind him.</summary>
+        private void Shut(Vehicle car)
+        {
+            if (_doorOn < 0) return;
+
+            try { Function.Call(Hash.SET_VEHICLE_DOOR_SHUT, car.Handle, _doorOn, false); }
+            catch { }
+
+            _doorOn = -1;
+        }
+
+        /// <summary>
+        /// Out of the car, through the door, the way Chop gets out.
+        ///
+        /// Two beats with the animation between them: the door swings, he plays the jump-out,
+        /// and only then does he actually leave the seat -- because a ped taken out of a
+        /// vehicle first has nothing left to animate and simply appears stood on the road.
+        ///
+        /// CLEAR_PED_TASKS_IMMEDIATELY is what takes him off the seat; a leave-vehicle task
+        /// would put him back through the door-handle mime this whole thing exists to avoid.
+        /// He is then set down on the side the door is actually on -- doors 1 and 3 are the
+        /// right-hand side of the car and door 2 is the left, so a fixed offset would drop him
+        /// through the car on half the trips.
+        /// </summary>
+        private void Hop()
+        {
+            var car = _dog.CurrentVehicle;
+
+            if (car == null || !car.Exists())
+            {
+                _outAt = 0;
+                return;
+            }
+
+            var seat = SeatOf(car);
+            var door = seat + 1;
+
+            if (_outAt == 0)
+            {
+                _sitting = false;
+                _outAt = Game.GameTime;
+
+                try { Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, car.Handle, door, false, false); }
+                catch { }
+
+                _doorOn = door;
+
+                foreach (var pair in Outs)
+                {
+                    try
+                    {
+                        Function.Call(Hash.REQUEST_ANIM_DICT, pair[0]);
+
+                        if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pair[0])) continue;
+
+                        Function.Call(Hash.TASK_PLAY_ANIM, _dog.Handle, pair[0], pair[1],
+                                      4f, -4f, JumpMs, 0, 0f, false, false, false);
+                        break;
+                    }
+                    catch
+                    {
+                        // Next pair.
+                    }
+                }
+
+                return;
+            }
+
+            if (Game.GameTime - _outAt < JumpMs) return;
+
+            _outAt = 0;
+
+            try
+            {
+                var side = car.RightVector * (door == 2 ? -2.2f : 2.2f);
+                var spot = car.Position + side;
+
+                Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, _dog.Handle);
+
+                Function.Call(Hash.SET_ENTITY_COORDS, _dog.Handle,
+                              spot.X, spot.Y, spot.Z, false, false, false, true);
+
+                Shut(car);
+            }
+            catch
+            {
+                // He is out either way.
+            }
+        }
+
+        /// <summary>
+        /// Which seat he is actually in.
+        ///
+        /// Asked rather than remembered. The seat he was put in and the seat he is in can
+        /// differ -- the game moves passengers about when somebody else gets in, and a
+        /// remembered number would open the wrong door on the way out.
+        /// </summary>
+        private int SeatOf(Vehicle car)
+        {
+            try
+            {
+                var seats = Function.Call<int>(Hash.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS, car.Handle);
+
+                for (var seat = 0; seat < seats; seat++)
+                {
+                    if (Function.Call<int>(Hash.GET_PED_IN_VEHICLE_SEAT, car.Handle, seat)
+                        == _dog.Handle)
+                    {
+                        return seat;
+                    }
+                }
+            }
+            catch
+            {
+                // Fall through to the passenger door.
+            }
+
+            return 0;
+        }
+
+        /// <summary>The jump out, tried in order like the others.</summary>
+        private static readonly string[][] Outs =
+        {
+            new[] { "creatures@rottweiler@in_vehicle@std_car", "get_out" },
+            new[] { "creatures@rottweiler@in_vehicle@std_car", "getout" },
+            new[] { "creatures@rottweiler@in_vehicle@van", "get_out" }
+        };
+
+        /// <summary>Which door is hanging open for him, or -1.</summary>
+        private int _doorOn = -1;
+
+        /// <summary>When the jump out started.</summary>
+        private int _outAt;
+
         /// <summary>The best empty seat, or MinValue when there is not one.</summary>
         private static int Free(Vehicle car)
         {
@@ -540,6 +1115,12 @@ namespace Hoodrich.Locations
 
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
                     Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
+
+                    // He does not die, in the yard or out of it. A party dog that can be shot
+                    // dead by a passing argument is the same problem in a quieter place.
+                    Function.Call(Hash.SET_PED_DIES_WHEN_INJURED, h, false);
+                    Function.Call(Hash.SET_PED_SUFFERS_CRITICAL_HITS, h, false);
+                    Function.Call(Hash.SET_PED_DIES_IN_WATER, h, false);
 
                     if (Yours)
                     {
