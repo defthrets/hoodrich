@@ -371,6 +371,12 @@ namespace Hoodrich.Core
         /// </summary>
         public int RollerPearl = 53;
 
+        /// <summary>Whether the junction gets taken over at night. See Locations.Takeover.</summary>
+        public bool TakeoverEnabled = true;
+
+        /// <summary>How far out the ring of watchers stands. 0 uses the measured 19 metres.</summary>
+        public float TakeoverRadius = 19f;
+
         /// <summary>Whether groups of the set walk the back streets on foot.</summary>
         public bool WalkersEnabled = true;
 
@@ -578,6 +584,9 @@ namespace Hoodrich.Core
             s.TowReturnY = ini.GetFloat("Cars", "TowReturnY", s.TowReturnY);
             s.TowReturnZ = ini.GetFloat("Cars", "TowReturnZ", s.TowReturnZ);
             s.TowReturnH = ini.GetFloat("Cars", "TowReturnH", s.TowReturnH);
+
+            s.TakeoverEnabled = ini.GetBool("Block", "TakeoverEnabled", s.TakeoverEnabled);
+            s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
             s.WalkerCrews = (int)Clamp(ini.GetInt("Block", "WalkerCrews", s.WalkerCrews), 0f, 5f);

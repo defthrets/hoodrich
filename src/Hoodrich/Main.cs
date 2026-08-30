@@ -461,6 +461,9 @@ namespace Hoodrich
         /// <summary>Groups of the set on foot in the back streets. See Gangs.Walkers.</summary>
         private readonly Walkers _walkers;
 
+        /// <summary>The junction, once a night. See Locations.Takeover.</summary>
+        private Takeover _takeover;
+
         /// <summary>Tanya, and the truck. See Locations.TowTruck.</summary>
         private readonly TowTruck _tow = new TowTruck();
 
@@ -1343,6 +1346,8 @@ namespace Hoodrich
                 // whether he was or not.
                 _rollers = new Rollers(_cfg, _gangs, "families", _turf);
                 _walkers = new Walkers(_cfg, _gangs, "families", _turf);
+
+                _takeover = new Takeover(_cfg) { Busy = () => _war != null && _war.IsRunning };
 
                 // The law, going round because the blocks are the blocks. Nothing to do with
                 // heat, a bust or a raid -- this car was coming down that street tonight
@@ -2527,6 +2532,7 @@ namespace Hoodrich
                     _payback.Update();
                     _rollers.Update();
                     _walkers.Update();
+                    if (_takeover != null) _takeover.Update();
                     _patrol.Update();
                     _war.Update();
 
@@ -3459,6 +3465,7 @@ namespace Hoodrich
             try { _turf?.RestoreWorld(); } catch { /* teardown */ }
             try { _rollers?.RestoreWorld(); } catch { /* teardown */ }
             try { _walkers?.RestoreWorld(); } catch { /* teardown */ }
+            try { _takeover?.RestoreWorld(); } catch { /* teardown */ }
             try { _patrol?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaderCrew?.RestoreWorld(); } catch { /* teardown */ }
