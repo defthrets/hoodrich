@@ -220,10 +220,10 @@ namespace Hoodrich.Locations
             if (_dog.Position.DistanceTo(player.Position) > PetRange) return;
 
             Help.ShowThisFrame(Yours
-                ? "Press ~INPUT_CELLPHONE_RIGHT~ to pet " + Name + "."
-                : "Press ~INPUT_CELLPHONE_RIGHT~ to pet him.");
+                ? "Hold ~INPUT_CELLPHONE_RIGHT~ to pet " + Name + "."
+                : "Hold ~INPUT_CELLPHONE_RIGHT~ to pet him.");
 
-            if (!Tapped()) return;
+            if (!Held()) return;
             if (now < _petAgainAt) return;
 
             Pet(player, now);
@@ -294,17 +294,53 @@ namespace Hoodrich.Locations
 
                 if (car == null || !car.Exists())
                 {
+                    _jumpingAt = 0;
+
+                    // OUT WITH YOU. The seated pose is a looped animation, and a loop with no
+                    // end time outlives the reason it was started -- so a dog left holding it
+                    // sits in an abandoned car while you walk away. Cleared once, on the frame
+                    // the car goes, and the group brings him after you.
+                    if (_sitting)
+                    {
+                        _sitting = false;
+
+                        try { Function.Call(Hash.CLEAR_PED_TASKS, _dog.Handle); }
+                        catch { }
+                    }
+
                     return;
                 }
 
-                if (_dog.IsInVehicle(car)) return;
+                if (_dog.IsInVehicle(car))
+                {
+                    _jumpingAt = 0;
+                    Sit();
+                    return;
+                }
+
+                var seat = Free(car);
+                if (seat == int.MinValue) return;
+
+                // MID-JUMP. The seat is taken at the END of the animation, so this branch is
+                // the one that does nothing -- and it has to come before the task check below
+                // or he is re-tasked halfway through his own jump.
+                if (_jumpingAt != 0)
+                {
+                    if (Game.GameTime - _jumpingAt < JumpMs) return;
+
+                    _jumpingAt = 0;
+
+                    Function.Call(Hash.SET_PED_INTO_VEHICLE, _dog.Handle, car.Handle, seat);
+                    return;
+                }
+
+                // Close enough to jump rather than walk. Further out he is still catching up
+                // and the group is already bringing him.
+                if (_dog.Position.DistanceTo(car.Position) < JumpFrom && Jump(car)) return;
 
                 // Already on his way. Asking again every tick restarts the approach and he
                 // never reaches the door.
                 if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, _dog.Handle, 160)) return;
-
-                var seat = Free(car);
-                if (seat == int.MinValue) return;
 
                 Function.Call(Hash.TASK_ENTER_VEHICLE, _dog.Handle, car.Handle,
                               -1, seat, 2f, 1, 0);
@@ -314,6 +350,133 @@ namespace Hoodrich.Locations
                 // He runs alongside, which is not the worst outcome.
             }
         }
+
+        /// <summary>
+        /// The jump in, which is the one Chop does.
+        ///
+        /// A DOG CANNOT OPEN A DOOR, so the ordinary enter task is a dog miming a person: he
+        /// walks to the handle, reaches for it with a paw, and slides in sideways. The game has
+        /// an animation for this exact thing because the story needed it, and it lives in the
+        /// Rottweiler's own set.
+        ///
+        /// Which dictionary and clip cannot be checked from here, so it is a short list tried
+        /// in order, and if none of them load he falls back to the ordinary task -- which is
+        /// ugly and works. He is turned to face the car first, or the jump goes off at whatever
+        /// angle he happened to be stood at.
+        /// </summary>
+        private bool Jump(Vehicle car)
+        {
+            foreach (var pair in Jumps)
+            {
+                try
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, pair[0]);
+
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pair[0])) continue;
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, _dog.Handle);
+
+                    var toCar = car.Position - _dog.Position;
+
+                    _dog.Heading =
+                        (float)((Math.Atan2(-toCar.X, toCar.Y) * 180.0 / Math.PI + 360.0) % 360.0);
+
+                    Function.Call(Hash.TASK_PLAY_ANIM, _dog.Handle, pair[0], pair[1],
+                                  4f, -4f, JumpMs, 0, 0f, false, false, false);
+
+                    _jumpingAt = Game.GameTime;
+                    return true;
+                }
+                catch
+                {
+                    // Next pair.
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Sat up on the seat, the way Chop sits.
+        ///
+        /// A DOG PUT IN A SEAT WITH NOTHING TO PLAY GETS THE HUMAN SEATED POSE mapped onto a
+        /// dog skeleton -- which is the sideways, half-through-the-door, floating look. The
+        /// seated clip is what makes him a passenger instead of cargo.
+        ///
+        /// Looped, and re-asserted rather than set once: the pose is dropped by a good number
+        /// of things -- a hard landing, a shunt, being shot at, the group re-tasking him -- and
+        /// he spends the rest of the drive lying through the upholstery. Checked on a clock
+        /// rather than every frame, because asking four clips whether they are playing several
+        /// times a second is a lot of asking about a dog sitting still.
+        /// </summary>
+        private void Sit()
+        {
+            try
+            {
+                foreach (var pair in Sits)
+                {
+                    if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM,
+                                            _dog.Handle, pair[0], pair[1], 3))
+                    {
+                        _sitting = true;
+                        return;
+                    }
+                }
+
+                if (Game.GameTime < _sitAgainAt) return;
+                _sitAgainAt = Game.GameTime + SitCheckMs;
+
+                foreach (var pair in Sits)
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, pair[0]);
+
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pair[0])) continue;
+
+                    // -1 and the loop flag, so it holds for the whole drive. Eased in slowly,
+                    // because a pose that snaps on every time it is re-asserted reads as a
+                    // twitch every couple of seconds.
+                    Function.Call(Hash.TASK_PLAY_ANIM, _dog.Handle, pair[0], pair[1],
+                                  2f, -2f, -1, 1, 0f, false, false, false);
+
+                    _sitting = true;
+                    return;
+                }
+            }
+            catch
+            {
+                // He rides badly, which is still riding.
+            }
+        }
+
+        /// <summary>Dictionary and clip for the jump in, in order of preference.</summary>
+        private static readonly string[][] Jumps =
+        {
+            new[] { "creatures@rottweiler@in_vehicle@std_car", "get_in" },
+            new[] { "creatures@rottweiler@in_vehicle@std_car", "getin" },
+            new[] { "creatures@rottweiler@in_vehicle@van", "get_in" }
+        };
+
+        /// <summary>
+        /// And for sitting on the seat. The last one is the ambient sitting idle, which is
+        /// everywhere in the game -- which is why this list ends in something certain.
+        /// </summary>
+        private static readonly string[][] Sits =
+        {
+            new[] { "creatures@rottweiler@in_vehicle@std_car", "sit" },
+            new[] { "creatures@rottweiler@in_vehicle@std_car", "idle" },
+            new[] { "creatures@rottweiler@in_vehicle@van", "sit" },
+            new[] { "creatures@rottweiler@amb@world_dog_sitting@base", "base" }
+        };
+
+        /// <summary>How long the jump takes, how close he has to be to try it, and how often
+        /// the seated pose is checked.</summary>
+        private const int JumpMs = 1100;
+        private const float JumpFrom = 4.5f;
+        private const int SitCheckMs = 1500;
+
+        private int _jumpingAt;
+        private int _sitAgainAt;
+        private bool _sitting;
 
         /// <summary>The best empty seat, or MinValue when there is not one.</summary>
         private static int Free(Vehicle car)
@@ -415,7 +578,19 @@ namespace Hoodrich.Locations
             }
         }
 
-        private bool Tapped()
+        /// <summary>
+        /// Held rather than tapped, because the prompt says held.
+        ///
+        /// A PROMPT THAT SAYS HOLD AND FIRES ON A TAP IS A PROMPT THAT LIES, and this is the
+        /// same key that talks to everybody else in the mod -- so a tap near the dog was also
+        /// a tap near whoever was stood behind him. A hold is the difference between putting a
+        /// hand on him deliberately and walking past with a thumb down.
+        ///
+        /// The clock resets on release, so a run of taps never adds up to a hold, and the hold
+        /// is spent when it fires, so one long press is one pet rather than one per frame for
+        /// as long as it is down.
+        /// </summary>
+        private bool Held()
         {
             var down = false;
 
@@ -429,11 +604,27 @@ namespace Hoodrich.Locations
             {
             }
 
-            var hit = down && !_down;
-            _down = down;
+            if (!down)
+            {
+                _downSince = 0;
+                _down = false;
+                return false;
+            }
 
-            return hit;
+            if (_downSince == 0) _downSince = Game.GameTime;
+
+            if (Game.GameTime - _downSince < HoldMs) return false;
+
+            _downSince = 0;
+            _down = true;
+
+            return true;
         }
+
+        /// <summary>How long a hold is.</summary>
+        private const int HoldMs = 550;
+
+        private int _downSince;
 
         /// <summary>Handed back to the game rather than deleted, so he is not removed in view.</summary>
         private void Release()
