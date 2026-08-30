@@ -2586,9 +2586,18 @@ namespace Hoodrich.Gangs
 
             if (string.Equals(who, "Gerald", StringComparison.OrdinalIgnoreCase))
             {
-                return "You wasn't there. That's it, that's the whole message. I ain't got " +
-                       "to tell nobody neither -- the block already know who came and who " +
-                       "didn't, they was all stood in it.";
+                // LOWERCASE AND CLIPPED, because that is how he TEXTS. His spoken lines are
+                // loud and long -- THE FENCE DAWG -- and the first version of this was written
+                // in that voice, which is the wrong one for a man typing on a phone. His actual
+                // messages read "aight thats all of it gone. come see me".
+                //
+                // And it is about the vouching, because everything with Gerald is. "All I did
+                // was say you was solid. Don't make me look stupid for it" is the line he keeps
+                // coming back to, so this is that line arriving the other way round.
+                return "i vouched for you. thats the part that sit with me. told them you was " +
+                       "solid and then had to go stand in it my damn self lookin like a man " +
+                       "who talks too much. i aint askin for no explanation. just dont let it " +
+                       "be a habit";
             }
 
             return "You wasn't there. Everybody out here seen who came and who didn't, and " +
