@@ -80,8 +80,27 @@ namespace Hoodrich.Locations
         private const float WalkFromMin = 55f;
         private const float WalkFromMax = 130f;
 
-        private const float DriveFromMin = 90f;
-        private const float DriveFromMax = 190f;
+        /// <summary>
+        /// A block over, and that is the floor rather than a suggestion.
+        ///
+        /// It was ninety, which on these streets is the far side of one junction -- close
+        /// enough that a car for the takeover could appear in the same shot as the takeover.
+        /// The whole reason everything drives in is so that nothing is seen arriving out of
+        /// nowhere, and a spawn radius that fits inside the draw distance gives that away.
+        /// </summary>
+        private const float DriveFromMin = 125f;
+        private const float DriveFromMax = 230f;
+
+        /// <summary>
+        /// How far out ordinary traffic is talked down.
+        ///
+        /// A junction full of people is a junction the driving AI has no idea what to do with:
+        /// a ped in the road is an obstacle, a car sideways in front of it is a threat, and the
+        /// response to both is to get out of there -- which at speed, through a crowd, is the
+        /// worst thing that can happen at one of these. So anybody driving near it is made
+        /// patient for as long as they are near it, and given themselves back when they leave.
+        /// </summary>
+        private const float CalmRange = 50f;
 
         /// <summary>Close enough to their place to stop and turn round.</summary>
         private const float ArrivedRange = 3.5f;
@@ -301,6 +320,7 @@ namespace Hoodrich.Locations
                         if (near > LetGo) { Pack(); return; }
                         if (OwnedCars.NowMinutes() >= _endsAt) { Blues(); return; }
 
+                        Calm();
                         Wave(now);
                         Walking();
                         Parking();
@@ -566,6 +586,81 @@ namespace Hoodrich.Locations
                     // Next tick.
                 }
             }
+        }
+
+        /// <summary>
+        /// Ordinary traffic near the junction, talked down.
+        ///
+        /// Everybody in a car within the radius who is not the player and not one of ours: no
+        /// aggression, no panic, and a speed that suits a road with forty people stood in it.
+        /// Re-applied every tick rather than once, because these are cars the game is streaming
+        /// in and out constantly -- the one that just arrived is exactly the one that has not
+        /// been told yet.
+        ///
+        /// THE PLAYER IS NOT TOUCHED. Taking the aggression off the person driving would be
+        /// the mod deciding how they get to drive, which is not its business.
+        /// </summary>
+        private void Calm()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                var mine = player != null && player.Exists() && player.CurrentVehicle != null
+                           && player.CurrentVehicle.Exists()
+                    ? player.CurrentVehicle.Handle
+                    : 0;
+
+                foreach (var car in World.GetNearbyVehicles(Middle, CalmRange))
+                {
+                    if (car == null || !car.Exists()) continue;
+                    if (mine != 0 && car.Handle == mine) continue;
+
+                    var driver = car.Driver;
+
+                    if (driver == null || !driver.Exists() || !driver.IsAlive) continue;
+                    if (driver.IsPlayer) continue;
+
+                    // One of ours is already calm and already has a job. Telling it to slow
+                    // down would take the circle apart.
+                    if (Ours(driver)) continue;
+
+                    var h = driver.Handle;
+
+                    Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, h, 0.0f);
+                    Function.Call(Hash.SET_DRIVER_ABILITY, h, 1.0f);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
+
+                    // Crawling pace. Not a stop -- a road that nobody can drive down at all
+                    // backs traffic up for half a district and that is its own kind of wrong.
+                    Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, h, 6f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not calm the traffic: " + ex.Message);
+            }
+        }
+
+        /// <summary>Whether this driver is one this file put there.</summary>
+        private bool Ours(Ped who)
+        {
+            foreach (var r in _running)
+            {
+                if (r.Driver != null && r.Driver.Exists() && r.Driver.Handle == who.Handle) return true;
+            }
+
+            foreach (var p in _parked)
+            {
+                if (p.Driver != null && p.Driver.Exists() && p.Driver.Handle == who.Handle) return true;
+            }
+
+            foreach (var l in _law)
+            {
+                if (l.Cop != null && l.Cop.Exists() && l.Cop.Handle == who.Handle) return true;
+            }
+
+            return false;
         }
 
         // ---- the cars that came to watch ----------------------------------------
