@@ -55,9 +55,17 @@ namespace Hoodrich.Locations
         /// <summary>How far out the ring stands. Measured on the ground: 19.1 metres.</summary>
         private const float RingAt = 19f;
 
-        /// <summary>And how far in the cars work. Four metres of clearance -- tunable.</summary>
-        private const float DriftMin = 14f;
-        private const float DriftMax = 15.5f;
+        /// <summary>
+        /// And how far in the cars work. Ten, tightened from fifteen.
+        ///
+        /// Nine metres of clearance to the ring rather than four, which is the number that
+        /// matters: the back end of a car on reduced grip steps a long way wide of the line the
+        /// nose is taking, and at four the front row was inside that. A tighter circle is also
+        /// a faster-looking one -- the same speed round a smaller radius is more lock, more
+        /// angle and more smoke in one place.
+        /// </summary>
+        private const float DriftMin = 9f;
+        private const float DriftMax = 10.5f;
 
         /// <summary>How long the one on the mark gets before somebody else has a go.</summary>
         private const int BurnMinMs = 26000;
@@ -523,6 +531,12 @@ namespace Hoodrich.Locations
 
                         Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
                                       Watching[_rng.Next(Watching.Length)], 0, true);
+
+                        // AND AGAIN AFTER THE SCENARIO, not only before it. A scenario picks
+                        // its own facing when it starts, so a heading set first is a heading
+                        // thrown away -- which is why the ring kept coming out pointing every
+                        // which way however carefully each man was placed.
+                        Function.Call(Hash.SET_ENTITY_HEADING, w.Man.Handle, Facing(w.Man.Position));
                     }
                     catch
                     {
@@ -575,11 +589,15 @@ namespace Hoodrich.Locations
 
                 try
                 {
+                    // TIGHTER THAN IT WAS. Twenty-five degrees of slack is a third of the
+                    // way to standing side-on, and across thirty people that reads as a crowd
+                    // milling rather than a crowd watching. Ten is close enough to inwards that
+                    // the whole ring points at the same thing.
                     var want = Facing(w.Man.Position);
                     var have = w.Man.Heading;
                     var off = Math.Abs(((want - have + 540f) % 360f) - 180f);
 
-                    if (off > 25f) Function.Call(Hash.SET_ENTITY_HEADING, w.Man.Handle, want);
+                    if (off > 10f) Function.Call(Hash.SET_ENTITY_HEADING, w.Man.Handle, want);
                 }
                 catch
                 {
