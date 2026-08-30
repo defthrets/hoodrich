@@ -57,6 +57,16 @@ namespace Hoodrich.Locations
     {
         // ---- shape --------------------------------------------------------------
 
+        /// <summary>
+        /// The face on its notifications.
+        ///
+        /// A driverless service has no person to put there, so it borrows the one the game
+        /// already uses for a car company. Faces.Ready falls back on its own if this build has
+        /// not got it, which is the whole reason the name is written once here rather than
+        /// four times below.
+        /// </summary>
+        private const string Face = "CHAR_SIMEON";
+
         /// <summary>The car, in the order they exist on a given install.</summary>
         private static readonly string[] Cars = { "vivanite2", "vivanite", "taxi" };
 
@@ -193,7 +203,7 @@ namespace Hoodrich.Locations
 
             Begin(RideState.Coming);
 
-            Notify.Ticker("~b~Knowai on the way.~s~");
+            Notify.Card(Face, "Knowai", "on the way", "A car's been assigned. Sit tight.");
 
             Log.Info("Knowai: pickup requested.");
 
@@ -223,7 +233,10 @@ namespace Hoodrich.Locations
             Begin(RideState.Riding);
             Drive(_dropAt, 22f);
 
-            Notify.Ticker("~b~" + stop.Name + ".~s~ About $" + _fare + ".");
+            // THE FARE ON ITS OWN. The destination is already on the row you just pressed,
+            // on the blip, and out of the window in about a minute; the number is the only
+            // thing here you did not already know.
+            Notify.Card(Face, "Knowai", stop.Name, "$" + _fare);
 
             return null;
         }
@@ -292,7 +305,7 @@ namespace Hoodrich.Locations
             try { Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _car.Handle, 1); }
             catch { /* it was probably unlocked anyway */ }
 
-            Notify.Ticker("~b~Your Knowai's here.~s~ Get in.");
+            Notify.Card(Face, "Knowai", "outside", "Your car's here.");
         }
 
         private void Waiting(Ped player, int now)
@@ -407,7 +420,7 @@ namespace Hoodrich.Locations
             }
             else
             {
-                Notify.Important("~b~" + _to.Name + ".~s~ $" + _fare + ".");
+                Notify.Card(Face, "Knowai", "paid", "$" + _fare);
             }
         }
 

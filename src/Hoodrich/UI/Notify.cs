@@ -1,4 +1,4 @@
-using GTA.Native;
+﻿using GTA.Native;
 
 namespace Hoodrich.UI
 {
@@ -108,6 +108,43 @@ namespace Hoodrich.UI
                 // Never worth losing the message over. Fall back to the plain feed.
                 Core.Log.Debug("Text message failed: " + ex.Message);
                 Ticker("~y~" + sender + ":~s~ " + body);
+            }
+        }
+
+        /// <summary>
+        /// The same card a text arrives on, for something that is not a text.
+        ///
+        /// NOT KEPT. Text files everything it sends, which is right for a text and wrong for
+        /// a service telling you its car is outside -- three of those per ride would push a
+        /// real conversation off the end of the inbox to say something that stops being true
+        /// in ninety seconds.
+        ///
+        /// So this is the picture, the name and the line, and then it is gone. Everything a
+        /// ticker cannot do and none of what an inbox is for.
+        /// </summary>
+        public static void Card(string portrait, string from, string subject, string body)
+        {
+            if (string.IsNullOrEmpty(body)) return;
+
+            portrait = Faces.Ready(portrait);
+
+            try
+            {
+                Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, "STRING");
+
+                foreach (var part in Split(body))
+                {
+                    Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, part);
+                }
+
+                Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_MESSAGETEXT,
+                              portrait, portrait, false, MessageIcon,
+                              from ?? "", subject ?? "");
+            }
+            catch (System.Exception ex)
+            {
+                Core.Log.Debug("Card failed: " + ex.Message);
+                Ticker(body);
             }
         }
 

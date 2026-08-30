@@ -1031,13 +1031,21 @@ namespace Hoodrich.Wheel
                 disabledReason: "You're working the counter");
             page.WithIcon(Icons.FromFile("baggie.png"));
 
-            // UNDER THE PHONE-SHAPED THINGS AND ABOVE THE WORK, because that is what it is:
-            // a service you use, not a part of the business. It is also the one app on here
-            // that will still be useful to somebody who has stopped dealing.
-            page.AddSub("Knowai", "~", BuildKnowaiPage,
-                detail: "Driverless cars. It comes to you and takes you where you say",
-                value: RideSummary());
-            page.WithIcon(Icons.FromFile("car.png"));
+            // IN THE MIDDLE OF THE GRID, swapped with Knowai. It is the app with something
+            // new in it most often, and it was sat on its own on a fourth row underneath three
+            // apps you open once a session.
+            page.Add("Socials", "@", () => ShowSocials?.Invoke(),
+                detail: PaybackDue != null && PaybackDue()
+                    ? "Somebody's coming about what you said"
+                    : "What the block is saying, and what you say back",
+                value: Followers == null ? "" : Followers().ToString("N0") + " followers",
+                enabled: ShowSocials != null,
+                disabledReason: "Not right now");
+
+            // The handset with a heart on the screen, so it cannot be confused with the Phone
+            // app. mobile.png put a feed on the screen, and at twenty pixels a feed is three
+            // smudges -- exactly what a phone with nothing on it looks like.
+            page.WithIcon(Icons.FromFile("socials.png"));
 
             page.AddSub("Gangs", "%", BuildGangsPage,
                 detail: _crew.IsAffiliated
@@ -1096,19 +1104,14 @@ namespace Hoodrich.Wheel
             // tile has to pass.
             page.WithIcon(Icons.FromFile("capapp.png"));
 
-            page.Add("Socials", "@", () => ShowSocials?.Invoke(),
-                detail: PaybackDue != null && PaybackDue()
-                    ? "Somebody's coming about what you said"
-                    : "What the block is saying, and what you say back",
-                value: Followers == null ? "" : Followers().ToString("N0") + " followers",
-                enabled: ShowSocials != null,
-                disabledReason: "Not right now");
-
-            // The handset with a heart on the screen, so it cannot be confused with the Phone
-            // app two tiles up. mobile.png put a feed on the screen, and at twenty pixels a
-            // feed is three smudges -- which is exactly what a phone with nothing on it looks
-            // like. One big shape is the only thing that survives that size.
-            page.WithIcon(Icons.FromFile("socials.png"));
+            // LAST, where Socials used to sit. It is a service you use rather than a part of
+            // the business, and the only app on here that will still be useful to somebody who
+            // has stopped dealing -- which is a reason to keep it and not a reason to put it
+            // in front of the work.
+            page.AddSub("Knowai", "~", BuildKnowaiPage,
+                detail: "Driverless cars. It comes to you and takes you where you say",
+                value: RideSummary());
+            page.WithIcon(Icons.FromFile("car.png"));
 
             return page;
         }
