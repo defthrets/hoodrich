@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -233,6 +233,27 @@ namespace Hoodrich.UI
                            Color.FromArgb(solid, 255, 255, 255));
 
                 drew = true;
+            }
+
+            // THE SAME MADE FACE THE FEED USES. The toast is the half of this screen most
+            // people see most of the time -- it is on screen without anybody opening
+            // anything -- and it was the half still drawing a coloured letter, which is why
+            // the faces looked like they were not working at all.
+            if (!drew && card.By != null)
+            {
+                var made = Headshots.Txd(card.By.Handle);
+
+                if (string.IsNullOrEmpty(made))
+                {
+                    Headshots.Want(card.By.Handle, card.By.Gang, card.By.Gender);
+                }
+                else
+                {
+                    Hud.Sprite(made, made, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f,
+                               Color.FromArgb(solid, 255, 255, 255));
+
+                    drew = true;
+                }
             }
 
             if (!drew)

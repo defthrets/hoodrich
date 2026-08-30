@@ -2600,7 +2600,7 @@ namespace Hoodrich.Gangs
         {
             switch (step)
             {
-                case 0: return "you comin?";
+                case 0: return "WHERE YOU AT";
                 case 1: return "franklin";
                 default: return "dont bother";
             }
@@ -2620,9 +2620,10 @@ namespace Hoodrich.Gangs
             {
                 switch (step)
                 {
-                    case 0: return "frank. FRANK. where you at, they still out here";
-                    case 1: return "aight so you seein these or you aint. two minutes ago i " +
-                                   "said two minutes ago. this " + them + ", this aint nothin";
+                    case 0: return "FRANK WHERE YOU AT. they still out here. im not playin " +
+                                   "with you MOVE";
+                    case 1: return "ARE YOU SERIOUS RIGHT NOW. four minutes. im out here in it " +
+                                   "and you readin these";
                     default: return "nah dont come now. dont. i mean it";
                 }
             }
@@ -2631,10 +2632,10 @@ namespace Hoodrich.Gangs
             {
                 switch (step)
                 {
-                    case 0: return "still waitin on you";
-                    case 1: return "you know what, take your time. we out here holdin it down " +
-                                   "for a man who aint here";
-                    default: return "forget it. i'll remember this one though";
+                    case 0: return "WHERE. ARE. YOU. we still out here";
+                    case 1: return "im gonna remember this one. we out here holdin it for a " +
+                                   "man who aint here";
+                    default: return "forget it. dont come";
                 }
             }
 
@@ -2642,16 +2643,15 @@ namespace Hoodrich.Gangs
             {
                 switch (step)
                 {
-                    case 0: return "franklin. im not textin for my health. " + them + " is here";
-                    case 1: return "you got somethin better on. thats fine. say it next time " +
-                                   "instead of leavin me lookin at my phone";
+                    case 0: return "FRANKLIN. im not textin for my health. get here";
+                    case 1: return "so thats how it is. fine. dont say nothin to me after";
                     default: return "dont worry about it";
                 }
             }
 
             switch (step)
             {
-                case 0: return them + " still on us. where you at";
+                case 0: return them + " STILL ON US. where you at";
                 case 1: return "we out here on our own then";
                 default: return "dont bother";
             }
@@ -2758,7 +2758,7 @@ namespace Hoodrich.Gangs
 
             try
             {
-                Notify.Text(Faces.For(who), who, "they outside", Coming(who, them));
+                Notify.Text(Faces.For(who), who, "GET HERE", Coming(who, them));
 
                 // And out loud if there is a recording for it, the same as everything else.
                 Voice.Cue(Voice.Named(who, "summon"));
@@ -2774,24 +2774,29 @@ namespace Hoodrich.Gangs
         /// <summary>His own words for it. Nobody sounds calm and nobody sounds the same.</summary>
         private static string Coming(string who, string them)
         {
+            // NOBODY ASKS. The first version had Stretch enquiring whether you were busy,
+            // which is a man with time on his hands -- and he is stood behind a car while
+            // people shoot at it. Every one of these is now an instruction, it is short,
+            // and the shouting is where somebody would actually shout.
             if (string.Equals(who, "Lamar", StringComparison.OrdinalIgnoreCase))
             {
-                return "FRANK. " + them + ". on the block RIGHT NOW, not later, NOW. i aint " +
-                       "askin i'm tellin you get down here";
+                return "FRANK GET UP. " + them + " ON THE BLOCK. not in a minute, NOW. im not " +
+                       "doin this by myself GET YOUR ASS DOWN HERE";
             }
 
             if (string.Equals(who, "Stretch", StringComparison.OrdinalIgnoreCase))
             {
-                return them + " outside. you comin or you busy. dont answer that just come";
+                return them + " OUTSIDE RIGHT NOW. get down here. i dont care what you doin " +
+                       "put it down and MOVE";
             }
 
             if (string.Equals(who, "Gerald", StringComparison.OrdinalIgnoreCase))
             {
-                return "we got " + them + " on us. i aint got time to explain it twice so " +
-                       "just get here, and dont come empty handed";
+                return them + " on us. franklin. GET HERE. im not explainin it twice and im " +
+                       "not askin twice, and bring somethin";
             }
 
-            return them + " on the block. get here.";
+            return them + " ON THE BLOCK RIGHT NOW. get here.";
         }
 
         /// <summary>Whether the player is stood inside the circle the map is drawing.</summary>
