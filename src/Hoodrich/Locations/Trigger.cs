@@ -175,6 +175,7 @@ namespace Hoodrich.Locations
             }
 
             Alive();
+            Once(now);
             Join();
             Bite(player);
             Offer(player);
@@ -546,6 +547,26 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// Sweep now and then, not every tick.
+        ///
+        /// GetNearbyPeds walks the ped pool and this does not need doing several times a
+        /// second -- a duplicate arrives at a reload or a dismiss, both of which are rare and
+        /// neither of which is urgent. Six seconds is quick enough that you never see the
+        /// second dog for long, and slow enough to cost nothing.
+        /// </summary>
+        private void Once(int now)
+        {
+            if (now < _sweepAt) return;
+
+            _sweepAt = now + SweepMs;
+
+            Only();
+        }
+
+        private const int SweepMs = 6000;
+        private int _sweepAt;
+
         /// <summary>Back to your side, if he had wandered off.</summary>
         private void Heel()
         {
@@ -668,9 +689,16 @@ namespace Hoodrich.Locations
 
                 _inGroup = false;
                 _sitting = false;
+                _wandering = false;
 
-                Release();
-
+                // HE IS NOT LET GO OF HERE, and that is a fix rather than an oversight.
+                // Releasing him marks him as no longer needed, which CLEARS the mission flag --
+                // and the mission flag is the only thing that says this dog is ours. A released
+                // dog is therefore invisible to the sweep and still stood there, so walking
+                // back to the yard built a second one right next to him.
+                //
+                // Kept instead, and handed to the yard logic: it offers him to be petted again,
+                // and lets him go properly once you are far enough away to not see it happen.
                 Notify.Important("~o~" + Name + " heads back to the yard.~s~");
                 Log.Info("Trigger was sent home.");
             }
@@ -1001,6 +1029,129 @@ namespace Hoodrich.Locations
         private bool _sitting;
 
         /// <summary>
+        /// Take up the one that is already out there, if there is one.
+        ///
+        /// Only ours -- a mission entity of one of our models. An ambient dog wandering past is
+        /// somebody else's and is left alone.
+        ///
+        /// He is re-armed on the way in when he is yours, because an adopted dog is one whose
+        /// flags were set by an instance that is gone: after a reload he is a rottweiler stood
+        /// in the road with none of the things that make him Trigger.
+        /// </summary>
+        private bool Adopt(Vector3 at)
+        {
+            try
+            {
+                Ped found = null;
+                var nearest = AdoptRange;
+
+                foreach (var ped in World.GetNearbyPeds(at, AdoptRange))
+                {
+                    if (!Ours(ped)) continue;
+
+                    var gap = ped.Position.DistanceTo(at);
+                    if (gap > nearest) continue;
+
+                    nearest = gap;
+                    found = ped;
+                }
+
+                if (found == null) return false;
+
+                _dog = found;
+                _dog.IsPersistent = true;
+
+                _inGroup = false;
+                _sitting = false;
+                _jumpingAt = 0;
+                _outAt = 0;
+                _doorOn = -1;
+                _wandering = false;
+
+                if (Yours) Arm(_dog.Handle);
+
+                Only();
+
+                Log.Info("Trigger was already out here. Took that one rather than making another.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not adopt a dog: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Anything else of ours goes.
+        ///
+        /// The backstop under the adoption above: adopting picks the nearest, and this removes
+        /// the rest, so a save that already collected three of them settles back to one on the
+        /// first tick rather than staying at three for ever.
+        /// </summary>
+        private void Only()
+        {
+            if (_dog == null || !_dog.Exists()) return;
+
+            try
+            {
+                foreach (var ped in World.GetNearbyPeds(_dog.Position, CullRange))
+                {
+                    if (ped.Handle == _dog.Handle) continue;
+                    if (!Ours(ped)) continue;
+
+                    Log.Info("Found a second Trigger. Removed it.");
+
+                    try { ped.Delete(); }
+                    catch { }
+                }
+            }
+            catch
+            {
+                // One extra dog is survivable; the sweep runs again.
+            }
+        }
+
+        /// <summary>
+        /// Is that one of ours.
+        ///
+        /// Two tests, and both are needed. The model says it is the right kind of animal and
+        /// the mission flag says this mod put it there -- the game spawns rottweilers of its
+        /// own accord, and those are not ours to delete.
+        /// </summary>
+        private static bool Ours(Ped ped)
+        {
+            try
+            {
+                if (ped == null || !ped.Exists() || !ped.IsAlive) return false;
+                if (ped.IsPlayer) return false;
+
+                var hash = ped.Model.Hash;
+                var mine = false;
+
+                foreach (var name in Dogs)
+                {
+                    if (hash != Game.GenerateHash(name)) continue;
+
+                    mine = true;
+                    break;
+                }
+
+                if (!mine) return false;
+
+                return Function.Call<bool>(Hash.IS_ENTITY_A_MISSION_ENTITY, ped.Handle);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>How far to look for one already out there, and how far to sweep.</summary>
+        private const float AdoptRange = 60f;
+        private const float CullRange = 90f;
+
+        /// <summary>
         /// Swing the right door for the seat he is heading to.
         ///
         /// Seat to door is an offset of one -- seat 0 is the front passenger and that is door
@@ -1180,8 +1331,34 @@ namespace Hoodrich.Locations
 
         // ---- making him ---------------------------------------------------------
 
+        /// <summary>
+        /// The dog, and only ever one dog.
+        ///
+        /// THE OLD ONE IS LOOKED FOR BEFORE A NEW ONE IS MADE, because "I do not have a
+        /// reference to him" and "he is not out there" are different things and this class
+        /// kept confusing them. Three ways they came apart:
+        ///
+        /// A SCRIPT RELOAD. Pressing Insert builds a fresh instance with no dog in hand while
+        /// the dog from before is still stood in the world as a mission entity -- nothing
+        /// cleans him up, because the object that owned him no longer exists. Every reload
+        /// added another one, and this mod has been reloaded a great many times in one sitting.
+        ///
+        /// A DISMISS. Sending him home hands him back to the game where he stands, which is the
+        /// point -- but he does not vanish, so walking back to the yard found no reference and
+        /// built a second dog next to the first.
+        ///
+        /// AND STREAMING. Walking out of range releases him and walking back makes one, and if
+        /// the release did not actually take he is now twice.
+        ///
+        /// So: adopt what is already there, then sweep. The sweep only takes MISSION entities,
+        /// which is the line between a dog this mod made and a dog the game put in the street
+        /// -- deleting every rottweiler near the player would be a mod that shoots other
+        /// people's dogs.
+        /// </summary>
         private void Make(Vector3 at)
         {
+            if (Adopt(at)) return;
+
             foreach (var name in Dogs)
             {
                 try
@@ -1252,6 +1429,8 @@ namespace Hoodrich.Locations
 
                         Function.Call(Hash.SET_PED_KEEP_TASK, h, true);
                     }
+
+                    Only();
 
                     Log.Info((Yours ? "Trigger is with you: " : "A dog is out in the yard: ") + name + ".");
                     return;
