@@ -573,9 +573,13 @@ namespace Hoodrich.Gangs
             }
             else
             {
-                Notify.Important("~r~" + _attacker.Name + " rolling up on " + _target.Who + ".~s~ " +
-                                 (_heat > 0.6f ? "Deep this time. Get over there."
-                                               : "Get over there."));
+                // FROM THE MAN IT IS HAPPENING TO, not from the mod.
+                //
+                // A banner announcing a raid you are three districts away from is the game
+                // telling you about its own systems. Somebody you know texting you to come is
+                // the same information arriving the way it would actually arrive -- and it
+                // leaves you the choice of ignoring it, which a banner never really does.
+                Summon();
             }
 
             Log.Info("Gang war (" + (_away ? "away" : "home") + "): " + _attacker.Id +
@@ -2604,6 +2608,78 @@ namespace Hoodrich.Gangs
                    "you wasn't one of the ones that came.";
         }
 
+        /// <summary>
+        /// "They're here. Come."
+        ///
+        /// The one message that starts a raid. It says who is on him and it says hurry, and it
+        /// does not say anything else -- the numbers, the count of who is down and whether more
+        /// are coming are all things you can see when you are stood in it, and none of them are
+        /// things a man being shot at stops to type.
+        /// </summary>
+        private void Summon()
+        {
+            var who = _target == null ? "" : _target.Who;
+            var them = _attacker == null ? "somebody" : _attacker.Name;
+
+            if (string.IsNullOrEmpty(who)) return;
+
+            try
+            {
+                Notify.Text(Faces.For(who), who, "they outside", Coming(who, them));
+
+                // And out loud if there is a recording for it, the same as everything else.
+                Voice.Cue(Voice.Named(who, "summon"));
+
+                Log.Info("Raid: " + who + " called it in.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not send the raid text: " + ex.Message);
+            }
+        }
+
+        /// <summary>His own words for it. Nobody sounds calm and nobody sounds the same.</summary>
+        private static string Coming(string who, string them)
+        {
+            if (string.Equals(who, "Lamar", StringComparison.OrdinalIgnoreCase))
+            {
+                return "FRANK. " + them + ". on the block RIGHT NOW, not later, NOW. i aint " +
+                       "askin i'm tellin you get down here";
+            }
+
+            if (string.Equals(who, "Stretch", StringComparison.OrdinalIgnoreCase))
+            {
+                return them + " outside. you comin or you busy. dont answer that just come";
+            }
+
+            if (string.Equals(who, "Gerald", StringComparison.OrdinalIgnoreCase))
+            {
+                return "we got " + them + " on us. i aint got time to explain it twice so " +
+                       "just get here, and dont come empty handed";
+            }
+
+            return them + " on the block. get here.";
+        }
+
+        /// <summary>Whether the player is stood inside the circle the map is drawing.</summary>
+        private bool InIt()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+
+                if (player == null || !player.Exists()) return false;
+
+                return player.Position.DistanceTo(_target.Where) <= DefendRange;
+            }
+            catch
+            {
+                // If we cannot tell, show it. A readout that is up when it need not be is a
+                // smaller problem than one that never appears while you are stood in a fight.
+                return true;
+            }
+        }
+
         /// <summary>Sends the survivors home rather than deleting them out from under you.</summary>
         private void Scatter()
         {
@@ -2733,6 +2809,26 @@ namespace Hoodrich.Gangs
                 _warShownAt = 0;
                 _warBar = 0f;
                 _warSeenReserve = -1;
+                return;
+            }
+
+            // NOT UNTIL YOU ARE IN IT.
+            //
+            // This is a readout of a street: how many of them are stood on it, how many are
+            // down, whether another carload is coming. Every one of those is something you
+            // could see with your own eyes from where it is being drawn -- and none of them is
+            // something you could possibly know from the other side of Los Santos, which is
+            // where it used to hang on the screen regardless.
+            //
+            // The same circle the map draws and the same test that decides you turned up, so
+            // the banner appearing and being counted as present are one event rather than two
+            // that can disagree.
+            //
+            // Reset on the way out rather than merely hidden, so walking back in plays the
+            // entrance again instead of snapping the panel on mid-animation.
+            if (!InIt())
+            {
+                _warShownAt = 0;
                 return;
             }
 
