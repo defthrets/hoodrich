@@ -460,6 +460,9 @@ namespace Hoodrich
 
         /// <summary>Tanya, and the truck. See Locations.TowTruck.</summary>
         private readonly TowTruck _tow = new TowTruck();
+
+        /// <summary>The driverless cabs. See Locations.Knowai.</summary>
+        private readonly Knowai _ride = new Knowai();
         private readonly Patrol _patrol;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
@@ -613,6 +616,18 @@ namespace Hoodrich
                 // Everything she needs to know is handed to her, which is why the file does not
                 // mention Hao, OwnedCars or the save: she is given a wreck and gives one back.
                 _tow.Wreck = at => _ownedCars.WreckNear(at, 18f);
+
+                // The cars with nobody in them.
+                _ride.Busy = () => _war != null && _war.IsRunning;
+
+                _ride.Charge = fare =>
+                {
+                    if (fare <= 0) return true;
+                    if (Game.Player.Money < fare) return false;
+
+                    UI.Cash.Take(fare);
+                    return true;
+                };
                 _ownedCars.YardHours = () => _cfg == null ? 36f : _cfg.TowYardHours;
                 _tow.Fee = () => _cfg == null ? 500 : _cfg.TowFee;
                 _tow.Busy = () => _war != null && _war.IsRunning;
@@ -1760,6 +1775,13 @@ namespace Hoodrich
                 pages.Bags = _bags;
                 pages.Crew = _homies;
                 pages.ShowSocials = () => _socialScreen.Open();
+
+                // Knowai. The page reads the state to decide whether it is a list of places or
+                // one row saying you already have a car coming, so all four go together.
+                pages.HailRide = stop => _ride.Hail(stop);
+                pages.RideState = () => _ride.State;
+                pages.RideGoing = () => _ride.Going;
+                pages.CancelRide = () => _ride.Cancel("Ride cancelled.");
                 pages.ShowGraffiti = () => _graffiti.Open();
 
                 // The tag run borrows the same engine the app uses.
@@ -2468,6 +2490,7 @@ namespace Hoodrich
                     // After OwnedCars, which is what decides a car is still there to be a
                     // wreck at all.
                     _tow.Update(Game.Player.Character);
+                    _ride.Update(Game.Player.Character);
 
                     _social.Update();
 
@@ -3399,6 +3422,7 @@ namespace Hoodrich
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { _tow?.RestoreWorld(); } catch { /* teardown */ }
+            try { _ride?.RestoreWorld(); } catch { /* teardown */ }
             try { _bust?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }

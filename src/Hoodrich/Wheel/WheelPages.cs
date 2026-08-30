@@ -72,6 +72,14 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main: opens the feed, and reads the follower count for the wedge.</summary>
         public Action ShowSocials;
 
+        /// <summary>Set by Main: hail one, or say why not. See Locations.Knowai.</summary>
+        public Func<Locations.RideStop, string> HailRide;
+
+        /// <summary>Set by Main: what the car is doing, if anything.</summary>
+        public Func<Locations.RideState> RideState;
+        public Func<string> RideGoing;
+        public Action CancelRide;
+
         /// <summary>Opens the can. See UI.GraffitiScreen.</summary>
         public Action ShowGraffiti;
 
@@ -1020,6 +1028,14 @@ namespace Hoodrich.Wheel
                 disabledReason: "You're working the counter");
             page.WithIcon(Icons.FromFile("baggie.png"));
 
+            // UNDER THE PHONE-SHAPED THINGS AND ABOVE THE WORK, because that is what it is:
+            // a service you use, not a part of the business. It is also the one app on here
+            // that will still be useful to somebody who has stopped dealing.
+            page.AddSub("Knowai", "~", BuildKnowaiPage,
+                detail: "Driverless cars. It comes to you and takes you where you say",
+                value: RideSummary());
+            page.WithIcon(Icons.FromFile("car.png"));
+
             page.AddSub("Gangs", "%", BuildGangsPage,
                 detail: _crew.IsAffiliated
                     ? "You run with " + _crew.Current.Name
@@ -1237,6 +1253,76 @@ namespace Hoodrich.Wheel
         /// that needs a library this mod does not take -- but it is the same idea in the mod's
         /// own furniture, and it is one flick from the wheel rather than three.
         /// </summary>
+        /// <summary>
+        /// Knowai. A list of places and a car that comes and takes you to one.
+        ///
+        /// A page rather than a screen of its own, and that is not a shortcut -- it is a list
+        /// of rows you press, which is what every other list on this phone is. A bespoke screen
+        /// for it would be a second way of drawing the same object, and the two would drift
+        /// the first time anything about a row changed.
+        /// </summary>
+        private WheelPage BuildKnowaiPage()
+        {
+            var page = new WheelPage("Knowai", RideSummary());
+            page.PanelTitle = "Where to?";
+
+            var state = RideState == null ? Locations.RideState.None : RideState();
+
+            // ONE ROW WHEN THERE IS A CAR, and it is the row you want. Offering ten
+            // destinations to somebody who already has one on the way is offering to do the
+            // thing they have already done; the only question left is whether they meant it.
+            if (state != Locations.RideState.None)
+            {
+                var going = RideGoing == null ? "" : RideGoing();
+
+                page.Add("Cancel the ride", "x", () => CancelRide?.Invoke(),
+                    detail: state == Locations.RideState.Riding
+                        ? "You're in it. This gets you out where you are"
+                        : "Send it away and hail another one later",
+                    value: string.IsNullOrEmpty(going) ? "" : going);
+
+                page.WithIcon(Icons.FromFile("car.png"));
+
+                return page;
+            }
+
+            foreach (var stop in Locations.Knowai.Stops)
+            {
+                // Captured, because the loop variable is one variable and every row would
+                // otherwise ask for wherever the loop finished.
+                var where = stop;
+
+                page.Add(where.Name, ">", () =>
+                {
+                    var no = HailRide == null ? "Not wired up" : HailRide(where);
+
+                    if (!string.IsNullOrEmpty(no)) UI.Notify.Failure(no);
+                },
+                    detail: where.Area,
+                    enabled: HailRide != null,
+                    disabledReason: "Not wired up");
+
+                page.WithIcon(Icons.FromFile("pin.png"));
+            }
+
+            return page;
+        }
+
+        /// <summary>What the app says on the home screen without being opened.</summary>
+        private string RideSummary()
+        {
+            var state = RideState == null ? Locations.RideState.None : RideState();
+
+            switch (state)
+            {
+                case Locations.RideState.Coming: return "on the way";
+                case Locations.RideState.Waiting: return "waiting";
+                case Locations.RideState.Riding: return "riding";
+                case Locations.RideState.Arrived: return "arrived";
+                default: return Locations.Knowai.Stops.Length + " stops";
+            }
+        }
+
         private WheelPage BuildContactsPage()
         {
             var page = new WheelPage("Contacts", ContactsSummary());
