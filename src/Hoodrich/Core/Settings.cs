@@ -387,6 +387,14 @@ namespace Hoodrich.Core
         public int TakeoverSpinLeft = 30;
         public int TakeoverSpinRight = 31;
 
+        /// <summary>
+        /// And the one for a car stood still with the back wheels lit up.
+        ///
+        /// Here for the same reason as the pair above, and 23 is the community number for it.
+        /// A wrong number here is a car on the mark doing nothing rather than a crash.
+        /// </summary>
+        public int TakeoverBurnAction = 23;
+
         /// <summary>Whether groups of the set walk the back streets on foot.</summary>
         public bool WalkersEnabled = true;
 
@@ -598,6 +606,7 @@ namespace Hoodrich.Core
             s.TakeoverEnabled = ini.GetBool("Block", "TakeoverEnabled", s.TakeoverEnabled);
             s.TakeoverSpinLeft = (int)Clamp(ini.GetInt("Block", "TakeoverSpinLeft", s.TakeoverSpinLeft), 0f, 40f);
             s.TakeoverSpinRight = (int)Clamp(ini.GetInt("Block", "TakeoverSpinRight", s.TakeoverSpinRight), 0f, 40f);
+            s.TakeoverBurnAction = (int)Clamp(ini.GetInt("Block", "TakeoverBurnAction", s.TakeoverBurnAction), 0f, 40f);
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);

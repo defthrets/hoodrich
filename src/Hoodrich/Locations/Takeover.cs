@@ -71,8 +71,33 @@ namespace Hoodrich.Locations
         private const int BurnMinMs = 26000;
         private const int BurnMaxMs = 36000;
 
-        /// <summary>Close enough to the mark to stop and start smoking.</summary>
-        private const float OnTheMark = 4.5f;
+        /// <summary>
+        /// Close enough to the mark to stop and start smoking.
+        ///
+        /// SEVEN AND A HALF, RAISED FROM FOUR AND A HALF, and this was why nothing ever burned
+        /// out. The drive-in was issued with a stopping range of five metres, so the car parked
+        /// itself five metres from the mark and the arrival test wanted four and a half -- it
+        /// never passed, so the car never started, never got its tyres, and never timed out
+        /// either, because the clock only starts when the work does. One car sat by the mark
+        /// doing nothing for the whole takeover and the count said the mark was occupied, so no
+        /// replacement was ever sent.
+        ///
+        /// The stopping range is down to two as well. Both numbers, or the same trap reopens
+        /// the first time a kerb stops somebody a metre early.
+        /// </summary>
+        private const float OnTheMark = 7.5f;
+
+        /// <summary>
+        /// How long anybody gets to arrive before the circle stops waiting for them.
+        ///
+        /// The backstop for the fault above, and for every other version of it: a blocked road,
+        /// a driver who has taken a wrong turn, a car wedged on a bollard. Without it a runner
+        /// that cannot reach its spot holds that spot for ever.
+        /// </summary>
+        private const int ComeOnMs = 40000;
+
+        /// <summary>Near enough that a late arrival is started where it stands rather than binned.</summary>
+        private const float CloseEnough = 26f;
 
         /// <summary>How fast he turns on the spot while he does it.</summary>
         private const float SpinRate = 62f;
@@ -224,6 +249,9 @@ namespace Hoodrich.Locations
 
             /// <summary>When this one is given its next go of lock.</summary>
             public int NextAction;
+
+            /// <summary>When it set off, so a car that never arrives can be given up on.</summary>
+            public int Sent;
             public float Speed;
             public int Way;
             public int Until;
@@ -888,8 +916,25 @@ namespace Hoodrich.Locations
                 if (!r.Circling)
                 {
                     var wants = r.Middle ? OnTheMark : r.Radius + 6f;
+                    var gap = r.Car.Position.DistanceTo(Middle);
 
-                    if (r.Car.Position.DistanceTo(Middle) > wants) continue;
+                    if (gap > wants)
+                    {
+                        // STILL COMING, up to a point. Past that it is not coming.
+                        if (r.Sent != 0 && now - r.Sent < ComeOnMs) continue;
+
+                        // Close but stopped short -- start it where it is. Miles away or stuck,
+                        // let it go and the top-up below sends somebody who can get here.
+                        if (gap > CloseEnough)
+                        {
+                            Log.Info("Takeover: a car never made it in. Sending another.");
+                            Leave(r);
+                            continue;
+                        }
+
+                        Log.Info("Takeover: starting one short of the mark at "
+                                 + gap.ToString("0.0") + "m.");
+                    }
 
                     r.Circling = true;
 
@@ -938,7 +983,10 @@ namespace Hoodrich.Locations
 
             if (mark < 1) In(true);
 
-            var want = _rng.Next(100) < 45 ? 2 : 1;
+            // TWO OR THREE ROUND THE OUTSIDE, so with the one on the mark there are three or
+            // four cars working at once. It was one-or-two, which read as an empty junction
+            // with a car in it -- and with the mark broken above it was often literally one.
+            var want = _rng.Next(100) < 55 ? 3 : 2;
 
             while (round < want)
             {
@@ -978,9 +1026,11 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
                               Middle.X, Middle.Y, Middle.Z, 16f, 0, car.Model.Hash,
-                              786603, 5f, true);
+                              786603, 2f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
+
+                r.Sent = Game.GameTime;
 
                 _running.Add(r);
                 return true;
@@ -1077,12 +1127,23 @@ namespace Hoodrich.Locations
 
                 try
                 {
-                    // On the mark, it is held on the brake with the throttle buried, which is
-                    // what a burnout is. Either way the lock comes from the driver.
-                    if (r.Middle) Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
+                    // THE ONE ON THE MARK STANDS STILL. It used to be told to hold a burnout
+                    // AND to drive a donut in the same breath, which are two different things
+                    // to do with the same wheels -- so it did the donut, because a temp action
+                    // is a driver input and beats a flag. That is why nothing ever sat there
+                    // smoking: there was a burnout car and it was driving in circles.
+                    if (r.Middle)
+                    {
+                        Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
 
-                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
-                                  r.Car.Handle, Spin(r.Way), BurstMs);
+                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
+                                      r.Car.Handle, Burn(), BurstMs);
+                    }
+                    else
+                    {
+                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
+                                      r.Car.Handle, Spin(r.Way), BurstMs);
+                    }
 
                     r.NextAction = now + BurstMs - 400;
                 }
@@ -1107,6 +1168,18 @@ namespace Hoodrich.Locations
             if (_cfg == null) return way > 0 ? 30 : 31;
 
             return way > 0 ? _cfg.TakeoverSpinLeft : _cfg.TakeoverSpinRight;
+        }
+
+        /// <summary>
+        /// And the one for standing on the spot with the back wheels going.
+        ///
+        /// Same caveat as the donut pair: the temp action list is community numbering and 23 is
+        /// what everybody uses for a burnout. It is in the ini for the same reason -- if this
+        /// build numbers them differently it is a number to change, not a rebuild.
+        /// </summary>
+        private int Burn()
+        {
+            return _cfg == null ? 23 : _cfg.TakeoverBurnAction;
         }
 
         /// <summary>How long one burst of lock lasts, and how far they may wander.</summary>
@@ -1267,36 +1340,220 @@ namespace Hoodrich.Locations
 
         // ---- making things ------------------------------------------------------
 
+        /// <summary>
+        /// One car, and not the same car as the last one.
+        ///
+        /// THIS WALKED THE LIST IN ORDER AND TOOK THE FIRST MODEL THAT LOADED, which meant the
+        /// list was a fallback chain rather than a choice -- so every drift car at every
+        /// takeover was the same model, three identical Dominators going round one junction.
+        /// The list is read from a random point now, and anything already out there is skipped
+        /// on the first pass, so a repeat only happens once the whole list is in use.
+        /// </summary>
         private Vehicle Make(string[] names, Vector3 at)
         {
-            foreach (var name in names)
+            var start = _rng.Next(names.Length);
+
+            Taken();
+
+            for (var pass = 0; pass < 2; pass++)
             {
-                try
+                for (var i = 0; i < names.Length; i++)
                 {
-                    var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+                    var name = names[(start + i) % names.Length];
 
-                    var car = World.CreateVehicle(model, at);
-                    model.MarkAsNoLongerNeeded();
+                    try
+                    {
+                        var model = new Model(name);
+                        if (!model.IsValid || !model.IsInCdImage) continue;
 
-                    if (car == null || !car.Exists()) continue;
+                        // First time round, only what nobody out there is already driving.
+                        if (pass == 0 && _taken.Contains(model.Hash)) continue;
 
-                    car.IsPersistent = true;
+                        if (!model.Request(1200)) continue;
 
-                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, car.Handle, true, true);
-                    Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
-                    Function.Call(Hash.SET_VEHICLE_ENGINE_ON, car.Handle, true, true, false);
+                        var car = World.CreateVehicle(model, at);
+                        model.MarkAsNoLongerNeeded();
 
-                    return car;
-                }
-                catch
-                {
-                    // Next name.
+                        if (car == null || !car.Exists()) continue;
+
+                        car.IsPersistent = true;
+
+                        Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, car.Handle, true, true);
+                        Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
+                        Function.Call(Hash.SET_VEHICLE_ENGINE_ON, car.Handle, true, true, false);
+
+                        Dress(car);
+
+                        return car;
+                    }
+                    catch
+                    {
+                        // Next name.
+                    }
                 }
             }
 
             return null;
         }
+
+        /// <summary>
+        /// Which models are out there, so the next one is a different car.
+        ///
+        /// Rebuilt from the live cars rather than added to and removed from. A set that is
+        /// maintained by hand drifts out of step the first time something is cleaned up on a
+        /// path that forgot to update it, and then the list of cars that "exist" only grows --
+        /// until every model is spoken for and the whole thing quietly stops working.
+        /// </summary>
+        private readonly HashSet<int> _taken = new HashSet<int>();
+
+        private void Taken()
+        {
+            _taken.Clear();
+
+            try
+            {
+                foreach (var r in _running)
+                {
+                    if (r.Car != null && r.Car.Exists()) _taken.Add(r.Car.Model.Hash);
+                }
+
+                foreach (var p in _parked)
+                {
+                    if (p.Car != null && p.Car.Exists()) _taken.Add(p.Car.Model.Hash);
+                }
+            }
+            catch
+            {
+                // A repeat is not the end of the world.
+            }
+        }
+
+        /// <summary>
+        /// Nobody brings a stock car to one of these.
+        ///
+        /// Every one of these is rolled per car, so no two arrive looking the same -- and the
+        /// parts are picked out of what the MODEL actually has rather than off a fixed list of
+        /// indexes: GET_NUM_VEHICLE_MODS is asked how many wheels or spoilers this particular
+        /// car owns, and one of those is chosen. A hard-coded index is a part on a Dominator
+        /// and nothing at all on a Futo.
+        ///
+        /// The mod kit goes on first. Without it every SET_VEHICLE_MOD below is a call that
+        /// returns quietly having done nothing, which is the usual reason a car dressed in
+        /// script comes out stock.
+        /// </summary>
+        private void Dress(Vehicle car)
+        {
+            try
+            {
+                var h = car.Handle;
+
+                Function.Call((Hash)0x1F2AA07F00B3217AUL, h, 0);   // SET_VEHICLE_MOD_KIT
+
+                // Paint. Pearl over a base, which is where the depth in a show car comes from.
+                var main = Paints[_rng.Next(Paints.Length)];
+                var pearl = Paints[_rng.Next(Paints.Length)];
+
+                Function.Call((Hash)0x4F1D4BE3A7F24601UL, h, main, main);       // COLOURS
+                Function.Call((Hash)0x2036F561ADD12E33UL, h, pearl, Rims);      // EXTRA_COLOURS
+                Function.Call((Hash)0x79D3B596FE44EE8BUL, h, 0f);               // DIRT_LEVEL
+                Function.Call((Hash)0x57C51E6BAD752696UL, h, Tints[_rng.Next(Tints.Length)]);
+
+                // The mechanical ones, which are fixed maximums rather than a choice.
+                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, h, 11, 3, false);  // engine
+                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, h, 12, 2, false);  // brakes
+                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, h, 13, 2, false);  // box
+                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, h, 15, 3, false);  // suspension
+                Function.Call((Hash)0x2A1F4F37F95BAD08UL, h, 18, true);      // turbo
+
+                // Wheels, from a random set, and whatever that set has for this car.
+                Function.Call((Hash)0x487EB21CC7341E0CUL, h, Wheels[_rng.Next(Wheels.Length)]);
+                Fit(h, 23, true);
+
+                // And the bodywork, from what this model owns.
+                Fit(h, 0, false);    // spoiler
+                Fit(h, 1, false);    // front bumper
+                Fit(h, 2, false);    // rear bumper
+                Fit(h, 3, false);    // skirts
+                Fit(h, 4, false);    // exhaust
+                Fit(h, 6, false);    // grille
+                Fit(h, 7, false);    // bonnet
+                Fit(h, 10, false);   // roof
+                Fit(h, 48, false);   // livery
+
+                // Xenons.
+                Function.Call((Hash)0x2A1F4F37F95BAD08UL, h, 22, true);
+                Function.Call((Hash)0xE41033B25D003A07UL, h, _rng.Next(0, 13));
+
+                // Smoke with a colour in it, which is half of why anybody watches.
+                var smoke = Glow[_rng.Next(Glow.Length)];
+
+                Function.Call((Hash)0x2A1F4F37F95BAD08UL, h, 20, true);
+                Function.Call((Hash)0xB5BA80F839791C0FUL, h, smoke[0], smoke[1], smoke[2]);
+
+                // NEON, on all four sides. The colour is rolled separately from the smoke, so
+                // a car is not one hue from end to end.
+                var neon = Glow[_rng.Next(Glow.Length)];
+
+                for (var side = 0; side < 4; side++)
+                {
+                    Function.Call((Hash)0x2AA720E4287BF269UL, h, side, true);
+                }
+
+                Function.Call((Hash)0x8E0A582209A62695UL, h, neon[0], neon[1], neon[2]);
+
+                Function.Call((Hash)0x95A88F0B409CDA47UL, h, Plates[_rng.Next(Plates.Length)]);
+            }
+            catch (Exception ex)
+            {
+                // A stock car still does donuts.
+                Log.Debug("Takeover could not dress one: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Fit a random one of whatever this model has of that part.
+        ///
+        /// Asked rather than assumed. A count of zero means this car has no spoilers, and the
+        /// right answer there is to leave it alone rather than to set index 0 of nothing.
+        /// </summary>
+        private void Fit(int car, int slot, bool custom)
+        {
+            try
+            {
+                var count = Function.Call<int>((Hash)0xE38E9162A2500646UL, car, slot);
+                if (count <= 0) return;
+
+                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, car, slot, _rng.Next(count), custom);
+            }
+            catch
+            {
+                // It goes without.
+            }
+        }
+
+        /// <summary>Paints, wheel sets, tints, plates, and the colours that glow.</summary>
+        private static readonly int[] Paints =
+        {
+            0, 1, 2, 3, 4, 12, 27, 28, 38, 49, 52, 55, 64, 70, 73, 88, 89, 92,
+            111, 112, 117, 120, 125, 132, 134, 141, 142, 145, 150
+        };
+
+        private static readonly int[] Wheels = { 0, 1, 2, 5, 7, 11 };
+        private static readonly int[] Tints = { 1, 2, 3, 5 };
+        private const int Rims = 156;
+
+        private static readonly int[][] Glow =
+        {
+            new[] { 255, 0, 60 },     new[] { 0, 200, 255 },   new[] { 140, 0, 255 },
+            new[] { 0, 255, 90 },     new[] { 255, 120, 0 },   new[] { 255, 0, 200 },
+            new[] { 255, 240, 0 },    new[] { 0, 90, 255 },    new[] { 255, 255, 255 }
+        };
+
+        private static readonly string[] Plates =
+        {
+            "SIDEWYS", "NOGRIP", "8OS ONLY", "1 MORE", "SKIDZ", "LS 4EVA",
+            "SMOKIN", "3RD GEAR", "NO TYRES", "SPIN IT", "DRIFTA", "LOUD 1"
+        };
 
         /// <summary>
         /// Somebody at the wheel who will not panic.
