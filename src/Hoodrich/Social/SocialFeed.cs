@@ -259,6 +259,26 @@ namespace Hoodrich.Social
         /// </summary>
         public bool HoldUntilShots;
 
+        /// <summary>
+        /// Posts handed over by other mods. Empty and nearly free when there are none.
+        ///
+        /// See Guests: the seam is a folder of small files, not a method call, so a mod on the
+        /// other side of it can be rewritten without this one noticing.
+        /// </summary>
+        private readonly Guests _guests = new Guests();
+
+        /// <summary>When a guest may next have the floor. Real milliseconds.</summary>
+        private int _guestNext;
+
+        /// <summary>
+        /// Shortest gap between two guest posts.
+        ///
+        /// Their own mod rate-limits itself as well, but this is the one that matters: it is
+        /// the only limit that knows how many guests there are, and three chatty mods with
+        /// reasonable individual limits still add up to an unreadable timeline.
+        /// </summary>
+        private const int GuestGapMs = 90000;
+
         public SocialFeed()
         {
             Handle = "@franklin_c";
@@ -926,6 +946,28 @@ namespace Hoodrich.Social
 
                 if (NewsReady && Report(set, subject) != null)
                 {
+                    _nextAmbient = Game.GameTime + AmbientGapMinMs;
+                    return;
+                }
+            }
+
+            // Somebody else's mod, with something to say.
+            //
+            // AFTER the reply and the paper, BEFORE the block's own chatter. A guest is a
+            // guest: it does not get to talk over a reply aimed at the player, and it does not
+            // get held behind ambient posts forever either.
+            //
+            // Held off entirely while a raid is live. A hot dog stand posting about the price
+            // of onions in the middle of a shootout is the joke landing at the worst possible
+            // moment, and it is the sort of thing that gets a mod uninstalled.
+            _guests.Collect();
+
+            if (_guests.Any && Game.GameTime >= _guestNext && _burstLeft <= 0 &&
+                Game.GameTime >= _warUntil)
+            {
+                if (Guest())
+                {
+                    _guestNext = Game.GameTime + GuestGapMs;
                     _nextAmbient = Game.GameTime + AmbientGapMinMs;
                     return;
                 }
@@ -2219,6 +2261,64 @@ namespace Hoodrich.Social
         /// same way round.
         /// </summary>
         public Action<string> Posted;
+
+        /// <summary>
+        /// Puts one guest post on the timeline as though it had always been there.
+        ///
+        /// A REAL POST, not a special case. It goes through Add and Notify like everything
+        /// else, so it gets the same avatar disc, the same tint, the same "2m" stamp and the
+        /// same toast -- which is the whole reason a guest hands over words rather than
+        /// drawing its own thing somewhere else on the screen.
+        ///
+        /// AboutYou stays FALSE. The rail down the left of the timeline means "this one is
+        /// about you", and a shop advertising its lunch menu is not.
+        /// </summary>
+        private bool Guest()
+        {
+            var guest = _guests.Next();
+            if (guest == null) return false;
+
+            try
+            {
+                var author = new Author
+                {
+                    Handle = "@" + guest.Handle,
+                    Name = guest.Name,
+                    Gang = "",
+                    Verified = guest.Verified,
+                    Gender = guest.Gender,
+
+                    // Tinted off the handle like everybody else, so the same shop is the same
+                    // colour every time you see it.
+                    Tint = TintFor(guest.Handle)
+                };
+
+                var post = new Post
+                {
+                    By = author,
+                    Body = guest.Text,
+                    Plain = guest.Text,
+                    At = Game.GameTime,
+                    Likes = _rng.Next(0, 40),
+                    Reposts = _rng.Next(0, 6),
+                    Replies = _rng.Next(0, 5)
+                };
+
+                // The no-repeats memory is shared, so a guest that says the same thing twice
+                // is caught by the same check that catches our own sets.
+                if (_recentSet.Contains(post.Plain)) return false;
+
+                Add(post);
+                Notify(post);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not post a guest line: " + ex.Message);
+                return false;
+            }
+        }
 
         private void Add(Post post)
         {
