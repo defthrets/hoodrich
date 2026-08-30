@@ -226,11 +226,18 @@ namespace Hoodrich.UI
                 return;
             }
 
-            // ABOVE THE PLAYER AND OUT OF EVERYTHING. He exists for about a second and the
-            // only thing that must be true of him is that the game is willing to render him:
-            // frozen so he cannot fall, no collision so he cannot land on anybody, and
-            // invisible so that if any of the above fails he is still not a man standing in
-            // the sky over Chamberlain Hills.
+            // ABOVE THE PLAYER, AND VISIBLE UNTIL HE HAS BEEN PHOTOGRAPHED.
+            //
+            // THIS IS WHAT WAS WRONG. He was created invisible, on the reasoning that nothing
+            // should ever see him -- and the headshot camera is a thing that sees him. An
+            // invisible ped photographs as an empty frame, so every texture came back blank
+            // and every avatar fell through to the coloured letter. The log said the picture
+            // had been made because it had; there was simply nothing in it.
+            //
+            // So he is visible for the half second it takes and hidden the moment it is done.
+            // Thirty metres up, frozen and without collision: he cannot fall, cannot land on
+            // anybody, and is a speck straight above your head in the fraction of a second
+            // anybody would have to be looking up to catch him.
             var at = player.Position + new Vector3(0f, 0f, 30f);
 
             var handle = Function.Call<int>(Hash.CREATE_PED, 4, model.Hash,
@@ -255,7 +262,6 @@ namespace Hoodrich.UI
 
             try
             {
-                Function.Call(Hash.SET_ENTITY_VISIBLE, _model.Handle, false, false);
                 Function.Call(Hash.SET_ENTITY_COLLISION, _model.Handle, false, false);
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, _model.Handle, true);
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _model.Handle, true);
@@ -314,6 +320,12 @@ namespace Hoodrich.UI
             Room();
 
             Log.Info("Headshot for " + _doing + " -> " + txd + ".");
+
+            // Photographed, so he can stop being visible now. He stays alive because the
+            // registration is against him -- see Face.Model -- but there is no reason for
+            // anybody to be able to see him from here on.
+            try { Function.Call(Hash.SET_ENTITY_VISIBLE, _model.Handle, false, false); }
+            catch { /* he is thirty metres up either way */ }
 
             Made[_doing] = new Face
             {
