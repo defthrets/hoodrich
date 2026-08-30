@@ -1361,7 +1361,11 @@ namespace Hoodrich.Wheel
                 case Locations.RideState.Picking: return "where to?";
                 case Locations.RideState.Riding: return "riding";
                 case Locations.RideState.Arrived: return "arrived";
-                default: return Locations.Knowai.Stops.Length + " stops";
+                // NOT A COUNT OF THE DESTINATIONS. It said "10 stops", which described the
+                // menu rather than the app -- and it stopped being true the moment the flow
+                // changed to hailing a car first and choosing where from the back seat. The
+                // number was also the least interesting thing about it.
+                default: return "tap to call one";
             }
         }
 

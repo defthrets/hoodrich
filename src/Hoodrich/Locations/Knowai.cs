@@ -307,6 +307,12 @@ namespace Hoodrich.Locations
 
         public void Update(Ped player)
         {
+            // BEFORE THE RUNNING CHECK. A cab on its way out has by definition finished its
+            // ride, so anything gated on a ride being live would never tidy it up -- which is
+            // exactly how the old version left one on the kerb.
+            try { Follow(); }
+            catch { /* next tick */ }
+
             try
             {
                 if (!IsRunning) return;
@@ -608,6 +614,18 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _car.Handle, 0f);
                 Function.Call(Hash.SET_VEHICLE_LIGHTS, _car.Handle, 2);
 
+                // WHITE, EVERY ONE OF THEM. A fleet is a fleet because it looks like one --
+                // you should know what pulled up before you can read anything on it.
+                //
+                // Set as a custom RGB rather than a paint index. The index table has several
+                // whites in it and they are not the same white; one of them is nearly grey.
+                // 255,255,255 is the only one that cannot be argued with, and it does not
+                // depend on a table nobody has documented.
+                Function.Call(Hash.SET_VEHICLE_MOD_KIT, _car.Handle, 0);
+                Function.Call(Hash.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR, _car.Handle, 255, 255, 255);
+                Function.Call(Hash.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR, _car.Handle, 255, 255, 255);
+                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
+
                 return Wheel();
             }
             catch (Exception ex)
@@ -820,20 +838,49 @@ namespace Hoodrich.Locations
                 if (_blip != null && _blip.Exists()) _blip.Delete();
                 _blip = null;
 
-                // THE DRIVER IS DELETED. The car is handed back -- one that vanishes off the
-                // kerb in front of you is worse than one that drives away, and by this point it
-                // has been told to go.
+                // IT DRIVES OFF. IT IS NOT ABANDONED.
                 //
-                // He cannot be. An invisible ped handed to the game is a ped the game will
-                // render the moment it feels like it, and what that looks like is a stranger
-                // appearing behind the wheel of the car you just got out of. He was never
-                // meant to be seen at all, so he goes.
-                if (_driver != null && _driver.Exists()) _driver.Delete();
-
+                // This used to delete the driver and hand the car back, which is the worst of
+                // both: the only thing that could move the car was destroyed, and the car was
+                // then given to a game that parks loose vehicles and leaves them. What that
+                // produced was a white driverless cab sat on the kerb for the rest of the
+                // session -- and "driverless" is the one thing this car is supposed to be, so
+                // it looked deliberate.
+                //
+                // Both are kept instead, and both stay OURS. The driver has to stay alive to
+                // drive, and he has to stay ours to stay invisible -- an invisible ped handed
+                // back is a ped the game will render whenever it feels like it, which is a
+                // stranger appearing behind the wheel of the car you just got out of.
+                //
+                // Follow() then watches it go and deletes the pair once nobody is looking, or
+                // after two minutes if it cannot get anywhere.
                 if (_car != null && _car.Exists())
                 {
-                    _car.IsPersistent = false;
-                    _car.MarkAsNoLongerNeeded();
+                    _leaving = _car;
+                    _leftAt = Game.GameTime;
+                    _goneDriver = _driver;
+
+                    try
+                    {
+                        if (_driver != null && _driver.Exists())
+                        {
+                            Function.Call(Hash.CLEAR_PED_TASKS, _driver.Handle);
+
+                            Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _driver.Handle,
+                                          _car.Handle, 18f, 786603);
+
+                            Function.Call(Hash.SET_PED_KEEP_TASK, _driver.Handle, true);
+                        }
+                    }
+                    catch
+                    {
+                        // It gets deleted on the timer instead.
+                    }
+                }
+                else if (_driver != null && _driver.Exists())
+                {
+                    // No car to drive, so there is nothing for him to do and nothing to see.
+                    _driver.Delete();
                 }
             }
             catch (Exception ex)
@@ -846,6 +893,78 @@ namespace Hoodrich.Locations
             _to = null;
         }
 
+        /// <summary>
+        /// See it off the premises.
+        ///
+        /// Two ways it ends and the second one is the point. Normally it drives away and is
+        /// deleted once it is far enough off that nobody watches it happen. But a car that has
+        /// just told you it could not reach you is, by its own admission, a car that cannot get
+        /// anywhere -- boxed in, wedged, on the wrong side of a closed road -- so it cannot be
+        /// left to the first rule or it would sit there for ever. Two minutes and it goes
+        /// wherever it is.
+        ///
+        /// The driver is kept invisible the whole way out, for the same reason he is kept
+        /// invisible during the ride: he is not supposed to exist, and the moment he is seen
+        /// the car stops being driverless.
+        /// </summary>
+        private void Follow()
+        {
+            if (_leaving == null) return;
+
+            if (!_leaving.Exists())
+            {
+                _leaving = null;
+                _goneDriver = null;
+                return;
+            }
+
+            if (_goneDriver != null && _goneDriver.Exists())
+            {
+                try { Function.Call(Hash.SET_ENTITY_VISIBLE, _goneDriver.Handle, false, false); }
+                catch { /* next tick */ }
+            }
+
+            var stranded = _goneDriver == null || !_goneDriver.Exists() || !_goneDriver.IsAlive;
+            var out_ = Game.GameTime - _leftAt > GiveUpMs;
+            var away = false;
+
+            try
+            {
+                var you = Game.Player.Character;
+
+                if (you != null && you.Exists())
+                {
+                    away = _leaving.Position.DistanceTo(you.Position) > OutOfSight;
+                }
+            }
+            catch
+            {
+            }
+
+            if (!stranded && !out_ && !away) return;
+
+            try
+            {
+                if (_goneDriver != null && _goneDriver.Exists()) _goneDriver.Delete();
+                if (_leaving.Exists()) _leaving.Delete();
+            }
+            catch
+            {
+                // It is going either way.
+            }
+
+            _leaving = null;
+            _goneDriver = null;
+        }
+
+        /// <summary>How far away is out of sight, and how long a stuck one gets.</summary>
+        private const float OutOfSight = 120f;
+        private const int GiveUpMs = 120000;
+
+        private Vehicle _leaving;
+        private Ped _goneDriver;
+        private int _leftAt;
+
         /// <summary>Teardown. An invisible man in a car is not a thing to leave behind.</summary>
         public void RestoreWorld()
         {
@@ -854,6 +973,11 @@ namespace Hoodrich.Locations
                 if (_driver != null && _driver.Exists()) _driver.Delete();
                 if (_car != null && _car.Exists()) _car.Delete();
                 if (_blip != null && _blip.Exists()) _blip.Delete();
+
+                // Including one already on its way out. This is the hard teardown, and a car
+                // we had promised to delete is still a car we promised to delete.
+                if (_goneDriver != null && _goneDriver.Exists()) _goneDriver.Delete();
+                if (_leaving != null && _leaving.Exists()) _leaving.Delete();
             }
             catch
             {
@@ -864,6 +988,8 @@ namespace Hoodrich.Locations
             _driver = null;
             _blip = null;
             _to = null;
+            _leaving = null;
+            _goneDriver = null;
 
             State = RideState.None;
             Going = "";
