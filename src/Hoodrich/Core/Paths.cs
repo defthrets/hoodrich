@@ -130,14 +130,49 @@ namespace Hoodrich.Core
                 if (_writable != null) return _writable;
 
                 var preferred = Path.Combine(Scripts, "Hoodrich");
-                if (IsWritable(preferred))
-                {
-                    _writable = preferred;
-                    return _writable;
-                }
 
                 var fallback = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Hoodrich");
+
+                if (IsWritable(preferred))
+                {
+                    // A SAVE THAT ALREADY EXISTS WINS, WHEREVER IT IS.
+                    //
+                    // Choosing purely on "can I write here" makes the save location a function
+                    // of the folder's permissions, and permissions change: the game goes into
+                    // Program Files, the first run cannot write there and saves to Documents,
+                    // and then the player runs as administrator once, or takes ownership, or
+                    // an installer resets the ACL -- and the next run CAN write to the game
+                    // folder, finds no save in it, and starts them at rank zero. Their
+                    // playthrough is still sitting in Documents, untouched, and nothing ever
+                    // looks at it again.
+                    //
+                    // Reported as "all the progress i have made via your mod is reset", and
+                    // fixed by the player granting full control -- which is not the fix, it is
+                    // simply the thing that stopped the location moving about.
+                    //
+                    // So the question asked first is not where CAN we write, it is where IS
+                    // the save. Only when neither place has one does writability decide.
+                    if (!HasSave(preferred) && HasSave(fallback))
+                    {
+                        // ASSIGNED BEFORE IT IS LOGGED, and that order is not stylistic.
+                        // Log.Info writes to Paths.LogFile, which asks for Paths.Writable --
+                        // so logging first re-enters this getter with _writable still null,
+                        // takes this same branch, and logs again. That is not an exception
+                        // anything can catch; it is a stack overflow, and it would land on
+                        // precisely the installs this branch exists to rescue.
+                        _writable = fallback;
+
+                        Log.Info("Save found in " + fallback + " rather than beside the dll. " +
+                                 "Using it, so the permissions on the game folder cannot move " +
+                                 "a playthrough.");
+
+                        return _writable;
+                    }
+
+                    _writable = preferred;
+                    return _writable;
+                }
 
                 try
                 {
@@ -153,6 +188,28 @@ namespace Hoodrich.Core
 
                 _writable = fallback;
                 return _writable;
+            }
+        }
+
+        /// <summary>
+        /// Whether a playthrough lives here.
+        ///
+        /// The backup counts. A save that is mid-write is a save, and the whole point of the
+        /// .bak is that it is the one still readable when the other one is not -- so a folder
+        /// holding nothing but a backup is still the folder with the playthrough in it, and
+        /// walking away from it would be the exact loss this check exists to prevent.
+        /// </summary>
+        private static bool HasSave(string dir)
+        {
+            try
+            {
+                var save = Path.Combine(dir, "save.json");
+
+                return File.Exists(save) || File.Exists(save + ".bak");
+            }
+            catch
+            {
+                return false;
             }
         }
 

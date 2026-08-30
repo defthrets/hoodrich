@@ -263,26 +263,45 @@ namespace Hoodrich.Core
             });
         }
 
+        /// <summary>
+        /// Where the save actually is, said out loud when it is not where you would look.
+        ///
+        /// THIS USED TO BE UNREACHABLE. It probed Paths.Writable and reported a fault if the
+        /// probe threw -- but Paths.Writable has ALREADY fallen back to somewhere writable by
+        /// the time it hands back a path, so the probe passed every time and the warning it
+        /// guarded could never fire. A check that cannot fail is not a check.
+        ///
+        /// What is worth saying is not "this folder is read-only". It is "your save is not
+        /// where you think it is", because that is the sentence that stops somebody looking in
+        /// scripts\Hoodrich, finding nothing, and concluding the mod does not save.
+        /// </summary>
         private static void CheckWritable(List<Fault> faults)
         {
             try
             {
                 var dir = Paths.Writable;
-                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                var beside = Path.Combine(Paths.Scripts, "Hoodrich");
 
-                var probe = Path.Combine(dir, "write.test");
-                File.WriteAllText(probe, "x");
-                File.Delete(probe);
+                if (string.Equals(dir, beside, StringComparison.OrdinalIgnoreCase)) return;
+
+                faults.Add(new Fault
+                {
+                    Fatal = false,
+                    What = "Your save is in " + dir + ", not beside the dll.",
+                    Fix = "Windows will not let the game folder be written to, which is normal " +
+                          "under Program Files. Nothing is wrong and nothing is lost -- but do " +
+                          "not go looking for save.json in scripts\\Hoodrich, and do not " +
+                          "change that folder's permissions, because the save does not move " +
+                          "with them."
+                });
             }
             catch (Exception ex)
             {
                 faults.Add(new Fault
                 {
                     Fatal = false,
-                    What = "The mod cannot write to its own folder: " + ex.Message,
-                    Fix = "Your game is somewhere Windows protects, such as Program Files. " +
-                          "Nothing will save. Either run the game as administrator or move the " +
-                          "install somewhere writable."
+                    What = "Could not work out where the save goes: " + ex.Message,
+                    Fix = "Read Hoodrich.log -- the Paths line names the folder it settled on."
                 });
             }
         }
