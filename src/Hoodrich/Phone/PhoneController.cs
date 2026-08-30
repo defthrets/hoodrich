@@ -544,6 +544,35 @@ namespace Hoodrich.Phone
 
         // ---- open and close -----------------------------------------------------
 
+        /// <summary>
+        /// Brings it out already on one page, with nothing behind it.
+        ///
+        /// For something that needs an answer rather than a browse -- the car asking where you
+        /// are going. No page stack, so backing out puts the phone away instead of walking you
+        /// to a home screen you did not ask for.
+        /// </summary>
+        public void OpenAt(WheelPage page)
+        {
+            if (page == null || _menu.IsOpen) return;
+
+            _menu.Open(page);
+            TakeItOut();
+
+            _navBlocked = true;
+
+            if (_cfg.WheelTimeScale < 0.999f)
+            {
+                Game.TimeScale = _cfg.WheelTimeScale;
+                _timeScaleApplied = true;
+            }
+
+            if (_cfg.BlurBackground && !string.IsNullOrEmpty(_cfg.TimecycleModifier))
+            {
+                Function.Call(Hash.SET_TRANSITION_TIMECYCLE_MODIFIER, _cfg.TimecycleModifier, 0.35f);
+                _timecycleApplied = true;
+            }
+        }
+
         private void OpenPhone()
         {
             WheelPage root;

@@ -620,6 +620,7 @@ namespace Hoodrich
                 // The cars with nobody in them.
                 _ride.Busy = () => _war != null && _war.IsRunning;
 
+
                 _ride.Charge = fare =>
                 {
                     if (fare <= 0) return true;
@@ -1778,7 +1779,13 @@ namespace Hoodrich
 
                 // Knowai. The page reads the state to decide whether it is a list of places or
                 // one row saying you already have a car coming, so all four go together.
-                pages.HailRide = stop => _ride.Hail(stop);
+                pages.HailRide = () => _ride.Hail();
+                pages.RideTo = stop => _ride.Go(stop);
+
+                // Sat in the back, and the car wants an answer. The phone comes out on the
+                // Knowai page with nothing behind it, so backing out of the question puts the
+                // phone away rather than dropping you on a home screen.
+                _ride.Choose = () => _phone.OpenAt(pages.KnowaiPage());
                 pages.RideState = () => _ride.State;
                 pages.RideGoing = () => _ride.Going;
                 pages.CancelRide = () => _ride.Cancel("Ride cancelled.");

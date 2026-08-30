@@ -73,7 +73,10 @@ namespace Hoodrich.Wheel
         public Action ShowSocials;
 
         /// <summary>Set by Main: hail one, or say why not. See Locations.Knowai.</summary>
-        public Func<Locations.RideStop, string> HailRide;
+        public Func<string> HailRide;
+
+        /// <summary>Set by Main: name a stop from the back seat.</summary>
+        public Func<Locations.RideStop, string> RideTo;
 
         /// <summary>Set by Main: what the car is doing, if anything.</summary>
         public Func<Locations.RideState> RideState;
@@ -1261,6 +1264,12 @@ namespace Hoodrich.Wheel
         /// for it would be a second way of drawing the same object, and the two would drift
         /// the first time anything about a row changed.
         /// </summary>
+        /// <summary>The Knowai page on its own, for the car to put in front of you.</summary>
+        public WheelPage KnowaiPage()
+        {
+            return BuildKnowaiPage();
+        }
+
         private WheelPage BuildKnowaiPage()
         {
             var page = new WheelPage("Knowai", RideSummary());
@@ -1268,42 +1277,65 @@ namespace Hoodrich.Wheel
 
             var state = RideState == null ? Locations.RideState.None : RideState();
 
-            // ONE ROW WHEN THERE IS A CAR, and it is the row you want. Offering ten
-            // destinations to somebody who already has one on the way is offering to do the
-            // thing they have already done; the only question left is whether they meant it.
-            if (state != Locations.RideState.None)
+            // NOTHING YET: one button, and it is the only thing anybody wants from this app
+            // when they are stood on a pavement. You do not tell a cab where you are going
+            // before it has arrived.
+            if (state == Locations.RideState.None)
             {
-                var going = RideGoing == null ? "" : RideGoing();
+                page.Add("Request a pickup", ">", () =>
+                {
+                    var no = HailRide == null ? "Not wired up" : HailRide();
 
-                page.Add("Cancel the ride", "x", () => CancelRide?.Invoke(),
-                    detail: state == Locations.RideState.Riding
-                        ? "You're in it. This gets you out where you are"
-                        : "Send it away and hail another one later",
-                    value: string.IsNullOrEmpty(going) ? "" : going);
+                    if (!string.IsNullOrEmpty(no)) UI.Notify.Failure(no);
+                },
+                    detail: "One comes to you. You say where when you're in it",
+                    enabled: HailRide != null,
+                    disabledReason: "Not wired up");
 
                 page.WithIcon(Icons.FromFile("car.png"));
 
                 return page;
             }
 
-            foreach (var stop in Locations.Knowai.Stops)
+            // IN THE BACK AND IT IS ASKING. This is the only state that shows the list, which
+            // is why the list is not on the home screen: it is a question the car asks, not a
+            // menu you browse.
+            if (state == Locations.RideState.Picking)
             {
-                // Captured, because the loop variable is one variable and every row would
-                // otherwise ask for wherever the loop finished.
-                var where = stop;
+                page.PanelTitle = "Where to?";
 
-                page.Add(where.Name, ">", () =>
+                foreach (var stop in Locations.Knowai.Stops)
                 {
-                    var no = HailRide == null ? "Not wired up" : HailRide(where);
+                    // Captured, because the loop variable is one variable and every row would
+                    // otherwise ask for wherever the loop finished.
+                    var where = stop;
 
-                    if (!string.IsNullOrEmpty(no)) UI.Notify.Failure(no);
-                },
-                    detail: where.Area,
-                    enabled: HailRide != null,
-                    disabledReason: "Not wired up");
+                    page.Add(where.Name, ">", () =>
+                    {
+                        var no = RideTo == null ? "Not wired up" : RideTo(where);
 
-                page.WithIcon(Icons.FromFile("pin.png"));
+                        if (!string.IsNullOrEmpty(no)) UI.Notify.Failure(no);
+                    },
+                        detail: where.Area,
+                        enabled: RideTo != null,
+                        disabledReason: "Not wired up");
+
+                    page.WithIcon(Icons.FromFile("pin.png"));
+                }
+
+                return page;
             }
+
+            // Coming, riding or arrived. One row, and it is the row you want.
+            var going = RideGoing == null ? "" : RideGoing();
+
+            page.Add("Cancel the ride", "x", () => CancelRide?.Invoke(),
+                detail: state == Locations.RideState.Riding
+                    ? "You're in it. This gets you out where you are"
+                    : "Send it away and ask for another later",
+                value: string.IsNullOrEmpty(going) ? "" : going);
+
+            page.WithIcon(Icons.FromFile("car.png"));
 
             return page;
         }
@@ -1317,6 +1349,7 @@ namespace Hoodrich.Wheel
             {
                 case Locations.RideState.Coming: return "on the way";
                 case Locations.RideState.Waiting: return "waiting";
+                case Locations.RideState.Picking: return "where to?";
                 case Locations.RideState.Riding: return "riding";
                 case Locations.RideState.Arrived: return "arrived";
                 default: return Locations.Knowai.Stops.Length + " stops";

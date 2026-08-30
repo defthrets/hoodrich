@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -17,6 +17,9 @@ namespace Hoodrich.Locations
 
         /// <summary>Stopped, doors unlocked, waiting for you to get in.</summary>
         Waiting,
+
+        /// <summary>You are in the back and it wants to know where.</summary>
+        Picking,
 
         /// <summary>You are in it and it is driving.</summary>
         Riding,
@@ -133,6 +136,9 @@ namespace Hoodrich.Locations
         /// <summary>Set by Main: off while something louder is happening.</summary>
         public Func<bool> Busy;
 
+        /// <summary>Set by Main: you are in the back and it wants a destination.</summary>
+        public Action Choose;
+
         public RideState State { get; private set; }
 
         public bool IsRunning => State != RideState.None;
@@ -154,10 +160,16 @@ namespace Hoodrich.Locations
 
         // ---- hailing ------------------------------------------------------------
 
-        /// <summary>Returns a player-facing refusal, or null once one is on its way.</summary>
-        public string Hail(RideStop stop)
+        /// <summary>
+        /// Requests one. Returns a player-facing refusal, or null once it is on its way.
+        ///
+        /// NO DESTINATION AT THIS POINT, and that is the shape of the real thing. You do not
+        /// tell a cab where you are going before it has arrived -- you get in, and then it
+        /// asks. Choosing on the phone in the street also meant choosing before you knew
+        /// whether the car was going to turn up at all.
+        /// </summary>
+        public string Hail()
         {
-            if (stop == null) return "Nowhere selected.";
             if (IsRunning) return "You've already got one coming.";
 
             if (Busy != null && Busy()) return "Not right now.";
@@ -167,30 +179,51 @@ namespace Hoodrich.Locations
             if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
             if (player.IsInVehicle()) return "Get out of the car first.";
 
-            // The kerb nearest where you asked for, worked out now rather than on arrival, so
-            // the fare quoted is the fare charged.
-            var drop = OnRoad(stop.At);
-            if (drop == Vector3.Zero) return "Knowai doesn't go there.";
-
             var start = Somewhere(player.Position);
             if (start == Vector3.Zero) return "Nothing free near you.";
 
             if (!Make(start)) return "Nothing free near you.";
 
-            _to = stop;
-            _dropAt = drop;
-
-            _fare = Flagfall + (int)(player.Position.DistanceTo(drop) / 100f * PerHundred);
-            Going = stop.Name;
+            _to = null;
+            Going = "";
+            _fare = 0;
 
             Send(player.Position);
             Mark();
 
             Begin(RideState.Coming);
 
-            Notify.Ticker("~b~Knowai on the way.~s~ " + stop.Name + ", about $" + _fare + ".");
+            Notify.Ticker("~b~Knowai on the way.~s~");
 
-            Log.Info("Knowai: hailed for " + stop.Name + ", $" + _fare + ".");
+            Log.Info("Knowai: pickup requested.");
+
+            return null;
+        }
+
+        /// <summary>
+        /// Where to, chosen from the back seat. Returns a refusal or null.
+        /// </summary>
+        public string Go(RideStop stop)
+        {
+            if (stop == null) return "Nowhere selected.";
+            if (State != RideState.Picking) return "Not in a Knowai.";
+
+            var drop = OnRoad(stop.At);
+            if (drop == Vector3.Zero) return "Knowai doesn't go there.";
+
+            var player = Game.Player.Character;
+            var from = player != null && player.Exists() ? player.Position : _car.Position;
+
+            _to = stop;
+            _dropAt = drop;
+            _fare = Flagfall + (int)(from.DistanceTo(drop) / 100f * PerHundred);
+
+            Going = stop.Name;
+
+            Begin(RideState.Riding);
+            Drive(_dropAt, 22f);
+
+            Notify.Ticker("~b~" + stop.Name + ".~s~ About $" + _fare + ".");
 
             return null;
         }
@@ -237,6 +270,7 @@ namespace Hoodrich.Locations
                 {
                     case RideState.Coming: Coming(player, now); break;
                     case RideState.Waiting: Waiting(player, now); break;
+                    case RideState.Picking: Picking(player, now); break;
                     case RideState.Riding: Riding(player); break;
                     case RideState.Arrived: Arrived(player); break;
                 }
@@ -265,14 +299,17 @@ namespace Hoodrich.Locations
         {
             if (player.IsInVehicle(_car))
             {
-                Begin(RideState.Riding);
-                Drive(_dropAt, 22f);
+                Begin(RideState.Picking);
 
-                Notify.Ticker("~b~" + _to.Name + ".~s~ Sit back.");
+                try { if (Choose != null) Choose(); }
+                catch (Exception ex) { Log.Debug("Could not ask where to: " + ex.Message); }
+
                 return;
             }
 
-            Help.ShowThisFrame("Your Knowai is waiting. ~b~" + _to.Name + "~s~, about $" + _fare + ".");
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to get in your Knowai.");
+
+            if (Tapped()) Board(player);
 
             // It is a car with nowhere else to be, not a mission timer -- but it does not sit
             // at that kerb for the rest of the session either.
@@ -280,6 +317,69 @@ namespace Hoodrich.Locations
 
             Away();
             Cancel("Your Knowai gave up waiting.");
+        }
+
+        /// <summary>
+        /// Puts him in the back, which is where a passenger sits.
+        ///
+        /// SEAT 2 -- the near-side rear. Not the front, and not because the front is taken:
+        /// the driver's seat has a man in it you cannot see, and somebody sat in the front
+        /// passenger seat of a driverless car looks like somebody whose driver has vanished.
+        /// The back is the seat that reads as being driven.
+        ///
+        /// Walking up and pressing the game's own enter key would put him at the wheel, so the
+        /// car has an exclusive driver set on it -- see Wheel. That makes every ordinary way in
+        /// a passenger seat, and this makes it the right one.
+        /// </summary>
+        private void Board(Ped player)
+        {
+            try
+            {
+                Function.Call(Hash.TASK_ENTER_VEHICLE, player.Handle, _car.Handle,
+                              12000, RearSeat, 1.5f, 1, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put him in the back: " + ex.Message);
+            }
+        }
+
+        /// <summary>The near-side rear seat. -1 driver, 0 front passenger, 1 and 2 the back.</summary>
+        private const int RearSeat = 2;
+
+        private bool _down;
+
+        private bool Tapped()
+        {
+            var down = false;
+
+            try
+            {
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context);
+            }
+            catch
+            {
+            }
+
+            var hit = down && !_down;
+            _down = down;
+
+            return hit;
+        }
+
+        /// <summary>Sat in the back with nowhere named yet.</summary>
+        private void Picking(Ped player, int now)
+        {
+            if (!player.IsInVehicle(_car))
+            {
+                Away();
+                Cancel("You got out.");
+                return;
+            }
+
+            Help.ShowThisFrame("Open the phone and pick where you're going.");
         }
 
         private void Riding(Ped player)
@@ -405,6 +505,12 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _driver.Handle, false);
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, _driver.Handle, false);
                 Function.Call(Hash.SET_PED_CONFIG_FLAG, _driver.Handle, 251, true);
+
+                // AND NOBODY ELSE DRIVES IT. Without this, walking up and pressing the game's
+                // own enter key puts the player at the wheel -- on top of a man he cannot see,
+                // in a car that is meant to drive itself. With it, every way in is a passenger
+                // seat and the only question left is which one.
+                Function.Call(Hash.SET_VEHICLE_EXCLUSIVE_DRIVER, _car.Handle, _driver.Handle, 0);
 
                 return true;
             }
