@@ -35,7 +35,16 @@ namespace Hoodrich.Locations
         ///
         /// West Coast Classics, because this is a yard in Chamberlain and not a nightclub.
         /// </summary>
-        private const string Station = "RADIO_09_HIPHOP_OLD";
+        /// <summary>
+        /// What the speaker is playing. Blonded, found rather than named -- see Core.Radio.
+        ///
+        /// A property rather than a const, because the answer depends on what this install
+        /// actually has and a const would have to be a guess.
+        /// </summary>
+        private static string Station
+        {
+            get { return Core.Radio.Blonded; }
+        }
 
         /// <summary>
         /// The speaker.
