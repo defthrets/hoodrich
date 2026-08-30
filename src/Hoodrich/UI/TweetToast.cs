@@ -276,33 +276,42 @@ namespace Hoodrich.UI
             Hud.Text(card.By.Name, textX, line, NameScale,
                      Alpha(Palette.Text, solid), Hud.FontCursive, centre: false);
 
-            line += NameHeight;
-
-            // The handle under it, quieter, in the plain face.
-            // The same badge the feed draws, for the same people.
+            // AND THE TICK BESIDE IT, which is where a tick means what a tick means: it is
+            // about the account, and the account is the name. Sat down on the handle line it
+            // read as a mark on the @, and it moved about depending on how long the name was.
             //
-            // It was a white tick and it was only for anybody FLAGGED, while the timeline had
-            // already moved to a blue disc and to anybody with a real photograph -- so the same
-            // account wore one badge on the right of the screen and a different one in the
-            // timeline, and a story character with a face got nothing here at all.
-            if (card.By.Verified || drew)
+            // ONLY FOR THE REAL ONES. The condition used to be "verified OR has a picture",
+            // which was true when a picture meant one of the game's own contact photos and
+            // therefore a story character. Everybody has a made face now, so that clause made
+            // it everybody -- and a badge everybody has is not a badge, it is decoration. Four
+            // accounts on this feed are flagged and those are the four that get it.
+            if (card.By.Verified)
             {
+                var nameW = 0.05f;
+
+                try { nameW = Hud.MeasureText(card.By.Name, NameScale, Hud.FontCursive); }
+                catch { /* the estimate will do */ }
+
                 const float th = 0.012f;
-                var icx = textX + Hud.ToX(th) * 0.5f;
 
-                Hud.Disc(icx, line + 0.0068f, 0.0055f, Alpha(Palette.Verified, solid));
+                // Lifted to sit against the CAP of the name rather than its centre. The script
+                // face has a tall ascender and a badge hung off its middle looks dropped.
+                var bx = textX + nameW + Hud.ToX(th) * 0.5f + 0.004f;
+                var by = line + 0.0052f;
 
-                if (!Hud.File("tick.png", icx, line + 0.0068f, th * 0.72f, 0f,
+                Hud.Disc(bx, by, 0.0055f, Alpha(Palette.Verified, solid));
+
+                if (!Hud.File("tick.png", bx, by, th * 0.72f, 0f,
                               Alpha(Color.FromArgb(255, 18, 20, 22), solid)))
                 {
-                    // No tick art in this install, so the disc says it on its own.
-                    Hud.Disc(icx, line + 0.0068f, 0.0022f,
-                             Alpha(Color.FromArgb(255, 18, 20, 22), solid));
+                    Hud.Disc(bx, by, 0.0022f, Alpha(Color.FromArgb(255, 18, 20, 22), solid));
                 }
-
-                textX += Hud.ToX(th) + 0.003f;
             }
 
+            line += NameHeight;
+
+            // The handle under it, quieter, in the plain face. No badge on this line any
+            // more -- it belongs to the name above it.
             Hud.Text(card.Handle, textX, line, HandleScale,
                      Alpha(Palette.TextDim, solid), Hud.FontChaletLondon, centre: false);
 

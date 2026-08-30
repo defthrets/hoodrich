@@ -2000,7 +2000,14 @@ namespace Hoodrich.UI
             // questions "is this somebody" and "does this somebody have a face" have the same
             // answer, and the picture is the more reliable half of it: it is a fact about the
             // game's own data rather than a flag somebody had to remember to set.
-            if (post.By.Verified || pictured)
+            // ONLY THE FLAGGED ONES. The "or pictured" half was written when a picture meant
+            // one of the game's own contact dictionaries, which meant a story character -- a
+            // fact about the game's data rather than a flag somebody had to remember to set.
+            //
+            // That reasoning was sound and is now false: every account on this feed has a face,
+            // because the mod makes them. So the clause that used to identify the few now
+            // matches everybody, and a badge everybody has is not a badge.
+            if (post.By.Verified)
             {
                 // A shape, not a dot. The mark was a small white disc immediately followed by
                 // the "  ·  " in the handle string -- a dot, a gap, then another dot, which
