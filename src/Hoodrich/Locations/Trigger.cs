@@ -574,6 +574,18 @@ namespace Hoodrich.Locations
 
             _wandering = false;
 
+            // NOT WHILE HE IS SAT IN A CAR, and this was breaking the seated pose on the way
+            // in. The order of a tick is Ride() then Nose(): Ride puts him on the seat and
+            // starts the sit, then Nose sees you are in a vehicle and calls this to bring him
+            // back to heel -- and the clear it does to end a wander ended the animation that
+            // had just started, one line later, every single time you got in a car after
+            // standing still long enough for him to have a look round.
+            //
+            // The flag still drops, because he is plainly not wandering any more. It is only
+            // the clear that is wrong here: there is no wander task left to cancel, and the
+            // task it actually cancelled was the one we wanted.
+            if (_dog != null && _dog.Exists() && _dog.IsInVehicle()) return;
+
             try { Function.Call(Hash.CLEAR_PED_TASKS, _dog.Handle); }
             catch { }
 
@@ -845,6 +857,8 @@ namespace Hoodrich.Locations
                         catch { }
                     }
 
+                    Afoot();
+
                     return;
                 }
 
@@ -961,6 +975,8 @@ namespace Hoodrich.Locations
         /// </summary>
         private void Sit()
         {
+            Seated();
+
             try
             {
                 foreach (var pair in Sits)
@@ -998,6 +1014,74 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// A passenger does not flinch.
+        ///
+        /// THIS IS WHY HE CAME APART UNDER FIRE. He is deliberately reactive -- that is what
+        /// makes him a bodyguard rather than a prop, and it is switched on the moment he is
+        /// yours. But a reaction is a TASK, and every task replaces the seated pose, so a
+        /// firefight beside the car was a stream of flinch-cower-brace events each of which
+        /// cancelled the animation and left him lying through the seat until the next re-assert
+        /// put it back -- which the next round then cancelled again. That flicker is the glitch.
+        ///
+        /// So the reactions go off while he is a passenger and come back on when he gets out.
+        /// He can do nothing useful about a gunfight from inside a car anyway: he cannot bite
+        /// anybody through a door, and Bite() already sits out the whole time he is in one. All
+        /// the reactions were producing was the flicker.
+        ///
+        /// Ragdoll goes too. A dog knocked into a ragdoll on a seat has no pose at all until he
+        /// settles, and he settles wherever the physics leaves him -- usually halfway through
+        /// the dashboard.
+        ///
+        /// He is still shot at and still hurt. The health floor is what keeps him, not this.
+        /// </summary>
+        private void Seated()
+        {
+            if (_riding) return;
+            _riding = true;
+
+            try
+            {
+                var h = _dog.Handle;
+
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL, h, false);
+                Function.Call(Hash.SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE, h, 1);
+                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
+            }
+            catch
+            {
+                // He rides badly, which is still riding.
+            }
+        }
+
+        /// <summary>And gets them all back the moment his feet are on the ground.</summary>
+        private void Afoot()
+        {
+            if (!_riding) return;
+            _riding = false;
+
+            try
+            {
+                if (_dog == null || !_dog.Exists()) return;
+
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL, _dog.Handle, true);
+                Function.Call(Hash.SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE, _dog.Handle, 0);
+
+                // Only if he is yours -- the yard dog is deliberately deaf to everything, and
+                // handing him the bodyguard settings on the way out of a car would be a party
+                // dog that suddenly starts picking fights.
+                if (Yours) Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS,
+                                         _dog.Handle, false);
+            }
+            catch
+            {
+                // Next tick.
+            }
+        }
+
+        private bool _riding;
+
         /// <summary>Dictionary and clip for the jump in, in order of preference.</summary>
         private static readonly string[][] Jumps =
         {
@@ -1022,7 +1106,17 @@ namespace Hoodrich.Locations
         /// the seated pose is checked.</summary>
         private const int JumpMs = 1100;
         private const float JumpFrom = 4.5f;
-        private const int SitCheckMs = 1500;
+        /// <summary>
+        /// Five hundred, down from fifteen hundred.
+        ///
+        /// The gate on how often the pose is re-asserted, which is also how long he can be seen
+        /// without one. The tick above it only runs every nine hundred milliseconds, so the old
+        /// number meant a broken pose could stand for the better part of two and a half seconds
+        /// -- long enough to read as a bug rather than a hiccup. At five hundred the tick is the
+        /// limit rather than this, and anything that does get through is put back on the next
+        /// one. The cost is asking four clips whether they are playing about once a second.
+        /// </summary>
+        private const int SitCheckMs = 500;
 
         private int _jumpingAt;
         private int _sitAgainAt;
@@ -1246,6 +1340,7 @@ namespace Hoodrich.Locations
             if (Game.GameTime - _outAt < JumpMs) return;
 
             _outAt = 0;
+            Afoot();
 
             try
             {
