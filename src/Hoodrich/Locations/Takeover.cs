@@ -110,6 +110,18 @@ namespace Hoodrich.Locations
         /// </summary>
         private const float CalmRange = 50f;
 
+        /// <summary>
+        /// And how close anybody who is not part of it may get.
+        ///
+        /// Two metres outside the ring, so the turn happens where the crowd starts rather than
+        /// on top of them. Anything of ours is exempt: the drifters live inside it, the
+        /// spectators park on the line, and the police are supposed to come straight through.
+        /// </summary>
+        private const float BlockAt = 21f;
+
+        /// <summary>How often one car may be turned round, so it is not re-tasked every tick.</summary>
+        private const int TurnGapMs = 4000;
+
         /// <summary>Close enough to their place to stop and turn round.</summary>
         private const float ArrivedRange = 3.5f;
         private const float CarArrivedRange = 7f;
@@ -236,6 +248,15 @@ namespace Hoodrich.Locations
         private readonly List<Watcher> _crowd = new List<Watcher>();
         private readonly List<Parkee> _parked = new List<Parkee>();
         private readonly List<Runner> _running = new List<Runner>();
+
+        /// <summary>
+        /// When each outsider was last sent back, by vehicle handle.
+        ///
+        /// Without it a car sat on the line is re-tasked every tick, and a driver handed a
+        /// fresh route several times a second never gets anywhere at all -- which would leave
+        /// it exactly where the cordon is trying to move it from.
+        /// </summary>
+        private readonly Dictionary<int, int> _turned = new Dictionary<int, int>();
 
         private sealed class Law
         {
@@ -653,6 +674,49 @@ namespace Hoodrich.Locations
                     // Crawling pace. Not a stop -- a road that nobody can drive down at all
                     // backs traffic up for half a district and that is its own kind of wrong.
                     Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, h, 6f);
+
+                    // AND NOBODY GETS INSIDE THE RING.
+                    //
+                    // Turned round rather than stopped. A car braked on the line is a road
+                    // closure that never clears -- it sits there, the one behind it stops, and
+                    // within a minute the junction is a car park with a takeover in the middle
+                    // of it. Sent back the way it came, the road empties itself.
+                    //
+                    // NOT by switching the road nodes off in the area, which is the other way
+                    // to do this: our own cars path in and out on those same nodes, and taking
+                    // them away would stop the drifters reaching the circle at all.
+                    if (car.Position.DistanceTo(Middle) > BlockAt) continue;
+
+                    int turned;
+
+                    if (_turned.TryGetValue(car.Handle, out turned)
+                        && Game.GameTime - turned < TurnGapMs)
+                    {
+                        continue;
+                    }
+
+                    _turned[car.Handle] = Game.GameTime;
+
+                    // Back out along the line it came in on, and then some -- so the point it
+                    // is given is behind it rather than across the junction.
+                    var out_ = car.Position - Middle;
+                    var len = out_.Length();
+
+                    if (len < 0.5f) out_ = car.ForwardVector * -1f;
+                    else out_ = out_ * (1f / len);
+
+                    var back = Middle + out_ * 90f;
+                    var road = World.GetNextPositionOnStreet(back, true);
+
+                    if (road == Vector3.Zero) road = back;
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, h);
+
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, h, car.Handle,
+                                  road.X, road.Y, road.Z, 12f, 0, car.Model.Hash,
+                                  786603, 8f, true);
+
+                    Function.Call(Hash.SET_PED_KEEP_TASK, h, true);
                 }
             }
             catch (Exception ex)
@@ -1432,6 +1496,7 @@ namespace Hoodrich.Locations
             }
 
             _parked.Clear();
+            _turned.Clear();
 
             foreach (var l in _law)
             {
@@ -1493,6 +1558,7 @@ namespace Hoodrich.Locations
 
             _crowd.Clear();
             _parked.Clear();
+            _turned.Clear();
             _running.Clear();
             _law.Clear();
 
