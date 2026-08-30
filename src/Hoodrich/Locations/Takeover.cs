@@ -208,8 +208,10 @@ namespace Hoodrich.Locations
             public Vehicle Car;
             public Ped Driver;
 
-            public double Angle;
             public float Radius;
+
+            /// <summary>When this one is given its next go of lock.</summary>
+            public int NextAction;
             public float Speed;
             public int Way;
             public int Until;
@@ -290,11 +292,9 @@ namespace Hoodrich.Locations
 
             // Per frame: the circle and the hydraulics. Both are physics driven by hand and
             // both read as a stutter at anything less.
-            if (State == TakeoverState.Running)
-            {
-                Circle();
-                Bounce();
-            }
+            // The hydraulics stay per frame -- that is a value being driven, not a car
+            // being moved. The cars are on tasks now and are looked at on the tick.
+            if (State == TakeoverState.Running) Bounce();
 
             if (now - _lastTick < TickMs) return;
             _lastTick = now;
@@ -333,6 +333,7 @@ namespace Hoodrich.Locations
                         Walking();
                         Parking();
                         Keep(now);
+                        Working(now);
                         Chatter(now);
                         break;
 
@@ -832,12 +833,16 @@ namespace Hoodrich.Locations
                         ? _rng.Next(BurnMinMs, BurnMaxMs)
                         : _rng.Next(24000, 52000));
 
-                    r.Angle = Math.Atan2(r.Car.Position.Y - Middle.Y,
-                                         r.Car.Position.X - Middle.X);
+                    r.NextAction = 0;
 
                     try
                     {
                         Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                        // Both, because they are different things: drift tyres are the real
+                        // ones off the tuning menu, and reduced grip is the blunt instrument
+                        // behind them for a build that has not got the first.
+                        Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
                         Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
                     }
                     catch
@@ -933,6 +938,7 @@ namespace Hoodrich.Locations
             {
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
                 Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
+                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, false);
 
                 var away = OnRoad(150f + (float)_rng.NextDouble() * 110f);
                 if (away == Vector3.Zero) away = Middle.Around(190f);
@@ -950,64 +956,98 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>One frame of circle work, for whoever is actually working.</summary>
-        private void Circle()
+        /// <summary>
+        /// Keeping the ones on the floor doing what they came to do.
+        ///
+        /// NOTHING HERE MOVES A CAR ANY MORE, and that is the fix. The first version advanced
+        /// an angle and then wrote the heading and the forward speed straight onto the vehicle
+        /// every frame -- which is not driving, it is teleporting sixty times a second. A car
+        /// moved that way has no momentum, takes no notice of what it hits, and goes through a
+        /// crowd like a plough. It also could not be steered by anything, which is why they
+        /// ended up off course: they were never on a course, they were being dragged round a
+        /// circle drawn in the script.
+        ///
+        /// So the game drives them. The stunt actions on TASK_VEHICLE_TEMP_ACTION are a real
+        /// driver putting real lock on with real throttle, so the physics, the collision and
+        /// the tyre smoke all happen for the ordinary reasons -- and a car about to hit
+        /// somebody behaves like a car about to hit somebody.
+        ///
+        /// The action is re-issued rather than held. A temp action has a duration and expires,
+        /// and a driver whose action has run out coasts to a stop -- so each is topped up
+        /// slightly before it ends, which is what makes it continuous.
+        /// </summary>
+        private void Working(int now)
         {
-            for (var i = 0; i < _running.Count; i++)
+            foreach (var r in _running)
             {
-                var r = _running[i];
-
                 if (!r.Circling) continue;
                 if (r.Car == null || !r.Car.Exists()) continue;
+                if (r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive) continue;
 
-                // ON THE MARK. Held where it stopped and turned on the spot with the throttle
-                // buried, which is a burnout -- no forward speed, because the moment it has any
-                // it is not a burnout, it is a small circle. The tyres do the moving.
-                if (r.Middle)
+                // THE LEASH, and it is a real drive rather than a shove. A donut wanders --
+                // that is what a donut does -- so anybody who has drifted out of the area gets
+                // an ordinary route back into it and picks up again when it arrives.
+                var gap = r.Car.Position.DistanceTo(Middle);
+
+                if (gap > r.Radius + Wander)
                 {
+                    if (now < r.NextAction) continue;
+
+                    r.NextAction = now + 3000;
+
                     try
                     {
-                        Function.Call(Hash.SET_ENTITY_HEADING, r.Car.Handle,
-                                      (r.Car.Heading + r.Way * SpinRate * 0.016f + 360f) % 360f);
-
-                        Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
+                                      r.Car.Handle, Middle.X, Middle.Y, Middle.Z,
+                                      12f, 0, r.Car.Model.Hash, 786603, 4f, true);
                     }
                     catch
                     {
-                        // Next frame.
+                        // Next time round.
                     }
 
                     continue;
                 }
 
+                if (now < r.NextAction) continue;
+
                 try
                 {
-                    r.Angle += r.Way * (r.Speed / Math.Max(2f, r.Radius)) * 0.016;
+                    // On the mark, it is held on the brake with the throttle buried, which is
+                    // what a burnout is. Either way the lock comes from the driver.
+                    if (r.Middle) Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
 
-                    var tangent = r.Angle + r.Way * Math.PI * 0.5;
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
+                                  r.Car.Handle, Spin(r.Way), BurstMs);
 
-                    var want = (float)(Math.Atan2(Math.Sin(tangent), Math.Cos(tangent))
-                                       * 180.0 / Math.PI);
-
-                    want = (90f - want + 360f) % 360f;
-
-                    var have = r.Car.Heading;
-                    var turn = ((want - have + 540f) % 360f) - 180f;
-
-                    Function.Call(Hash.SET_ENTITY_HEADING, r.Car.Handle,
-                                  (have + turn * 0.25f + 360f) % 360f);
-
-                    Function.Call(Hash.SET_VEHICLE_FORWARD_SPEED, r.Car.Handle, r.Speed);
-
-                    Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle,
-                                  (Game.GameTime / 1400) % 3 == 0);
+                    r.NextAction = now + BurstMs - 400;
                 }
                 catch
                 {
-                    // Next frame.
+                    r.NextAction = now + BurstMs;
                 }
             }
         }
+
+        /// <summary>
+        /// The stunt action for a donut, one way or the other.
+        ///
+        /// THESE TWO NUMBERS ARE THE ONE THING IN HERE THAT CANNOT BE CHECKED FROM A DESK. The
+        /// temp action list is not documented by Rockstar and the community numbering is the
+        /// only source there is; 30 and 31 are what everybody uses for a spinning donut. If
+        /// they are something else on a given build they are in the ini, so finding the right
+        /// pair is a matter of trying two numbers rather than rebuilding anything.
+        /// </summary>
+        private int Spin(int way)
+        {
+            if (_cfg == null) return way > 0 ? 30 : 31;
+
+            return way > 0 ? _cfg.TakeoverSpinLeft : _cfg.TakeoverSpinRight;
+        }
+
+        /// <summary>How long one burst of lock lasts, and how far they may wander.</summary>
+        private const int BurstMs = 3200;
+        private const float Wander = 7f;
 
         // ---- the feed -----------------------------------------------------------
 
