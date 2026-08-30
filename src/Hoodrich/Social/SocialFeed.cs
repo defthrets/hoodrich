@@ -1732,7 +1732,12 @@ namespace Hoodrich.Social
             "HouseRaided",
 
             // The block held, and the block lost. Both say "we", and both mean ours.
-            "WarHeld", "WarLost"
+            "WarHeld", "WarLost",
+
+            // Somebody moving up in YOUR set. Mostly observation a neighbour could make, but
+            // not all of it -- "{yours} got a new face out front and he's earned it" is a
+            // compliment, and a rival does not hand those out about your promotions.
+            "RankUp"
         };
 
         private static bool OursOnly(string set)
