@@ -1,4 +1,6 @@
+﻿using System;
 using System.Drawing;
+using GTA;
 
 namespace Hoodrich.Social
 {
@@ -68,9 +70,59 @@ namespace Hoodrich.Social
         /// <summary>Game time it landed, for the "2m" stamp.</summary>
         public int At;
 
+        /// <summary>Where the numbers END UP. What is shown is Grown, below.</summary>
         public int Likes;
         public int Reposts;
         public int Replies;
+
+        /// <summary>
+        /// The figures as they stand this second, rather than the ones it will settle at.
+        ///
+        /// A post used to arrive holding its final engagement: eight seconds old, ninety-four
+        /// likes, and never another one for the rest of its life. Which is not what a feed
+        /// looks like -- the thing that makes a timeline feel alive is that the numbers on it
+        /// are DIFFERENT when you scroll back past them, and none of them ever were.
+        ///
+        /// Now they climb. The curve is fast at the start and slows, which is the shape real
+        /// engagement has: most of what a post is ever going to get, it gets early. A post you
+        /// watch for a minute visibly gains, and one you come back to has moved on without you.
+        ///
+        /// Nothing is stored. It is a function of the post's own age, so it survives a reload,
+        /// costs no memory, and cannot drift out of step with anything.
+        /// </summary>
+        public int LikesNow => Grown(Likes);
+        public int RepostsNow => Grown(Reposts);
+        public int RepliesNow => Grown(Replies);
+
+        /// <summary>How long a post takes to reach the numbers it was born with.</summary>
+        private const int SettleMs = 240000;
+
+        private int Grown(int settled)
+        {
+            if (settled <= 0) return 0;
+
+            try
+            {
+                var age = Game.GameTime - At;
+
+                // A post out of a loaded save has an At from a previous session and no sensible
+                // age at all. It is old news either way, so it gets its settled figure.
+                if (age < 0 || age >= SettleMs) return settled;
+
+                var t = age / (float)SettleMs;
+                var curve = 1f - (float)Math.Pow(1f - t, 2.2);
+
+                var n = (int)(settled * curve);
+
+                // Never nought while it has any at all. A post showing 0 replies and then 1 a
+                // moment later reads as a bug; showing 1 and then 4 reads as a conversation.
+                return n < 1 ? 1 : n;
+            }
+            catch
+            {
+                return settled;
+            }
+        }
 
         /// <summary>
         /// True when it is about the player.

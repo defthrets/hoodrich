@@ -1136,6 +1136,12 @@ namespace Hoodrich.UI
                      Palette.Alpha(Palette.TextDim, 110), Hud.FontChaletLondon, centre: false);
         }
 
+        /// <summary>A darker version of a colour, for edges and rings.</summary>
+        private static Color Shade(Color c, float by)
+        {
+            return Color.FromArgb(c.A, (int)(c.R * by), (int)(c.G * by), (int)(c.B * by));
+        }
+
         private static void Row(float left, float x, float right, float top, bool here, bool dead,
                                 Color tick, string label, string value, Color valueInk, float fill,
                                 string art = "")
@@ -1633,11 +1639,60 @@ namespace Hoodrich.UI
             Log.Debug("Avatar '" + pic + "' would not load; falling back to the initial.");
         }
 
+        /// <summary>
+        /// How new this one is, from 1 the instant it lands to 0 once it has settled in.
+        ///
+        /// Two different windows because they are two different jobs. The SLIDE is a movement
+        /// and has to be over almost before you notice it -- anything you can sit and watch
+        /// travel is a screen being slow rather than a post arriving. The GLOW is a marker and
+        /// has to outlast the movement, or the one thing it exists to point at is gone before
+        /// you have looked up.
+        /// </summary>
+        private static float Landing(Post post, int windowMs)
+        {
+            try
+            {
+                var age = Game.GameTime - post.At;
+
+                // Out of a save. It landed in another session and is not new to anybody.
+                if (age < 0 || age >= windowMs) return 0f;
+
+                return 1f - age / (float)windowMs;
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
+        private const int SlideMs = 420;
+        private const int GlowMs = 6000;
+
         private void DrawPost(float left, float top, Post post)
         {
             var lines = Lines(post);
 
             if (post == null || post.By == null) return;
+
+            // IT ARRIVES RATHER THAN APPEARING.
+            //
+            // Everything below is placed off `left`, so moving that one number carries the
+            // whole post with it and nothing has to be threaded through forty draw calls.
+            // Squared, so it comes in quickly and settles rather than gliding at a constant
+            // speed the whole way, which reads as a slide rather than a thing landing.
+            var slide = Landing(post, SlideMs);
+            var glow = Landing(post, GlowMs);
+
+            if (slide > 0f) left += Hud.ToX(0.045f) * slide * slide;
+
+            if (glow > 0f)
+            {
+                // A wash that burns off. It does the work a NEW badge would do and then stops
+                // existing, which a badge cannot -- and it never competes with the about-you
+                // rail, because it is gone within six seconds and that one is permanent.
+                Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.012f, PostHeight(post) - PostGap,
+                             Palette.Alpha(Palette.Accent, (int)(58f * glow)));
+            }
 
             // Anything about you gets a change of ground as well as a rail.
             //
@@ -1683,10 +1738,22 @@ namespace Hoodrich.UI
 
             if (!pictured)
             {
+                // A ring under the disc, one step darker than it. A flat circle with a letter
+                // in it is a placeholder; the same circle with an edge is an avatar, and it
+                // costs one more draw.
+                Hud.Disc(cx, cy, AvatarSize * 0.5f + 0.0016f, Shade(post.By.Tint, 0.55f));
                 Hud.Disc(cx, cy, AvatarSize * 0.5f, post.By.Tint);
 
                 Hud.Text(post.By.Initial, cx, cy - 0.0135f, 0.46f,
                          Color.FromArgb(235, 250, 250, 248), Hud.FontChaletLondon);
+            }
+
+            // Still warm. A pip rather than a word: it is on for a few seconds and the eye
+            // catches a dot appearing without having to read anything.
+            if (glow > 0f)
+            {
+                Hud.Disc(left + PanelWidth - 0.018f, top + 0.010f, 0.0032f,
+                         Palette.Alpha(Palette.Accent, (int)(230f * glow)));
             }
 
             var textX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
@@ -1757,14 +1824,14 @@ namespace Hoodrich.UI
             //
             // Non-short-circuit &, deliberately, so all three are attempted and the fallback is
             // all-or-nothing rather than one icon and two gaps.
-            var ok = Metric("reply.png", post.Replies, textX, y)
-                   & Metric("repost.png", post.Reposts, textX + MetricPitch, y)
-                   & Metric("like.png", post.Likes, textX + MetricPitch * 2f, y);
+            var ok = Metric("reply.png", post.RepliesNow, textX, y)
+                   & Metric("repost.png", post.RepostsNow, textX + MetricPitch, y)
+                   & Metric("like.png", post.LikesNow, textX + MetricPitch * 2f, y);
 
             if (!ok)
             {
-                Hud.Text(post.Replies + "   REPLIES        " + post.Reposts + "   REPOSTS        " +
-                         post.Likes + "   LIKES",
+                Hud.Text(post.RepliesNow + "   REPLIES        " + post.RepostsNow + "   REPOSTS        " +
+                         post.LikesNow + "   LIKES",
                          textX, y, 0.235f, Color.FromArgb(150, 150, 158, 152),
                          Hud.FontLabel, centre: false);
             }
