@@ -179,7 +179,9 @@ namespace Hoodrich.Locations
             Bite(player);
             Offer(player);
             Ride(player);
+            Nose(player, now);
             Idle(player, now);
+            Mark();
         }
 
         /// <summary>
@@ -439,6 +441,13 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.TASK_PLAY_ANIM, _dog.Handle, pair[0], pair[1],
                                   2f, -2f, _rng.Next(IdleShortMs, IdleLongMs), 0, 0f,
                                   false, false, false);
+
+                    // The animation has just replaced whatever he was doing, and if that was
+                    // the wander then the wander is gone -- so it is marked as gone and set
+                    // again next time round. He works the area, stops to bark at something,
+                    // and carries on, which is what a dog does anyway.
+                    _wandering = false;
+
                     return;
                 }
                 catch
@@ -465,6 +474,100 @@ namespace Hoodrich.Locations
             new[] { "creatures@rottweiler@amb@world_dog_sitting@base", "base" },
             new[] { "creatures@rottweiler@amb@world_dog_sitting@enter", "enter" }
         };
+
+        /// <summary>
+        /// Stood about long enough that he goes and has a look round.
+        ///
+        /// A dog at heel is right for thirty seconds and wrong for five minutes. If you have
+        /// parked yourself somewhere -- a shop door, a corner, reading the map -- he stops
+        /// waiting at your knee and works the area instead, and comes straight back the moment
+        /// you move off.
+        ///
+        /// THE WANDER IS A TASK AND THE FOLLOW IS A TASK, and only one of them can be on. That
+        /// is the whole reason this is switched rather than layered: the group hands him a
+        /// follow, this hands him a wander, and the one issued last is the one he does. Which
+        /// makes the clear on the way out the important half -- without it, moving off leaves
+        /// him wandering a patch of pavement you have walked away from, and the group does not
+        /// take him back until something else clears it.
+        ///
+        /// The trigger is your speed rather than your position. Standing still turning on the
+        /// spot is still standing still, and a position check would call that walking.
+        /// </summary>
+        private void Nose(Ped player, int now)
+        {
+            if (_dog == null || !_dog.Exists() || !_dog.IsAlive) return;
+
+            // Anything that matters more than a sniff around.
+            if (_dog.IsInVehicle() || player.IsInVehicle() || _biting != 0
+                || _jumpingAt != 0 || _outAt != 0 || now < _petUntil)
+            {
+                Heel();
+                return;
+            }
+
+            float speed;
+
+            try { speed = player.Velocity.Length(); }
+            catch { return; }
+
+            // MOVING AGAIN. Back to your side, and the clock starts from nothing rather than
+            // from where it left off -- a step to the left should not leave him one second
+            // away from wandering off again.
+            if (speed > MovingAt)
+            {
+                Heel();
+                _stillSince = 0;
+                return;
+            }
+
+            if (_stillSince == 0)
+            {
+                _stillSince = now;
+                return;
+            }
+
+            if (now - _stillSince < StoodAboutMs) return;
+            if (_wandering) return;
+
+            try
+            {
+                var at = player.Position;
+
+                Function.Call(Hash.TASK_WANDER_IN_AREA, _dog.Handle,
+                              at.X, at.Y, at.Z, NoseRange, ShortestWalk, PauseBetween);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, _dog.Handle, true);
+
+                _wandering = true;
+            }
+            catch
+            {
+                // He stays at your knee.
+            }
+        }
+
+        /// <summary>Back to your side, if he had wandered off.</summary>
+        private void Heel()
+        {
+            if (!_wandering) return;
+
+            _wandering = false;
+
+            try { Function.Call(Hash.CLEAR_PED_TASKS, _dog.Handle); }
+            catch { }
+
+            // And the group is re-asserted on the next tick by Join(), which is what actually
+            // brings him back -- clearing only makes room for it.
+            _inGroup = false;
+        }
+
+        /// <summary>How long you have to stand there, how far he goes, and what counts as moving.</summary>
+        private const int StoodAboutMs = 16000;
+        private const float NoseRange = 9f;
+        private const float MovingAt = 0.9f;
+
+        private int _stillSince;
+        private bool _wandering;
 
         /// <summary>How often, how close, and how long each one runs.</summary>
         private const int IdleMinMs = 14000;
@@ -594,6 +697,8 @@ namespace Hoodrich.Locations
                     _state.TriggerIsYours = false;
                     _state.Touch();
                 }
+
+                Unmark();
 
                 if (_dog != null && _dog.Exists())
                 {
@@ -1208,8 +1313,68 @@ namespace Hoodrich.Locations
         private int _downSince;
 
         /// <summary>Handed back to the game rather than deleted, so he is not removed in view.</summary>
+        /// <summary>
+        /// The dog on the map.
+        ///
+        /// Chop's own blip, which is sprite 442 -- the game has a dog icon because the story
+        /// needed one, and drawing a generic dot for a dog when a dog exists would be worse for
+        /// no reason. Set by number rather than through the sprite enum: which names that enum
+        /// carries varies between builds of the scripting library, and a number that is wrong
+        /// is a blip that looks odd, while a name that is missing is a mod that will not build.
+        ///
+        /// Only ever while he is yours, because this is only called from Mine(). Small, because
+        /// he is a dog and not a mission.
+        /// </summary>
+        private void Mark()
+        {
+            try
+            {
+                if (_dog == null || !_dog.Exists() || !_dog.IsAlive)
+                {
+                    Unmark();
+                    return;
+                }
+
+                if (_blip != null && _blip.Exists()) return;
+
+                _blip = _dog.AddBlip();
+                if (_blip == null || !_blip.Exists()) return;
+
+                Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, 442);
+                Function.Call(Hash.SET_BLIP_SCALE, _blip.Handle, 0.7f);
+                Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, _blip.Handle, true);
+                Function.Call(Hash.SET_BLIP_COLOUR, _blip.Handle, 5);
+
+                Function.Call(Hash.BEGIN_TEXT_COMMAND_SET_BLIP_NAME, "STRING");
+                Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, Name);
+                Function.Call(Hash.END_TEXT_COMMAND_SET_BLIP_NAME, _blip.Handle);
+            }
+            catch
+            {
+                // No blip is not a broken dog.
+            }
+        }
+
+        /// <summary>Take it off the map.</summary>
+        private void Unmark()
+        {
+            try
+            {
+                if (_blip != null && _blip.Exists()) _blip.Delete();
+            }
+            catch
+            {
+            }
+
+            _blip = null;
+        }
+
+        private Blip _blip;
+
         private void Release()
         {
+            Unmark();
+
             try
             {
                 if (_dog != null && _dog.Exists())
