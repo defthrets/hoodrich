@@ -323,6 +323,20 @@ namespace Hoodrich.Gangs
         /// <summary>When the message goes out if you still have not turned up. Nought is off.</summary>
         private int _noShowAt;
 
+        /// <summary>When he next chases you, and how many times he already has.</summary>
+        private int _nagAt;
+        private int _nagStep;
+
+        /// <summary>
+        /// How long between one and the next.
+        ///
+        /// Three of them fit inside the eight minutes before he gives up on you, which is the
+        /// shape of the thing: asking, then asking again, then not asking any more, then the
+        /// one after it is over. A fourth would be nagging and a second would be a coincidence.
+        /// </summary>
+        private const int NagEveryMs = 120000;
+        private const int NagsMost = 3;
+
         /// <summary>
         /// Who sends it, taken at the start rather than read at the end.
         ///
@@ -478,6 +492,7 @@ namespace Hoodrich.Gangs
             // ABOVE THE IsRunning BRANCH ON PURPOSE. The fight is usually over long before
             // the eight minutes are up, and a message that could only arrive mid-firefight is
             // a message almost nobody would ever get.
+            Chase(now);
             Nobody(now);
 
             if (IsRunning) { Tick(player, now); return; }
@@ -553,6 +568,9 @@ namespace Hoodrich.Gangs
             // on somebody else's street.
             _noShowAt = _away ? 0 : Game.GameTime + NoShowMs;
             _noShowWho = _away || _target == null ? "" : _target.Who;
+
+            _nagAt = _away ? 0 : Game.GameTime + NagEveryMs;
+            _nagStep = 0;
             IsRunning = true;
 
             Mark();
@@ -833,6 +851,9 @@ namespace Hoodrich.Gangs
 
                 // Turning up at seven minutes fifty is turning up.
                 _noShowAt = 0;
+
+                // And he stops asking, obviously. He can see you.
+                _nagAt = 0;
 
                 Notify.Ticker("~g~You showed up.~s~ Hold the block.");
             }
@@ -2522,6 +2543,118 @@ namespace Hoodrich.Gangs
 
             // Nobody won it, so both sides claim they did.
             if (Social != null) Social.Argue(attacker == null ? "" : attacker.Name, kills > 0);
+        }
+
+        /// <summary>
+        /// Him asking again, and then again, and getting shorter about it.
+        ///
+        /// ONE MESSAGE IS AN EVENT AND FOUR ARE A RELATIONSHIP. The summon on its own is a
+        /// thing that happened to him; the same man writing every two minutes while you do not
+        /// come is a thing happening between the two of you, and by the third one he has
+        /// stopped asking. That is the part the thirty rep never conveyed.
+        ///
+        /// Above the running check like the letdown, so a raid that finishes early does not
+        /// stop him. If anything the ones that land after it is over are the pointed ones --
+        /// he is not calling for help any more at that point, he is telling you it went
+        /// without you.
+        /// </summary>
+        private void Chase(int now)
+        {
+            if (_nagAt == 0 || now < _nagAt) return;
+
+            if (_nagStep >= NagsMost)
+            {
+                _nagAt = 0;
+                return;
+            }
+
+            var who = _noShowWho;
+
+            if (string.IsNullOrEmpty(who))
+            {
+                _nagAt = 0;
+                return;
+            }
+
+            var step = _nagStep;
+
+            // Advanced BEFORE the send, so a throw costs one message rather than putting the
+            // same one out every tick from here to the end of the session.
+            _nagStep++;
+            _nagAt = now + NagEveryMs;
+
+            try
+            {
+                var them = _attacker == null ? "them" : _attacker.Name;
+
+                Notify.Text(Faces.For(who), who, Subject(step), Again(who, them, step));
+                Voice.Cue(Voice.Named(who, "nag" + (step + 1)));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not chase: " + ex.Message);
+            }
+        }
+
+        private static string Subject(int step)
+        {
+            switch (step)
+            {
+                case 0: return "you comin?";
+                case 1: return "franklin";
+                default: return "dont bother";
+            }
+        }
+
+        /// <summary>
+        /// The same man three times, getting colder.
+        ///
+        /// The arc is the whole point and it is the same one for all of them: still expecting
+        /// you, then not understanding where you are, then finished asking. What changes
+        /// between the characters is how each of them does that -- Lamar shouts and then goes
+        /// quiet, Stretch was never asking nicely, Gerald simply stops using your name.
+        /// </summary>
+        private static string Again(string who, string them, int step)
+        {
+            if (string.Equals(who, "Lamar", StringComparison.OrdinalIgnoreCase))
+            {
+                switch (step)
+                {
+                    case 0: return "frank. FRANK. where you at, they still out here";
+                    case 1: return "aight so you seein these or you aint. two minutes ago i " +
+                                   "said two minutes ago. this " + them + ", this aint nothin";
+                    default: return "nah dont come now. dont. i mean it";
+                }
+            }
+
+            if (string.Equals(who, "Stretch", StringComparison.OrdinalIgnoreCase))
+            {
+                switch (step)
+                {
+                    case 0: return "still waitin on you";
+                    case 1: return "you know what, take your time. we out here holdin it down " +
+                                   "for a man who aint here";
+                    default: return "forget it. i'll remember this one though";
+                }
+            }
+
+            if (string.Equals(who, "Gerald", StringComparison.OrdinalIgnoreCase))
+            {
+                switch (step)
+                {
+                    case 0: return "franklin. im not textin for my health. " + them + " is here";
+                    case 1: return "you got somethin better on. thats fine. say it next time " +
+                                   "instead of leavin me lookin at my phone";
+                    default: return "dont worry about it";
+                }
+            }
+
+            switch (step)
+            {
+                case 0: return them + " still on us. where you at";
+                case 1: return "we out here on our own then";
+                default: return "dont bother";
+            }
         }
 
         /// <summary>
