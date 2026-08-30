@@ -337,6 +337,9 @@ namespace Hoodrich.Core
         public int RollerBikes = 4;
 
         /// <summary>Whether riders pull the front wheel up on the straights.</summary>
+        /// <summary>What Tanya charges to come out and lift a wreck of yours.</summary>
+        public int TowFee = 500;
+
         public bool RollerWheelies = true;
 
         /// <summary>How hard. See Rollers.Lift for why this is a setting and not a constant.</summary>
@@ -530,6 +533,8 @@ namespace Hoodrich.Core
             s.RollersEnabled = ini.GetBool("Block", "RollersEnabled", s.RollersEnabled);
             s.RollerCars = (int)Clamp(ini.GetInt("Block", "RollerCars", s.RollerCars), 0f, 6f);
             s.RollerBikes = (int)Clamp(ini.GetInt("Block", "RollerBikes", s.RollerBikes), 0f, 6f);
+            s.TowFee = (int)Clamp(ini.GetInt("Cars", "TowFee", s.TowFee), 0f, 100000f);
+
             s.RollerWheelies = ini.GetBool("Block", "RollerWheelies", s.RollerWheelies);
             s.RollerWheelieLift = Clamp(ini.GetFloat("Block", "RollerWheelieLift",
                                                      s.RollerWheelieLift), 0f, 8f);

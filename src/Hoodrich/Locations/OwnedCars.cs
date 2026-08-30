@@ -624,6 +624,92 @@ namespace Hoodrich.Locations
             Log.Info("Sold car " + id + " back; forgotten.");
         }
 
+        /// <summary>
+        /// One of yours nearby that is not going anywhere under its own power.
+        ///
+        /// Burnt out, upside down in a ditch, or simply not drivable any more -- the question
+        /// the tow asks is not how it died, it is whether it can be driven away, and
+        /// IsDriveable is the game's own answer to exactly that.
+        ///
+        /// Nearest first, because two of yours can be wrecked at once and the prompt has to be
+        /// about the one you are stood next to.
+        /// </summary>
+        public Vehicle WreckNear(Vector3 here, float radius)
+        {
+            if (_state == null) return null;
+
+            Vehicle best = null;
+            var nearest = radius;
+
+            foreach (var owned in _state.Owned)
+            {
+                try
+                {
+                    var car = Find(owned, here);
+                    if (car == null || !car.Exists()) continue;
+
+                    // Still fine. A car parked up is not a car that needs recovering.
+                    if (car.IsDriveable) continue;
+
+                    var gap = car.Position.DistanceTo(here);
+                    if (gap >= nearest) continue;
+
+                    nearest = gap;
+                    best = car;
+                }
+                catch
+                {
+                    // Next car.
+                }
+            }
+
+            return best;
+        }
+
+        /// <summary>
+        /// It went on the truck. Book it back in somewhere it can be collected from.
+        ///
+        /// The record is NOT removed. That is the whole point of paying for a tow -- the car is
+        /// still yours, it is just somewhere else now. Moving Where is enough on its own,
+        /// because the ordinary rebuild already stands a car back up wherever its record says
+        /// it is, and one built from the model comes back straight. The wreck is deleted by the
+        /// tow; this is only the paperwork.
+        /// </summary>
+        public bool Recovered(Vehicle car, Vector3 spot, float heading)
+        {
+            if (_state == null || car == null || !car.Exists()) return false;
+
+            try
+            {
+                var plate = Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle);
+
+                foreach (var owned in _state.Owned)
+                {
+                    if (!string.Equals(owned.Plate, plate, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    owned.Where = spot;
+                    owned.Heading = heading;
+
+                    // So the rebuild does not refuse it for having been touched a moment ago.
+                    _rebuiltAt.Remove(owned.Id ?? "");
+
+                    _state.Touch();
+
+                    try { SaveNow?.Invoke(); }
+                    catch (Exception ex) { Log.Debug("Could not save after the tow: " + ex.Message); }
+
+                    Log.Info("Recovered " + owned.Name + " to " + spot + ".");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not book a recovery in: " + ex.Message);
+            }
+
+            return false;
+        }
+
         private static string PlateFor(string id)
         {
             var hash = 5381;

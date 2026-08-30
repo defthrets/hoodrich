@@ -457,6 +457,9 @@ namespace Hoodrich
         private readonly HouseDoors _houseDoors = new HouseDoors();
         private readonly BlockLife _block;
         private readonly Rollers _rollers;
+
+        /// <summary>Tanya, and the truck. See Locations.TowTruck.</summary>
+        private readonly TowTruck _tow = new TowTruck();
         private readonly Patrol _patrol;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
@@ -604,6 +607,44 @@ namespace Hoodrich
                     SaveNow = () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks)
                 };
                 _hao.Owned = _ownedCars;
+
+                // And the woman who comes out when one of them is on its roof.
+                //
+                // Everything she needs to know is handed to her, which is why the file does not
+                // mention Hao, OwnedCars or the save: she is given a wreck and gives one back.
+                _tow.Wreck = at => _ownedCars.WreckNear(at, 18f);
+                _tow.Fee = () => _cfg == null ? 500 : _cfg.TowFee;
+                _tow.Busy = () => _war != null && _war.IsRunning;
+
+                _tow.Charge = fee =>
+                {
+                    if (fee <= 0) return true;
+                    if (Game.Player.Money < fee) return false;
+
+                    Game.Player.Money -= fee;
+                    return true;
+                };
+
+                _tow.Recovered = car =>
+                {
+                    // BACK ON THE LOT IT CAME OFF, which is the only place a recovered car has
+                    // any business being. His() reads the plate, so it has to happen while the
+                    // wreck still exists -- the tow calls this before it deletes it, for
+                    // exactly that reason.
+                    var lot = _hao.His(car);
+
+                    if (lot == null)
+                    {
+                        // Not one of Hao's, or the lot has been rewritten under it. Leaving the
+                        // record where it is means the rebuild stands a straight one back up
+                        // where the wreck was, which is worse than the lot and much better than
+                        // losing the car.
+                        Log.Info("Tow: recovered a car with no lot spot; left where it was.");
+                        return;
+                    }
+
+                    _ownedCars.Recovered(car, lot.Spot, lot.Heading);
+                };
 
                 // Nobody sends you to a car dealer in Little Seoul before you are anybody. The
                 // yard is there the whole time and you can find it on foot; what waits is the
@@ -2412,6 +2453,10 @@ namespace Hoodrich
                     if (_ownedCars != null) _ownedCars.Update();
                     _hao.UpdatePrompt();
 
+                    // After OwnedCars, which is what decides a car is still there to be a
+                    // wreck at all.
+                    _tow.Update(Game.Player.Character);
+
                     _social.Update();
 
                     // The desk, watching the street for the two things nothing else reports.
@@ -3341,6 +3386,7 @@ namespace Hoodrich
             try { _delivery?.RestoreWorld(); } catch { /* teardown */ }
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
+            try { _tow?.RestoreWorld(); } catch { /* teardown */ }
             try { _bust?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
