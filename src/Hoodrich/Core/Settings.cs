@@ -371,6 +371,12 @@ namespace Hoodrich.Core
         /// </summary>
         public int RollerPearl = 53;
 
+        /// <summary>Whether groups of the set walk the back streets on foot.</summary>
+        public bool WalkersEnabled = true;
+
+        /// <summary>How many of those groups are out at once. Each is three or four men.</summary>
+        public int WalkerCrews = 2;
+
         /// <summary>Whether riders pull the front wheel up on the straights.</summary>
         public bool RollerWheelies = true;
 
@@ -572,6 +578,13 @@ namespace Hoodrich.Core
             s.TowReturnY = ini.GetFloat("Cars", "TowReturnY", s.TowReturnY);
             s.TowReturnZ = ini.GetFloat("Cars", "TowReturnZ", s.TowReturnZ);
             s.TowReturnH = ini.GetFloat("Cars", "TowReturnH", s.TowReturnH);
+
+            s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
+            s.WalkerCrews = (int)Clamp(ini.GetInt("Block", "WalkerCrews", s.WalkerCrews), 0f, 5f);
+
+            // Never read until now. It was declared, documented and written into the ini, and
+            // nothing ever loaded it -- so the number in the file did nothing at all.
+            s.RollerPearl = (int)Clamp(ini.GetInt("Block", "RollerPearl", s.RollerPearl), 0f, 160f);
 
             s.RollerWheelies = ini.GetBool("Block", "RollerWheelies", s.RollerWheelies);
             s.RollerWheelieLift = Clamp(ini.GetFloat("Block", "RollerWheelieLift",

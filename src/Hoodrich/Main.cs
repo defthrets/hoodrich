@@ -458,6 +458,9 @@ namespace Hoodrich
         private readonly BlockLife _block;
         private readonly Rollers _rollers;
 
+        /// <summary>Groups of the set on foot in the back streets. See Gangs.Walkers.</summary>
+        private readonly Walkers _walkers;
+
         /// <summary>Tanya, and the truck. See Locations.TowTruck.</summary>
         private readonly TowTruck _tow = new TowTruck();
 
@@ -1339,6 +1342,7 @@ namespace Hoodrich
                 // mod turns up because of the player; these are the ones that would be there
                 // whether he was or not.
                 _rollers = new Rollers(_cfg, _gangs, "families", _turf);
+                _walkers = new Walkers(_cfg, _gangs, "families", _turf);
 
                 // The law, going round because the blocks are the blocks. Nothing to do with
                 // heat, a bust or a raid -- this car was coming down that street tonight
@@ -2522,6 +2526,7 @@ namespace Hoodrich
                     _traffic.Update();
                     _payback.Update();
                     _rollers.Update();
+                    _walkers.Update();
                     _patrol.Update();
                     _war.Update();
 
@@ -3453,6 +3458,7 @@ namespace Hoodrich
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _turf?.RestoreWorld(); } catch { /* teardown */ }
             try { _rollers?.RestoreWorld(); } catch { /* teardown */ }
+            try { _walkers?.RestoreWorld(); } catch { /* teardown */ }
             try { _patrol?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaderCrew?.RestoreWorld(); } catch { /* teardown */ }
