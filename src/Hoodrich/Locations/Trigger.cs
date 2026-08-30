@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -241,7 +241,11 @@ namespace Hoodrich.Locations
                 // dog not petted at all.
                 var toDog = _dog.Position - player.Position;
 
-                player.Heading = (float)((Math.Atan2(toDog.X, toDog.Y) * 180.0 / Math.PI + 360.0) % 360.0);
+                // Minus on the X. GTA headings run anticlockwise from north, so the
+                // version without it is mirrored east to west -- which had Franklin turning
+                // away from the dog to pet it whenever the dog was to his left or right.
+                player.Heading =
+                    (float)((Math.Atan2(-toDog.X, toDog.Y) * 180.0 / Math.PI + 360.0) % 360.0);
                 _dog.Heading = (player.Heading + 180f) % 360f;
 
                 Function.Call(Hash.REQUEST_ANIM_DICT, PetDict);

@@ -1395,12 +1395,27 @@ namespace Hoodrich.Locations
             return Vector3.Zero;
         }
 
+        /// <summary>
+        /// The heading that points something at the middle.
+        ///
+        /// THE MINUS ON DX IS THE WHOLE FUNCTION. GTA headings run anticlockwise from north --
+        /// 0 is north, 90 is WEST, 270 is east -- and atan2(dx, dy) runs the other way, so the
+        /// version without it returned every angle mirrored about the north-south axis.
+        ///
+        /// That is why the ring never faced the middle however many times the heading was set.
+        /// It was being set correctly, to the wrong number: anybody due north or south of the
+        /// mark happened to look right, and everybody east or west of it was turned exactly the
+        /// wrong way. Three attempts went into re-applying a value that was never going to be
+        /// correct, which is what looking at the wrong end of a problem costs.
+        ///
+        /// Checked rather than reasoned about: north 0, west 90, south 180, east 270.
+        /// </summary>
         private static float Facing(Vector3 from)
         {
             var dx = Middle.X - from.X;
             var dy = Middle.Y - from.Y;
 
-            return (float)((Math.Atan2(dx, dy) * 180.0 / Math.PI + 360.0) % 360.0);
+            return (float)((Math.Atan2(-dx, dy) * 180.0 / Math.PI + 360.0) % 360.0);
         }
 
         private static Vector3 Ground(Vector3 at)

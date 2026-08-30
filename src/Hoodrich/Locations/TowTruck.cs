@@ -554,7 +554,10 @@ namespace Hoodrich.Locations
                 // The heading that puts her TAIL at the wreck: the direction from the wreck
                 // out to her.
                 var out_ = _truck.Position - _wreck.Position;
-                var want = (float)(Math.Atan2(out_.X, -out_.Y) * 180.0 / Math.PI);
+                // Was a hundred and eighty degrees out, which is the worst it could be: it
+                // pointed her NOSE at the wreck and then reversed her away from it. Same
+                // mirrored-heading mistake as the takeover's ring and the dog.
+                var want = (float)(Math.Atan2(-out_.X, out_.Y) * 180.0 / Math.PI);
 
                 var have = _truck.Heading;
                 var turn = ((want - have + 540f) % 360f) - 180f;
