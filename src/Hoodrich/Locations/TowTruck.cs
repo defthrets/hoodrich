@@ -252,10 +252,15 @@ namespace Hoodrich.Locations
             {
                 Log.Debug("Could not ask for the texting animation: " + ex.Message);
             }
+
+            _phone.Show(player);
         }
 
         private const string TextDict = "cellphone@";
         private const string TextClip = "cellphone_text_read_base";
+
+        /// <summary>The phone he is looking at while he texts her. See Core.Handset.</summary>
+        private readonly Handset _phone = new Handset();
 
         private void Thumbs(Ped player, int now)
         {
@@ -280,6 +285,8 @@ namespace Hoodrich.Locations
             }
 
             if (now - _at < TextingMs) return;
+
+            _phone.Hide();
 
             try { Function.Call(Hash.CLEAR_PED_TASKS, player.Handle); }
             catch { /* he puts it away on his own */ }
@@ -620,6 +627,12 @@ namespace Hoodrich.Locations
 
         private void Clean(bool takeTheCar)
         {
+            // FIRST, and outside the try below. Everything after this is about her and her
+            // truck; this is about the player's own hand, and a handset left attached to it
+            // because a vehicle failed to delete is the worst outcome available here -- it
+            // survives the job, the mission and the reload.
+            _phone.Hide();
+
             try
             {
                 if (_blip != null && _blip.Exists()) _blip.Delete();

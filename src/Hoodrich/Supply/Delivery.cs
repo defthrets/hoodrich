@@ -597,7 +597,7 @@ namespace Hoodrich.Supply
                 // Streaming is asynchronous. A dictionary that is not in yet is not an error,
                 // and a handset on its own still reads as somebody looking at their phone, so
                 // the prop goes in either way.
-                PhoneInHand(player);
+                _handset.Show(player);
 
                 if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, TextDict)) return;
 
@@ -620,12 +620,8 @@ namespace Hoodrich.Supply
         /// <summary>Looping, upper body only, secondary -- so he keeps control of his legs.</summary>
         private const int TextFlags = 49;
 
-        private static readonly string[] PhoneProps = { "prop_npc_phone_02", "prop_npc_phone" };
-
-        /// <summary>The right hand. The same bone the game puts its own handset in.</summary>
-        private const int RightHandBone = 28422;
-
-        private Prop _phone;
+        /// <summary>The phone he texts on. See Core.Handset -- this file used to own a copy.</summary>
+        private readonly Handset _handset = new Handset();
 
         /// <summary>
         /// Puts a handset in his hand for the length of the message.
@@ -634,36 +630,6 @@ namespace Hoodrich.Supply
         /// animation and comes off in one call, where anything else has to be moved every frame
         /// and leaves a phone hanging in the yard the moment something goes wrong.
         /// </summary>
-        private void PhoneInHand(Ped player)
-        {
-            if (_phone != null && _phone.Exists()) return;
-
-            foreach (var name in PhoneProps)
-            {
-                try
-                {
-                    var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(500)) continue;
-
-                    _phone = World.CreateProp(model, player.Position, false, false);
-                    model.MarkAsNoLongerNeeded();
-
-                    if (_phone == null || !_phone.Exists()) continue;
-
-                    var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, player.Handle,
-                                                  RightHandBone);
-
-                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _phone.Handle, player.Handle,
-                                  bone, 0f, 0f, 0f, 0f, 0f, 0f,
-                                  true, true, false, true, 1, true);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug("Could not put a phone in his hand: " + ex.Message);
-                }
-            }
-        }
 
         /// <summary>
         /// Keeps the player's hands off it for the length of the call.
@@ -711,20 +677,7 @@ namespace Hoodrich.Supply
                 // It blends out on its own.
             }
 
-            try
-            {
-                if (_phone != null && _phone.Exists())
-                {
-                    Function.Call(Hash.DETACH_ENTITY, _phone.Handle, true, true);
-                    _phone.Delete();
-                }
-            }
-            catch
-            {
-                // It will stream out.
-            }
-
-            _phone = null;
+            _handset.Hide();
         }
 
         // ---- per-tick ----------------------------------------------------------
