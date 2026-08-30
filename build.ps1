@@ -81,6 +81,18 @@ if (-not (Test-Path $refDir)) { throw "net48 reference assemblies missing: $refD
 $shvdn = Join-Path $GtaDir 'ScriptHookVDotNet3.dll'
 if (-not (Test-Path $shvdn)) { throw "ScriptHookVDotNet3.dll not found under: $GtaDir" }
 
+# WHICH ScriptHookVDotNet, said out loud, every build.
+#
+# The compiler stamps the reference assembly's EXACT version into the output, so a mod built
+# here against 3.9 is a mod that asks for 3.9 -- and a player on 3.7 gets a load failure with
+# no log, because the thing that would have written the log is the thing that did not load.
+#
+# That is not a hypothetical. It is four "it does not work for me" reports on the mod page
+# against a readme promising 3.6 or newer, written when 3.6 was what this machine had. The
+# number moved when ScriptHookVDotNet updated and nothing said so.
+$shvdnVer = [System.Reflection.AssemblyName]::GetAssemblyName($shvdn).Version
+Write-Host "ScriptHookVDotNet reference: $shvdnVer  (players need this or newer)" -ForegroundColor DarkCyan
+
 New-Item -ItemType Directory -Force $outDir | Out-Null
 
 # --- references -------------------------------------------------------------
