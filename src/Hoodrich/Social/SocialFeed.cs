@@ -1707,11 +1707,42 @@ namespace Hoodrich.Social
         /// talking about your product is the neighbours AND the set, both, and never theirs --
         /// a Balla telling you your work is good is not a compliment, and a Balla telling you
         /// it is garbage is not information.
+        ///
+        /// THE TEST IS THE PRONOUN. Every set in here is written from inside: "praying for my
+        /// boy franklin", "came home to my auntie's door hanging off", "we lost that one",
+        /// "now count us". Words like that have an author built into them, and handing them to
+        /// somebody from a set you are at war with does not produce a rival being sarcastic --
+        /// it produces a sentence nobody could have typed.
+        ///
+        /// Reported off a screenshot: an Azteca sending love to Franklin and to Aunt Denise,
+        /// and a Balla wishing him a speedy recovery, both while he was on the floor of Pillbox
+        /// because of people like them. The other three were the same bug one death away.
         /// </summary>
+        private static readonly string[] OwnSideSets =
+        {
+            // Your work. A rival has no view on it worth printing.
+            "ProductGood", "ProductBad",
+
+            // You in hospital. Nobody who put you there is praying for you.
+            "Hospital",
+
+            // Your house turned over. Written in the first person by the people it happened
+            // to -- "everything I had put away is gone" -- so it cannot come from the people
+            // who took it.
+            "HouseRaided",
+
+            // The block held, and the block lost. Both say "we", and both mean ours.
+            "WarHeld", "WarLost"
+        };
+
         private static bool OursOnly(string set)
         {
-            return string.Equals(set, "ProductGood", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(set, "ProductBad", StringComparison.OrdinalIgnoreCase);
+            foreach (var name in OwnSideSets)
+            {
+                if (string.Equals(set, name, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+
+            return false;
         }
 
         /// <summary>Somebody with no gang at all, or one of ours.</summary>
