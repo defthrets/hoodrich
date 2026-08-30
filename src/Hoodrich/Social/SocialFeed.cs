@@ -257,7 +257,47 @@ namespace Hoodrich.Social
         /// Cars pulling up is not news. The block starts posting when the shooting starts, which
         /// is both truer and stops the whole raid being narrated over the top of itself.
         /// </summary>
-        public bool HoldUntilShots;
+        /// <summary>
+        /// Nothing narrates itself until the shooting starts.
+        ///
+        /// IT EXPIRES ON ITS OWN NOW, and that is the whole of this change.
+        ///
+        /// It was a plain flag: GangWar set it when a raid began and GangWar cleared it, either
+        /// when somebody fired or when the fight ended. Both of those live in GangWar.Update,
+        /// and GangWar.Update only runs while the mod is available -- so anything that makes
+        /// the mod unavailable during a raid freezes the war mid-fight and leaves this true
+        /// with nothing left running that is able to turn it off.
+        ///
+        /// Reported as: the phone reverts to vanilla for a while, comes back later, and the
+        /// social messages never do. That is exactly this. The phone going quiet is the mod
+        /// being unavailable; the phone coming back is it becoming available again; the feed
+        /// staying silent afterwards is this flag, still set by a raid that was interrupted
+        /// and can no longer end.
+        ///
+        /// The usual suspect for the unavailability is GET_MISSION_FLAG, which any script in
+        /// the game can set and forget to clear.
+        ///
+        /// A deadline cannot be forgotten. The worst case is now a feed that stays quiet for a
+        /// couple of minutes longer than it should have, instead of one that never speaks
+        /// again for the rest of the session.
+        /// </summary>
+        public bool HoldUntilShots
+        {
+            get { return _holdUntil != 0 && Game.GameTime < _holdUntil; }
+            set { _holdUntil = value ? Game.GameTime + HoldCapMs : 0; }
+        }
+
+        private int _holdUntil;
+
+        /// <summary>
+        /// The longest the feed will ever hold its tongue for one raid.
+        ///
+        /// Generous rather than tight. A raid that nobody fires a shot in is unusual but not
+        /// impossible -- you can be driving over for the whole of a short one -- and cutting
+        /// this too fine would have the block narrating gunfire that has not happened yet.
+        /// Three minutes is longer than any raid stays quiet and far shorter than a session.
+        /// </summary>
+        private const int HoldCapMs = 180000;
 
         /// <summary>
         /// Posts handed over by other mods. Empty and nearly free when there are none.

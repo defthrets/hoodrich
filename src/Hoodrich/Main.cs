@@ -3172,28 +3172,65 @@ namespace Hoodrich
             return false;
         }
 
+        /// <summary>What last made the mod stand down, for the log.</summary>
+        private string _whyUnavailable = "";
+
         private bool IsPlayable()
         {
             try
             {
-                var player = Game.Player?.Character;
-                if (player == null || !player.Exists() || !player.IsAlive) return false;
+                var why = Unplayable();
 
-                if (Game.IsPaused) return false;
-                if (!Function.Call<bool>(Hash.IS_PLAYER_CONTROL_ON, Game.Player.Handle)) return false;
-                if (Function.Call<bool>(Hash.IS_PAUSE_MENU_ACTIVE)) return false;
-                if (Function.Call<bool>(Hash.IS_CUTSCENE_ACTIVE)) return false;
-                if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_IN)) return false;
+                // ONLY ON THE EDGE, so this is two string compares a tick and not a log file.
+                //
+                // Worth having at all because "the phone went back to vanilla" is the single
+                // most confusing thing this mod can do, and until now it did it silently. The
+                // player sees a mod that stopped working; the log said nothing, because from
+                // the code's point of view nothing went wrong -- it was asked to stand down and
+                // it stood down. Naming the reason turns an unreproducible report into one line
+                // somebody can paste.
+                if (why != _whyUnavailable)
+                {
+                    if (why.Length > 0) Log.Info("Standing down: " + why + ".");
+                    else Log.Info("Playable again.");
 
-                if (_cfg.PauseDuringMission && Function.Call<bool>(Hash.GET_MISSION_FLAG)) return false;
+                    _whyUnavailable = why;
+                }
 
-                return true;
+                return why.Length == 0;
             }
             catch (Exception ex)
             {
                 Log.Debug("Playability probe failed: " + ex.Message);
                 return false;
             }
+        }
+
+        /// <summary>Why the mod cannot run right now, or empty when it can.</summary>
+        private string Unplayable()
+        {
+            var player = Game.Player?.Character;
+
+            if (player == null || !player.Exists()) return "no player";
+            if (!player.IsAlive) return "player is down";
+
+            if (Game.IsPaused) return "game paused";
+            if (!Function.Call<bool>(Hash.IS_PLAYER_CONTROL_ON, Game.Player.Handle)) return "control is off";
+            if (Function.Call<bool>(Hash.IS_PAUSE_MENU_ACTIVE)) return "pause menu";
+            if (Function.Call<bool>(Hash.IS_CUTSCENE_ACTIVE)) return "cutscene";
+            if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_IN)) return "screen not faded in";
+
+            // THE STICKY ONE. Any script in the game can SET_MISSION_FLAG and any script can
+            // fail to clear it, so this is true a good deal more often than a mission is
+            // actually running -- and while it is, everything below the availability check
+            // stops, which is most of the mod. Named in the log so the next person to report
+            // "it just stopped" hands over the answer with the report.
+            if (_cfg.PauseDuringMission && Function.Call<bool>(Hash.GET_MISSION_FLAG))
+            {
+                return "a story mission is flagged (PauseDuringMission=false in the ini if this is wrong)";
+            }
+
+            return "";
         }
 
         /// <summary>
