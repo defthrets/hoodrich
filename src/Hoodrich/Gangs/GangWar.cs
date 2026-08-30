@@ -51,6 +51,20 @@ namespace Hoodrich.Gangs
         private const int LongestMs = 600000;
 
         /// <summary>
+        /// How long you have got before the man whose block it was says something about it.
+        ///
+        /// LONGER THAN MOST OF THESE FIGHTS LAST, and that is the point of it rather than a
+        /// miscalculation. A set with a small grievance is gone in two minutes; only one that
+        /// hates you is still coming after eight. So this is almost never a message that
+        /// arrives during the shooting -- it is the one that arrives afterwards, when it is
+        /// over and settled and you were not there for any of it, which is when somebody
+        /// actually gets their phone out about it.
+        ///
+        /// It survives the fight ending, so it does not matter how long the fight was.
+        /// </summary>
+        private const int NoShowMs = 480000;
+
+        /// <summary>
         /// How many people a set is willing to lose over one block, by how badly they want it.
         ///
         /// This is the thing that was missing. A raid ran on a clock and sent another carload
@@ -306,6 +320,17 @@ namespace Hoodrich.Gangs
 
         private bool _showedUp;
 
+        /// <summary>When the message goes out if you still have not turned up. Nought is off.</summary>
+        private int _noShowAt;
+
+        /// <summary>
+        /// Who sends it, taken at the start rather than read at the end.
+        ///
+        /// End clears the target, and this fires after End more often than not -- so by the
+        /// time there is a message to send there is nothing left to say who it is from.
+        /// </summary>
+        private string _noShowWho = "";
+
         public GangWar(GangRegistry gangs, Affiliation crew, PlayerState state)
         {
             _gangs = gangs;
@@ -450,6 +475,11 @@ namespace Hoodrich.Gangs
                 return;
             }
 
+            // ABOVE THE IsRunning BRANCH ON PURPOSE. The fight is usually over long before
+            // the eight minutes are up, and a message that could only arrive mid-firefight is
+            // a message almost nobody would ever get.
+            Nobody(now);
+
             if (IsRunning) { Tick(player, now); return; }
 
             if (now < _nextRoll) return;
@@ -518,6 +548,11 @@ namespace Hoodrich.Gangs
 
             // You are already there. It is your fight and you are stood in the middle of it.
             _showedUp = _away;
+
+            // Only for one brought to us. Nobody is owed an appearance at a fight you started
+            // on somebody else's street.
+            _noShowAt = _away ? 0 : Game.GameTime + NoShowMs;
+            _noShowWho = _away || _target == null ? "" : _target.Who;
             IsRunning = true;
 
             Mark();
@@ -791,6 +826,10 @@ namespace Hoodrich.Gangs
             if (here && !_showedUp)
             {
                 _showedUp = true;
+
+                // Turning up at seven minutes fifty is turning up.
+                _noShowAt = 0;
+
                 Notify.Ticker("~g~You showed up.~s~ Hold the block.");
             }
 
@@ -2479,6 +2518,81 @@ namespace Hoodrich.Gangs
 
             // Nobody won it, so both sides claim they did.
             if (Social != null) Social.Argue(attacker == null ? "" : attacker.Name, kills > 0);
+        }
+
+        /// <summary>
+        /// The text from the man who stood there without you.
+        ///
+        /// The rep is already gone by the time this lands -- End takes thirty off you the
+        /// moment the fight finishes. This is not a second penalty and is not meant to be one.
+        /// It is the part that makes the first one mean something: a number moving in a menu is
+        /// an accounting entry, and somebody you know telling you he noticed is the thing you
+        /// actually mind.
+        ///
+        /// Sent once. _noShowAt is cleared before the message rather than after, so a throw
+        /// anywhere in here costs you the text and not a loop that sends it every tick.
+        /// </summary>
+        private void Nobody(int now)
+        {
+            if (_noShowAt == 0 || now < _noShowAt) return;
+
+            _noShowAt = 0;
+
+            var who = _noShowWho;
+            if (string.IsNullOrEmpty(who)) return;
+
+            try
+            {
+                Notify.Text(Faces.For(who), who, "you wasn't there", LetDown(who));
+
+                // And out loud, if there is a recording for it. Voice finds nothing and does
+                // nothing when there is not, which is how every other line in here works --
+                // so this costs a file called gerald_letdown.wav and nothing at all until
+                // somebody makes one.
+                Voice.Cue(Voice.Named(who, "letdown"));
+
+                Log.Info("No-show text sent from " + who + ".");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not send the no-show text: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// What he says, in his own words.
+        ///
+        /// One line each rather than one line with the name swapped in. These three do not
+        /// sound remotely alike and the whole value of the message is that it sounds like the
+        /// person it came from -- a shared sentence with a different portrait on it is a form
+        /// letter, and it reads as one.
+        /// </summary>
+        private static string LetDown(string who)
+        {
+            if (string.Equals(who, "Lamar", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Eight minutes, Frank. EIGHT. I'm out here on YOUR block, catchin' it " +
+                       "for you, lookin' up the street the whole time like any second now, " +
+                       "here he come. Nah. It's cool. It's all love. I'm just sayin' I " +
+                       "looked.";
+            }
+
+            if (string.Equals(who, "Stretch", StringComparison.OrdinalIgnoreCase))
+            {
+                return "So we just doin' that now. Aight. I ain't trippin'. But everybody " +
+                       "out here got two eyes and they all pointed at the same empty spot " +
+                       "where you was supposed to be standin'.";
+            }
+
+            if (string.Equals(who, "Gerald", StringComparison.OrdinalIgnoreCase))
+            {
+                return "You wasn't there. That's it, that's the whole message. I ain't got " +
+                       "to tell nobody neither -- the block already know who came and who " +
+                       "didn't, they was all stood in it.";
+            }
+
+            return "You wasn't there. Everybody out here seen who came and who didn't, and " +
+                   "you wasn't one of the ones that came.";
         }
 
         /// <summary>Sends the survivors home rather than deleting them out from under you.</summary>
