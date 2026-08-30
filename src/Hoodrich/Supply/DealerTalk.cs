@@ -522,7 +522,7 @@ namespace Hoodrich.Supply
                 return Node("You got nowhere to put it. Sort that out first.");
             }
 
-            Game.Player.Money -= cost;
+            UI.Cash.Take(cost);
             _state.Touch();
 
             if (_crew != null) _crew.CreditPurchase();

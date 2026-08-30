@@ -1,23 +1,27 @@
+using System;
 using GTA;
 using GTA.Native;
+using Color = System.Drawing.Color;
 
 namespace Hoodrich.UI
 {
     /// <summary>
-    /// Paying the player, and clearing up after the green number it leaves behind.
+    /// Money moving, said where you are already looking.
     ///
-    /// GTA shows a "+$170" beside the wallet when your money changes and takes it away again a
-    /// few seconds later -- except that it did not. It sat in the corner of the screen for the
-    /// rest of the session: through the drive back, through a conversation with Gerald, through
-    /// everything, because the timer that retires it is driven by the game's own money path and
-    /// a script writing the cash stat directly never starts it.
+    /// GTA puts a green "+$170" beside the wallet in the top right and takes it away again a
+    /// few seconds later -- except that it did not, for us. It sat in the corner for the rest
+    /// of the session: through the drive back, through a conversation with Gerald, through
+    /// everything, because the timer that retires it is driven by the game's own money path
+    /// and a script writing the cash stat directly never starts it.
     ///
-    /// So the mod cleans up after itself. Every payout goes through here, the number gets the
-    /// few seconds it was always meant to have, and after that HUD_CASH_CHANGE is held down
-    /// each frame until something else moves the money.
+    /// SO IT IS OURS NOW, AND IT IS NOT IN THE CORNER. The top right is the furthest point on
+    /// the screen from the minimap, and the minimap is where your eye already is when you are
+    /// driving away from a sale -- which is precisely when this number appears. A readout you
+    /// have to go and look for is a readout you find out about afterwards.
     ///
-    /// That last part is what keeps this honest. The moment the player's balance changes from
-    /// anywhere we did not touch -- a shop, a pickup, another mod -- the suppression drops and
+    /// The game's own one is held down for as long as ours is up, so there is never a moment
+    /// with two of them. And the suppression is only ever ours to hold: the instant the balance
+    /// moves from somewhere we did not touch -- a shop, a pickup, another mod -- we let go and
     /// the game gets its HUD back. We only ever hide the number we put there.
     /// </summary>
     internal static class Cash
@@ -25,52 +29,126 @@ namespace Hoodrich.UI
         /// <summary>HUD_CASH_CHANGE. The green number, not the wallet beside it.</summary>
         private const int CashChange = 13;
 
-        /// <summary>How long it is allowed to sit there before we take it away ourselves.</summary>
-        private const int ReadItMs = 5000;
+        /// <summary>How long it stays up.</summary>
+        private const int ReadItMs = 4200;
 
-        private static int _paidAt;
+        /// <summary>The last stretch of that, spent fading and rising out.</summary>
+        private const int LeaveMs = 900;
+
+        /// <summary>
+        /// Just above the minimap, and left-aligned with it.
+        ///
+        /// The minimap's top edge sits near 0.783 at the default safe zone, so this clears it
+        /// with a little air. Not measured off the game -- there is no native that will tell
+        /// you where the minimap actually is, and the safe zone can move it -- so these are the
+        /// figures for a normal setup and they are constants precisely so there is one place to
+        /// nudge them if somebody runs a strange one.
+        /// </summary>
+        private const float LeftAt = 0.0165f;
+        private const float RestAt = 0.7555f;
+
+        /// <summary>How far it drifts up as it goes.</summary>
+        private const float Rise = 0.014f;
+
+        private static int _shownAt;
+        private static int _amount;
         private static int _balance;
 
-        /// <summary>Pays the player, and starts the clock on the number it puts on screen.</summary>
+        /// <summary>Pays the player, and puts the number up.</summary>
         public static void Give(int amount)
         {
             if (amount == 0) return;
 
             Game.Player.Money += amount;
-
-            _paidAt = Game.GameTime;
-            _balance = Game.Player.Money;
+            Mark(amount);
         }
 
-        /// <summary>Takes money without arming any of the above. A fine is not a payout.</summary>
+        /// <summary>
+        /// Takes money, and says so.
+        ///
+        /// It used to be silent on the reasoning that a fine is not a payout. Which is true and
+        /// is not the point: the question this answers is "what just happened to my money", and
+        /// money leaving is the half of that anybody actually wants telling about.
+        /// </summary>
         public static void Take(int amount)
         {
             if (amount <= 0) return;
 
             Game.Player.Money -= amount;
-
-            // The balance moved because WE moved it, so the watch below would otherwise read
-            // this as somebody else's change and let a stuck number stay up.
-            if (_paidAt != 0) _balance = Game.Player.Money;
+            Mark(-amount);
         }
 
-        /// <summary>Called every frame. Does nothing at all until we have actually paid out.</summary>
+        private static void Mark(int amount)
+        {
+            _shownAt = Game.GameTime;
+            _amount = amount;
+
+            try { _balance = Game.Player.Money; }
+            catch { _balance = 0; }
+        }
+
+        /// <summary>Called every frame. Does nothing at all until money has actually moved.</summary>
         public static void Tick()
         {
-            if (_paidAt == 0) return;
+            if (_shownAt == 0) return;
 
             int money;
 
             try { money = Game.Player.Money; }
             catch { return; }
 
-            // Somebody else's money, somebody else's HUD.
-            if (money != _balance) { _paidAt = 0; return; }
+            // Somebody else's money, somebody else's HUD. Ours comes down with it, because a
+            // number of ours sat next to a number of theirs is worse than either alone.
+            if (money != _balance)
+            {
+                _shownAt = 0;
+                return;
+            }
 
-            if (Game.GameTime - _paidAt < ReadItMs) return;
+            var age = Game.GameTime - _shownAt;
 
+            if (age > ReadItMs)
+            {
+                _shownAt = 0;
+                return;
+            }
+
+            // Held down every frame for as long as ours is up, rather than once at the end.
+            // This is the whole reason there are not two of them on screen.
             try { Function.Call(Hash.HIDE_HUD_COMPONENT_THIS_FRAME, CashChange); }
-            catch { /* then it stays, and it is no worse than it was */ }
+            catch { /* then theirs stays, and ours is beside it, which is no worse than before */ }
+
+            try { Show(age); }
+            catch { /* a frame without it is not worth taking the tick down for */ }
+        }
+
+        private static void Show(int age)
+        {
+            var left = age > ReadItMs - LeaveMs
+                ? (ReadItMs - age) / (float)LeaveMs
+                : 1f;
+
+            if (left <= 0f) return;
+
+            // Rises as it goes, so it leaves rather than switching off. Squared, so almost all
+            // of the travel happens at the end and it sits still while you are reading it.
+            var gone = 1f - left;
+            var y = RestAt - Rise * gone * gone;
+
+            var alpha = (int)(255f * left);
+
+            var text = (_amount > 0 ? "+$" : "-$") + Math.Abs(_amount).ToString("N0");
+
+            var ink = _amount > 0 ? Palette.Cash : Palette.Danger;
+
+            // A shadow under it, because this lands over the map and the road behind the map,
+            // and a thin green figure on a pale street is a figure nobody reads.
+            Draw.Text(text, LeftAt + Draw.ToX(0.0016f), y + 0.0016f, 0.46f,
+                      Color.FromArgb((int)(alpha * 0.75f), 0, 0, 0),
+                      Draw.FontChaletLondon, centre: false);
+
+            Draw.Text(text, LeftAt, y, 0.46f, Palette.Alpha(ink, alpha),
+                      Draw.FontChaletLondon, centre: false);
         }
     }
 }

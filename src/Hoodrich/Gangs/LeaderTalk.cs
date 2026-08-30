@@ -1030,7 +1030,7 @@ namespace Hoodrich.Gangs
 
             // Charged for what actually fit, so a part-full pocket is not a part-paid robbery.
             var charged = (int)Math.Round(cost * (taken / lotGrams));
-            Game.Player.Money -= charged;
+            UI.Cash.Take(charged);
 
             _state.Touch();
             _crew.CreditPurchase();

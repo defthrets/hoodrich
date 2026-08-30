@@ -238,7 +238,7 @@ namespace Hoodrich.Locations
             if (car == null) return "pick something first.";
             if (Game.Player.Money < car.Price) return "you ain't got it. Come back with it.";
 
-            Game.Player.Money -= car.Price;
+            UI.Cash.Take(car.Price);
 
             try
             {
@@ -475,7 +475,7 @@ namespace Hoodrich.Locations
                 Log.Debug("Could not park " + lot.Id + " back up: " + ex.Message);
             }
 
-            Game.Player.Money += paid;
+            UI.Cash.Give(paid);
 
             // Off the books, in both places that remember it.
             if (Owned != null) Owned.Sold(lot.Id);

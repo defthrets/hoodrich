@@ -1907,7 +1907,7 @@ namespace Hoodrich.Wheel
             }
 
             var charged = (int)Math.Round(cost * (accepted / grams));
-            Game.Player.Money -= charged;
+            UI.Cash.Take(charged);
             _state.Touch();
 
             _crew.CreditPurchase();

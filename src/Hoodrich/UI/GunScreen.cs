@@ -324,7 +324,7 @@ namespace Hoodrich.UI
                     if (Locker != null) Locker.Bought(piece.Weapon);
                 }
 
-                Game.Player.Money -= cost;
+                Cash.Take(cost);
                 if (_state != null) _state.Touch();
 
                 Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");

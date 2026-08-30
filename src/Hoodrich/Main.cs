@@ -621,7 +621,7 @@ namespace Hoodrich
                     if (fee <= 0) return true;
                     if (Game.Player.Money < fee) return false;
 
-                    Game.Player.Money -= fee;
+                    UI.Cash.Take(fee);
                     return true;
                 };
 
