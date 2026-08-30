@@ -64,12 +64,19 @@ namespace Hoodrich.UI
         /// <summary>Breathing room inside a card, above the name and below the figures.</summary>
         private const float CardPad = 0.006f;
 
-        /// <summary>How round the cards are. Enough to read as a corner, not a pill.</summary>
-        private const float CardRadius = 0.005f;
-
-        /// <summary>The card itself, and the hairline that gives it an edge in the dark.</summary>
+        /// <summary>The card itself, and the two edges that make it a raised surface.</summary>
         private static readonly Color CardFace = Color.FromArgb(64, 150, 158, 152);
-        private static readonly Color CardEdge = Color.FromArgb(30, 210, 220, 214);
+
+        /// <summary>Top and left: lit. Bottom and right: in its own shade.</summary>
+        private static readonly Color CardEdge = Color.FromArgb(46, 215, 225, 219);
+        private static readonly Color CardFloor = Color.FromArgb(70, 0, 0, 0);
+
+        /// <summary>
+        /// What is under it. Two hard offsets rather than a blur, which is not available here
+        /// and would not be worth the fill if it were.
+        /// </summary>
+        private static readonly Color ShadowNear = Color.FromArgb(90, 0, 0, 0);
+        private static readonly Color ShadowFar = Color.FromArgb(45, 0, 0, 0);
 
         /// <summary>
         /// The display name, in one place because two things measure it.
@@ -1844,43 +1851,69 @@ namespace Hoodrich.UI
             // long as a cursor sits on it whereas this is permanent and can cover three posts
             // at once. It sits BEHIND the text and does not inset it, which matters: see the
             // note on the wrap cache in Lines().
-            // EVERY POST IS A CARD NOW.
+            // SQUARE, AND THAT IS THE FIX RATHER THAN A PREFERENCE.
             //
-            // It used to be a run of text with a hairline under it, which is a list. The thing
-            // that makes a timeline read as a timeline is that each post is a separate object
-            // you could pick up -- and that is a shape with an edge and air around it, not a
-            // rule between two paragraphs.
+            // RoundRect builds its corners out of discs, and a disc drawn over a dark panel at
+            // this size does not blend away -- it reads as four pale dots sat just outside the
+            // card, which is what the corners looked like. A rectangle has no corner problem.
             var cardH = PostHeight(post) - PostGap;
             var cardW = PanelWidth - 0.012f;
+            var cardX = left + 0.002f;
 
-            Hud.RoundRect(left + 0.002f, top, cardW, cardH, CardRadius, CardFace);
+            // UNDER IT FIRST. Two offset rectangles, the nearer one darker: not a real blur,
+            // but a hard shadow at one and two pixels reads as depth at this size and costs
+            // two draws. It goes down and right because everything else in this HUD is lit
+            // from the top left.
+            Hud.RectFrom(cardX + Hud.ToX(0.0022f), top + 0.0022f, cardW, cardH, ShadowFar);
+            Hud.RectFrom(cardX + Hud.ToX(0.0011f), top + 0.0011f, cardW, cardH, ShadowNear);
 
-            // A one-pixel lift along the top edge only. A full outline round a dark card on a
-            // dark panel is a box drawn twice; a highlight on the top edge alone is the way
-            // light actually falls on something raised.
-            Hud.RectFrom(left + 0.002f + Hud.ToX(CardRadius), top,
-                         cardW - Hud.ToX(CardRadius) * 2f, 0.0008f, CardEdge);
+            Hud.RectFrom(cardX, top, cardW, cardH, CardFace);
+
+            // A BORDER ON ALL FOUR SIDES, brighter along the top than the bottom. An even
+            // outline is a box; a lit top edge and a dark bottom one is a raised surface, and
+            // the whole reason for the shadow underneath is to say the same thing twice.
+            //
+            // A new post's edge is hotter and cools off. It is the same six-second window the
+            // wash uses, so the two are one gesture rather than two competing ones.
+            var edgeLift = glow > 0f ? (int)(120f * glow) : 0;
+
+            Hud.RectFrom(cardX, top, cardW, 0.0009f,
+                         Palette.Alpha(CardEdge, Math.Min(255, CardEdge.A + edgeLift)));
+
+            Hud.RectFrom(cardX, top + cardH - 0.0009f, cardW, 0.0009f, CardFloor);
+
+            Hud.RectFrom(cardX, top, Hud.ToX(0.0009f), cardH,
+                         Palette.Alpha(CardEdge, Math.Min(255, CardEdge.A + edgeLift)));
+
+            Hud.RectFrom(cardX + cardW - Hud.ToX(0.0009f), top, Hud.ToX(0.0009f), cardH, CardFloor);
 
             if (post.AboutYou)
             {
-                var h = cardH;
+                Hud.RectFrom(cardX, top, cardW, cardH, Color.FromArgb(26, 255, 255, 255));
 
-                Hud.RoundRect(left + 0.002f, top, cardW, h, CardRadius,
-                              Color.FromArgb(26, 255, 255, 255));
+                // The rail down the left, which is the one permanent mark on this screen.
+                Hud.RectFrom(cardX, top, 0.0026f, cardH, Palette.Accent);
 
-                Hud.RectFrom(left + 0.002f, top + CardRadius * 0.5f, 0.0022f,
-                             h - CardRadius, Palette.Accent);
-
-                // Closed on the other three sides as well. A wash with a rail down one edge is
-                // a highlight; a wash with a line all the way round it is a card, and the whole
-                // point of the thing is that it is a separate object from the post above it.
                 var trim = Palette.Alpha(Palette.Accent, 70);
 
-                Hud.RectFrom(left + 0.002f + Hud.ToX(CardRadius), top,
-                             cardW - Hud.ToX(CardRadius) * 2f, 0.0010f, trim);
+                Hud.RectFrom(cardX, top, cardW, 0.0010f, trim);
+                Hud.RectFrom(cardX, top + cardH - 0.0010f, cardW, 0.0010f, trim);
+                Hud.RectFrom(cardX + cardW - Hud.ToX(0.0010f), top, Hud.ToX(0.0010f), cardH, trim);
+            }
 
-                Hud.RectFrom(left + 0.002f + Hud.ToX(CardRadius), top + h - 0.0010f,
-                             cardW - Hud.ToX(CardRadius) * 2f, 0.0010f, trim);
+            // AND A BAR THAT RUNS DOWN THE EDGE AS IT LANDS.
+            //
+            // The wash says "this one is new" and then sits there fading, which is a state. A
+            // bar travelling the height of the card is a MOVEMENT, and movement is the thing
+            // the eye actually catches out of the corner of itself while it is reading
+            // something else. It is over in the first fifth of the glow, so it is a stroke
+            // rather than a progress bar.
+            if (glow > 0.8f)
+            {
+                var run = (1f - glow) / 0.2f;
+
+                Hud.RectFrom(cardX, top, 0.0026f, cardH * run,
+                             Palette.Alpha(Palette.Accent, 220));
             }
 
             // Content sits inside the card from here down. One shift rather than a padding
@@ -1916,8 +1949,13 @@ namespace Hoodrich.UI
             // catches a dot appearing without having to read anything.
             if (glow > 0f)
             {
+                // Breathing rather than simply fading, so it reads as something live rather
+                // than something being turned down. 0..1 -- see the note in the phone's call
+                // screen about what a bare sine does to an alpha.
+                var beat = 0.55f + 0.45f * (0.5f + 0.5f * (float)Math.Sin(Game.GameTime * 0.011));
+
                 Hud.Disc(left + PanelWidth - 0.018f, top + 0.010f, 0.0032f,
-                         Palette.Alpha(Palette.Accent, (int)(230f * glow)));
+                         Palette.Alpha(Palette.Accent, (int)(230f * glow * beat)));
             }
 
             var textX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
