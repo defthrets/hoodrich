@@ -1,104 +1,91 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
-using Hoodrich.UI;
+using Hoodrich.Social;
 
 namespace Hoodrich.Locations
 {
     /// <summary>Where the night is up to.</summary>
     internal enum TakeoverState
     {
-        /// <summary>Not tonight, or not yet.</summary>
         None,
-
-        /// <summary>People are there and it is running.</summary>
         Running,
-
-        /// <summary>Blue lights. Everybody goes.</summary>
         Scattering
     }
 
     /// <summary>
     /// The takeover.
     ///
-    /// One intersection, one night, some time between nine and four. Cars and people turn up,
-    /// a ring forms, and somebody puts a car sideways in the middle of it while the ring
-    /// watches. One or two at a time, and when one pulls out another goes in. It runs for
-    /// hours and it ends the way these always end.
+    /// One intersection, one night, some time between nine and four. Cars and people come in
+    /// from the surrounding streets, a ring forms facing inwards, and one or two cars work the
+    /// inside of it sideways. It runs for hours and ends with blue lights.
     ///
-    /// IT IS NOT A MISSION AND THERE IS NOTHING TO DO. You are not called, there is no blip
-    /// and nothing is asked of you -- it happens whether you go or not, and the whole value of
-    /// it is that you can drive past a junction at two in the morning and find it going on. A
-    /// version of this with an objective attached would be a worse thing than the thing it is.
+    /// IT IS NOT A MISSION. No call, no blip, nothing asked of you -- it happens whether you go
+    /// or not, and the whole value of it is driving past at two in the morning and finding it.
+    ///
+    /// NOBODY APPEARS. Every person walks in and every car drives in, from out of sight, to a
+    /// place picked for them before they existed. That is the most expensive decision in this
+    /// file and the one that makes it read as people turning up rather than a set being
+    /// dressed: a crowd that pops into being at a junction is a crowd nobody believes, however
+    /// many of them there are.
     ///
     /// THE CIRCLE IS DRIVEN, NOT TASKED. No native asks a driver to hold a donut at a radius
-    /// around a point -- the closest are the burnout actions, which go wherever the car happens
-    /// to be pointing for however long you name and cannot be aimed. So the car is pushed round
-    /// by hand: an angle that advances, a heading lerped toward the tangent of it, and forward
-    /// speed. Grip is turned down underneath that, which is what makes the back end run wide
-    /// and turns a circle into circle work.
+    /// around a point -- the closest are the burnout actions, which go wherever the car is
+    /// pointing for however long you name and cannot be aimed. So a car that has ARRIVED is
+    /// taken off its task and pushed round by hand: an angle that advances, a heading chasing
+    /// the tangent, forward speed, grip turned down underneath. Coming in and going out it is
+    /// an ordinary driver on an ordinary route, which is how it gets through the gap in the
+    /// ring in the first place.
     ///
-    /// THE RING IS AT NINETEEN AND THE CARS WORK AT FIFTEEN, which is four metres of
-    /// clearance and is the one number in here worth arguing about. A back end that steps a
-    /// car's width wide of its line is into the front row -- and stepping wide is exactly what
-    /// the reduced grip is for. It is what was asked for; it is also the first thing to move if
-    /// the crowd starts getting clipped, and it moves from the ini.
+    /// AND THE DRIVERS DO NOT PANIC. Flinching at a gunshot, fleeing a collision, treating a
+    /// crowd as something to escape -- every one of those is correct for a driver in traffic
+    /// and catastrophic here, and the visible symptom of leaving them on is a car abandoning
+    /// its own donut and tearing off through the spectators.
     /// </summary>
     internal sealed class Takeover
     {
         // ---- where and when -----------------------------------------------------
 
-        /// <summary>
-        /// The junction, read off the screen while stood in the middle of it.
-        ///
-        /// Not a coordinate from a map. Somebody walked to the centre of that intersection and
-        /// to the kerb the crowd stands on, and the two readings are what set the radius below.
-        /// </summary>
+        /// <summary>The junction, read off the screen while stood in the middle of it.</summary>
         private static readonly Vector3 Middle = new Vector3(-126.840f, -1737.201f, 30.135f);
 
-        /// <summary>
-        /// How far out the ring stands. Measured between those two readings: 19.1 metres.
-        ///
-        /// It was asked for as fifteen. The two points given are nineteen apart, and the points
-        /// are the better evidence -- one of them is somebody stood where they wanted the crowd.
-        /// In the ini either way.
-        /// </summary>
+        /// <summary>How far out the ring stands. Measured on the ground: 19.1 metres.</summary>
         private const float RingAt = 19f;
 
-        /// <summary>
-        /// And how far in the cars actually work. Fifteen, as asked for.
-        ///
-        /// FOUR METRES OF CLEARANCE, which is the thing to know about this number. The ring is
-        /// at nineteen, so a car whose back end steps a car's width wide of its line is into
-        /// the front row -- and the whole point of reduced grip is that the back end does
-        /// exactly that. It is what was wanted and it is tuned from the ini, so if the crowd
-        /// starts getting clipped, this is the number that moves.
-        /// </summary>
+        /// <summary>And how far in the cars work. Four metres of clearance -- tunable.</summary>
         private const float DriftMin = 14f;
         private const float DriftMax = 15.5f;
 
-        /// <summary>The earliest and latest it starts, on the game's own clock.</summary>
         private const int FromHour = 21;
         private const int ToHour = 4;
-
-        /// <summary>How many in-game hours it runs for before the law turns up.</summary>
         private const float LastsHours = 3f;
 
-        /// <summary>Close enough for it to be worth existing at all.</summary>
-        private const float NearEnough = 190f;
+        private const float NearEnough = 200f;
+        private const float LetGo = 300f;
 
-        /// <summary>And far enough that it is packed away again.</summary>
-        private const float LetGo = 260f;
+        /// <summary>Where people and cars come FROM, which is never the junction itself.</summary>
+        private const float WalkFromMin = 55f;
+        private const float WalkFromMax = 130f;
+
+        private const float DriveFromMin = 90f;
+        private const float DriveFromMax = 190f;
+
+        /// <summary>Close enough to their place to stop and turn round.</summary>
+        private const float ArrivedRange = 3.5f;
+        private const float CarArrivedRange = 7f;
 
         // ---- the crowd ----------------------------------------------------------
 
-        private const int CrowdMin = 16;
-        private const int CrowdMax = 24;
+        private const int CrowdMin = 28;
+        private const int CrowdMax = 40;
 
-        /// <summary>Watching. Half of them are filming it, which is what the phone one is.</summary>
+        /// <summary>How many set off at once, so it fills up rather than materialising.</summary>
+        private const int PerWave = 4;
+        private const int WaveGapMs = 2600;
+
         private static readonly string[] Watching =
         {
             "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_STAND_MOBILE_UPRIGHT",
@@ -106,75 +93,122 @@ namespace Hoodrich.Locations
             "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_CHEERING"
         };
 
-        /// <summary>Who turns up. Everybody, not one set -- this is not a gang thing.</summary>
         private static readonly string[] Faces =
         {
-            "a_m_y_soucent_01", "a_m_y_soucent_02", "a_m_y_soucent_03",
-            "a_f_y_soucent_01", "a_f_y_soucent_02", "a_m_y_hipster_01",
-            "a_m_y_latino_01", "a_m_y_ktown_01", "a_f_y_hipster_02",
-            "a_m_y_stwhi_01", "a_m_y_downtown_01", "a_f_y_genhot_01"
+            "a_m_y_soucent_01", "a_m_y_soucent_02", "a_m_y_soucent_03", "a_m_y_soucent_04",
+            "a_f_y_soucent_01", "a_f_y_soucent_02", "a_m_y_hipster_01", "a_m_m_soucent_01",
+            "a_m_y_latino_01", "a_m_y_ktown_01", "a_f_y_hipster_02", "a_m_y_dhill_01",
+            "a_m_y_stwhi_01", "a_m_y_downtown_01", "a_f_y_genhot_01", "a_m_y_beach_01"
         };
 
-        /// <summary>What gets put sideways, in the order they exist.</summary>
+        /// <summary>
+        /// What gets put sideways.
+        ///
+        /// The Hellcats and the Mustangs are the Gauntlets and the Dominators -- those are the
+        /// cars this game has for those cars, and the numbered variants are the hotted-up ones.
+        /// The drift* models lead where an install has them and everything after is a car every
+        /// install has, so nobody ends up with an empty circle.
+        /// </summary>
         private static readonly string[] Drifters =
         {
-            "driftdominator10", "driftgauntlet4", "driftchavosv6", "driftfr36",
-            "driftremus", "driftfuto", "dominator", "buffalo3", "sultan", "futo"
+            "driftdominator10", "driftgauntlet4", "driftchavosv6", "driftfr36", "driftremus",
+            "gauntlet3", "gauntlet4", "gauntlet5",
+            "dominator3", "dominator7", "dominator8",
+            "dominator", "buffalo3", "sultan", "futo"
         };
 
-        /// <summary>And what everybody else turned up in, parked outside the ring.</summary>
+        /// <summary>Cars that came to watch, parked outside the ring.</summary>
         private static readonly string[] Parked =
         {
             "asterope2", "dorado", "kanjosj", "s95", "vorschlaghammer", "sultan2",
-            "warrener", "faction", "voodoo", "primo2", "buccaneer2"
+            "warrener", "faction", "primo2", "gauntlet", "dominator", "buffalo"
         };
 
-        private const int ParkedMin = 5;
-        private const int ParkedMax = 9;
+        /// <summary>
+        /// And the ones on juice.
+        ///
+        /// Hydraulics are a real system in this game and these are the cars that have them. A
+        /// bouncing Asterope would be a bouncing bug -- SET_CAN_USE_HYDRAULICS on something
+        /// without them does nothing, and the raise factor would be driven all night for free.
+        /// </summary>
+        private static readonly string[] Lows =
+        {
+            "voodoo", "buccaneer2", "chino2", "faction2", "moonbeam2",
+            "slamvan3", "sabregt2", "virgo2", "tornado5", "minivan2"
+        };
 
-        // ---- state --------------------------------------------------------------
+        private const int ParkedMin = 7;
+        private const int ParkedMax = 12;
+        private const int LowsMin = 2;
+        private const int LowsMax = 4;
+
+        // ---- what is out there --------------------------------------------------
+
+        private sealed class Watcher
+        {
+            public Ped Man;
+            public Vector3 Slot;
+            public bool There;
+        }
+
+        private sealed class Parkee
+        {
+            public Vehicle Car;
+            public Ped Driver;
+            public Vector3 Slot;
+            public bool There;
+
+            public bool Low;
+            public double Hop;
+            public double Rate;
+        }
 
         private sealed class Runner
         {
             public Vehicle Car;
             public Ped Driver;
 
-            /// <summary>Where it is on the circle, and how big a circle.</summary>
             public double Angle;
             public float Radius;
             public float Speed;
-
-            /// <summary>Which way round, and when it has had its go.</summary>
             public int Way;
             public int Until;
+
+            public bool Circling;
+            public bool Leaving;
         }
 
         private readonly Settings _cfg;
         private readonly Random _rng = new Random();
 
-        private readonly List<Ped> _crowd = new List<Ped>();
-        private readonly List<Vehicle> _parked = new List<Vehicle>();
+        private readonly List<Watcher> _crowd = new List<Watcher>();
+        private readonly List<Parkee> _parked = new List<Parkee>();
         private readonly List<Runner> _running = new List<Runner>();
 
         private Vehicle _law;
         private Ped _cop;
 
-        /// <summary>Off while something louder is happening.</summary>
         public Func<bool> Busy;
+
+        /// <summary>Set by Main: the feed, so the block can talk about it.</summary>
+        public SocialFeed Social;
 
         public TakeoverState State { get; private set; }
 
-        /// <summary>The in-game day this was last scheduled for, and the hour it starts.</summary>
         private int _plannedFor = -1;
         private int _startsAt = -1;
-
-        /// <summary>The in-game minute it ends. See OwnedCars.NowMinutes for the clock.</summary>
         private int _endsAt;
 
         private int _lastTick;
         private int _lastDrive;
 
-        private const int TickMs = 900;
+        private int _toCome;
+        private int _nextWave;
+        private int _nextWord;
+
+        private const int TickMs = 700;
+        private const int WordMinMs = 55000;
+        private const int WordMaxMs = 130000;
 
         private bool Enabled => _cfg == null || _cfg.TakeoverEnabled;
 
@@ -191,8 +225,13 @@ namespace Hoodrich.Locations
         {
             var now = Game.GameTime;
 
-            // The circle is driven every frame. Everything else is a decision and can wait.
-            if (State == TakeoverState.Running) Circle();
+            // Per frame: the circle and the hydraulics. Both are physics driven by hand and
+            // both read as a stutter at anything less.
+            if (State == TakeoverState.Running)
+            {
+                Circle();
+                Bounce();
+            }
 
             if (now - _lastTick < TickMs) return;
             _lastTick = now;
@@ -219,15 +258,18 @@ namespace Hoodrich.Locations
                         if (!Tonight()) return;
                         if (near > NearEnough) return;
 
-                        Begin();
+                        Begin(now);
                         break;
 
                     case TakeoverState.Running:
                         if (near > LetGo) { Pack(); return; }
-
                         if (OwnedCars.NowMinutes() >= _endsAt) { Blues(); return; }
 
+                        Wave(now);
+                        Walking();
+                        Parking();
                         Keep(now);
+                        Chatter(now);
                         break;
 
                     case TakeoverState.Scattering:
@@ -244,13 +286,6 @@ namespace Hoodrich.Locations
 
         // ---- the diary ----------------------------------------------------------
 
-        /// <summary>
-        /// Picks tonight's hour, once per day.
-        ///
-        /// Nine at night to four in the morning, which wraps midnight -- so the hour is picked
-        /// out of a seven-long run starting at nine and folded back round, rather than out of a
-        /// range that would have to be two ranges.
-        /// </summary>
         private void Plan()
         {
             int day;
@@ -268,7 +303,6 @@ namespace Hoodrich.Locations
             Log.Info("Takeover: tonight's is at " + _startsAt + ":00.");
         }
 
-        /// <summary>Whether the clock is inside tonight's window.</summary>
         private bool Tonight()
         {
             if (_startsAt < 0) return false;
@@ -276,8 +310,6 @@ namespace Hoodrich.Locations
             try
             {
                 var h = Function.Call<int>(Hash.GET_CLOCK_HOURS);
-
-                // The window wraps, so "after the start" is not a single comparison.
                 var since = (h - _startsAt + 24) % 24;
 
                 return since < (int)Math.Ceiling(LastsHours);
@@ -288,113 +320,264 @@ namespace Hoodrich.Locations
             }
         }
 
-        // ---- setting up ---------------------------------------------------------
+        // ---- starting -----------------------------------------------------------
 
-        private void Begin()
+        private void Begin(int now)
         {
-            Crowd();
+            State = TakeoverState.Running;
 
-            if (_crowd.Count == 0) return;
+            _endsAt = OwnedCars.NowMinutes() + (int)(LastsHours * 60f);
+            _toCome = _rng.Next(CrowdMin, CrowdMax + 1);
+            _nextWave = now;
+            _nextWord = now + _rng.Next(20000, 45000);
 
             Cars();
 
-            State = TakeoverState.Running;
-            _endsAt = OwnedCars.NowMinutes() + (int)(LastsHours * 60f);
+            if (Social != null) Social.On(SocialEvent.Takeover);
 
-            Log.Info("Takeover: on, " + _crowd.Count + " watching.");
+            Log.Info("Takeover: on. " + _toCome + " on their way.");
         }
 
-        /// <summary>The ring, every one of them turned to face the middle.</summary>
-        private void Crowd()
+        /// <summary>People set off in small lots rather than all at once.</summary>
+        private void Wave(int now)
         {
-            var want = _rng.Next(CrowdMin, CrowdMax + 1);
+            if (_toCome <= 0 || now < _nextWave) return;
 
+            _nextWave = now + WaveGapMs;
+
+            var want = Math.Min(PerWave, _toCome);
+
+            // Counted down whether or not the spawn succeeded. A failure is a person who did
+            // not come, and retrying forever would have the mod hammering the pavement finder
+            // for the rest of the night on a junction where it cannot find one.
             for (var i = 0; i < want; i++)
             {
+                Somebody();
+                _toCome--;
+            }
+        }
+
+        /// <summary>
+        /// One person, put down out of sight and told to walk to their place in the ring.
+        ///
+        /// The slot is picked FIRST and the spawn point is chosen to be away from it, which is
+        /// the right way round: everybody has somewhere to be before they exist, so the ring
+        /// fills evenly instead of clumping wherever the spawner happened to succeed.
+        /// </summary>
+        private bool Somebody()
+        {
+            try
+            {
+                var a = _rng.NextDouble() * Math.PI * 2d;
+                var r = Ring + (float)(_rng.NextDouble() * 3.5 - 1.2);
+
+                var slot = Ground(new Vector3(Middle.X + (float)Math.Cos(a) * r,
+                                              Middle.Y + (float)Math.Sin(a) * r, Middle.Z));
+
+                var from = OnFoot(slot);
+                if (from == Vector3.Zero) return false;
+
+                var name = Faces[_rng.Next(Faces.Length)];
+
+                var model = new Model(name);
+                if (!model.IsValid || !model.IsInCdImage || !model.Request(900)) return false;
+
+                var handle = Function.Call<int>(Hash.CREATE_PED, 4, model.Hash,
+                                                from.X, from.Y, from.Z, 0f, false, false);
+
+                model.MarkAsNoLongerNeeded();
+                if (handle == 0) return false;
+
+                var ped = Entity.FromHandle(handle) as Ped;
+                if (ped == null || !ped.Exists()) return false;
+
+                ped.IsPersistent = true;
+
+                var h = ped.Handle;
+
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, h, false);
+                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
+
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, h,
+                              slot.X, slot.Y, slot.Z, 1.2f, -1, 1.5f, true, 0f);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, h, true);
+
+                _crowd.Add(new Watcher { Man = ped, Slot = slot });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not send somebody: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Anybody who has reached their place stops and turns to face the middle.
+        ///
+        /// AND IS TURNED BACK. A scenario picks its own heading and several of these rotate a
+        /// ped as they play, so a ring faced inwards once is a ring facing every which way a
+        /// minute later. One comparison and one call per person per tick, and it is the
+        /// difference between a crowd watching something and a crowd standing near it.
+        /// </summary>
+        private void Walking()
+        {
+            foreach (var w in _crowd)
+            {
+                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+
+                if (!w.There)
+                {
+                    if (w.Man.Position.DistanceTo(w.Slot) > ArrivedRange) continue;
+
+                    w.There = true;
+
+                    try
+                    {
+                        Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                        Function.Call(Hash.SET_ENTITY_HEADING, w.Man.Handle, Facing(w.Man.Position));
+
+                        Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
+                                      Watching[_rng.Next(Watching.Length)], 0, true);
+                    }
+                    catch
+                    {
+                        // He stands there either way.
+                    }
+
+                    continue;
+                }
+
                 try
                 {
-                    // Spread round the whole circle with a bit of slop, so it is a crowd and
-                    // not a fence.
-                    var a = (i / (double)want) * Math.PI * 2d + (_rng.NextDouble() - 0.5) * 0.18;
-                    var r = Ring + (float)(_rng.NextDouble() * 3.0 - 1.0);
+                    var want = Facing(w.Man.Position);
+                    var have = w.Man.Heading;
+                    var off = Math.Abs(((want - have + 540f) % 360f) - 180f);
 
-                    var at = Ground(new Vector3(
-                        Middle.X + (float)Math.Cos(a) * r,
-                        Middle.Y + (float)Math.Sin(a) * r,
-                        Middle.Z));
-
-                    var name = Faces[_rng.Next(Faces.Length)];
-
-                    var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(900)) continue;
-
-                    var handle = Function.Call<int>(Hash.CREATE_PED, 4, model.Hash,
-                                                    at.X, at.Y, at.Z, Facing(at), false, false);
-
-                    model.MarkAsNoLongerNeeded();
-                    if (handle == 0) continue;
-
-                    var ped = Entity.FromHandle(handle) as Ped;
-                    if (ped == null || !ped.Exists()) continue;
-
-                    ped.IsPersistent = true;
-
-                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
-
-                    // THEY DO NOT REACT TO THE CARS. Without this every one of them dives out
-                    // of the way of a vehicle that was never going to hit them, and the ring
-                    // turns into a panic within seconds of the first car going sideways.
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
-                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, ped.Handle, false);
-
-                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle,
-                                  Watching[_rng.Next(Watching.Length)], 0, true);
-
-                    _crowd.Add(ped);
+                    if (off > 25f) Function.Call(Hash.SET_ENTITY_HEADING, w.Man.Handle, want);
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Log.Debug("Takeover could not add somebody: " + ex.Message);
+                    // Next tick.
                 }
             }
         }
 
-        /// <summary>What they came in, left outside the ring.</summary>
+        // ---- the cars that came to watch ----------------------------------------
+
         private void Cars()
         {
             var want = _rng.Next(ParkedMin, ParkedMax + 1);
+            var lows = _rng.Next(LowsMin, LowsMax + 1);
 
-            for (var i = 0; i < want; i++)
+            for (var i = 0; i < want; i++) Spectator(i < lows);
+        }
+
+        private void Spectator(bool low)
+        {
+            try
             {
+                var a = _rng.NextDouble() * Math.PI * 2d;
+                var r = Ring + 5f + (float)(_rng.NextDouble() * 9.0);
+
+                var slot = new Vector3(Middle.X + (float)Math.Cos(a) * r,
+                                       Middle.Y + (float)Math.Sin(a) * r, Middle.Z);
+
+                var from = OnRoad(DriveFromMin + (float)_rng.NextDouble() * (DriveFromMax - DriveFromMin));
+                if (from == Vector3.Zero) return;
+
+                var car = Make(low ? Lows : Parked, from);
+                if (car == null) return;
+
+                var driver = Behind(car);
+
+                if (driver == null)
+                {
+                    car.Delete();
+                    return;
+                }
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
+                              slot.X, slot.Y, slot.Z, 14f, 0, car.Model.Hash, 786603, 4f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
+
+                if (low) Function.Call(Hash.SET_CAN_USE_HYDRAULICS, car.Handle, true);
+
+                _parked.Add(new Parkee
+                {
+                    Car = car,
+                    Driver = driver,
+                    Slot = slot,
+                    Low = low,
+                    Hop = _rng.NextDouble() * Math.PI * 2d,
+                    Rate = 2.2 + _rng.NextDouble() * 2.6
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not send a spectator: " + ex.Message);
+            }
+        }
+
+        private void Parking()
+        {
+            foreach (var p in _parked)
+            {
+                if (p.There) continue;
+                if (p.Car == null || !p.Car.Exists()) continue;
+                if (p.Car.Position.DistanceTo(p.Slot) > CarArrivedRange) continue;
+
+                p.There = true;
+
                 try
                 {
-                    var a = _rng.NextDouble() * Math.PI * 2d;
-                    var r = Ring + 5f + (float)(_rng.NextDouble() * 7.0);
+                    if (p.Driver != null && p.Driver.Exists())
+                    {
+                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, p.Driver.Handle,
+                                      p.Car.Handle, 1, 4000);
+                    }
 
-                    var at = new Vector3(Middle.X + (float)Math.Cos(a) * r,
-                                         Middle.Y + (float)Math.Sin(a) * r, Middle.Z);
-
-                    var car = Make(Parked, at);
-                    if (car == null) continue;
-
-                    // Nose in, which is how anybody parks at one of these.
-                    car.Heading = Facing(at);
-
-                    Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
-                    Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, car.Handle, 2);
-
-                    _parked.Add(car);
+                    Function.Call(Hash.SET_ENTITY_HEADING, p.Car.Handle, Facing(p.Car.Position));
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Log.Debug("Takeover could not park one: " + ex.Message);
+                    // It stops where it stops.
+                }
+            }
+        }
+
+        /// <summary>The juice. Driven per frame, or it is a car changing height rather than hopping.</summary>
+        private void Bounce()
+        {
+            foreach (var p in _parked)
+            {
+                if (!p.Low || !p.There) continue;
+                if (p.Car == null || !p.Car.Exists()) continue;
+
+                try
+                {
+                    p.Hop += p.Rate * 0.016;
+
+                    // Squared, so it sits low most of the way round and snaps up. A plain sine
+                    // is a car floating, which is not what a hydraulic does.
+                    var s = 0.5 + 0.5 * Math.Sin(p.Hop);
+
+                    Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR,
+                                  p.Car.Handle, (float)(s * s));
+                }
+                catch
+                {
+                    // Next frame.
                 }
             }
         }
 
         // ---- the circle ---------------------------------------------------------
 
-        /// <summary>Keeps one or two of them going, and swaps them out when their go is up.</summary>
         private void Keep(int now)
         {
             for (var i = _running.Count - 1; i >= 0; i--)
@@ -404,40 +587,70 @@ namespace Hoodrich.Locations
                 var dead = r.Car == null || !r.Car.Exists()
                            || r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive;
 
-                if (!dead && now < r.Until) continue;
+                if (dead)
+                {
+                    Out(r);
+                    _running.RemoveAt(i);
+                    continue;
+                }
 
-                Out(r);
-                _running.RemoveAt(i);
+                // On the way out. Once clear of the ring it belongs to the world again.
+                if (r.Leaving)
+                {
+                    if (r.Car.Position.DistanceTo(Middle) < Ring + 14f) continue;
+
+                    Out(r);
+                    _running.RemoveAt(i);
+                    continue;
+                }
+
+                // On the way in. Close enough to its circle and it takes over by hand.
+                if (!r.Circling)
+                {
+                    if (r.Car.Position.DistanceTo(Middle) > r.Radius + 6f) continue;
+
+                    r.Circling = true;
+                    r.Until = now + _rng.Next(24000, 52000);
+
+                    r.Angle = Math.Atan2(r.Car.Position.Y - Middle.Y,
+                                         r.Car.Position.X - Middle.X);
+
+                    try
+                    {
+                        Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+                        Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
+                    }
+                    catch
+                    {
+                        // It still goes round.
+                    }
+
+                    continue;
+                }
+
+                if (now < r.Until) continue;
+
+                Leave(r);
             }
 
             var want = _rng.Next(100) < 45 ? 2 : 1;
 
             while (_running.Count < want)
             {
-                if (!In(now)) break;
+                if (!In()) break;
             }
         }
 
-        /// <summary>Somebody takes their turn.</summary>
-        private bool In(int now)
+        /// <summary>Somebody drives in for their go.</summary>
+        private bool In()
         {
             try
             {
-                var radius = DriftMin + (float)_rng.NextDouble() * (DriftMax - DriftMin);
-                var angle = _rng.NextDouble() * Math.PI * 2d;
+                var from = OnRoad(DriveFromMin + (float)_rng.NextDouble() * (DriveFromMax - DriveFromMin));
+                if (from == Vector3.Zero) return false;
 
-                var at = new Vector3(Middle.X + (float)Math.Cos(angle) * radius,
-                                     Middle.Y + (float)Math.Sin(angle) * radius, Middle.Z);
-
-                var car = Make(Drifters, at);
+                var car = Make(Drifters, from);
                 if (car == null) return false;
-
-                Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
-
-                // THE SLIDEY WHEELS. This is the whole look -- a car driven round a circle with
-                // full grip is a car going round a roundabout.
-                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, car.Handle, true);
-                Function.Call(Hash.SET_VEHICLE_ENGINE_ON, car.Handle, true, true, false);
 
                 var driver = Behind(car);
 
@@ -451,12 +664,16 @@ namespace Hoodrich.Locations
                 {
                     Car = car,
                     Driver = driver,
-                    Angle = angle,
-                    Radius = radius,
+                    Radius = DriftMin + (float)_rng.NextDouble() * (DriftMax - DriftMin),
                     Speed = 9f + (float)_rng.NextDouble() * 5f,
-                    Way = _rng.Next(2) == 0 ? 1 : -1,
-                    Until = now + _rng.Next(22000, 48000)
+                    Way = _rng.Next(2) == 0 ? 1 : -1
                 };
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
+                              Middle.X, Middle.Y, Middle.Z, 16f, 0, car.Model.Hash,
+                              786603, 5f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
 
                 _running.Add(r);
                 return true;
@@ -468,23 +685,41 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>
-        /// One frame of circle work, per car.
-        ///
-        /// The angle is advanced, the car is pointed at the tangent of where it now is, and it
-        /// is pushed forward. Grip is already down, so the back end runs wide of the line the
-        /// nose is taking -- which is the difference between driving a circle and drifting one.
-        ///
-        /// Heading is LERPED rather than set. Snapping it every frame would hold the car
-        /// perfectly on the line and look like it was on rails; letting it chase the tangent
-        /// leaves it always slightly behind, which is the angle.
-        /// </summary>
+        /// <summary>Their go is over. Grip back, smoke off, and out the way they came.</summary>
+        private void Leave(Runner r)
+        {
+            r.Leaving = true;
+            r.Circling = false;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
+                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
+
+                var away = OnRoad(150f + (float)_rng.NextDouble() * 110f);
+                if (away == Vector3.Zero) away = Middle.Around(190f);
+
+                Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
+                              away.X, away.Y, away.Z, 15f, 0, r.Car.Model.Hash, 786603, 10f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not send one out: " + ex.Message);
+            }
+        }
+
+        /// <summary>One frame of circle work, for whoever is actually working.</summary>
         private void Circle()
         {
-            for (var i = _running.Count - 1; i >= 0; i--)
+            for (var i = 0; i < _running.Count; i++)
             {
                 var r = _running[i];
 
+                if (!r.Circling) continue;
                 if (r.Car == null || !r.Car.Exists()) continue;
 
                 try
@@ -493,10 +728,9 @@ namespace Hoodrich.Locations
 
                     var tangent = r.Angle + r.Way * Math.PI * 0.5;
 
-                    var want = (float)((Math.Atan2(Math.Sin(tangent), Math.Cos(tangent))
-                                        * 180.0 / Math.PI));
+                    var want = (float)(Math.Atan2(Math.Sin(tangent), Math.Cos(tangent))
+                                       * 180.0 / Math.PI);
 
-                    // The game's headings run the other way round from atan2's, and from north.
                     want = (90f - want + 360f) % 360f;
 
                     var have = r.Car.Heading;
@@ -507,8 +741,6 @@ namespace Hoodrich.Locations
 
                     Function.Call(Hash.SET_VEHICLE_FORWARD_SPEED, r.Car.Handle, r.Speed);
 
-                    // Smoke, in bursts rather than constantly. A car that is permanently on the
-                    // limiter is a car nobody is driving.
                     Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle,
                                   (Game.GameTime / 1400) % 3 == 0);
                 }
@@ -519,55 +751,29 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>Their go is over. They drive out rather than vanishing.</summary>
-        private void Out(Runner r)
+        // ---- the feed -----------------------------------------------------------
+
+        /// <summary>The block says something about it while it is on.</summary>
+        private void Chatter(int now)
         {
-            try
-            {
-                if (r.Car != null && r.Car.Exists())
-                {
-                    Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-                    Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
+            if (Social == null || now < _nextWord) return;
 
-                    if (r.Driver != null && r.Driver.Exists())
-                    {
-                        Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, r.Driver.Handle,
-                                      r.Car.Handle, 20f, 786603);
-                    }
+            _nextWord = now + _rng.Next(WordMinMs, WordMaxMs);
 
-                    r.Car.IsPersistent = false;
-                    r.Car.MarkAsNoLongerNeeded();
-                }
-
-                if (r.Driver != null && r.Driver.Exists())
-                {
-                    r.Driver.IsPersistent = false;
-                    r.Driver.MarkAsNoLongerNeeded();
-                }
-            }
-            catch
-            {
-                // It leaves either way.
-            }
+            try { Social.On(SocialEvent.Takeover); }
+            catch (Exception ex) { Log.Debug("Takeover could not post: " + ex.Message); }
         }
 
         // ---- the law ------------------------------------------------------------
 
-        /// <summary>
-        /// Blue lights, and then there is nobody there.
-        ///
-        /// One car. It is not a raid and nobody is arrested -- the point of the police here is
-        /// that they end it, and one set of lights at the end of a street empties a junction
-        /// faster than anything else that could be written.
-        /// </summary>
         private void Blues()
         {
             State = TakeoverState.Scattering;
-            _lastDrive = Game.GameTime + 20000;
+            _lastDrive = Game.GameTime + 22000;
 
             try
             {
-                var at = new Vector3(Middle.X, Middle.Y - 55f, Middle.Z);
+                var at = new Vector3(Middle.X, Middle.Y - 60f, Middle.Z);
 
                 _law = Make(new[] { "police3", "police", "police2" }, at);
 
@@ -589,19 +795,20 @@ namespace Hoodrich.Locations
                 Log.Debug("Takeover: no police car: " + ex.Message);
             }
 
-            foreach (var ped in _crowd)
+            foreach (var w in _crowd)
             {
-                if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
 
                 try
                 {
-                    // Off, so they are allowed to react to anything again -- which is the whole
-                    // of scattering. They have been deaf to the world all night on purpose.
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                    // Off, so they can react to the world again. Being deaf to it all night is
+                    // what kept the ring standing; turning it back on IS scattering.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, w.Man.Handle, false);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, w.Man.Handle, 0, true);
 
-                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
-                    Function.Call(Hash.TASK_SMART_FLEE_COORD, ped.Handle,
-                                  Middle.X, Middle.Y, Middle.Z, 220f, -1, false, false);
+                    Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                    Function.Call(Hash.TASK_SMART_FLEE_COORD, w.Man.Handle,
+                                  Middle.X, Middle.Y, Middle.Z, 240f, -1, false, false);
                 }
                 catch
                 {
@@ -609,8 +816,33 @@ namespace Hoodrich.Locations
                 }
             }
 
-            foreach (var r in _running) Out(r);
-            _running.Clear();
+            foreach (var p in _parked)
+            {
+                if (p.Car == null || !p.Car.Exists()) continue;
+
+                try
+                {
+                    Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR, p.Car.Handle, 0f);
+
+                    if (p.Driver != null && p.Driver.Exists())
+                    {
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, p.Driver.Handle,
+                                      p.Car.Handle, 18f, 786603);
+                    }
+                }
+                catch
+                {
+                    // It goes when it goes.
+                }
+            }
+
+            foreach (var r in _running)
+            {
+                if (r.Car != null && r.Car.Exists() && r.Driver != null && r.Driver.Exists())
+                {
+                    Leave(r);
+                }
+            }
 
             Log.Info("Takeover: police. Everybody gone.");
         }
@@ -632,7 +864,10 @@ namespace Hoodrich.Locations
                     if (car == null || !car.Exists()) continue;
 
                     car.IsPersistent = true;
+
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, car.Handle, true, true);
+                    Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
+                    Function.Call(Hash.SET_VEHICLE_ENGINE_ON, car.Handle, true, true, false);
 
                     return car;
                 }
@@ -645,6 +880,14 @@ namespace Hoodrich.Locations
             return null;
         }
 
+        /// <summary>
+        /// Somebody at the wheel who will not panic.
+        ///
+        /// Every line here switches off a reaction that is correct for a driver in traffic and
+        /// catastrophic at a takeover. A car that flinches at a gunshot, treats a crowd as an
+        /// obstacle to escape, or takes a knock personally is a car that abandons its own donut
+        /// and drives through the spectators -- which is the exact failure this exists to stop.
+        /// </summary>
         private Ped Behind(Vehicle car)
         {
             try
@@ -665,9 +908,18 @@ namespace Hoodrich.Locations
 
                 ped.IsPersistent = true;
 
-                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
-                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
-                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, ped.Handle, false);
+                var h = ped.Handle;
+
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, h, false);
+                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, h, 5, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, h, 46, false);
+
+                // Good enough to hold a line, calm enough not to race anybody out of it.
+                Function.Call(Hash.SET_DRIVER_ABILITY, h, 1.0f);
+                Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, h, 0.0f);
 
                 return ped;
             }
@@ -678,7 +930,53 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>The heading that points something at the middle.</summary>
+        /// <summary>A pavement to walk in from, well away from where they are going.</summary>
+        private Vector3 OnFoot(Vector3 slot)
+        {
+            for (var tries = 0; tries < 12; tries++)
+            {
+                try
+                {
+                    var away = WalkFromMin + (float)_rng.NextDouble() * (WalkFromMax - WalkFromMin);
+                    var at = World.GetNextPositionOnSidewalk(Middle.Around(away));
+
+                    if (at == Vector3.Zero) continue;
+                    if (at.DistanceTo(slot) < WalkFromMin * 0.7f) continue;
+
+                    return at;
+                }
+                catch
+                {
+                    // Next try.
+                }
+            }
+
+            return Vector3.Zero;
+        }
+
+        /// <summary>A road to drive in from.</summary>
+        private Vector3 OnRoad(float away)
+        {
+            for (var tries = 0; tries < 12; tries++)
+            {
+                try
+                {
+                    var at = World.GetNextPositionOnStreet(Middle.Around(away), true);
+
+                    if (at == Vector3.Zero) continue;
+                    if (at.DistanceTo(Middle) < DriveFromMin * 0.6f) continue;
+
+                    return at;
+                }
+                catch
+                {
+                    // Next try.
+                }
+            }
+
+            return Vector3.Zero;
+        }
+
         private static float Facing(Vector3 from)
         {
             var dx = Middle.X - from.X;
@@ -701,7 +999,7 @@ namespace Hoodrich.Locations
             }
             catch
             {
-                // The given height will do; it came off the road in the first place.
+                // The given height came off the road in the first place.
             }
 
             return at;
@@ -709,21 +1007,46 @@ namespace Hoodrich.Locations
 
         // ---- putting it away ----------------------------------------------------
 
+        private void Out(Runner r)
+        {
+            try
+            {
+                if (r.Car != null && r.Car.Exists())
+                {
+                    Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
+                    Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
+
+                    r.Car.IsPersistent = false;
+                    r.Car.MarkAsNoLongerNeeded();
+                }
+
+                if (r.Driver != null && r.Driver.Exists())
+                {
+                    r.Driver.IsPersistent = false;
+                    r.Driver.MarkAsNoLongerNeeded();
+                }
+            }
+            catch
+            {
+                // It leaves either way.
+            }
+        }
+
         private void Pack()
         {
             foreach (var r in _running) Out(r);
             _running.Clear();
 
-            foreach (var ped in _crowd)
+            foreach (var w in _crowd)
             {
                 try
                 {
-                    if (ped == null || !ped.Exists()) continue;
+                    if (w.Man == null || !w.Man.Exists()) continue;
 
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, w.Man.Handle, false);
 
-                    ped.IsPersistent = false;
-                    ped.MarkAsNoLongerNeeded();
+                    w.Man.IsPersistent = false;
+                    w.Man.MarkAsNoLongerNeeded();
                 }
                 catch
                 {
@@ -733,14 +1056,20 @@ namespace Hoodrich.Locations
 
             _crowd.Clear();
 
-            foreach (var car in _parked)
+            foreach (var p in _parked)
             {
                 try
                 {
-                    if (car == null || !car.Exists()) continue;
+                    if (p.Driver != null && p.Driver.Exists())
+                    {
+                        p.Driver.IsPersistent = false;
+                        p.Driver.MarkAsNoLongerNeeded();
+                    }
 
-                    car.IsPersistent = false;
-                    car.MarkAsNoLongerNeeded();
+                    if (p.Car == null || !p.Car.Exists()) continue;
+
+                    p.Car.IsPersistent = false;
+                    p.Car.MarkAsNoLongerNeeded();
                 }
                 catch
                 {
@@ -771,17 +1100,22 @@ namespace Hoodrich.Locations
 
             _cop = null;
             _law = null;
+            _toCome = 0;
 
             State = TakeoverState.None;
         }
 
-        /// <summary>Teardown. Nothing of a party is left standing in a junction.</summary>
         public void RestoreWorld()
         {
             try
             {
-                foreach (var ped in _crowd) { if (ped != null && ped.Exists()) ped.Delete(); }
-                foreach (var car in _parked) { if (car != null && car.Exists()) car.Delete(); }
+                foreach (var w in _crowd) { if (w.Man != null && w.Man.Exists()) w.Man.Delete(); }
+
+                foreach (var p in _parked)
+                {
+                    if (p.Driver != null && p.Driver.Exists()) p.Driver.Delete();
+                    if (p.Car != null && p.Car.Exists()) p.Car.Delete();
+                }
 
                 foreach (var r in _running)
                 {

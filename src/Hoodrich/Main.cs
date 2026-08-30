@@ -1348,7 +1348,11 @@ namespace Hoodrich
                 _rollers = new Rollers(_cfg, _gangs, "families", _turf);
                 _walkers = new Walkers(_cfg, _gangs, "families", _turf);
 
-                _takeover = new Takeover(_cfg) { Busy = () => _war != null && _war.IsRunning };
+                _takeover = new Takeover(_cfg)
+                {
+                    Busy = () => _war != null && _war.IsRunning,
+                    Social = _social
+                };
 
                 // The law, going round because the blocks are the blocks. Nothing to do with
                 // heat, a bust or a raid -- this car was coming down that street tonight

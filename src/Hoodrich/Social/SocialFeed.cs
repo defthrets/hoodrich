@@ -85,6 +85,15 @@ namespace Hoodrich.Social
         /// <summary>Somebody came through loud and kept going. Not the same as a drive-by.</summary>
         RideThrough,
 
+        /// <summary>
+        /// The junction is taken over. Not about him and not caused by him.
+        ///
+        /// Like the block tips, this is the feed reporting the world rather than reporting the
+        /// player -- which is what makes it worth reading. Somebody posts that it is happening,
+        /// and it is.
+        /// </summary>
+        Takeover,
+
         WarStarted,
         WarHeld,
         WarLost,
@@ -1347,6 +1356,13 @@ namespace Hoodrich.Social
                     // The one thing the whole city has an opinion about, and it arrives fast.
                     follow = _rng.NextDouble() < 0.55 ? "CopKilled" : "OrgEvent";
                     count = BurstMax;
+                    break;
+
+                case SocialEvent.Takeover:
+                    // Not everybody there is one of ours, so the general set sits behind it --
+                    // a junction full of people is a junction full of everybody.
+                    follow = _rng.NextDouble() < 0.75 ? "Takeover" : "Ambient";
+                    count = 2 + _rng.Next(2);
                     break;
 
                 case SocialEvent.WarStarted:
