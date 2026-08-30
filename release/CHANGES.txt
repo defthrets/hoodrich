@@ -7,7 +7,7 @@
   0.5.1
 -------------------------------------------------------------------------------
 
-One fix. It is save loss, which is why it is not waiting for 0.6.0.
+Out on its own the day after 0.5.0, because the first thing in it is save loss.
 
 If you are on 0.4.0 or 0.5.0 with the game installed under Program Files, this
 affects you, and it can take a whole playthrough without ever saying anything.
@@ -50,6 +50,18 @@ the folder the mod had ALREADY fallen back to, so the probe passed every time.
 It now tells you on screen when your save is not beside the dll, names the folder
 it is in, and says not to go changing the game folder's permissions looking for
 it.
+
+
+AND TWO SMALLER ONES
+
+Lamar introduces himself once. "Bout time you came around to see your old friend
+Lamar, the one you done forgot about" is a man who has not seen you in a while,
+and it was the wrong sentence every time you walked up to him afterwards -- which,
+on his own job list, is every few minutes. Now he says it once and then just looks
+up: what is happening, are you working or walking past.
+
+The full package's front page said 0.5.0 was 0.2.0, listed 105 icons when there
+are 95, and never mentioned the 152 recordings that were the whole release.
 
 
 -------------------------------------------------------------------------------
