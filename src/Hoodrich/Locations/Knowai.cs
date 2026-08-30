@@ -58,21 +58,53 @@ namespace Hoodrich.Locations
         // ---- shape --------------------------------------------------------------
 
         /// <summary>
-        /// The picture on its notifications.
+        /// The picture on its notifications: a helmet, photographed like anybody else's face.
         ///
-        /// A BRAND, NOT A MAN. It was Simeon, which is a photograph of somebody's face on a
-        /// message from a company -- and worse, of a character who has nothing to do with it.
-        /// A driverless service has nobody to photograph, so the nearest thing available is
-        /// another company's mark, and which of these a given build ships is not something to
-        /// guess at from here. The first that loads wins and the silhouette is behind them all.
+        /// THE SERVICE HAS NO PERSON, SO IT HAS A HEAD INSTEAD. It was Simeon -- a photograph
+        /// of a specific man's face on a message from a company he has nothing to do with,
+        /// which is the nearest wrong thing rather than a picture.
+        ///
+        /// The feed's own face factory already turns any ped into a portrait, so the answer is
+        /// to point it at something with no face: a helmet, a visor, a bubble. It comes back
+        /// looking like a machine wearing a uniform, which is exactly what a driverless car
+        /// company would put on its notifications.
+        ///
+        /// Behind it, the contact photos it used to use -- because the headshot is made on
+        /// demand and takes a few frames, so the first card of a session may go out before it
+        /// exists. See Warm.
         /// </summary>
+        private const string FaceKey = "knowai";
+
+        private static readonly string[] Heads =
+        {
+            "u_m_y_juggernaut_01", "s_m_y_hwaycop_01", "u_m_y_rsranger_01",
+            "s_m_y_swat_01", "s_m_m_movalien_01"
+        };
+
         private static string Face
         {
             get
             {
+                var made = Headshots.Txd(FaceKey);
+
+                if (!string.IsNullOrEmpty(made)) return made;
+
                 return Faces.FirstReady("CHAR_LS_CUSTOMS", "CHAR_MP_MECHANIC",
                                         "CHAR_BLANK_ENTRY", "CHAR_DEFAULT");
             }
+        }
+
+        /// <summary>
+        /// Asks for the head before anything needs it.
+        ///
+        /// Called when a car is requested, which is a good several seconds before the first
+        /// card goes out -- so by the time there is something to say, there is something to
+        /// say it with.
+        /// </summary>
+        private static void Warm()
+        {
+            try { Headshots.WantAs(FaceKey, Heads); }
+            catch { /* the contact photo is behind it */ }
         }
 
         /// <summary>The car, in the order they exist on a given install.</summary>
@@ -211,6 +243,8 @@ namespace Hoodrich.Locations
             if (start == Vector3.Zero) return "Nothing free near you.";
 
             if (!Make(start)) return "Nothing free near you.";
+
+            Warm();
 
             _to = null;
             Going = "";

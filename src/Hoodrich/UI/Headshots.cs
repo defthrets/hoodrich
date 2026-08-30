@@ -59,6 +59,22 @@ namespace Hoodrich.UI
             public int Shot;
             public string Txd = "";
             public int Used;
+
+            /// <summary>
+            /// The ped the picture was taken of, kept alive for as long as the picture is.
+            ///
+            /// THIS IS THE BIT THAT WAS WRONG. The ped was deleted the instant the texture
+            /// came back, on the reasoning that the picture belongs to the registration rather
+            /// than to the man -- which is half true and useless: the registration is what
+            /// holds the texture, and the registration is against a ped. Delete him and the
+            /// slot is a name pointing at nothing, which draws as nothing, which is exactly
+            /// what the feed was showing.
+            ///
+            /// So he stays: frozen, invisible, no collision, thirty metres over the player's
+            /// head, and deleted at the same moment the headshot is unregistered. Fourteen of
+            /// those is the price of everybody having a face.
+            /// </summary>
+            public Ped Model;
         }
 
         private static readonly Dictionary<string, Face> Made =
@@ -70,8 +86,15 @@ namespace Hoodrich.UI
         /// <summary>Who is waiting, oldest first. Bounded, so a scroll cannot pile up work.</summary>
         private static readonly List<string> Queue = new List<string>();
 
-        private static readonly Dictionary<string, string> Wanted =
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// What each waiting key should be photographed as, in order of preference.
+        ///
+        /// A LIST RATHER THAN A NAME, because the caller does not always know which of several
+        /// models a given build has -- and a face that fails because one model is missing is a
+        /// face that never comes back, since a failure is remembered for half a minute.
+        /// </summary>
+        private static readonly Dictionary<string, string[]> Wanted =
+            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
         private const int QueueMost = 12;
 
@@ -120,7 +143,31 @@ namespace Hoodrich.UI
             if (Queue.Count >= QueueMost) return;
 
             Queue.Add(key);
-            Wanted[key] = Model(key, gang, gender);
+            Wanted[key] = new[] { Model(key, gang, gender) };
+        }
+
+        /// <summary>
+        /// Asks for one photographed as a specific thing, rather than as whoever the handle
+        /// hashes to.
+        ///
+        /// For the handful of accounts that are not people. A taxi firm has no face and no
+        /// gender and hashing its handle into the street pool would give it somebody else's --
+        /// so it names what it wants to look like and the factory does the rest.
+        /// </summary>
+        public static void WantAs(string key, params string[] models)
+        {
+            if (string.IsNullOrEmpty(key) || models == null || models.Length == 0) return;
+            if (Made.ContainsKey(key)) return;
+            if (Wanted.ContainsKey(key)) return;
+            if (string.Equals(key, _doing, StringComparison.OrdinalIgnoreCase)) return;
+
+            int failedAt;
+
+            if (Failed.TryGetValue(key, out failedAt) && Game.GameTime - failedAt < RetryMs) return;
+            if (Queue.Count >= QueueMost) return;
+
+            Queue.Add(key);
+            Wanted[key] = models;
         }
 
         // ---- the machine --------------------------------------------------------
@@ -147,18 +194,34 @@ namespace Hoodrich.UI
             var key = Queue[0];
             Queue.RemoveAt(0);
 
-            string modelName;
-            if (!Wanted.TryGetValue(key, out modelName)) return;
+            string[] names;
+            if (!Wanted.TryGetValue(key, out names)) return;
 
             Wanted.Remove(key);
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
-            var model = new Model(modelName);
+            // The first of them this build has. A name that is not here is a reason to try the
+            // next one, not a reason for somebody to have no face.
+            Model model = default(Model);
+            var got = false;
 
-            if (!model.IsValid || !model.IsInCdImage || !model.Request(1500))
+            foreach (var name in names)
             {
+                model = new Model(name);
+
+                if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+
+                got = true;
+                break;
+            }
+
+            if (!got)
+            {
+                Log.Info("Headshot for " + key + ": none of " + names.Length +
+                         " model(s) would load. First was " + names[0] + ".");
+
                 Failed[key] = Game.GameTime;
                 return;
             }
@@ -177,6 +240,7 @@ namespace Hoodrich.UI
 
             if (handle == 0)
             {
+                Log.Info("Headshot for " + key + ": the ped would not create.");
                 Failed[key] = Game.GameTime;
                 return;
             }
@@ -206,6 +270,11 @@ namespace Hoodrich.UI
 
             if (_shot == 0)
             {
+                // The pool is full, or the game has decided not to. This is the one that
+                // matters: it is how the engine says no, and it says it silently.
+                Log.Info("Headshot for " + key + ": REGISTER_PEDHEADSHOT returned nothing. " +
+                         Made.Count + " already held.");
+
                 Failed[key] = Game.GameTime;
                 Give(false);
                 return;
@@ -219,7 +288,7 @@ namespace Hoodrich.UI
         {
             if (Game.GameTime - _startedAt > PatienceMs)
             {
-                Log.Debug("Headshot for " + _doing + " never rendered.");
+                Log.Info("Headshot for " + _doing + " never rendered in " + PatienceMs + "ms.");
                 Failed[_doing] = Game.GameTime;
                 Give(false);
                 return;
@@ -244,10 +313,19 @@ namespace Hoodrich.UI
 
             Room();
 
-            Made[_doing] = new Face { Shot = _shot, Txd = txd, Used = Game.GameTime };
+            Log.Info("Headshot for " + _doing + " -> " + txd + ".");
 
-            // The ped goes and the PICTURE STAYS. That is the whole trick -- the texture
-            // belongs to the registration, not to the man, and unregistering is what frees it.
+            Made[_doing] = new Face
+            {
+                Shot = _shot,
+                Txd = txd,
+                Used = Game.GameTime,
+                Model = _model
+            };
+
+            // Handed over rather than deleted. See Face.Model.
+            _model = null;
+
             Give(true);
         }
 
@@ -292,8 +370,21 @@ namespace Hoodrich.UI
 
                 if (oldest.Length == 0) return;
 
-                try { Function.Call(Hash.UNREGISTER_PEDHEADSHOT, Made[oldest].Shot); }
-                catch { /* it goes either way */ }
+                try
+                {
+                    Function.Call(Hash.UNREGISTER_PEDHEADSHOT, Made[oldest].Shot);
+
+                    // And the man in the picture goes with it, which is the only moment he can
+                    // safely go.
+                    if (Made[oldest].Model != null && Made[oldest].Model.Exists())
+                    {
+                        Made[oldest].Model.Delete();
+                    }
+                }
+                catch
+                {
+                    // It goes either way.
+                }
 
                 Made.Remove(oldest);
             }
@@ -461,8 +552,19 @@ namespace Hoodrich.UI
 
             foreach (var pair in Made)
             {
-                try { Function.Call(Hash.UNREGISTER_PEDHEADSHOT, pair.Value.Shot); }
-                catch { /* teardown */ }
+                try
+                {
+                    Function.Call(Hash.UNREGISTER_PEDHEADSHOT, pair.Value.Shot);
+
+                    if (pair.Value.Model != null && pair.Value.Model.Exists())
+                    {
+                        pair.Value.Model.Delete();
+                    }
+                }
+                catch
+                {
+                    // Teardown.
+                }
             }
 
             Made.Clear();
