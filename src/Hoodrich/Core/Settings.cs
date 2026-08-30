@@ -340,6 +340,28 @@ namespace Hoodrich.Core
         /// <summary>What Tanya charges to come out and lift a wreck of yours.</summary>
         public int TowFee = 500;
 
+        /// <summary>
+        /// How long the yard keeps a recovered car, in IN-GAME hours.
+        ///
+        /// Thirty-six is a day and a half, which at the game's own clock is a bit over an hour
+        /// of playing. Long enough that you notice it is gone and get on with something else,
+        /// which is the entire point of it not being instant.
+        /// </summary>
+        public float TowYardHours = 36f;
+
+        /// <summary>
+        /// Where a recovered car is left, or all zeroes to use the car's own spot on the lot.
+        ///
+        /// Zeroes by default ON PURPOSE. The forecourt spot outside the roller door is a real
+        /// coordinate somebody has to stand on and read off, and a made-up one puts a car
+        /// through a wall on every install at once. Until it is filled in, each car goes back
+        /// to the space it was bought from, which is a spot the mod already knows is good.
+        /// </summary>
+        public float TowReturnX;
+        public float TowReturnY;
+        public float TowReturnZ;
+        public float TowReturnH;
+
         public bool RollerWheelies = true;
 
         /// <summary>How hard. See Rollers.Lift for why this is a setting and not a constant.</summary>
@@ -534,6 +556,12 @@ namespace Hoodrich.Core
             s.RollerCars = (int)Clamp(ini.GetInt("Block", "RollerCars", s.RollerCars), 0f, 6f);
             s.RollerBikes = (int)Clamp(ini.GetInt("Block", "RollerBikes", s.RollerBikes), 0f, 6f);
             s.TowFee = (int)Clamp(ini.GetInt("Cars", "TowFee", s.TowFee), 0f, 100000f);
+            s.TowYardHours = Clamp(ini.GetFloat("Cars", "TowYardHours", s.TowYardHours), 0f, 336f);
+
+            s.TowReturnX = ini.GetFloat("Cars", "TowReturnX", s.TowReturnX);
+            s.TowReturnY = ini.GetFloat("Cars", "TowReturnY", s.TowReturnY);
+            s.TowReturnZ = ini.GetFloat("Cars", "TowReturnZ", s.TowReturnZ);
+            s.TowReturnH = ini.GetFloat("Cars", "TowReturnH", s.TowReturnH);
 
             s.RollerWheelies = ini.GetBool("Block", "RollerWheelies", s.RollerWheelies);
             s.RollerWheelieLift = Clamp(ini.GetFloat("Block", "RollerWheelieLift",

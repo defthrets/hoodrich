@@ -223,6 +223,27 @@ namespace Hoodrich.Locations
                 // round the corner has not moved because you walked away from it.
                 var live = Find(owned, owned.Where);
 
+                // AT THE YARD. Not on the map, not stood back up, and not a wreck anybody
+                // can call about -- it is somewhere you cannot go, being worked on.
+                //
+                // Checked before anything else touches it, because every branch below this is
+                // about a car that is somewhere in the world, and this one deliberately is not.
+                if (owned.DueAt != 0)
+                {
+                    if (NowMinutes() < owned.DueAt) continue;
+
+                    // Its day and a half is up. From here it is an ordinary car of ours parked
+                    // at the address the tow wrote down, and the code below stands it up.
+                    owned.DueAt = 0;
+                    moved = true;
+
+                    Log.Info(owned.Name + " is back from the yard.");
+
+                    UI.Notify.Text(UI.Faces.For("Hao"), "Hao", "your car is ready",
+                                "she dropped your " + owned.Name + " off. its outside, its " +
+                                "straight, and im not a car park so come and get it");
+                }
+
                 if (live != null)
                 {
                     // Seen it. Where it is now is where it will be next time.
@@ -645,6 +666,10 @@ namespace Hoodrich.Locations
             {
                 try
                 {
+                    // Already on the truck, or already at the yard. Not a wreck you can call
+                    // anybody about.
+                    if (owned.DueAt != 0) continue;
+
                     var car = Find(owned, here);
                     if (car == null || !car.Exists()) continue;
 
@@ -675,6 +700,34 @@ namespace Hoodrich.Locations
         /// it is, and one built from the model comes back straight. The wreck is deleted by the
         /// tow; this is only the paperwork.
         /// </summary>
+        /// <summary>
+        /// The in-game clock as one number, so a due date can be written down.
+        ///
+        /// Year is taken from 2013 rather than absolute, purely so the arithmetic stays a
+        /// comfortable distance from the top of an int -- the absolute form lands around a
+        /// billion, which is fine until somebody multiplies it by something.
+        /// </summary>
+        public static int NowMinutes()
+        {
+            try
+            {
+                var y = Function.Call<int>(Hash.GET_CLOCK_YEAR) - 2013;
+                var mo = Function.Call<int>(Hash.GET_CLOCK_MONTH);
+                var d = Function.Call<int>(Hash.GET_CLOCK_DAY_OF_MONTH);
+                var h = Function.Call<int>(Hash.GET_CLOCK_HOURS);
+                var mi = Function.Call<int>(Hash.GET_CLOCK_MINUTES);
+
+                return (((y * 12 + mo) * 31 + d) * 24 + h) * 60 + mi;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>How long the yard keeps it. In-game hours.</summary>
+        public Func<float> YardHours;
+
         public bool Recovered(Vehicle car, Vector3 spot, float heading)
         {
             if (_state == null || car == null || !car.Exists()) return false;
@@ -689,6 +742,17 @@ namespace Hoodrich.Locations
 
                     owned.Where = spot;
                     owned.Heading = heading;
+
+                    // AND IT IS NOT THERE YET.
+                    //
+                    // Where it will be is written now because there is nowhere else to keep
+                    // it; when it will be there is what stops it simply appearing on the
+                    // forecourt the moment the truck rounds the corner. A recovery you can
+                    // watch happen instantly is not a recovery, it is a teleport with a
+                    // cutscene in front of it.
+                    var hours = YardHours == null ? 36f : YardHours();
+
+                    owned.DueAt = hours <= 0f ? 0 : NowMinutes() + (int)(hours * 60f);
 
                     // So the rebuild does not refuse it for having been touched a moment ago.
                     _rebuiltAt.Remove(owned.Id ?? "");

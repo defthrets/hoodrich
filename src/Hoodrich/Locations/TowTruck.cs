@@ -87,8 +87,23 @@ namespace Hoodrich.Locations
         private const int ArmMs = 2600;
         private const int SettleMs = 2200;
 
-        /// <summary>Once she is this far away with it, the pair of them stop existing.</summary>
-        private const float GoneRange = 170f;
+        /// <summary>
+        /// How long she drives with it on before any of it is allowed to disappear.
+        ///
+        /// A tow truck that evaporates the moment it is out of the shot is a tow truck that
+        /// never went anywhere. A full minute is long enough to watch her go, follow her if
+        /// you feel like it, and lose interest -- and by the end of it she is most of a
+        /// district away, which is where a thing is allowed to stop existing.
+        /// </summary>
+        private const int TowAwayMs = 60000;
+
+        /// <summary>Backing on: how fast, how straight, and how long she is given to do it.</summary>
+        private const float BackSpeed = 2.2f;
+        private const float SwingRate = 90f;
+        private const int BackCapMs = 14000;
+
+        /// <summary>Close enough behind it to stage the reverse from.</summary>
+        private const float StageRange = 13f;
 
         /// <summary>
         /// Nothing in this waits forever.
@@ -462,42 +477,119 @@ namespace Hoodrich.Locations
 
             if (gap <= HookRange)
             {
+                Stop();
+
                 Begin(TowState.Hooking);
                 _at = now;
-
-                try
-                {
-                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _tanya.Handle, _truck.Handle, 1, 1200);
-                }
-                catch
-                {
-                    // She stops when she stops.
-                }
 
                 return;
             }
 
-            if (_held) return;
+            // Still driving to the staging spot behind it.
+            if (!_reversing)
+            {
+                if (gap > StageRange)
+                {
+                    if (_held) return;
 
-            _held = true;
+                    _held = true;
+
+                    try
+                    {
+                        // Behind it, along its own back end, which is where a truck would sit.
+                        var spot = _wreck.Position - _wreck.ForwardVector * 9f;
+
+                        Function.Call(Hash.CLEAR_PED_TASKS, _tanya.Handle);
+
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _tanya.Handle,
+                                      _truck.Handle, spot.X, spot.Y, spot.Z, 7f, 0,
+                                      _truck.Model.Hash, 262144, 3f, true);
+
+                        Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, _tanya.Handle, 7f);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Debug("Could not stage the truck: " + ex.Message);
+                    }
+
+                    return;
+                }
+
+                // Arrived. The driving task is done with; the rest is done by hand.
+                _reversing = true;
+                _at = now;
+
+                try { Function.Call(Hash.CLEAR_PED_TASKS, _tanya.Handle); }
+                catch { /* she is stopping anyway */ }
+
+                return;
+            }
+
+            // SHE REVERSES ONTO IT, and this is driven rather than tasked.
+            //
+            // There is no native that will ask a driver to back accurately onto a specific
+            // object. TASK_VEHICLE_TEMP_ACTION has reverse actions and they go in whatever
+            // direction the truck happens to be pointing for whatever length of time you name,
+            // which is a manoeuvre you cannot aim. So the last nine metres are done by hand:
+            // the back end is swung round to face the wreck and the truck is pushed backwards
+            // along it, a little at a time, until the hook is over it.
+            //
+            // Swinging WHILE reversing rather than turning on the spot and then going. A truck
+            // that rotates in place and then drives straight is a turret; one whose back end
+            // comes round as it moves is a driver reversing.
+            if (now - _at > BackCapMs)
+            {
+                // Close enough is close enough. The attach snaps it into place from here, and
+                // a truck that spends fifteen seconds shuffling has stopped being a tow.
+                Stop();
+
+                Begin(TowState.Hooking);
+                _at = now;
+
+                return;
+            }
 
             try
             {
-                // Behind it, along its own back end, which is where a truck would sit.
-                var spot = _wreck.Position - _wreck.ForwardVector * 6.5f;
+                // The heading that puts her TAIL at the wreck: the direction from the wreck
+                // out to her.
+                var out_ = _truck.Position - _wreck.Position;
+                var want = (float)(Math.Atan2(out_.X, -out_.Y) * 180.0 / Math.PI);
 
-                Function.Call(Hash.CLEAR_PED_TASKS, _tanya.Handle);
+                var have = _truck.Heading;
+                var turn = ((want - have + 540f) % 360f) - 180f;
 
-                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _tanya.Handle, _truck.Handle,
-                              spot.X, spot.Y, spot.Z, 6f, 0, _truck.Model.Hash, 262144, 2.5f, true);
+                var step = SwingRate * 0.033f;
+                if (turn > step) turn = step;
+                if (turn < -step) turn = -step;
 
-                Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, _tanya.Handle, 6f);
+                Function.Call(Hash.SET_ENTITY_HEADING, _truck.Handle, (have + turn + 360f) % 360f);
+                Function.Call(Hash.SET_VEHICLE_FORWARD_SPEED, _truck.Handle, -BackSpeed);
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not line the truck up: " + ex.Message);
+                Log.Debug("Could not back the truck on: " + ex.Message);
+
+                Begin(TowState.Hooking);
+                _at = now;
             }
         }
+
+        /// <summary>Puts the handbrake on, so she is still while the arm comes down.</summary>
+        private void Stop()
+        {
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_FORWARD_SPEED, _truck.Handle, 0f);
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _tanya.Handle, _truck.Handle, 1, 2000);
+            }
+            catch
+            {
+                // She stops when she stops.
+            }
+        }
+
+        private bool _reversing;
 
         // ---- the hook -----------------------------------------------------------
 
@@ -580,12 +672,13 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            var player = Game.Player.Character;
-
-            var far = player == null || !player.Exists()
-                      || _truck.Position.DistanceTo(player.Position) > GoneRange;
-
-            if (!far) return;
+            // A FULL MINUTE, however far she gets in it.
+            //
+            // Distance was the old test and it is the wrong one: she can be held at a light
+            // fifty metres away, and a truck that has your car on it and is not going anywhere
+            // is not a thing to delete out from under you. Time is what the player is actually
+            // measuring here -- she left, and after a while she is gone.
+            if (Game.GameTime - _phaseFrom < TowAwayMs) return;
 
             Done();
         }
@@ -614,6 +707,8 @@ namespace Hoodrich.Locations
             State = state;
             _phaseFrom = Game.GameTime;
             _held = false;
+
+            if (state != TowState.Backing) _reversing = false;
         }
 
         /// <summary>Called off. Everything put back and nothing recovered.</summary>

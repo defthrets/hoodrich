@@ -613,6 +613,7 @@ namespace Hoodrich
                 // Everything she needs to know is handed to her, which is why the file does not
                 // mention Hao, OwnedCars or the save: she is given a wreck and gives one back.
                 _tow.Wreck = at => _ownedCars.WreckNear(at, 18f);
+                _ownedCars.YardHours = () => _cfg == null ? 36f : _cfg.TowYardHours;
                 _tow.Fee = () => _cfg == null ? 500 : _cfg.TowFee;
                 _tow.Busy = () => _war != null && _war.IsRunning;
 
@@ -643,7 +644,18 @@ namespace Hoodrich
                         return;
                     }
 
-                    _ownedCars.Recovered(car, lot.Spot, lot.Heading);
+                    // The forecourt if somebody has filled one in, and the car's own space
+                    // on the lot until they have.
+                    var back = lot.Spot;
+                    var facing = lot.Heading;
+
+                    if (_cfg != null && (_cfg.TowReturnX != 0f || _cfg.TowReturnY != 0f))
+                    {
+                        back = new Vector3(_cfg.TowReturnX, _cfg.TowReturnY, _cfg.TowReturnZ);
+                        facing = _cfg.TowReturnH;
+                    }
+
+                    _ownedCars.Recovered(car, back, facing);
                 };
 
                 // Nobody sends you to a car dealer in Little Seoul before you are anybody. The

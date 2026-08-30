@@ -26,6 +26,19 @@ namespace Hoodrich.State
 
         public Vector3 Where;
         public float Heading;
+
+        /// <summary>
+        /// In-game minute this comes back, or nought when it is simply out there.
+        ///
+        /// A towed car is not lost and it is not available either. It is at the yard, and the
+        /// yard takes as long as it takes -- so the record stays yours the whole time and this
+        /// is the one field that says you cannot have it yet.
+        ///
+        /// An ABSOLUTE clock reading rather than a countdown, so it survives being saved,
+        /// closed and loaded a week later. A countdown would have to be ticked by something,
+        /// and nothing ticks while the game is shut.
+        /// </summary>
+        public int DueAt;
     }
 
     internal sealed class PlayerState
@@ -878,7 +891,8 @@ namespace Hoodrich.State
                     .Set("x", Math.Round(c.Where.X, 2))
                     .Set("y", Math.Round(c.Where.Y, 2))
                     .Set("z", Math.Round(c.Where.Z, 2))
-                    .Set("h", Math.Round(c.Heading, 1)));
+                    .Set("h", Math.Round(c.Heading, 1))
+                    .Set("due", c.DueAt));
             }
 
             return arr;
@@ -1089,7 +1103,12 @@ namespace Hoodrich.State
                         Paint2 = node["paint2"].AsInt(-1),
                         Where = new Vector3(node["x"].AsFloat(), node["y"].AsFloat(),
                                             node["z"].AsFloat()),
-                        Heading = node["h"].AsFloat()
+                        Heading = node["h"].AsFloat(),
+
+                        // Missing on every save written before the tow existed, which reads
+                        // as nought, which means "out there" -- the right answer for a car
+                        // that was never towed.
+                        DueAt = node["due"].AsInt(0)
                     });
                 }
 
