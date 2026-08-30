@@ -1730,16 +1730,37 @@ namespace Hoodrich.UI
         /// </summary>
         private bool Avatar(Post post, float cx, float cy)
         {
-            var pic = post.By == null ? "" : post.By.Pic;
-            if (string.IsNullOrEmpty(pic)) return false;
+            if (post.By == null) return false;
 
-            if (!Hud.EnsureTextureDict(pic))
+            var pic = post.By.Pic;
+
+            // A named character with a contact photo the game ships. Trevor looks like Trevor
+            // and always will; nothing below improves on that.
+            if (!string.IsNullOrEmpty(pic))
             {
-                Grumble(pic);
+                if (!Hud.EnsureTextureDict(pic))
+                {
+                    Grumble(pic);
+                    return false;
+                }
+
+                Hud.Sprite(pic, pic, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f, Color.White);
+                return true;
+            }
+
+            // EVERYBODY ELSE GETS ONE MADE. See UI.Headshots -- a ped model that suits the
+            // handle is stood up out of sight, photographed and deleted, and the picture is
+            // kept. Asking for it is also what keeps it in the cache, so the faces on screen
+            // are never the ones thrown away.
+            var made = Headshots.Txd(post.By.Handle);
+
+            if (string.IsNullOrEmpty(made))
+            {
+                Headshots.Want(post.By.Handle, post.By.Gang, post.By.Gender);
                 return false;
             }
 
-            Hud.Sprite(pic, pic, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f, Color.White);
+            Hud.Sprite(made, made, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f, Color.White);
             return true;
         }
 

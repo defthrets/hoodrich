@@ -2588,6 +2588,11 @@ namespace Hoodrich
                 // The green "+$" the game leaves behind after we pay somebody. See Cash.
                 UI.Cash.Tick();
 
+                // One step of the face factory. Does nothing at all when nobody is waiting,
+                // which is almost always -- it only has work while the feed is open on
+                // somebody it has not photographed yet.
+                UI.Headshots.Tick();
+
                 // The spotlight, every frame rather than every tick -- a beam that exists for
                 // one frame in nine is a strobe.
                 _patrol.Draw();
@@ -3439,6 +3444,7 @@ namespace Hoodrich
             try { _delivery?.RestoreWorld(); } catch { /* teardown */ }
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
+            try { UI.Headshots.Clear(); } catch { /* teardown */ }
             try { _tow?.RestoreWorld(); } catch { /* teardown */ }
             try { _ride?.RestoreWorld(); } catch { /* teardown */ }
             try { _bust?.RestoreWorld(); } catch { /* teardown */ }
