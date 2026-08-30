@@ -336,7 +336,6 @@ namespace Hoodrich.Core
         /// <summary>Riders on the footpaths at once.</summary>
         public int RollerBikes = 4;
 
-        /// <summary>Whether riders pull the front wheel up on the straights.</summary>
         /// <summary>What Tanya charges to come out and lift a wreck of yours.</summary>
         public int TowFee = 500;
 
@@ -362,6 +361,17 @@ namespace Hoodrich.Core
         public float TowReturnZ;
         public float TowReturnH;
 
+        /// <summary>
+        /// The pearl flake on the set's cars, as an index into the game's colour table.
+        ///
+        /// The body is always the set's own colour. This is what is suspended in it, and it is
+        /// a setting because the colour table is not written down anywhere that can be checked
+        /// -- the difference between the green somebody wants and the one beside it is a single
+        /// number, and finding it should not cost a rebuild.
+        /// </summary>
+        public int RollerPearl = 53;
+
+        /// <summary>Whether riders pull the front wheel up on the straights.</summary>
         public bool RollerWheelies = true;
 
         /// <summary>How hard. See Rollers.Lift for why this is a setting and not a constant.</summary>

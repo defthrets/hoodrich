@@ -247,6 +247,13 @@ namespace Hoodrich.Gangs
         /// </summary>
         private static readonly string[] Cars =
         {
+            // The Sentinel GTS, three times, so it turns up often enough to be the car the set
+            // is known for rather than one you see once an evening. Three names because the
+            // GTS is a late addition and installs disagree about what it is called -- the list
+            // is tried in order and the log says which one actually loaded, so a build without
+            // it quietly gets an ordinary Sentinel instead of nothing.
+            "sentinelgts", "sentinel4", "sentinel3",
+
             "minimus", "woodlander", "hardy", "driftdominator10", "driftgauntlet4",
             "driftchavosv6", "s95", "vorschlaghammer", "asterope2", "dorado",
             "driftfr36", "kanjosj", "iwagen", "toros"
@@ -287,6 +294,14 @@ namespace Hoodrich.Gangs
 
         /// <summary>Dark green, out of the game's own paint table.</summary>
         private const int DarkGreen = 49;
+
+        /// <summary>
+        /// The flake over the top of it. A brighter green, so it lifts rather than flattens.
+        ///
+        /// Overridable in the ini and deliberately so -- see the note in Paint. If this one is
+        /// not the green it should be it is one line to change and nothing is rebuilt.
+        /// </summary>
+        private const int DefaultPearl = 53;
 
         private readonly Settings _cfg;
         private readonly GangRegistry _gangs;
@@ -1173,8 +1188,22 @@ namespace Hoodrich.Gangs
                 var gang = _gangs == null ? null : _gangs.Get(_gangId);
                 var paint = gang != null && gang.Paint >= 0 ? gang.Paint : DarkGreen;
 
+                // PRIMARY DARK, PEARL BRIGHT, and the gap between them is the whole effect.
+                //
+                // It used to set the pearl to the same index as the body, which is the same as
+                // having no pearl at all -- a flake that matches the paint it is suspended in
+                // does not catch anything. A lighter green over the dark one is what makes it
+                // shift as the car turns under a street light, which is what anybody means by
+                // a pearlescent green.
+                //
+                // The pearl is in the ini because the colour table is not documented anywhere
+                // we can check and the difference between "green" and the wrong green is one
+                // number. The body is not: that is the set's own colour and it belongs to the
+                // set, not to a taste.
+                var pearl = _cfg == null ? DefaultPearl : _cfg.RollerPearl;
+
                 Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, paint, paint);
-                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, paint, 0);
+                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, pearl, 0);
 
                 if (bike) return;
 
