@@ -336,6 +336,12 @@ namespace Hoodrich.Core
         /// <summary>Riders on the footpaths at once.</summary>
         public int RollerBikes = 4;
 
+        /// <summary>Whether riders pull the front wheel up on the straights.</summary>
+        public bool RollerWheelies = true;
+
+        /// <summary>How hard. See Rollers.Lift for why this is a setting and not a constant.</summary>
+        public float RollerWheelieLift = 1.9f;
+
         // ---- joining -----------------------------------------------------------
 
         /// <summary>Grams a gang leader fronts you when he takes you on.</summary>
@@ -524,6 +530,9 @@ namespace Hoodrich.Core
             s.RollersEnabled = ini.GetBool("Block", "RollersEnabled", s.RollersEnabled);
             s.RollerCars = (int)Clamp(ini.GetInt("Block", "RollerCars", s.RollerCars), 0f, 6f);
             s.RollerBikes = (int)Clamp(ini.GetInt("Block", "RollerBikes", s.RollerBikes), 0f, 6f);
+            s.RollerWheelies = ini.GetBool("Block", "RollerWheelies", s.RollerWheelies);
+            s.RollerWheelieLift = Clamp(ini.GetFloat("Block", "RollerWheelieLift",
+                                                     s.RollerWheelieLift), 0f, 8f);
 
             Log.Level = s.LogLevel;
             Log.Info("Settings loaded: phone key=" + s.PhoneKey +

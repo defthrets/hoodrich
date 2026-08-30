@@ -42,6 +42,25 @@ namespace Hoodrich.Gangs
         public int Nudges;
 
         public int BornAt;
+
+        /// <summary>
+        /// The one this bike is riding with, or null for a man on his own.
+        ///
+        /// A REFERENCE RATHER THAN AN ID, because the only question ever asked of it is "where
+        /// is he going" and the answer is a field on the other Roll. An id would mean a lookup
+        /// through the list every time, for a list that is four long.
+        ///
+        /// The lead can die, crash, or be let go for being stuck while the rest are still out.
+        /// Nothing repairs that and nothing needs to: a mate whose lead is gone falls back to
+        /// picking his own way, which is what a man whose mate has ridden off does.
+        /// </summary>
+        public Roll Lead;
+
+        /// <summary>While this is in the future, the front wheel is up.</summary>
+        public int WheelieUntil;
+
+        /// <summary>And not another one before this, so it is a moment and not a stance.</summary>
+        public int WheelieAfter;
     }
 
     /// <summary>
@@ -88,6 +107,89 @@ namespace Hoodrich.Gangs
 
         /// <summary>Chance the next place they are headed is somewhere they will stop.</summary>
         private const int StopChancePercent = 45;
+
+        /// <summary>
+        /// And the same for a bike, which used to be nought.
+        ///
+        /// Bikes never stopped. The stop roll was written !OnFoot, so every rider went round
+        /// and round until his eight minutes were up and he was handed back -- which is fine as
+        /// traffic and useless as life. Somebody riding round the block is going somewhere;
+        /// somebody stood over his bike in the park with two mates IS the block.
+        /// </summary>
+        private const int BikeStopChancePercent = 55;
+
+        /// <summary>How many ride out together when they ride out together.</summary>
+        private const int PackMin = 2;
+        private const int PackMax = 3;
+
+        /// <summary>Chance a bike going out brings his crew rather than going alone.</summary>
+        private const int PackChancePercent = 45;
+
+        /// <summary>
+        /// How far off the lead's own spot the rest of a crew are aimed.
+        ///
+        /// Not zero, because three bikes given one identical coordinate arrive as three bikes
+        /// trying to occupy one square metre, and the game resolves that by shoving them.
+        /// </summary>
+        private const float PackSpread = 6.5f;
+
+        /// <summary>
+        /// Pulling the front up.
+        ///
+        /// There is no native for this. TASK_VEHICLE_TEMP_ACTION has a list of stunts and none
+        /// of them is a wheelie, so it is done the way it is done in the physics: a shove
+        /// upwards applied BEHIND the centre of mass, which pitches the nose up and leaves the
+        /// back wheel driving. Held frame by frame while it lasts rather than applied once,
+        /// because one impulse at 900ms intervals is a bump in the road, not a wheelie.
+        ///
+        /// Wanting speed is what keeps it honest. A bike doing walking pace that rears up is a
+        /// bike being levitated; the same bike doing thirty is a rider showing off.
+        /// </summary>
+        private const int WheelieChancePercent = 30;
+        private const int WheelieMinMs = 1100;
+        private const int WheelieMaxMs = 2600;
+        private const int WheelieRestMinMs = 7000;
+        private const int WheelieRestMaxMs = 22000;
+        private const float WheelieNeedsSpeed = 9f;
+        private const float WheelieLift = 1.9f;
+        private const float WheelieBehind = 1.15f;
+
+        /// <summary>
+        /// Where they stand about with the engines off.
+        ///
+        /// ONE COORDINATE, AND IT IS THE ONE THAT IS KNOWN GOOD. The Chamberlain courts are
+        /// already in this mod -- Lamar rides out to them -- so it is a spot that has been
+        /// stood on, driven to and filmed rather than a number read off a map. Everything else
+        /// is found at runtime by Green() below, which is slower to write and cannot put a bike
+        /// inside a wall.
+        ///
+        /// Add to it freely. A hangout is only ever used when the player is already near it, so
+        /// a bad entry costs nothing anywhere else on the map.
+        /// </summary>
+        private static readonly Vector3[] Hangouts =
+        {
+            // The basketball courts in Chamberlain Hills.
+            new Vector3(-227.173f, -1541.756f, 31.607f)
+        };
+
+        /// <summary>Near enough to be worth riding to rather than a trip across town.</summary>
+        private const float HangoutRange = 320f;
+
+        /// <summary>No road this close, and it is open ground rather than a kerb.</summary>
+        private const float OffRoad = 15f;
+
+        /// <summary>A road this close, and he is on one.</summary>
+        private const float OnRoad = 7f;
+
+        /// <summary>
+        /// How hard the front comes up, out of the ini.
+        ///
+        /// In the ini because it is the one number here that cannot be reasoned about from a
+        /// desk. It is a force against a mass the game owns, on a model that can be swapped,
+        /// and the difference between a front wheel skimming and a bike on its back is a
+        /// decimal place. Whoever is looking at it can move it; nobody who is not, cannot.
+        /// </summary>
+        private float Lift => _cfg == null ? WheelieLift : _cfg.RollerWheelieLift;
 
         /// <summary>Close enough to call it arrived.</summary>
         private const float ArrivedRange = 16f;
@@ -152,11 +254,16 @@ namespace Hoodrich.Gangs
         /// </summary>
         private static readonly string[] Bikes =
         {
-            // The Street Blazer first, then the plain one behind it.
+            // The Manchez first and twice, because it is what was asked for and because a
+            // crew that turns up on three different bikes is three men who happen to be
+            // riding, where three on the same one is a crew.
+            "manchez", "manchez",
+
+            // The Street Blazer, then the plain one behind it.
             "blazer4", "blazer",
 
             // Dirt bikes, which is the same answer at a different price.
-            "sanchez", "sanchez2", "manchez",
+            "sanchez", "sanchez2",
 
             // And what you pedal. The Inductor and the Stryder sit here rather than with the
             // engines: both are bicycle-shaped, both were asked for by name, and on a footpath
@@ -209,6 +316,13 @@ namespace Hoodrich.Gangs
         public void Update()
         {
             var now = Game.GameTime;
+
+            // ABOVE THE THROTTLE ON PURPOSE. A wheelie is held by pushing on the bike every
+            // frame it lasts; the same push at nine-hundred-millisecond intervals is a pothole.
+            // Everything below here is a decision and can wait its turn, but this is physics
+            // and has to run at the rate the physics does.
+            Wheelies(now);
+
             if (now - _lastTick < TickMs) return;
             _lastTick = now;
 
@@ -256,9 +370,26 @@ namespace Hoodrich.Gangs
                 // toss more often than not.
                 var wantBike = _rng.Next(100) < 72;
 
-                if (wantBike && Count(true) < MaxBikes) Send(player, true);
-                else if (Count(false) < MaxCars) Send(player, false);
-                else if (Count(true) < MaxBikes) Send(player, true);
+                if (wantBike && Count(true) < MaxBikes)
+                {
+                    var lead = Send(player, true, null);
+
+                    // The rest of his crew, spawned around him and pointed wherever he is
+                    // pointed. Held to the same ceiling as everybody else, so a pack is not a
+                    // way round RollerBikes -- turning that down to two gets you pairs, and
+                    // turning it to one gets you the mod as it was.
+                    if (lead != null && _rng.Next(100) < PackChancePercent)
+                    {
+                        var mates = _rng.Next(PackMin, PackMax + 1) - 1;
+
+                        for (var i = 0; i < mates && Count(true) < MaxBikes; i++)
+                        {
+                            Send(player, true, lead);
+                        }
+                    }
+                }
+                else if (Count(false) < MaxCars) Send(player, false, null);
+                else if (Count(true) < MaxBikes) Send(player, true, null);
             }
             catch (Exception ex)
             {
@@ -345,7 +476,35 @@ namespace Hoodrich.Gangs
             if (roll.Car == null || !roll.Car.Exists()) return;
             if (roll.Driver == null || !roll.Driver.Exists() || !roll.Driver.IsAlive) return;
 
-            var stop = !roll.OnFoot && _rng.Next(100) < StopChancePercent;
+            // A mate goes where the lead goes and stops when the lead stops. He does not get
+            // his own opinion about it, which is the entire difference between a crew and three
+            // men who happened to set off at the same time.
+            //
+            // A lead who has crashed, died or been handed back for being stuck leaves his mates
+            // with nothing to follow, and they quietly go back to riding on their own -- which
+            // is what somebody whose mate has ridden off does.
+            var lead = roll.Lead;
+
+            // STILL ONE OF OURS, checked here rather than everywhere a roll is dropped.
+            //
+            // Release does not null the vehicle -- it hands it back to the game, which leaves
+            // Car.Exists() perfectly true on a bike that is now ordinary traffic riding off
+            // with a Target it was given twenty minutes ago. Asking whether the lead is still
+            // on the books catches that, and catches it in the one place that reads Lead at
+            // all, so no future removal site can forget to do it.
+            if (lead != null && !_out.Contains(lead))
+            {
+                roll.Lead = null;
+                lead = null;
+            }
+
+            var following = roll.OnFoot && lead != null &&
+                            lead.Car != null && lead.Car.Exists() &&
+                            lead.Target != Vector3.Zero;
+
+            var stop = following
+                ? lead.StopThere
+                : _rng.Next(100) < (roll.OnFoot ? BikeStopChancePercent : StopChancePercent);
 
             // A rider goes down the back streets about as often as he goes along the pavement.
             //
@@ -353,9 +512,27 @@ namespace Hoodrich.Gangs
             // one place a bike is least interesting -- the service roads and the cut-throughs
             // behind the buildings are where anybody round here actually rides, and the road
             // network already knows which ones those are.
-            var where = roll.OnFoot
-                ? (_rng.Next(100) < 55 ? Node(roll.Car.Position, true) : Pavement(roll.Car.Position))
-                : Node(roll.Car.Position, stop);
+            Vector3 where;
+
+            if (following)
+            {
+                where = Beside(lead.Target);
+            }
+            else if (roll.OnFoot && stop)
+            {
+                // Somewhere to stand about, rather than somewhere to ride to.
+                where = Hangout(roll.Car.Position);
+            }
+            else if (roll.OnFoot)
+            {
+                where = _rng.Next(100) < 55
+                    ? Node(roll.Car.Position, true)
+                    : Pavement(roll.Car.Position);
+            }
+            else
+            {
+                where = Node(roll.Car.Position, stop);
+            }
 
             // Whichever it asked for, take the other rather than stand still.
             if (where == Vector3.Zero && roll.OnFoot) where = Pavement(roll.Car.Position);
@@ -430,6 +607,189 @@ namespace Hoodrich.Gangs
         /// A few tries and then it takes whatever it got. Insisting on an alley near a block
         /// that has none means never moving.
         /// </summary>
+        /// <summary>
+        /// Somewhere to stand about with the engine off.
+        ///
+        /// A known spot first, and only if he is near enough that riding to it is a thing he
+        /// might have been doing anyway -- a bike sent across two districts to reach a car park
+        /// is not hanging about, it is commuting.
+        ///
+        /// Failing that, found rather than listed. See Green.
+        /// </summary>
+        private Vector3 Hangout(Vector3 from)
+        {
+            var best = Vector3.Zero;
+            var nearest = HangoutRange;
+
+            foreach (var spot in Hangouts)
+            {
+                try
+                {
+                    var d = spot.DistanceTo(from);
+
+                    if (d >= nearest) continue;
+                    if (!Ours(spot)) continue;
+
+                    best = spot;
+                    nearest = d;
+                }
+                catch
+                {
+                    // Next one.
+                }
+            }
+
+            // Scattered around it, because three bikes handed one coordinate arrive as three
+            // bikes trying to stand in the same square metre and the game settles that by
+            // shoving them into each other.
+            if (best != Vector3.Zero) return Beside(best);
+
+            var green = Green(from);
+
+            // Nothing open nearby. The pavement is still better than standing in the road.
+            return green != Vector3.Zero ? green : Pavement(from);
+        }
+
+        /// <summary>
+        /// Open ground on our turf, found by asking the map instead of by listing coordinates.
+        ///
+        /// A pavement spot with a road running past it is a pavement. The same spot with no
+        /// road within fifteen metres is a green, a yard, a court or the back of a car park --
+        /// which is the same set of places people actually stand about in, arrived at without
+        /// anybody typing a single coordinate that could turn out to be inside a wall.
+        ///
+        /// That is the whole reason it is done this way round. A hand-written list of parks is
+        /// better scenery and worse code: every entry is a number somebody read off a map, and
+        /// the ones that are wrong put a bike through a fence on somebody else's machine.
+        /// </summary>
+        private Vector3 Green(Vector3 from)
+        {
+            for (var tries = 0; tries < 12; tries++)
+            {
+                try
+                {
+                    var probe = from.Around(30f + (float)_rng.NextDouble() * 95f);
+                    var at = World.GetNextPositionOnSidewalk(probe);
+
+                    if (at == Vector3.Zero) continue;
+                    if (!Ours(at)) continue;
+
+                    var street = World.GetNextPositionOnStreet(at);
+                    if (street != Vector3.Zero && street.DistanceTo(at) < OffRoad) continue;
+
+                    return at;
+                }
+                catch
+                {
+                    // Next try.
+                }
+            }
+
+            return Vector3.Zero;
+        }
+
+        /// <summary>Near a spot rather than on it.</summary>
+        private Vector3 Beside(Vector3 spot)
+        {
+            try
+            {
+                var turn = _rng.NextDouble() * Math.PI * 2d;
+                var reach = PackSpread * (0.35f + (float)_rng.NextDouble());
+
+                return new Vector3(spot.X + (float)Math.Cos(turn) * reach,
+                                   spot.Y + (float)Math.Sin(turn) * reach,
+                                   spot.Z);
+            }
+            catch
+            {
+                return spot;
+            }
+        }
+
+        // ---- the front wheel ---------------------------------------------------
+
+        /// <summary>
+        /// Whoever is up on the back wheel, held there.
+        ///
+        /// RUN EVERY FRAME, from above the tick throttle. The lift is a push applied behind the
+        /// centre of mass, and a push is only a wheelie if it keeps coming -- delivered once
+        /// every nine hundred milliseconds it is a kerb being hit.
+        ///
+        /// Started rarely and only on a road at speed. A bike doing walking pace that rears up
+        /// on the pavement is being levitated; the same bike doing thirty down Carson is a
+        /// rider showing off, which is the thing worth seeing.
+        /// </summary>
+        private void Wheelies(int now)
+        {
+            if (!Enabled || _out.Count == 0) return;
+            if (_cfg != null && !_cfg.RollerWheelies) return;
+
+            for (var i = 0; i < _out.Count; i++)
+            {
+                var roll = _out[i];
+
+                if (!roll.OnFoot || roll.Phase == RollPhase.Sitting) continue;
+
+                var bike = roll.Car;
+                if (bike == null || !bike.Exists()) continue;
+
+                var rider = roll.Driver;
+                if (rider == null || !rider.Exists() || !rider.IsAlive) continue;
+
+                float speed;
+
+                try { speed = bike.Speed; }
+                catch { continue; }
+
+                if (now < roll.WheelieUntil)
+                {
+                    // Comes down on its own when he runs out of road or slows for a junction,
+                    // rather than being carried nose-up at walking pace to the end of a timer.
+                    if (speed < WheelieNeedsSpeed * 0.6f)
+                    {
+                        roll.WheelieUntil = 0;
+                        continue;
+                    }
+
+                    try
+                    {
+                        Function.Call(Hash.APPLY_FORCE_TO_ENTITY, bike.Handle, 1,
+                                      0f, 0f, Lift,
+                                      0f, -WheelieBehind, 0f,
+                                      0, true, true, true, false, true);
+                    }
+                    catch
+                    {
+                        // Next frame.
+                    }
+
+                    continue;
+                }
+
+                if (now < roll.WheelieAfter || speed < WheelieNeedsSpeed) continue;
+
+                // Whether he goes for one or not, he is not asked again for a while. Rolling
+                // the dice every frame at speed would make it a certainty within about two.
+                roll.WheelieAfter = now + _rng.Next(WheelieRestMinMs, WheelieRestMaxMs);
+
+                if (_rng.Next(100) >= WheelieChancePercent) continue;
+
+                // On a road, checked only here. It is a native call and this is the one branch
+                // that is rare enough to afford it.
+                try
+                {
+                    var street = World.GetNextPositionOnStreet(bike.Position);
+                    if (street == Vector3.Zero || street.DistanceTo(bike.Position) > OnRoad) continue;
+                }
+                catch
+                {
+                    continue;
+                }
+
+                roll.WheelieUntil = now + _rng.Next(WheelieMinMs, WheelieMaxMs);
+            }
+        }
+
         private Vector3 Node(Vector3 from, bool wantAlley)
         {
             for (var tries = 0; tries < 12; tries++)
@@ -514,20 +874,31 @@ namespace Hoodrich.Gangs
 
         // ---- putting one out ---------------------------------------------------
 
-        private void Send(Ped player, bool bike)
+        /// <summary>
+        /// One of them out on the block, optionally alongside somebody already out there.
+        /// </summary>
+        /// <returns>The one that went out, so a caller can send his mates after him.</returns>
+        private Roll Send(Ped player, bool bike, Roll lead)
         {
             var gang = _gangs.Get(_gangId);
-            if (gang == null || gang.MemberModels.Count == 0) return;
+            if (gang == null || gang.MemberModels.Count == 0) return null;
 
-            var spawn = Somewhere(player, bike);
-            if (spawn == Vector3.Zero) return;
+            // A mate comes from where his lead is, not from the far end of the block. The
+            // near-spawn rule is relaxed for him on purpose: the thing it protects against is
+            // a vehicle appearing in front of you, and one appearing beside a bike you are
+            // already watching is worse, so he is put behind the lead and slightly off him.
+            var spawn = lead != null && lead.Car != null && lead.Car.Exists()
+                ? Beside(lead.Car.Position - lead.Car.ForwardVector * 6f)
+                : Somewhere(player, bike);
 
-            var roll = new Roll { OnFoot = bike, BornAt = Game.GameTime };
+            if (spawn == Vector3.Zero) return null;
+
+            var roll = new Roll { OnFoot = bike, BornAt = Game.GameTime, Lead = lead };
 
             try
             {
-                roll.Car = Make(bike, spawn);
-                if (roll.Car == null) return;
+                roll.Car = Make(bike, spawn, lead == null ? null : lead.Car);
+                if (roll.Car == null) return null;
 
                 // Two or four up. A bike is one man, and a two-seater is a man and his mate --
                 // asking for four in a coupe gets you two and a warning nobody reads.
@@ -552,7 +923,7 @@ namespace Hoodrich.Gangs
                 if (roll.Driver == null)
                 {
                     Scrap(roll);
-                    return;
+                    return null;
                 }
 
                 Paint(roll.Car, bike);
@@ -560,8 +931,12 @@ namespace Hoodrich.Gangs
                 _out.Add(roll);
                 Aim(roll, Game.GameTime);
 
-                Log.Info("Rollers: " + (bike ? "a bike" : "a car with " + roll.Crew.Count + " up") +
+                Log.Info("Rollers: " +
+                         (bike ? (lead == null ? "a bike" : "a bike alongside another")
+                               : "a car with " + roll.Crew.Count + " up") +
                          " came out on " + (_turf == null ? "the block" : _turf.ZoneName) + ".");
+
+                return roll;
             }
             catch (Exception ex)
             {
@@ -569,6 +944,8 @@ namespace Hoodrich.Gangs
                 Scrap(roll);
                 _out.Remove(roll);
             }
+
+            return null;
         }
 
         /// <summary>
@@ -612,12 +989,30 @@ namespace Hoodrich.Gangs
         /// never received, so on that install this quietly becomes a shorter list rather than a
         /// stream of failures.
         /// </summary>
-        private Vehicle Make(bool bike, Vector3 at)
+        private Vehicle Make(bool bike, Vector3 at, Vehicle matching)
         {
             var wanted = bike ? Bikes : Cars;
             var spares = bike ? SpareBikes : SpareCars;
 
             var order = new List<string>();
+
+            // THE SAME BIKE AS THE MAN HE IS RIDING WITH, tried first. Three riders on three
+            // different frames read as three strangers who happen to be on the same street;
+            // three on the same frame read as people who came together, which is the whole
+            // thing being built here. It is only a preference -- if that model will not load
+            // the ordinary list is right behind it.
+            if (matching != null && matching.Exists())
+            {
+                try
+                {
+                    var name = matching.Model.Hash;
+                    if (Function.Call<bool>(Hash.IS_MODEL_IN_CDIMAGE, name)) order.Add(null);
+                }
+                catch
+                {
+                    // The list below is a complete answer on its own.
+                }
+            }
 
             for (var i = 0; i < 8; i++) order.Add(wanted[_rng.Next(wanted.Length)]);
             order.AddRange(spares);
@@ -626,7 +1021,9 @@ namespace Hoodrich.Gangs
             {
                 try
                 {
-                    var model = new Model(name);
+                    // The null placeholder is the lead's own model, carried by reference rather
+                    // than by name because a hash is what we have and a hash is what Model takes.
+                    var model = name == null ? new Model(matching.Model.Hash) : new Model(name);
                     if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
 
                     var car = World.CreateVehicle(model, at);
