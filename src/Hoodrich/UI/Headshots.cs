@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -302,41 +302,126 @@ namespace Hoodrich.UI
         // ---- who looks like what ------------------------------------------------
 
         /// <summary>
-        /// The set, and the street. These are who is on this feed.
+        /// Who looks like whom.
         ///
-        /// Split by who somebody IS rather than shuffled together, because that is the entire
-        /// point of the exercise: a handle that reads as one of the block should not come back
-        /// wearing a business suit, and the coloured letter it replaces was at least neutral
-        /// about it. A wrong face is worse than no face; a face that fits is the whole feature.
+        /// THE WHOLE POINT OF MAKING A FACE IS THAT IT FITS THE NAME ON IT. A Vagos handle
+        /// coming back as a man from Vinewood is the same failure as handing him Simeon's
+        /// contact photo -- it is the nearest wrong thing, and the coloured letter it replaced
+        /// was at least honest about knowing nothing.
+        ///
+        /// So the pool is chosen by the set, and the sets in this game are drawn along lines
+        /// the models follow: the Families and the Ballas are South Central, the Vagos and the
+        /// Aztecas are Latino, the Triads and the Kkangpae are East Asian, the Armenians are
+        /// eastern European, the Lost are bikers. Those are the game's own model families and
+        /// picking from them is the difference between a face and a photograph of a stranger.
+        ///
+        /// Everybody with no set draws from the street, because that is what they are.
         /// </summary>
-        private static readonly string[] SetMen =
+        private static readonly string[] SouthCentralMen =
         {
             "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01",
+            "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01",
             "a_m_y_soucent_01", "a_m_y_soucent_02", "a_m_y_soucent_03", "a_m_y_soucent_04",
             "a_m_m_soucent_01", "a_m_m_soucent_02", "a_m_m_soucent_03", "a_m_m_soucent_04",
-            "a_m_o_soucent_01", "a_m_o_soucent_02", "a_m_o_soucent_03",
-            "a_m_y_stwhi_02", "a_m_y_dhill_01"
+            "a_m_o_soucent_01", "a_m_o_soucent_02", "a_m_o_soucent_03"
         };
 
-        private static readonly string[] SetWomen =
+        private static readonly string[] SouthCentralWomen =
         {
+            "g_f_y_families_01", "g_f_y_ballas_01",
             "a_f_y_soucent_01", "a_f_y_soucent_02", "a_f_y_soucent_03",
-            "a_f_m_soucent_01", "a_f_m_soucent_02",
-            "a_f_o_soucent_01", "a_f_y_genhot_01", "a_f_y_hipster_04"
+            "a_f_m_soucent_01", "a_f_m_soucent_02", "a_f_o_soucent_01"
+        };
+
+        private static readonly string[] LatinoMen =
+        {
+            "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03",
+            "g_m_y_azteca_01", "g_m_m_mexboss_01", "g_m_m_mexboss_02",
+            "a_m_y_mexthug_01", "a_m_y_latino_01", "a_m_m_mexlabor_01",
+            "a_m_o_soucent_02", "a_m_y_gencaspat_01"
+        };
+
+        private static readonly string[] LatinoWomen =
+        {
+            "a_f_y_latino_01", "a_f_m_ktown_02", "a_f_y_eastsa_01",
+            "a_f_m_eastsa_01", "a_f_y_soucent_02"
+        };
+
+        private static readonly string[] AsianMen =
+        {
+            "g_m_m_chiboss_01", "g_m_m_chicold_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02",
+            "g_m_y_korean_01", "g_m_y_korean_02", "g_m_y_korlieut_01",
+            "a_m_y_ktown_01", "a_m_y_ktown_02", "a_m_m_ktown_01", "a_m_o_ktown_01"
+        };
+
+        private static readonly string[] AsianWomen =
+        {
+            "a_f_y_ktown_01", "a_f_m_ktown_01", "a_f_m_ktown_02", "a_f_y_eastsa_02"
+        };
+
+        private static readonly string[] ArmenianMen =
+        {
+            "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_m_armlieut_01", "g_m_y_armgoon_02",
+            "a_m_m_eastsa_01", "a_m_m_eastsa_02", "a_m_y_business_01"
+        };
+
+        private static readonly string[] BikerMen =
+        {
+            "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03",
+            "a_m_m_hillbilly_01", "a_m_m_hillbilly_02", "a_m_y_methhead_01",
+            "a_m_m_trampbeac_01", "a_m_y_motox_01"
+        };
+
+        private static readonly string[] BikerWomen =
+        {
+            "g_f_y_lost_01", "a_f_y_hipster_04", "a_f_m_fatwhite_01", "a_f_y_rurmeth_01"
         };
 
         private static readonly string[] AnyMen =
         {
             "a_m_y_hipster_01", "a_m_y_hipster_02", "a_m_y_business_01", "a_m_m_business_01",
             "a_m_y_ktown_01", "a_m_y_latino_01", "a_m_m_eastsa_01", "a_m_y_stwhi_01",
-            "a_m_y_downtown_01", "a_m_m_hillbilly_01", "a_m_y_vinewood_01", "a_m_y_beach_01"
+            "a_m_y_downtown_01", "a_m_m_hillbilly_01", "a_m_y_vinewood_01", "a_m_y_beach_01",
+            "a_m_y_soucent_01", "a_m_m_soucent_02"
         };
 
         private static readonly string[] AnyWomen =
         {
             "a_f_y_hipster_02", "a_f_y_business_01", "a_f_m_business_02", "a_f_y_latino_01",
-            "a_f_y_vinewood_01", "a_f_y_eastsa_01", "a_f_m_eastsa_01", "a_f_y_beach_01"
+            "a_f_y_vinewood_01", "a_f_y_eastsa_01", "a_f_m_eastsa_01", "a_f_y_beach_01",
+            "a_f_y_soucent_01", "a_f_m_soucent_02"
         };
+
+        /// <summary>The pool a given set draws from.</summary>
+        private static string[] Pool(string gang, bool she)
+        {
+            switch ((gang ?? "").ToLowerInvariant())
+            {
+                case "families":
+                case "ballas":
+                    return she ? SouthCentralWomen : SouthCentralMen;
+
+                case "vagos":
+                case "aztecas":
+                case "marabunta":
+                    return she ? LatinoWomen : LatinoMen;
+
+                case "triads":
+                case "koreans":
+                    return she ? AsianWomen : AsianMen;
+
+                // No women's models in the Armenian family, so theirs fall through to the
+                // street rather than to somebody who plainly is not one of them.
+                case "armenians":
+                    return she ? AnyWomen : ArmenianMen;
+
+                case "lost":
+                    return she ? BikerWomen : BikerMen;
+
+                default:
+                    return she ? AnyWomen : AnyMen;
+            }
+        }
 
         /// <summary>
         /// Which model this handle wears, forever.
@@ -348,10 +433,8 @@ namespace Hoodrich.UI
         /// </summary>
         private static string Model(string key, string gang, string gender)
         {
-            var ours = !string.IsNullOrEmpty(gang);
             var she = string.Equals(gender, "female", StringComparison.OrdinalIgnoreCase);
-
-            var pool = ours ? (she ? SetWomen : SetMen) : (she ? AnyWomen : AnyMen);
+            var pool = Pool(gang, she);
 
             return pool[(int)(Hash32(key) % (uint)pool.Length)];
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -58,6 +58,16 @@ namespace Hoodrich.Locations
         /// <summary>And how far in the cars work. Four metres of clearance -- tunable.</summary>
         private const float DriftMin = 14f;
         private const float DriftMax = 15.5f;
+
+        /// <summary>How long the one on the mark gets before somebody else has a go.</summary>
+        private const int BurnMinMs = 26000;
+        private const int BurnMaxMs = 36000;
+
+        /// <summary>Close enough to the mark to stop and start smoking.</summary>
+        private const float OnTheMark = 4.5f;
+
+        /// <summary>How fast he turns on the spot while he does it.</summary>
+        private const float SpinRate = 62f;
 
         private const int FromHour = 21;
         private const int ToHour = 4;
@@ -149,6 +159,9 @@ namespace Hoodrich.Locations
             public Ped Man;
             public Vector3 Slot;
             public bool There;
+
+            /// <summary>When they were first noticed away from their spot, or nought.</summary>
+            public int Away;
         }
 
         private sealed class Parkee
@@ -176,6 +189,16 @@ namespace Hoodrich.Locations
 
             public bool Circling;
             public bool Leaving;
+
+            /// <summary>
+            /// This one is on the mark rather than going round it.
+            ///
+            /// The two are the same object because they have the same life -- drive in, do the
+            /// thing, drive out -- and the only difference is what "the thing" is. Splitting
+            /// them into two classes would duplicate the arrival, the timeout and every line
+            /// of the cleanup to change one method.
+            /// </summary>
+            public bool Middle;
         }
 
         private readonly Settings _cfg;
@@ -185,8 +208,20 @@ namespace Hoodrich.Locations
         private readonly List<Parkee> _parked = new List<Parkee>();
         private readonly List<Runner> _running = new List<Runner>();
 
-        private Vehicle _law;
-        private Ped _cop;
+        private sealed class Law
+        {
+            public Vehicle Car;
+            public Ped Cop;
+        }
+
+        private readonly List<Law> _law = new List<Law>();
+
+        /// <summary>How many turn up, and how far out they start.</summary>
+        private const int Units = 3;
+        private const float LawFrom = 150f;
+
+        /// <summary>Close enough for the junction to notice them.</summary>
+        private const float LawSeen = 70f;
 
         public Func<bool> Busy;
 
@@ -202,6 +237,7 @@ namespace Hoodrich.Locations
         private int _lastTick;
         private int _lastDrive;
 
+        private bool _scattered;
         private int _toCome;
         private int _nextWave;
         private int _nextWord;
@@ -273,6 +309,14 @@ namespace Hoodrich.Locations
                         break;
 
                     case TakeoverState.Scattering:
+                        // The police are driving in. Nothing runs until one of them is close
+                        // enough to be worth running from.
+                        if (!_scattered && Closing())
+                        {
+                            _scattered = true;
+                            Scatter();
+                        }
+
                         if (near > LetGo || now > _lastDrive) Pack();
                         break;
                 }
@@ -396,9 +440,19 @@ namespace Hoodrich.Locations
                 var h = ped.Handle;
 
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
-                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, h, false);
-                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
+
+                // THEY REACT NOW, and that is a reversal of what was here before.
+                //
+                // Being deaf to the world kept the ring perfectly still, which is also what
+                // made it a diorama -- a car sliding four metres from your feet and nobody so
+                // much as turning their head is the one thing at a takeover that could not
+                // happen. So they flinch, and they duck, and some of them run.
+                //
+                // What stops that emptying the junction is not the ped -- it is Walking()
+                // below, which notices anybody who has left their spot and walks them back.
+                // They are allowed to bolt; they are not allowed to keep going.
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, false);
 
                 Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, h,
                               slot.X, slot.Y, slot.Z, 1.2f, -1, 1.5f, true, 0f);
@@ -423,8 +477,14 @@ namespace Hoodrich.Locations
         /// minute later. One comparison and one call per person per tick, and it is the
         /// difference between a crowd watching something and a crowd standing near it.
         /// </summary>
+        /// <summary>How far he may drift before he is walked back, and how long he gets first.</summary>
+        private const float StrayRange = 9f;
+        private const int LetHimRunMs = 4000;
+
         private void Walking()
         {
+            var now = Game.GameTime;
+
             foreach (var w in _crowd)
             {
                 if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
@@ -434,6 +494,7 @@ namespace Hoodrich.Locations
                     if (w.Man.Position.DistanceTo(w.Slot) > ArrivedRange) continue;
 
                     w.There = true;
+                    w.Away = 0;
 
                     try
                     {
@@ -450,6 +511,47 @@ namespace Hoodrich.Locations
 
                     continue;
                 }
+
+                // SPOOKED, AND THEN BACK. He is allowed to jump out of the way of something --
+                // that is the whole reason he can hear the world now -- but a takeover where
+                // one loud noise empties the pavement is a takeover that ends itself.
+                //
+                // Given a few seconds to have his reaction before anybody interferes with it.
+                // Pulling him back the instant he moves would cancel the flinch mid-animation
+                // and read as a man being dragged, which is worse than not flinching at all.
+                var strayed = w.Man.Position.DistanceTo(w.Slot);
+
+                if (strayed > StrayRange)
+                {
+                    if (w.Away == 0)
+                    {
+                        w.Away = now;
+                        continue;
+                    }
+
+                    if (now - w.Away < LetHimRunMs) continue;
+
+                    w.There = false;
+                    w.Away = 0;
+
+                    try
+                    {
+                        Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+
+                        Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, w.Man.Handle,
+                                      w.Slot.X, w.Slot.Y, w.Slot.Z, 1.6f, -1, 1.5f, true, 0f);
+
+                        Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
+                    }
+                    catch
+                    {
+                        // He wanders back or he does not.
+                    }
+
+                    continue;
+                }
+
+                w.Away = 0;
 
                 try
                 {
@@ -607,10 +709,15 @@ namespace Hoodrich.Locations
                 // On the way in. Close enough to its circle and it takes over by hand.
                 if (!r.Circling)
                 {
-                    if (r.Car.Position.DistanceTo(Middle) > r.Radius + 6f) continue;
+                    var wants = r.Middle ? OnTheMark : r.Radius + 6f;
+
+                    if (r.Car.Position.DistanceTo(Middle) > wants) continue;
 
                     r.Circling = true;
-                    r.Until = now + _rng.Next(24000, 52000);
+
+                    r.Until = now + (r.Middle
+                        ? _rng.Next(BurnMinMs, BurnMaxMs)
+                        : _rng.Next(24000, 52000));
 
                     r.Angle = Math.Atan2(r.Car.Position.Y - Middle.Y,
                                          r.Car.Position.X - Middle.X);
@@ -633,16 +740,33 @@ namespace Hoodrich.Locations
                 Leave(r);
             }
 
+            // ONE ON THE MARK AND ONE OR TWO ROUND THE OUTSIDE, counted separately -- the
+            // middle is a place rather than a share of the traffic, and letting them come out
+            // of the same pool means the mark stands empty whenever the circle is busy.
+            var mark = 0;
+            var round = 0;
+
+            foreach (var r in _running)
+            {
+                if (r.Leaving) continue;
+
+                if (r.Middle) mark++;
+                else round++;
+            }
+
+            if (mark < 1) In(true);
+
             var want = _rng.Next(100) < 45 ? 2 : 1;
 
-            while (_running.Count < want)
+            while (round < want)
             {
-                if (!In()) break;
+                if (!In(false)) break;
+                round++;
             }
         }
 
-        /// <summary>Somebody drives in for their go.</summary>
-        private bool In()
+        /// <summary>Somebody drives in for their go, on the mark or round the outside.</summary>
+        private bool In(bool middle)
         {
             try
             {
@@ -664,6 +788,7 @@ namespace Hoodrich.Locations
                 {
                     Car = car,
                     Driver = driver,
+                    Middle = middle,
                     Radius = DriftMin + (float)_rng.NextDouble() * (DriftMax - DriftMin),
                     Speed = 9f + (float)_rng.NextDouble() * 5f,
                     Way = _rng.Next(2) == 0 ? 1 : -1
@@ -722,6 +847,26 @@ namespace Hoodrich.Locations
                 if (!r.Circling) continue;
                 if (r.Car == null || !r.Car.Exists()) continue;
 
+                // ON THE MARK. Held where it stopped and turned on the spot with the throttle
+                // buried, which is a burnout -- no forward speed, because the moment it has any
+                // it is not a burnout, it is a small circle. The tyres do the moving.
+                if (r.Middle)
+                {
+                    try
+                    {
+                        Function.Call(Hash.SET_ENTITY_HEADING, r.Car.Handle,
+                                      (r.Car.Heading + r.Way * SpinRate * 0.016f + 360f) % 360f);
+
+                        Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
+                    }
+                    catch
+                    {
+                        // Next frame.
+                    }
+
+                    continue;
+                }
+
                 try
                 {
                     r.Angle += r.Way * (r.Speed / Math.Max(2f, r.Radius)) * 0.016;
@@ -766,35 +911,80 @@ namespace Hoodrich.Locations
 
         // ---- the law ------------------------------------------------------------
 
+        /// <summary>
+        /// Three of them, from three directions, a block out.
+        ///
+        /// THEY ARRIVE BEFORE ANYTHING SCATTERS. One car parked at the end of the street is a
+        /// prop; three sets of lights closing from three bearings is the thing that actually
+        /// empties a junction, and the gap between hearing them and seeing them is most of
+        /// what makes it work. So this only sends them -- the running is in Closing(), when
+        /// somebody is near enough to be worth running from.
+        /// </summary>
         private void Blues()
         {
             State = TakeoverState.Scattering;
-            _lastDrive = Game.GameTime + 22000;
+            _lastDrive = Game.GameTime + 60000;
 
-            try
+            for (var i = 0; i < Units; i++)
             {
-                var at = new Vector3(Middle.X, Middle.Y - 60f, Middle.Z);
-
-                _law = Make(new[] { "police3", "police", "police2" }, at);
-
-                if (_law != null && _law.Exists())
+                try
                 {
-                    Function.Call(Hash.SET_VEHICLE_SIREN, _law.Handle, true);
-                    _cop = Behind(_law);
+                    // Spread round the compass rather than random, so three cars cannot all
+                    // come up the same street.
+                    var bearing = (i / (double)Units) * Math.PI * 2d + _rng.NextDouble() * 0.6;
 
-                    if (_cop != null && _cop.Exists())
+                    var probe = new Vector3(Middle.X + (float)Math.Cos(bearing) * LawFrom,
+                                            Middle.Y + (float)Math.Sin(bearing) * LawFrom,
+                                            Middle.Z);
+
+                    var at = World.GetNextPositionOnStreet(probe, true);
+                    if (at == Vector3.Zero) continue;
+
+                    var car = Make(new[] { "police3", "police", "police2" }, at);
+                    if (car == null) continue;
+
+                    var cop = Behind(car);
+
+                    if (cop == null)
                     {
-                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, _cop.Handle, _law.Handle,
-                                      Middle.X, Middle.Y, Middle.Z, 18f, 0,
-                                      _law.Model.Hash, 786603, 8f, true);
+                        car.Delete();
+                        continue;
                     }
+
+                    Function.Call(Hash.SET_VEHICLE_SIREN, car.Handle, true);
+
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, cop.Handle, car.Handle,
+                                  Middle.X, Middle.Y, Middle.Z, 20f, 0,
+                                  car.Model.Hash, 786603, 6f, true);
+
+                    Function.Call(Hash.SET_PED_KEEP_TASK, cop.Handle, true);
+
+                    _law.Add(new Law { Car = car, Cop = cop });
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Takeover: no police car: " + ex.Message);
                 }
             }
-            catch (Exception ex)
+
+            Log.Info("Takeover: " + _law.Count + " units on the way.");
+        }
+
+        /// <summary>Whether any of them is close enough to be worth running from.</summary>
+        private bool Closing()
+        {
+            foreach (var l in _law)
             {
-                Log.Debug("Takeover: no police car: " + ex.Message);
+                if (l.Car == null || !l.Car.Exists()) continue;
+                if (l.Car.Position.DistanceTo(Middle) <= LawSeen) return true;
             }
 
+            return false;
+        }
+
+        /// <summary>The bit everybody has been waiting for.</summary>
+        private void Scatter()
+        {
             foreach (var w in _crowd)
             {
                 if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
@@ -824,11 +1014,22 @@ namespace Hoodrich.Locations
                 {
                     Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR, p.Car.Handle, 0f);
 
-                    if (p.Driver != null && p.Driver.Exists())
-                    {
-                        Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, p.Driver.Handle,
-                                      p.Car.Handle, 18f, 786603);
-                    }
+                    if (p.Driver == null || !p.Driver.Exists()) continue;
+
+                    // NOT A WANDER. Wander is a car pottering off at the speed limit, which is
+                    // not what anybody does when the lights come round the corner. They are
+                    // given somewhere to be and told to get there.
+                    var off = OnRoad(200f + (float)_rng.NextDouble() * 150f);
+                    if (off == Vector3.Zero) off = Middle.Around(250f);
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
+
+                    Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, p.Driver.Handle, 1.0f);
+
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle, p.Car.Handle,
+                                  off.X, off.Y, off.Z, 28f, 0, p.Car.Model.Hash, 786603, 15f, true);
+
+                    Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
                 }
                 catch
                 {
@@ -1079,27 +1280,30 @@ namespace Hoodrich.Locations
 
             _parked.Clear();
 
-            try
+            foreach (var l in _law)
             {
-                if (_cop != null && _cop.Exists())
+                try
                 {
-                    _cop.IsPersistent = false;
-                    _cop.MarkAsNoLongerNeeded();
-                }
+                    if (l.Cop != null && l.Cop.Exists())
+                    {
+                        l.Cop.IsPersistent = false;
+                        l.Cop.MarkAsNoLongerNeeded();
+                    }
 
-                if (_law != null && _law.Exists())
+                    if (l.Car == null || !l.Car.Exists()) continue;
+
+                    l.Car.IsPersistent = false;
+                    l.Car.MarkAsNoLongerNeeded();
+                }
+                catch
                 {
-                    _law.IsPersistent = false;
-                    _law.MarkAsNoLongerNeeded();
+                    // Already gone.
                 }
             }
-            catch
-            {
-                // Already gone.
-            }
 
-            _cop = null;
-            _law = null;
+            _law.Clear();
+
+            _scattered = false;
             _toCome = 0;
 
             State = TakeoverState.None;
@@ -1123,8 +1327,11 @@ namespace Hoodrich.Locations
                     if (r.Car != null && r.Car.Exists()) r.Car.Delete();
                 }
 
-                if (_cop != null && _cop.Exists()) _cop.Delete();
-                if (_law != null && _law.Exists()) _law.Delete();
+                foreach (var l in _law)
+                {
+                    if (l.Cop != null && l.Cop.Exists()) l.Cop.Delete();
+                    if (l.Car != null && l.Car.Exists()) l.Car.Delete();
+                }
             }
             catch
             {
@@ -1134,9 +1341,9 @@ namespace Hoodrich.Locations
             _crowd.Clear();
             _parked.Clear();
             _running.Clear();
+            _law.Clear();
 
-            _cop = null;
-            _law = null;
+            _scattered = false;
 
             State = TakeoverState.None;
         }
