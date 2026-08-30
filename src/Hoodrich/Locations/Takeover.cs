@@ -348,6 +348,14 @@ namespace Hoodrich.Locations
             if (now - _lastTick < TickMs) return;
             _lastTick = now;
 
+            // BEFORE ANYTHING ELSE, AND OUTSIDE EVERY EARLY RETURN BELOW. Cars on their way
+            // out outlive the takeover that sent them -- that is the whole point of the list --
+            // so a sweep that only ran while one was on would leave the last batch of every
+            // night sitting where it stopped. It is also cheap: it does nothing at all unless
+            // there is something on the list.
+            try { Ghosts(now); }
+            catch { /* next tick */ }
+
             try
             {
                 if (!Enabled)
@@ -1230,7 +1238,10 @@ namespace Hoodrich.Locations
                     var at = World.GetNextPositionOnStreet(probe, true);
                     if (at == Vector3.Zero) continue;
 
-                    var car = Make(new[] { "police3", "police", "police2" }, at);
+                    // NOT DRESSED. Everything else that turns up here is somebody's own car
+                    // and gets neon, rims and a plate; a squad car with underglow and a set of
+                    // deep dish is the joke landing in the wrong scene entirely.
+                    var car = Make(new[] { "police3", "police", "police2" }, at, false);
                     if (car == null) continue;
 
                     var cop = Behind(car);
@@ -1349,7 +1360,7 @@ namespace Hoodrich.Locations
         /// The list is read from a random point now, and anything already out there is skipped
         /// on the first pass, so a repeat only happens once the whole list is in use.
         /// </summary>
-        private Vehicle Make(string[] names, Vector3 at)
+        private Vehicle Make(string[] names, Vector3 at, bool dress = true)
         {
             var start = _rng.Next(names.Length);
 
@@ -1382,7 +1393,7 @@ namespace Hoodrich.Locations
                         Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
                         Function.Call(Hash.SET_VEHICLE_ENGINE_ON, car.Handle, true, true, false);
 
-                        Dress(car);
+                        if (dress) Dress(car);
 
                         return car;
                     }
@@ -1705,22 +1716,125 @@ namespace Hoodrich.Locations
                 {
                     Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
                     Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
-
-                    r.Car.IsPersistent = false;
-                    r.Car.MarkAsNoLongerNeeded();
                 }
 
-                if (r.Driver != null && r.Driver.Exists())
-                {
-                    r.Driver.IsPersistent = false;
-                    r.Driver.MarkAsNoLongerNeeded();
-                }
+                Loose(r.Car, r.Driver);
             }
             catch
             {
                 // It leaves either way.
             }
         }
+
+        /// <summary>
+        /// Let a car and its driver go, without leaving the car behind.
+        ///
+        /// THIS IS WHY THE JUNCTION FILLED UP WITH EMPTY CARS. Everything used to be handed
+        /// back to the game in pairs -- IsPersistent off, MarkAsNoLongerNeeded on both -- on
+        /// the reasonable assumption that a pair released together goes away together. It does
+        /// not. The population manager treats a loose PED as disposable and clears it out
+        /// quickly, while a loose CAR is parked scenery and sits there for as long as the
+        /// player is anywhere near. So the driver went, the car stayed, and the car it stayed
+        /// as was one of the ones we had just fitted with neon and a personalised plate.
+        ///
+        /// So the DRIVER is released and drives off, and the CAR is kept -- ours, on a list --
+        /// until there is nobody in it or it is far enough away that deleting it is not
+        /// something anybody sees. Whichever comes first, it goes.
+        /// </summary>
+        private void Loose(Vehicle car, Ped driver)
+        {
+            if (driver != null && driver.Exists())
+            {
+                try
+                {
+                    driver.IsPersistent = false;
+                    driver.MarkAsNoLongerNeeded();
+                }
+                catch
+                {
+                }
+            }
+
+            if (car == null || !car.Exists()) return;
+
+            _ghosts.Add(new Ghost { Car = car, Driver = driver, Since = Game.GameTime });
+        }
+
+        /// <summary>A car on its way out, and whoever was driving it.</summary>
+        private sealed class Ghost
+        {
+            public Vehicle Car;
+            public Ped Driver;
+            public int Since;
+        }
+
+        private readonly List<Ghost> _ghosts = new List<Ghost>();
+
+        /// <summary>
+        /// Follow them out and tidy up behind them.
+        ///
+        /// Three ways off the list, and the first one is the fault this exists for: the driver
+        /// has been cleaned up by the game and the car is now an ornament, so it goes at once.
+        /// Otherwise it goes when it is far enough away to not be seen going, and failing both
+        /// of those it goes on a timer -- because a car wedged against a wall two streets away
+        /// with a driver who cannot free it would otherwise be kept for the rest of the session.
+        /// </summary>
+        private void Ghosts(int now)
+        {
+            if (_ghosts.Count == 0) return;
+
+            Vector3 you;
+
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return;
+
+                you = player.Position;
+            }
+            catch
+            {
+                return;
+            }
+
+            for (var i = _ghosts.Count - 1; i >= 0; i--)
+            {
+                var g = _ghosts[i];
+
+                try
+                {
+                    if (g.Car == null || !g.Car.Exists())
+                    {
+                        _ghosts.RemoveAt(i);
+                        continue;
+                    }
+
+                    var empty = g.Driver == null || !g.Driver.Exists() || !g.Driver.IsAlive
+                                || !g.Driver.IsInVehicle(g.Car);
+
+                    var away = g.Car.Position.DistanceTo(you) > GoneRange;
+                    var old = now - g.Since > GhostMs;
+
+                    if (!empty && !away && !old) continue;
+
+                    // An abandoned car is deleted where it stands even if you are looking at
+                    // it. It is a car with nobody in it that was not there ten minutes ago --
+                    // there is no version of leaving it that looks better.
+                    if (g.Driver != null && g.Driver.Exists() && away) g.Driver.Delete();
+
+                    g.Car.Delete();
+                    _ghosts.RemoveAt(i);
+                }
+                catch
+                {
+                    _ghosts.RemoveAt(i);
+                }
+            }
+        }
+
+        /// <summary>How far is far enough to go, and how long before one goes anyway.</summary>
+        private const float GoneRange = 130f;
+        private const int GhostMs = 180000;
 
         private void Pack()
         {
@@ -1748,23 +1862,8 @@ namespace Hoodrich.Locations
 
             foreach (var p in _parked)
             {
-                try
-                {
-                    if (p.Driver != null && p.Driver.Exists())
-                    {
-                        p.Driver.IsPersistent = false;
-                        p.Driver.MarkAsNoLongerNeeded();
-                    }
-
-                    if (p.Car == null || !p.Car.Exists()) continue;
-
-                    p.Car.IsPersistent = false;
-                    p.Car.MarkAsNoLongerNeeded();
-                }
-                catch
-                {
-                    // Already gone.
-                }
+                try { Loose(p.Car, p.Driver); }
+                catch { /* Already gone. */ }
             }
 
             _parked.Clear();
@@ -1774,16 +1873,7 @@ namespace Hoodrich.Locations
             {
                 try
                 {
-                    if (l.Cop != null && l.Cop.Exists())
-                    {
-                        l.Cop.IsPersistent = false;
-                        l.Cop.MarkAsNoLongerNeeded();
-                    }
-
-                    if (l.Car == null || !l.Car.Exists()) continue;
-
-                    l.Car.IsPersistent = false;
-                    l.Car.MarkAsNoLongerNeeded();
+                    Loose(l.Car, l.Cop);
                 }
                 catch
                 {
@@ -1822,6 +1912,16 @@ namespace Hoodrich.Locations
                     if (l.Cop != null && l.Cop.Exists()) l.Cop.Delete();
                     if (l.Car != null && l.Car.Exists()) l.Car.Delete();
                 }
+
+                // Anything already on its way out goes with the rest of it. RestoreWorld is
+                // the hard teardown -- a save being loaded, the mod being switched off -- and
+                // leaving a list of cars we had promised to delete would be leaving exactly
+                // the mess this whole thing is about.
+                foreach (var g in _ghosts)
+                {
+                    if (g.Driver != null && g.Driver.Exists()) g.Driver.Delete();
+                    if (g.Car != null && g.Car.Exists()) g.Car.Delete();
+                }
             }
             catch
             {
@@ -1833,6 +1933,7 @@ namespace Hoodrich.Locations
             _turned.Clear();
             _running.Clear();
             _law.Clear();
+            _ghosts.Clear();
 
             _scattered = false;
 

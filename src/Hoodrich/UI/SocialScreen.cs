@@ -1748,6 +1748,13 @@ namespace Hoodrich.UI
                 return true;
             }
 
+            // A COMPANY GETS NOTHING MADE FOR IT. The face factory stands a PED up and
+            // photographs it, so asking it for a picture of a taxi firm gets you a photograph
+            // of a man -- and then a cab company is posting its opening hours over somebody's
+            // holiday snap. If the game ships a logo for the business it is used above; if it
+            // does not, the initial is the honest answer.
+            if (post.By.IsOrg) return false;
+
             // EVERYBODY ELSE GETS ONE MADE. See UI.Headshots -- a ped model that suits the
             // handle is stood up out of sight, photographed and deleted, and the picture is
             // kept. Asking for it is also what keeps it in the cache, so the faces on screen

@@ -239,7 +239,8 @@ namespace Hoodrich.UI
             // people see most of the time -- it is on screen without anybody opening
             // anything -- and it was the half still drawing a coloured letter, which is why
             // the faces looked like they were not working at all.
-            if (!drew && card.By != null)
+            // Same rule as the feed: a business wears its own logo or nothing at all.
+            if (!drew && card.By != null && !card.By.IsOrg)
             {
                 var made = Headshots.Txd(card.By.Handle);
 

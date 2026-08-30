@@ -44,6 +44,17 @@ namespace Hoodrich.Social
 
         public bool HasVoice => !string.IsNullOrEmpty(Voice);
 
+        /// <summary>
+        /// A company, a station, an agency -- anything that is not a person.
+        ///
+        /// Carried as the gender rather than as its own flag because that is the field that
+        /// already answers it: an account with no gender is not a man or a woman because it is
+        /// a chicken shop. The feed has always used it to decide who may post a shop's opening
+        /// hours; the pictures need the same answer.
+        /// </summary>
+        public bool IsOrg =>
+            string.Equals(Gender, "none", StringComparison.OrdinalIgnoreCase);
+
         /// <summary>Avatar colour, derived once from the handle so it never changes on them.</summary>
         public Color Tint = Color.FromArgb(255, 90, 96, 92);
 
