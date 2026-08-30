@@ -4,6 +4,55 @@
 
 
 -------------------------------------------------------------------------------
+  0.5.1
+-------------------------------------------------------------------------------
+
+One fix. It is save loss, which is why it is not waiting for 0.6.0.
+
+If you are on 0.4.0 or 0.5.0 with the game installed under Program Files, this
+affects you, and it can take a whole playthrough without ever saying anything.
+
+
+THE SAVE FOLLOWS THE SAVE, NOT THE FOLDER'S PERMISSIONS
+
+Reported on the mod page: quit the game, load it back up, and everything the mod
+had tracked is reset.
+
+The mod writes beside the dll when Windows lets it and falls back to
+Documents\Hoodrich when it does not, which is the normal case under Program
+Files. That part has worked for months. What was wrong is that loading only ever
+looked at whichever of the two won THIS session -- so the save location was a
+function of the folder's permissions, and permissions change.
+
+Run one cannot write to the game folder and saves to Documents. Then somebody
+runs the game as administrator once, or takes ownership of the folder, or an
+installer resets the ACL. Run two CAN write there, finds no save in it, and
+starts them at rank zero. The playthrough is still sitting in Documents,
+untouched, and nothing ever looks at it again.
+
+Which is also why granting yourself full control appeared to fix it. That was
+never the fix. It just stopped the location moving about.
+
+So the question asked first is no longer where CAN it write. It is where IS the
+save, and only when neither place holds one does writability decide. A folder
+holding nothing but a .bak counts: that is still the folder with your
+playthrough in it.
+
+NOTHING WAS EVER DELETED. If this happened to you, your old save is in
+Documents\Hoodrich and this build will find it and carry on from it.
+
+
+AND IT SAYS SO NOW
+
+The startup check that was meant to warn about this could never fire. It probed
+the folder the mod had ALREADY fallen back to, so the probe passed every time.
+
+It now tells you on screen when your save is not beside the dll, names the folder
+it is in, and says not to go changing the game folder's permissions looking for
+it.
+
+
+-------------------------------------------------------------------------------
   0.5.0
 -------------------------------------------------------------------------------
 
