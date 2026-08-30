@@ -49,8 +49,40 @@ namespace Hoodrich.UI
         private const float BodyScale = 0.315f;
         private const float LineHeight = 0.0248f;
 
-        /// <summary>Gap under a post, before the next one's rule.</summary>
-        private const float PostGap = 0.012f;
+        /// <summary>
+        /// Gap BETWEEN two cards now, rather than under a post before the next one's rule.
+        ///
+        /// Wider than it was, and the width is the point. A hairline between two blocks of text
+        /// separates them the way a ruled notebook separates lines -- they are still one sheet.
+        /// Air between two shapes makes them two objects, and a feed is a stack of objects.
+        ///
+        /// It costs about one post a screenful. Worth it: eight posts you scan as a wall are
+        /// worth less than seven you read.
+        /// </summary>
+        private const float PostGap = 0.017f;
+
+        /// <summary>Breathing room inside a card, above the name and below the figures.</summary>
+        private const float CardPad = 0.006f;
+
+        /// <summary>How round the cards are. Enough to read as a corner, not a pill.</summary>
+        private const float CardRadius = 0.005f;
+
+        /// <summary>The card itself, and the hairline that gives it an edge in the dark.</summary>
+        private static readonly Color CardFace = Color.FromArgb(64, 150, 158, 152);
+        private static readonly Color CardEdge = Color.FromArgb(30, 210, 220, 214);
+
+        /// <summary>
+        /// The display name, in one place because two things measure it.
+        ///
+        /// Up from 0.34 against a body at 0.315. Those two numbers are close enough that the
+        /// eye reads a post as one undifferentiated block and has to actually parse it to find
+        /// out who is talking -- which is the whole reason the screen looked like a list of
+        /// sentences rather than a feed. A name has to win its line.
+        /// </summary>
+        private const float NameScale = 0.385f;
+
+        /// <summary>The handle and the stamp. Down, and further out of the way.</summary>
+        private const float StampScale = 0.245f;
 
         private const int OpenGraceMs = 220;
 
@@ -866,7 +898,7 @@ namespace Hoodrich.UI
                 var height = PostHeight(post);
                 if (y + height > bottom) break;
 
-                DrawPost(left, y, post);
+                DrawPost(left, y, post, shown);
                 y += height;
                 shown++;
             }
@@ -925,8 +957,35 @@ namespace Hoodrich.UI
         /// shove ABOUT YOU sideways every ten seconds -- fine in a still, twitching all evening
         /// in motion.
         /// </summary>
+        /// <summary>The marker under the tab strip, which travels rather than teleports.</summary>
+        private readonly Eased _tabX = new Eased();
+        private readonly Eased _tabW = new Eased();
+
         private float Tabs(float x, float right, float y, Color edge)
         {
+            // WHERE THE MARKER IS HEADED, worked out before a single label is drawn.
+            //
+            // It used to be painted inside the loop at whichever tab happened to be the
+            // current one, which means it does not move between tabs -- it stops existing in
+            // one place and starts existing in another. That is the difference between a
+            // selection you can follow and one you have to go and find again, and on a strip
+            // where two of the four tabs start fights, following it matters.
+            var goingTo = x;
+
+            for (var i = 0; i < _tab && i < TabNames.Length; i++)
+            {
+                goingTo += _stripW[i] + (i == 1 ? _stripSplit : _stripGap);
+            }
+
+            var markX = _tabX.To(goingTo, 13f);
+            var markW = _tabW.To(_stripW[_tab] + 0.008f, 13f);
+
+            // Under the labels, so it slides behind the words rather than over them.
+            Hud.RectFrom(markX - 0.004f, y - 0.004f, markW, 0.024f, RowWash);
+
+            Hud.RectFrom(markX - 0.004f, y + 0.019f, markW, 0.0022f,
+                         _tab < 2 ? Palette.Accent : Palette.Danger);
+
             var cx = x;
 
             for (var i = 0; i < TabNames.Length; i++)
@@ -935,14 +994,6 @@ namespace Hoodrich.UI
 
                 // _tally has TWO entries and the strip has FOUR.
                 var empty = i < 2 && _tally[i] == 0;
-
-                if (here)
-                {
-                    Hud.RectFrom(cx - 0.004f, y - 0.004f, _stripW[i] + 0.008f, 0.024f, RowWash);
-
-                    Hud.RectFrom(cx - 0.004f, y + 0.019f, _stripW[i] + 0.008f, 0.0022f,
-                                 i < 2 ? Palette.Accent : Palette.Danger);
-                }
 
                 // One of the four in warning colour. POST costs nothing and should not be
                 // dressed as though it did, so DISS is the only label that arrives amber.
@@ -1668,7 +1719,36 @@ namespace Hoodrich.UI
         private const int SlideMs = 420;
         private const int GlowMs = 6000;
 
-        private void DrawPost(float left, float top, Post post)
+        /// <summary>
+        /// How long each card waits behind the one above it, and how long its own move takes.
+        ///
+        /// Short. A cascade you can sit and watch complete is a screen that is slow to open;
+        /// what this is for is the half-second after the button, where a list that assembles
+        /// itself reads as a thing being fetched and a list that is simply THERE reads as a
+        /// static image somebody drew.
+        /// </summary>
+        private const int DealStepMs = 38;
+        private const int DealMoveMs = 260;
+
+        /// <summary>Where this card is in its own arrival, from 1 to 0.</summary>
+        private float Dealing(int slot)
+        {
+            try
+            {
+                var since = Game.GameTime - _openedAt - slot * DealStepMs;
+
+                if (since >= DealMoveMs) return 0f;
+                if (since <= 0) return 1f;
+
+                return 1f - since / (float)DealMoveMs;
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
+        private void DrawPost(float left, float top, Post post, int slot = 0)
         {
             var lines = Lines(post);
 
@@ -1683,7 +1763,12 @@ namespace Hoodrich.UI
             var slide = Landing(post, SlideMs);
             var glow = Landing(post, GlowMs);
 
-            if (slide > 0f) left += Hud.ToX(0.045f) * slide * slide;
+            // Two reasons a card can be moving and they do not add up -- a post that arrives
+            // in the same instant the screen opens should travel once, not twice as far. The
+            // bigger of the two wins and the other is along for the ride.
+            var move = Math.Max(slide * slide, Dealing(slot));
+
+            if (move > 0f) left += Hud.ToX(0.045f) * move;
 
             if (glow > 0f)
             {
@@ -1702,26 +1787,48 @@ namespace Hoodrich.UI
             // long as a cursor sits on it whereas this is permanent and can cover three posts
             // at once. It sits BEHIND the text and does not inset it, which matters: see the
             // note on the wrap cache in Lines().
+            // EVERY POST IS A CARD NOW.
+            //
+            // It used to be a run of text with a hairline under it, which is a list. The thing
+            // that makes a timeline read as a timeline is that each post is a separate object
+            // you could pick up -- and that is a shape with an edge and air around it, not a
+            // rule between two paragraphs.
+            var cardH = PostHeight(post) - PostGap;
+            var cardW = PanelWidth - 0.012f;
+
+            Hud.RoundRect(left + 0.002f, top, cardW, cardH, CardRadius, CardFace);
+
+            // A one-pixel lift along the top edge only. A full outline round a dark card on a
+            // dark panel is a box drawn twice; a highlight on the top edge alone is the way
+            // light actually falls on something raised.
+            Hud.RectFrom(left + 0.002f + Hud.ToX(CardRadius), top,
+                         cardW - Hud.ToX(CardRadius) * 2f, 0.0008f, CardEdge);
+
             if (post.AboutYou)
             {
-                var h = PostHeight(post) - PostGap;
+                var h = cardH;
 
-                Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.012f, h,
-                             Color.FromArgb(28, 255, 255, 255));
+                Hud.RoundRect(left + 0.002f, top, cardW, h, CardRadius,
+                              Color.FromArgb(26, 255, 255, 255));
 
-                Hud.RectFrom(left + 0.002f, top, 0.0022f, h, Palette.Accent);
+                Hud.RectFrom(left + 0.002f, top + CardRadius * 0.5f, 0.0022f,
+                             h - CardRadius, Palette.Accent);
 
                 // Closed on the other three sides as well. A wash with a rail down one edge is
                 // a highlight; a wash with a line all the way round it is a card, and the whole
                 // point of the thing is that it is a separate object from the post above it.
-                var trim = Palette.Alpha(Palette.Accent, 90);
+                var trim = Palette.Alpha(Palette.Accent, 70);
 
-                Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.012f, 0.0010f, trim);
-                Hud.RectFrom(left + 0.002f, top + h - 0.0010f, PanelWidth - 0.012f, 0.0010f, trim);
+                Hud.RectFrom(left + 0.002f + Hud.ToX(CardRadius), top,
+                             cardW - Hud.ToX(CardRadius) * 2f, 0.0010f, trim);
 
-                Hud.RectFrom(left + PanelWidth - 0.010f - Hud.ToX(0.0010f), top,
-                             Hud.ToX(0.0010f), h, trim);
+                Hud.RectFrom(left + 0.002f + Hud.ToX(CardRadius), top + h - 0.0010f,
+                             cardW - Hud.ToX(CardRadius) * 2f, 0.0010f, trim);
             }
+
+            // Content sits inside the card from here down. One shift rather than a padding
+            // term added to every offset below it, which is how those go out of step.
+            top += CardPad;
 
             var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;
             var cy = top + 0.004f + AvatarSize * 0.5f;
@@ -1761,10 +1868,11 @@ namespace Hoodrich.UI
 
             // Name, then handle and stamp trailing it in the quiet face. Measured so the handle
             // sits directly after the name whatever the name happens to be.
-            Hud.Text(post.By.Name, textX, y, 0.34f, Palette.Text, Hud.FontChaletLondon, centre: false);
+            Hud.Text(post.By.Name, textX, y, NameScale, Palette.Text, Hud.FontChaletLondon,
+                     centre: false);
 
             var nameWidth = 0.06f;
-            try { nameWidth = Hud.MeasureText(post.By.Name, 0.34f, Hud.FontChaletLondon); }
+            try { nameWidth = Hud.MeasureText(post.By.Name, NameScale, Hud.FontChaletLondon); }
             catch { /* the estimate above will do */ }
 
             var tail = textX + nameWidth + 0.006f;
@@ -1799,7 +1907,8 @@ namespace Hoodrich.UI
                 tail += Hud.ToX(th) + 0.004f;
             }
 
-            Hud.Text(post.By.Handle + "  ·  " + SocialFeed.Ago(post.At), tail, y + 0.003f, 0.26f,
+            Hud.Text(post.By.Handle + "  ·  " + SocialFeed.Ago(post.At), tail, y + 0.0045f,
+                     StampScale,
                      Palette.TextDim, Hud.FontLabel, centre: false);
 
             y += MetaHeight;
@@ -1836,10 +1945,8 @@ namespace Hoodrich.UI
                          Hud.FontLabel, centre: false);
             }
 
-            // Divider under the post, inset so it reads as a separator rather than a box edge.
-            Hud.RectFrom(left + Pad, top + PostHeight(post) - PostGap * 0.6f,
-                         PanelWidth - Pad * 2f, 0.0010f,
-                         Color.FromArgb(40, 200, 205, 200));
+            // No divider. The gap between two cards is the divider, and drawing a rule in it
+            // as well would put a line through the middle of the space that separates them.
         }
 
         /// <summary>
@@ -1883,7 +1990,9 @@ namespace Hoodrich.UI
         {
             var lines = Math.Max(1, Lines(post).Count);
 
-            return MetaHeight + lines * LineHeight + MetricsHeight + PostGap;
+            // The card's own padding is part of the post's height, so the gap between two of
+            // them stays PostGap however much is inside either one.
+            return CardPad * 2f + MetaHeight + lines * LineHeight + MetricsHeight + PostGap;
         }
 
         /// <summary>
