@@ -700,7 +700,7 @@
    "gender": "male",
    "pic": "CHAR_MP_STRETCH",
    "verified": true,
-   "voice": "grimes_ls",
+   "voice": "stretch_guns",
    "gang": "families"
   },
   {
@@ -2168,7 +2168,11 @@
    "hardest lesson round here is that being right and being safe ain't the same",
    "every year i want less and it keeps working",
    "sometimes the answer is go to sleep and look at it again {timeofday}",
-   "i give people one chance now. one is generous"
+   "i give people one chance now. one is generous",
+   "franklin got two dogs now and both of them look at you the same way",
+   "seen that rottweiler on {hood} again. he don't belong to nobody but he belongs to somebody",
+   "there's a black rottweiler round {localspot} that everybody knows and nobody owns",
+   "whoever's dog that is on {hood}, he's better behaved than most people i know"
   ],
   "MissionTaken": [
    "Seen {yours} pulling up on {here}. Something about to happen",
@@ -2180,7 +2184,17 @@
    "{source} {hearsay} {yours} got something planned",
    "Everybody with a green shirt is walking fast on {here}",
    "It is about to be a long night on {here}",
-   "{reaction}. Locking my door"
+   "{reaction}. Locking my door",
+   "something's about to happen on {here}. you can tell",
+   "cars been circling {here} for an hour",
+   "everybody who knows anything left {localspot} at the same time",
+   "the block got that feeling again",
+   "somebody made a call and somebody else picked up",
+   "if you got somewhere else to be tonight, be there",
+   "{yours} moving early. that's never nothing",
+   "phones been going all over {hood}",
+   "aunties pulling kids inside on {here}. they know",
+   "it's about to be a long night for somebody"
   ],
   "MissionDone": [
    "Seen some YNs riding down and whooping ass on {rival} at {here} {filler}",
@@ -2215,7 +2229,27 @@
    "Y'all remember when {rival} was acting like they ran {here}? Good times",
    "One phone call and {here} changed hands. {filler}",
    "{reaction}. {here} is different now",
-   "The way {rival} scattered off {here} {timeofday} {filler}"
+   "The way {rival} scattered off {here} {timeofday} {filler}",
+   "whatever went down on {here} was over before anybody got a phone out",
+   "{yours} moved through {here} {timeofday} and left it quiet",
+   "somebody handled something on {here} and everybody real polite about it now",
+   "the {rival} boys ain't been back to {here} since {timeofday}",
+   "heard it from {source}. said it was {opinion}",
+   "whole street saw it and the whole street forgot it",
+   "you ever notice how fast a problem stops being a problem round {here}",
+   "{localspot} closed early. that tells you enough",
+   "there was a lot of noise on {here} and now there ain't any",
+   "{yours} don't announce nothing. you just notice after",
+   "{source} said it took four minutes. four",
+   "nobody's asking questions on {here} tonight and that's answer enough",
+   "the block runs different since {timeofday}",
+   "somebody settled something and it wasn't the police",
+   "{rival} got told and they got told properly",
+   "green been moving with purpose all week",
+   "{here} back to normal. whatever normal is now",
+   "somebody did somebody a favour and everybody knows the price",
+   "the {rival} tag on {here} came down before lunch",
+   "you could feel it change on {here} {timeofday}"
   ],
   "MissionFailed": [
    "Whatever {yours} tried on {here} did NOT work {filler}",
@@ -2227,7 +2261,15 @@
    "{source} {hearsay} it fell apart on {here}. {reaction}",
    "{rival} laughing about {here} right now and honestly, fair",
    "That is gonna be a long ride home",
-   "Whoever planned that one, sit down"
+   "Whoever planned that one, sit down",
+   "whatever that was on {here}, it didn't go how they wanted",
+   "somebody's got a lot of explaining to do {timeofday}",
+   "heard it went sideways. heard it from three people",
+   "that's gonna cost somebody more than money",
+   "{source} said they had to leave in a hurry",
+   "not everything works. this is the part nobody posts about",
+   "{rival} laughing about something on {here} and i don't like it",
+   "somebody bit off more than they could handle out here"
   ],
   "RivalKilled": [
    "Another one of {rival} down near {here} {timeofday}",
@@ -2246,7 +2288,15 @@
    "The corner store on {here} closing early now. Cannot blame them",
    "This the fourth time this year on {here}. {reaction}",
    "{source} {hearsay} it was quick. Small mercy",
-   "Whole block on {here} standing outside watching. Nobody saying nothing"
+   "Whole block on {here} standing outside watching. Nobody saying nothing",
+   "somebody went down on {here} and the street cleared in seconds",
+   "they left him there. that's the part that gets me",
+   "he was somebody's son and somebody's problem, both",
+   "ambulance took eleven minutes to {hood}. eleven",
+   "everybody saw and nobody's saying",
+   "there's a candle there already. that was fast",
+   "the block's gonna answer for that one way or another",
+   "he wasn't even from round here"
   ],
   "Brawl": [
    "Whole fight broke out at {here} {timeofday}. No guns, all hands. Respect",
@@ -2265,7 +2315,15 @@
    "they was throwing hands outside the store. no guns, respect",
    "bro got folded in front of his whole crew",
    "hands only and he still lost. embarrassing",
-   "somebody get that man a ice pack and some dignity"
+   "somebody get that man a ice pack and some dignity",
+   "two grown men on {here} and a whole crowd filming",
+   "started over nothing and ended over nothing",
+   "somebody's cousin got involved and made it worse",
+   "they was friends {timeofday}",
+   "no weapons at least. small mercies out here",
+   "the fight moved three whole streets",
+   "everybody watching and not one person stepping in",
+   "that's gonna be a beef now. that wasn't a beef before"
   ],
   "DriveBy": [
    "Shots on {here} {timeofday}. Everybody down",
@@ -2287,7 +2345,17 @@
    "they came, they let off, they left. same as always",
    "somebody's on the floor down {street} and somebody's driving",
    "that corner's been asking for a while now",
-   "nobody saw the car. nobody ever sees the car"
+   "nobody saw the car. nobody ever sees the car",
+   "car came down {here} slow and then not slow",
+   "everybody on the corner hit the deck at the same time. practised",
+   "they didn't even stop. that's how casual it's got",
+   "plates covered. of course",
+   "somebody's window got it instead of somebody's head",
+   "that car been round twice before it happened",
+   "the whole thing took four seconds",
+   "you can tell a real one from a warning by whether they slowed down",
+   "kids playing out front. KIDS",
+   "third one on {hood} this month and nothing's been done"
   ],
   "Busted": [
    "LSPD got somebody on {here} {timeofday}",
@@ -2300,7 +2368,15 @@
    "Four cars for one person on {here}. {reaction}",
    "Watched the whole thing outside {localspot}. {filler}",
    "Somebody about to need {source} to post bail",
-   "That is what the corner gets you eventually"
+   "That is what the corner gets you eventually",
+   "they took somebody off {here} in cuffs {timeofday}",
+   "four cars for one man. four",
+   "the whole street came out to watch and nobody said a word",
+   "he'll be out by Friday. they always are",
+   "they searched three cars that had nothing to do with it",
+   "somebody's mother screaming on {here} and nobody helping",
+   "that's the third arrest on {hood} this week",
+   "they got him for something and it wasn't the thing"
   ],
   "Tagged": [
    "Somebody went over the {rival} tag on {here} {timeofday}. Bold",
@@ -2328,7 +2404,15 @@
    "Whoever keeps painting round here, we see you. {reaction}",
    "Fresh paint on {localspot} again. Somebody's got a lot of time and a lot of cans",
    "Shopkeeper on {here} out there scrubbing a wall {timeofday}. Losing battle",
-   "That wall by {localspot} changed colour twice this week {filler}"
+   "That wall by {localspot} changed colour twice this week {filler}",
+   "fresh paint on {here} and it went up in daylight",
+   "whoever's doing these walls is good. genuinely good",
+   "that tag's a message and everybody on {hood} can read it",
+   "council painted over it Tuesday. it's back",
+   "the wall by {localspot} is a whole conversation now",
+   "somebody spent real time on that one",
+   "the {rival} one lasted about six hours",
+   "you can track the whole beef by that wall"
   ],
   "BigSale": [
    "It's busy on {here} {timeofday}. Everybody knows why",
@@ -2354,7 +2438,17 @@
    "From nobody to somebody in about six months. {reaction}",
    "{yours} got a new problem-solver and everybody knows it",
    "Whoever that is, they earned every bit of it",
-   "You can tell who is running things by who does not have to say it"
+   "You can tell who is running things by who does not have to say it",
+   "that name carries weight on {here} now and it didn't last year",
+   "people who wouldn't speak last month speaking now",
+   "you can measure it by who calls first",
+   "same guy. different room he gets let into",
+   "the older heads on {hood} started nodding. that's the whole promotion",
+   "nobody voted. it just happened",
+   "went from asking to being asked",
+   "you know somebody's up when the rumours get flattering",
+   "that's a name you say properly now",
+   "the block decides these things and the block decided"
   ],
   "JoinedGang": [
    "Heard {yours} put somebody on {timeofday}",
@@ -2900,7 +2994,27 @@
    "\"solid is a word y'all just say / I ain't seen one of you outside all day\" ",
    "\"they run they mouth, we run the strip / one of us been workin, one of us been trippin\"",
    "\"put the whole set on a t-shirt press / y'all made a song about a fumbled address\" ",
-   "\"we don't need a hook, the block already know / been eatin out here since the Rancho show\" "
+   "\"we don't need a hook, the block already know / been eatin out here since the Rancho show\" ",
+   "\"you was on the block when the block was safe / we was on the block when it wasn't a place\"",
+   "\"purple in the hills 'cause they can't stay here / green on the corner every day this year\"",
+   "\"they put a candle where a man used to stand / now they wanna talk about a truce and a plan\"",
+   "\"i don't need a hook, i need a corner and a phone / half of your set already sittin' at home\"",
+   "\"you a driver, not a shooter, and we know which is which / been knew the difference since the Forum Drive ditch\"",
+   "\"talk about respect with a borrowed gun / talk about the set, you ain't even one\"",
+   "\"Grove Street raised me, Chamberlain paid me / everything after that is somethin' they gave me\"",
+   "\"count your bodies, i'll count my rent / you spent the whole year on somethin' i already spent\"",
+   "\"they call it a war 'cause it sounds better than losin' / they call it a truce 'cause it sounds better than movin'\"",
+   "\"i been through Davis when Davis was quiet / been through the same block when the block was a riot\"",
+   "\"your boy was a legend for about a weekend / now he's a hashtag and a candle they leanin'\"",
+   "\"we don't do interviews, we do addresses / you do the talkin', we do the guesses\"",
+   "\"came from the courts where the nets is gone / been runnin' this corner since the lights come on\"",
+   "\"you was a Balla when it was a costume / i was a Family before i had a room\"",
+   "\"they say i changed. yeah, the price did / same old block, i just know what a house cost\"",
+   "\"i don't rap, i just tell you what happened / everything after that is somebody clappin'\"",
+   "\"put yellow on the wall, we put green over it / put a name on the wall, we don't go over it\"",
+   "\"tell the whole east side we ain't hard to find / we the ones outside when it's raining, standing in line\"",
+   "\"i ain't got a chain, i got a lawyer on retainer / that's the difference between a boy and an earner\"",
+   "\"you was on Bleeter, i was on Forum / you got followers, i got a quorum\""
   ],
   "CopKilled": [
    "Officer down on {hood}. This whole city about to be hell for a week",
@@ -2918,7 +3032,17 @@
    "Roadblocks going up on {hood}. Take the long way. Take ANY other way",
    "My scanner has not stopped in forty minutes",
    "Praying for everybody caught up on {hood} tonight",
-   "The heat behind this is gonna last months. Watch"
+   "The heat behind this is gonna last months. Watch",
+   "officer down on {here}. this whole side of the city about to change",
+   "every police in Los Santos coming to {hood} tonight",
+   "whatever you had planned, cancel it",
+   "they're stopping everybody. everybody",
+   "this ain't gonna be a week, it's gonna be a month",
+   "nobody wins from this. nobody",
+   "helicopters over {hood} since {timeofday} and they ain't leaving",
+   "roadblocks on both ends. can't get home",
+   "whoever did that just made life worse for ten thousand people",
+   "they got the whole block on the wall outside {localspot}"
   ],
   "WarStarted": [
    "Cars just pulled up deep on {here}. Everybody get inside",
@@ -2932,7 +3056,15 @@
    "If you're anywhere near {here}, turn around",
    "This is what everybody been saying was coming",
    "{theirs} deep on {here}. this is not a drive-by",
-   "{theircolour} on the corner of {here} and nobody inside is breathing"
+   "{theircolour} on the corner of {here} and nobody inside is breathing",
+   "it started. everybody on {here} knows it started",
+   "cars been coming down {here} for twenty minutes straight",
+   "if you got people on {here} call them now",
+   "this been coming since {timeofday} and everybody pretended it wasn't",
+   "shut the shop early. everybody did",
+   "somebody said something at {localspot} and now this",
+   "the whole block just went quiet at once. that's how it starts",
+   "get off {here}. i'm not explaining, just get off it"
   ],
   "WarLive": [
    "shots on {here} right now. i'm on the floor of my own kitchen",
@@ -2949,7 +3081,19 @@
    "that's not fireworks. it has not been fireworks for twenty minutes",
    "{rival} came deep. i'll give em that",
    "one of them is stuck on the wrong side of the street and he knows it",
-   "i've never seen {here} empty this quick"
+   "i've never seen {here} empty this quick",
+   "still going. been going twenty minutes",
+   "i can hear it from two streets over",
+   "kids on the floor of the front room. again",
+   "there's people running past my window and i don't know whose side",
+   "the shop on {here} pulled the shutter down mid-customer",
+   "somebody's car alarm been going the whole time",
+   "you can tell where it moved to by which dogs are barking",
+   "nobody's coming for a while. nobody comes for this",
+   "sirens somewhere. not here yet",
+   "third round of it. it keeps stopping and starting",
+   "my whole street is dark. everybody killed the lights at once",
+   "if you outside on {here} right now you made a choice"
   ],
   "WarLiveRival": [
    "we out here. where they at",
@@ -2979,7 +3123,17 @@
    "they ain't got the numbers no more and they know it",
    "keep the shiesty down and keep working",
    "every window on this street just closed. that's an answer",
-   "we came for a name. we leaving with one"
+   "we came for a name. we leaving with one",
+   "we in they block right now. where they at",
+   "they hiding behind cars on they own street",
+   "this how easy it is to get in here",
+   "they got numbers and nobody willing",
+   "we taking this corner tonight",
+   "tell them come outside then. we waiting",
+   "they been talking all month for this",
+   "we ain't leaving til somebody comes out",
+   "half of them already gone. watch",
+   "they gonna post about this like they won"
   ],
   "WarLiveOurs": [
    "they came to the wrong one. again",
@@ -3006,7 +3160,17 @@
    "this ain't a drill, this is the get-back",
    "keep the youngins inside. this ain't theirs yet",
    "{theirs} still out there talking. still out there losing",
-   "count how many of {theirs} go home"
+   "count how many of {theirs} go home",
+   "hold the corner. that's it. that's the whole job",
+   "we got people on both ends of {here}",
+   "nobody moves off this block. nobody",
+   "they came deep. they always come deep",
+   "we been ready since {timeofday}",
+   "keep your head down and keep the corner",
+   "this our street. this been our street",
+   "we losing nothing tonight",
+   "everybody where they supposed to be",
+   "they can come all night. we live here"
   ],
   "YouDaily": [
    "back on the block. same block, different day",
@@ -3015,14 +3179,65 @@
    "everybody want a piece and don't nobody want to work for it",
    "made my money today. that's the whole post",
    "still ain't got a day off since i can remember",
-   "chop ate better than me tonight",
+   "chop and trigz ate better than me tonight",
    "some of y'all need to stop calling me for favours",
    "you can leave the block, block don't leave you",
    "traffic on the {hood} was a whole hour of my life",
    "one day this all gonna make sense",
    "aunt denise asked me for money again. i gave it to her again",
    "seen an old face today. didn't say nothing",
-   "if you owe me you know you owe me"
+   "if you owe me you know you owe me",
+   "aunt denise got opinions about my hours again",
+   "chop and trigz both ate before i did. that's the third day",
+   "spent all morning on paperwork for a business that ain't legal. figure that out",
+   "used to repo cars for a man who screamed at me in two languages. this ain't worse",
+   "everybody on this block got a plan and a reason it ain't started yet",
+   "half of this is waiting. nobody tell you that part",
+   "{here} quiet. i don't trust it",
+   "i keep telling lamar this ain't a hobby",
+   "counting money in a kitchen ain't the dream but it ain't the corner neither",
+   "went past the old lot on {hood}. still got cars in it. still got the same sign",
+   "some days i miss the simple version of this. some days",
+   "nobody in {hood} respects a man til he leaves and comes back",
+   "took the long way home. needed to think",
+   "every dollar i make got somebody attached to it wanting a piece",
+   "got real estate on my mind and a real problem in my pocket",
+   "you can move out the block. the block don't move out you",
+   "denise asked me what i do. i said logistics. she said mmhm",
+   "aint been to sleep before 3 in a month",
+   "you know what's expensive? doing this properly",
+   "everybody want in until it's time to sit outside for six hours",
+   "chop knows when something's off before i do. trigz just follows him. every time",
+   "made more this week than i made in a year at that lot",
+   "the thing about {hood} is everybody know everything and nobody says nothing",
+   "i been up since {timeofday} and i ain't done nothing i planned",
+   "trying to build something that don't fall apart the second i leave the room",
+   "tanisha was right about most of it. not all of it",
+   "somebody asked if i'm still in the car business. kind of",
+   "you get one shot at being the person who got out",
+   "spent the whole day fixing something somebody else broke {filler}",
+   "got the money. still got the same phone. that's on purpose",
+   "everybody in this city selling something. at least i'm honest about it",
+   "{here} smells like rain and somebody's grill",
+   "i don't need everybody to like me. i need everybody to answer",
+   "the hills look close from {hood}. they ain't close",
+   "you can't build nothing on a block that don't trust you",
+   "lamar called me boring today. i been shot at twice this week",
+   "trigz sleeps in the doorway. chop sleeps on the bed. they worked it out between them",
+   "two dogs is not twice one dog. it's a different situation entirely",
+   "trigz still don't know he's a dog. thinks he's staff",
+   "chop been showing trigz where everything is. i ain't teach him that",
+   "denise says one dog was already one too many",
+   "took trigz to the yard and he acted like he owned it. he kind of does",
+   "trigz sits in the passenger seat like he's got somewhere to be",
+   "you know it's a bad neighbourhood when the dog gets a name and a reputation",
+   "chop's the smart one. trigz is the one you want at the door",
+   "spending more on dog food than i did on rent at the old place",
+   "trigz don't bark at everybody. that's how you know when to look up",
+   "two dogs in the car and neither one of them paying for gas",
+   "trigz found something in the yard and won't tell me what",
+   "chop's getting old. trigz doing the running for both of them now",
+   "somebody asked which one's the guard dog. both. obviously both"
   ],
   "GangOnGang": [
    "{rival} been quiet lately. suspiciously quiet",
@@ -3337,7 +3552,9 @@
    "they got him but they ain't got him. get well soon fam",
    "franklin been through worse than this. hold your head bro",
    "if you laughing at franklin right now the block seen it",
-   "chop been sat outside that hospital all night i swear"
+   "chop and trigz been sat outside that hospital all night i swear",
+   "somebody's gotta feed them dogs while he's in there",
+   "them two dogs of his ain't moved from the door"
   ],
   "CarBurned": [
    "car burning down by the water in la puerta. nobody around it either",
@@ -3359,7 +3576,17 @@
    "you can smell that two blocks off",
    "whatever was in that car isn't evidence any more",
    "kids out there filming it. of course they are",
-   "somebody solved a problem this afternoon and that's the receipt"
+   "somebody solved a problem this afternoon and that's the receipt",
+   "car burning on {here} and nobody's calling it in",
+   "you can smell it from {localspot}",
+   "whole thing went up in about a minute",
+   "that's the second one on {here} this month",
+   "fire crew took their time getting to {hood}. as usual",
+   "somebody's insurance is about to have a conversation",
+   "it wasn't parked there this morning",
+   "that car had a story and now it don't",
+   "kids stood watching it like it's a bonfire",
+   "black smoke over {hood} again"
   ],
   "Shots": [
    "shiiit somebody letting em fly down {street}",
@@ -3383,7 +3610,19 @@
    "that was four, maybe five. i stopped counting",
    "whole street went quiet after. that's the part people don't tell you",
    "somebody's alarm is still going off down {street}",
-   "you learn to tell them from fireworks and i wish you didn't"
+   "you learn to tell them from fireworks and i wish you didn't",
+   "shots on {here}. everybody inside",
+   "that was close enough to feel",
+   "eight, maybe nine. i stopped counting",
+   "my window's cracked. that's how close",
+   "whole street on the floor {timeofday}",
+   "somebody's kid was out there. somebody's KID",
+   "you don't get used to it, you just get faster at moving",
+   "that was two different guns. i know what that means",
+   "everybody's phone going off asking the same question",
+   "quiet now. the quiet after is worse",
+   "police helicopter up. twenty minutes late as usual",
+   "i counted the shots and then i counted the doors slamming"
   ],
   "WarHeld": [
    "they came and they left with less than they brought. block held",
@@ -3396,7 +3635,14 @@
    "everybody come outside now it's over. i see y'all",
    "no fumble. not one. block still ours {timeofday}",
    "they spun the block twice and never got out the car",
-   "held it with the youngins watching. they learned something {timeofday}"
+   "held it with the youngins watching. they learned something {timeofday}",
+   "we still here. that's the headline",
+   "they came with everything and left with nothing",
+   "nobody moved. not one of us",
+   "sweep the street and go home. we good",
+   "block held. that's twice this month",
+   "not a corner lost. write it down",
+   "everybody's accounted for. that's the only number that matters"
   ],
   "WarLost": [
    "we lost that one. no point saying otherwise",
@@ -3408,7 +3654,15 @@
    "somebody gonna answer for tonight, just not on the internet",
    "they took the block {timeofday}. tonight",
    "they was active and we wasn't. that's the whole reason",
-   "get-back list starts {timeofday}. nobody sleeps on it"
+   "get-back list starts {timeofday}. nobody sleeps on it",
+   "we lost that one and there's no other way to say it",
+   "the corner's theirs tonight. tonight",
+   "we got outnumbered and we got out-organised. both",
+   "everybody home. we'll talk about it tomorrow",
+   "that's a bad night and it's gonna be a bad week",
+   "somebody's gonna answer for how that went",
+   "we'll get it back. i don't know how yet",
+   "count everybody. that's the only thing that matters right now"
   ],
   "YouDissAztecas": [
    "aztecas got two streets and act like it's a country",
@@ -3797,7 +4051,17 @@
    "franklin been quiet today. just an observation. no reason",
    "not sayin it was them two. just sayin i ain't seen either of em since",
    "whoever it was picked the one shop with a man behind the counter who remembers faces",
-   "my cousin swears he saw two guys pedalling down {street} after. PEDALLING"
+   "my cousin swears he saw two guys pedalling down {street} after. PEDALLING",
+   "they hit {localspot}. again",
+   "the man behind the counter been robbed four times and he still opens",
+   "shutter's down on {localspot} and it's the middle of the day",
+   "whoever did {localspot} took the till and left the lottery tickets. amateurs",
+   "that shop is the only place round here that gives credit and they robbed it",
+   "police been at {localspot} for two hours doing nothing",
+   "everybody in {hood} knows who did it and the police interviewed a wall",
+   "he's putting the boards up himself. nobody helping",
+   "they took a hundred and fifty dollars and cost him a window",
+   "that's somebody's family business. think about that"
   ],
   "YouPosted": [
    "outside in {here}. you know what it is",
@@ -3824,7 +4088,7 @@
    "been out since {timeofday}. my back done told on me twice",
    "everybody know where i be. that's the business and the problem",
    "quit callin my phone. walk down and see me",
-   "chop out here with me. he don't do refunds neither",
+   "chop and trigz out here with me. they don't do refunds neither",
    "holler my name, not what you want. {filler}",
    "if you gotta ask what i'm doin out here you ain't the customer",
    "they rolled past twice. i'm just out here enjoyin the weather",
@@ -3837,7 +4101,21 @@
    "that {subject} in {here} if you was wonderin. wonder quieter next time",
    "servin in {here}. iykyk and if you don't, scroll",
    "customer service is OUTSIDE in {here} today",
-   "{here}. i'm the one who ain't waitin for a bus"
+   "{here}. i'm the one who ain't waitin for a bus",
+   "outside {here}. no waiting, no questions",
+   "{here} if you need me. don't call, just come",
+   "posted. {here}. that's the whole message",
+   "somebody said i'm hard to find. i'm at {here}",
+   "on {here} for a couple hours. after that i'm gone",
+   "at {here} {timeofday}. bring exactly what we said",
+   "{here}. don't send nobody i ain't met",
+   "here til it's done. {here}",
+   "if you was looking for me earlier, i'm here now. {here}",
+   "{here}. i'm not moving for the next hour",
+   "{here} and it's moving {filler}",
+   "outside. {here}. i got what you asked about",
+   "trigz with me. that's your warning and your welcome",
+   "me and the dogs on {here}. take from that what you want"
   ],
   "YouDidTheJob": [
    "handled it. don't ask what it was",
@@ -3855,7 +4133,15 @@
    "back in the car with a headache and a full pocket",
    "walked out the same way i walked in. bit richer",
    "money hit {timeofday}. still ain't sat down",
-   "paid up and nobody looking for me. i'll take it"
+   "paid up and nobody looking for me. i'll take it",
+   "handled. next",
+   "that's done and i ain't discussing it",
+   "took longer than it should have. it's done",
+   "some things you do and then you don't talk about them",
+   "lamar's gonna tell it wrong. it went fine",
+   "in and out. that's how it's supposed to go",
+   "not every job needs a story",
+   "clean. nobody's mad but the people who should be"
   ],
   "YouDidTheRide": [
    "rode a bicycle to a fistfight today. that's where i'm at",
@@ -3873,7 +4159,15 @@
    "chain came off twice. still got there before lamar",
    "won the fight. lost the argument the whole way home",
    "back in {hood} walking the bike up the last hill",
-   "no gun on me all day. still came home even"
+   "no gun on me all day. still came home even",
+   "rode down. said what needed saying",
+   "that block gonna be quiet for a week now",
+   "they wanted to know if we was serious",
+   "wasn't nothing personal. it was very personal",
+   "sent a message that don't need a follow up",
+   "everybody in that car knew the job before we left",
+   "we came through once. once was enough",
+   "they'll figure out who it was. that's fine"
   ],
   "YouDroppedACop": [
    "well. oops",
@@ -3882,7 +4176,7 @@
    "somebody had a bad night. might be two of us",
    "need to not be in {here} for a minute",
    "ain't talkin my way out this one",
-   "chop, if i don't come back, denise got you",
+   "chop, trigz, if i don't come back, denise got both of you",
    "this the one they don't let go",
    "how slow can a man walk and still be leavin",
    "hands ain't stopped shakin {filler}",
@@ -3891,7 +4185,15 @@
    "car ain't mine no more. that's all i'm sayin",
    "wish i could have them last ten minutes back",
    "i keep waitin on somebody to tell me it ain't real",
-   "if anybody ask, i been in the house since {timeofday}"
+   "if anybody ask, i been in the house since {timeofday}",
+   "that wasn't supposed to happen and i can't take it back",
+   "this one's gonna follow me. i know that",
+   "i need to be somewhere else for a while",
+   "of all the people to be in the way",
+   "no version of this ends good",
+   "everybody's about to have a very bad week because of me",
+   "i'm not going to say a word about this to anybody",
+   "that's a whole different kind of heat and i brought it myself"
   ],
   "YouDroppedOne": [
    "one less {rival} on the payroll. y'all hiring?",
@@ -3909,7 +4211,15 @@
    "dude rolled up like the block was his. it wasn't",
    "had a whole army online and showed up by hisself",
    "his people ain't run up. they just ran",
-   "i was mindin my business. he wasn't"
+   "i was mindin my business. he wasn't",
+   "he had every chance to walk off",
+   "i ain't proud of it. it was him or the next one",
+   "that's on whoever sent him",
+   "he came looking. he found it",
+   "one less person got my address",
+   "wasn't the plan. plans change fast out here",
+   "i'll think about it later. right now i got things to do",
+   "he shouldn't have been there and he knew it"
   ],
   "YouDidTheTags": [
    "wall in {here} reads different now",
@@ -3927,7 +4237,15 @@
    "took my time. wasn't nobody rushing me in {hood}",
    "went over it twice. wasn't taking no chances",
    "walked home. didn't run. wasn't nobody chasing me",
-   "gonna have to explain the paint on these jeans"
+   "gonna have to explain the paint on these jeans",
+   "wall's ours now. simple",
+   "they'll go over it. we'll go over that",
+   "took twenty minutes to say something they'll see every day",
+   "paint's cheap. the message ain't",
+   "you can read the block if you know how to look at the walls",
+   "put ours up where theirs was. that's the whole point",
+   "somebody's gonna be real mad about a wall",
+   "the block knows who did it and the block ain't saying"
   ],
   "YouDidTheTorch": [
    "went for a drive. came back on foot. don't ask about the car",
@@ -3941,11 +4259,19 @@
    "{rival} corner had a rough evening. heard about it same as y'all",
    "old beater did its job twice tonight",
    "ain't nothing to find and nobody to ask. moving on",
-   "chop asked about the car. told him what i'm telling y'all",
+   "chop and trigz asked about the car. told them what i'm telling y'all",
    "that block gonna be sweeping up all week. not my broom",
    "everybody got questions. i got a bus ride home",
    "one less problem on {hood}. one less car too",
-   "long drive. short visit"
+   "long drive. short visit",
+   "won't be driving that no more",
+   "some things you can't sell and can't keep",
+   "it was that or explain it later",
+   "gone. no plate, no problem",
+   "that car had a whole history in it. not anymore",
+   "cheaper than the alternative",
+   "smoke on {here} ain't nothing to do with me",
+   "nobody's finding nothing in that"
   ],
   "YouDidTheHit": [
    "it's done. don't ask me nothing else",
@@ -3953,7 +4279,7 @@
    "went in. came out. ain't talking about the middle",
    "somebody had a bad night. wasn't me",
    "{here} quiet now. let it stay quiet",
-   "chop ain't even look up when i came in. good",
+   "chop ain't even look up when i came in. trigz did. good dog",
    "ain't feel nothing after. that's the part that bother me",
    "last time i say anything about it",
    "radio off the whole way back",
@@ -3963,7 +4289,15 @@
    "burned the shirt. that was a good shirt too",
    "sat in the car a while before i turned the key",
    "ain't been out tonight. ask anybody",
-   "door was open when i got there. that's all i know"
+   "door was open when i got there. that's all i know",
+   "he had a name and a reputation and neither one helped",
+   "that was business. i want it on record it was business",
+   "somebody paid a lot for that to happen",
+   "one call and a man's whole life changes. mine too",
+   "i keep telling myself these are the ones that get me out",
+   "he knew somebody was coming. he didn't know when",
+   "done. i'm not answering the phone for a day",
+   "that's the last favour i owe anybody"
   ],
   "FoundYou": [
    "{you} we outside. you know which house",
@@ -4090,7 +4424,21 @@
    "who let the mustangs out",
    "traffic backed up to the lights because of this and honestly, worth it",
    "if you know you know. carson and the boulevard",
-   "the one in the green did four laps without straightening up once"
+   "the one in the green did four laps without straightening up once",
+   "engines going since {timeofday} and it ain't traffic",
+   "there's about forty cars parked round {here} for no legal reason",
+   "somebody doing donuts and about a hundred people watching",
+   "the whole junction is smoke. can't see across it",
+   "tyres, all night. that smell gets in the curtains",
+   "there's a Hellcat in the middle of the road going in circles and everybody's cheering",
+   "police been past twice and kept going. twice",
+   "lowriders bouncing on the kerb and somebody's got a speaker in a boot",
+   "i can't get to work. the whole junction's a car park with a show in it",
+   "my window's rattling from the exhausts",
+   "this happens once a month and it's always the same corner",
+   "somebody's gonna get hit standing that close. every time",
+   "burnout in the middle of the road and the crowd stepped IN closer",
+   "green plates, yellow plates, everybody's out. no beef tonight apparently"
   ]
  },
  "voices": {
@@ -4112,7 +4460,24 @@
     "Ate a whole tub of ice cream standing at the fridge. Nobody saw it. It didn't happen",
     "My son called the pool house his apartment today. In my house. That he lives in for free",
     "Traffic didn't move for forty minutes on the freeway and I did not mind one bit",
-    "Whiskey, deck chair, nothing on the calendar. Somebody will ruin this by noon"
+    "Whiskey, deck chair, nothing on the calendar. Somebody will ruin this by noon",
+    "Watched Meltdown again. Solomon was right about the second act. He was wrong about everything else",
+    "Twenty years in this town and the only honest man I've met is my therapist, and he charges me for it",
+    "The pool guy comes Tuesdays. I have never once seen him clean the pool",
+    "My son is asleep. It is four in the afternoon",
+    "Went to the range. Felt like myself for about forty minutes",
+    "Amanda's got a new instructor. I'm told it's yoga",
+    "You know what nobody tells you about getting what you wanted? You still have to be there for it",
+    "I keep a bottle in the study for occasions. Every day is an occasion now",
+    "Bought a boat I have used twice. That's the whole story of my forties",
+    "Some guy recognised me at the Bean Machine. Wrong face. Lucky for both of us",
+    "Nobody in this city reads a script. They read the first ten pages and the last two",
+    "I'm not retired. I'm between things. There's a difference and I can't explain it",
+    "Friedlander says I externalise. I said that's why I pay you",
+    "Snow in North Yankton got into my bones and never left",
+    "Drove past a Cluckin' Bell and genuinely considered it. That's where I'm at",
+    "My daughter wants to be famous. For what, she hasn't decided",
+    "Everybody thinks the hard part was the work. The hard part is the afternoons"
    ],
    "MissionDone": [
     "Heard about {here}. Kid's got potential. Terrible instincts, but potential",
@@ -4136,7 +4501,24 @@
     "Somebody explain why the government hates ME specifically",
     "Ate something I found. Would recommend. Would not recommend",
     "I don't have anger issues, I have RESULTS",
-    "Made a new friend today. He's in the trunk but we're working through it"
+    "Made a new friend today. He's in the trunk but we're working through it",
+    "SANDY SHORES IS A STATE OF MIND AND THE STATE IS FURIOUS",
+    "Ron says the government is listening. Ron is RIGHT and I want them to hear this",
+    "Wade has been staring at a wall since Tuesday. He's fine. He's THINKING",
+    "Somebody in Ludendorff owes me an apology and a decade",
+    "The Lost MC are a motorcycle club the way I am a small businessman",
+    "I have a plane, an airstrip and a licence for NONE of it",
+    "Went to Vespucci. Hated it. Went back. Hated it MORE. Going again",
+    "Mother called. Or I imagined it. Either way I've had a day",
+    "TREVOR PHILIPS INDUSTRIES IS EXPANDING. Into what, we'll see. Into WHAT",
+    "People say I have a temper. People say a lot of things and then stop",
+    "Chef is the only man in this desert with standards and he works for ME",
+    "I don't have friends, I have ASSETS with FEELINGS",
+    "Somebody said Canada like it's an insult. IT IS AN INSULT AND I'LL SAY IT",
+    "The trailer is not a home, it is a BASE OF OPERATIONS with a bed in it",
+    "Everybody wants to be an entrepreneur until it's four in the morning in a shed",
+    "I have been betrayed by my best friend and I still send him things",
+    "Ate at a place in Paleto. Would go back. Would burn it down. BOTH"
    ],
    "MissionDone": [
     "SOMEBODY out in {here} is having a BEAUTIFUL day and it is NOT the {rival}",
@@ -4160,21 +4542,37 @@
     "Y'all be posting like anybody asked",
     "Just so everybody know, I invented that",
     "Somebody in {hood} owe me money and he KNOW he owe me money",
-    "Chop been eating better than me",
+    "Chop been eating better than me and now Frank got a SECOND one. Trigz. TRIGZ",
     "New chain came in. It's aight. It's aight? It's PHENOMENAL",
     "I'm not saying I'm the best in {hood}, I'm saying nobody else is",
     "Cluckin' Bell changed the fry seasoning and think nobody gon' notice. I noticed",
     "Bought new rims. Curb bought one back off me the same day",
     "Barber closed early. On a Saturday. That's a personal attack",
     "Everybody at the car wash suddenly a mechanic when it's MY car",
-    "Told y'all about that dog. Chop got a following now and I do all the work",
+    "Told y'all about that dog. Chop got a following, Trigz got a following, and I do all the work",
     "Been in the Discount Store forty minutes for one thing. One thing",
     "Phone on nine percent and NOW everybody wanna call me",
     "Somebody parked in front of my mama gate again. We gon' have a conversation",
     "They put a new sign up on {street} and it's still the same broke street",
     "Bean Machine got a size bigger than large now. What is that. That's a bucket",
     "Nah I don't need directions. I been through {hood} since I was nine",
-    "Got a cut so clean I might just stay in and let it settle"
+    "Got a cut so clean I might just stay in and let it settle",
+    "Frank actin like he don't remember who put him ON",
+    "Y'all know I had a whole business plan before ANY of this",
+    "Somebody told me I talk too much. I said say that again slower",
+    "Been thinkin about gettin into real estate. Or podcasts. One of them",
+    "D said he'd pay me Thursday. It has been many Thursdays",
+    "I'm not late I'm arrivin at MY time",
+    "Chop and Trigz both listen to me more than Franklin do",
+    "Ay somebody in Forum Drive parked in MY spot. It ain't assigned but it's MINE",
+    "I invented that. Whatever it is, I invented it",
+    "Franklin got a house in the hills and STILL come back to the block. Say what you want, that's loyalty",
+    "Went to the gym one time this year and I'm still talkin about it",
+    "Stretch been actin funny since he got out and I ain't the only one who noticed",
+    "You know what's crazy? I been right about everything and nobody keeps score",
+    "I need a manager. Not for nothin specific. Just in general",
+    "Every plan I make works. The execution is where other people let me down",
+    "Tanisha never liked me and that's a her problem"
    ],
    "MissionTaken": [
     "Got my boy on something. Watch",
@@ -4254,7 +4652,18 @@
     "They repaved the nice streets and left ours. I counted. I have photos",
     "Signed up for pottery to find my centre. Found a woman who talks through the whole class",
     "Everybody wants to march and nobody wants to fold the chairs after",
-    "The library cut its hours again and they have the nerve to call that a budget"
+    "The library cut its hours again and they have the nerve to call that a budget",
+    "My nephew comes and goes at all hours and tells me nothing. I raised him better",
+    "Finished another empowerment course. Six weeks. I have the certificate",
+    "That dog has eaten better than me this month and now there are TWO of them",
+    "This house has been in this family longer than most of you have been alive",
+    "Somebody parked across my drive on Forum again",
+    "I am not a landlord I am an AUNT and there is a difference nobody respects",
+    "Went to church, went to the market, came home to a house full of nothing",
+    "The system was designed this way. I have read the books, I know",
+    "Franklin thinks money solves it. Money made it a different shape, that is all",
+    "My kitchen is not a meeting room and I would like that understood",
+    "Everybody wants to be somebody until it involves getting up early"
    ],
    "MissionDone": [
     "Whatever's going on in {here}, it's a symptom of a much larger problem",
@@ -4290,7 +4699,16 @@
     "Somebody's car alarm been going off since five. Nobody's car got stolen. Nobody cares",
     "I don't need advice. I need Sunday and I need everybody quiet",
     "Paid the bills before the fun money and that is why I'm the boring one",
-    "New manager wants us in early. New manager can come in early then"
+    "New manager wants us in early. New manager can come in early then",
+    "Some people grow. Some people just get better at the same thing",
+    "My husband works nights at the hospital. Real work, real hours",
+    "I keep hearing about somebody doing well. Doing well how, is the question",
+    "You cannot love somebody into changing. I tried it for years",
+    "Chamberlain is home. It is also the thing I had to leave to have a life",
+    "Everybody on this block knows everybody's business and nobody knows anybody",
+    "I did not marry a doctor to be impressive. I married a man who is home at night",
+    "Being from somewhere is not the same as being stuck there",
+    "The version of him I wanted was in there. It just was never coming out on its own"
    ],
    "MissionDone": [
     "I heard about {here}. I'm not saying anything. I'm just saying I heard",
@@ -4317,7 +4735,22 @@
     "The air conditioning in here died and I relocated the servers before I relocated myself",
     "Loyalty cards. You handed over your entire life for a free coffee. A FREE coffee",
     "Fixed a bug today that I introduced in 2009. Nobody noticed either event",
-    "Every 24/7 in this city runs the same till software. The same one. Unpatched since forever"
+    "Every 24/7 in this city runs the same till software. The same one. Unpatched since forever",
+    "The warehouse has a leak. I have a fortune. These facts coexist",
+    "I read seventeen quarterly reports today and understood all of them, which is the problem",
+    "Lifeinvader's security is a suggestion written by an intern",
+    "Somebody asked me to socialise. I have a condition AND a preference",
+    "BAWSAQ is a casino for people who think they're too clever for casinos",
+    "I don't do heists any more. I do consulting. It is the same verb",
+    "The trick is not being smart. The trick is everybody else being in a hurry",
+    "I have never once been caught and I have never once been thanked",
+    "People think the money is the hard part. The hard part is the timing",
+    "Murrieta Heights at three in the morning. Nobody comes here. That is the amenity",
+    "You can buy a police radio legally. Nobody believes me",
+    "Sold at the peak. Bought at the bottom. Told nobody. That's the whole discipline",
+    "Every plan fails at the point where somebody improvises",
+    "My chair costs more than most people's cars and it is worth every cent",
+    "I could ruin four companies before lunch. I had lunch instead"
    ],
    "MissionDone": [
     "The activity in {here} is showing up in three places it shouldn't. Whoever you are: tidy up",
@@ -4347,7 +4780,15 @@
     "Weazel News ran the story and then did not run the story. Explain that",
     "I keep notes on everything now. Two books full. This is not a hobby",
     "Lights over Sandy Shores again at three. Those are not planes. I know planes",
-    "They put something in the {food} out here too. Different something. Same THEM"
+    "They put something in the {food} out here too. Different something. Same THEM",
+    "They are watching Sandy Shores. Why would they watch Sandy Shores. THAT is the question",
+    "The frequency changed at 3am. It always changes at 3am",
+    "I am not saying it was the government. I am saying it was NOT NOT the government",
+    "T says I worry too much. T does not have my responsibilities",
+    "Broadcasting from the trailer until they find the trailer",
+    "Chemtrails over Zancudo again. Look up. LOOK UP",
+    "Nobody asks who benefits. I ask who benefits",
+    "My equipment picked something up and I have not slept since"
    ],
    "MissionDone": [
     "What happened in {here} was NOT what they're telling you happened",
@@ -4371,7 +4812,15 @@
     "found a good rock today. it's flat. i put it in my pocket",
     "the bus driver knows my stop now and that feels real nice",
     "i had a dream about my mom. i don't wanna talk about it though",
-    "somebody's cousin is always somebody's cousin. that's how i figure it"
+    "somebody's cousin is always somebody's cousin. that's how i figure it",
+    "cousin floyd says i can stay a bit longer, he didn't say it out loud but i could tell",
+    "i had a dream about a horse. it was normal though",
+    "T said don't tell nobody so i'm not telling nobody, i'm just posting",
+    "the tunnel club in the city plays the good stuff. the sad stuff",
+    "somebody said i look scary. i cried a bit about that",
+    "i been to the desert and i been to the city and the desert is quieter",
+    "i don't really understand money but T says he'll sort it",
+    "my hair takes a long time and nobody notices"
    ],
    "MissionDone": [
     "sounds like somebody had a real busy day. hope they're ok"
@@ -4394,7 +4843,18 @@
     "was gonna go to the beach today but the beach involves going",
     "bought a game i already own. that's a hundred bucks. of dad's. whatever",
     "there's an app that delivers to this house and one that doesn't and i judge accordingly",
-    "everyone says get a job like there's not a whole economy of me sitting here"
+    "everyone says get a job like there's not a whole economy of me sitting here",
+    "my dad thinks a job is a personality",
+    "was up til seven. woke up at four. balanced",
+    "streaming later. or tomorrow. or",
+    "my sister thinks dancing is a career and my dad thinks THAT'S the problem child",
+    "someone in the chat said i sound like i'm twelve. i'm a MAN",
+    "asked for money. got a lecture AND the money. worth it",
+    "there's a whole pool out there and nobody uses it including me",
+    "i've been meaning to go outside. like as a concept",
+    "my mum booked me a personal trainer. i booked myself a nap",
+    "the fridge in this house is a lie. it's all salad and my dad's whisky",
+    "everyone in vinewood is famous for nothing. i could do that"
    ],
    "MissionDone": [
     "wait people actually DO stuff out there?? like in real life??",
@@ -4417,7 +4877,17 @@
     "spent forty minutes on a video and deleted it. you're all welcome honestly",
     "mom is doing a whole thing about my outfit and it's not even her house. ok it is her house",
     "i'm not late, everyone else is just weirdly early all the time",
-    "the pool guy came and i had to move my entire shoot inside. like ok"
+    "the pool guy came and i had to move my entire shoot inside. like ok",
+    "Auditioning again on Friday. This one is DIFFERENT",
+    "Fame or Shame is a real platform whatever my dad says",
+    "My brother has not been outside since the weekend before last",
+    "Dancing is a discipline. Ask anybody who actually dances",
+    "Went to a party in the hills and knew nobody and it was PERFECT",
+    "My dad turned up at a shoot once and I still haven't recovered",
+    "Everyone says get a backup plan. A backup plan is just quitting slowly",
+    "New headshots. Same face, better lighting",
+    "Mum thinks yoga is a personality and she is not wrong she is just not right either",
+    "Vinewood is not fake it is just very honest about what it wants"
    ],
    "MissionDone": [
     "everyone's talking about {here} and no one will tell me what happened"
@@ -4440,7 +4910,18 @@
     "The gardener says the lemon tree is dying. Everything in this house is dying",
     "Someone drank my green juice and nobody in this family is confessing",
     "Went shopping in Rockford Hills and bought nothing. Growth. Terrifying growth",
-    "Walked the whole of Vinewood Boulevard and did not recognise one shop"
+    "Walked the whole of Vinewood Boulevard and did not recognise one shop",
+    "Fabien says my alignment is improving. Michael says nothing, as usual",
+    "Tennis at nine, spa at eleven, and I have EARNED both",
+    "My husband is in the study. He is always in the study",
+    "Jimmy has not left the house in nine days and I am the villain for mentioning it",
+    "Rockford Hills is full of women who peaked in a different decade. Not me. Obviously",
+    "Went shopping to feel something. Felt something. It was the receipt",
+    "Twenty years married and he still can't say what he does for a living",
+    "Tracey is auditioning again. I am supportive. I am SO supportive",
+    "The pool needs cleaning and somebody is being paid to clean the pool",
+    "I do not have a problem, I have a routine",
+    "Everybody in this neighbourhood has a therapist and a secret and I have both"
    ],
    "MissionDone": [
     "Whatever is happening in {here}, I guarantee somebody's husband is involved"
@@ -4461,7 +4942,15 @@
     "Recognised in a Bean Machine today. He wanted to discuss his mother. I gave him a card",
     "I do not take calls after six. My previous self did, and my previous self was unwell",
     "A colleague suggested I am the one who needs therapy. I have referred him to my book",
-    "Rescheduled my own appointment with my own therapist. We are both very busy men"
+    "Rescheduled my own appointment with my own therapist. We are both very busy men",
+    "Boundaries are healthy. My rates reflect that",
+    "A patient told me something today I will be using in my book",
+    "Progress is not linear. Neither is billing",
+    "I do not judge. I observe, at two hundred and fifty an hour",
+    "Some people come here to be understood. Most come here to be agreed with",
+    "The unexamined life is fine, actually, for most people. Not for my clients",
+    "I have a waiting list and a beach house and those facts are related",
+    "Everyone in this city is one honest conversation from a breakthrough. Nobody wants it"
    ],
    "MissionDone": [
     "The violence in {here} is displaced rage and I could help, for a fee"
@@ -4483,7 +4972,17 @@
     "Gala tonight. I am the cause, the donor and the photograph. Efficient",
     "Never negotiate. Wait. They negotiate against themselves and then thank you",
     "Read one page of a two hundred page report. The only page with a number on it",
-    "People say I take things. I relocate value. There is a difference and it is legal"
+    "People say I take things. I relocate value. There is a difference and it is legal",
+    "I don't buy companies. I buy the moment before somebody realises they should have sold",
+    "Loyalty is a rounding error people put on their own balance sheet",
+    "My lawyer says I can't say what I want to say. That's what a lawyer is FOR",
+    "Bought a car this morning. Not to drive. To have",
+    "Everyone in this town is one bad quarter from being reasonable",
+    "I have never lost. I have occasionally postponed",
+    "A hostile takeover is only hostile to people who were losing anyway",
+    "The collection is not about cars. It is about the fact that they are mine",
+    "Sentiment is the most expensive thing you can own",
+    "People ask what I do. I take. It's a verb, it's fine"
    ],
    "MissionDone": [
     "There's a business opportunity in whatever just happened in {here}. There always is"
@@ -4505,7 +5004,17 @@
     "Somebody scratched a hatchback in the night. On MY lot. Under MY sign",
     "You come, you sit, you sign. Twenty minutes and your life is different",
     "I have been called a shark. A shark does not offer financing to the unemployed",
-    "The showroom lights are still being replaced. Three weeks. We are selling in the dark"
+    "The showroom lights are still being replaced. Three weeks. We are selling in the dark",
+    "Premium Deluxe Motorsport. The name is a PROMISE, my friend",
+    "A man came in today with no credit and no shame. I gave him neither",
+    "In this country you are what you drive. This is not my rule, it is the rule",
+    "I do not repossess. I RECOVER what was never truly given",
+    "Everybody wants the German car on the Korean budget",
+    "My employees do not understand loyalty. This is the tragedy of my life",
+    "You laugh at the paperwork until the paperwork owns your house",
+    "I came here with nothing. Now I have a forecourt and a headache",
+    "The customer is always right until he signs, then the CONTRACT is always right",
+    "A test drive is not a loan. I should not have to explain this"
    ],
    "MissionDone": [
     "Whoever was in {here} today, you owe me for a windscreen"
@@ -4527,7 +5036,17 @@
     "Do not send me a gift basket. Send me what you owe, then send the basket",
     "The road out to the ranch flooded again. Nobody fixes anything out here",
     "I do not raise my voice at home. Outside the home is a separate matter",
-    "Two men came to apologise today. One of them meant it. I know which one"
+    "Two men came to apologise today. One of them meant it. I know which one",
+    "A man's word is the only currency that does not devalue",
+    "My family has been in this business for three generations. Three",
+    "I do not raise my voice. I have never needed to",
+    "The vineyard is doing well. It is the only clean thing I own and I am fond of it",
+    "Patricia says I work too much. Patricia is correct",
+    "Everybody wants a favour. Nobody wants to owe one",
+    "There are men who talk and men who arrange. I arrange",
+    "Disrespect is not a feeling, it is a debt",
+    "I am a reasonable man surrounded by people testing exactly how reasonable",
+    "Some problems you solve with money. Those are the good problems"
    ],
    "MissionDone": [
     "Somebody has been making noise in {here}. I hope for their sake it stays there"
@@ -4547,7 +5066,14 @@
     "A man in the elevator asked which floor, then explained my own job to me",
     "Cancelled a holiday I never booked to a place I never chose. Still feels like a loss",
     "Flights, filings, and a very short window. This is the job and I chose the job",
-    "New associate asked what work life balance looks like here. I laughed and it startled him"
+    "New associate asked what work life balance looks like here. I laughed and it startled him",
+    "My client's interests are my interests. This is not complicated",
+    "I have read every page of every contract in this building",
+    "Ambition is not a character flaw whatever the men in this office think",
+    "Some lawyers argue. I make arguing unnecessary",
+    "I did not go to law school to be liked",
+    "The paperwork is the weapon. Everything else is theatre",
+    "I answer to exactly one person and it is not any of you"
    ],
    "MissionDone": [
     "Anything occurring in {here} is not affiliated with my employer. Legally. At all"
@@ -4569,7 +5095,16 @@
     "Merchandise is coming. Do not ask me about the merchandise yet",
     "Guy in Vespucci recognised me from the show and not the badge. Progress",
     "Told a producer I'd do a ride along. Now I am doing eleven ride alongs",
-    "Two hours in makeup and they still lit me like a parking garage"
+    "Two hours in makeup and they still lit me like a parking garage",
+    "The Underbelly of Paradise, new episode, and yes I'm in it",
+    "You want results or you want procedure? Because you can't have both",
+    "I've got a bureau breathing down my neck and a network breathing down the other one",
+    "Ratings ARE law enforcement now. Somebody had to say it",
+    "The IAA are amateurs with a bigger budget. Write that down",
+    "Everybody's a critic until they need somebody to do the thing",
+    "I don't break rules. I outrank them",
+    "Do you know what a warrant costs in TIME? Do you?",
+    "Los Santos doesn't have a crime problem, it has a coverage problem"
    ],
    "MissionDone": [
     "We are AWARE of the situation in {here} and we are handling it. On camera",
@@ -4592,7 +5127,15 @@
     "I have a drawer of things I was going to deal with later. Later has not turned up",
     "She asked what I did today. I said paperwork. That was almost true",
     "Home at nine and the porch light was still on for me. That is about all I have got",
-    "Walked around Vespucci to clear my head and thought about work the entire way"
+    "Walked around Vespucci to clear my head and thought about work the entire way",
+    "Twenty two years in the bureau and the paperwork is still the hardest part",
+    "Some days you protect people. Some days you protect the file",
+    "My partner thinks this is television. It is not television",
+    "I've made deals I'd rather not explain to my daughter",
+    "The right thing and the survivable thing are rarely the same thing",
+    "Everybody in this building is somebody's asset. Including me",
+    "I keep a case closed and a man alive and neither one is on any form",
+    "Getting old in this job is the achievement nobody congratulates you for"
    ],
    "MissionDone": [
     "Something happened in {here} and I already know I'm going to be asked about it"
@@ -4616,7 +5159,15 @@
     "Three photographs on my desk and two of them are smiling. That is the funny part",
     "Made a stew, enough for four. There is only me and there has only been me",
     "He said he would be at his sister's. He was at his sister's. Some days are easy",
-    "The heater in the trailer died and I would sooner chase a man than call a plumber"
+    "The heater in the trailer died and I would sooner chase a man than call a plumber",
+    "Another one skipped. They always think the desert is far enough",
+    "I do not chase. I have people for chasing",
+    "The paperwork says he is a flight risk. The paperwork is never wrong",
+    "Bail is a promise with a number on it and people break both",
+    "A woman in this business needs one good contact and a lot of patience",
+    "He signed. He agreed. He knew. And here we are",
+    "I have found men hiding in places I will not describe",
+    "Skipping bail is a lifestyle choice with a very short lifespan"
    ],
    "MissionDone": [
     "Half the people in {here} have outstanding warrants. Just so we're all aware"
@@ -4638,7 +5189,15 @@
     "They put a younger guy in my chair for a week and adjusted the height. The HEIGHT",
     "Signing at a Discount Store Saturday. Bring a pen, they didn't get me pens",
     "Interviewed a guy who does voices for a cartoon. He asked what I used to do",
-    "Wore the leather jacket again. It works. It has always worked"
+    "Wore the leather jacket again. It works. It has always worked",
+    "New season of Fame or Shame. Same shame, different fame",
+    "I have been on the radio in three cities and humiliated in all of them",
+    "People say I'm washed up. I'm SEASONED",
+    "Somebody threw something at me at an event and it was on brand",
+    "I interview the young and I resent them. That's the format",
+    "I used to break bands. Now I break contracts",
+    "The industry moved on and I made a career out of pointing at where it went",
+    "Everyone's a personality now. I was a personality when it was HARD"
    ],
    "MissionDone": [
     "Whatever went down in {here} would make GREAT television and I am available"
@@ -4652,7 +5211,14 @@
     "The public has a RIGHT to know what they had for lunch",
     "Got the shot. Got the SHOT. Nobody understands what it takes to get the shot",
     "I am owed money by several people and one of them is a very ungrateful young man",
-    "Wildlife photography is simply celebrity photography with worse lighting"
+    "Wildlife photography is simply celebrity photography with worse lighting",
+    "Got the shot. Got THE shot. Nobody understands what that means",
+    "A celebrity in a public place has no expectation of privacy and I have a lens",
+    "They call it stalking when you're broke and access when you're not",
+    "I have been punched by three people you have heard of",
+    "The magazines want it cheap and exclusive. Pick one",
+    "I sat outside a restaurant for nine hours for one frame. Worth it",
+    "My work will be in a gallery one day and you will all pretend you knew"
    ],
    "MissionDone": [
     "MISSED it. I was in {hood} and it happened in {here}. My LIFE"
@@ -4671,7 +5237,14 @@
     "Somebody has taken my parking space. My name is on the wall directly behind their car",
     "A picture needs a face. You cannot put a committee on a poster",
     "I do not go to award season for the awards. I go for the seating chart",
-    "My old editor died and the obituary spelled his name wrong. I had it corrected"
+    "My old editor died and the obituary spelled his name wrong. I had it corrected",
+    "In my day a producer read the script. All of it. Twice",
+    "They want explosions. I want a SCENE. Two people, a room, and something at stake",
+    "Richards Majestic has been making pictures since before any of you could read",
+    "Everybody in this town wants to be in the movies. Nobody wants to make one",
+    "I have three awards and a lawsuit and I am prouder of the lawsuit",
+    "The audience is not stupid. The audience is TIRED",
+    "Give me one honest performance and I'll forgive you the budget"
    ],
    "MissionDone": [
     "There's a picture in what happened in {here}. There's a picture in everything"
@@ -4694,7 +5267,15 @@
     "Nobody in this city walks. We did eleven miles today and felt terribly conspicuous",
     "Moved along by a security fellow. Very polite about it. We shall return tomorrow",
     "A man on Vinewood Boulevard dressed as an alien asked for twenty dollars. We gave him ten",
-    "The checklist gets shorter, which Mrs Thornhill finds thrilling and I find rather sad"
+    "The checklist gets shorter, which Mrs Thornhill finds thrilling and I find rather sad",
+    "Mrs Thornhill spotted someone MARVELLOUS outside a juice bar. Simply marvellous",
+    "One does not stalk. One APPRECIATES, at a distance, with binoculars",
+    "The Vinewood sign is smaller than one imagines and that is rather the point",
+    "We have flown eleven thousand miles for this and we are having a lovely time",
+    "A star waved at us. It may have been a gesture of another kind",
+    "One simply cannot get a decent cup of tea in this entire county",
+    "Mrs Thornhill has a list. I have a camera. Between us we have a holiday",
+    "The Americans are terribly friendly until you follow them home"
    ],
    "MissionDone": [
     "One does hear the most thrilling things about {here}"
@@ -4732,7 +5313,15 @@
     "Up since four. Coffee from the 24/7 tastes like the cup it came in",
     "Whole block knows my hours and still knocks at eleven at night",
     "The winch is making a noise it was not making last week",
-    "Rain's coming. Rain means calls. Calls mean JB better pick up"
+    "Rain's coming. Rain means calls. Calls mean JB better pick up",
+    "JB's meant to be on shift. JB is not on shift",
+    "Somebody's gotta run this yard and it ain't gonna be him",
+    "Third call today and no driver. THIRD",
+    "I been asking one person for help for years and he keeps saying yes, bless him",
+    "The truck don't drive itself and the phone don't answer itself",
+    "You'd be amazed how many people park somewhere they shouldn't and act surprised",
+    "I'm tired. That's the whole post",
+    "This yard been in the family and it's gonna stay in the family if it kills me"
    ],
    "MissionDone": [
     "Whatever happened in {here}, somebody's car got left behind and that's MY business"
@@ -4757,7 +5346,15 @@
     "Counted four people stretching twenty minutes and running six",
     "That hill on {street} beat me last year. It did not beat me today",
     "My heart rate said stop. My heart rate does not make the decisions here",
-    "Signed up for another one. Not telling anybody until I have won it"
+    "Signed up for another one. Not telling anybody until I have won it",
+    "Beat my own time and nobody was there to see it, which is HOW IT SHOULD BE",
+    "Somebody on a bicycle told me to slow down today. On a BICYCLE",
+    "Triathlon is not a hobby it is an argument you have with yourself",
+    "I do not compete with people I compete with the CLOCK. And with people",
+    "Six in the morning and the beach path is mine",
+    "If you cannot keep up do not comment",
+    "Rest days are for people with something else to do",
+    "I have never once been beaten by anybody who did not cheat"
    ],
    "MissionDone": [
     "Ran through {here} this morning. Pace was excellent. Atmosphere was not"
@@ -4801,7 +5398,15 @@
     "new shaker bottle. same shake. tastes better though. it genuinely does",
     "cardio is just weights but sad. i said what i said",
     "flexed at myself in a car window and got caught by the owner. worth it",
-    "scale said the same number and the mirror said a DIFFERENT number. trust the mirror"
+    "scale said the same number and the mirror said a DIFFERENT number. trust the mirror",
+    "BULL SHARK. TESTOSTERONE. Say it with me",
+    "Woke up ANGRY and went to the gym about it",
+    "Came out west because Liberty City was holding me back emotionally",
+    "You gotta rage, bro. You gotta RAGE",
+    "New car. Same me. Bigger me actually",
+    "Chest day is a state of mind and today is chest day",
+    "People say I'm intense. People say that from BEHIND me",
+    "I don't sleep I RECHARGE"
    ],
    "MissionDone": [
     "somebody in {here} got that AGGRESSION. respect. channel it bro"
@@ -4821,7 +5426,17 @@
     "Power went out for an hour and I just sat there. Best hour I had all month",
     "Everybody want to be in the room til it's time to be in the room",
     "Somebody parked in my spot. Ain't no assigned spots. It's still my spot",
-    "Ordered from the Lucky Plucker and they forgot half of it. Again"
+    "Ordered from the Lucky Plucker and they forgot half of it. Again",
+    "I got two phones and neither one of them rings with good news",
+    "Been doing this since before half of you was walking",
+    "Young ones today want the money without the waiting",
+    "I don't go outside much. Outside comes to me",
+    "The apartment stays how the apartment stays. Don't touch nothing",
+    "You do a man a favour and he thinks it's a friendship",
+    "Everybody in this city think they inventing something. Ain't nothing new down here",
+    "I been shot at, locked up, and lied to. Still here. Still answering",
+    "The block runs on people who show up. Everybody else is talking",
+    "Don't ask me twice about the same thing. I remember the first time"
    ],
    "MissionDone": [
     "Heard my people was busy in {here}. Good"
@@ -4888,7 +5503,14 @@
     "made a friend last night. dont know his name. we are still friends",
     "why does nobody here sleep. i love it. i love that nobody sleeps",
     "back home nobody would let me do any of this. thats. thats the point",
-    "spent more on one night than my first car. worth it. worth every. worth it"
+    "spent more on one night than my first car. worth it. worth every. worth it",
+    "My father says I embarrass the family. My father says a lot at dinner",
+    "I am here on BUSINESS and business involves a bar, this is known",
+    "The translator does not translate what I actually say. I have noticed",
+    "Los Santos is a wonderful city and I remember almost none of it",
+    "One day this is all mine. That is not a threat it is succession planning",
+    "Everybody underestimates me. Everybody. It is very useful",
+    "I have been told to be more serious. I will start on Monday"
    ],
    "MissionDone": [
     "somethin happen in {here}?? i was there. i think. probably. was i there",
@@ -4917,7 +5539,17 @@
     "Slept four hours. Under the bridge by eight. That is the whole schedule",
     "Somebody scratched my door in the Customs lot. I know the paint, I know the car",
     "Tyres came in. Right size, wrong compound. Two weeks gone for nothing",
-    "Do not touch the orange one. Look at it as long as you like. Do not touch it"
+    "Do not touch the orange one. Look at it as long as you like. Do not touch it",
+    "Under the freeway from midnight. Bring the car or don't come",
+    "Stock is a starting point, not a personality",
+    "Somebody rolled up with a body kit and stock brakes. On purpose",
+    "The tunnel run is the only honest test in this city",
+    "You can hear a bad build before you see it",
+    "Everybody wants nitrous. Nobody wants to learn the line",
+    "Cops know about the meet. They come, we go, we come back",
+    "Money in the engine, not the wrap",
+    "Been racing this city since before the apps",
+    "Show me the times. I don't care what it cost"
    ],
    "MissionDone": [
     "Somebody drove through {here} like they meant it. Noted"
@@ -5441,7 +6073,14 @@
     "I ate dinner alone tonight and it was the most efficient hour of my day",
     "Respect is inexpensive. It is the lack of it that becomes costly",
     "The city sleeps at three. The port does not. I prefer the port",
-    "They told me the weather here never changes. Neither do certain men"
+    "They told me the weather here never changes. Neither do certain men",
+    "My son will learn. He will learn late, but he will learn",
+    "We do not make noise. Noise is what people make instead of money",
+    "This city rewards patience and punishes everything else",
+    "An arrangement is only as good as the memory of the men who made it",
+    "I have buried more partners than most men have had",
+    "Respect is not requested. It is observed, or it is corrected",
+    "The triads did not come here to be small"
    ],
    "OursGloats": [
     "The matter is settled. It did not need to be loud",
@@ -5482,7 +6121,14 @@
     "They put a fence around the lot where we used to park. For who",
     "Sunday is family. Anybody knocking on my door on a Sunday better be family",
     "August in Rancho makes everybody stupid. You wait it out, you do not chase it",
-    "A grandmother stopped me to say I was a good boy once. She is wrong. I let it stand"
+    "A grandmother stopped me to say I was a good boy once. She is wrong. I let it stand",
+    "Sandy Shores belongs to us and everybody out here knows it",
+    "The crazy gringo in the trailer thinks this is his desert",
+    "We were here first. That is not a boast, it is a date",
+    "Everybody in Blaine County pays somebody. Choose wisely",
+    "My people do not run. We relocate, strategically",
+    "You come to my desert and you disrespect me in my own desert",
+    "Los Aztecas is a family before it is anything else"
    ],
    "VagosTaunt": [
     "Yellow all over Rancho and not one of them will stand on Senora Road after dark"
@@ -5527,7 +6173,14 @@
     "cleaned the whole trailer. two hours. nobody's coming over",
     "my phone's been dead two days and honestly it's been peaceful",
     "the desert gets cold at night and nobody ever warns you about that part",
-    "i was pretty once and i've got the pictures, so"
+    "i was pretty once and i've got the pictures, so",
+    "everybody round here got an opinion about who i been with",
+    "the clubhouse ain't the same and everybody knows why",
+    "johnny used to say this place would kill us both",
+    "i'm fine. i've been fine for years",
+    "somebody's always leaving in this town and somebody's always coming back worse",
+    "i don't need saving i need a lift",
+    "the desert is quiet which is the problem with the desert"
    ],
    "RivalMourns": [
     "another one gone and the same men will pretend to care at the same bar"
@@ -5617,7 +6270,15 @@
     "The extractor fan is the most important employee out here",
     "Everything here is legal except three of the steps. That is chemistry, not opinion",
     "I have burned my hands more times than I have raised my voice",
-    "A man asked if the smell ever goes away. It goes away when you do"
+    "A man asked if the smell ever goes away. It goes away when you do",
+    "Purity is not a marketing word to me. It is the whole job",
+    "Temperature, timing, ventilation. Everybody gets the first two wrong",
+    "I work for a lunatic and I have never been more professionally fulfilled",
+    "The desert is the right place for this and everybody knows why",
+    "Somebody tried to cut mine with something. I found out. It got handled",
+    "A clean lab is a long career",
+    "I keep my head down and my product up. That's the whole philosophy",
+    "People think this is chemistry. It's cooking, and cooking is patience"
    ],
    "Delivery": [
     "Product moved, nobody exploded. Good week for Trevor Philips Industries"
@@ -5638,7 +6299,15 @@
     "The neighbours had a party and I could hear all of it. I did not go. Nobody asked",
     "I like the walk to the docks in the morning. Nobody talks to you before six",
     "I bought flowers for the apartment. They are for the apartment. That is who they are for",
-    "There is a smell in the kitchen and I have been in every cupboard looking for it"
+    "There is a smell in the kitchen and I have been in every cupboard looking for it",
+    "Debra's back Thursday and I don't know how to explain any of this",
+    "Working the docks all week and I still can't sleep",
+    "There is a man living in my apartment and he is not on the lease",
+    "I keep the place nice. I like keeping the place nice",
+    "Everything was fine. Everything WAS fine",
+    "I don't want any trouble I just want my apartment back",
+    "Somebody used my kitchen. I'm not going to say who",
+    "I've been crying in the stairwell again and that's between me and the stairwell"
    ]
   },
   "cris_formage": {
@@ -5658,7 +6327,15 @@
     "Nine paradigms, brother-brother. You are standing on one. One is a beginning",
     "The desert retreat is fully subscribed. Bring water. Water is not provided",
     "A woman has asked for a refund. Kifflom to her. The portal only runs one way",
-    "Kifflom. Tracts are available at the door in five denominations, which are also five prices"
+    "Kifflom. Tracts are available at the door in five denominations, which are also five prices",
+    "Kifflom. The truth is available and it is not free, because nothing true ever is",
+    "Nine trillion years ago the Kifflom made a decision and you are the result",
+    "Doubt is a tax on the unenlightened. Pay it or pay us",
+    "The Epsilon Program does not recruit. It RECOGNISES",
+    "You cannot buy happiness. You can, however, make a qualifying contribution",
+    "Those who leave were never really here",
+    "The desert reveals what the city hides. Come to the desert",
+    "Kifflom, brother-brother. Kifflom"
    ]
   },
   "omega_ufo": {
@@ -5679,7 +6356,15 @@
     "Somebody moved a cone at the site. A CONE. I know what that means",
     "Weazel News will not return my calls. That is itself a form of answer",
     "The ship is not finished but it is closer than yesterday, and yesterday was close",
-    "If you drive out here bring water and bring parts. Mostly bring parts"
+    "If you drive out here bring water and bring parts. Mostly bring parts",
+    "Fifty pieces. FIFTY. And they are all out there in the sand",
+    "The government knows what is under Zancudo. I know that they know",
+    "Been out since {timeofday} with the detector. Found a bottle cap and a truth",
+    "They do not want the parts assembled. Ask yourself WHY",
+    "The lights over the desert are not planes. I know what a plane sounds like",
+    "Everybody laughs until the day they stop laughing",
+    "I have not been indoors properly in some years and I have never been clearer",
+    "The signal comes from above and it is patient"
    ]
   },
   "cbp_joe": {
@@ -6050,6 +6735,25 @@
     "All fares are metered and receipted. Ask for a receipt, it is your right",
     "We do not operate outside Los Santos County. For Blaine County, call ahead",
     "Drivers, the depot is open for shift change from five"
+   ]
+  },
+  "stretch_guns": {
+   "Ambient": [
+    "Prison teach you who you was the whole time",
+    "Everybody was my brother til i came home and had nothing",
+    "Nine years. Nobody wrote. Remember that",
+    "I ain't switch sides. Sides switched around me",
+    "Came home to a block that moved on without me",
+    "Loyalty is a word people use when they want something for free",
+    "You do what you gotta do in there. Then you do it out here too",
+    "Everybody in green got soft while i was gone",
+    "I don't need friends i need people who answer the phone",
+    "Stock came in. Ain't saying what, ain't saying where",
+    "Somebody always want a discount from a man with no receipt",
+    "Cash. That's the whole conversation",
+    "You want it clean, that costs. You want it now, that costs more",
+    "Half these young ones never held one before they bought one",
+    "I keep my business in one place and my mouth in another"
    ]
   }
  },
