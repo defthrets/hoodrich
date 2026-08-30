@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Hoodrich.Core;
 using System.Collections.Generic;
 using System.Drawing;
@@ -131,6 +131,17 @@ namespace Hoodrich.UI
     /// <summary>A ring of items plus the header shown while it is open.</summary>
     internal sealed class WheelPage
     {
+        /// <summary>
+        /// Draw this page as a list of full-width rows rather than a grid of tiles.
+        ///
+        /// A GRID IS FOR THINGS YOU RECOGNISE BY SHAPE and a list is for things you read. Nine
+        /// apps in a grid work because you learn where Dealing is and stop reading the word;
+        /// ten place names in the same grid are ten identical map pins with a caption under
+        /// each, so every one of them has to be read, and the grid has made the words as small
+        /// as it can while making the pictures -- which carry nothing -- as large as it can.
+        /// </summary>
+        public bool AsList;
+
         public string Title = "";
         public string Subtitle = "";
         public readonly List<WheelItem> Items = new List<WheelItem>();

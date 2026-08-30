@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -41,9 +41,11 @@ namespace Hoodrich.Locations
     /// speed. Grip is turned down underneath that, which is what makes the back end run wide
     /// and turns a circle into circle work.
     ///
-    /// NOBODY GETS RUN OVER, and that is why the ring is nineteen metres out and the cars work
-    /// inside eleven. Eight metres of clearance is not a safety margin anybody would need in a
-    /// real car park; it is a margin for a driving model being pushed sideways by a script.
+    /// THE RING IS AT NINETEEN AND THE CARS WORK AT FIFTEEN, which is four metres of
+    /// clearance and is the one number in here worth arguing about. A back end that steps a
+    /// car's width wide of its line is into the front row -- and stepping wide is exactly what
+    /// the reduced grip is for. It is what was asked for; it is also the first thing to move if
+    /// the crowd starts getting clipped, and it moves from the ini.
     /// </summary>
     internal sealed class Takeover
     {
@@ -66,9 +68,17 @@ namespace Hoodrich.Locations
         /// </summary>
         private const float RingAt = 19f;
 
-        /// <summary>And how far in the cars actually work. See the note on the class.</summary>
-        private const float DriftMin = 7f;
-        private const float DriftMax = 11f;
+        /// <summary>
+        /// And how far in the cars actually work. Fifteen, as asked for.
+        ///
+        /// FOUR METRES OF CLEARANCE, which is the thing to know about this number. The ring is
+        /// at nineteen, so a car whose back end steps a car's width wide of its line is into
+        /// the front row -- and the whole point of reduced grip is that the back end does
+        /// exactly that. It is what was wanted and it is tuned from the ini, so if the crowd
+        /// starts getting clipped, this is the number that moves.
+        /// </summary>
+        private const float DriftMin = 14f;
+        private const float DriftMax = 15.5f;
 
         /// <summary>The earliest and latest it starts, on the game's own clock.</summary>
         private const int FromHour = 21;
@@ -109,7 +119,7 @@ namespace Hoodrich.Locations
         private static readonly string[] Drifters =
         {
             "driftdominator10", "driftgauntlet4", "driftchavosv6", "driftfr36",
-            "driftremus", "driftfutо", "dominator", "buffalo3", "sultan", "futo"
+            "driftremus", "driftfuto", "dominator", "buffalo3", "sultan", "futo"
         };
 
         /// <summary>And what everybody else turned up in, parked outside the ring.</summary>

@@ -903,10 +903,126 @@ namespace Hoodrich.Phone
 
         // ---- home ---------------------------------------------------------------
 
+        /// <summary>How tall one row of a list page is, and the gap under it.</summary>
+        private const float ListRowH = 0.050f;
+        private const float ListRowGap = 0.005f;
+
+        /// <summary>The art on a row. Small, because on a list the words are the content.</summary>
+        private const float ListArt = 0.026f;
+
+        /// <summary>
+        /// A page as a list of rows.
+        ///
+        /// Everything a tile does to be findable at a glance -- the pop, the sheen, the runner
+        /// -- is missing on purpose. Those exist because a cursor on a grid jumps two columns
+        /// and a row across and you have to re-find it; on a list it moves one line at a time
+        /// and there is nowhere for it to go that you were not already looking.
+        /// </summary>
+        private void Rows(float left, float top, float w, float h, int fade)
+        {
+            var page = Current;
+            if (page == null) return;
+
+            if (Top.Index != _lastIndex)
+            {
+                _lastIndex = Top.Index;
+                _movedAt = Game.GameTime;
+            }
+
+            var padX = Hud.ToX(TilePad);
+
+            var x = left + padX;
+            var rowW = w - padX * 2f;
+            var y = top + TilePad;
+
+            for (var i = 0; i < page.Items.Count; i++)
+            {
+                if (y + ListRowH > top + h) break;
+
+                var age = Game.GameTime - _openedAt - i * TileStaggerMs;
+
+                var lands = age <= 0 ? 0f
+                          : age >= RiseMs ? 1f
+                          : 1f - (float)Math.Pow(1f - age / (float)RiseMs, 3);
+
+                Line(page.Items[i], x, y, rowW, ListRowH, i == Top.Index,
+                     (int)(fade * lands), lands);
+
+                y += ListRowH + ListRowGap;
+            }
+        }
+
+        private void Line(WheelItem item, float x, float y, float w, float h, bool here,
+                          int fade, float lands)
+        {
+            var on = here && item.Enabled;
+
+            // Slid in from the left as it lands, which is the direction a list reads.
+            x += (1f - lands) * Hud.ToX(0.018f);
+
+            var back = !item.Enabled ? Palette.SegmentDisabled
+                     : on ? LitEdge
+                     : Palette.Segment;
+
+            Hud.RectFrom(x + Hud.ToX(TileShadow), y + TileShadow, w, h,
+                         Fade(Color.FromArgb(150, 0, 0, 0), fade));
+
+            Hud.RectFrom(x, y, w, h, Fade(back, fade));
+
+            // A bar down the left of the live one. On a grid the whole tile changes colour and
+            // that is enough; in a column of identical bars the eye wants an edge to run down.
+            if (on)
+            {
+                Hud.RectFrom(x, y, Hud.ToX(0.0030f), h, Fade(Palette.Accent, fade));
+                Edge(x, y, w, h, TileEdge, Fade(LitEdge, fade));
+            }
+
+            var ink = !item.Enabled ? Palette.TextDisabled : Palette.Text;
+
+            if (item.Tint.HasValue && !on && item.Enabled) ink = item.Tint.Value;
+
+            var textX = x + Hud.ToX(0.012f);
+
+            // The art on the left, at a size that leaves the words the row.
+            if (!string.IsNullOrEmpty(item.IconFile) &&
+                Hud.File(item.IconFile, textX + Hud.ToX(ListArt) * 0.5f, y + h * 0.5f - 0.0005f,
+                         ListArt, 0f, Fade(ink, fade)))
+            {
+                textX += Hud.ToX(ListArt) + 0.010f;
+            }
+
+            Hud.Text(item.Label, textX, y + 0.0085f, 0.34f, Fade(ink, fade),
+                     Hud.FontChaletLondon, centre: false);
+
+            // What it is, under the name and quieter. This is the half a tile could never
+            // show -- there is no room under a caption for a second line.
+            if (!string.IsNullOrEmpty(item.Detail))
+            {
+                Hud.Text(Hud.Fit(item.Detail, w - (textX - x) - Hud.ToX(0.055f), 0.24f,
+                                 Hud.FontLabel),
+                         textX, y + 0.0300f, 0.24f,
+                         Fade(Palette.Alpha(Palette.TextDim, 190), fade),
+                         Hud.FontLabel, centre: false);
+            }
+
+            if (!string.IsNullOrEmpty(item.Value))
+            {
+                Hud.TextRight(item.Value, x + w - Hud.ToX(0.010f), y + 0.0150f, 0.26f,
+                              Fade(Palette.TextDim, fade), Hud.FontLabel);
+            }
+        }
+
         private void Grid(float left, float top, float w, float h, int fade)
         {
             var page = Current;
             if (page == null) return;
+
+            // Some pages are read rather than recognised. See WheelPage.AsList.
+            if (page.AsList)
+            {
+                Rows(left, top, w, h, fade);
+                return;
+            }
 
             // The cursor landing somewhere is an event, and the tile it lands on says so.
             if (Top.Index != _lastIndex)

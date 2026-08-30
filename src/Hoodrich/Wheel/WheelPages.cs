@@ -1307,6 +1307,9 @@ namespace Hoodrich.Wheel
             {
                 page.PanelTitle = "Where to?";
 
+                // Ten place names are ten things you read, not ten shapes you recognise.
+                page.AsList = true;
+
                 foreach (var stop in Locations.Knowai.Stops)
                 {
                     // Captured, because the loop variable is one variable and every row would

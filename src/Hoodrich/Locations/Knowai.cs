@@ -58,14 +58,22 @@ namespace Hoodrich.Locations
         // ---- shape --------------------------------------------------------------
 
         /// <summary>
-        /// The face on its notifications.
+        /// The picture on its notifications.
         ///
-        /// A driverless service has no person to put there, so it borrows the one the game
-        /// already uses for a car company. Faces.Ready falls back on its own if this build has
-        /// not got it, which is the whole reason the name is written once here rather than
-        /// four times below.
+        /// A BRAND, NOT A MAN. It was Simeon, which is a photograph of somebody's face on a
+        /// message from a company -- and worse, of a character who has nothing to do with it.
+        /// A driverless service has nobody to photograph, so the nearest thing available is
+        /// another company's mark, and which of these a given build ships is not something to
+        /// guess at from here. The first that loads wins and the silhouette is behind them all.
         /// </summary>
-        private const string Face = "CHAR_SIMEON";
+        private static string Face
+        {
+            get
+            {
+                return Faces.FirstReady("CHAR_LS_CUSTOMS", "CHAR_MP_MECHANIC",
+                                        "CHAR_BLANK_ENTRY", "CHAR_DEFAULT");
+            }
+        }
 
         /// <summary>The car, in the order they exist on a given install.</summary>
         private static readonly string[] Cars = { "vivanite2", "vivanite", "taxi" };
@@ -167,6 +175,16 @@ namespace Hoodrich.Locations
 
         private int _phaseFrom;
         private int _fare;
+
+        /// <summary>Where it was when last looked at, and when that was.</summary>
+        private Vector3 _wasAt;
+        private int _lookedAt;
+        private int _nudges;
+
+        /// <summary>Barely moved in this long, this many times over, and it is written off.</summary>
+        private const float StuckMoved = 3f;
+        private const int StuckLookMs = 9000;
+        private const int MaxNudges = 3;
 
         // ---- hailing ------------------------------------------------------------
 
@@ -271,6 +289,19 @@ namespace Hoodrich.Locations
                     return;
                 }
 
+                // INVISIBLE EVERY TICK, NOT ONCE.
+                //
+                // Setting it at creation is not enough: the flag comes back on when the ped
+                // streams out and in again, when it is handed back to the game, and when its
+                // task changes -- which is why a man appeared behind the wheel the moment the
+                // ride ended. It is one native call against one ped and it is the difference
+                // between a driverless car and a car with a stranger in it.
+                if (_driver != null && _driver.Exists())
+                {
+                    try { Function.Call(Hash.SET_ENTITY_VISIBLE, _driver.Handle, false, false); }
+                    catch { /* next tick */ }
+                }
+
                 var now = Game.GameTime;
 
                 if (now - _phaseFrom > PhaseCapMs)
@@ -295,8 +326,55 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// Whether it has stopped getting anywhere, and what to do about it.
+        ///
+        /// A CAR THAT CANNOT REACH YOU USED TO SIT THERE FOR FIVE MINUTES. The only limit was
+        /// the phase cap, so a Knowai that nosed into an alley wall was a Knowai you waited on
+        /// until the whole thing timed out -- and there is no worse outcome for a service whose
+        /// entire promise is that it turns up.
+        ///
+        /// Re-routed rather than teleported. The route is asked for again from where it
+        /// actually is, which is usually all it needs; three of those and it is written off
+        /// and you are told, which is far better than silence.
+        /// </summary>
+        /// <returns>True when it has been given up on.</returns>
+        private bool Stuck(int now, Vector3 goingTo)
+        {
+            if (now - _lookedAt < StuckLookMs) return false;
+
+            var here = _car.Position;
+            var moved = _lookedAt == 0 ? float.MaxValue : here.DistanceTo(_wasAt);
+
+            _wasAt = here;
+            _lookedAt = now;
+
+            if (moved > StuckMoved)
+            {
+                _nudges = 0;
+                return false;
+            }
+
+            _nudges++;
+
+            if (_nudges > MaxNudges) return true;
+
+            Log.Info("Knowai: stuck, re-routing (" + _nudges + ").");
+
+            Drive(goingTo, State == RideState.Riding ? 22f : 20f);
+
+            return false;
+        }
+
         private void Coming(Ped player, int now)
         {
+            if (Stuck(now, player.Position))
+            {
+                Away();
+                Cancel("That Knowai couldn't reach you. Ask for another.");
+                return;
+            }
+
             if (_car.Position.DistanceTo(player.Position) > PickUpRange) return;
 
             Halt();
@@ -399,10 +477,31 @@ namespace Hoodrich.Locations
         {
             // Out early. It is a taxi, not a cage: getting out is allowed and ends the ride
             // wherever you did it, which is what stepping out of a moving cab means.
+            //
+            // AND IT IS STILL CHARGED FOR. A car came out, found you and drove you part of the
+            // way; changing your mind halfway is a thing you are allowed to do and not a thing
+            // that makes it free. It is the whole fare rather than a share of it, because a
+            // meter that has to be explained is worse than one that is simply firm.
             if (!player.IsInVehicle(_car))
             {
+                var paid = Charge == null || Charge(_fare);
+
+                Notify.Card(Face, "Knowai", "ride ended early",
+                            paid ? "$" + _fare : "Unpaid. $" + _fare + " owed.");
+
                 Away();
-                Cancel("You got out.");
+                Cancel("");
+                return;
+            }
+
+            if (Stuck(Game.GameTime, _dropAt))
+            {
+                Charge?.Invoke(_fare);
+
+                Notify.Card(Face, "Knowai", "ride ended", "Couldn't get through. $" + _fare);
+
+                Away();
+                Cancel("");
                 return;
             }
 
@@ -518,6 +617,12 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _driver.Handle, false);
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, _driver.Handle, false);
                 Function.Call(Hash.SET_PED_CONFIG_FLAG, _driver.Handle, 251, true);
+
+                // AND HE DOES NOT TALK. A ped nobody can see still has a voice, and a
+                // driverless car whose empty driver's seat says "watch it!" at a cyclist is
+                // the whole illusion gone in one line of dialogue.
+                Function.Call(Hash.STOP_PED_SPEAKING, _driver.Handle, true);
+                Function.Call(Hash.DISABLE_PED_PAIN_AUDIO, _driver.Handle, true);
 
                 // AND NOBODY ELSE DRIVES IT. Without this, walking up and pressing the game's
                 // own enter key puts the player at the wheel -- on top of a man he cannot see,
@@ -645,6 +750,13 @@ namespace Hoodrich.Locations
         {
             State = state;
             _phaseFrom = Game.GameTime;
+
+            // Fresh for every leg. Carrying the last one's reading over means the first look
+            // of a new leg compares against where the car was before it was given a new route,
+            // which reads as movement whether or not there has been any.
+            _lookedAt = 0;
+            _nudges = 0;
+            _wasAt = _car != null && _car.Exists() ? _car.Position : Vector3.Zero;
         }
 
         private void Mark()
@@ -674,14 +786,15 @@ namespace Hoodrich.Locations
                 if (_blip != null && _blip.Exists()) _blip.Delete();
                 _blip = null;
 
-                // HANDED BACK RATHER THAN DELETED when the player could still be looking at
-                // it. A car that vanishes off the kerb in front of you is worse than one that
-                // drives away, and by this point it has been told to.
-                if (_driver != null && _driver.Exists())
-                {
-                    _driver.IsPersistent = false;
-                    _driver.MarkAsNoLongerNeeded();
-                }
+                // THE DRIVER IS DELETED. The car is handed back -- one that vanishes off the
+                // kerb in front of you is worse than one that drives away, and by this point it
+                // has been told to go.
+                //
+                // He cannot be. An invisible ped handed to the game is a ped the game will
+                // render the moment it feels like it, and what that looks like is a stranger
+                // appearing behind the wheel of the car you just got out of. He was never
+                // meant to be seen at all, so he goes.
+                if (_driver != null && _driver.Exists()) _driver.Delete();
 
                 if (_car != null && _car.Exists())
                 {

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using GTA.Native;
 
 namespace Hoodrich.UI
@@ -66,6 +66,12 @@ namespace Hoodrich.UI
                 case "DENISE": return "CHAR_DENISE";
                 case "FRANKLIN": return "CHAR_FRANKLIN";
                 case "TANISHA": return "CHAR_TANISHA";
+
+                // The recovery driver. There is no Tanya in this game, so she borrows the
+                // nearest thing it has -- and which of these a build ships is not something to
+                // guess at from here, so the first that loads wins.
+                case "TANYA": return FirstReady("CHAR_TOW_TRUCK", "CHAR_MP_MECHANIC",
+                                                "CHAR_LS_CUSTOMS", "CHAR_TANISHA");
                 case "MICHAEL": return "CHAR_MICHAEL";
                 case "TREVOR": return "CHAR_TREVOR";
 
@@ -118,6 +124,33 @@ namespace Hoodrich.UI
         /// Checked rather than assumed because the two GTA installs this runs on do not ship
         /// identical contact sets.
         /// </summary>
+        /// <summary>
+        /// The first of these this build actually has, or the silhouette.
+        ///
+        /// For a picture that is a BRAND rather than a person. There is nobody to photograph
+        /// for a driverless car service, and the game has no picture of one -- so the best
+        /// available is somebody else's logo, and which logos a given build ships is not
+        /// something to guess at from here. Every name is requested on the way past, so a
+        /// call that falls through today succeeds a moment later.
+        /// </summary>
+        public static string FirstReady(params string[] dicts)
+        {
+            if (dicts == null || dicts.Length == 0) return Nobody;
+
+            var got = Nobody;
+
+            foreach (var dict in dicts)
+            {
+                if (string.IsNullOrEmpty(dict)) continue;
+
+                var ready = Ready(dict);
+
+                if (ready != Nobody && got == Nobody) got = ready;
+            }
+
+            return got;
+        }
+
         public static string Ready(string dict)
         {
             if (string.IsNullOrEmpty(dict)) return Nobody;
