@@ -176,6 +176,7 @@ namespace Hoodrich.Locations
 
             Alive();
             Once(now);
+            Catchup(player, now);
             Join();
             Bite(player);
             Offer(player);
@@ -211,6 +212,122 @@ namespace Hoodrich.Locations
                 // He catches up on the next tick.
             }
         }
+
+        /// <summary>
+        /// He turns up, the way Chop turns up.
+        ///
+        /// THE GROUP IS A FOLLOW, NOT A GUARANTEE. It walks him after you at dog speed, which
+        /// is fine across a car park and hopeless against a car, a locked gate, a freeway, a
+        /// building he has to go round, or a fight he stopped to have. Every one of those ends
+        /// the same way: a dog somewhere behind you, getting further behind, with nothing in
+        /// the game that will ever close the distance. Vanilla does not make you go and fetch
+        /// Chop and neither should this.
+        ///
+        /// So past the leash he is simply put where he should be. Two rules about HOW, and
+        /// both of them are about not seeing it happen:
+        ///
+        /// IF YOU ARE DRIVING HE GOES IN THE CAR. Setting him down beside a moving vehicle is
+        /// a dog who is instantly behind again -- the same problem, solved for one second. A
+        /// free seat is the honest answer to "where should the dog be", and it is the seat he
+        /// would have taken anyway.
+        ///
+        /// AND HE IS NOT MOVED WHERE YOU CAN SEE HIM. A dog blinking across the street is a
+        /// bug even when it is a feature. He is placed behind your shoulder while off screen,
+        /// and only forced into view once he has been lost long enough that a visible pop is
+        /// better than no dog at all.
+        ///
+        /// The wait before any of it exists so that rounding a corner does not yank him: most
+        /// of the time he is simply walking and will arrive on his own.
+        /// </summary>
+        private void Catchup(Ped player, int now)
+        {
+            if (_dog == null || !_dog.Exists() || !_dog.IsAlive) return;
+
+            // Riding with you, or in the middle of getting in or out of something. All three
+            // are places he is meant to be, and all three look terrible interrupted.
+            if (_dog.IsInVehicle() || _jumpingAt != 0 || _outAt != 0) return;
+
+            if (_dog.Position.DistanceTo(player.Position) < Leash)
+            {
+                _lostSince = 0;
+                return;
+            }
+
+            if (_lostSince == 0)
+            {
+                _lostSince = now;
+                return;
+            }
+
+            var lost = now - _lostSince;
+            if (lost < FetchAfterMs) return;
+
+            try
+            {
+                var car = player.CurrentVehicle;
+
+                if (car != null && car.Exists())
+                {
+                    var seat = Free(car);
+                    if (seat == int.MinValue) return;
+
+                    Function.Call(Hash.SET_PED_INTO_VEHICLE, _dog.Handle, car.Handle, seat);
+
+                    _lostSince = 0;
+                    _inGroup = false;
+                    _sitting = false;
+
+                    Log.Info("Trigger was left behind, so he is in the car.");
+                    return;
+                }
+
+                // On screen and not desperate yet: wait for him to be out of shot rather than
+                // move him in front of you.
+                if (lost < ForceAfterMs
+                    && Function.Call<bool>(Hash.IS_ENTITY_ON_SCREEN, _dog.Handle))
+                {
+                    return;
+                }
+
+                var spot = player.Position - player.ForwardVector * 3f;
+
+                float ground;
+                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 2f),
+                                          out ground, GetGroundHeightMode.Normal))
+                {
+                    spot = new Vector3(spot.X, spot.Y, ground);
+                }
+
+                Function.Call(Hash.CLEAR_PED_TASKS, _dog.Handle);
+
+                Function.Call(Hash.SET_ENTITY_COORDS, _dog.Handle,
+                              spot.X, spot.Y, spot.Z, false, false, false, true);
+
+                // Facing the same way you are, so he arrives at your shoulder rather than
+                // stood in the road looking at you.
+                _dog.Heading = player.Heading;
+
+                _lostSince = 0;
+                _inGroup = false;
+                _wandering = false;
+
+                Log.Info("Trigger had fallen behind, so he caught up.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not bring Trigger up: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// How far he may get, how long he gets to fix it himself, and how long before he is
+        /// moved even if you are looking straight at him.
+        /// </summary>
+        private const float Leash = 45f;
+        private const int FetchAfterMs = 4000;
+        private const int ForceAfterMs = 12000;
+
+        private int _lostSince;
 
         /// <summary>
         /// He gets hurt. He does not die.
