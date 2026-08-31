@@ -105,7 +105,7 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// The twenty-three spots round the junction, walked and written down.
+        /// The spots round the junction, walked and written down.
         ///
         /// NOT A CIRCLE ANY MORE, and that is the point. The ring used to be generated -- an
         /// angle, a radius, a jitter -- which put cars in the middle of the road, half on the
@@ -113,10 +113,10 @@ namespace Hoodrich.Locations
         /// only ever be a circle, and the junction is not a circle: it is four streets meeting
         /// at an angle, with kerbs, a corner shop and a verge.
         ///
-        /// These are twenty-three real kerbside places, each with the heading of a car actually
-        /// parked in it. Measured rather than claimed: they sit between 18.8 and 25.9 metres
-        /// from the mark, so they still ring the crowd the way the generated ones were meant to
-        /// -- but they ring it along the kerb instead of through it.
+        /// These are real kerbside places, each with the heading of a car actually parked in
+        /// it. Measured rather than claimed: they sit between 19.5 and 36.6 metres from the
+        /// mark -- a wider, looser ring than the first walked set, out along the streets that
+        /// feed the junction rather than tight around it.
         ///
         /// THE HEADINGS ARE NOT COMPUTED AND MUST NOT BE. A car parked on a street points down
         /// the street, canted in towards whatever it has stopped to watch -- which is close to
@@ -124,35 +124,31 @@ namespace Hoodrich.Locations
         /// difference between cars parked up and cars arranged. Turning them to face the mark
         /// exactly would throw away the whole reason for walking them.
         ///
-        /// Fourteen to twenty cars come to twenty-three places, so a few always stand empty and
-        /// no car is ever without one. They are listed the way they were walked, all the way
-        /// round and back to the first.
+        /// EVERY ONE OF THEM IS FILLED -- one car per spot, no spares, so the length of this
+        /// array is the number of cars that turn up. Adding a spot adds a car.
         /// </summary>
         private static readonly Spot[] Spots =
         {
-            new Spot { At = new Vector3(-150.147f, -1740.836f, 30.090f), Face = 324.761f },
-            new Spot { At = new Vector3(-148.430f, -1744.720f, 30.128f), Face = 318.208f },
-            new Spot { At = new Vector3(-146.233f, -1748.704f, 30.121f), Face = 314.160f },
-            new Spot { At = new Vector3(-142.197f, -1751.668f, 30.131f), Face = 317.387f },
-            new Spot { At = new Vector3(-135.928f, -1754.888f, 30.113f), Face = 293.019f },
-            new Spot { At = new Vector3(-134.342f, -1757.896f, 30.059f), Face = 307.759f },
-            new Spot { At = new Vector3(-132.016f, -1760.529f, 29.904f), Face = 300.825f },
-            new Spot { At = new Vector3(-128.469f, -1762.873f, 29.753f), Face = 325.639f },
-            new Spot { At = new Vector3(-120.297f, -1760.855f, 29.785f), Face =  27.555f },
-            new Spot { At = new Vector3(-116.104f, -1758.634f, 29.807f), Face =  25.657f },
-            new Spot { At = new Vector3(-112.132f, -1754.713f, 29.822f), Face =  39.275f },
-            new Spot { At = new Vector3(-106.436f, -1742.815f, 30.154f), Face =  95.704f },
-            new Spot { At = new Vector3(-107.277f, -1738.566f, 30.210f), Face =  95.244f },
-            new Spot { At = new Vector3(-108.355f, -1733.801f, 30.064f), Face = 109.900f },
-            new Spot { At = new Vector3(-105.108f, -1730.108f, 29.863f), Face = 114.070f },
-            new Spot { At = new Vector3(-111.381f, -1721.519f, 29.808f), Face = 143.255f },
-            new Spot { At = new Vector3(-114.888f, -1719.808f, 29.815f), Face = 137.941f },
-            new Spot { At = new Vector3(-121.657f, -1716.436f, 29.889f), Face = 154.870f },
-            new Spot { At = new Vector3(-125.524f, -1716.260f, 29.990f), Face = 151.701f },
-            new Spot { At = new Vector3(-128.744f, -1713.283f, 29.893f), Face = 151.006f },
-            new Spot { At = new Vector3(-143.341f, -1717.723f, 29.993f), Face = 227.619f },
-            new Spot { At = new Vector3(-146.946f, -1720.855f, 30.124f), Face = 234.357f },
-            new Spot { At = new Vector3(-149.384f, -1724.409f, 29.961f), Face = 236.158f }
+            new Spot { At = new Vector3( -126.696f,  -1707.998f, 28.945f), Face = 142.974f },
+            new Spot { At = new Vector3( -130.816f,  -1712.833f, 29.239f), Face = 140.032f },
+            new Spot { At = new Vector3( -136.611f,  -1718.020f, 29.349f), Face = 114.876f },
+            new Spot { At = new Vector3( -142.715f,  -1716.573f, 29.404f), Face = 237.634f },
+            new Spot { At = new Vector3( -147.696f,  -1712.760f, 29.470f), Face = 228.277f },
+            new Spot { At = new Vector3( -154.136f,  -1720.701f, 29.419f), Face = 229.255f },
+            new Spot { At = new Vector3( -150.679f,  -1723.746f, 29.385f), Face = 233.514f },
+            new Spot { At = new Vector3( -147.009f,  -1729.062f, 29.337f), Face = 359.130f },
+            new Spot { At = new Vector3( -147.731f,  -1733.873f, 29.346f), Face = 160.693f },
+            new Spot { At = new Vector3( -151.134f,  -1737.599f, 29.330f), Face = 320.681f },
+            new Spot { At = new Vector3( -155.979f,  -1743.019f, 29.305f), Face = 318.852f },
+            new Spot { At = new Vector3( -161.329f,  -1749.322f, 29.242f), Face = 320.456f },
+            new Spot { At = new Vector3( -141.608f,  -1749.960f, 29.494f), Face = 319.884f },
+            new Spot { At = new Vector3( -146.894f,  -1756.148f, 29.454f), Face = 319.686f },
+            new Spot { At = new Vector3( -142.829f,  -1758.037f, 29.492f), Face = 257.029f },
+            new Spot { At = new Vector3( -137.656f,  -1755.114f, 29.510f), Face = 297.218f },
+            new Spot { At = new Vector3( -138.892f,  -1767.886f, 29.152f), Face = 303.768f },
+            new Spot { At = new Vector3( -132.734f,  -1765.011f, 29.110f), Face = 293.663f },
+            new Spot { At = new Vector3( -126.161f,  -1763.270f, 29.117f), Face = 280.911f },
+            new Spot { At = new Vector3( -121.339f,  -1762.843f, 29.120f), Face = 263.718f }
         };
 
         /// <summary>
