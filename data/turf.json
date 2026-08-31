@@ -33,7 +33,11 @@
   "",
   "ONLY THE FAMILIES ARE IN HERE. The seeded rectangles for the other eight sets were guesses",
   "derived from bounding circles, and a guess drawn on the map reads as an answer. They are",
-  "out until somebody walks them -- an unshaded set says 'not done yet', which is true."
+  "out until somebody walks them -- an unshaded set says 'not done yet', which is true.",
+  "",
+  "  bleed  1.0 is exactly zero overlap and zero gap: strips abut on the line. Above 1.0",
+  "         overlaps them, which hides the faint join two soft edges leave and costs a darker",
+  "         band where they cross. There is no value that is neither, so 1.0 is the default."
  ],
  "turf": {
   "families": [
@@ -42,6 +46,7 @@
     "_note": "The whole of ours, walked corner by corner. Covers Chamberlain Hills AND Strawberry, so both old boxes are gone -- one shape, not two.",
     "rot": 59.3,
     "step": 8.0,
+    "bleed": 1.0,
     "poly": [
      [
       -181.4,

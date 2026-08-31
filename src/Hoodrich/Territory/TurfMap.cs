@@ -184,7 +184,7 @@ namespace Hoodrich.Territory
         /// dozen boxes. The step is per shape because a long thin strip of turf down one street
         /// wants a finer cut than a whole neighbourhood.
         /// </summary>
-        private static void Tile(List<Vector3> poly, float rot, float step,
+        private static void Tile(List<Vector3> poly, float rot, float step, float bleed,
                                  string zone, List<TurfBox> into)
         {
             if (step < 4f) step = 4f;
@@ -263,21 +263,19 @@ namespace Hoodrich.Territory
                         At = new Vector3(cx + (mx * bcos - y * bsin),
                                          cy + (mx * bsin + y * bcos), 0f),
 
-                        // THE STRIPS OVERLAP EACH OTHER ON PURPOSE, and this is what stops the
-                        // fill looking like a barcode.
+                        // AT BLEED 1.0 THIS IS EXACTLY ZERO OVERLAP AND ZERO GAP. Centres sit
+                        // one step apart and each strip is one step deep, so they abut on the
+                        // line and neither cross it nor fall short of it. That is the default
+                        // and it is what the arithmetic actually guarantees.
                         //
-                        // Cut exactly to the step, adjacent strips abut perfectly in the maths
-                        // and still show a seam on screen, because an area blip does not have a
-                        // hard edge -- it fades out. Two fades meeting sum to less than one
-                        // solid, so every join reads as a pale line, and forty-three of them in
-                        // a row reads as stripes.
-                        //
-                        // Made deeper than the step so the fades overlap and add back up to a
-                        // flat wash. The shape grows by half a bleed all the way round, which
-                        // at eight metres and a quarter is a metre -- nothing, against a
-                        // boundary walked by a man reading numbers off a screen.
-                        Wide = wide + step * (Bleed - 1f),
-                        Deep = step * Bleed,
+                        // The knob exists because an area blip does not have a hard edge -- it
+                        // fades -- so perfect abutment can still show a faint join where two
+                        // fades meet and sum to less than one solid. Bleed above 1 overlaps
+                        // them to hide that, at the cost of a darker band where they cross,
+                        // which is worse the further above 1 it goes. There is no value that
+                        // is both, and 1.0 is the honest one.
+                        Wide = wide + step * (bleed - 1f),
+                        Deep = step * bleed,
                         Rot = rot
                     });
                 }
@@ -288,13 +286,14 @@ namespace Hoodrich.Territory
         private const float DefaultStep = 25f;
 
         /// <summary>
-        /// How much bigger than its step each strip is cut, to hide the joins.
+        /// How much bigger than its step each strip is cut, per shape, from "bleed".
         ///
-        /// See where it is used. If the fill comes out banded DARKER rather than paler, the
-        /// edges are hard rather than soft and this wants to be 1.0 -- it is one number and
-        /// which way it goes cannot be worked out from here.
+        /// ONE IS ZERO OVERLAP AND ZERO GAP, which is the default and the honest answer. Above
+        /// one hides the faint join between two soft-edged strips and pays for it with a darker
+        /// band where they cross -- pick whichever of the two you can live with, because there
+        /// is no number that is neither.
         /// </summary>
-        private const float Bleed = 1.35f;
+        private const float DefaultBleed = 1.0f;
 
         /// <summary>Past this many boxes, say so -- see the note where it is checked.</summary>
         private const int BoxWarnAt = 400;
@@ -342,6 +341,7 @@ namespace Hoodrich.Territory
                                 Tile(pts,
                                      b["rot"].AsFloat(0f),
                                      b["step"].AsFloat(DefaultStep),
+                                     b["bleed"].AsFloat(DefaultBleed),
                                      b["zone"].AsString(""),
                                      list);
                             }
