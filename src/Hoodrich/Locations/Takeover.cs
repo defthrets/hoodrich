@@ -262,8 +262,16 @@ namespace Hoodrich.Locations
         private const float LetGo = 300f;
 
         /// <summary>Where people and cars come FROM, which is never the junction itself.</summary>
-        private const float WalkFromMin = 55f;
-        private const float WalkFromMax = 130f;
+        /// <summary>
+        /// How far out they are put down to walk in from. Pulled in from 55-130.
+        ///
+        /// A hundred and thirty metres at a run is the better part of a minute, and the ring
+        /// is not full until the LAST of them has done it -- which is why the crowd was taking
+        /// two and a half minutes to gather. Forty to ninety is still somewhere out of sight
+        /// round a corner and it halves the far end, which is the end that sets the clock.
+        /// </summary>
+        private const float WalkFromMin = 40f;
+        private const float WalkFromMax = 90f;
 
         /// <summary>
         /// A block over, and that is the floor rather than a suggestion.
@@ -342,11 +350,17 @@ namespace Hoodrich.Locations
         private const int CrowdMax = 68;
 
         /// <summary>How many set off at once, so it fills up rather than materialising.</summary>
-        private const int PerWave = 7;
+        /// <summary>
+        /// How many are put down at once. Seven to ten.
+        ///
+        /// Sixty-eight people at seven a wave is ten waves, and at 2.6 seconds a wave the last
+        /// of them had not been CREATED for half a minute before he even started walking.
+        /// </summary>
+        private const int PerWave = 10;
 
         /// <summary>How long the cars get before anybody sets off on foot.</summary>
         private const int CrowdLeadMs = 14000;
-        private const int WaveGapMs = 2600;
+        private const int WaveGapMs = 1600;
 
         /// <summary>
         /// What the ring is doing while it watches.
@@ -2556,8 +2570,20 @@ namespace Hoodrich.Locations
                      " parked up. The crowd sets off.");
         }
 
-        /// <summary>Nine in ten. What counts as "they are all here" for a thing this size.</summary>
+        /// <summary>Nine in ten. What the CARS have to be before the crowd sets off.</summary>
         private const float MostOfThem = 0.9f;
+
+        /// <summary>
+        /// And what the CROWD has to be before the first car goes in. Three in five.
+        ///
+        /// LOWER THAN THE CARS ON PURPOSE, because the two are not the same question. A kerb
+        /// with no car on it is a hole in a wall you can see through; a person still jogging up
+        /// Carson is somebody arriving at a thing that has started, which is what a takeover
+        /// looks like anyway. Holding the first donut until the slowest of sixty-eight has got
+        /// there was most of the wait, and none of it was visible as anything but nothing
+        /// happening.
+        /// </summary>
+        private const float EnoughCrowd = 0.6f;
 
         /// <summary>The cars have their spots, so the crowd may come. See Filling.</summary>
         private bool _carsIn;
@@ -2606,7 +2632,7 @@ namespace Hoodrich.Locations
             }
 
             var enough = _crowd.Count > 0 &&
-                         here >= (int)Math.Ceiling(_crowd.Count * MostOfThem);
+                         here >= (int)Math.Ceiling(_crowd.Count * EnoughCrowd);
 
             var late = _startedAt != 0 && now - _startedAt > StartGiveUpMs;
 
