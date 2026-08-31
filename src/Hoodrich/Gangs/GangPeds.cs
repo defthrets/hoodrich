@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -73,8 +73,12 @@ namespace Hoodrich.Gangs
         /// Something in his hand, held the way a hand holds it.
         ///
         /// PH_R_Hand at zero offset. Every fiddled-in offset in this codebase has turned out to
-        /// be somebody having used SKEL_R_Hand, which is the wrist joint and half a hand out
-        /// from where the fingers close.
+        /// be somebody having used the wrong bone, so the fix is the bone and never the offset.
+        ///
+        /// THIS COMMENT WAS TRUE AND THE CODE WAS NOT. It said PH_R_Hand and the constant below
+        /// it said 28422, which is IK_R_Hand -- so every bottle in the mod hung off the wrist,
+        /// unrotated, while the file explained at length that it did not. Worth remembering the
+        /// next time a comment is used as evidence that something works.
         /// </summary>
         public static Prop Hand(Ped who, string propName)
         {
@@ -104,7 +108,20 @@ namespace Hoodrich.Gangs
             }
         }
 
-        /// <summary>PH_R_Hand, the prop helper.</summary>
-        private const int RightHand = 28422;
+        /// <summary>
+        /// The bone a held prop hangs off.
+        ///
+        /// PH_R_Hand, not IK_R_Hand. This was 28422 -- the IK_R_Hand bone -- which is the
+        /// TARGET the animation system aims the hand at, not the hand's grip. A bottle
+        /// attached there with no offset sits at the wrist, unrotated, pointing along the
+        /// world axes rather than along the fist, which is why they were carrying beer at an
+        /// angle nobody has ever held a beer at.
+        ///
+        /// 60309 is PH_R_Hand -- the prop-holder bone, which exists for exactly this and is
+        /// already positioned and rotated in the grip. Attached to it at zero offset the
+        /// bottle sits where the game's own scenarios put one, with no magic numbers to tune
+        /// per prop.
+        /// </summary>
+        private const int RightHand = 60309;
     }
 }

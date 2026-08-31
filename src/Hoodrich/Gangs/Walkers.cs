@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -111,12 +111,40 @@ namespace Hoodrich.Gangs
         private static readonly string[] Bottles =
             { "prop_beer_bottle", "prop_beer_am", "prop_cs_beer_bot_40oz" };
 
-        /// <summary>Standing about with it, once they have stopped somewhere.</summary>
+        /// <summary>
+        /// Standing about, once they have stopped somewhere -- for the ones with empty hands.
+        ///
+        /// WORLD_HUMAN_DRINKING IS NOT IN HERE ANY MORE. A scenario brings its own prop, so a
+        /// man already holding one of our bottles who was handed the drinking scenario ended up
+        /// with two bottles: ours welded to his hand and the game's in the other. The men with
+        /// a drink get an animation instead -- see Drinks below -- which keeps the bottle they
+        /// already have.
+        /// </summary>
         private static readonly string[] Standing =
         {
-            "WORLD_HUMAN_DRINKING", "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING_POT",
-            "WORLD_HUMAN_AA_SMOKE", "WORLD_HUMAN_HANG_OUT_STREET"
+            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING_POT",
+            "WORLD_HUMAN_AA_SMOKE", "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_STAND_IMPATIENT"
         };
+
+        /// <summary>
+        /// And the ones with a bottle actually drink out of it.
+        ///
+        /// The game's own beer idles, played as animations rather than as a scenario so the
+        /// bottle in his hand stays the bottle in his hand. Tried in order, and if none of them
+        /// load he falls back to standing about like everybody else -- a man holding a beer and
+        /// not drinking it is only slightly wrong, and it is what was happening before.
+        /// </summary>
+        private static readonly string[][] Drinks =
+        {
+            new[] { "amb@world_human_drinking@beer@male@idle_a", "idle_a" },
+            new[] { "amb@world_human_drinking@beer@male@idle_a", "idle_b" },
+            new[] { "amb@world_human_drinking@beer@male@idle_a", "idle_c" },
+            new[] { "amb@world_human_drinking@beer@male@base", "base" }
+        };
+
+        /// <summary>The walk of a man four beers in.</summary>
+        private const string DrunkWalk = "move_m@drunk@moderatedrunk";
 
         private readonly Settings _cfg;
         private readonly GangRegistry _gangs;
@@ -226,6 +254,41 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>
+        /// Put a beer idle on him, keeping the bottle he is already holding.
+        /// </summary>
+        /// <returns>False if none of the clips would load, so the caller can fall back.</returns>
+        private bool Sip(Ped man)
+        {
+            var pick = _rng.Next(Drinks.Length);
+
+            for (var i = 0; i < Drinks.Length; i++)
+            {
+                var pair = Drinks[(pick + i) % Drinks.Length];
+
+                try
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, pair[0]);
+
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pair[0])) continue;
+
+                    // Looped and open-ended: the stop lasts until the crew is aimed somewhere
+                    // else, and a drink that runs out after four seconds leaves him stood
+                    // holding a bottle doing nothing, which is where this started.
+                    Function.Call(Hash.TASK_PLAY_ANIM, man.Handle, pair[0], pair[1],
+                                  2f, -2f, -1, 1, 0f, false, false, false);
+
+                    return true;
+                }
+                catch
+                {
+                    // Next clip.
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Points the lead somewhere else and everybody else at the lead.
         ///
         /// A quarter of the time they stop instead, and that is the half of "walking up and
@@ -245,8 +308,13 @@ namespace Hoodrich.Gangs
                     try
                     {
                         Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
-                        Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
-                                      Standing[_rng.Next(Standing.Length)], 0, true);
+
+                        // A man with a drink drinks it. Everybody else stands about.
+                        if (w.Holding == null || !w.Holding.Exists() || !Sip(w.Man))
+                        {
+                            Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
+                                          Standing[_rng.Next(Standing.Length)], 0, true);
+                        }
                     }
                     catch
                     {
@@ -388,6 +456,32 @@ namespace Hoodrich.Gangs
                 if (_rng.Next(100) < 45)
                 {
                     w.Holding = GangPeds.Hand(man, Bottles[_rng.Next(Bottles.Length)]);
+
+                    // AND HE WALKS LIKE HE HAS HAD A FEW. The bottle was doing all the work of
+                    // saying he had been drinking, which is a prop rather than a performance --
+                    // he carried a beer down the alley with the gait of a man on his way to
+                    // work. The clipset is the whole difference and it costs one call.
+                    //
+                    // Requested and checked, because a movement clipset applied before it has
+                    // streamed in is silently ignored, and the man walks normally for the rest
+                    // of the night with a beer in his hand.
+                    if (w.Holding != null)
+                    {
+                        try
+                        {
+                            Function.Call(Hash.REQUEST_ANIM_SET, DrunkWalk);
+
+                            if (Function.Call<bool>(Hash.HAS_ANIM_SET_LOADED, DrunkWalk))
+                            {
+                                Function.Call(Hash.SET_PED_MOVEMENT_CLIPSET,
+                                              man.Handle, DrunkWalk, 1.0f);
+                            }
+                        }
+                        catch
+                        {
+                            // He walks straight. Not the end of the world.
+                        }
+                    }
                 }
 
                 try
