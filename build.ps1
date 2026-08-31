@@ -418,6 +418,58 @@ if ($Package) {
     Get-ChildItem $stage -Recurse -Include 'save.json', '*.log', '*.bak' |
         ForEach-Object { Remove-Item $_.FullName -Force }
 
+    # ---------------------------------------------------------------------------
+    # NOTHING SHIPS UNTIL IT HAS BEEN COUNTED.
+    #
+    # This exists because 0.4.0 went out wrong and nobody could see it from the outside. The
+    # -full zip -- the one whose whole reason to exist is "everything you need in one file" --
+    # contained ScriptHookVDotNet and NOT ONE of the hundred and forty-three recorded voice
+    # lines, which were the headline feature of that release. 108 files where the plain zip
+    # had 255. It packaged without complaint, uploaded without complaint, and the first
+    # anybody knew was a bug report saying the mod broke at 0.4.
+    #
+    # A zip is not verifiable by looking at it, so it gets counted instead. Each of these is
+    # something whose absence makes the release either broken or pointless, and each one is a
+    # thing that has actually gone missing at least once.
+    $problems = @()
+
+    $stagedDll = Join-Path $stage 'scripts\Hoodrich.dll'
+    if (-not (Test-Path $stagedDll)) { $problems += 'no scripts\Hoodrich.dll' }
+
+    $stagedIni = Join-Path $stage 'scripts\Hoodrich.ini'
+    if (-not (Test-Path $stagedIni)) { $problems += 'no scripts\Hoodrich.ini' }
+
+    $dataDir = Join-Path $stage 'scripts\Hoodrich'
+
+    # The data files the mod cannot start without. gangs.json missing is a mod that loads and
+    # then has no gangs, no leaders and no Gerald on the map -- which looks exactly like "it
+    # does not work" and says nothing about why.
+    foreach ($needed in @('gangs.json', 'zones.json', 'drugs.json', 'dealers.json',
+                          'socials.json', 'leaders.json', 'missions.json')) {
+        if (-not (Test-Path (Join-Path $dataDir $needed))) { $problems += "no $needed" }
+    }
+
+    $wavs = @(Get-ChildItem (Join-Path $dataDir 'voice') -Filter '*.wav' -ErrorAction SilentlyContinue).Count
+    if ($wavs -lt 100) { $problems += "only $wavs voice lines (expected 100+)" }
+
+    $icons = @(Get-ChildItem (Join-Path $dataDir 'icons') -Filter '*.png' -ErrorAction SilentlyContinue).Count
+    if ($icons -lt 50) { $problems += "only $icons icons (expected 50+)" }
+
+    # And the one that only applies to the bundle that promises it.
+    if ($Full -and -not (Test-Path (Join-Path $stage 'ScriptHookVDotNet3.dll'))) {
+        $problems += 'a -Full package with no ScriptHookVDotNet3.dll'
+    }
+
+    if ($problems.Count -gt 0) {
+        Write-Host ""
+        Write-Host "REFUSING TO PACKAGE. The staged folder is incomplete:" -ForegroundColor Red
+        foreach ($p in $problems) { Write-Host "  - $p" -ForegroundColor Red }
+        Write-Host ""
+        Write-Host "  A half-built stage is usually a build that failed while the last zip was" -ForegroundColor Yellow
+        Write-Host "  still open, or a copy step that silently did nothing. Fix it and run again." -ForegroundColor Yellow
+        throw "Release staging is incomplete; nothing was packaged."
+    }
+
     if (Test-Path $zip) { Remove-Item $zip -Force }
 
     Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal
@@ -428,4 +480,5 @@ if ($Package) {
     Write-Host ""
     Write-Host "Packaged  $zip" -ForegroundColor Green
     Write-Host "          $files files, $size KB, version $version"
+    Write-Host "          $wavs voice lines, $icons icons$(if ($Full) { ', ScriptHookVDotNet bundled' })"
 }
