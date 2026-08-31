@@ -18,7 +18,18 @@
   "EVERY NUMBER IN HERE IS A STARTING POINT AND IS MEANT TO BE CORRECTED. They are derived",
   "from the zone centres and radii in zones.json, which are bounding circles rather than",
   "shapes -- so they are the right ballpark and nothing more. Stand on a corner you want the",
-  "line to run along, read the coordinate off the screen, and put it in. No rebuild."
+  "",
+  "A SHAPE, RATHER THAN A BOX. An entry with a \"poly\" is a list of [x, y] corners in world",
+  "coordinates, and the mod cuts it into boxes itself -- as many as it takes. Three corners or",
+  "three hundred; it does not care, and a shape with a notch in it works.",
+  "",
+  "  rot    the street grid the strips run along. Get this right and an edge that follows a",
+  "         road is one clean line; get it wrong and the same edge is a staircase.",
+  "  step   how thick each strip is, in metres. Finer is neater and costs more blips.",
+  "",
+  "Chamberlain Hills below is written as a poly to show the shape of it. Its four corners are",
+  "exactly where the box was, so it looks the same today -- walk a corner you want the line to",
+  "run through, read the coordinate off the screen, and replace a pair."
  ],
  "turf": {
   "aztecas": [
@@ -34,11 +45,26 @@
   "families": [
    {
     "zone": "CHAMH",
-    "x": -173.9,
-    "y": -1593.7,
-    "w": 211.0,
-    "h": 129.0,
-    "rot": 27.0
+    "rot": 27.0,
+    "step": 20,
+    "poly": [
+     [
+      -238.6,
+      -1699.1
+     ],
+     [
+      -50.6,
+      -1603.3
+     ],
+     [
+      -109.2,
+      -1488.3
+     ],
+     [
+      -297.2,
+      -1584.1
+     ]
+    ]
    },
    {
     "zone": "STRAW",
