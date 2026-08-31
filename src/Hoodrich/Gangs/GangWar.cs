@@ -1400,6 +1400,8 @@ namespace Hoodrich.Gangs
 
             for (var i = 0; i < _rivals.Count; i++) Order(_rivals[i], true, player, now);
             for (var i = 0; i < _defenders.Count; i++) Order(_defenders[i], false, player, now);
+
+            Swarm(now);
         }
 
         /// <summary>
@@ -2413,6 +2415,135 @@ namespace Hoodrich.Gangs
             // And the ones nobody killed who are not coming back either.
             SendStragglersHome();
         }
+
+        /// <summary>
+        /// Anybody of theirs inside the circle, and every one of ours comes for him.
+        ///
+        /// THE CIRCLE IS THE ONE ON THE MAP. It is the same DefendRange the red radius blip is
+        /// drawn with, so the line the player can see is the line this is about -- not a
+        /// second number that behaves slightly differently to the one on the screen.
+        ///
+        /// WHY THIS IS NOT JUST THE DEFENDERS DOING THEIR JOB. The defenders are the men the
+        /// raid spawned, and they already fight. What did not happen is everybody ELSE: the
+        /// crew walking their round, the car of ours that happens to be on the block, the homies
+        /// following you, the men stood outside Gerald's who are not part of the raid's list.
+        /// A block that is being run into by a rival while a dozen of its own people carry on
+        /// smoking is the thing that breaks it.
+        ///
+        /// So this does not read a list. It asks the WORLD who is stood nearby wearing our
+        /// colours -- by relationship group, which is the only thing every one of them has in
+        /// common -- and points them all at the man who came in.
+        ///
+        /// The nearest breacher, not all of them. A ped can only fight one person, and the
+        /// game finds the next one itself the moment that one goes down.
+        /// </summary>
+        private void Swarm(int now)
+        {
+            if (_target == null || _defender == null || _defender.GroupHash == 0) return;
+
+            Ped worst = null;
+            var nearest = DefendRange;
+
+            try
+            {
+                for (var i = 0; i < _rivals.Count; i++)
+                {
+                    var r = _rivals[i];
+                    if (r == null || !r.Exists() || !r.IsAlive) continue;
+
+                    var gap = r.Position.DistanceTo(_target.Where);
+                    if (gap > nearest) continue;
+
+                    nearest = gap;
+                    worst = r;
+                }
+            }
+            catch
+            {
+                return;
+            }
+
+            // Nobody has crossed it. The defenders carry on doing what defenders do.
+            if (worst == null)
+            {
+                _swarmOn = 0;
+                return;
+            }
+
+            // SAID ONCE WHEN IT HAPPENS. A line about the block turning out is worth reading
+            // the first time and is noise on the second.
+            if (_swarmOn == 0)
+            {
+                _swarmOn = now;
+                Log.Info("Gang war: they are inside the block. Everybody out.");
+            }
+
+            if (now < _nextSwarm) return;
+            _nextSwarm = now + SwarmGapMs;
+
+            var sent = 0;
+
+            try
+            {
+                foreach (var ped in World.GetNearbyPeds(_target.Where, SwarmRange))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (ped.IsPlayer) continue;
+
+                    // Ours, by the only thing all of ours share. Not a list -- see above.
+                    if (Function.Call<int>(Hash.GET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle)
+                        != _defender.GroupHash)
+                    {
+                        continue;
+                    }
+
+                    // Already on him. Re-issuing a combat task on somebody who is fighting the
+                    // right man restarts his approach and is how a crowd of people ends up
+                    // jogging on the spot.
+                    if (Function.Call<bool>(Hash.IS_PED_IN_COMBAT, ped.Handle, worst.Handle)) continue;
+
+                    // Deaf men do not fight. A good number of ours are spawned with events
+                    // blocked so they stand still and look like scenery, and that flag will
+                    // quietly swallow the order below.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
+
+                    // Offensive rather than defensive, which is the difference between a man
+                    // shooting from where he is stood and a man walking at you -- "chase them
+                    // down" is a movement setting before it is a task.
+                    Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, ped.Handle, 2);
+                    Function.Call(Hash.SET_PED_COMBAT_RANGE, ped.Handle, 2);
+
+                    Function.Call(Hash.TASK_COMBAT_PED, ped.Handle, worst.Handle, 0, 16);
+                    Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+
+                    sent++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Gang war could not turn the block out: " + ex.Message);
+            }
+
+            if (sent > 0) Log.Debug("Gang war: " + sent + " of ours sent at the one inside.");
+        }
+
+        /// <summary>
+        /// How far out the call goes, and how often it is repeated.
+        ///
+        /// Wider than the circle itself on purpose -- somebody two streets away is still one of
+        /// ours and would come. The repeat is for the men who arrive after the first call and
+        /// for anybody whose task got cleared by something else; three seconds is often enough
+        /// to catch them and slow enough not to be re-tasking the same men every tick.
+        /// </summary>
+        private const float SwarmRange = 130f;
+        private const int SwarmGapMs = 3000;
+
+        private int _swarmOn;
+        private int _nextSwarm;
 
         private void Mark()
         {
