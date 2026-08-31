@@ -1839,6 +1839,10 @@ namespace Hoodrich
 
                 if (_partyDog != null) pages.ResetTrigger = () => _partyDog.Reset();
 
+                // And the settings screen can start a takeover, which is the one thing on it
+                // that does something rather than setting something.
+                if (_takeover != null) _settingsScreen.StartTakeover = () => _takeover.Force();
+
                 pages.AllJobs = () =>
                 {
                     var ids = new List<string>();

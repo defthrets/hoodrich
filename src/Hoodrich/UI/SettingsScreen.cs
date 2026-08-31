@@ -203,6 +203,15 @@ namespace Hoodrich.UI
 
         // ---- the list ----------------------------------------------------------
 
+        /// <summary>
+        /// Start a takeover now. Set by Main; returns the line to show the player.
+        ///
+        /// A hook rather than a reference to the takeover itself, for the same reason every
+        /// other one here is: this screen draws rows and reads settings, and giving it the
+        /// event runner would make it a thing that can also start events.
+        /// </summary>
+        public Func<string> StartTakeover;
+
         private void Head(string title)
         {
             _rows.Add(new Opt { Kind = OptKind.Heading, Label = title });
@@ -381,6 +390,24 @@ namespace Hoodrich.UI
             Slide("The circle the cars drive", "Block", "TakeoverSpinRadius",
                   () => c.TakeoverSpinRadius, v => c.TakeoverSpinRadius = v, 2f, 18f, 0.5f, "0.0", "m",
                   note: "What they aim at. They slide well outside it, which is the point");
+
+            // HELD RATHER THAN PRESSED, and not because it is destructive. It is thirty-five
+            // cars, thirty-five drivers and sixty-odd people arriving at once -- not something
+            // to walk into while scrolling past it looking for something else.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Start one now",
+                Note = "Hold to start a takeover without waiting for the clock. You have to be " +
+                       "near the junction on Carson for it to have anywhere to happen",
+                Enabled = () => StartTakeover != null,
+                Do = () =>
+                {
+                    var said = StartTakeover == null ? null : StartTakeover();
+
+                    if (!string.IsNullOrEmpty(said)) Notify.Important(said);
+                }
+            });
 
             Head("Socials");
             Tick("Feed on the right", "Socials", "TweetsOnTheRight",

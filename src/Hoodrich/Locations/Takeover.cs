@@ -736,6 +736,48 @@ namespace Hoodrich.Locations
 
         // ---- per-tick -----------------------------------------------------------
 
+        /// <summary>
+        /// Start one now, whatever the clock says.
+        ///
+        /// Arms a flag rather than calling Begin directly, so the takeover still starts down
+        /// its ordinary path on the next tick with every check that path makes. A second
+        /// entrance into a state machine is a second set of assumptions to keep in step with
+        /// the first, and this one has phases, a diary and a teardown hanging off it.
+        ///
+        /// Returns the line to show the player. Every way this can decline is a thing they can
+        /// do something about, so each one says which it was -- a button that silently does
+        /// nothing is indistinguishable from a button that is broken.
+        /// </summary>
+        public string Force()
+        {
+            if (!Enabled) return "Takeovers are switched off. Turn them on above.";
+
+            if (State != TakeoverState.None) return "There is one on already.";
+
+            if (Busy != null && Busy()) return "Not while something else is running.";
+
+            var player = Game.Player.Character;
+
+            if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
+
+            var near = player.Position.DistanceTo(Middle);
+
+            if (near > NearEnough)
+            {
+                return "Too far from the junction -- you are " + (int)near +
+                       "m away and it starts within " + (int)NearEnough + "m.";
+            }
+
+            _forced = true;
+
+            Log.Info("Takeover: started by hand.");
+
+            return "Starting one now.";
+        }
+
+        /// <summary>Somebody asked for one. Cleared the moment it begins. See Force.</summary>
+        private bool _forced;
+
         public void Update()
         {
             var now = Game.GameTime;
@@ -788,9 +830,22 @@ namespace Hoodrich.Locations
                 switch (State)
                 {
                     case TakeoverState.None:
-                        if (Busy != null && Busy()) return;
-                        if (!Tonight()) return;
+                        // ASKED FOR, OR THE CLOCK. The two checks that get skipped are the two
+                        // that are about WHEN -- somebody who has just held the button down
+                        // has answered "is tonight one of the nights" himself.
+                        if (!_forced)
+                        {
+                            if (Busy != null && Busy()) return;
+                            if (!Tonight()) return;
+                        }
+
+                        // The distance is NOT skipped, and Force checks it too. This one is
+                        // not about when: the junction is a fixed place, and starting one
+                        // three miles away is thirty-five cars and sixty people spawning
+                        // somewhere nobody is stood to see them.
                         if (near > NearEnough) return;
+
+                        _forced = false;
 
                         Begin(now);
                         break;
