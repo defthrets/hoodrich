@@ -109,6 +109,127 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>
+        /// One of yours notices you go past.
+        ///
+        /// THE SET NEVER ACKNOWLEDGED THE PLAYER AT ALL, which is a strange thing about a mod
+        /// whose whole subject is belonging to it. You could drive the length of your own
+        /// block, past your own people, and not one of them would look up -- they were set
+        /// dressing that happened to be wearing your colours.
+        ///
+        /// He looks at you first, always. The look is most of the effect: a man who turns his
+        /// head as you pass has noticed you whether or not the rest of it lands, and it is one
+        /// call that cannot fail.
+        /// </summary>
+        public static void Notice(Ped man, Ped you, int lookMs = 2500)
+        {
+            if (man == null || !man.Exists() || !man.IsAlive) return;
+            if (you == null || !you.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.TASK_LOOK_AT_ENTITY, man.Handle, you.Handle, lookMs, 0, 2);
+            }
+            catch
+            {
+                // He does not look. Nothing else here depends on it.
+            }
+        }
+
+        /// <summary>
+        /// And says something.
+        ///
+        /// Forced, because these are ambient lines and the game will otherwise decide a man
+        /// stood on a pavement has nothing worth saying. A context this build has not got is
+        /// silence rather than an error -- speech names are safe to try in a way that native
+        /// hashes are not.
+        /// </summary>
+        public static void Hello(Ped man, Random rng)
+        {
+            if (man == null || !man.Exists() || !man.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, man.Handle,
+                              Greetings[rng.Next(Greetings.Length)], "SPEECH_PARAMS_FORCE");
+            }
+            catch
+            {
+                // Quiet nod, then.
+            }
+        }
+
+        /// <summary>
+        /// A wave, for the ones on foot.
+        ///
+        /// The MP celebration wave, tried in order, because it is the one animation in the game
+        /// that is unambiguously a person waving at another person. Upper-body only and not
+        /// looping, so it plays over whatever he is already doing and he goes back to it --
+        /// a man who stops walking to wave has made an event of it.
+        /// </summary>
+        public static bool Wave(Ped man, Random rng)
+        {
+            if (man == null || !man.Exists() || !man.IsAlive) return false;
+
+            var start = rng.Next(Waves.Length);
+
+            for (var i = 0; i < Waves.Length; i++)
+            {
+                var pair = Waves[(start + i) % Waves.Length];
+
+                try
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, pair[0]);
+
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pair[0])) continue;
+
+                    // Flag 48 is upper-body plus secondary: it runs alongside the walk instead
+                    // of replacing it, which is what makes it a wave rather than a stop.
+                    Function.Call(Hash.TASK_PLAY_ANIM, man.Handle, pair[0], pair[1],
+                                  4f, -4f, 2200, 48, 0f, false, false, false);
+
+                    return true;
+                }
+                catch
+                {
+                    // Next one.
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Two taps on the horn, which is how a car says hello.</summary>
+        public static void Beep(Vehicle car)
+        {
+            if (car == null || !car.Exists()) return;
+
+            try
+            {
+                // Short, and only ever one from here -- the second tap is the caller's, a beat
+                // later, because a horn held for four hundred milliseconds is somebody leaning
+                // on it and that means something else entirely.
+                Function.Call(Hash.START_VEHICLE_HORN, car.Handle, 180, 0, false);
+            }
+            catch
+            {
+                // No horn, no hello.
+            }
+        }
+
+        private static readonly string[] Greetings =
+        {
+            "GENERIC_HI", "GENERIC_HOWS_IT_GOING", "GENERIC_HI",
+            "GENERIC_WHATS_UP", "GENERIC_HOWS_IT_GOING"
+        };
+
+        private static readonly string[][] Waves =
+        {
+            new[] { "anim@mp_player_intcelebrationmale@wave", "wave" },
+            new[] { "friends@frj@ig_1", "wave_a" },
+            new[] { "gestures@m@standing@casual", "gesture_hello" }
+        };
+
+        /// <summary>
         /// The bone a held prop hangs off.
         ///
         /// PH_R_Hand, not IK_R_Hand. This was 28422 -- the IK_R_Hand bone -- which is the

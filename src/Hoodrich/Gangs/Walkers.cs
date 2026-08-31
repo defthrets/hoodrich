@@ -160,6 +160,10 @@ namespace Hoodrich.Gangs
         /// <summary>Off while something louder is happening. Wired by the house script.</summary>
         public Func<bool> Busy;
 
+        /// <summary>How close you have to be for one of them to notice, and how often.</summary>
+        private const float GreetRange = 18f;
+        private const int GreetGapMs = 22000;
+
         private bool Enabled => _cfg == null || _cfg.WalkersEnabled;
 
         private int MaxCrews => _cfg == null ? 2 : _cfg.WalkerCrews;
@@ -183,6 +187,7 @@ namespace Hoodrich.Gangs
             try
             {
                 Prune(now);
+                Greet(now);
 
                 if (!Enabled)
                 {
@@ -287,6 +292,75 @@ namespace Hoodrich.Gangs
 
             return false;
         }
+
+        /// <summary>
+        /// Somebody in the crew says hello as you go past.
+        ///
+        /// ONE MAN, NOT THE CREW. Four people turning and waving in unison is a chorus line;
+        /// one of them clocking you and the rest carrying on is a group of blokes on a
+        /// pavement, which is what they are. The others still get the look, because heads
+        /// turning is cheap and is most of what "they noticed you" looks like.
+        ///
+        /// Foot crews wave OR speak rather than both -- doing both at once reads as somebody
+        /// performing rather than somebody acknowledging.
+        /// </summary>
+        private void Greet(int now)
+        {
+            if (now < _nextGreet) return;
+
+            Ped you;
+
+            try
+            {
+                you = Game.Player.Character;
+                if (you == null || !you.Exists() || !you.IsAlive) return;
+            }
+            catch
+            {
+                return;
+            }
+
+            foreach (var crew in _out)
+            {
+                if (crew.Men.Count == 0) continue;
+
+                var near = -1;
+
+                for (var i = 0; i < crew.Men.Count; i++)
+                {
+                    var m = crew.Men[i].Man;
+                    if (m == null || !m.Exists() || !m.IsAlive) continue;
+
+                    if (m.Position.DistanceTo(you.Position) > GreetRange) continue;
+
+                    near = i;
+                    break;
+                }
+
+                if (near < 0) continue;
+
+                _nextGreet = now + GreetGapMs;
+
+                foreach (var w in crew.Men) GangPeds.Notice(w.Man, you);
+
+                var him = crew.Men[near].Man;
+
+                // A man holding a bottle waves with the hand that has a bottle in it, which is
+                // fine, but he is more likely to just shout.
+                if (crew.Men[near].Holding != null || _rng.Next(100) < 40)
+                {
+                    GangPeds.Hello(him, _rng);
+                }
+                else if (!GangPeds.Wave(him, _rng))
+                {
+                    GangPeds.Hello(him, _rng);
+                }
+
+                return;
+            }
+        }
+
+        private int _nextGreet;
 
         /// <summary>
         /// Points the lead somewhere else and everybody else at the lead.

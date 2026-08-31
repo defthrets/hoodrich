@@ -317,6 +317,11 @@ namespace Hoodrich.Gangs
         /// <summary>Off while something louder is happening. Wired by the house script.</summary>
         public Func<bool> Busy;
 
+        /// <summary>How close you have to be for one of them to notice, and how often.</summary>
+        private const float GreetRange = 22f;
+        private const int GreetGapMs = 20000;
+        private const int SecondBeepMs = 240;
+
         /// <summary>
         /// The settings are read every tick rather than copied at startup.
         ///
@@ -349,11 +354,24 @@ namespace Hoodrich.Gangs
             // and has to run at the rate the physics does.
             Wheelies(now);
 
+            // The second tap of a double beep, which has to be its own thing -- a horn is a
+            // duration, so two beeps is two calls with a gap, and the gap cannot be a sleep.
+            if (_secondBeepAt != 0 && now >= _secondBeepAt)
+            {
+                _secondBeepAt = 0;
+
+                if (_beepCar != null && _beepCar.Exists()) GangPeds.Beep(_beepCar);
+
+                _beepCar = null;
+            }
+
             if (now - _lastTick < TickMs) return;
             _lastTick = now;
 
             try
             {
+                Greet(now);
+
                 Prune(now);
 
                 if (!Enabled)
@@ -837,6 +855,66 @@ namespace Hoodrich.Gangs
         /// on the pavement is being levitated; the same bike doing thirty down Carson is a
         /// rider showing off, which is the thing worth seeing.
         /// </summary>
+        /// <summary>
+        /// One of yours clocks you from the car.
+        ///
+        /// A HORN OR A SHOUT, NOT BOTH, and the horn is the rarer of the two because it is the
+        /// louder gesture -- somebody leaning out and shouting your name is the normal way one
+        /// of your own says hello, and two taps on the horn is what you get when they are
+        /// already moving and cannot.
+        ///
+        /// The whole car looks at you either way, which is the bit that reads at speed: you
+        /// notice heads turning in a passing car long before you make out what anybody said.
+        /// </summary>
+        private void Greet(int now)
+        {
+            if (now < _nextGreet) return;
+
+            Ped you;
+
+            try
+            {
+                you = Game.Player.Character;
+                if (you == null || !you.Exists() || !you.IsAlive) return;
+            }
+            catch
+            {
+                return;
+            }
+
+            foreach (var roll in _out)
+            {
+                if (roll.Car == null || !roll.Car.Exists()) continue;
+                if (roll.Car.Position.DistanceTo(you.Position) > GreetRange) continue;
+
+                _nextGreet = now + GreetGapMs;
+
+                foreach (var m in roll.Crew) GangPeds.Notice(m, you, 3000);
+
+                // A bike has no horn worth the name and nobody beeps a scooter at a friend.
+                var canBeep = roll.Car.ClassType != VehicleClass.Motorcycles
+                              && roll.Car.ClassType != VehicleClass.Cycles;
+
+                if (canBeep && _rng.Next(100) < 35)
+                {
+                    GangPeds.Beep(roll.Car);
+
+                    _beepCar = roll.Car;
+                    _secondBeepAt = now + SecondBeepMs;
+                }
+                else
+                {
+                    GangPeds.Hello(roll.Driver, _rng);
+                }
+
+                return;
+            }
+        }
+
+        private int _nextGreet;
+        private int _secondBeepAt;
+        private Vehicle _beepCar;
+
         private void Wheelies(int now)
         {
             if (!Enabled || _out.Count == 0) return;
