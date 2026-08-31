@@ -861,6 +861,7 @@ namespace Hoodrich.Locations
                         if (OwnedCars.NowMinutes() >= _endsAt) { Blues(); return; }
 
                         Calm();
+                        Arriving(now);
                         Filling(now);
                         Wave(now);
                         Walking();
@@ -1733,19 +1734,70 @@ namespace Hoodrich.Locations
             //
             // So it was throwing away a perfectly good kerb to solve a problem that was not
             // there, which is exactly the gap it was asked to close.
+            // NOT ALL AT ONCE. THIS QUEUES THEM.
+            //
+            // Thirty-five cars released on the same frame is thirty-five drivers all pathing to
+            // the same junction through the same four streets, arriving in a block, and then
+            // shunting each other trying to reach kerbs that are three metres apart. They are
+            // not bad drivers -- they are thirty-five cars in a space that holds thirty-five
+            // cars, all trying to be there at the same moment.
+            //
+            // Spread over a minute they arrive the way people arrive: one, then another, then
+            // two together. Each has an empty kerb to aim at because the one next to it has
+            // already stopped, and the street fills up rather than appearing.
             var made = 0;
 
             foreach (var idx in order)
             {
                 var spot = Spots[idx];
 
-                if (made < lows) Spectator(Kind.Low, spot);
-                else if (made < lows + donks) Spectator(Kind.Donk, spot);
-                else Spectator(Kind.Plain, spot);
+                var kind = made < lows ? Kind.Low
+                         : made < lows + donks ? Kind.Donk
+                         : Kind.Plain;
+
+                _coming.Add(new Pending { Where = spot, What = kind });
 
                 made++;
             }
+
+            // The order they were dealt is already shuffled, so this is the order they turn up
+            // in as well -- the lowriders are not the first three to arrive every night.
+            _nextCar = Game.GameTime;
         }
+
+        /// <summary>A car that has a kerb but has not been sent for yet. See Arriving.</summary>
+        private sealed class Pending
+        {
+            public Spot Where;
+            public Kind What;
+        }
+
+        private readonly List<Pending> _coming = new List<Pending>();
+        private int _nextCar;
+
+        /// <summary>
+        /// Send for the next one, when it is due.
+        ///
+        /// The gap is worked out from the count rather than fixed, so the spread is a MINUTE
+        /// whether there are thirty-five kerbs or five. Adding spots to the list lengthens the
+        /// queue, not the night.
+        /// </summary>
+        private void Arriving(int now)
+        {
+            if (_coming.Count == 0 || now < _nextCar) return;
+
+            var one = _coming[0];
+            _coming.RemoveAt(0);
+
+            Spectator(one.What, one.Where);
+
+            var gap = SpreadMs / Math.Max(1, Spots.Length);
+
+            _nextCar = now + Math.Max(500, gap);
+        }
+
+        /// <summary>How long the whole street takes to fill, in milliseconds.</summary>
+        private const int SpreadMs = 60000;
 
         /// <summary>What sort of car came to watch.</summary>
         private enum Kind
@@ -1826,6 +1878,26 @@ namespace Hoodrich.Locations
                 // crooked for the rest of the night.
                 if (p.There)
                 {
+                    // KNOCKED OFF ITS KERB AND INTO THE ROAD.
+                    //
+                    // A parked car is not a fixed object -- a donut that goes wide shoves it,
+                    // and the next one shoves it again, so over a night it walks. Three of them
+                    // ended up sat in the middle of the junction with their drivers still stood
+                    // at the kerb they had been shunted away from.
+                    //
+                    // Aim already puts a nudged car back on its heading and never once looked
+                    // at where it actually was, which is how something twenty metres out of
+                    // place was still counted as parked and pointing the right way.
+                    //
+                    // Put back, not re-driven. The driver is stood on the pavement by now, so
+                    // there is nobody in it to drive it -- and it is going to the same spot it
+                    // is supposed to be on already.
+                    if (p.Car.Exists() && p.Car.Speed < 0.5f
+                        && p.Car.Position.DistanceTo(p.Slot) > StrayedFar)
+                    {
+                        Place(p);
+                    }
+
                     Aim(p);
                     Mingle(p, now);
                     continue;
@@ -2004,13 +2076,19 @@ namespace Hoodrich.Locations
                 // sole reason that his car had to be helped onto its kerb.
                 p.OutAt = Game.GameTime + SitAMomentMs;
 
-                Log.Info("Takeover: a spectator could not drive to its spot and was put on it.");
+                // Not logged. It fires for a car that could not drive in AND for one that was
+                // shoved off its kerb later, dozens of times a night either way, and a line per
+                // car buries everything else in the log. The counts in Filling say how many
+                // made it under their own steam, which is the number worth knowing.
             }
             catch
             {
                 // Tried again next tick.
             }
         }
+
+        /// <summary>How far a parked car may be shoved off its kerb before it is put back.</summary>
+        private const float StrayedFar = 6f;
 
         /// <summary>How long a spectator gets to drive to its kerb before it is placed on it.</summary>
         private const int ParkGiveUpMs = 40000;
@@ -2451,6 +2529,13 @@ namespace Hoodrich.Locations
         {
             if (_carsIn) return;
 
+            // NOBODY HAS BEEN SENT FOR YET EXCEPT THE FIRST FEW, so there is nothing to be
+            // nine tenths of. This is the trap the staggering opens: the fraction below is of
+            // _parked.Count, and _parked GROWS as they are sent for -- three cars sent and
+            // three parked is a hundred per cent, and the crowd would set off to a street with
+            // three cars on it. The count only means anything once they have all been sent.
+            if (_coming.Count > 0) return;
+
             var there = 0;
 
             foreach (var p in _parked)
@@ -2538,14 +2623,24 @@ namespace Hoodrich.Locations
         /// <summary>
         /// The outside limit on the whole build-up, in milliseconds.
         ///
-        /// Two and a half minutes. Long enough that it is never reached on a normal night, and
-        /// short enough that a takeover which has gone wrong somewhere still happens rather
-        /// than standing there being a car park.
+        /// Four minutes, which is a minute of cars arriving, a minute of the last of them
+        /// parking, and a crowd walking in behind that -- plus room for a bad night. Long
+        /// enough that it is never reached when things are working, and short enough that a
+        /// takeover which has gone wrong somewhere still happens rather than standing there
+        /// being a car park.
         /// </summary>
-        private const int StartGiveUpMs = 150000;
+        private const int StartGiveUpMs = 240000;
 
-        /// <summary>How long the ring gets to fill before it starts without the stragglers.</summary>
-        private const int FillGiveUpMs = 90000;
+        /// <summary>
+        /// How long the ring gets to fill before it starts without the stragglers.
+        ///
+        /// Raised from ninety seconds to two and a half minutes when the arrivals were spread
+        /// over a minute. The last car is now SENT for at sixty seconds and still has to drive
+        /// in, so ninety would have fired as a matter of course rather than as the fallback it
+        /// is -- and a fallback that trips every single night is not a fallback, it is the
+        /// behaviour.
+        /// </summary>
+        private const int FillGiveUpMs = 150000;
 
         /// <summary>Set once the ring has filled. Never asked again -- see Ringed.</summary>
         private bool _ringed;
@@ -5053,6 +5148,7 @@ namespace Hoodrich.Locations
             _law.Clear();
 
             _wereHere.Clear();
+            _coming.Clear();
 
             _scattered = false;
             _toCome = 0;
