@@ -1,4 +1,4 @@
-{
+﻿{
  "_comment": [
   "The block, talking about itself.",
   "",
@@ -3170,7 +3170,6 @@
    "everybody want a piece and don't nobody want to work for it",
    "made my money today. that's the whole post",
    "still ain't got a day off since i can remember",
-   "chop and trigz ate better than me tonight",
    "some of y'all need to stop calling me for favours",
    "you can leave the block, block don't leave you",
    "traffic on the {hood} was a whole hour of my life",
@@ -3179,7 +3178,6 @@
    "seen an old face today. didn't say nothing",
    "if you owe me you know you owe me",
    "aunt denise got opinions about my hours again",
-   "chop and trigz both ate before i did. that's the third day",
    "spent all morning on paperwork for a business that ain't legal. figure that out",
    "used to repo cars for a man who screamed at me in two languages. this ain't worse",
    "everybody on this block got a plan and a reason it ain't started yet",
@@ -3198,7 +3196,6 @@
    "aint been to sleep before 3 in a month",
    "you know what's expensive? doing this properly",
    "everybody want in until it's time to sit outside for six hours",
-   "chop knows when something's off before i do. trigz just follows him. every time",
    "made more this week than i made in a year at that lot",
    "the thing about {hood} is everybody know everything and nobody says nothing",
    "i been up since {timeofday} and i ain't done nothing i planned",
@@ -3214,21 +3211,10 @@
    "the hills look close from {hood}. they ain't close",
    "you can't build nothing on a block that don't trust you",
    "lamar called me boring today. i been shot at twice this week",
-   "trigz sleeps in the doorway. chop sleeps on the bed. they worked it out between them",
-   "two dogs is not twice one dog. it's a different situation entirely",
    "trigz still don't know he's a dog. thinks he's staff",
-   "chop been showing trigz where everything is. i ain't teach him that",
-   "denise says one dog was already one too many",
-   "took trigz to the yard and he acted like he owned it. he kind of does",
-   "trigz sits in the passenger seat like he's got somewhere to be",
-   "you know it's a bad neighbourhood when the dog gets a name and a reputation",
    "chop's the smart one. trigz is the one you want at the door",
    "spending more on dog food than i did on rent at the old place",
-   "trigz don't bark at everybody. that's how you know when to look up",
-   "two dogs in the car and neither one of them paying for gas",
-   "trigz found something in the yard and won't tell me what",
-   "chop's getting old. trigz doing the running for both of them now",
-   "somebody asked which one's the guard dog. both. obviously both"
+   "trigz don't bark at everybody. that's how you know when to look up"
   ],
   "GangOnGang": [
    "{rival} been quiet lately. suspiciously quiet",
@@ -3543,8 +3529,6 @@
    "they got him but they ain't got him. get well soon fam",
    "franklin been through worse than this. hold your head bro",
    "if you laughing at franklin right now the block seen it",
-   "chop and trigz been sat outside that hospital all night i swear",
-   "somebody's gotta feed them dogs while he's in there",
    "them two dogs of his ain't moved from the door"
   ],
   "CarBurned": [
@@ -4105,8 +4089,7 @@
    "{here}. i'm not moving for the next hour",
    "{here} and it's moving {filler}",
    "outside. {here}. i got what you asked about",
-   "trigz with me. that's your warning and your welcome",
-   "me and the dogs on {here}. take from that what you want"
+   "trigz with me. that's your warning and your welcome"
   ],
   "YouDidTheJob": [
    "handled it. don't ask what it was",
@@ -4459,10 +4442,7 @@
    "kid on the block calling everybody 'boss'. he seven",
    "some days the block is just loud and you're just tired",
    "the block raised me and the block owe me nothing",
-   "franklin got two dogs now and both of them look at you the same way",
    "seen that rottweiler on {hood} again. he don't belong to nobody but he belongs to somebody",
-   "there's a black rottweiler round {localspot} that everybody knows and nobody owns",
-   "whoever's dog that is on {hood}, he's better behaved than most people i know",
    "everybody on this block knows everybody's car by the sound of it",
    "new faces on the block this week. we noticed",
    "you can tell whose corner it is by who's stood on it at six in the morning",

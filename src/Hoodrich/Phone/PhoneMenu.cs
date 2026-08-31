@@ -960,8 +960,9 @@ namespace Hoodrich.Phone
             // Slid in from the left as it lands, which is the direction a list reads.
             x += (1f - lands) * Hud.ToX(0.018f);
 
+            // The bed, not the ring. See Tile.
             var back = !item.Enabled ? Palette.SegmentDisabled
-                     : on ? LitEdge
+                     : on ? Lit
                      : Palette.Segment;
 
             Hud.RectFrom(x + Hud.ToX(TileShadow), y + TileShadow, w, h,
@@ -1070,8 +1071,16 @@ namespace Hoodrich.Phone
         {
             var on = here && item.Enabled;
 
+            // THE BED, NOT THE RING. Filling the live tile with LitEdge and then drawing
+            // its border in LitEdge painted the border in the colour of the thing directly
+            // underneath it -- which is not a faint ring, it is no ring at all, and what
+            // was left was a flat bright green block with white text on it. That is the
+            // inverted-panel highlight the note on these two colours rejects by name.
+            //
+            // Lit is the dark green bed and LitEdge is the light that goes round it. Both
+            // were declared for exactly this and neither renderer was using the first one.
             var back = !item.Enabled ? Palette.SegmentDisabled
-                     : on ? LitEdge
+                     : on ? Lit
                      : Palette.Segment;
 
             // Rounded, and the selected one grows into place.
