@@ -126,25 +126,9 @@ namespace Hoodrich.Phone
                 return;
             }
 
-            // WHOSE ARROW KEY IS IT THIS FRAME?
-            //
-            // Sampled HERE, above our own suppression, or the answer is always "ours" -- we
-            // disable these controls every single frame ourselves, so asking afterwards is
-            // asking about us.
-            var mine = Ours();
-
-            // SAID ONCE, so a guard that misfires leaves evidence instead of a phone that
-            // quietly does not work. That is how the last one got out: nothing anywhere said
-            // the button had been suppressed, so there was nothing to read but the symptom.
-            if (!mine && !_saidSuppressed)
-            {
-                _saidSuppressed = true;
-                Log.Info("Phone: INPUT_PHONE is disabled by something else, so ours is holding off.");
-            }
-
             SuppressVanillaPhone();
 
-            var edge = ReadOpenEdge(mine);
+            var edge = ReadOpenEdge();
 
             if (!_menu.IsOpen)
             {
@@ -431,63 +415,52 @@ namespace Hoodrich.Phone
         }
 
         /// <summary>
-        /// Whether the phone button is still ours to read this frame.
+        /// One line in the log, the first time the phone button is pressed.
         ///
-        /// THE WHOLE PROBLEM IS THAT Pressed READS DISABLED CONTROLS. It is
-        /// IS_DISABLED_CONTROL_PRESSED, and it has to be -- we disable the phone controls
-        /// ourselves every frame to keep the game's handset down, so a normal read would never
-        /// see our own button at all.
+        /// THIS WAS A GATE AND IT BROKE THE PHONE TWICE, so it is a question now instead of an
+        /// answer. The idea was sound -- a mod menu opened on a hotkey takes the arrow keys by
+        /// disabling them, and Pressed reads through that because it is
+        /// IS_DISABLED_CONTROL_PRESSED, so scrolling somebody else's menu opened ours on top.
         ///
-        /// The cost of that is it also sees through EVERYBODY ELSE'S disabling. A trainer or a
-        /// mod menu opened on a hotkey takes the arrow keys for its own list, the way any menu
-        /// does, by disabling them each frame -- and we carried on reading them through it. So
-        /// scrolling down somebody else's menu opened our phone on top of it.
+        /// WHAT IS NOT SOUND IS TESTING A CONTROL WE DISABLE OURSELVES. SuppressVanillaPhone
+        /// turns off INPUT_PHONE every single frame to keep the game's handset down. Sampling
+        /// above that call only gives an honest answer if the game has already cleared the
+        /// PREVIOUS frame's disable by the time our tick runs, and that ordering is not
+        /// something to bet a working phone on. It read disabled, the gate held the button off
+        /// for good, and no amount of picking a different control number fixes the shape of it.
         ///
-        /// This asks the plain question instead: is this control enabled right now. Called
-        /// before our own suppression runs, so a "no" is somebody else's no -- another script
-        /// that ticked earlier this frame, or the game itself during a cutscene or a shop.
-        /// Either way it is not a moment to put a phone up.
-        ///
-        /// ONE CONTROL, AND IT HAS TO BE THIS ONE. The first version asked about PhoneUp as
-        /// well, on the reasoning that a menu which picks and chooses takes the directions
-        /// rather than the phone button. That broke the phone outright.
-        ///
-        /// Control.Phone is 27, INPUT_PHONE, which lives in the PLAYER control group.
-        /// Control.PhoneUp is 172, INPUT_CELLPHONE_UP, which lives in the FRONTEND group --
-        /// and asking IS_CONTROL_ENABLED about a frontend control under index 0 does not
-        /// answer the question it looks like it answers. It read false in ordinary gameplay,
-        /// so the whole test read false, so the button never worked again. Checked against the
-        /// real enum in the installed ScriptHookVDotNet rather than guessed at.
-        ///
-        /// 27 is also the one that matters: on a pad it is D-pad up, on a keyboard the up
-        /// arrow, and it is the control the game's own phone answers to. A menu that disables
-        /// everything -- which is nearly all of them, via DISABLE_ALL_CONTROL_ACTIONS -- takes
-        /// it along with the rest.
-        ///
-        /// It cannot see a menu that disables nothing at all. There is no native for "is
-        /// somebody else's menu open" and there is not going to be one -- this is the signal a
-        /// menu actually leaves, and a menu that leaves none is indistinguishable from no menu.
+        /// So the button works again and this writes down what the natives actually say, once,
+        /// so the next attempt starts from a measurement rather than from my reasoning about
+        /// what the game probably does.
         /// </summary>
-        private static bool Ours()
+        private void Probe()
         {
+            if (_probed) return;
+
+            _probed = true;
+
             try
             {
-                return Function.Call<bool>(Hash.IS_CONTROL_ENABLED, 0, (int)Control.Phone);
+                var phone = Function.Call<bool>(Hash.IS_CONTROL_ENABLED, 0, (int)Control.Phone);
+                var up = Function.Call<bool>(Hash.IS_CONTROL_ENABLED, 2, (int)Control.PhoneUp);
+
+                Log.Info("Phone probe on first press: INPUT_PHONE(0,27) enabled=" + phone +
+                         ", INPUT_CELLPHONE_UP(2,172) enabled=" + up + ".");
             }
-            catch
+            catch (Exception ex)
             {
-                // If it cannot be asked, it is ours. A phone that stops opening is worse than
-                // one that opens over somebody's menu -- which is exactly what the version
-                // above proved.
-                return true;
+                Log.Info("Phone probe failed: " + ex.Message);
             }
         }
 
+        private bool _probed;
+
         /// <summary>Rising edge of whatever opens the phone.</summary>
-        /// <param name="mine">Whether the game's phone control is ours to read this frame.</param>
-        private bool ReadOpenEdge(bool mine)
+        private bool ReadOpenEdge()
         {
-            var down = mine && Pressed(Control.Phone);
+            var down = Pressed(Control.Phone);
+
+            if (down) Probe();
 
             // A KEY OF YOUR OWN STILL WORKS, AND IS DELIBERATELY NOT GATED ABOVE.
             //
@@ -513,9 +486,6 @@ namespace Hoodrich.Phone
 
         /// <summary>When a held press should actually open its app, or nought. See HandleInput.</summary>
         private int _actAt;
-
-        /// <summary>Whether the log has already mentioned somebody else holding the button.</summary>
-        private bool _saidSuppressed;
 
         private void HandleInput()
         {
