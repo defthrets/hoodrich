@@ -128,9 +128,6 @@ namespace Hoodrich.Locations
         /// no car is ever without one. They are listed the way they were walked, all the way
         /// round and back to the first.
         /// </summary>
-        /// <summary>The shortest kerb two of them may share, in metres. A car is longer.</summary>
-        private const float MinGap = 5f;
-
         private static readonly Spot[] Spots =
         {
             new Spot { At = new Vector3(-150.147f, -1740.836f, 30.090f), Face = 324.761f },
@@ -396,11 +393,37 @@ namespace Hoodrich.Locations
             "dominator", "buffalo3", "sultan", "futo"
         };
 
-        /// <summary>Cars that came to watch, parked outside the ring.</summary>
+        /// <summary>
+        /// The cars round the ring: imports and Ubermachts.
+        ///
+        /// JDM AND BMW, WHICH IN THIS GAME MEANS KARIN, DINKA, ANNIS, MAIBATSU AND UBERMACHT.
+        /// That is the crowd a street takeover actually draws -- a row of Skylines, Silvias
+        /// and E36s on the kerb, not the muscle and the saloons that were in here before. The
+        /// Ubermachts are every BMW this game has: the Sentinel is an E36, the Sentinel
+        /// Classic an E30, the Cypher an M2, the Oracle and the Zion the big coupes.
+        ///
+        /// Deep on purpose. Nineteen or so of these are spawned at once and Make skips a name
+        /// somebody is already driving on its first pass, so a short list would come out as
+        /// the same four cars repeated down the street. Twenty-eight names is enough that it
+        /// does not have to.
+        ///
+        /// Ordered best-first, and Make walks the whole list past anything an install has not
+        /// got. So the Tuners cars lead where they exist and the base-game ones behind them
+        /// catch a build without that DLC -- Sultan, Kuruma, Futo, Jester, Penumbra, Elegy,
+        /// Warrener, Sentinel, Zion and Oracle ship with every copy of the game, which is
+        /// more than enough on its own to fill twenty-three kerbs.
+        /// </summary>
         private static readonly string[] Parked =
         {
-            "asterope2", "dorado", "kanjosj", "s95", "vorschlaghammer", "sultan2",
-            "warrener", "faction", "primo2", "gauntlet", "dominator", "buffalo"
+            // Imports.
+            "zr350", "euros", "remus", "previon", "calico", "futo2", "penumbra2",
+            "jester3", "rt3000", "kanjo", "kanjosj", "warrener2", "s95", "vectre",
+            "sultan2", "sultanrs", "elegy2", "kuruma", "sultan", "futo", "jester",
+            "penumbra", "elegy", "warrener", "asterope2",
+
+            // Ubermacht.
+            "cypher", "sentinel3", "sentinel2", "sentinel", "zion2", "zion",
+            "oracle2", "oracle"
         };
 
         /// <summary>
@@ -421,8 +444,13 @@ namespace Hoodrich.Locations
             "sabregt2", "tornado5", "virgo2"
         };
 
-        private const int DonksMin = 3;
-        private const int DonksMax = 5;
+        /// <summary>
+        /// A few. Two or three of the twenty-three, which is what "a few" means on a street
+        /// this size -- they are the cars people come to look at, and a kerb full of them is
+        /// a show rather than a takeover.
+        /// </summary>
+        private const int DonksMin = 2;
+        private const int DonksMax = 3;
 
         /// <summary>
         /// And the ones on juice.
@@ -447,10 +475,16 @@ namespace Hoodrich.Locations
         /// what the drift cars come in through, so more of them closes the junction without
         /// ever sealing it.
         /// </summary>
-        private const int ParkedMin = 14;
-        private const int ParkedMax = 20;
-        private const int LowsMin = 4;
-        private const int LowsMax = 7;
+        /// <summary>
+        /// And a few on juice. Two or three, the same as the donks.
+        ///
+        /// It was four to seven, which with three to five donks put nine of the twenty-odd
+        /// cars on big wheels or hydraulics -- getting on for half a street that is supposed
+        /// to be imports. Four to six of twenty-three between the two of them leaves the rest
+        /// of the kerb to the Skylines.
+        /// </summary>
+        private const int LowsMin = 2;
+        private const int LowsMax = 3;
 
         // ---- what is out there --------------------------------------------------
 
@@ -482,6 +516,9 @@ namespace Hoodrich.Locations
 
             /// <summary>The walked heading for this spot. Never recomputed -- see Spots.</summary>
             public float Face;
+
+            /// <summary>What he was last told to steer for. See Toward.</summary>
+            public Vector3 Aimed;
 
             public bool There;
 
@@ -1316,19 +1353,18 @@ namespace Hoodrich.Locations
 
         private void Cars()
         {
-            var want = _rng.Next(ParkedMin, ParkedMax + 1);
+            // EVERY KERB, EVERY TIME. Fourteen to twenty into twenty-three places left gaps
+            // in the wall, and a gap in a row of parked cars is a hole you can see the far
+            // pavement through -- which is the thing the ring exists to stop.
+            var want = Spots.Length;
             var lows = _rng.Next(LowsMin, LowsMax + 1);
             var donks = _rng.Next(DonksMin, DonksMax + 1);
 
             // Lowriders first, then donks, then everything else -- counted out of the same
             // total rather than added on top, so turning any of them up does not quietly grow
             // the number of cars ringing the junction.
-            // Never more cars than there are places for them, or two arrive at the same kerb
-            // and the second one parks inside the first.
-            if (want > Spots.Length) want = Spots.Length;
-
-            // Shuffled, so which spots stand empty changes from one night to the next and the
-            // lowriders are not always on the same corner.
+            // Shuffled, so the lowriders and the donks are on a different corner every time
+            // rather than always the same three kerbs.
             var order = new List<int>();
             for (var i = 0; i < Spots.Length; i++) order.Add(i);
 
@@ -1340,36 +1376,23 @@ namespace Hoodrich.Locations
                 order[j] = t;
             }
 
-            // AND NO TWO CARS IN THE SAME LENGTH OF KERB.
+            // THE MINIMUM-GAP CHECK THAT USED TO BE HERE WAS WRONG AND IS GONE.
             //
-            // Two of the walked spots are three and a half metres apart, which is shorter than
-            // a car. Both are real places to stop and both were walked, so neither of them is
-            // wrong -- but filling both puts two cars in the same six metres of pavement, and
-            // that is one car parked inside another. Whichever comes up first in the shuffle
-            // takes it; the other stands empty that night, which is what the spare spots are
-            // there for.
-            var taken = new List<Vector3>();
+            // It skipped any spot within five metres of one already taken, on the grounds that
+            // the closest walked pair is 3.4m apart and a car is longer than that. The distance
+            // was right and the conclusion was not: it measured centre to centre and ignored
+            // which way the cars point. Every close pair on this junction is SIDE BY SIDE along
+            // a kerb -- 3.4m apart across the cars and about 0.3m along them -- so they are two
+            // cars in adjacent bays, not one parked inside another. Measured across all 23:
+            // seventeen pairs within seven metres, and not one of them would clip.
+            //
+            // So it was throwing away a perfectly good kerb to solve a problem that was not
+            // there, which is exactly the gap it was asked to close.
             var made = 0;
 
             foreach (var idx in order)
             {
-                if (made >= want) break;
-
                 var spot = Spots[idx];
-
-                var clash = false;
-
-                foreach (var t in taken)
-                {
-                    if (t.DistanceTo(spot.At) >= MinGap) continue;
-
-                    clash = true;
-                    break;
-                }
-
-                if (clash) continue;
-
-                taken.Add(spot.At);
 
                 if (made < lows) Spectator(Kind.Low, spot);
                 else if (made < lows + donks) Spectator(Kind.Donk, spot);
@@ -1409,8 +1432,11 @@ namespace Hoodrich.Locations
                     return;
                 }
 
+                // ROUND THE OUTSIDE IF THE DIRECT LINE GOES THROUGH THE MARK. See Toward.
+                var aim = Toward(from, slot);
+
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
-                              slot.X, slot.Y, slot.Z, 14f, 0, car.Model.Hash, CareStyle, 4f, true);
+                              aim.X, aim.Y, aim.Z, 14f, 0, car.Model.Hash, CareStyle, 4f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
 
@@ -1422,6 +1448,7 @@ namespace Hoodrich.Locations
                     Driver = driver,
                     Slot = slot,
                     Face = spot.Face,
+                    Aimed = aim,
                     Low = kind == Kind.Low,
                     Hop = _rng.NextDouble() * Math.PI * 2d,
                     Rate = 2.2 + _rng.NextDouble() * 2.6
@@ -1453,7 +1480,41 @@ namespace Hoodrich.Locations
                     Aim(p);
                     continue;
                 }
+
                 if (p.Car == null || !p.Car.Exists()) continue;
+
+                // ONCE HE IS ROUND, HE COMES IN. Toward answers "the waypoint" while the
+                // straight line to his kerb would cross the mark, and "the kerb itself" once it
+                // would not -- so the answer changes exactly once per car, and that change is
+                // the moment to re-task him.
+                //
+                // Gated on the answer having MOVED rather than run on a timer. Re-issuing a
+                // drive order every couple of seconds is how a car ends up doing nothing at
+                // all: each new task throws away the routing the last one was part way through,
+                // and it never gets far enough to finish any of them.
+                var want = Toward(p.Car.Position, p.Slot);
+
+                if (want.DistanceTo(p.Aimed) > 8f)
+                {
+                    p.Aimed = want;
+
+                    try
+                    {
+                        if (p.Driver != null && p.Driver.Exists())
+                        {
+                            Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle,
+                                          p.Car.Handle, want.X, want.Y, want.Z, 14f, 0,
+                                          p.Car.Model.Hash, CareStyle, 4f, true);
+
+                            Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
+                        }
+                    }
+                    catch
+                    {
+                        // He will be asked again when the answer next moves.
+                    }
+                }
+
                 if (p.Car.Position.DistanceTo(p.Slot) > CarArrivedRange) continue;
 
                 p.There = true;
@@ -2582,6 +2643,54 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// Whether anybody is stood in the bit of road he is about to swing through.
+        ///
+        /// Looked for AHEAD OF THE NOSE rather than all round the car, because a donut is
+        /// going somewhere: the dangerous ground is the arc in front, and a man behind the
+        /// back bumper is a man the car is driving away from. A plain radius would have him
+        /// lifting off for people he has already passed, all the way round, every time.
+        ///
+        /// Cars as well as people. A spectator who has crept forward off his kerb is the same
+        /// obstacle a person is, and hitting one is what starts the pile-ups.
+        /// </summary>
+        private bool Crowded(Runner r)
+        {
+            try
+            {
+                var nose = r.Car.Position + r.Car.ForwardVector * LookAhead;
+
+                foreach (var w in _crowd)
+                {
+                    if (w == null || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+                    if (w.Man.Position.DistanceTo(nose) < ClearPed) return true;
+                }
+
+                foreach (var p in _parked)
+                {
+                    if (p == null || p.Car == null || !p.Car.Exists()) continue;
+                    if (p.Car.Handle == r.Car.Handle) continue;
+                    if (p.Car.Position.DistanceTo(nose) < ClearCar) return true;
+                }
+
+                return false;
+            }
+            catch
+            {
+                // If it cannot be answered, he drives. A missed check is one burst of lock; an
+                // exception thrown here would stop the car working at all.
+                return false;
+            }
+        }
+
+        /// <summary>How far ahead of the nose he looks, and how much room he wants there.</summary>
+        private const float LookAhead = 5.5f;
+        private const float ClearPed = 3.6f;
+        private const float ClearCar = 4.2f;
+
+        /// <summary>How long he waits before looking again, having lifted off.</summary>
+        private const int EaseMs = 500;
+
         /// <summary>Their go is over. Grip back, smoke off, and out the way they came.</summary>
         private void Leave(Runner r)
         {
@@ -2605,6 +2714,11 @@ namespace Hoodrich.Locations
                          : OnRoad(150f + (float)_rng.NextDouble() * 110f);
 
                 if (back == Vector3.Zero) back = Middle.Around(190f);
+
+                // AND HE GOES ROUND THE OUTSIDE TOO. He has just finished in the middle, so his
+                // kerb is very often on the far side of it from wherever the slide left him --
+                // and the straight line home is back through everybody still working.
+                if (r.Home != null) back = Toward(r.Car.Position, back);
 
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
@@ -2663,8 +2777,12 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
+                // Asked again from where he is NOW, so a car that has got round the outside is
+                // sent in at the kerb rather than back out to a waypoint it already reached.
+                var home = Toward(r.Car.Position, r.Home.Slot);
+
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
-                              r.Home.Slot.X, r.Home.Slot.Y, r.Home.Slot.Z, BackSpeed, 0,
+                              home.X, home.Y, home.Z, BackSpeed, 0,
                               r.Car.Model.Hash, CareStyle, 3f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
@@ -2719,25 +2837,24 @@ namespace Hoodrich.Locations
 
                     try
                     {
-                        // Back to his own circle rather than to the centre, for the same reason
-                        // he was not sent to the centre in the first place -- a car recovering
-                        // from a wide slide should rejoin the ring, not drive across it.
-                        var back = Circle;
-
-                        if (!r.Middle)
-                        {
-                            var out_ = r.Car.Position - Circle;
-                            var len = out_.Length();
-
-                            if (len > 0.5f)
-                            {
-                                out_ = out_ * (1f / len);
-                                back = Circle + out_ * r.Radius;
-                            }
-                        }
+                        // BACK TO THE MIDDLE, AND STILL SIDEWAYS.
+                        //
+                        // Aimed at the centre of the circle now rather than at the nearest
+                        // point on his own ring. A car that has slid wide hauling itself back
+                        // towards the middle is what losing it and catching it looks like; one
+                        // that rejoins the ring at the nearest point has tidily driven back to
+                        // where it should be, which is not the same picture at all.
+                        //
+                        // AND THE TYRES STAY ON. This is a correction inside his go, not the
+                        // end of it -- grip and drift tyres come off in Leave and nowhere else.
+                        // Re-asserted rather than assumed, because a car that grips up halfway
+                        // through has visibly stopped drifting, and putting the smoke back
+                        // afterwards would not hide that it had gone.
+                        Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
+                        Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
 
                         Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
-                                      r.Car.Handle, back.X, back.Y, back.Z,
+                                      r.Car.Handle, Circle.X, Circle.Y, Circle.Z,
                                       12f, 0, r.Car.Model.Hash, RushStyle, 4f, true);
                     }
                     catch
@@ -2749,6 +2866,27 @@ namespace Hoodrich.Locations
                 }
 
                 if (now < r.NextAction) continue;
+
+                // HE LOOKS BEFORE HE PUTS THE LOCK ON.
+                //
+                // A temp action is a driver input, not a route -- there is no avoidance in it
+                // at all, so a car mid-donut drives through whatever is in the way and keeps
+                // driving. That is why the crowd was being cleaned out: not because the cars
+                // aim at anybody, but because nothing in the action ever asks.
+                //
+                // So the asking happens here, between bursts. Somebody stood in the arc he is
+                // about to swing through means the burst is simply not issued this time round:
+                // he coasts for half a second, the arc moves on or the person does, and he
+                // picks it up again. That is a lift off the throttle, which is what a driver
+                // does, and it costs a fraction of one donut.
+                //
+                // Our own crowd list rather than a world query, because they are who is stood
+                // there and the list is already in hand.
+                if (Crowded(r))
+                {
+                    r.NextAction = now + EaseMs;
+                    continue;
+                }
 
                 try
                 {
@@ -3474,32 +3612,25 @@ namespace Hoodrich.Locations
                 Fit(h, 7, false);    // bonnet
                 Fit(h, 10, false);   // roof
 
-                // XENONS AND COLOURED SMOKE, BUT NOT ON THE ONES ACTUALLY DRIFTING.
+                // NO COLOURED SMOKE AND NO COLOURED HEADLIGHTS. On any of them.
                 //
-                // Both are things you only see when a car is working, which is exactly the
-                // case where they are wrong here. Purple smoke off the back of a car mid-donut
-                // turns a street takeover into a light show, and blue headlights sweeping the
-                // crowd every time it comes round does the same job. A real one of these is
-                // white smoke, standard lights and a lot of noise.
+                // Both are things you only see when a car is working, which is exactly where
+                // they are wrong: purple smoke off a car mid-donut turns a street takeover
+                // into a light show, and blue headlights sweeping the crowd every time it
+                // comes round does the same job in the same way. That reasoning was applied
+                // to the drift cars and then not followed through -- a spectator burning out
+                // as it pulls away, a donk lighting up as it leaves, and the row of parked
+                // cars pointing pink and green at the crowd all night are the same wrong
+                // picture in smaller frames.
                 //
-                // The cars that came to WATCH keep both. They are parked, so the smoke never
-                // shows anyway, and a row of xenons along the kerb at night is the look.
-                // NO COLOURED SMOKE ON ANYTHING HERE, not just on the ones drifting.
-                //
-                // It was already off the drift cars, on the reasoning that purple smoke off a
-                // car mid-donut turns a street takeover into a light show. That reasoning does
-                // not stop at the drift cars: a spectator does a burnout pulling out of the
-                // ring, a donk lights them up leaving, and every one of those is the same
-                // wrong picture in a smaller frame. A real one is white smoke and a lot of
-                // noise.
-                //
-                // The toggle is left OFF rather than the colour set to white, because those
-                // are different things -- white smoke is a bought part, and no part at all is
-                // a car that never had one.
+                // WHITE XENONS STAY, and they are a different thing from coloured ones. The
+                // bulb upgrade is a part somebody bought; the colour index is a novelty on
+                // top of it. Dropping the index rather than setting it to a white value
+                // matters for the same reason the smoke toggle is left off rather than set
+                // to white: no part at all is a car that never had one.
                 if (showy)
                 {
                     Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 22, true);
-                    Function.Call(Hash.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX, h, _rng.Next(0, 13));
                 }
 
                 // NEON, on all four sides, and everybody gets it. It is underglow on a parked
@@ -3703,6 +3834,80 @@ namespace Hoodrich.Locations
         ///
         /// Checked rather than reasoned about: north 0, west 90, south 180, east 270.
         /// </summary>
+        /// <summary>
+        /// Where a car heading for a kerb should actually steer for, so it does not cut
+        /// across the middle to get there.
+        ///
+        /// THE JUNCTION IS THE SHORTEST ROUTE BETWEEN ANY TWO KERBS ON IT, which is the whole
+        /// problem. A car sent straight to a spot on the far side takes the road nodes through
+        /// the centre -- through the donut, past the burnout, and out the other side. It is
+        /// the fastest way there and it is the one place it must not go.
+        ///
+        /// SET_ROADS_IN_AREA is not the answer and was tried: switching the junction's nodes
+        /// off breaks OUR pathing too, and the cars that are supposed to arrive then cannot.
+        ///
+        /// So it is a waypoint. If the straight line to the spot passes inside the no-go
+        /// circle, steer for a point radially OUTSIDE the spot instead -- up its own street,
+        /// away from the junction. That sends the car round the outside, and once it is round,
+        /// the line from where it now is to its spot no longer crosses the middle, so this
+        /// returns the spot itself and it comes in off the kerb.
+        ///
+        /// One test per car rather than a route: the answer changes exactly once, when it has
+        /// got round, which is what the re-task in Parking watches for.
+        /// </summary>
+        private static Vector3 Toward(Vector3 from, Vector3 spot)
+        {
+            if (!Crosses(from, spot)) return spot;
+
+            var out_ = spot - Middle;
+            var len = out_.Length();
+
+            if (len < 0.5f) return spot;
+
+            out_ = out_ * (1f / len);
+
+            return Middle + out_ * (len + SwingOut);
+        }
+
+        /// <summary>
+        /// Whether driving straight from one point to the other would go through the middle.
+        ///
+        /// Point-to-SEGMENT, not point-to-line. A car parked well off to one side is not
+        /// "about to drive through the junction" merely because the infinite line through it
+        /// and its spot happens to pass near the mark -- the bit of that line it will actually
+        /// drive is what matters, and clamping t to 0..1 is the difference.
+        /// </summary>
+        private static bool Crosses(Vector3 from, Vector3 to)
+        {
+            var dx = to.X - from.X;
+            var dy = to.Y - from.Y;
+
+            var len2 = dx * dx + dy * dy;
+            if (len2 < 0.01f) return false;
+
+            var t = ((Middle.X - from.X) * dx + (Middle.Y - from.Y) * dy) / len2;
+
+            if (t < 0f) t = 0f;
+            if (t > 1f) t = 1f;
+
+            var nx = from.X + dx * t - Middle.X;
+            var ny = from.Y + dy * t - Middle.Y;
+
+            return nx * nx + ny * ny < NoGo * NoGo;
+        }
+
+        /// <summary>
+        /// How far around the mark nobody drives on their way to a kerb, in metres.
+        ///
+        /// Seventeen, which sits just inside the ring the crowd stands on at nineteen and
+        /// comfortably inside the nearest kerb at 18.8 -- so a spot is never itself inside the
+        /// zone that would send a car round to reach it.
+        /// </summary>
+        private const float NoGo = 17f;
+
+        /// <summary>How far past a kerb the go-round waypoint sits, up its own street.</summary>
+        private const float SwingOut = 20f;
+
         private static float Facing(Vector3 from)
         {
             // Turned to face the CIRCLE rather than the middle of the junction, because the
