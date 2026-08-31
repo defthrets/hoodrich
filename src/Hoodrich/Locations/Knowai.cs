@@ -127,6 +127,11 @@ namespace Hoodrich.Locations
         private const int PhaseCapMs = 300000;
 
         /// <summary>Once you are out and it has driven this far, it stops existing.</summary>
+        /// <summary>
+        /// Kept for the ride itself. The leaving is measured by OutOfSight now -- see Follow --
+        /// because "far enough that deleting it is not something anybody sees" and "far enough
+        /// that the ride is over" are different questions with different right answers.
+        /// </summary>
         private const float GoneRange = 130f;
 
         /// <summary>What it costs: on the meter, plus this much a hundred metres.</summary>
@@ -215,8 +220,21 @@ namespace Hoodrich.Locations
 
         /// <summary>Barely moved in this long, this many times over, and it is written off.</summary>
         private const float StuckMoved = 3f;
-        private const int StuckLookMs = 9000;
-        private const int MaxNudges = 3;
+
+        /// <summary>
+        /// Five seconds, down from nine, and five tries instead of three.
+        ///
+        /// Nine seconds of a car not moving is a long time to sit in the back of something
+        /// that is supposed to be taking you somewhere -- and the old number was chosen when
+        /// the only response was to re-route, which mostly did not work, so being slow to do
+        /// it was hiding how often it failed. Now that the response actually frees the car,
+        /// it is worth doing sooner and worth doing more times before giving up.
+        /// </summary>
+        private const int StuckLookMs = 5000;
+        private const int MaxNudges = 5;
+
+        /// <summary>How long it reverses for before trying the route again.</summary>
+        private const int ReverseMs = 2000;
 
         // ---- hailing ------------------------------------------------------------
 
@@ -405,7 +423,26 @@ namespace Hoodrich.Locations
 
             if (_nudges > MaxNudges) return true;
 
-            Log.Info("Knowai: stuck, re-routing (" + _nudges + ").");
+            // BACK UP FIRST. Re-routing on its own was asking a car with its nose against a
+            // wall to work out a route, from a position where every route starts by going
+            // through the wall -- so it computed the same path into the same wall and the next
+            // check found it exactly where it was.
+            //
+            // A real driver reverses. Two seconds of it is enough to be off whatever it caught,
+            // and the route is asked for after that rather than before, from a place the car
+            // can actually leave. Temp action 3 is reverse-straight; the drive task is issued
+            // on the NEXT check, which is what the shortened look-again gap below is for.
+            Log.Info("Knowai: stuck, backing it off and re-routing (" + _nudges + ").");
+
+            try
+            {
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, _driver.Handle, _car.Handle,
+                              3, ReverseMs);
+            }
+            catch
+            {
+                // Straight to the re-route then.
+            }
 
             Drive(goingTo, State == RideState.Riding ? 22f : 20f);
 
@@ -577,12 +614,27 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            // Out. It has somewhere else to be.
-            Away();
-
-            if (_car.Position.DistanceTo(player.Position) < GoneRange) return;
-
+            // OUT, AND IT GOES. It used to sit at the kerb for the rest of the session.
+            //
+            // Two faults, and the first one is the whole reason it never moved. Away() was
+            // called from here EVERY TICK for as long as the car was within a hundred and
+            // thirty metres -- and the first thing Away() does is CLEAR_PED_TASKS. So the
+            // drive-off was cancelled and reissued several times a second, and a driver handed
+            // a fresh task before he has pulled out never pulls out. It was being told to leave
+            // so often that it could not.
+            //
+            // The second is that leaving was measured by distance with nothing behind it. A car
+            // that could not get a hundred and thirty metres away -- boxed in, on a dead end,
+            // nose against the kerb it just parked on -- stayed for ever, and there was no
+            // other way out of this state.
+            //
+            // Both go. It is handed to the leaving machinery instead, which is the same code
+            // that sees off a cancelled ride: the driver is kept so there is somebody to drive
+            // it, he is kept invisible on the way out, and the pair are deleted once they are
+            // out of sight or after two minutes if they never manage it. Once, from here, and
+            // then this state is finished with.
             Clean();
+
             State = RideState.None;
             Going = "";
         }
@@ -687,6 +739,36 @@ namespace Hoodrich.Locations
                 // in a car that is meant to drive itself. With it, every way in is a passenger
                 // seat and the only question left is which one.
                 Function.Call(Hash.SET_VEHICLE_EXCLUSIVE_DRIVER, _car.Handle, _driver.Handle, 0);
+
+                // THE BEST DRIVER IN THE CITY, WHICH IS THE PRODUCT.
+                //
+                // Ability at maximum, because there is no argument for a self-driving car that
+                // is worse at driving than the man it replaced.
+                //
+                // Aggression at a third rather than at nothing, and that is the counter-intuitive
+                // one. A driver on zero does not drive calmly, it drives TIMIDLY -- it will not
+                // commit to a gap, will not pull out at a junction with anything approaching, and
+                // waits for a road that is completely empty before it moves. Which reads as
+                // exactly the thing being complained about: stuck. A third is decisive without
+                // being a maniac.
+                Function.Call(Hash.SET_DRIVER_ABILITY, _driver.Handle, 1.0f);
+                Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, _driver.Handle, 0.35f);
+
+                // Said again as ped behaviour, because the driving style is a property of the
+                // TASK and these are properties of the DRIVER -- a re-task that forgot the
+                // style would still have a driver who steers round things.
+                Function.Call(Hash.SET_PED_STEERS_AROUND_VEHICLES, _driver.Handle, true);
+                Function.Call(Hash.SET_PED_STEERS_AROUND_PEDS, _driver.Handle, true);
+                Function.Call(Hash.SET_PED_STEERS_AROUND_OBJECTS, _driver.Handle, true);
+
+                // Nothing takes his hands off the wheel. He cannot be scared out of the car,
+                // cannot be dragged out of it, and does not stop driving because somebody
+                // nearby started shooting -- all of which end with a passenger sat in a
+                // stationary taxi wondering what happened.
+                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, _driver.Handle, 0, false);
+                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, _driver.Handle, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, _driver.Handle, 17, false);
+                Function.Call(Hash.SET_ENTITY_INVINCIBLE, _driver.Handle, true);
 
                 // AND THE FRONT DOORS DO NOT OPEN FOR YOU EITHER.
                 //
@@ -793,9 +875,10 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD_LONGRANGE,
                               _driver.Handle, _car.Handle, to.X, to.Y, to.Z,
-                              speed, 786603, 8f);
+                              speed, Style, 8f);
 
                 Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, _driver.Handle, speed);
+                Function.Call(Hash.SET_DRIVE_TASK_DRIVING_STYLE, _driver.Handle, Style);
                 Function.Call(Hash.SET_PED_KEEP_TASK, _driver.Handle, true);
             }
             catch (Exception ex)
@@ -803,6 +886,31 @@ namespace Hoodrich.Locations
                 Log.Debug("Could not send a Knowai on: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// How it drives, and this is what was wrong with it.
+        ///
+        /// IT WAS 786603, WHICH IS THE GAME'S ORDINARY TRAFFIC STYLE. Read as flags that is
+        /// stop-before-vehicles, stop-before-peds, avoid-EMPTY-vehicles, avoid-objects and
+        /// stop-at-lights -- and what it does NOT contain is the bit for steering around a
+        /// vehicle that has somebody in it, or around a person. So the car stopped for things
+        /// and never went round them. A double-parked van, a bin lorry, a car waiting to turn:
+        /// each one is a full stop it has no instruction to solve, and it sits there until the
+        /// obstacle decides to move.
+        ///
+        /// That is not a bad driver. That is a driver that was never told it was allowed to
+        /// overtake anything.
+        ///
+        ///     1   stop before vehicles          16   steer around peds
+        ///     2   stop before peds              32   steer around objects
+        ///     4   steer around vehicles        128   stop at lights
+        ///     8   steer around empty vehicles  256   indicate
+        ///
+        /// All eight. It still stops for people and still stops at lights -- a self-driving
+        /// taxi that runs reds is a different kind of wrong -- but it now goes round the things
+        /// that are never going to move.
+        /// </summary>
+        private const int Style = 1 | 2 | 4 | 8 | 16 | 32 | 128 | 256;
 
         private void Halt()
         {
