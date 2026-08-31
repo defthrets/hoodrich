@@ -94,6 +94,17 @@ namespace Hoodrich.Social
         /// </summary>
         Takeover,
 
+        /// <summary>
+        /// The word going out that one is starting, and WHERE.
+        ///
+        /// Its own event rather than the first of the Takeover burst, because the two do
+        /// different jobs. This one is a call-out -- it names the junction, it goes out once,
+        /// and its whole purpose is that somebody reading the feed can decide to go. The
+        /// Takeover set is people talking ABOUT one while it is on, which is worth nothing
+        /// until it has been on a while and is held back for exactly that reason.
+        /// </summary>
+        TakeoverOn,
+
         WarStarted,
         WarHeld,
         WarLost,
@@ -1363,6 +1374,14 @@ namespace Hoodrich.Social
                     // a junction full of people is a junction full of everybody.
                     follow = _rng.NextDouble() < 0.75 ? "Takeover" : "Ambient";
                     count = 2 + _rng.Next(2);
+                    break;
+
+                case SocialEvent.TakeoverOn:
+                    // ONE POST, AND NOTHING BEHIND IT. A call-out is a call-out: two people
+                    // announcing the same thing in the same minute is a rumour, and the rest
+                    // of the talking happens later, once there is something to talk about.
+                    follow = "TakeoverOn";
+                    count = 1;
                     break;
 
                 case SocialEvent.WarStarted:
