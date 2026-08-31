@@ -1,4 +1,4 @@
-# Posted Up
+﻿# Posted Up
 
 **A drug-dealing and gang mod for GTA V, built from scratch. You pick the corner, not the customer.**
 
@@ -110,5 +110,3 @@ Single player only.
   unlocked so you can reach the kitchen sink without Open All Interiors. If you already run
   that, nothing conflicts.
 - Not compatible with GTA Online. Do not take it anywhere near it.
-
-Source: https://github.com/defthrets/hoodrich

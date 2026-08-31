@@ -418,7 +418,12 @@ if ($Package) {
     # install there is, and nothing about it throws. The mod reads this back and says so.
     Set-Content -Path (Join-Path $dataOut 'version.txt') -Value $version -NoNewline -Encoding ascii
 
-    Copy-Item (Join-Path $relDir 'README.txt')  $stage
+    # STAMPED, NOT COPIED. The header used to be typed into the template by hand, which
+    # meant it was right on the day it was written and wrong from the next release onward --
+    # the README inside the 0.5.1 zip announced itself as 0.3.0 to everybody who downloaded
+    # it. A version that has to be remembered is a version that will be forgotten.
+    (Get-Content (Join-Path $relDir 'README.txt') -Raw) -replace '\{VERSION\}', $version |
+        Set-Content (Join-Path $stage 'README.txt') -Encoding UTF8 -NoNewline
     Copy-Item (Join-Path $relDir 'CHANGES.txt') $stage
     Copy-Item (Join-Path $relDir 'LICENCE.txt') $stage
 

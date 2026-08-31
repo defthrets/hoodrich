@@ -1,5 +1,5 @@
 ﻿===============================================================================
-  POSTED UP  0.3.0
+  POSTED UP  {VERSION}
   A drug-dealing and gang mod for Grand Theft Auto V
 ===============================================================================
 
@@ -112,5 +112,3 @@ Every key is rebindable in Hoodrich.ini.
 
 See LICENCE.txt. Do what you like with it, credit where it is due, no warranty
 of any kind.
-
-Source: https://github.com/defthrets/hoodrich
