@@ -180,12 +180,53 @@ namespace Hoodrich.Locations
             "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_STAND_IMPATIENT"
         };
 
+        /// <summary>
+        /// Who turns up, weighted by repetition.
+        ///
+        /// THIS IS CHAMBERLAIN HILLS AT TWO IN THE MORNING, and the old list was a coach party:
+        /// a hipster, a Korean, a man from Downtown and somebody off the beach in Vespucci,
+        /// all in equal measure, on a block none of them live on. It read as the game's
+        /// ambient population teleported to a junction, which is exactly what it was.
+        ///
+        /// So it is the neighbourhood instead. Mostly Families and mostly the people who live
+        /// on those streets whether they claim a set or not; a few Ballas and a few Vagos,
+        /// because a takeover is the one night nobody is counting colours and everybody wants
+        /// to see the cars; a couple of dealers, who go where a crowd goes; and women
+        /// throughout, including women in both sets, because a ring of fifty men is its own
+        /// kind of wrong.
+        ///
+        /// Weighted by how many times a name appears rather than by a table of numbers -- it
+        /// is the same trick as the crowd's idle animations and it keeps the weighting where
+        /// anybody can see it.
+        ///
+        /// A name this install has not got is skipped rather than fatal; see Somebody.
+        /// </summary>
         private static readonly string[] Faces =
         {
-            "a_m_y_soucent_01", "a_m_y_soucent_02", "a_m_y_soucent_03", "a_m_y_soucent_04",
-            "a_f_y_soucent_01", "a_f_y_soucent_02", "a_m_y_hipster_01", "a_m_m_soucent_01",
-            "a_m_y_latino_01", "a_m_y_ktown_01", "a_f_y_hipster_02", "a_m_y_dhill_01",
-            "a_m_y_stwhi_01", "a_m_y_downtown_01", "a_f_y_genhot_01", "a_m_y_beach_01"
+            // The set, and the block. The bulk of it.
+            "g_m_y_famca_01", "g_m_y_famca_01", "g_m_y_famca_01",
+            "g_m_y_famdnf_01", "g_m_y_famdnf_01", "g_m_y_famdnf_01",
+            "g_m_y_famfor_01", "g_m_y_famfor_01", "g_m_y_famfor_01",
+            "a_m_y_soucent_01", "a_m_y_soucent_01", "a_m_y_soucent_02", "a_m_y_soucent_02",
+            "a_m_y_soucent_03", "a_m_y_soucent_03", "a_m_y_soucent_04", "a_m_y_soucent_04",
+            "a_m_m_soucent_01", "a_m_m_soucent_02", "a_m_m_soucent_03",
+            "a_m_o_soucent_01", "a_m_o_soucent_02",
+
+            // Women, from the same streets and from the sets.
+            "a_f_y_soucent_01", "a_f_y_soucent_01", "a_f_y_soucent_02", "a_f_y_soucent_02",
+            "a_f_m_soucent_01", "a_f_m_soucent_02",
+            "g_f_y_families_01", "g_f_y_families_01",
+            "g_f_y_ballas_01", "g_f_y_vagos_01",
+
+            // Purple, in ones and twos. Nobody is counting tonight.
+            "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01",
+
+            // And yellow, same again.
+            "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03",
+
+            // People who go where a crowd goes.
+            "s_m_y_dealer_01", "s_m_y_dealer_01",
+            "a_m_y_stwhi_01", "a_f_y_genhot_01", "a_m_y_ktown_01", "a_f_y_hipster_02"
         };
 
         /// <summary>
@@ -515,8 +556,10 @@ namespace Hoodrich.Locations
 
             Cars();
 
-            if (Social != null) Social.On(SocialEvent.Takeover);
-
+            // NOTHING IS POSTED AT THE MOMENT IT STARTS. Chatter() holds the feed for the first
+            // half hour so the block is not reporting something it cannot have noticed yet --
+            // and this line fired one anyway, on the frame it began, which was the earliest
+            // possible post and made the gate below it pointless.
             Log.Info("Takeover: on. " + _toCome + " on their way.");
         }
 
@@ -559,10 +602,24 @@ namespace Hoodrich.Locations
                 var from = OnFoot(slot);
                 if (from == Vector3.Zero) return false;
 
-                var name = Faces[_rng.Next(Faces.Length)];
+                // A FEW GOES AT A MODEL RATHER THAN ONE.
+                //
+                // This used to take a single name and give up on the whole person if it did
+                // not load, which was survivable when every name was a stock ambient ped. The
+                // list now leans on gang models, and a build without one of them would have
+                // quietly lost a slice of the crowd -- thinning the ring in a way that would
+                // look like the spawner failing rather than like a model being absent.
+                Model model = default(Model);
+                var got = false;
 
-                var model = new Model(name);
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(900)) return false;
+                for (var tries = 0; tries < 6 && !got; tries++)
+                {
+                    model = new Model(Faces[_rng.Next(Faces.Length)]);
+
+                    got = model.IsValid && model.IsInCdImage && model.Request(900);
+                }
+
+                if (!got) return false;
 
                 var handle = Function.Call<int>(Hash.CREATE_PED, 4, model.Hash,
                                                 from.X, from.Y, from.Z, 0f, false, false);
