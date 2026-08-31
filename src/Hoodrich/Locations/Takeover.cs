@@ -423,6 +423,16 @@ namespace Hoodrich.Locations
             public bool Low;
             public double Hop;
             public double Rate;
+
+            /// <summary>
+            /// He has left the ring and is taking his turn in the middle.
+            ///
+            /// The car stays on the parked list the whole time rather than being moved between
+            /// two lists -- the slot is HIS and nobody else may have it, which is the entire
+            /// reason he has somewhere to come back to. Everything that walks the parked list
+            /// skips him while this is set.
+            /// </summary>
+            public bool Out;
         }
 
         private sealed class Runner
@@ -437,6 +447,15 @@ namespace Hoodrich.Locations
 
             /// <summary>When it set off, so a car that never arrives can be given up on.</summary>
             public int Sent;
+
+            /// <summary>
+            /// The spot in the ring he came out of, and goes back to.
+            ///
+            /// Null for a car that was spawned rather than taken off the ring -- that only
+            /// happens if the ring is somehow empty, and one of those leaves the way they all
+            /// used to.
+            /// </summary>
+            public Parkee Home;
             public float Speed;
             public int Way;
             public int Until;
@@ -1305,6 +1324,12 @@ namespace Hoodrich.Locations
         {
             foreach (var p in _parked)
             {
+                // OUT TAKING HIS TURN. His slot is held and he is coming back to it, but he is
+                // not a car failing to arrive at it -- without this he would be re-faced towards
+                // the middle and settled in place the moment he came within range of his own
+                // gap on his way past it.
+                if (p.Out) continue;
+
                 if (p.There) continue;
                 if (p.Car == null || !p.Car.Exists()) continue;
                 if (p.Car.Position.DistanceTo(p.Slot) > CarArrivedRange) continue;
@@ -1367,14 +1392,40 @@ namespace Hoodrich.Locations
 
                 if (dead)
                 {
+                    // A wreck does not go back in the line, but the SLOT has to be released or
+                    // it is held empty for the rest of the night by a car that no longer
+                    // exists -- and the ring quietly loses a space every time somebody crashes.
+                    if (r.Home != null) r.Home.Out = false;
+
                     Out(r);
                     _running.RemoveAt(i);
                     continue;
                 }
 
-                // On the way out. Once clear of the ring it belongs to the world again.
+                // On the way back.
                 if (r.Leaving)
                 {
+                    // ONE OF THE RING'S OWN, going home. He is done when he is on his slot --
+                    // and then he is simply a parked car again: There is cleared so Parking()
+                    // treats him as a new arrival, which turns him to face the middle and
+                    // settles him, exactly as it did the first time.
+                    if (r.Home != null)
+                    {
+                        var late = now - r.Sent > BackGiveUpMs;
+
+                        if (r.Car.Position.DistanceTo(r.Home.Slot) > CarArrivedRange && !late)
+                        {
+                            continue;
+                        }
+
+                        r.Home.Out = false;
+                        r.Home.There = false;
+
+                        _running.RemoveAt(i);
+                        continue;
+                    }
+
+                    // A spawned one, with nowhere to go back to. Off the map as before.
                     if (r.Car.Position.DistanceTo(Middle) < Ring + 14f) continue;
 
                     Out(r);
@@ -1495,7 +1546,7 @@ namespace Hoodrich.Locations
             // left to finish rather than pulled off the mark the moment the roll changes --
             // his go is his go, and a car that vanishes mid-burnout is worse than one that
             // stays a minute longer than the dice wanted.
-            if (_wantMark && mark < 1) In(true);
+            if (_wantMark && mark < 1) Pull(true);
 
             // TWO TO FOUR WORKING AT ONCE, and never fewer than two.
             //
@@ -1517,7 +1568,7 @@ namespace Hoodrich.Locations
 
             while (round < want)
             {
-                if (!In(false)) break;
+                if (!Pull(false)) break;
                 round++;
             }
         }
@@ -2184,6 +2235,9 @@ namespace Hoodrich.Locations
         private const float PassSpeed = 24f;
         private const int PassGiveUpMs = 40000;
 
+        /// <summary>How long a car gets to find its way back to its own spot.</summary>
+        private const int BackGiveUpMs = 45000;
+
         private const int BikeGapMs = 9000;
         private const float WheelieNeeds = 8f;
         private const float WheelieLift = 1.9f;
@@ -2192,6 +2246,93 @@ namespace Hoodrich.Locations
 
         private int _wantBikes = 2;
         private int _nextBike;
+
+        /// <summary>
+        /// Somebody in the ring pulls out and takes their turn.
+        ///
+        /// THE CARS THAT RING THE JUNCTION ARE THE CARS THAT GO IN, which is both how a real
+        /// one works and the answer to a question this never had a good reply to: where do the
+        /// drift cars come from? They used to be spawned a block away and driven in, and when
+        /// their go was over they drove off the map and were deleted -- so the ring was
+        /// scenery and the circle was a conveyor belt, with no relationship between them.
+        ///
+        /// Now it is one set of cars. Somebody pulls out of the line, does his bit, and backs
+        /// into the same gap he left. The ring thins by one while he is out, which is exactly
+        /// what it should do, and there is no spawning or deleting during the whole night.
+        ///
+        /// His slot is held for him the entire time. That is why the car stays on the parked
+        /// list with a flag rather than being moved onto another one.
+        ///
+        /// Not the lowriders. They are sat on their hydraulics being looked at, which is its
+        /// own act, and a car bouncing on the spot is not one about to go and do donuts.
+        /// </summary>
+        private bool Pull(bool middle)
+        {
+            Parkee pick = null;
+
+            foreach (var p in _parked)
+            {
+                if (p.Out || p.Low || !p.There) continue;
+                if (p.Car == null || !p.Car.Exists()) continue;
+                if (p.Driver == null || !p.Driver.Exists() || !p.Driver.IsAlive) continue;
+
+                pick = p;
+                break;
+            }
+
+            // Nobody in the ring is in a fit state to go, so one is sent for the old way. This
+            // should be rare -- there are fourteen to twenty of them and at most four out.
+            if (pick == null) return In(middle);
+
+            pick.Out = true;
+
+            var r = new Runner
+            {
+                Car = pick.Car,
+                Driver = pick.Driver,
+                Home = pick,
+                Middle = middle,
+                Radius = DriftMin + (float)_rng.NextDouble() * (DriftMax - DriftMin),
+                Speed = 9f + (float)_rng.NextDouble() * 5f,
+                Way = _rng.Next(2) == 0 ? 1 : -1,
+                Sent = Game.GameTime
+            };
+
+            var aim = Circle;
+
+            if (!middle)
+            {
+                var inFrom = pick.Car.Position - Circle;
+                var len = inFrom.Length();
+
+                if (len > 0.5f)
+                {
+                    inFrom = inFrom * (1f / len);
+                    aim = Circle + inFrom * r.Radius;
+                }
+            }
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
+                              aim.X, aim.Y, aim.Z, ComeInSpeed, 0, r.Car.Model.Hash,
+                              RushStyle, 2f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not pull one out of the ring: " + ex.Message);
+
+                pick.Out = false;
+                return false;
+            }
+
+            _running.Add(r);
+            return true;
+        }
 
         /// <summary>Somebody drives in for their go, on the mark or round the outside.</summary>
         private bool In(bool middle)
@@ -2284,19 +2425,30 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
                 Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, false);
 
-                var away = OnRoad(150f + (float)_rng.NextDouble() * 110f);
-                if (away == Vector3.Zero) away = Middle.Around(190f);
+                // HE GOES BACK TO HIS SPOT, not off the map. The gap he left has been held for
+                // him the whole time, so this is a car rejoining a line rather than one leaving
+                // and another arriving to replace it.
+                //
+                // Carefully rather than in a hurry: he is driving back INTO the ring of people
+                // he has just been performing in front of, which is the one moment on this
+                // whole junction where stopping for somebody is the right behaviour.
+                var back = r.Home != null ? r.Home.Slot
+                         : OnRoad(150f + (float)_rng.NextDouble() * 110f);
+
+                if (back == Vector3.Zero) back = Middle.Around(190f);
 
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
-                              away.X, away.Y, away.Z, 15f, 0, r.Car.Model.Hash, RushStyle, 10f, true);
+                              back.X, back.Y, back.Z, 12f, 0, r.Car.Model.Hash,
+                              r.Home != null ? CareStyle : RushStyle,
+                              r.Home != null ? 3f : 10f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
             }
             catch (Exception ex)
             {
-                Log.Debug("Takeover could not send one out: " + ex.Message);
+                Log.Debug("Takeover could not send one back: " + ex.Message);
             }
         }
 
