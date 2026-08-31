@@ -133,6 +133,15 @@ namespace Hoodrich.Phone
             // asking about us.
             var mine = Ours();
 
+            // SAID ONCE, so a guard that misfires leaves evidence instead of a phone that
+            // quietly does not work. That is how the last one got out: nothing anywhere said
+            // the button had been suppressed, so there was nothing to read but the symptom.
+            if (!mine && !_saidSuppressed)
+            {
+                _saidSuppressed = true;
+                Log.Info("Phone: INPUT_PHONE is disabled by something else, so ours is holding off.");
+            }
+
             SuppressVanillaPhone();
 
             var edge = ReadOpenEdge(mine);
@@ -439,9 +448,21 @@ namespace Hoodrich.Phone
         /// that ticked earlier this frame, or the game itself during a cutscene or a shop.
         /// Either way it is not a moment to put a phone up.
         ///
-        /// Both controls, because menus differ in which they take: DISABLE_ALL_CONTROL_ACTIONS
-        /// covers everything, and the ones that pick and choose usually take the directions
-        /// rather than INPUT_CELLPHONE itself.
+        /// ONE CONTROL, AND IT HAS TO BE THIS ONE. The first version asked about PhoneUp as
+        /// well, on the reasoning that a menu which picks and chooses takes the directions
+        /// rather than the phone button. That broke the phone outright.
+        ///
+        /// Control.Phone is 27, INPUT_PHONE, which lives in the PLAYER control group.
+        /// Control.PhoneUp is 172, INPUT_CELLPHONE_UP, which lives in the FRONTEND group --
+        /// and asking IS_CONTROL_ENABLED about a frontend control under index 0 does not
+        /// answer the question it looks like it answers. It read false in ordinary gameplay,
+        /// so the whole test read false, so the button never worked again. Checked against the
+        /// real enum in the installed ScriptHookVDotNet rather than guessed at.
+        ///
+        /// 27 is also the one that matters: on a pad it is D-pad up, on a keyboard the up
+        /// arrow, and it is the control the game's own phone answers to. A menu that disables
+        /// everything -- which is nearly all of them, via DISABLE_ALL_CONTROL_ACTIONS -- takes
+        /// it along with the rest.
         ///
         /// It cannot see a menu that disables nothing at all. There is no native for "is
         /// somebody else's menu open" and there is not going to be one -- this is the signal a
@@ -451,13 +472,13 @@ namespace Hoodrich.Phone
         {
             try
             {
-                return Function.Call<bool>(Hash.IS_CONTROL_ENABLED, 0, (int)Control.Phone)
-                    && Function.Call<bool>(Hash.IS_CONTROL_ENABLED, 0, (int)Control.PhoneUp);
+                return Function.Call<bool>(Hash.IS_CONTROL_ENABLED, 0, (int)Control.Phone);
             }
             catch
             {
                 // If it cannot be asked, it is ours. A phone that stops opening is worse than
-                // one that opens over somebody's menu.
+                // one that opens over somebody's menu -- which is exactly what the version
+                // above proved.
                 return true;
             }
         }
@@ -492,6 +513,9 @@ namespace Hoodrich.Phone
 
         /// <summary>When a held press should actually open its app, or nought. See HandleInput.</summary>
         private int _actAt;
+
+        /// <summary>Whether the log has already mentioned somebody else holding the button.</summary>
+        private bool _saidSuppressed;
 
         private void HandleInput()
         {
