@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -37,8 +37,32 @@ namespace Hoodrich.Locations
             _models = models;
         }
 
+        /// <summary>
+        /// A light thrown out of it, or null for a prop that is only a shape.
+        ///
+        /// A WORKLIGHT PROP DOES NOT LIGHT ANYTHING. The model has a lens on it and the lens
+        /// is painted bright, and that is the whole of it -- stand a floodlight in a dark yard
+        /// and the yard stays dark. Light in this game is drawn, per frame, by the thing that
+        /// wants it, so anything that is supposed to be lighting a place has to say so.
+        /// </summary>
+        public System.Drawing.Color? Beam;
+
+        /// <summary>How far it throws, how hard, and where the lamp sits on the prop.</summary>
+        public float BeamRange = 32f;
+        public float BeamPower = 14f;
+        public Vector3 BeamAt = new Vector3(0f, 0.2f, 1.8f);
+
+        /// <summary>How far below level it points. A worklight is aimed at the ground.</summary>
+        public float BeamDrop = 0.35f;
+
         public void Update()
         {
+            // EVERY FRAME, ABOVE THE THROTTLE, because a light is not a state -- it exists on
+            // the frame it is drawn and on no other. The same lesson the van's radio taught:
+            // a thing set once every two seconds is a thing that is off for the other 119
+            // frames, and a floodlight flickering at half a hertz is worse than no floodlight.
+            Shine();
+
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;
@@ -57,6 +81,51 @@ namespace Hoodrich.Locations
             }
 
             if (away > DespawnRange) Clear();
+        }
+
+        /// <summary>
+        /// The beam, drawn from the lamp along the way the prop is pointing.
+        ///
+        /// Two lights rather than one: a spot for the cone that lands on the ground, and a
+        /// small round one at the lamp itself so the head glows rather than being a dark shape
+        /// with a bright floor in front of it.
+        ///
+        /// Aimed slightly DOWN. A worklight on a tripod is pointed at the work, not at the
+        /// horizon, and a beam dead level lights the far wall and nothing anybody is standing
+        /// on.
+        /// </summary>
+        private void Shine()
+        {
+            if (Beam == null || _prop == null || !_prop.Exists()) return;
+
+            try
+            {
+                var c = Beam.Value;
+
+                var from = _prop.GetOffsetPosition(BeamAt);
+
+                var dir = _prop.ForwardVector;
+                dir = new Vector3(dir.X, dir.Y, dir.Z - BeamDrop);
+
+                var len = dir.Length();
+                if (len < 0.01f) return;
+
+                dir = dir * (1f / len);
+
+                Function.Call(Hash.DRAW_SPOT_LIGHT,
+                              from.X, from.Y, from.Z,
+                              dir.X, dir.Y, dir.Z,
+                              (int)c.R, (int)c.G, (int)c.B,
+                              BeamRange, BeamPower, 0.5f, 13f, 26f);
+
+                Function.Call(Hash.DRAW_LIGHT_WITH_RANGE,
+                              from.X, from.Y, from.Z,
+                              (int)c.R, (int)c.G, (int)c.B, 3.5f, 4f);
+            }
+            catch
+            {
+                // No light this frame.
+            }
         }
 
         private void Place()

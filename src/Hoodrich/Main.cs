@@ -203,6 +203,9 @@ namespace Hoodrich
         private readonly ParkedCar _meetOne;
         private readonly ParkedCar _meetTwo;
         private readonly Fixture _partyBarrel;
+
+        /// <summary>The worklight by the skip. See Fixture.Beam.</summary>
+        private readonly Fixture _partyLight;
         private readonly Fixture _partyCouch;
         /// <summary>The dog in the yard, and yours once you have petted him.</summary>
         private readonly Trigger _partyDog;
@@ -1201,6 +1204,18 @@ namespace Hoodrich
 
                 _partyCouch = new Fixture(new Vector3(-202.400f, -1727.000f, 32.664f), 118.000f,
                                           "prop_couch_03", "prop_old_couch_01", "prop_rub_couch01");
+
+                // A worklight on the concrete by the skip, pointed down the yard.
+                //
+                // Warm white rather than daylight white: a builder's floodlight is a halogen
+                // and halogens are yellow. A pure white one reads as a film light, which is
+                // the one thing a yard behind a chain fence should not look like.
+                _partyLight = new Fixture(new Vector3(-208.392f, -1711.383f, 32.664f), 152.962f,
+                                          "prop_worklight_03a", "prop_worklight_03b",
+                                          "prop_worklight_01a", "prop_worklight_02a")
+                {
+                    Beam = System.Drawing.Color.FromArgb(255, 248, 226)
+                };
 
                 // And somebody's dog, off the lead, doing laps of the yard nobody asked him to.
                 //
@@ -2570,6 +2585,7 @@ namespace Hoodrich
                     _party.Update();
                     _meet.Update();
                     _partyBarrel.Update();
+                    _partyLight?.Update();
                     _partyCouch.Update();
                     _partyDog?.Update();
                     _leaderBox.Update();
@@ -3575,6 +3591,7 @@ namespace Hoodrich
             try { _party?.RestoreWorld(); } catch { /* teardown */ }
             try { _meet?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
+            try { _partyLight?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyDog?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaderBox?.RestoreWorld(); } catch { /* teardown */ }

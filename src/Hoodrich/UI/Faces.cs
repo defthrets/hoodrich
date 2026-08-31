@@ -44,7 +44,11 @@ namespace Hoodrich.UI
 
         private static readonly HashSet<string> Resident = new HashSet<string>();
 
-        private static bool _warm;
+        /// <summary>When the pictures are next checked over. See Warm.</summary>
+        private static int _nextCheck;
+
+        /// <summary>How often. Cheap enough that it may as well be often.</summary>
+        private const int CheckEveryMs = 15000;
 
         /// <summary>
         /// Whose face goes with a name. Empty for somebody nobody has a photo of.
@@ -92,28 +96,46 @@ namespace Hoodrich.UI
         /// </summary>
         public static void Warm()
         {
-            if (_warm) return;
+            // RE-CHECKED FOR EVER, RATHER THAN ONCE. This used to latch: the moment every
+            // picture had loaded it set a flag and never looked again.
+            //
+            // A request is not a lease. REQUEST_STREAMED_TEXTURE_DICT asks the streamer for
+            // something and the streamer is entitled to take it back -- and it does, under
+            // memory pressure, which on this mod means a takeover with thirty-five cars and
+            // sixty people in it. Once that happened the picture was gone for the rest of the
+            // session and nothing would ever ask for it again, so every text after it came out
+            // as the grey silhouette. That is exactly what Stretch's did.
+            //
+            // Fifteen seconds and about fourteen native calls, which is nothing, and an evicted
+            // face is back before the next message needs it.
+            var now = GTA.Game.GameTime;
 
-            var all = true;
+            if (_nextCheck != 0 && now < _nextCheck) return;
+
+            _nextCheck = now + CheckEveryMs;
+
+            var lost = 0;
 
             foreach (var dict in Everyone)
             {
-                if (Resident.Contains(dict)) continue;
-
                 if (Function.Call<bool>(Hash.HAS_STREAMED_TEXTURE_DICT_LOADED, dict))
                 {
                     Resident.Add(dict);
                     continue;
                 }
 
+                // Dropped out of Resident as well, or FirstReady goes on handing back the name
+                // of a picture that is no longer there.
+                if (Resident.Remove(dict)) lost++;
+
                 Function.Call(Hash.REQUEST_STREAMED_TEXTURE_DICT, dict, false);
-                all = false;
             }
 
-            if (!all) return;
-
-            _warm = true;
-            Core.Log.Debug("Contact pictures are resident.");
+            if (lost > 0)
+            {
+                Core.Log.Info("Contact pictures: " + lost +
+                              " had been unloaded and were asked for again.");
+            }
         }
 
         /// <summary>
