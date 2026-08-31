@@ -45,34 +45,35 @@
   "families": [
    {
     "zone": "CHAMH",
-    "rot": 27.0,
-    "step": 20,
+    "_note": "The whole of ours, walked corner by corner. Covers Chamberlain Hills AND Strawberry, so both old boxes are gone -- one shape, not two.",
+    "rot": 59.3,
+    "step": 8.0,
     "poly": [
      [
-      -238.6,
-      -1699.1
+      -181.4,
+      -1765.0
      ],
      [
-      -50.6,
-      -1603.3
+      40.6,
+      -1668.7
      ],
      [
-      -109.2,
-      -1488.3
+      119.5,
+      -1397.9
      ],
      [
-      -297.2,
-      -1584.1
+      -110.3,
+      -1379.0
+     ],
+     [
+      -223.1,
+      -1434.7
+     ],
+     [
+      -349.5,
+      -1647.9
      ]
     ]
-   },
-   {
-    "zone": "STRAW",
-    "x": 50.8,
-    "y": -1429.3,
-    "w": 333.0,
-    "h": 263.0,
-    "rot": 27.0
    }
   ],
   "ballas": [
