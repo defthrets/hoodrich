@@ -67,6 +67,33 @@ namespace Hoodrich.Locations
         /// </summary>
         private static readonly Vector3 Circle = new Vector3(-129.056f, -1739.410f, 29.530f);
 
+        /// <summary>
+        /// The pavement corners people actually stand on, read off the ground in game.
+        ///
+        /// Seven, and they are not evenly spaced because the junction is not -- they sit
+        /// between thirteen and twenty-seven metres out at bearings of roughly 20, 65, 148,
+        /// 192, 246, 305 and 335 degrees from the circle, which is every side of it. That
+        /// unevenness is the point: it is the shape of the actual crossroads rather than the
+        /// shape of a circle drawn around it.
+        ///
+        /// The cars are deliberately NOT moved onto these. They still park on the ring, which
+        /// is where they block the roads in, and the roads in are the thing they are for.
+        /// </summary>
+        private static readonly Vector3[] Corners =
+        {
+            new Vector3(-137.831f, -1715.518f, 30.033f),
+            new Vector3(-120.845f, -1721.802f, 30.028f),
+            new Vector3(-111.836f, -1727.592f, 29.907f),
+            new Vector3(-108.003f, -1748.946f, 29.955f),
+            new Vector3(-123.605f, -1766.196f, 29.796f),
+            new Vector3(-136.306f, -1750.899f, 30.233f),
+            new Vector3(-149.461f, -1729.984f, 30.026f)
+        };
+
+        /// <summary>How many of them stand on a corner, and how far a corner spreads.</summary>
+        private const int OnCorners = 80;
+        private const float CornerSpread = 4.5f;
+
         /// <summary>How far out the ring stands. Measured on the ground: 19.1 metres.</summary>
         private const float RingAt = 19f;
 
@@ -634,11 +661,41 @@ namespace Hoodrich.Locations
         {
             try
             {
-                var a = _rng.NextDouble() * Math.PI * 2d;
-                var r = Ring + (float)(_rng.NextDouble() * 3.5 - 1.2);
+                // MOSTLY ON THE CORNERS, AND THAT IS WHAT A CROWD DOES.
+                //
+                // A circle drawn round the middle is the obvious way to place a ring and it
+                // was quietly wrong on this junction: an even ring puts a quarter of the
+                // crowd in the middle of Carson with nothing behind them, stood in a live
+                // traffic lane on a bit of road that is not a place anybody would choose to
+                // stand. People gather where there is something to stand ON and something to
+                // stand BEHIND, which at a crossroads is the pavement corners.
+                //
+                // Seven of them, read off the ground in game, at bearings that cover every
+                // side of the junction. Each takes a scatter so a corner is a knot of people
+                // rather than seven neat stacks.
+                //
+                // A fifth still go on the old ring, because a takeover does spill: somebody is
+                // always stood somewhere daft, and a crowd that respects the kerb perfectly is
+                // as unconvincing as one that ignores it.
+                Vector3 slot;
 
-                var slot = Ground(new Vector3(Middle.X + (float)Math.Cos(a) * r,
+                if (_rng.Next(100) < OnCorners)
+                {
+                    var c = Corners[_rng.Next(Corners.Length)];
+                    var ca = _rng.NextDouble() * Math.PI * 2d;
+                    var cr = (float)(_rng.NextDouble() * CornerSpread);
+
+                    slot = Ground(new Vector3(c.X + (float)Math.Cos(ca) * cr,
+                                              c.Y + (float)Math.Sin(ca) * cr, c.Z));
+                }
+                else
+                {
+                    var a = _rng.NextDouble() * Math.PI * 2d;
+                    var r = Ring + (float)(_rng.NextDouble() * 3.5 - 1.2);
+
+                    slot = Ground(new Vector3(Middle.X + (float)Math.Cos(a) * r,
                                               Middle.Y + (float)Math.Sin(a) * r, Middle.Z));
+                }
 
                 var from = OnFoot(slot);
                 if (from == Vector3.Zero) return false;
