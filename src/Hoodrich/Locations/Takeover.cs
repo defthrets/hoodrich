@@ -97,6 +97,67 @@ namespace Hoodrich.Locations
         /// <summary>How far out the ring stands. Measured on the ground: 19.1 metres.</summary>
         private const float RingAt = 19f;
 
+        /// <summary>One place a car waits its turn, and which way it points while it waits.</summary>
+        private sealed class Spot
+        {
+            public Vector3 At;
+            public float Face;
+        }
+
+        /// <summary>
+        /// The twenty-three spots round the junction, walked and written down.
+        ///
+        /// NOT A CIRCLE ANY MORE, and that is the point. The ring used to be generated -- an
+        /// angle, a radius, a jitter -- which put cars in the middle of the road, half on the
+        /// pavement, and nose-in at whatever angle the maths produced. A generated ring can
+        /// only ever be a circle, and the junction is not a circle: it is four streets meeting
+        /// at an angle, with kerbs, a corner shop and a verge.
+        ///
+        /// These are twenty-three real kerbside places, each with the heading of a car actually
+        /// parked in it. Measured rather than claimed: they sit between 18.8 and 25.9 metres
+        /// from the mark, so they still ring the crowd the way the generated ones were meant to
+        /// -- but they ring it along the kerb instead of through it.
+        ///
+        /// THE HEADINGS ARE NOT COMPUTED AND MUST NOT BE. A car parked on a street points down
+        /// the street, canted in towards whatever it has stopped to watch -- which is close to
+        /// facing the middle but never exactly it, and the difference between those two is the
+        /// difference between cars parked up and cars arranged. Turning them to face the mark
+        /// exactly would throw away the whole reason for walking them.
+        ///
+        /// Fourteen to twenty cars come to twenty-three places, so a few always stand empty and
+        /// no car is ever without one. They are listed the way they were walked, all the way
+        /// round and back to the first.
+        /// </summary>
+        /// <summary>The shortest kerb two of them may share, in metres. A car is longer.</summary>
+        private const float MinGap = 5f;
+
+        private static readonly Spot[] Spots =
+        {
+            new Spot { At = new Vector3(-150.147f, -1740.836f, 30.090f), Face = 324.761f },
+            new Spot { At = new Vector3(-148.430f, -1744.720f, 30.128f), Face = 318.208f },
+            new Spot { At = new Vector3(-146.233f, -1748.704f, 30.121f), Face = 314.160f },
+            new Spot { At = new Vector3(-142.197f, -1751.668f, 30.131f), Face = 317.387f },
+            new Spot { At = new Vector3(-135.928f, -1754.888f, 30.113f), Face = 293.019f },
+            new Spot { At = new Vector3(-134.342f, -1757.896f, 30.059f), Face = 307.759f },
+            new Spot { At = new Vector3(-132.016f, -1760.529f, 29.904f), Face = 300.825f },
+            new Spot { At = new Vector3(-128.469f, -1762.873f, 29.753f), Face = 325.639f },
+            new Spot { At = new Vector3(-120.297f, -1760.855f, 29.785f), Face =  27.555f },
+            new Spot { At = new Vector3(-116.104f, -1758.634f, 29.807f), Face =  25.657f },
+            new Spot { At = new Vector3(-112.132f, -1754.713f, 29.822f), Face =  39.275f },
+            new Spot { At = new Vector3(-106.436f, -1742.815f, 30.154f), Face =  95.704f },
+            new Spot { At = new Vector3(-107.277f, -1738.566f, 30.210f), Face =  95.244f },
+            new Spot { At = new Vector3(-108.355f, -1733.801f, 30.064f), Face = 109.900f },
+            new Spot { At = new Vector3(-105.108f, -1730.108f, 29.863f), Face = 114.070f },
+            new Spot { At = new Vector3(-111.381f, -1721.519f, 29.808f), Face = 143.255f },
+            new Spot { At = new Vector3(-114.888f, -1719.808f, 29.815f), Face = 137.941f },
+            new Spot { At = new Vector3(-121.657f, -1716.436f, 29.889f), Face = 154.870f },
+            new Spot { At = new Vector3(-125.524f, -1716.260f, 29.990f), Face = 151.701f },
+            new Spot { At = new Vector3(-128.744f, -1713.283f, 29.893f), Face = 151.006f },
+            new Spot { At = new Vector3(-143.341f, -1717.723f, 29.993f), Face = 227.619f },
+            new Spot { At = new Vector3(-146.946f, -1720.855f, 30.124f), Face = 234.357f },
+            new Spot { At = new Vector3(-149.384f, -1724.409f, 29.961f), Face = 236.158f }
+        };
+
         /// <summary>
         /// And how far in the cars work. Ten, tightened from fifteen.
         ///
@@ -418,6 +479,10 @@ namespace Hoodrich.Locations
             public Vehicle Car;
             public Ped Driver;
             public Vector3 Slot;
+
+            /// <summary>The walked heading for this spot. Never recomputed -- see Spots.</summary>
+            public float Face;
+
             public bool There;
 
             public bool Low;
@@ -462,6 +527,9 @@ namespace Hoodrich.Locations
 
             public bool Circling;
             public bool Leaving;
+
+            /// <summary>When he stopped on the way home, or nought if he is still moving.</summary>
+            public int Stuck;
 
             /// <summary>
             /// This one is on the mark rather than going round it.
@@ -1255,11 +1323,59 @@ namespace Hoodrich.Locations
             // Lowriders first, then donks, then everything else -- counted out of the same
             // total rather than added on top, so turning any of them up does not quietly grow
             // the number of cars ringing the junction.
-            for (var i = 0; i < want; i++)
+            // Never more cars than there are places for them, or two arrive at the same kerb
+            // and the second one parks inside the first.
+            if (want > Spots.Length) want = Spots.Length;
+
+            // Shuffled, so which spots stand empty changes from one night to the next and the
+            // lowriders are not always on the same corner.
+            var order = new List<int>();
+            for (var i = 0; i < Spots.Length; i++) order.Add(i);
+
+            for (var i = order.Count - 1; i > 0; i--)
             {
-                if (i < lows) Spectator(Kind.Low);
-                else if (i < lows + donks) Spectator(Kind.Donk);
-                else Spectator(Kind.Plain);
+                var j = _rng.Next(i + 1);
+                var t = order[i];
+                order[i] = order[j];
+                order[j] = t;
+            }
+
+            // AND NO TWO CARS IN THE SAME LENGTH OF KERB.
+            //
+            // Two of the walked spots are three and a half metres apart, which is shorter than
+            // a car. Both are real places to stop and both were walked, so neither of them is
+            // wrong -- but filling both puts two cars in the same six metres of pavement, and
+            // that is one car parked inside another. Whichever comes up first in the shuffle
+            // takes it; the other stands empty that night, which is what the spare spots are
+            // there for.
+            var taken = new List<Vector3>();
+            var made = 0;
+
+            foreach (var idx in order)
+            {
+                if (made >= want) break;
+
+                var spot = Spots[idx];
+
+                var clash = false;
+
+                foreach (var t in taken)
+                {
+                    if (t.DistanceTo(spot.At) >= MinGap) continue;
+
+                    clash = true;
+                    break;
+                }
+
+                if (clash) continue;
+
+                taken.Add(spot.At);
+
+                if (made < lows) Spectator(Kind.Low, spot);
+                else if (made < lows + donks) Spectator(Kind.Donk, spot);
+                else Spectator(Kind.Plain, spot);
+
+                made++;
             }
         }
 
@@ -1271,15 +1387,11 @@ namespace Hoodrich.Locations
             Donk
         }
 
-        private void Spectator(Kind kind)
+        private void Spectator(Kind kind, Spot spot)
         {
             try
             {
-                var a = _rng.NextDouble() * Math.PI * 2d;
-                var r = Ring + 5f + (float)(_rng.NextDouble() * 9.0);
-
-                var slot = new Vector3(Middle.X + (float)Math.Cos(a) * r,
-                                       Middle.Y + (float)Math.Sin(a) * r, Middle.Z);
+                var slot = spot.At;
 
                 var from = OnRoad(DriveFromMin + (float)_rng.NextDouble() * (DriveFromMax - DriveFromMin));
                 if (from == Vector3.Zero) return;
@@ -1309,6 +1421,7 @@ namespace Hoodrich.Locations
                     Car = car,
                     Driver = driver,
                     Slot = slot,
+                    Face = spot.Face,
                     Low = kind == Kind.Low,
                     Hop = _rng.NextDouble() * Math.PI * 2d,
                     Rate = 2.2 + _rng.NextDouble() * 2.6
@@ -1330,7 +1443,16 @@ namespace Hoodrich.Locations
                 // gap on his way past it.
                 if (p.Out) continue;
 
-                if (p.There) continue;
+                // ALREADY IN. Still worth a look, because a heading set once is a heading set
+                // once: a car gets nudged by the next one arriving, shoved by somebody's donut
+                // going wide, or simply settles a few degrees as the suspension takes it. None
+                // of those move it far enough to notice, and every one of them leaves it parked
+                // crooked for the rest of the night.
+                if (p.There)
+                {
+                    Aim(p);
+                    continue;
+                }
                 if (p.Car == null || !p.Car.Exists()) continue;
                 if (p.Car.Position.DistanceTo(p.Slot) > CarArrivedRange) continue;
 
@@ -1344,7 +1466,7 @@ namespace Hoodrich.Locations
                                       p.Car.Handle, 1, 4000);
                     }
 
-                    Function.Call(Hash.SET_ENTITY_HEADING, p.Car.Handle, Facing(p.Car.Position));
+                    Function.Call(Hash.SET_ENTITY_HEADING, p.Car.Handle, p.Face);
                 }
                 catch
                 {
@@ -1352,6 +1474,40 @@ namespace Hoodrich.Locations
                 }
             }
         }
+
+        /// <summary>
+        /// Nudge a settled car back onto the heading its spot was walked with.
+        ///
+        /// ONLY WHEN IT IS ACTUALLY STILL, and that is the whole care in this method. Writing a
+        /// heading onto a moving car is a car snapping sideways at speed -- so anything with
+        /// any roll on it is left alone until it has stopped, whatever it is pointing at.
+        ///
+        /// And only when it is properly wrong. A couple of degrees is a car parked by a person;
+        /// correcting that every tick is a ring of cars twitching in unison, which reads far
+        /// worse than the crooked one it fixed.
+        /// </summary>
+        private void Aim(Parkee p)
+        {
+            if (p.Car == null || !p.Car.Exists()) return;
+
+            try
+            {
+                if (p.Car.Speed > 0.4f) return;
+
+                var off = ((p.Face - p.Car.Heading + 540f) % 360f) - 180f;
+
+                if (Math.Abs(off) < AimSlack) return;
+
+                Function.Call(Hash.SET_ENTITY_HEADING, p.Car.Handle, p.Face);
+            }
+            catch
+            {
+                // Next time round.
+            }
+        }
+
+        /// <summary>How far off its line a parked car may sit before it is turned back.</summary>
+        private const float AimSlack = 12f;
 
         /// <summary>The juice. Driven per frame, or it is a car changing height rather than hopping.</summary>
         private void Bounce()
@@ -1411,10 +1567,9 @@ namespace Hoodrich.Locations
                     // settles him, exactly as it did the first time.
                     if (r.Home != null)
                     {
-                        var late = now - r.Sent > BackGiveUpMs;
-
-                        if (r.Car.Position.DistanceTo(r.Home.Slot) > CarArrivedRange && !late)
+                        if (r.Car.Position.DistanceTo(r.Home.Slot) > CarArrivedRange)
                         {
+                            Patient(r, now);
                             continue;
                         }
 
@@ -2236,7 +2391,14 @@ namespace Hoodrich.Locations
         private const int PassGiveUpMs = 40000;
 
         /// <summary>How long a car gets to find its way back to its own spot.</summary>
-        private const int BackGiveUpMs = 45000;
+        /// <summary>
+        /// How fast he comes back, and it is a walking pace for a car on purpose.
+        ///
+        /// Eight rather than twelve. He is driving into a ring of people, and the difference
+        /// between those two numbers is whether a man who steps back into his path gets
+        /// stopped for or gets hit.
+        /// </summary>
+        private const float BackSpeed = 8f;
 
         private const int BikeGapMs = 9000;
         private const float WheelieNeeds = 8f;
@@ -2268,7 +2430,13 @@ namespace Hoodrich.Locations
         /// </summary>
         private bool Pull(bool middle)
         {
-            Parkee pick = null;
+            // WHOEVER IS UP FOR IT, not whoever spawned first.
+            //
+            // Taking the first match walked the list in spawn order every time, so the same two
+            // or three cars did every turn all night and the rest of the ring never moved. Over
+            // an event that is not a detail: it is the difference between twenty cars taking
+            // turns and three cars working in front of seventeen ornaments.
+            var able = new List<Parkee>();
 
             foreach (var p in _parked)
             {
@@ -2276,9 +2444,10 @@ namespace Hoodrich.Locations
                 if (p.Car == null || !p.Car.Exists()) continue;
                 if (p.Driver == null || !p.Driver.Exists() || !p.Driver.IsAlive) continue;
 
-                pick = p;
-                break;
+                able.Add(p);
             }
+
+            var pick = able.Count == 0 ? null : able[_rng.Next(able.Count)];
 
             // Nobody in the ring is in a fit state to go, so one is sent for the old way. This
             // should be rare -- there are fourteen to twenty of them and at most four out.
@@ -2440,7 +2609,8 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
-                              back.X, back.Y, back.Z, 12f, 0, r.Car.Model.Hash,
+                              back.X, back.Y, back.Z, r.Home != null ? BackSpeed : 12f, 0,
+                              r.Car.Model.Hash,
                               r.Home != null ? CareStyle : RushStyle,
                               r.Home != null ? 3f : 10f, true);
 
@@ -2451,6 +2621,62 @@ namespace Hoodrich.Locations
                 Log.Debug("Takeover could not send one back: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// He is on his way back to his spot and he is not there yet.
+        ///
+        /// HE WAITS. THAT IS THE WHOLE METHOD. The old version gave him forty-five seconds and
+        /// then counted him as home wherever he had got to, which is how a car ends up stopped
+        /// in the middle of the road with its kerb standing empty -- the timeout did not get
+        /// him home, it just stopped anybody asking.
+        ///
+        /// He is driving back INTO the crowd he was performing in front of, so being blocked is
+        /// the normal case and not a fault. A person in that position does not lean on the horn
+        /// and shove through; he sits there until the gap opens. So: rolling is fine, stopped
+        /// for a few seconds means the route he was given has run out or run into somebody, and
+        /// the answer to that is to ask for it again -- not to force it, and not to give up.
+        ///
+        /// There is deliberately no ceiling on the retries. His spot is his, nobody else can
+        /// have it, and a car sat waiting at the edge of a junction full of people is a
+        /// perfectly good thing for him to be doing until it clears.
+        /// </summary>
+        private void Patient(Runner r, int now)
+        {
+            try
+            {
+                // Still rolling -- he is getting there, leave him to it.
+                if (r.Car.Speed > 0.6f)
+                {
+                    r.Stuck = 0;
+                    return;
+                }
+
+                if (r.Stuck == 0)
+                {
+                    r.Stuck = now;
+                    return;
+                }
+
+                if (now - r.Stuck < BlockedMs) return;
+
+                r.Stuck = now;
+
+                Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
+                              r.Home.Slot.X, r.Home.Slot.Y, r.Home.Slot.Z, BackSpeed, 0,
+                              r.Car.Model.Hash, CareStyle, 3f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
+            }
+            catch
+            {
+                // He tries again in a few seconds.
+            }
+        }
+
+        /// <summary>How long a car going home may sit still before it asks for the route again.</summary>
+        private const int BlockedMs = 4000;
 
         /// <summary>
         /// Keeping the ones on the floor doing what they came to do.
@@ -3258,15 +3484,22 @@ namespace Hoodrich.Locations
                 //
                 // The cars that came to WATCH keep both. They are parked, so the smoke never
                 // shows anyway, and a row of xenons along the kerb at night is the look.
+                // NO COLOURED SMOKE ON ANYTHING HERE, not just on the ones drifting.
+                //
+                // It was already off the drift cars, on the reasoning that purple smoke off a
+                // car mid-donut turns a street takeover into a light show. That reasoning does
+                // not stop at the drift cars: a spectator does a burnout pulling out of the
+                // ring, a donk lights them up leaving, and every one of those is the same
+                // wrong picture in a smaller frame. A real one is white smoke and a lot of
+                // noise.
+                //
+                // The toggle is left OFF rather than the colour set to white, because those
+                // are different things -- white smoke is a bought part, and no part at all is
+                // a car that never had one.
                 if (showy)
                 {
                     Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 22, true);
                     Function.Call(Hash.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX, h, _rng.Next(0, 13));
-
-                    var smoke = Glow[_rng.Next(Glow.Length)];
-
-                    Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 20, true);
-                    Function.Call(Hash.SET_VEHICLE_TYRE_SMOKE_COLOR, h, smoke[0], smoke[1], smoke[2]);
                 }
 
                 // NEON, on all four sides, and everybody gets it. It is underglow on a parked
@@ -3310,7 +3543,7 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>Paints, wheel sets, tints, plates, and the colours that glow.</summary>
+        /// <summary>Paints, wheel sets, tints, and plates.</summary>
         private static readonly int[] Paints =
         {
             0, 1, 2, 3, 4, 12, 27, 28, 38, 49, 52, 55, 64, 70, 73, 88, 89, 92,
@@ -3320,13 +3553,6 @@ namespace Hoodrich.Locations
         private static readonly int[] Wheels = { 0, 1, 2, 5, 7, 11 };
         private static readonly int[] Tints = { 1, 2, 3, 5 };
         private const int Rims = 156;
-
-        private static readonly int[][] Glow =
-        {
-            new[] { 255, 0, 60 },     new[] { 0, 200, 255 },   new[] { 140, 0, 255 },
-            new[] { 0, 255, 90 },     new[] { 255, 120, 0 },   new[] { 255, 0, 200 },
-            new[] { 255, 240, 0 },    new[] { 0, 90, 255 },    new[] { 255, 255, 255 }
-        };
 
         /// <summary>
         /// And the underglow, which leans green.
