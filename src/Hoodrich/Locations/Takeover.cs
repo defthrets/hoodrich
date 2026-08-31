@@ -216,6 +216,9 @@ namespace Hoodrich.Locations
 
         /// <summary>How many set off at once, so it fills up rather than materialising.</summary>
         private const int PerWave = 7;
+
+        /// <summary>How long the cars get before anybody sets off on foot.</summary>
+        private const int CrowdLeadMs = 14000;
         private const int WaveGapMs = 2600;
 
         /// <summary>
@@ -668,7 +671,21 @@ namespace Hoodrich.Locations
             // Two or three, and the first of them is always the one going round the middle.
             _wantBikes = _rng.Next(2, 4);
             _nextBike = now + 8000;
-            _nextWave = now;
+
+            // THE CARS GET THERE FIRST, BUT ONLY JUST.
+            //
+            // Everything used to be released on the same frame, and the running order after
+            // that was an accident of geometry: the crowd spawns fifty to a hundred and thirty
+            // metres out and runs, the drift cars spawn a hundred and twenty-five to two
+            // hundred and thirty out and drive, and which arrived first depended on what the
+            // spawner happened to roll.
+            //
+            // It should not be an accident. A takeover that people are still arriving at, with
+            // a car already sideways in the middle of it, is a thing that started without you;
+            // one where a crowd stands in a circle waiting for a car to turn up is a queue.
+            // The head start is small on purpose -- long enough for one car to be down and
+            // working, not long enough that the first arrivals have got bored.
+            _nextWave = now + CrowdLeadMs;
             _nextWord = now + _rng.Next(20000, 45000);
 
             Cars();
@@ -1073,7 +1090,7 @@ namespace Hoodrich.Locations
 
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, h, car.Handle,
                                   road.X, road.Y, road.Z, 12f, 0, car.Model.Hash,
-                                  786603, 8f, true);
+                                  CareStyle, 8f, true);
 
                     Function.Call(Hash.SET_PED_KEEP_TASK, h, true);
                 }
@@ -1140,7 +1157,7 @@ namespace Hoodrich.Locations
                 }
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
-                              slot.X, slot.Y, slot.Z, 14f, 0, car.Model.Hash, 786603, 4f, true);
+                              slot.X, slot.Y, slot.Z, 14f, 0, car.Model.Hash, CareStyle, 4f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
 
@@ -1771,6 +1788,39 @@ namespace Hoodrich.Locations
         /// </summary>
         private const int BikeStyle = 4 | 8 | 16 | 32;
 
+        /// <summary>
+        /// How everything arriving at the takeover drives, and this is a fix.
+        ///
+        /// EVERY DRIVE TASK IN THIS FILE WAS 786603, the game's ordinary traffic style. Read as
+        /// flags that is stop-before-vehicles, stop-before-peds, avoid-EMPTY-vehicles,
+        /// avoid-objects and stop-at-lights -- and the two bits it does NOT contain are steer
+        /// around a vehicle with somebody in it, and steer around a person.
+        ///
+        /// Which is exactly the wrong pair to be missing here. A takeover is a junction full of
+        /// occupied cars and people stood in the road: the one place in the city where "stops
+        /// for things but never goes round them" turns into a car nosing into the back of a
+        /// donut because the donut is in its lane and it has no instruction to do anything but
+        /// wait. Same fault the Knowai had, in seven more places.
+        ///
+        ///     1   stop before vehicles          16   steer around peds
+        ///     2   stop before peds              32   steer around objects
+        ///     4   steer around vehicles        128   stop at lights
+        ///     8   steer around empty vehicles  256   indicate
+        ///
+        /// All eight for anything ARRIVING -- it still stops for people, it just also goes
+        /// round them.
+        /// </summary>
+        private const int CareStyle = 1 | 2 | 4 | 8 | 16 | 32 | 128 | 256;
+
+        /// <summary>
+        /// And for anything LEAVING, or the police coming in.
+        ///
+        /// The same steering, none of the stopping. A car scattering from a police raid that
+        /// stops at a red light is not scattering, and a squad car that gives way on the
+        /// approach is not a raid. They still go round people, which is the part that matters.
+        /// </summary>
+        private const int RushStyle = 4 | 8 | 16 | 32;
+
         private const float PassDone = 14f;
         private const float PassSpeed = 24f;
         private const int PassGiveUpMs = 40000;
@@ -1843,7 +1893,7 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
                               aim.X, aim.Y, aim.Z, 16f, 0, car.Model.Hash,
-                              786603, 2f, true);
+                              CareStyle, 2f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
 
@@ -1877,7 +1927,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
-                              away.X, away.Y, away.Z, 15f, 0, r.Car.Model.Hash, 786603, 10f, true);
+                              away.X, away.Y, away.Z, 15f, 0, r.Car.Model.Hash, RushStyle, 10f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
             }
@@ -1947,7 +1997,7 @@ namespace Hoodrich.Locations
 
                         Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
                                       r.Car.Handle, back.X, back.Y, back.Z,
-                                      12f, 0, r.Car.Model.Hash, 786603, 4f, true);
+                                      12f, 0, r.Car.Model.Hash, CareStyle, 4f, true);
                     }
                     catch
                     {
@@ -2144,7 +2194,7 @@ namespace Hoodrich.Locations
 
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, cop.Handle, car.Handle,
                                   Middle.X, Middle.Y, Middle.Z, 20f, 0,
-                                  car.Model.Hash, 786603, 6f, true);
+                                  car.Model.Hash, RushStyle, 6f, true);
 
                     Function.Call(Hash.SET_PED_KEEP_TASK, cop.Handle, true);
 
@@ -2216,7 +2266,7 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, p.Driver.Handle, 1.0f);
 
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle, p.Car.Handle,
-                                  off.X, off.Y, off.Z, 28f, 0, p.Car.Model.Hash, 786603, 15f, true);
+                                  off.X, off.Y, off.Z, 28f, 0, p.Car.Model.Hash, RushStyle, 15f, true);
 
                     Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
                 }
@@ -2537,7 +2587,19 @@ namespace Hoodrich.Locations
 
                 // Good enough to hold a line, calm enough not to race anybody out of it.
                 Function.Call(Hash.SET_DRIVER_ABILITY, h, 1.0f);
-                Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, h, 0.0f);
+
+                // Not zero. A driver on nothing does not drive calmly, it drives TIMIDLY --
+                // it will not commit to a gap and waits for a completely clear road, which at a
+                // junction with forty people and fifteen cars in it is a car that never moves.
+                // A fifth is careful without being stuck.
+                Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, h, 0.2f);
+
+                // Said as ped behaviour as well as in the task, because the style belongs to
+                // the TASK and these belong to the DRIVER -- a re-task that forgot the style
+                // would still have somebody who goes round things rather than into them.
+                Function.Call(Hash.SET_PED_STEERS_AROUND_VEHICLES, h, true);
+                Function.Call(Hash.SET_PED_STEERS_AROUND_PEDS, h, true);
+                Function.Call(Hash.SET_PED_STEERS_AROUND_OBJECTS, h, true);
 
                 return ped;
             }
