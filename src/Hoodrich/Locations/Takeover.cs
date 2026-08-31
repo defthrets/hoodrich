@@ -200,7 +200,27 @@ namespace Hoodrich.Locations
         /// on top of them. Anything of ours is exempt: the drifters live inside it, the
         /// spectators park on the line, and the police are supposed to come straight through.
         /// </summary>
-        private const float BlockAt = 30f;
+        private const float BlockAt = 40f;
+
+        /// <summary>
+        /// And how close a stranger gets before it simply stops existing.
+        ///
+        /// THE TURN-ROUND IS A REQUEST AND THIS IS NOT. Forty metres out a car is asked to go
+        /// back the way it came, which works on a driver who is listening -- most are. The ones
+        /// that are not, because they are mid-manoeuvre or wedged or being shoved by something
+        /// else, used to carry on into a junction with sixty people stood in it.
+        ///
+        /// At the ring they are removed. Nineteen metres is where the crowd starts, so it is
+        /// the last moment it can happen without being a car vanishing in front of somebody --
+        /// and a car that has got that far through a closed junction was never going to be
+        /// talked out of it.
+        ///
+        /// ONLY TRAFFIC. Something with a driver in it, that is not ours and is not yours. A
+        /// parked car is left alone whoever it belongs to, because the one thing worse than a
+        /// stranger driving through the takeover is your own car disappearing off the kerb you
+        /// left it on.
+        /// </summary>
+        private const float EatAt = 19f;
 
         /// <summary>How often one car may be turned round, so it is not re-tasked every tick.</summary>
         /// <summary>
@@ -1085,7 +1105,27 @@ namespace Hoodrich.Locations
                     // NOT by switching the road nodes off in the area, which is the other way
                     // to do this: our own cars path in and out on those same nodes, and taking
                     // them away would stop the drifters reaching the circle at all.
-                    if (car.Position.DistanceTo(Middle) > BlockAt) continue;
+                    var in_ = car.Position.DistanceTo(Middle);
+
+                    // GOT THROUGH. It is not going to be persuaded now.
+                    if (in_ < EatAt)
+                    {
+                        try
+                        {
+                            driver.Delete();
+                            car.Delete();
+
+                            Log.Info("Takeover: something drove into it. Removed.");
+                        }
+                        catch
+                        {
+                            // It will be tried again next tick.
+                        }
+
+                        continue;
+                    }
+
+                    if (in_ > BlockAt) continue;
 
                     int turned;
 
@@ -1142,6 +1182,24 @@ namespace Hoodrich.Locations
             {
                 if (l.Cop != null && l.Cop.Exists() && l.Cop.Handle == who.Handle) return true;
             }
+
+            // THE BIKES AND THE HELICOPTER, WHICH WERE BOTH MISSING FROM THIS LIST.
+            //
+            // Everything that reads this asks one question -- is this one of ours -- and every
+            // answer of "no" about somebody who IS ours is a thing done TO our own event: the
+            // cordon was turning our own riders round in the middle of their runs, and the
+            // moment anything starts deleting outsiders this becomes the difference between a
+            // clear junction and a junction with no bikes in it.
+            //
+            // A list that has to be added to every time something new is spawned is a list that
+            // will be forgotten again, so this is worth saying plainly: ANYTHING SPAWNED FOR
+            // THE TAKEOVER GOES IN HERE.
+            foreach (var r in _riders)
+            {
+                if (r.Man != null && r.Man.Exists() && r.Man.Handle == who.Handle) return true;
+            }
+
+            if (_pilot != null && _pilot.Exists() && _pilot.Handle == who.Handle) return true;
 
             return false;
         }
@@ -1867,45 +1925,35 @@ namespace Hoodrich.Locations
                 try { speed = r.Bike.Speed; }
                 catch { continue; }
 
-                if (now < r.WheelieUntil)
-                {
-                    if (speed < WheelieNeeds * 0.6f)
-                    {
-                        r.WheelieUntil = 0;
-                        continue;
-                    }
-
-                    try
-                    {
-                        Function.Call(Hash.APPLY_FORCE_TO_ENTITY, r.Bike.Handle, 1,
-                                      0f, 0f, WheelieLift,
-                                      0f, -WheelieBehind, 0f,
-                                      0, true, true, true, false, true);
-                    }
-                    catch
-                    {
-                        // Next frame.
-                    }
-
-                    continue;
-                }
-
-                if (now < r.WheelieAfter || speed < WheelieNeeds) continue;
-
-                // BETWEEN THE MARKS ON HIS OWN RUN, AND NOWHERE ELSE. Outside them he is a
-                // man riding a bike down a road, which is what the run-up is for.
+                // NO TIMER. THE MARKS ARE THE TIMER.
+                //
+                // It used to hold for a fixed few seconds and then have to decide whether to go
+                // again, with a rest in between -- so a crossing that took longer than the
+                // number got a wheel that dropped in the middle of the junction and came back
+                // up on the far side, for no reason anybody watching could see. The marks
+                // already say exactly where it should be up. Nothing else needs to.
+                //
+                // So: between the marks and moving, the wheel is up. Outside them, or too slow
+                // to hold it, it is down. That is the whole rule, it is evaluated fresh every
+                // frame, and there is no state to get out of step.
                 //
                 // The one going round the middle has no marks and no outside -- he is at the
                 // junction by definition, so he is at it the whole time.
-                if (!r.Looping && !Runs[r.Run].Between(r.Bike.Position)) continue;
+                var up = r.Looping || Runs[r.Run].Between(r.Bike.Position);
 
-                r.WheelieAfter = now + 1200;
+                if (!up || speed < WheelieNeeds) continue;
 
-                // Long enough to carry him the rest of the way across. It ends early on its own
-                // if he slows -- that is the check at the top of this loop -- so a generous
-                // number here is a wheel that stays up for the whole crossing rather than one
-                // that drops halfway over for no reason anybody can see.
-                r.WheelieUntil = now + WheelieMaxMs;
+                try
+                {
+                    Function.Call(Hash.APPLY_FORCE_TO_ENTITY, r.Bike.Handle, 1,
+                                  0f, 0f, WheelieLift,
+                                  0f, -WheelieBehind, 0f,
+                                  0, true, true, true, false, true);
+                }
+                catch
+                {
+                    // Next frame.
+                }
             }
         }
 
