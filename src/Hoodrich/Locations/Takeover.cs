@@ -566,6 +566,18 @@ namespace Hoodrich.Locations
             /// <summary>When he was sent, so one that cannot get there can be put there.</summary>
             public int Sent;
 
+            /// <summary>When the driver may get out. Set on arrival, so he sits a beat first.</summary>
+            public int OutAt;
+
+            /// <summary>He is out of the car and stood with the rest of them.</summary>
+            public bool Outside;
+
+            /// <summary>What he does while he stands there. Picked once. See Mingle.</summary>
+            public string Doing;
+
+            /// <summary>He has been sent back to the car and is not in it yet. See Bail.</summary>
+            public bool Bailing;
+
             public bool There;
 
             public bool Low;
@@ -873,6 +885,8 @@ namespace Hoodrich.Locations
                             _scattered = true;
                             Scatter();
                         }
+
+                        Bail(now);
 
                         if (near > LetGo || now > _lastDrive) Pack();
                         break;
@@ -1813,6 +1827,7 @@ namespace Hoodrich.Locations
                 if (p.There)
                 {
                     Aim(p);
+                    Mingle(p, now);
                     continue;
                 }
 
@@ -1888,8 +1903,77 @@ namespace Hoodrich.Locations
                 {
                     // It stops where it stops.
                 }
+
+                // AND THEN HE GETS OUT, after a moment. Not on the frame he arrives: a man who
+                // opens the door before the car has settled looks like a man ejected from it.
+                p.OutAt = now + SitAMomentMs;
             }
         }
+
+        /// <summary>
+        /// He has parked. Now he gets out and watches, like everybody else did.
+        ///
+        /// NOBODY DRIVES TO A STREET TAKEOVER AND THEN SITS IN THE CAR. They park it, they get
+        /// out, and they stand by it with everyone else -- and thirty-five men sat behind glass
+        /// in a ring of parked cars was the single most obviously wrong thing about the street.
+        ///
+        /// He stands WHERE HE IS, at his own door, rather than walking in to join the ring. It
+        /// is what people actually do -- your car is the thing you came in and the thing you
+        /// stand next to -- and it means thirty-five more men do not all set off walking across
+        /// the junction at the same moment.
+        ///
+        /// Turned to face the circle, twice, for the same reason the crowd is: a scenario picks
+        /// its own facing when it starts, so a heading set only beforehand is thrown away.
+        ///
+        /// The leave-vehicle task is re-issued rather than assumed. Getting out can be refused
+        /// -- a door against a wall, a ped shoved mid-animation -- and a man who silently never
+        /// got out is a car with somebody in it for the rest of the night.
+        /// </summary>
+        private void Mingle(Parkee p, int now)
+        {
+            if (p.Outside || p.Bailing) return;
+            if (p.OutAt == 0 || now < p.OutAt) return;
+            if (p.Car == null || !p.Car.Exists()) return;
+            if (p.Driver == null || !p.Driver.Exists() || !p.Driver.IsAlive) return;
+
+            try
+            {
+                var inside = Function.Call<bool>(Hash.IS_PED_IN_VEHICLE,
+                                                 p.Driver.Handle, p.Car.Handle, false);
+
+                if (inside)
+                {
+                    // Asked again every tick until it takes. Cheap, and the alternative is a
+                    // man who is stuck in his seat because one attempt was refused.
+                    Function.Call(Hash.TASK_LEAVE_VEHICLE, p.Driver.Handle, p.Car.Handle, 0);
+                    return;
+                }
+
+                p.Outside = true;
+
+                if (string.IsNullOrEmpty(p.Doing)) p.Doing = Watching[_rng.Next(Watching.Length)];
+
+                var h = p.Driver.Handle;
+
+                Function.Call(Hash.CLEAR_PED_TASKS, h);
+                Function.Call(Hash.SET_ENTITY_HEADING, h, Facing(p.Driver.Position));
+
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, h, p.Doing, 0, true);
+
+                Function.Call(Hash.SET_ENTITY_HEADING, h, Facing(p.Driver.Position));
+
+                // Deaf to the world while he stands there, the same as the ring is. Without it
+                // the first burnout sends every one of them home.
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+            }
+            catch
+            {
+                // He gets out next tick, or he does not and he sits there.
+            }
+        }
+
+        /// <summary>How long he sits in the parked car before opening the door.</summary>
+        private const int SitAMomentMs = 1800;
 
         /// <summary>
         /// Put a car on its spot, because driving there has not worked.
@@ -1914,6 +1998,11 @@ namespace Hoodrich.Locations
                 }
 
                 p.There = true;
+
+                // AND HIS CLOCK STARTS TOO. Arriving sets this; being placed is still arriving,
+                // and without it his door never opens -- one man sat in a car all night for the
+                // sole reason that his car had to be helped onto its kerb.
+                p.OutAt = Game.GameTime + SitAMomentMs;
 
                 Log.Info("Takeover: a spectator could not drive to its spot and was put on it.");
             }
@@ -4065,8 +4154,81 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>The bit everybody has been waiting for.</summary>
+        /// <summary>
+        /// Drivers running back to their cars, and driven off the moment they are in one.
+        ///
+        /// THE SECOND HALF OF SCATTER, and it has to be a tick rather than a second task queued
+        /// behind the first. Getting into a car takes as long as it takes -- the run, the door,
+        /// the animation -- and a drive order issued in the same breath cancels the getting in
+        /// that had not happened yet, which leaves a man stood at an open door.
+        ///
+        /// Given up on after a while. A driver who cannot reach his car because it is on its
+        /// roof or somebody is in it should not stand in the road for the rest of the night;
+        /// he legs it with everybody else.
+        /// </summary>
+        private void Bail(int now)
+        {
+            foreach (var p in _parked)
+            {
+                if (!p.Bailing) continue;
+                if (p.Car == null || !p.Car.Exists()) { p.Bailing = false; continue; }
+                if (p.Driver == null || !p.Driver.Exists() || !p.Driver.IsAlive)
+                {
+                    p.Bailing = false;
+                    continue;
+                }
+
+                try
+                {
+                    var inside = Function.Call<bool>(Hash.IS_PED_IN_VEHICLE,
+                                                     p.Driver.Handle, p.Car.Handle, false);
+
+                    if (!inside)
+                    {
+                        if (_scatteredAt != 0 && now - _scatteredAt > GetInGiveUpMs)
+                        {
+                            p.Bailing = false;
+
+                            Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
+                            Function.Call(Hash.TASK_SMART_FLEE_COORD, p.Driver.Handle,
+                                          Middle.X, Middle.Y, Middle.Z, 240f, -1, false, false);
+                        }
+
+                        continue;
+                    }
+
+                    p.Bailing = false;
+                    p.Outside = false;
+
+                    var off = OnRoad(200f + (float)_rng.NextDouble() * 150f);
+                    if (off == Vector3.Zero) off = Middle.Around(250f);
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
+                    Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, p.Driver.Handle, 1.0f);
+
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle, p.Car.Handle,
+                                  off.X, off.Y, off.Z, 28f, 0, p.Car.Model.Hash,
+                                  RushStyle, 15f, true);
+
+                    Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
+                }
+                catch
+                {
+                    // Next tick.
+                }
+            }
+        }
+
+        /// <summary>How long a driver gets to reach his car before he runs for it instead.</summary>
+        private const int GetInGiveUpMs = 20000;
+
+        /// <summary>When the police turned up, for Bail's patience.</summary>
+        private int _scatteredAt;
+
         private void Scatter()
         {
+            _scatteredAt = Game.GameTime;
+
             foreach (var w in _crowd)
             {
                 if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
@@ -4097,6 +4259,27 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR, p.Car.Handle, 0f);
 
                     if (p.Driver == null || !p.Driver.Exists()) continue;
+
+                    // HE IS STOOD NEXT TO IT, so first he has to get back in.
+                    //
+                    // Two tasks rather than one. Handing a drive order to a man on the pavement
+                    // is asking the game to work out the whole of getting in on its own, and
+                    // what it does with that varies by how far away he is, which door is clear
+                    // and what he was doing -- often nothing at all. Told to get in, and then
+                    // told to drive once he is in, by Bail.
+                    if (p.Outside)
+                    {
+                        Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, p.Driver.Handle, false);
+                        Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
+
+                        // Seat -1 is the driver's, and 2.0 is a run. Nobody walks to their car
+                        // when the lights come round the corner.
+                        Function.Call(Hash.TASK_ENTER_VEHICLE, p.Driver.Handle, p.Car.Handle,
+                                      20000, -1, 2.0f, 1, 0);
+
+                        p.Bailing = true;
+                        continue;
+                    }
 
                     // NOT A WANDER. Wander is a car pottering off at the speed limit, which is
                     // not what anybody does when the lights come round the corner. They are
