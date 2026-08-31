@@ -485,6 +485,15 @@ namespace Hoodrich.Gangs
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive)
             {
+                // A BACKSTOP, AND IT HAS NEVER ONCE FIRED. Main gates the whole gameplay tick
+                // on IsPlayable, and IsPlayable is false while the player is not alive -- so
+                // this method stops being called at the exact moment it wanted to notice, and
+                // by the time it starts again he is upright in Pillbox and IsAlive is true.
+                //
+                // Died() is what actually ends it, off the death frame in Main. This stays
+                // because it costs nothing and would be right if the gating ever changed, but
+                // nothing should be relied on here: it reads like a working death check, which
+                // is exactly what made it take this long to spot.
                 if (IsRunning) End(false, "You went down.");
                 return;
             }
@@ -2575,7 +2584,49 @@ namespace Hoodrich.Gangs
 
         // ---- finishing ---------------------------------------------------------
 
-        private void End(bool held, string reason)
+        /// <summary>
+        /// You went down in the middle of one.
+        ///
+        /// SEPARATE FROM THE CHECK IN Update BECAUSE Update IS NOT RUNNING. Main gates the
+        /// gameplay tick on IsPlayable and IsPlayable is false while the player is dead, so
+        /// the war stopped ticking at the one moment it needed to look -- and started again
+        /// with him alive at Pillbox, IsRunning still true, the bar still on screen and the
+        /// set still on the block. From the code's point of view nothing had happened.
+        ///
+        /// This is the same trap MissionRunner.Died was written to get out of, and it had the
+        /// war in it too. It hangs off the same death-frame watch in Main, which is the one
+        /// piece of this mod still looking at that moment.
+        ///
+        /// Quiet, because a notification on the death frame is a notification behind a black
+        /// screen. It is said at Pillbox instead, where it can be read.
+        /// </summary>
+        public void Died()
+        {
+            if (!IsRunning) return;
+
+            End(false, "You went down.", true);
+
+            _deathNotice = true;
+
+            Log.Info("Gang war ended: you went down in it.");
+        }
+
+        /// <summary>
+        /// Whether to tell him the block was lost, asked once.
+        ///
+        /// Cleared as it is read, so the wake-up that shows it is the only one that does.
+        /// </summary>
+        public bool TakeDeathNotice()
+        {
+            if (!_deathNotice) return false;
+
+            _deathNotice = false;
+            return true;
+        }
+
+        private bool _deathNotice;
+
+        private void End(bool held, string reason, bool quiet = false)
         {
             var attacker = _attacker;
             var kills = _kills;
@@ -2602,7 +2653,9 @@ namespace Hoodrich.Gangs
 
             if (!string.IsNullOrEmpty(reason))
             {
-                Notify.Failure(reason);
+                // Still returns before the wanted level below, quiet or not. Waking up in
+                // Pillbox with a star for a fight you lost is the game kicking you twice.
+                if (!quiet) Notify.Failure(reason);
                 return;
             }
 

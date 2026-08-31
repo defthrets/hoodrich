@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -3061,6 +3061,10 @@ namespace Hoodrich
                         // waited for the runner's own update waited until he was alive again
                         // at Pillbox -- by which point the mission had simply resumed.
                         if (_jobs != null) _jobs.Died();
+
+                        // And the same for a gang war, for exactly the same reason. Its own
+                        // death check sits in a method that is not running at this moment.
+                        if (_war != null) _war.Died();
                     }
 
                     _wasDown = true;
@@ -3087,6 +3091,13 @@ namespace Hoodrich
 
             _pillboxAt = 0;
             _social?.On(SocialEvent.Hospital, "");
+
+            // The war ended on the frame he went down, but saying so then would have put it
+            // behind the death fade. Here it can be read.
+            if (_war != null && _war.TakeDeathNotice())
+            {
+                Notify.Failure("They held the block. You went down on it.");
+            }
 
             // And whoever did it, still talking about it. Your people worrying and theirs
             // laughing, which is how waking up in Pillbox would actually arrive.
