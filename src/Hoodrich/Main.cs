@@ -85,6 +85,9 @@ namespace Hoodrich
         private readonly StashScreen _stashScreen;
         private readonly PocketScreen _pocketScreen;
         private readonly SettingsScreen _settingsScreen = new SettingsScreen();
+
+        /// <summary>Whether this load has cleared the previous load's headshot peds.</summary>
+        private bool _sweptFaces;
         private readonly StashHouse _stash;
         private readonly SleepSpot _sleep;
         private readonly Kitchen _kitchen;
@@ -2594,6 +2597,17 @@ namespace Hoodrich
 
                 // The green "+$" the game leaves behind after we pay somebody. See Cash.
                 UI.Cash.Tick();
+
+                // ONCE, ON THE FIRST TICK OF THIS LOAD. The face factory keeps its peds
+                // alive on static state, and statics do not survive an Insert -- so a reload
+                // leaves the last batch of them frozen over wherever you were stood, owned by
+                // nobody and deleted by nothing. Clearing them is a startup job because that is
+                // the only moment we know a previous load has just ended.
+                if (!_sweptFaces)
+                {
+                    _sweptFaces = true;
+                    UI.Headshots.Sweep();
+                }
 
                 // One step of the face factory. Does nothing at all when nobody is waiting,
                 // which is almost always -- it only has work while the feed is open on

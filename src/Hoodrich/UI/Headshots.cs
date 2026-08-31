@@ -43,10 +43,16 @@ namespace Hoodrich.UI
         ///
         /// The limit is not documented anywhere that can be checked and running into it does
         /// not throw -- REGISTER_PEDHEADSHOT simply starts returning nothing, which would look
-        /// like the feature quietly not working for some people. Fourteen is comfortably below
-        /// every figure anybody quotes and is twice what a screenful needs.
+        /// like the feature quietly not working for some people.
+        ///
+        /// EIGHT, DOWN FROM FOURTEEN. Each face costs more than a texture: the ped it was taken
+        /// of is kept alive for as long as the picture is, which keeps that ped's model resident
+        /// too. Fourteen of those is fourteen archetypes the game cannot stream out, on top of
+        /// whatever else is going on -- and a takeover is forty people and fifteen cars of
+        /// whatever else. Eight still covers a screenful of the feed with room over, and it
+        /// halves the standing cost of the whole feature.
         /// </summary>
-        private const int Keep = 14;
+        private const int Keep = 8;
 
         /// <summary>How long one is given to render before it is written off.</summary>
         private const int PatienceMs = 4000;
@@ -79,6 +85,52 @@ namespace Hoodrich.UI
 
         private static readonly Dictionary<string, Face> Made =
             new Dictionary<string, Face>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Clear out any models left over from a previous load of the script.
+        ///
+        /// EVERYTHING ABOVE IS STATIC, AND STATICS DO NOT SURVIVE A RELOAD. Press Insert and
+        /// this class comes back knowing about no faces at all -- while the peds it was
+        /// keeping alive are still up there, frozen, thirty metres over wherever the player was
+        /// stood. Nothing owns them and nothing will ever delete them, so every reload used to
+        /// leave another eight behind.
+        ///
+        /// They are findable because of what makes them odd in the first place: ours, frozen,
+        /// invisible, and a long way above your head. Nothing the game does on its own puts a
+        /// ped there, so the test cannot take somebody else's.
+        /// </summary>
+        public static void Sweep()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return;
+
+                var found = 0;
+
+                foreach (var ped in World.GetNearbyPeds(player.Position, 90f))
+                {
+                    if (ped == null || !ped.Exists()) continue;
+                    if (ped.Handle == player.Handle || ped.IsPlayer) continue;
+
+                    // Ours, and well above head height. A ped twenty metres up that this mod
+                    // owns is a leftover photograph and nothing else.
+                    if (ped.Position.Z - player.Position.Z < 20f) continue;
+
+                    if (!Function.Call<bool>(Hash.IS_ENTITY_A_MISSION_ENTITY, ped.Handle)) continue;
+                    if (Function.Call<bool>(Hash.IS_ENTITY_VISIBLE, ped.Handle)) continue;
+
+                    try { ped.Delete(); found++; }
+                    catch { }
+                }
+
+                if (found > 0) Log.Info("Headshots: cleared " + found + " left over from a reload.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Headshots could not sweep: " + ex.Message);
+            }
+        }
 
         private static readonly Dictionary<string, int> Failed =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);

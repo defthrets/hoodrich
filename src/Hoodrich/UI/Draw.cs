@@ -69,12 +69,32 @@ namespace Hoodrich.UI
         // ---- texture dictionaries ---------------------------------------------
 
         /// <summary>
-        /// Requests a streamed texture dict once and reports whether it is resident.
-        /// Safe to call every frame.
+        /// Requests a streamed texture dict, reports whether it is resident, and gives back
+        /// the ones nothing is drawing any more.
+        ///
+        /// THE GIVING BACK IS NEW AND IT IS A REAL LEAK THAT WAS FIXED HERE. Every dictionary
+        /// this asked for was pinned in streaming memory for the rest of the session --
+        /// requested once, recorded in a set, and never released. That was survivable when a
+        /// handful of contact photos were in play. It stopped being survivable when the feed
+        /// grew: seventy-odd accounts carry one of the game's own portraits, the phone has its
+        /// own art, and scrolling a long timeline touches every one of them. Each stays
+        /// resident, none is ever handed back, and the number only ever goes up.
+        ///
+        /// Which is exactly the shape of ERR_MEM_EMBEDDEDALLOC -- a crash that arrives after a
+        /// long session rather than at a particular moment, because it is not caused by an
+        /// event, it is caused by the total.
+        ///
+        /// So each one carries the time it was last drawn, and anything nothing has drawn for
+        /// a minute is released. Releasing something that is about to be drawn again costs one
+        /// frame, because the caller already handles "asked for, not here yet" -- that path is
+        /// the normal one on the first draw and it is the same path here.
         /// </summary>
         public static bool EnsureTextureDict(string dict)
         {
             if (string.IsNullOrEmpty(dict)) return false;
+
+            DictUsed[dict] = Game.GameTime;
+            Recycle();
 
             if (Function.Call<bool>(Hash.HAS_STREAMED_TEXTURE_DICT_LOADED, dict)) return true;
 
@@ -86,6 +106,66 @@ namespace Hoodrich.UI
             Function.Call(Hash.REQUEST_STREAMED_TEXTURE_DICT, dict, false);
             return false;
         }
+
+        /// <summary>
+        /// Hand back everything nothing has drawn lately.
+        ///
+        /// On a clock rather than every call, because this runs from inside a draw path that is
+        /// hit many times a frame and walking the whole table each time would cost more than
+        /// the leak did.
+        ///
+        /// The entry is dropped along with the dictionary, so the next draw treats it as new
+        /// and asks for it again -- keeping it would leave a name recorded as requested that
+        /// the engine no longer holds, which is a texture that never comes back.
+        /// </summary>
+        private static void Recycle()
+        {
+            var now = Game.GameTime;
+            if (now < _nextRecycle) return;
+
+            _nextRecycle = now + RecycleEveryMs;
+
+            List<string> stale = null;
+
+            foreach (var pair in DictUsed)
+            {
+                if (now - pair.Value < DictIdleMs) continue;
+
+                if (stale == null) stale = new List<string>();
+                stale.Add(pair.Key);
+            }
+
+            if (stale == null) return;
+
+            foreach (var dict in stale)
+            {
+                try
+                {
+                    Function.Call(Hash.SET_STREAMED_TEXTURE_DICT_AS_NO_LONGER_NEEDED, dict);
+                }
+                catch
+                {
+                    // It is going off the list either way; a name we no longer track is a name
+                    // that gets requested again cleanly.
+                }
+
+                DictUsed.Remove(dict);
+                RequestedDicts.Remove(dict);
+            }
+
+            Log.Debug("Handed back " + stale.Count + " texture dict(s); " +
+                      DictUsed.Count + " still in use.");
+        }
+
+        /// <summary>When each dictionary was last drawn.</summary>
+        private static readonly Dictionary<string, int> DictUsed =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>How long a dictionary may go undrawn, and how often that is checked.</summary>
+        private const int DictIdleMs = 60000;
+        private const int RecycleEveryMs = 5000;
+
+        private static int _nextRecycle;
 
         /// <summary>
         /// Whether a texture actually exists in a dictionary.
