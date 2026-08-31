@@ -140,7 +140,18 @@ namespace Hoodrich.Territory
                 // that reads as wrong without being easy to name.
                 if (Math.Abs(box.Rot) > 0.01f)
                 {
-                    Function.Call(Hash.SET_BLIP_ROTATION_WITH_FLOAT, handle, box.Rot);
+                    // SET_BLIP_ROTATION, NOT THE _WITH_FLOAT ONE.
+                    //
+                    // Both exist and both take degrees. The float variant is the newer and
+                    // rarer of the two, and the turf was coming out skewed on the minimap at
+                    // one heading and right at every other -- which is a rotation being applied
+                    // in the wrong frame, not a shape being built wrong, because the pause map
+                    // (always north-up) was correct the whole time.
+                    //
+                    // The integer one is what the game's own scripts use and what every mod
+                    // that rotates an area blip uses. If the skew survives this, the fault is
+                    // in how the minimap composites a rotated area rather than in the value.
+                    Function.Call(Hash.SET_BLIP_ROTATION, handle, (int)Math.Round(box.Rot));
                 }
 
                 Function.Call(Hash.BEGIN_TEXT_COMMAND_SET_BLIP_NAME, "STRING");
