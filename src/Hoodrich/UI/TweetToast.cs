@@ -84,6 +84,22 @@ namespace Hoodrich.UI
 
             /// <summary>The game's own contact picture for the named cast, or empty.</summary>
             public string Pic = "";
+
+            /// <summary>
+            /// The texture this card settled on, once it has one. Never unset. See DrawCard.
+            ///
+            /// THIS IS WHAT STOPS THE FLICKER. The avatar had three ways of being drawn -- the
+            /// contact picture, a made face, and a coloured monogram -- and it chose between
+            /// them EVERY FRAME on whether the texture happened to be loaded at that instant.
+            /// A dictionary that streams out for a moment, or a face registered a beat later
+            /// than the card, therefore did not appear late: it appeared, vanished, came back.
+            /// That is a picture blinking in the corner of the screen.
+            ///
+            /// Latched, and it only ever goes one way. A card starts on the monogram and moves
+            /// to a real image the first time one is there. It never moves back, whatever the
+            /// streamer does afterwards.
+            /// </summary>
+            public string Art = "";
             public List<string> Lines = new List<string>();
             public Color Tint;
             public int ShownAt;
@@ -225,14 +241,13 @@ namespace Hoodrich.UI
             //
             // Falls back to the monogram while the dictionary streams, so the card never has a
             // hole in it waiting for a texture.
-            var drew = false;
-
-            if (!string.IsNullOrEmpty(card.Pic) && Hud.EnsureTextureDict(card.Pic))
+            // WHICH PICTURE, DECIDED ONCE. See Card.Art. Only asked while it has not settled
+            // on one, so nothing here can take an image back off a card that already had it.
+            if (string.IsNullOrEmpty(card.Art)
+                && !string.IsNullOrEmpty(card.Pic)
+                && Hud.EnsureTextureDict(card.Pic))
             {
-                Hud.Sprite(card.Pic, card.Pic, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f,
-                           Color.FromArgb(solid, 255, 255, 255));
-
-                drew = true;
+                card.Art = card.Pic;
             }
 
             // THE SAME MADE FACE THE FEED USES. The toast is the half of this screen most
@@ -240,24 +255,29 @@ namespace Hoodrich.UI
             // anything -- and it was the half still drawing a coloured letter, which is why
             // the faces looked like they were not working at all.
             // Same rule as the feed: a business wears its own logo or nothing at all.
-            if (!drew && card.By != null && !card.By.IsOrg)
+            if (string.IsNullOrEmpty(card.Art) && card.By != null && !card.By.IsOrg)
             {
                 var made = Headshots.Txd(card.By.Handle);
 
-                if (string.IsNullOrEmpty(made))
-                {
-                    Headshots.Want(card.By.Handle, card.By.Gang, card.By.Gender);
-                }
-                else
-                {
-                    Hud.Sprite(made, made, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f,
-                               Color.FromArgb(solid, 255, 255, 255));
-
-                    drew = true;
-                }
+                if (string.IsNullOrEmpty(made)) Headshots.Want(card.By.Handle, card.By.Gang, card.By.Gender);
+                else card.Art = made;
             }
 
-            if (!drew)
+            // Asked for every frame it is drawn, which is also what keeps it: the face store
+            // evicts whichever has gone longest without being asked for, and the dictionary
+            // table works the same way. A picture on screen is never the one thrown away.
+            if (!string.IsNullOrEmpty(card.Art))
+            {
+                if (card.Art == card.Pic) Hud.EnsureTextureDict(card.Art);
+                else Headshots.Txd(card.By.Handle);
+            }
+
+            // THE MONOGRAM GOES UNDERNEATH RATHER THAN INSTEAD OF. It used to be the third of
+            // three choices, so a frame where the image was not ready showed a coloured square
+            // where a face had been. Drawn first and always, it is simply what is behind the
+            // picture -- and a frame the streamer misses shows the same square that was there
+            // before the face arrived instead of a hole. Sprites draw above rectangles
+            // whatever order they are issued in, so the face still covers it.
             {
                 // A square, not a disc. The width is converted through ToX so it comes out
                 // square on the screen rather than square in the coordinate system -- 0.03 by
@@ -268,6 +288,13 @@ namespace Hoodrich.UI
 
                 Hud.Text(card.By.Initial, cx, cy - 0.0112f, 0.38f,
                          Color.FromArgb((int)(240 * fade), 250, 250, 248), Hud.FontChaletLondon);
+            }
+
+            // And the face over the top of it, once there is one.
+            if (!string.IsNullOrEmpty(card.Art))
+            {
+                Hud.Sprite(card.Art, card.Art, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f,
+                           Color.FromArgb(solid, 255, 255, 255));
             }
 
             var textX = left + Pad + Hud.ToX(AvatarSize) + Gap;

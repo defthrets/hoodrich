@@ -564,7 +564,7 @@ namespace Hoodrich.Supply
             switch (id)
             {
                 case "docks": return "CHAR_CHENG";
-                case "stretch_run": return "CHAR_MP_GERALD";
+                case GeraldId: return "CHAR_MP_GERALD";
                 default: return "CHAR_DEFAULT";
             }
         }
@@ -1291,6 +1291,9 @@ namespace Hoodrich.Supply
             return false;
         }
 
+        /// <summary>Gerald. The one dealer whose mark stays on the radar from anywhere.</summary>
+        private const string GeraldId = "stretch_run";
+
         private void CreateBlip(DealerDef def, bool route)
         {
             try
@@ -1556,9 +1559,23 @@ namespace Hoodrich.Supply
                     mark.Name = def.Name + (gang == null ? "" : " -- " + gang.Name);
                     mark.Scale = 0.85f;
 
-                    // NOT short range. This is the whole point of it -- it is the thing you
-                    // earned by finding him, and it is on the map from anywhere.
-                    mark.IsShortRange = false;
+                    // SHORT RANGE, SO THE MINIMAP IS NOT A ROW OF CROWNS.
+                    //
+                    // A long-range blip that is off the edge of the minimap does not disappear,
+                    // it CLAMPS -- it slides to the border and sits there pointing at itself.
+                    // Thirteen dealers found is thirteen crowns lined up along the top of the
+                    // radar the whole time, and none of them tells you anything you can act on:
+                    // the one you are near is somewhere in that row with the rest.
+                    //
+                    // It costs nothing that mattered. Short range is a MINIMAP rule only, so
+                    // every pin is still on the pause map exactly as it was -- the thing you
+                    // earned by finding him is still there, on the map you open to plan with,
+                    // and it now also means something when it shows up on the radar.
+                    //
+                    // GERALD IS THE EXCEPTION. He is the one you are sent to rather than the
+                    // one you find, and a contact you are meant to be able to get to is not a
+                    // thing to make you hunt for twice.
+                    mark.IsShortRange = def.Id != GeraldId;
 
                     _marks[def.Id] = mark;
 
