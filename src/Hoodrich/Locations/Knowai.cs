@@ -360,6 +360,15 @@ namespace Hoodrich.Locations
                     catch { /* next tick */ }
                 }
 
+                // The same, every tick, for the same reason: the visible flag comes back when a
+                // ped streams out and in. A driver who reappears is a stranger at the wheel; a
+                // passenger who reappears is a stranger sat next to you, which is worse.
+                if (_rider != null && _rider.Exists())
+                {
+                    try { Function.Call(Hash.SET_ENTITY_VISIBLE, _rider.Handle, false, false); }
+                    catch { /* next tick */ }
+                }
+
                 // The same argument as the invisible driver, for the same reason: both are
                 // things that come back on their own and both are things you only notice once
                 // they have broken the illusion.
@@ -740,6 +749,24 @@ namespace Hoodrich.Locations
                 // seat and the only question left is which one.
                 Function.Call(Hash.SET_VEHICLE_EXCLUSIVE_DRIVER, _car.Handle, _driver.Handle, 0);
 
+                // AND SOMEBODY IS ALREADY SITTING IN THE FRONT.
+                //
+                // A TAKEN SEAT IS THE ONLY BLOCK THE GAME CANNOT ARGUE WITH. Everything else
+                // tried here was a rule about the seat rather than the seat itself: exclusive
+                // driver only defends the wheel, the door locks are a request the game grants
+                // until something else overrides them, and the move-him-to-the-back check runs
+                // AFTER the player is already sat where he should not be. Each of those is a
+                // way of saying "please do not", and all three can be got round.
+                //
+                // Occupied cannot. There is no seat to take because a man is in it, and the
+                // game's own entry logic simply routes you to the back the way it routes you
+                // round any full seat -- no rule, no correction, no frame where you are sat in
+                // the wrong place.
+                //
+                // The other three stay. This one is the wall; they are the signs on it, and a
+                // sign that is never read costs nothing.
+                Riding();
+
                 // THE BEST DRIVER IN THE CITY, WHICH IS THE PRODUCT.
                 //
                 // Ability at maximum, because there is no argument for a self-driving car that
@@ -859,6 +886,63 @@ namespace Hoodrich.Locations
             catch (Exception ex)
             {
                 Log.Debug("Could not move him into the back: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// The passenger nobody can see, whose entire job is to be in the way.
+        ///
+        /// Made the same way as the driver and for the same reasons -- invisible, deaf, silent,
+        /// invincible, and impossible to drag out. A ped nobody can see still reacts, still
+        /// talks, and can still be pulled out of a car by a stranger, and all three of those
+        /// end with somebody appearing out of nowhere on a pavement.
+        ///
+        /// He is a passenger rather than the driver, so he is not the one the exclusive-driver
+        /// lock names, and nothing about him touches how the car drives.
+        ///
+        /// If he cannot be made, nothing is lost: the door locks and the move-to-the-back check
+        /// were doing this job on their own before he existed, and they still run.
+        /// </summary>
+        private void Riding()
+        {
+            try
+            {
+                var model = new Model(PedHash.Autoshop01SMM);
+
+                if (!model.IsValid || !model.Request(1500))
+                {
+                    model = new Model("a_m_y_business_01");
+                    if (!model.IsValid || !model.Request(1500)) return;
+                }
+
+                _rider = World.CreatePed(model, _car.Position);
+                model.MarkAsNoLongerNeeded();
+
+                if (_rider == null || !_rider.Exists()) return;
+
+                _rider.IsPersistent = true;
+
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _rider.Handle, true, true);
+
+                // Seat 0 is the front passenger -- the one seat this car has that a rider
+                // should never be in, which is exactly why it is filled.
+                Function.Call(Hash.SET_PED_INTO_VEHICLE, _rider.Handle, _car.Handle, 0);
+
+                Function.Call(Hash.SET_ENTITY_VISIBLE, _rider.Handle, false, false);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _rider.Handle, true);
+                Function.Call(Hash.SET_ENTITY_INVINCIBLE, _rider.Handle, true);
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _rider.Handle, false);
+                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, _rider.Handle, false);
+                Function.Call(Hash.SET_PED_CONFIG_FLAG, _rider.Handle, 251, true);
+
+                Function.Call(Hash.STOP_PED_SPEAKING, _rider.Handle, true);
+                Function.Call(Hash.DISABLE_PED_PAIN_AUDIO, _rider.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Knowai: no front passenger: " + ex.Message);
+
+                _rider = null;
             }
         }
 
@@ -1051,6 +1135,15 @@ namespace Hoodrich.Locations
                 //
                 // Follow() then watches it go and deletes the pair once nobody is looking, or
                 // after two minutes if it cannot get anywhere.
+                // THE FRONT PASSENGER GOES NOW, not with the car. He exists to keep you out
+                // of a seat, and once the ride is over there is nobody left to keep out -- so
+                // he is deleted here rather than being carried along on the way out. The
+                // driver is kept because the driver has a job to do; this one does not.
+                try { if (_rider != null && _rider.Exists()) _rider.Delete(); }
+                catch { }
+
+                _rider = null;
+
                 if (_car != null && _car.Exists())
                 {
                     _leaving = _car;
@@ -1087,6 +1180,7 @@ namespace Hoodrich.Locations
 
             _car = null;
             _driver = null;
+            _rider = null;
             _to = null;
         }
 
@@ -1158,6 +1252,9 @@ namespace Hoodrich.Locations
         private const float OutOfSight = 120f;
         private const int GiveUpMs = 120000;
 
+        /// <summary>The passenger who is only there to be in the way. See Riding.</summary>
+        private Ped _rider;
+
         private Vehicle _leaving;
         private Ped _goneDriver;
         private int _leftAt;
@@ -1168,6 +1265,7 @@ namespace Hoodrich.Locations
             try
             {
                 if (_driver != null && _driver.Exists()) _driver.Delete();
+                if (_rider != null && _rider.Exists()) _rider.Delete();
                 if (_car != null && _car.Exists()) _car.Delete();
                 if (_blip != null && _blip.Exists()) _blip.Delete();
 
@@ -1183,6 +1281,7 @@ namespace Hoodrich.Locations
 
             _car = null;
             _driver = null;
+            _rider = null;
             _blip = null;
             _to = null;
             _leaving = null;
