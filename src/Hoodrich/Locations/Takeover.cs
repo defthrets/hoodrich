@@ -2543,13 +2543,6 @@ namespace Hoodrich.Locations
         {
             if (_carsIn) return;
 
-            // NOBODY HAS BEEN SENT FOR YET EXCEPT THE FIRST FEW, so there is nothing to be
-            // nine tenths of. This is the trap the staggering opens: the fraction below is of
-            // _parked.Count, and _parked GROWS as they are sent for -- three cars sent and
-            // three parked is a hundred per cent, and the crowd would set off to a street with
-            // three cars on it. The count only means anything once they have all been sent.
-            if (_coming.Count > 0) return;
-
             var there = 0;
 
             foreach (var p in _parked)
@@ -2557,8 +2550,19 @@ namespace Hoodrich.Locations
                 if (p.There) there++;
             }
 
-            var enough = _parked.Count > 0 &&
-                         there >= (int)Math.Ceiling(_parked.Count * MostOfThem);
+            // MEASURED AGAINST THE NUMBER OF KERBS, NOT AGAINST HOW MANY HAVE BEEN SENT.
+            //
+            // That distinction is the whole reason this can overlap safely. _parked GROWS as
+            // cars are sent for, so a fraction of _parked.Count is meaningless while they are
+            // still coming -- three sent and three parked is a hundred per cent, and the crowd
+            // would set off to a street with three cars on it. Spots.Length is known from the
+            // start and does not move, so half of it means half of it whenever it is asked.
+            //
+            // HALF, so the crowd walks in WHILE the back half of the cars are still arriving
+            // rather than after them. The two phases took a minute each end to end; overlapped
+            // they take about a minute together, and the street filling up with cars and people
+            // at the same time is what one of these actually looks like anyway.
+            var enough = there >= (int)Math.Ceiling(Spots.Length * CrowdAfter);
 
             var late = _startedAt != 0 && now - _startedAt > FillGiveUpMs;
 
@@ -2566,12 +2570,15 @@ namespace Hoodrich.Locations
 
             _carsIn = true;
 
-            Log.Info("Takeover: " + there + " of " + _parked.Count +
-                     " parked up. The crowd sets off.");
+            Log.Info("Takeover: " + there + " of " + Spots.Length +
+                     " kerbs taken. The crowd sets off while the rest come in.");
         }
 
-        /// <summary>Nine in ten. What the CARS have to be before the crowd sets off.</summary>
+        /// <summary>Nine in ten. What the cars have to be before the first one goes IN.</summary>
         private const float MostOfThem = 0.9f;
+
+        /// <summary>Half the kerbs taken, and the crowd starts walking while the rest arrive.</summary>
+        private const float CrowdAfter = 0.5f;
 
         /// <summary>
         /// And what the CROWD has to be before the first car goes in. Three in five.
@@ -2615,8 +2622,25 @@ namespace Hoodrich.Locations
         {
             if (_ringed) return true;
 
-            // Cars first. Filling owns that half.
+            // Cars first, and now this owns that test rather than inheriting it. _carsIn
+            // means "half the kerbs are taken, the crowd may start" since the two phases were
+            // overlapped -- which is not the same as "the street is ready to be performed in
+            // front of", and the first donut still wants the finished street.
             if (!_carsIn) return false;
+            if (_coming.Count > 0) return false;
+
+            var parked = 0;
+
+            foreach (var p in _parked)
+            {
+                if (p.There) parked++;
+            }
+
+            if (_parked.Count > 0 && parked < (int)Math.Ceiling(_parked.Count * MostOfThem)
+                && !(_startedAt != 0 && now - _startedAt > StartGiveUpMs))
+            {
+                return false;
+            }
 
             // THEN THE CROWD HAS TO ACTUALLY BE THERE. Not merely spawned -- they are put down
             // fifty to a hundred and thirty metres out and walk in, so "the crowd exists" and
