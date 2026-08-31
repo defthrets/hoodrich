@@ -1203,6 +1203,9 @@ namespace Hoodrich.Social
         /// <summary>How often an ambient post is one gang being rude about another.</summary>
         private const double BickerChance = 0.22;
 
+        /// <summary>And how often it is somebody from the block talking about the block.</summary>
+        private const double HoodChance = 0.25;
+
         private void Ambient(bool backdated, bool business = false)
         {
             // Roughly one ambient post in five is two other gangs going at each other.
@@ -1216,7 +1219,12 @@ namespace Hoodrich.Social
             // And some of what is left is the block talking about what you are selling.
             if (!business && Word(backdated)) return;
 
-            var post = Build(business ? "AmbientOrg" : "Ambient", null);
+            // A quarter of the rest is the block talking about the block, which only the block
+            // is allowed to do -- see the hoodOnly note in Build.
+            var which = business ? "AmbientOrg"
+                      : (_rng.NextDouble() < HoodChance ? "AmbientHood" : "Ambient");
+
+            var post = Build(which, null);
             if (post == null) return;
 
             if (backdated)
@@ -1752,6 +1760,21 @@ namespace Hoodrich.Social
                 var wantGang = GangFor(set);
                 var oursOnly = OursOnly(set);
 
+                // AND SOME OF IT IS ONLY SAID BY PEOPLE WHO LIVE HERE.
+                //
+                // Ambient is gang-blind by design -- a Balla, a Vago and a woman who has never
+                // thrown a set all draw from it, which is right for a line about the price of
+                // chicken. It is wrong the moment a line names Franklin, or says "our block",
+                // because the pool also contains the Lost MC in Stab City, the Triads and the
+                // Armenians. A biker in Sandy Shores fondly observing that Franklin has two
+                // dogs now is somebody who has never been to Chamberlain Hills.
+                //
+                // So there is a second ambient set for the lines that are ABOUT here, and it is
+                // restricted to the people who are FROM here: the set, and the neighbours with
+                // no set at all. Everybody else keeps the general pool, which has nothing in it
+                // that any of them could not say.
+                var hoodOnly = string.Equals(set, "AmbientHood", StringComparison.OrdinalIgnoreCase);
+
                 // Anybody with a voice of their own is excluded, with no exception.
                 //
                 // There used to be one: if no voice-less organisation was left, voiced accounts
@@ -1774,6 +1797,12 @@ namespace Hoodrich.Social
                     }
 
                     if (oursOnly && !Ours(author)) continue;
+
+                    if (hoodOnly && !string.IsNullOrEmpty(author.Gang)
+                        && !string.Equals(author.Gang, "families", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
 
                     open.Add(author);
                 }

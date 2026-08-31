@@ -275,6 +275,11 @@ namespace Hoodrich.Locations
             {
                 var car = player.CurrentVehicle;
 
+                // NOT INTO THE CAR ANY MORE. He does not ride, so a dog who has fallen behind
+                // a car is a dog who is not catching up by any means -- and by the time this
+                // could fire, Ride() has already sent him home for the same reason.
+                if (car != null && car.Exists() && !Rides(car)) return;
+
                 if (car != null && car.Exists())
                 {
                     var seat = Free(car);
@@ -897,6 +902,24 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
+        /// Off home, because you got into something he is not coming in.
+        ///
+        /// The same thing as being waved off, and deliberately so -- there is one way for a dog
+        /// to stop following you and it is this one, whether you told him to or drove away from
+        /// him. Which does mean he has to be petted again when you next want him, and that is
+        /// the honest cost of a dog who does not ride in cars.
+        ///
+        /// Said out loud, because a dog quietly not being behind you any more is a bug until
+        /// you are told it is a rule.
+        /// </summary>
+        private void Home()
+        {
+            if (!Yours) return;
+
+            Dismiss();
+        }
+
+        /// <summary>
         /// Start him over: forget he was ever yours and put him back in the yard.
         ///
         /// For the settings screen. The difference from a dismiss is that this one works from
@@ -1002,11 +1025,70 @@ namespace Hoodrich.Locations
         /// to get in, and the seat is chosen rather than left to the game: front passenger if
         /// it is free, the back if it is not, and nothing at all if the car is full.
         /// </summary>
+        /// <summary>
+        /// Whether he will get into that.
+        ///
+        /// A BIKE IS NOT A VEHICLE HE HAS TO GET INTO -- he runs alongside it, and a dog
+        /// keeping pace with a motorbike down a back street is the thing that reads right.
+        /// Anything with doors is the one that does not: the door animation, the jump, the
+        /// seated pose, all of it is a lot of machinery to make a dog look like a passenger,
+        /// and he is not a passenger. So he does not ride, and everything below that puts him
+        /// in a seat is now only reachable when the rule is relaxed here.
+        ///
+        /// One method, so turning it back on is one line rather than an archaeology exercise.
+        /// </summary>
+        private static bool Rides(Vehicle car)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// And whether it is something he can keep up with on his feet.
+        ///
+        /// Bikes and pushbikes. He follows those the way he follows you walking -- the group
+        /// does it, and a dog at a jog beside a Manchez is fine. Everything else leaves him.
+        /// </summary>
+        private static bool Alongside(Vehicle car)
+        {
+            try
+            {
+                if (car == null || !car.Exists()) return false;
+
+                return car.ClassType == VehicleClass.Motorcycles
+                       || car.ClassType == VehicleClass.Cycles;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private void Ride(Ped player)
         {
             try
             {
                 var car = player.CurrentVehicle;
+
+                // YOU GOT IN SOMETHING HE IS NOT COMING IN.
+                //
+                // He is sent home rather than left standing in the road watching you drive off,
+                // which is the other way this could have gone and is worse: a dog abandoned at
+                // a kerb is a dog you have to remember to go back for.
+                //
+                // If he is already sat in it -- because you got into a car while he was riding
+                // one from before this rule -- he gets out properly first. Hop() is still
+                // reachable for exactly that.
+                if (car != null && car.Exists() && !Rides(car) && !Alongside(car))
+                {
+                    if (_dog != null && _dog.Exists() && _dog.IsInVehicle())
+                    {
+                        Hop();
+                        return;
+                    }
+
+                    Home();
+                    return;
+                }
 
                 if (car == null || !car.Exists())
                 {
