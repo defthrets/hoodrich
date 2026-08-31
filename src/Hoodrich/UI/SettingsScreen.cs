@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
@@ -385,14 +385,6 @@ namespace Hoodrich.UI
             Slide("The circle the cars drive", "Block", "TakeoverSpinRadius",
                   () => c.TakeoverSpinRadius, v => c.TakeoverSpinRadius = v, 2f, 18f, 0.5f, "0.0", "m",
                   note: "What they aim at. They slide well outside it, which is the point");
-
-            Head("The law");
-            Tick("Police patrol the blocks", "Police", "PatrolsEnabled",
-                 () => c.PatrolsEnabled, v => c.PatrolsEnabled = v,
-                 "Cars going round of their own accord -- nothing to do with heat");
-            Slide("Patrol cars at once", "Police", "PatrolCars",
-                  () => c.PatrolCars, v => c.PatrolCars = (int)v, 0f, 4f, 1f, "0",
-                  note: "One is a neighbourhood; three is an occupation");
 
             Head("Socials");
             Tick("Feed on the right", "Socials", "TweetsOnTheRight",

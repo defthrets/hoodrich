@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -1473,9 +1473,14 @@ namespace Hoodrich.Dealing
         /// <summary>
         /// The patrol easing past your corner, for anything that wants to react to it.
         ///
-        /// Exposed so Patrol can offer the finger at it -- see Patrol.Passing. Null whenever
-        /// there is no car or it is not a car worth telling: one that has already stopped to
-        /// question you is having a different conversation.
+        /// NOTHING READS THIS AT THE MOMENT. Its one consumer was the ambient patrol system's
+        /// flip-off gesture -- Patrol.Passing -- and that system has moved out to Precinct 88.
+        /// Kept rather than deleted because it is the only handle on the car this class
+        /// dispatches, and the next thing that wants to react to a squad car easing past a
+        /// corner will want exactly this.
+        ///
+        /// Null whenever there is no car or it is not a car worth telling about: one that has
+        /// already stopped to question you is having a different conversation.
         /// </summary>
         public Vehicle RollingPast =>
             _patrolCar != null && _patrolCar.Exists() &&
@@ -1851,6 +1856,27 @@ namespace Hoodrich.Dealing
         {
             try
             {
+                // REPORTED RATHER THAN SET, when Precinct 88 is installed.
+                //
+                // Handing somebody three stars is the vanilla idiom and it skips the only
+                // interesting part: nobody has to have SEEN anything, there is no description
+                // out, and the police start off knowing exactly where you are. Reported, the
+                // same bust becomes a narcotics call at your position that has to be searched
+                // for -- so the alley behind the corner is worth something, and so is not being
+                // the man in the white shirt any more.
+                //
+                // The star count is deliberately dropped on the floor here. What a drugs call is
+                // worth is Precinct 88's judgement and it has a table for it; passing our number
+                // across would put this mod back in charge of the one thing it just handed over.
+                if (Bridge.Present)
+                {
+                    var me = Game.Player.Character;
+
+                    Bridge.Report("Dealing",
+                                  me != null && me.Exists() ? me.Position : Vector3.Zero);
+                    return;
+                }
+
                 if (Game.Player.Wanted.WantedLevel >= stars) return;
 
                 Game.Player.Wanted.SetWantedLevel(stars, false);

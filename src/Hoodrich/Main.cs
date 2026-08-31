@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -476,7 +476,6 @@ namespace Hoodrich
 
         /// <summary>The driverless cabs. See Locations.Knowai.</summary>
         private readonly Knowai _ride = new Knowai();
-        private readonly Patrol _patrol;
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
         private GunScreen _gunScreen;
@@ -1360,13 +1359,23 @@ namespace Hoodrich
                     Social = _social
                 };
 
-                // The law, going round because the blocks are the blocks. Nothing to do with
-                // heat, a bust or a raid -- this car was coming down that street tonight
-                // whether you were on it or not.
-                _patrol = new Patrol(_cfg, _gangs, _turf, _state)
-                {
-                    Doorstep = StashHouse.House
-                };
+                // THE AMBIENT PATROL LIVES IN PRECINCT 88 NOW.
+                //
+                // It was this mod's fourth source of police -- the one that was not caused by
+                // anything, the car that was coming down that street tonight whether you were
+                // on it or not. Precinct 88 does that properly: a finite pool of units on a
+                // beat, per district, which its own dispatch then reassigns rather than
+                // spawning on top of. Two systems both putting ambient squad cars on the same
+                // block is twice the density either of them intended, and neither of them can
+                // tell which cars are its own.
+                //
+                // Nothing replaces it here and nothing needs to. With Precinct 88 installed the
+                // patrols are better than these were; without it, the streets have the game's
+                // own police in them, which is where they started.
+                //
+                // The three things that dispatched police FOR A REASON -- a bust, a raid, a
+                // robbery -- are untouched and still live in this mod. See Bridge, which hands
+                // those to Precinct 88 when it is there.
 
                 _toasts = new TweetToast
                 {
@@ -1474,8 +1483,9 @@ namespace Hoodrich
                 // level to zero and re-applying it every seven hundred milliseconds for the
                 // whole fight. So a war that began during a three star chase deleted the chase
                 // and kept it deleted for up to eight minutes -- rob, run people over, shoot at
-                // police, nothing sticks. Patrol already refuses to act while you are wanted
-                // for the same reason; the war did not.
+                // police, nothing sticks. The ambient patrol system refused to act while you
+                // were wanted for the same reason; the war did not. (That patrol now lives in
+                // Precinct 88 -- see the note where it used to be constructed.)
                 _war.Busy = () => onAJob() || Game.Player.Wanted.WantedLevel > 0;
 
                 // Whose block you are stood on, so a war you start yourself knows it is being
@@ -1499,28 +1509,9 @@ namespace Hoodrich
                                       || (_war != null && _war.IsRunning)
                                       || (_payback != null && _payback.IsRunning);
 
-                // And the law stays out of a raid, a job and a bust -- all three send police of
-                // their own, and two lots of police for two different reasons in one street is
-                // neither of them reading as what it is.
-                _patrol.Busy = () => onAJob()
-                                     || (_war != null && _war.IsRunning)
-                                     || (_payback != null && _payback.IsRunning)
-                                     || Game.Player.Wanted.WantedLevel > 0;
-
-                // Right on the d-pad is the talk-to-somebody button everywhere in the mod, so
-                // the gesture must not be offered while anything else already owns it -- a
-                // squad car rolling past while you are stood in front of Gerald would otherwise
-                // turn "talk to Gerald" into a hand at the police.
-                // The car that comes past while you are dealing is PostUp's, not the patrol
-                // system's, and it is the one you most want to put a hand up at.
-                _patrol.Passing = () => _postUp == null ? null : _postUp.RollingPast;
-
-                _patrol.Occupied = () => _phone.IsOpen || _talk.IsOpen || _info.IsOpen
-                                         || _cook.IsOpen || _socialScreen.IsOpen
-                                         || _messages.IsOpen
-                                         || _stashScreen.IsOpen || _pocketScreen.IsOpen
-                                         || _settingsScreen.IsOpen || _gunScreen.IsOpen
-                                         || _carScreen.IsOpen || _graffiti.IsOpen;
+                // The law staying out of a raid, a job and a bust is now told to Precinct 88
+                // rather than to a patrol system of our own -- same rule, one layer out. See
+                // Bridge.Busy.
 
                 _copWatch.Social = _social;
 
@@ -2187,6 +2178,13 @@ namespace Hoodrich
                 // still holding the button that closed it.
                 InputGuard.Tick();
 
+                // Offered every tick and registered once. It has to be a tick rather than a
+                // line in the constructor because SHVDN does not order script construction --
+                // on roughly half of all launches Precinct 88 does not exist yet at the moment
+                // Hoodrich would rather have done this, and a one-shot attempt is then silently
+                // absent on those launches only.
+                Bridge.OfferSeizure(Seized);
+
                 _bust.Update();
                 _postUp.Update();
 
@@ -2563,7 +2561,6 @@ namespace Hoodrich
                     _rollers.Update();
                     _walkers.Update();
                     if (_takeover != null) _takeover.Update();
-                    _patrol.Update();
                     _war.Update();
 
                     _lamarCrew.Update();
@@ -2643,10 +2640,6 @@ namespace Hoodrich
                 // which is almost always -- it only has work while the feed is open on
                 // somebody it has not photographed yet.
                 UI.Headshots.Tick();
-
-                // The spotlight, every frame rather than every tick -- a beam that exists for
-                // one frame in nine is a strobe.
-                _patrol.Draw();
 
                 if (!_phone.IsOpen)
                 {
@@ -2809,6 +2802,54 @@ namespace Hoodrich
             {
                 // Never let a look at the camera be the thing that stops the phone opening.
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// What the police take off you, when Precinct 88 searches or books you.
+        ///
+        /// THE HANDLER TAKES IT AND THEN SAYS WHAT IT TOOK -- it is not a query. Precinct 88
+        /// calls this once, expects the seizure to have happened by the time it returns, and
+        /// shows the string. Two calls with a window between them is a window in which the
+        /// player walks off having been told he was robbed and not actually having been.
+        ///
+        /// A SEARCH TAKES EVERYTHING ON YOU AND A BOOKING TAKES EVERYTHING, which sounds like
+        /// the same sentence and is not: what this mod calls the stash is what is ON him. There
+        /// is nowhere else for it to be, so a proportion would just be an arbitrary number
+        /// pretending to be leniency. If that turns out to be too harsh in play, the number to
+        /// change is the share below and nothing else.
+        ///
+        /// Called from Precinct 88's tick, not ours, so it must not throw -- an exception here
+        /// crosses a reflection boundary and surfaces over there as a TargetInvocationException
+        /// wrapping a Hoodrich type that mod has no reference to.
+        /// </summary>
+        private string Seized(string why)
+        {
+            try
+            {
+                if (_state == null || _state.Stash == null) return string.Empty;
+
+                var had = _state.Stash.Total;
+                if (had < 0.01f) return string.Empty;
+
+                var took = _state.Stash.TakeShare(1f);
+                if (took < 0.01f) return string.Empty;
+
+                // Notoriety, because being searched and found holding is exactly the sort of
+                // thing the block hears about. Deliberately less than a full bust -- they took
+                // the work, they did not make the arrest a story.
+                _state.AddNotoriety(8f);
+
+                Log.Info("Precinct 88 seized " + took.ToString("0") + "g (" + why + ").");
+
+                if (_social != null) _social.PostAsYouSometimes("SearchedAndFound", "", 180000, 60);
+
+                return took.ToString("0") + "g";
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Seizure handler failed: " + ex.Message);
+                return string.Empty;
             }
         }
 
@@ -3524,7 +3565,6 @@ namespace Hoodrich
             try { _rollers?.RestoreWorld(); } catch { /* teardown */ }
             try { _walkers?.RestoreWorld(); } catch { /* teardown */ }
             try { _takeover?.RestoreWorld(); } catch { /* teardown */ }
-            try { _patrol?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaderCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerCrew?.RestoreWorld(); } catch { /* teardown */ }

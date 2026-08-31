@@ -23,8 +23,15 @@ namespace Hoodrich.Core
 
         private static int _wasMax = 5;
 
-        /// <summary>Whether anybody is currently holding the police off.</summary>
-        public static bool Held => Holders.Count > 0;
+        /// <summary>
+        /// Whether anybody is currently holding the police off.
+        ///
+        /// Asks the BRIDGE first when it is there, because Precinct 88 is then the arbiter and
+        /// its own bookings hold it too -- so a Hoodrich system reading this to decide whether
+        /// the police are a factor has to see holds it did not place. Reading our own set here
+        /// would say "nobody" during somebody else's arrest.
+        /// </summary>
+        public static bool Held => Bridge.Present ? Bridge.LawIsHeld() : Holders.Count > 0;
 
         /// <summary>
         /// Takes the police off, and puts them off again every time it is asked.
@@ -46,10 +53,22 @@ namespace Hoodrich.Core
         {
             if (who == null) return;
 
-            var first = Holders.Count == 0;
-
+            // ONE ARBITER, AND IT IS THE OTHER MOD WHEN THE OTHER MOD IS THERE.
+            //
+            // Precinct 88 has a counted hold of its own, for bookings. Two counted holds that
+            // do not know about each other is exactly the bug THIS class was written to fix,
+            // one layer up: whichever finishes first hands the police back to the other, so a
+            // booking that ends during a gang war brings a helicopter to the war.
+            //
+            // So when it is installed, this forwards and pushes no natives itself. When it is
+            // not, nothing below changes and this stays the arbiter, as it has been.
             // A set, so adding somebody already on it changes nothing and costs nothing.
+            // Recorded even when bridged, because ReleaseAll has to know who we are holding
+            // in order to let go of them individually at the other end.
+            var first = Holders.Count == 0;
             Holders.Add(who);
+
+            if (Bridge.Hold(who.GetType().Name)) return;
 
             if (first)
             {
@@ -101,6 +120,7 @@ namespace Hoodrich.Core
         /// </summary>
         public static void Cap(int stars)
         {
+            if (Bridge.Cap(stars)) return;
             if (Held) return;
 
             try { Function.Call(Hash.SET_MAX_WANTED_LEVEL, stars < 0 ? 0 : stars); }
@@ -110,6 +130,7 @@ namespace Hoodrich.Core
         /// <summary>Back to whatever the ceiling was before anybody touched it.</summary>
         public static void Uncap()
         {
+            if (Bridge.Uncap()) return;
             if (Held) return;
 
             try { Function.Call(Hash.SET_MAX_WANTED_LEVEL, _wasMax); }
@@ -119,6 +140,9 @@ namespace Hoodrich.Core
         public static void Release(object who)
         {
             if (who == null || !Holders.Remove(who)) return;
+
+            if (Bridge.Release(who.GetType().Name)) return;
+
             if (Holders.Count > 0) return;
 
             Restore();
@@ -133,6 +157,18 @@ namespace Hoodrich.Core
         /// </summary>
         public static void ReleaseAll()
         {
+            // Let go at the other end FIRST, one at a time, because that is the only vocabulary
+            // the bridge has -- and because pushing our own natives while Precinct 88 still
+            // thinks it is holding for a booking would hand the player back to the police in
+            // the middle of being arrested.
+            if (Bridge.Present)
+            {
+                foreach (var who in Holders) Bridge.Release(who.GetType().Name);
+
+                Holders.Clear();
+                return;
+            }
+
             Holders.Clear();
             Restore();
         }

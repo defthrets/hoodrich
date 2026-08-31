@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Hoodrich.Locations;
 using GTA;
 using System.Collections.Generic;
@@ -303,17 +303,6 @@ namespace Hoodrich.Core
 
         // ---- the law -----------------------------------------------------------
 
-        /// <summary>
-        /// Whether the police drive the gang blocks of their own accord.
-        ///
-        /// Nothing to do with heat, a bust or a raid. This is the patrol that would have come
-        /// down that street tonight whether you were on it or not.
-        /// </summary>
-        public bool PatrolsEnabled = true;
-
-        /// <summary>Cars out at once. One is a neighbourhood; three is an occupation.</summary>
-        public int PatrolCars = 1;
-
         // ---- Lamar's list ------------------------------------------------------
 
         /// <summary>
@@ -603,8 +592,6 @@ namespace Hoodrich.Core
 
             s.LeaderFrontGrams = Math.Max(0f, ini.GetFloat("Map", "LeaderFrontGrams", s.LeaderFrontGrams));
 
-            s.PatrolsEnabled = ini.GetBool("Police", "PatrolsEnabled", s.PatrolsEnabled);
-            s.PatrolCars = (int)Clamp(ini.GetInt("Police", "PatrolCars", s.PatrolCars), 0f, 4f);
 
             s.LamarRestMinutes =
                 Math.Max(0f, ini.GetFloat("Jobs", "LamarRestMinutes", s.LamarRestMinutes));
