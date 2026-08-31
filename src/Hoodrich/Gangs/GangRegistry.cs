@@ -308,12 +308,28 @@ namespace Hoodrich.Gangs
                 // missing from the data is the day the wrong one surfaces.
                 new[] { "CHAMH", "STRAW" },
                 "Chamberlain Hills and Strawberry",
-                // The three Families models and nothing else. A generic South Central civilian
+                // The Families models and nothing else. A generic South Central civilian
                 // used to sit on the end of this list for variety, and it is how a man in a
-                // pink shirt and a blazer ended up guarding Lamar's yard with a rifle.
-                // Variety is randomised clothing on these three, not a fourth ped who is not
-                // in the set.
-                new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01" }));
+                // pink shirt and a blazer ended up guarding Lamar's yard with a rifle. Variety
+                // is randomised clothing on these, not a ped who is not in the set.
+                //
+                // AND SHE IS IN THE SET. g_f_y_families_01 is the game's Families female and
+                // she was missing from every patrol -- the walkers and the rollers both draw
+                // from this list and nowhere else, so a set with a woman in it at the party and
+                // a woman in it at the takeover somehow had none out on the block.
+                //
+                // Weighted by repetition, which is the same trick the takeover crowd uses and
+                // keeps the odds where anybody can see them. One in seven: enough that a crew
+                // of four is often mixed, not so much that the corner is half women -- the game
+                // ships exactly one female model, so past that they start reading as the same
+                // person twice.
+                new[]
+                {
+                    "g_m_y_famca_01", "g_m_y_famca_01",
+                    "g_m_y_famdnf_01", "g_m_y_famdnf_01",
+                    "g_m_y_famfor_01", "g_m_y_famfor_01",
+                    "g_f_y_families_01"
+                }));
 
             Register(Make("ballas", "Ballas", "BALL", "AMBIENT_GANG_BALLAS",
                 Color.FromArgb(145, 70, 190), 27,

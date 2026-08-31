@@ -418,6 +418,7 @@ namespace Hoodrich.Locations
             "a_f_y_soucent_01", "a_f_y_soucent_01", "a_f_y_soucent_02", "a_f_y_soucent_02",
             "a_f_m_soucent_01", "a_f_m_soucent_02",
             "g_f_y_families_01", "g_f_y_families_01",
+            "g_f_y_families_01", "g_f_y_families_01",
             "g_f_y_ballas_01", "g_f_y_vagos_01",
 
             // Purple, in ones and twos. Nobody is counting tonight.

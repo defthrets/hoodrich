@@ -1073,8 +1073,11 @@ namespace Hoodrich
                     .Stand(new Vector3(-199.196f, -1726.450f, 32.664f), 190.000f,
                            "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
 
+                    // Her, on a cigarette. The yard had women dancing, drinking and on the
+                    // decks and not one stood about doing nothing in particular, which is most
+                    // of what anybody does at a party.
                     .Stand(new Vector3(-197.277f, -1728.437f, 32.664f), 262.000f,
-                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false)
+                           "WORLD_HUMAN_SMOKING", Women, armed: false)
 
                     // Dancing, not "partying". WORLD_HUMAN_PARTYING is somebody holding a
                     // drink and nodding; this is somebody actually moving to what is coming
@@ -1125,7 +1128,7 @@ namespace Hoodrich
                     // and read the mark off -- that is where every other number in this list
                     // came from.
                     .Stand(new Vector3(-196.532f, -1725.500f, 32.664f), 300.596f,
-                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false, wander: 5f, party: true)
+                           "WORLD_HUMAN_DRINKING", Women, armed: false, wander: 5f, party: true)
 
                     .Stand(new Vector3(-199.096f, -1723.577f, 32.664f), 319.476f,
                            "WORLD_HUMAN_DRINKING", Fam(0), armed: false, wander: 4.5f, party: true)
