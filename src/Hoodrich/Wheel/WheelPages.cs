@@ -123,9 +123,6 @@ namespace Hoodrich.Wheel
         /// <summary>Put the dog back in the yard. Set by Main.</summary>
         public Action ResetTrigger;
 
-        /// <summary>Measure every set's turf out of the game. Set by Main. See TurfBake.</summary>
-        public Action MeasureTurf;
-
         /// <summary>
         /// Every job in the book, for the unlock-everything row.
         ///
@@ -2247,16 +2244,6 @@ namespace Hoodrich.Wheel
                        "of asking again",
                 Enabled = () => _state.FrontsDone < 2,
                 Do = () => _state.CreditFronts()
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Measure the turf",
-                Note = "Asks the game where every set's blocks actually end and redraws the map " +
-                       "from the answer. Overwrites turf.json, including anything walked by hand",
-                Enabled = () => MeasureTurf != null,
-                Do = () => MeasureTurf?.Invoke()
             };
 
             yield return new Opt

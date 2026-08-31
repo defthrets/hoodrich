@@ -58,7 +58,7 @@ param(
     [string]$Target = 'Both',
 
     # Overwrite the installed data files with the ones just built. Off by default so a
-    # player's hand-edits survive, but generated content (turf, dealers, gangs) has to be
+    # player's hand-edits survive, but generated content (dealers, gangs) has to be
     # able to move or the game runs data that does not match the build.
     [switch]$FreshData,
 
