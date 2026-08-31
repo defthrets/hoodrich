@@ -123,6 +123,9 @@ namespace Hoodrich.Locations
         /// <summary>How long it will sit at the kerb before it gives up on you.</summary>
         private const int WaitMs = 120000;
 
+        /// <summary>How close you have to be for it to offer you a way in.</summary>
+        private const float BoardRange = 12f;
+
         /// <summary>And how long anything else is given before it is written off.</summary>
         private const int PhaseCapMs = 300000;
 
@@ -489,6 +492,20 @@ namespace Hoodrich.Locations
 
                 return;
             }
+
+            // ONLY WHEN YOU ARE NEXT TO IT.
+            //
+            // The prompt used to show from the moment it parked, whatever street you were on --
+            // so a car waiting round the corner put "get in your Knowai" across the top of the
+            // screen for two solid minutes while you were doing something else entirely. A
+            // prompt for a thing you cannot do from where you are stood is not a prompt, it is
+            // a caption.
+            //
+            // The keypress is gated on the same distance rather than just the text. A prompt
+            // you cannot see is not a reason to still be able to press it -- and this key talks
+            // to everybody else in the mod, so an ungated one is a Knowai you board by accident
+            // while trying to speak to somebody a street away from it.
+            if (player.Position.DistanceTo(_car.Position) > BoardRange) return;
 
             Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to get in your Knowai.");
 
