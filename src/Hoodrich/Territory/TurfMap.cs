@@ -117,6 +117,19 @@ namespace Hoodrich.Territory
                 Function.Call(Hash.SET_BLIP_COLOUR, handle, gang.BlipColour);
                 Function.Call(Hash.SET_BLIP_ALPHA, handle, Wash);
 
+                // SHORT RANGE, OR THE MINIMAP GROWS A COLUMN OF GREEN DOTS DOWN ITS EDGE.
+                //
+                // A blip that is off the minimap does not disappear, it CLAMPS to the edge and
+                // sits there pointing at itself. That is right for a mission marker and absurd
+                // for sixty-one strips of a shaded area: every strip you are not stood on
+                // stacks up on the rim, so a shape you cannot even see is a solid bar of its
+                // own colour down one side of the map.
+                //
+                // Short range stops the clamping. The strip is drawn when you are on it and
+                // simply is not there when you are not -- and the pause map is unaffected,
+                // which is where the whole shape is meant to be read anyway.
+                Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, handle, true);
+
                 // THE ROTATION IS THE WHOLE POINT. South Los Santos is on a grid turned about
                 // twenty-seven degrees, so an unturned box over Chamberlain or Davis sits at an
                 // angle to every street it is supposed to be bounded by -- which is the thing
