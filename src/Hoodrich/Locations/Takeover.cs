@@ -1111,7 +1111,9 @@ namespace Hoodrich.Locations
                 var from = OnRoad(DriveFromMin + (float)_rng.NextDouble() * (DriveFromMax - DriveFromMin));
                 if (from == Vector3.Zero) return false;
 
-                var car = Make(Drifters, from);
+                // NOT A SHOW CAR. It keeps the paint, the rims, the bodywork and the neon;
+                // it loses the coloured tyre smoke and the coloured headlights. See Dress.
+                var car = Make(Drifters, from, true, false);
                 if (car == null) return false;
 
                 var driver = Behind(car);
@@ -1565,7 +1567,7 @@ namespace Hoodrich.Locations
         /// The list is read from a random point now, and anything already out there is skipped
         /// on the first pass, so a repeat only happens once the whole list is in use.
         /// </summary>
-        private Vehicle Make(string[] names, Vector3 at, bool dress = true)
+        private Vehicle Make(string[] names, Vector3 at, bool dress = true, bool showy = true)
         {
             var start = _rng.Next(names.Length);
 
@@ -1598,7 +1600,7 @@ namespace Hoodrich.Locations
                         Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
                         Function.Call(Hash.SET_VEHICLE_ENGINE_ON, car.Handle, true, true, false);
 
-                        if (dress) Dress(car);
+                        if (dress) Dress(car, showy);
 
                         return car;
                     }
@@ -1671,7 +1673,7 @@ namespace Hoodrich.Locations
         /// game closing mid-session. The compile error is the good failure and it was there to
         /// be had the whole time.
         /// </summary>
-        private void Dress(Vehicle car)
+        private void Dress(Vehicle car, bool showy = true)
         {
             try
             {
@@ -1710,19 +1712,30 @@ namespace Hoodrich.Locations
                 Fit(h, 10, false);   // roof
                 Fit(h, 48, false);   // livery
 
-                // Xenons.
-                Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 22, true);
-                Function.Call(Hash.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX, h, _rng.Next(0, 13));
+                // XENONS AND COLOURED SMOKE, BUT NOT ON THE ONES ACTUALLY DRIFTING.
+                //
+                // Both are things you only see when a car is working, which is exactly the
+                // case where they are wrong here. Purple smoke off the back of a car mid-donut
+                // turns a street takeover into a light show, and blue headlights sweeping the
+                // crowd every time it comes round does the same job. A real one of these is
+                // white smoke, standard lights and a lot of noise.
+                //
+                // The cars that came to WATCH keep both. They are parked, so the smoke never
+                // shows anyway, and a row of xenons along the kerb at night is the look.
+                if (showy)
+                {
+                    Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 22, true);
+                    Function.Call(Hash.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX, h, _rng.Next(0, 13));
 
-                // Smoke with a colour in it, which is half of why anybody watches.
-                var smoke = Glow[_rng.Next(Glow.Length)];
+                    var smoke = Glow[_rng.Next(Glow.Length)];
 
-                Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 20, true);
-                Function.Call(Hash.SET_VEHICLE_TYRE_SMOKE_COLOR, h, smoke[0], smoke[1], smoke[2]);
+                    Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 20, true);
+                    Function.Call(Hash.SET_VEHICLE_TYRE_SMOKE_COLOR, h, smoke[0], smoke[1], smoke[2]);
+                }
 
-                // NEON, on all four sides. The colour is rolled separately from the smoke, so
-                // a car is not one hue from end to end.
-                var neon = Glow[_rng.Next(Glow.Length)];
+                // NEON, on all four sides, and everybody gets it. It is underglow on a parked
+                // or spinning car either way, and it is the one bit of colour that belongs.
+                var neon = Neons[_rng.Next(Neons.Length)];
 
                 for (var side = 0; side < 4; side++)
                 {
@@ -1777,6 +1790,25 @@ namespace Hoodrich.Locations
             new[] { 255, 0, 60 },     new[] { 0, 200, 255 },   new[] { 140, 0, 255 },
             new[] { 0, 255, 90 },     new[] { 255, 120, 0 },   new[] { 255, 0, 200 },
             new[] { 255, 240, 0 },    new[] { 0, 90, 255 },    new[] { 255, 255, 255 }
+        };
+
+        /// <summary>
+        /// And the underglow, which leans green.
+        ///
+        /// Its own list rather than the one above, because the two are answering different
+        /// questions. The glow list is "a colour"; this one is "a colour at a takeover in
+        /// Chamberlain Hills", and about a third of it is green -- four entries out of twelve,
+        /// in four different greens so they do not read as the same car four times. Everything
+        /// else is still in there, because a car park of nothing but green underglow is a
+        /// gang meet rather than a street takeover.
+        /// </summary>
+        private static readonly int[][] Neons =
+        {
+            new[] { 0, 255, 90 },     new[] { 40, 255, 0 },    new[] { 0, 200, 60 },
+            new[] { 120, 255, 40 },
+            new[] { 255, 0, 60 },     new[] { 0, 200, 255 },   new[] { 140, 0, 255 },
+            new[] { 255, 120, 0 },    new[] { 255, 0, 200 },   new[] { 255, 240, 0 },
+            new[] { 0, 90, 255 },     new[] { 255, 255, 255 }
         };
 
         private static readonly string[] Plates =
