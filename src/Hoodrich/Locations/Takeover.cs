@@ -979,6 +979,9 @@ namespace Hoodrich.Locations
             // when it will be. See Filling.
             _nextWave = now;
             _carsIn = false;
+
+            // AND A NOTE OF WHAT WAS ALREADY PARKED HERE. See Sweep.
+            Standing();
             _nextWord = now + _rng.Next(20000, 45000);
 
             Cars();
@@ -1443,6 +1446,79 @@ namespace Hoodrich.Locations
         /// badge. Deleting a police car mid-response is a wanted level that never resolves,
         /// and the flag would not have caught them.
         /// </summary>
+        /// <summary>
+        /// Write down every car already parked round the junction, before we touch anything.
+        ///
+        /// THESE ARE THE STREET, NOT TRAFFIC. A residential block has cars on it -- in the
+        /// driveways, along both kerbs, outside the shop -- and they were there before the
+        /// takeover and would be there after it. Clearing them out leaves a bare road with
+        /// nothing on it but our thirty-five, which reads as a film set rather than a street
+        /// somebody has taken over.
+        ///
+        /// Taken ONCE, at the start, so "was it here already" has a fixed answer for the whole
+        /// night rather than one that drifts as the sweep runs.
+        ///
+        /// STATIONARY ONLY, which is the definition doing the work. A car moving through the
+        /// junction at the moment the night starts is traffic that happens to be passing, not a
+        /// parked car -- it is the cordon's business, and if it stops and stays it is fair game.
+        /// It also keeps this list short, which matters: handles are recycled when an entity is
+        /// deleted, so the fewer of them held for hours the smaller the chance of pardoning
+        /// something later that merely inherited a number.
+        /// </summary>
+        private void Standing()
+        {
+            _wereHere.Clear();
+
+            try
+            {
+                foreach (var car in World.GetNearbyVehicles(Middle, SweepRange))
+                {
+                    if (car == null || !car.Exists()) continue;
+                    if (car.Speed > 1f) continue;
+
+                    _wereHere.Add(car.Handle);
+                }
+
+                Log.Info("Takeover: " + _wereHere.Count + " cars already parked here. They stay.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not read the street: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Whether one of our thirty-five spots or four markers is under this car.
+        ///
+        /// The one exception to leaving the street alone. A car parked on a kerb we are about
+        /// to put a spectator on is not scenery, it is an obstacle -- and it would win, because
+        /// a spot that cannot be driven to is placed into after forty seconds, which would put
+        /// two cars in the same space. Being there first does not get you a spot that has a
+        /// car coming for it.
+        /// </summary>
+        private static bool InTheWay(Vehicle car)
+        {
+            var at = car.Position;
+
+            foreach (var s in Spots)
+            {
+                if (at.DistanceTo(s.At) < ClearSpot) return true;
+            }
+
+            foreach (var s in Stages)
+            {
+                if (at.DistanceTo(s.At) < ClearSpot) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>How close to one of our places counts as being in the way of it.</summary>
+        private const float ClearSpot = 4.5f;
+
+        /// <summary>What was parked here before we arrived. Handles, taken once. See Standing.</summary>
+        private readonly HashSet<int> _wereHere = new HashSet<int>();
+
         private void Sweep(int now)
         {
             if (now < _nextSweep) return;
@@ -1462,6 +1538,16 @@ namespace Hoodrich.Locations
                     if (riding != null && riding.Exists() && car.Handle == riding.Handle) continue;
                     if (Badged(car)) continue;
                     if (Ours(car)) continue;
+
+                    // IT WAS ALREADY PARKED HERE, so it is part of the street and it stays.
+                    // Only what drives IN afterwards gets cleared -- the point of the sweep is
+                    // to stop the junction filling back up with strangers, not to empty a
+                    // residential block of every car on it.
+                    //
+                    // Unless it is sat on one of our places, which is the single exception:
+                    // that kerb has a spectator coming for it and being there first does not
+                    // win the argument.
+                    if (_wereHere.Contains(car.Handle) && !InTheWay(car)) continue;
 
                     var driver = car.Driver;
 
@@ -4782,6 +4868,8 @@ namespace Hoodrich.Locations
             }
 
             _law.Clear();
+
+            _wereHere.Clear();
 
             _scattered = false;
             _toCome = 0;
