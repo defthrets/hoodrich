@@ -1451,6 +1451,20 @@ namespace Hoodrich.Locations
         /// The mod kit goes on first. Without it every SET_VEHICLE_MOD below is a call that
         /// returns quietly having done nothing, which is the usual reason a car dressed in
         /// script comes out stock.
+        ///
+        /// EVERY NATIVE HERE IS NAMED, NOT NUMBERED, AND THAT IS NOT A STYLE PREFERENCE.
+        /// The first version of this addressed them by raw hash, on the reasoning that a name
+        /// the scripting library does not carry is a mod that will not compile while a wrong
+        /// number is merely a thing that does not work. That reasoning was exactly backwards.
+        /// Script Hook V does not shrug at a hash it cannot resolve -- it puts up SCRIPT HOOK V
+        /// CRITICAL ERROR, FATAL: Can't find native, and takes the game with it. The try/catch
+        /// around all of this cannot help, because the process is gone before any exception
+        /// exists to catch. 0x487EB21CC7341E0C was the one that did it.
+        ///
+        /// A name that the library does not have is a build that fails on this machine, in
+        /// seconds, in front of me. A number that this build does not have is somebody else's
+        /// game closing mid-session. The compile error is the good failure and it was there to
+        /// be had the whole time.
         /// </summary>
         private void Dress(Vehicle car)
         {
@@ -1458,26 +1472,26 @@ namespace Hoodrich.Locations
             {
                 var h = car.Handle;
 
-                Function.Call((Hash)0x1F2AA07F00B3217AUL, h, 0);   // SET_VEHICLE_MOD_KIT
+                Function.Call(Hash.SET_VEHICLE_MOD_KIT, h, 0);   // SET_VEHICLE_MOD_KIT
 
                 // Paint. Pearl over a base, which is where the depth in a show car comes from.
                 var main = Paints[_rng.Next(Paints.Length)];
                 var pearl = Paints[_rng.Next(Paints.Length)];
 
-                Function.Call((Hash)0x4F1D4BE3A7F24601UL, h, main, main);       // COLOURS
-                Function.Call((Hash)0x2036F561ADD12E33UL, h, pearl, Rims);      // EXTRA_COLOURS
-                Function.Call((Hash)0x79D3B596FE44EE8BUL, h, 0f);               // DIRT_LEVEL
-                Function.Call((Hash)0x57C51E6BAD752696UL, h, Tints[_rng.Next(Tints.Length)]);
+                Function.Call(Hash.SET_VEHICLE_COLOURS, h, main, main);       // COLOURS
+                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, h, pearl, Rims);      // EXTRA_COLOURS
+                Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, h, 0f);               // DIRT_LEVEL
+                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, h, Tints[_rng.Next(Tints.Length)]);
 
                 // The mechanical ones, which are fixed maximums rather than a choice.
-                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, h, 11, 3, false);  // engine
-                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, h, 12, 2, false);  // brakes
-                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, h, 13, 2, false);  // box
-                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, h, 15, 3, false);  // suspension
-                Function.Call((Hash)0x2A1F4F37F95BAD08UL, h, 18, true);      // turbo
+                Function.Call(Hash.SET_VEHICLE_MOD, h, 11, 3, false);  // engine
+                Function.Call(Hash.SET_VEHICLE_MOD, h, 12, 2, false);  // brakes
+                Function.Call(Hash.SET_VEHICLE_MOD, h, 13, 2, false);  // box
+                Function.Call(Hash.SET_VEHICLE_MOD, h, 15, 3, false);  // suspension
+                Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 18, true);      // turbo
 
                 // Wheels, from a random set, and whatever that set has for this car.
-                Function.Call((Hash)0x487EB21CC7341E0CUL, h, Wheels[_rng.Next(Wheels.Length)]);
+                Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, h, Wheels[_rng.Next(Wheels.Length)]);
                 Fit(h, 23, true);
 
                 // And the bodywork, from what this model owns.
@@ -1492,14 +1506,14 @@ namespace Hoodrich.Locations
                 Fit(h, 48, false);   // livery
 
                 // Xenons.
-                Function.Call((Hash)0x2A1F4F37F95BAD08UL, h, 22, true);
-                Function.Call((Hash)0xE41033B25D003A07UL, h, _rng.Next(0, 13));
+                Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 22, true);
+                Function.Call(Hash.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX, h, _rng.Next(0, 13));
 
                 // Smoke with a colour in it, which is half of why anybody watches.
                 var smoke = Glow[_rng.Next(Glow.Length)];
 
-                Function.Call((Hash)0x2A1F4F37F95BAD08UL, h, 20, true);
-                Function.Call((Hash)0xB5BA80F839791C0FUL, h, smoke[0], smoke[1], smoke[2]);
+                Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 20, true);
+                Function.Call(Hash.SET_VEHICLE_TYRE_SMOKE_COLOR, h, smoke[0], smoke[1], smoke[2]);
 
                 // NEON, on all four sides. The colour is rolled separately from the smoke, so
                 // a car is not one hue from end to end.
@@ -1507,12 +1521,12 @@ namespace Hoodrich.Locations
 
                 for (var side = 0; side < 4; side++)
                 {
-                    Function.Call((Hash)0x2AA720E4287BF269UL, h, side, true);
+                    Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, h, side, true);
                 }
 
-                Function.Call((Hash)0x8E0A582209A62695UL, h, neon[0], neon[1], neon[2]);
+                Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, h, neon[0], neon[1], neon[2]);
 
-                Function.Call((Hash)0x95A88F0B409CDA47UL, h, Plates[_rng.Next(Plates.Length)]);
+                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h, Plates[_rng.Next(Plates.Length)]);
             }
             catch (Exception ex)
             {
@@ -1531,10 +1545,10 @@ namespace Hoodrich.Locations
         {
             try
             {
-                var count = Function.Call<int>((Hash)0xE38E9162A2500646UL, car, slot);
+                var count = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, car, slot);
                 if (count <= 0) return;
 
-                Function.Call((Hash)0x6AF0636DDEDCB6DDUL, car, slot, _rng.Next(count), custom);
+                Function.Call(Hash.SET_VEHICLE_MOD, car, slot, _rng.Next(count), custom);
             }
             catch
             {

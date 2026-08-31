@@ -123,6 +123,39 @@ $sources = Get-ChildItem $srcDir -Recurse -Filter *.cs |
 
 if (-not $sources) { throw "No .cs sources found under $srcDir" }
 
+# ---------------------------------------------------------------------------------------
+# NO RAW NATIVE HASHES. This one closed somebody's game.
+#
+# Function.Call((Hash)0x487EB21CC7341E0C, ...) looks like the careful option -- a name the
+# scripting library does not carry will not compile, whereas a number is just a number. That
+# is exactly backwards, and it took a SCRIPT HOOK V CRITICAL ERROR mid-session to find out.
+#
+# Script Hook V does not shrug at a hash it cannot resolve. It puts up FATAL: Can't find
+# native and takes the game down, and no try/catch in managed code can help because the
+# process is gone before there is an exception to catch. A wrong NAME is a build that fails
+# on this machine in seconds; a wrong NUMBER is somebody else losing their session.
+#
+# So the name is the safe form and this makes it the only form. If a native genuinely is not
+# in the enum, that is worth a conversation, not a quiet number.
+$rawHashes = Select-String -Path $sources `
+                           -Pattern '\(Hash\)\s*0x[0-9A-Fa-f]+' -ErrorAction SilentlyContinue
+
+if ($rawHashes) {
+    Write-Host ""
+    Write-Host "REFUSING TO BUILD. Raw native hashes found:" -ForegroundColor Red
+
+    foreach ($h in $rawHashes) {
+        $rel = $h.Path.Replace("$root\", '')
+        Write-Host ("  {0}:{1}  {2}" -f $rel, $h.LineNumber, $h.Line.Trim()) -ForegroundColor Red
+    }
+
+    Write-Host ""
+    Write-Host "  Script Hook V treats a hash it cannot resolve as FATAL and closes the game." -ForegroundColor Yellow
+    Write-Host "  Use the GTA.Native.Hash name instead, so a native this build lacks is a" -ForegroundColor Yellow
+    Write-Host "  compile error here rather than a crash on somebody else's machine." -ForegroundColor Yellow
+    throw "Raw native hashes in source."
+}
+
 # --- compiler options -------------------------------------------------------
 $opts = @(
     '/target:library'

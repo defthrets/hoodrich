@@ -811,8 +811,8 @@ namespace Hoodrich.Locations
             try
             {
                 // Door 0 is the driver's, door 1 the front passenger. 2 is "locked".
-                Function.Call((Hash)0xBE70724027F85BCDUL, _car.Handle, 0, 2);
-                Function.Call((Hash)0xBE70724027F85BCDUL, _car.Handle, 1, 2);
+                Function.Call(Hash.SET_VEHICLE_INDIVIDUAL_DOORS_LOCKED, _car.Handle, 0, 2);
+                Function.Call(Hash.SET_VEHICLE_INDIVIDUAL_DOORS_LOCKED, _car.Handle, 1, 2);
             }
             catch
             {
