@@ -3008,8 +3008,19 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, h, Wheels[_rng.Next(Wheels.Length)]);
                 Fit(h, 23, true);
 
-                // And the bodywork, from what this model owns.
-                Fit(h, 0, false);    // spoiler
+                // NO SPOILER AND NO LIVERY. Both were in here and both are the wrong kind of
+                // decoration for this: a livery is a paint scheme somebody ordered from a
+                // catalogue, and a big wing is a track car. These are street cars that get
+                // thrown sideways at a junction on a Tuesday -- the money goes into the paint,
+                // the rims and the noise, not into looking like a race entry.
+                //
+                // Taken OFF rather than simply not put on, because a few models ship with one
+                // fitted by default and skipping the call would leave those wearing it.
+                Function.Call(Hash.SET_VEHICLE_LIVERY, h, -1);
+                Function.Call(Hash.SET_VEHICLE_MOD, h, 48, -1, false);
+                Function.Call(Hash.SET_VEHICLE_MOD, h, 0, -1, false);
+
+                // And the rest of the bodywork, from what this model owns.
                 Fit(h, 1, false);    // front bumper
                 Fit(h, 2, false);    // rear bumper
                 Fit(h, 3, false);    // skirts
@@ -3017,7 +3028,6 @@ namespace Hoodrich.Locations
                 Fit(h, 6, false);    // grille
                 Fit(h, 7, false);    // bonnet
                 Fit(h, 10, false);   // roof
-                Fit(h, 48, false);   // livery
 
                 // XENONS AND COLOURED SMOKE, BUT NOT ON THE ONES ACTUALLY DRIFTING.
                 //
