@@ -259,6 +259,55 @@ namespace Hoodrich.Gangs
             "driftfr36", "kanjosj", "iwagen", "toros"
         };
 
+        /// <summary>
+        /// And the donks, which are a third of what comes out.
+        ///
+        /// A separate list rather than more names in Cars for the same reason the set has a
+        /// car it is known for: a donk is a statement and a Sentinel is transport, and mixing
+        /// them into one bag would make both of them ordinary. Rolled for separately, so
+        /// roughly one in three of the cars on the block is one of these and the rest are not.
+        ///
+        /// They get the same dark green as everything else and they get the underglow, which
+        /// nothing else does -- see Paint. A green donk on chrome with the ground lit up under
+        /// it is the loudest thing the set owns, and it should be, because that is the entire
+        /// point of the car.
+        /// </summary>
+        private static readonly string[] Donks =
+        {
+            "faction3", "faction2", "voodoo", "chino2", "buccaneer2", "sabregt2", "virgo2"
+        };
+
+        /// <summary>How often one that comes out is a donk.</summary>
+        private const int DonkChance = 34;
+
+        /// <summary>
+        /// Whether that car is one of them.
+        ///
+        /// Asked of the MODEL rather than remembered on the Roll, because Paint runs on a car
+        /// that has just been made and the only true thing about it at that point is what it
+        /// is. A flag set at the call site is a flag that will be right until somebody adds a
+        /// second way to make one of these.
+        /// </summary>
+        private static bool Donk(Vehicle car)
+        {
+            try
+            {
+                if (car == null || !car.Exists()) return false;
+
+                var hash = car.Model.Hash;
+
+                foreach (var name in Donks)
+                {
+                    if (hash == Game.GenerateHash(name)) return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
         /// <summary>Always present, for the install that has none of the above.</summary>
         private static readonly string[] SpareCars = { "buccaneer2", "voodoo", "manana", "primo2" };
 
@@ -1187,7 +1236,9 @@ namespace Hoodrich.Gangs
         /// </summary>
         private Vehicle Make(bool bike, Vector3 at, Vehicle matching)
         {
-            var wanted = bike ? Bikes : Cars;
+            // A third of the cars are donks. Bikes are never one, for reasons.
+            var wanted = bike ? Bikes
+                       : (_rng.Next(100) < DonkChance ? Donks : Cars);
             var spares = bike ? SpareBikes : SpareCars;
 
             var order = new List<string>();
@@ -1291,6 +1342,28 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, car.Handle, true);
                 Function.Call(Hash.SET_VEH_RADIO_STATION, car.Handle, Core.Radio.Blonded);
                 Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, car.Handle, true);
+
+                // AND THE DONKS GET THE UNDERGLOW, WHICH NOTHING ELSE DOES.
+                //
+                // Deliberately only them. Neon on everything is a fleet and neon on the donk is
+                // a car somebody has spent money on -- and the whole reason to have a donk in
+                // the set is that it is the loudest thing the set owns. Green, to match the
+                // paint it is under, because the point is the car and not the colour of the
+                // light.
+                //
+                // Left dirty like the rest of them, note. A donk that has never been driven in
+                // the rain is a showroom car, and these live on the same streets as everything
+                // else in this list.
+                if (!Donk(car)) return;
+
+                Function.Call(Hash.SET_VEHICLE_MOD_KIT, car.Handle, 0);
+
+                for (var side = 0; side < 4; side++)
+                {
+                    Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, car.Handle, side, true);
+                }
+
+                Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, car.Handle, 0, 255, 90);
             }
             catch (Exception ex)
             {

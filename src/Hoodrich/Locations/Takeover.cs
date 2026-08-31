@@ -343,6 +343,27 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>
+        /// Donks, parked up with the rest of them.
+        ///
+        /// Their own list rather than more names in Parked, because they are the cars people
+        /// come to LOOK at -- a handful is a feature and a car park full of them is a show,
+        /// which this is not. Three or four of the fourteen-odd spectators.
+        ///
+        /// The Faction Custom Donk is the one the game actually has; everything after it is a
+        /// Benny's build on big wheels, which is the same corner of the same car park even if
+        /// a purist would argue. The list is tried in order and a build missing the first name
+        /// quietly gets the next, so nobody ends up with an empty space.
+        /// </summary>
+        private static readonly string[] Donks =
+        {
+            "faction3", "faction2", "voodoo", "chino2", "buccaneer2",
+            "sabregt2", "tornado5", "virgo2"
+        };
+
+        private const int DonksMin = 3;
+        private const int DonksMax = 5;
+
+        /// <summary>
         /// And the ones on juice.
         ///
         /// Hydraulics are a real system in this game and these are the cars that have them. A
@@ -1210,11 +1231,28 @@ namespace Hoodrich.Locations
         {
             var want = _rng.Next(ParkedMin, ParkedMax + 1);
             var lows = _rng.Next(LowsMin, LowsMax + 1);
+            var donks = _rng.Next(DonksMin, DonksMax + 1);
 
-            for (var i = 0; i < want; i++) Spectator(i < lows);
+            // Lowriders first, then donks, then everything else -- counted out of the same
+            // total rather than added on top, so turning any of them up does not quietly grow
+            // the number of cars ringing the junction.
+            for (var i = 0; i < want; i++)
+            {
+                if (i < lows) Spectator(Kind.Low);
+                else if (i < lows + donks) Spectator(Kind.Donk);
+                else Spectator(Kind.Plain);
+            }
         }
 
-        private void Spectator(bool low)
+        /// <summary>What sort of car came to watch.</summary>
+        private enum Kind
+        {
+            Plain,
+            Low,
+            Donk
+        }
+
+        private void Spectator(Kind kind)
         {
             try
             {
@@ -1227,7 +1265,9 @@ namespace Hoodrich.Locations
                 var from = OnRoad(DriveFromMin + (float)_rng.NextDouble() * (DriveFromMax - DriveFromMin));
                 if (from == Vector3.Zero) return;
 
-                var car = Make(low ? Lows : Parked, from);
+                var car = Make(kind == Kind.Low ? Lows
+                             : kind == Kind.Donk ? Donks
+                             : Parked, from);
                 if (car == null) return;
 
                 var driver = Behind(car);
@@ -1243,14 +1283,14 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
 
-                if (low) Function.Call(Hash.SET_CAN_USE_HYDRAULICS, car.Handle, true);
+                if (kind == Kind.Low) Function.Call(Hash.SET_CAN_USE_HYDRAULICS, car.Handle, true);
 
                 _parked.Add(new Parkee
                 {
                     Car = car,
                     Driver = driver,
                     Slot = slot,
-                    Low = low,
+                    Low = kind == Kind.Low,
                     Hop = _rng.NextDouble() * Math.PI * 2d,
                     Rate = 2.2 + _rng.NextDouble() * 2.6
                 });
