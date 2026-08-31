@@ -143,6 +143,20 @@ namespace Hoodrich.Missions
                   + "we gotta work on."
                 : "What's happening. You looking for work, or you just walking past?");
 
+            // AND HE SAYS IT OUT LOUD -- OR HE WOULD, IF EITHER LINE HAD EVER ASKED FOR AUDIO.
+            //
+            // Neither of these was voiced. Not a missing recording: a missing REQUEST. A line
+            // that never asks is a line that can never be found by tools/voice_lines.py --log
+            // either, because that works by reading the log for lines that wanted a clip and
+            // did not get one. So it was invisible twice over: silent in the game, and absent
+            // from the list of things to record.
+            //
+            // Named rather than hashed, unlike most lines here. A hash is keyed to the exact
+            // wording, so fixing a typo in a greeting silently orphans its recording -- and
+            // these two are the most likely lines in the mod to get reworded, because they are
+            // the first thing anybody hears.
+            node.Voiced(Voice.Named(_fixer.Name, first ? "hello" : "work"));
+
             // The NEW thing comes first and on its own terms: he works down his list in order,
             // and until you have been through it he tells you what needs doing rather than
             // handing you a board to pick from.
