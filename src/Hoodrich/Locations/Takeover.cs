@@ -203,7 +203,16 @@ namespace Hoodrich.Locations
         private const float BlockAt = 30f;
 
         /// <summary>How often one car may be turned round, so it is not re-tasked every tick.</summary>
-        private const int TurnGapMs = 4000;
+        /// <summary>
+        /// How often one car may be turned round, so it is not re-tasked every tick.
+        ///
+        /// Down from four seconds now that the cordon is doing this alone. Four was chosen when
+        /// the road nodes were expected to do most of the work and this was the backstop; as
+        /// the only thing standing between traffic and the middle it has to catch a car sooner
+        /// than that, and re-issuing a route every two and a half seconds is still far enough
+        /// apart that a driver gets somewhere between them.
+        /// </summary>
+        private const int TurnGapMs = 2500;
 
         /// <summary>Close enough to their place to stop and turn round.</summary>
         private const float ArrivedRange = 3.5f;
@@ -534,6 +543,11 @@ namespace Hoodrich.Locations
                 // pushing on the bike every frame it lasts, and the same push at tick intervals
                 // is a pothole.
                 Wheelie(now);
+
+                // And the beam, which is a draw call and therefore only exists on the frame it
+                // is made -- a spot light drawn every nine hundred milliseconds is a spot light
+                // that is off for eight hundred and ninety of them.
+                Beam();
             }
 
             if (now - _lastTick < TickMs) return;
@@ -585,6 +599,7 @@ namespace Hoodrich.Locations
                         Chatter(now);
                         Racket(now);
                         Bikes(now);
+                        Chopper(now);
                         break;
 
                     case TakeoverState.Scattering:
@@ -652,21 +667,27 @@ namespace Hoodrich.Locations
             _endsAt = OwnedCars.NowMinutes() + (int)(LastsHours * 60f);
             _startedAt = Game.GameTime;
 
-            // AND THE ROADS THROUGH IT ARE SWITCHED OFF.
+            // THE ROADS STAY ON, AND THAT IS A REVERSAL OF SOMETHING TRIED AND MEASURED.
             //
-            // The turn-around cordon works on cars that are already here and it will always be
-            // reacting -- something has to get close before it can be sent back, which is why
-            // one occasionally made it into the middle before anybody noticed. This stops them
-            // being routed here at all: with the nodes off, the game's own traffic generator
-            // treats the junction as somewhere there is no road, and simply plans around it.
+            // Switching the road nodes off in a thirty metre box round the junction is the
+            // obvious way to stop traffic being routed through a takeover, and the reasoning
+            // written here was that ours would be unaffected because ours are not on the
+            // traffic generator -- a drift car is handed a coordinate and drives to it.
             //
-            // Ours are unaffected because ours are not on the traffic generator. A drift car is
-            // handed a coordinate and drives to it; a spectator is handed a parking slot. The
-            // nodes are for the cars nobody is steering.
+            // THAT WAS WRONG, and the log said so in one line repeated thirty times: "a car
+            // never made it in". TASK_VEHICLE_DRIVE_TO_COORD still ROUTES on the nodes even
+            // though the destination is a coordinate, so with none inside the box every car
+            // sent for planned as far as the edge of it and stopped -- about thirty metres out,
+            // which is just past the distance at which one is given up on. Every drift car,
+            // every night, for the whole night. The junction filled with people and spectators
+            // and had nothing in the middle of it.
             //
-            // Restored in Pack(), and restored again in RestoreWorld(), because a junction left
-            // with its roads switched off is a permanent hole in the city's traffic.
-            Roads(false);
+            // So it is the cordon's job again, and the cordon is a better fit for it than it
+            // looks: it turns strangers round at thirty metres, and the fourteen to twenty
+            // parked cars ringing the outside are a wall you can see. Restored here as well as
+            // in the teardowns, because a session that crashed with them off would otherwise
+            // leave a permanent hole in the city's traffic.
+            Roads(true);
             _toCome = _rng.Next(CrowdMin, CrowdMax + 1);
             // Two or three, and the first of them is always the one going round the middle.
             _wantBikes = _rng.Next(2, 4);
@@ -1504,6 +1525,202 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// Halfway through, a police helicopter turns up and starts circling with its light on.
+        ///
+        /// AND IT DOES NOT DO ANYTHING ELSE, WHICH IS THE POINT. It does not call units, it
+        /// does not end the takeover, and nobody scatters -- the cars on the ground are still
+        /// what stops it, later. This is the half hour of everybody carrying on with a light
+        /// sweeping over them, which is the part of a real one that nobody films because they
+        /// are all in it.
+        ///
+        /// It comes from a long way out and flies in, so the first you know is the noise from
+        /// somewhere over Davis, then the light on the buildings, then it overhead. Spawning it
+        /// already circling would be a helicopter that was always there.
+        /// </summary>
+        private void Chopper(int now)
+        {
+            if (_heli != null)
+            {
+                // Gone -- shot down, despawned, streamed out with the pilot. Let it go rather
+                // than trying to nurse it back; another one is not worth the code.
+                if (!_heli.Exists() || _pilot == null || !_pilot.Exists() || !_pilot.IsAlive)
+                {
+                    Away();
+                }
+
+                return;
+            }
+
+            if (_heliDone) return;
+            if (_startedAt == 0 || now - _startedAt < HeliAfterMs) return;
+
+            _heliDone = true;
+
+            try
+            {
+                // A long way out and well up. GetNextPositionOnStreet is deliberately not used:
+                // it is a helicopter and the one thing it does not need is a road.
+                var bearing = _rng.NextDouble() * Math.PI * 2d;
+
+                var from = new Vector3(
+                    Middle.X + (float)Math.Cos(bearing) * HeliFrom,
+                    Middle.Y + (float)Math.Sin(bearing) * HeliFrom,
+                    Middle.Z + HeliHigh);
+
+                var model = new Model("polmav");
+                if (!model.IsValid || !model.IsInCdImage || !model.Request(2000)) return;
+
+                _heli = World.CreateVehicle(model, from);
+                model.MarkAsNoLongerNeeded();
+
+                if (_heli == null || !_heli.Exists()) return;
+
+                _heli.IsPersistent = true;
+
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _heli.Handle, true, true);
+                Function.Call(Hash.SET_HELI_BLADES_FULL_SPEED, _heli.Handle);
+                Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _heli.Handle, true, true, false);
+
+                var cop = new Model("s_m_y_cop_01");
+
+                if (!cop.IsValid || !cop.Request(2000))
+                {
+                    _heli.Delete();
+                    _heli = null;
+                    return;
+                }
+
+                var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE, _heli.Handle,
+                                                6, cop.Hash, -1, false, false);
+
+                cop.MarkAsNoLongerNeeded();
+
+                _pilot = Entity.FromHandle(handle) as Ped;
+
+                if (_pilot == null || !_pilot.Exists())
+                {
+                    _heli.Delete();
+                    _heli = null;
+                    return;
+                }
+
+                _pilot.IsPersistent = true;
+
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _pilot.Handle, true, true);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _pilot.Handle, true);
+                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, _pilot.Handle, false);
+
+                // The game's own searchlight, handed to the AI so it points it wherever it is
+                // looking. Whether a given build actually swings it is not something that can
+                // be checked from here -- so the beam below is drawn by hand as well, and that
+                // is the one that is guaranteed to be over the junction.
+                Function.Call(Hash.SET_VEHICLE_SEARCHLIGHT, _heli.Handle, true, true);
+
+                // Mission 4 is "circle the coordinate". Numbers after it: speed, the radius it
+                // holds, no fixed heading, and a ceiling and floor it stays between.
+                Function.Call(Hash.TASK_HELI_MISSION, _pilot.Handle, _heli.Handle, 0, 0,
+                              Circle.X, Circle.Y, Circle.Z + HeliHigh,
+                              4, HeliSpeed, HeliRing, -1f,
+                              (int)(HeliHigh + 20f), (int)(HeliHigh - 15f), -1f, 0);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, _pilot.Handle, true);
+
+                Log.Info("Takeover: a helicopter is on its way.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not put a helicopter up: " + ex.Message);
+
+                Away();
+            }
+        }
+
+        /// <summary>
+        /// The beam, drawn by hand, every frame.
+        ///
+        /// DRAWN RATHER THAN ASKED FOR. SET_VEHICLE_SEARCHLIGHT gives the helicopter its light
+        /// and hands the aiming to the AI, which points it at whatever the AI is interested in
+        /// -- and what it is interested in during a circling mission is not reliably the thing
+        /// on the ground we care about. A drawn spot light is a draw call: it goes exactly
+        /// where it is told, every frame, and it cannot decide to look somewhere else.
+        ///
+        /// It wanders rather than sits. A beam nailed to one point is a lamp; one that drifts
+        /// around the middle at walking pace is somebody up there looking at things, which is
+        /// what a police helicopter over a takeover is doing.
+        /// </summary>
+        private void Beam()
+        {
+            if (_heli == null || !_heli.Exists()) return;
+
+            try
+            {
+                _sweep += SweepRate;
+
+                // A slow wander over the junction rather than a lock on the centre mark.
+                var at = new Vector3(
+                    Circle.X + (float)Math.Cos(_sweep) * SweepWide,
+                    Circle.Y + (float)Math.Sin(_sweep * 0.7) * SweepWide,
+                    Circle.Z);
+
+                var from = _heli.Position;
+                var dir = at - from;
+
+                var len = dir.Length();
+                if (len < 1f) return;
+
+                dir = dir * (1f / len);
+
+                Function.Call(Hash.DRAW_SPOT_LIGHT,
+                              from.X, from.Y, from.Z,
+                              dir.X, dir.Y, dir.Z,
+                              255, 245, 220,
+                              len + 25f, 12f, 0f, 13f, 0f);
+            }
+            catch
+            {
+                // Next frame.
+            }
+        }
+
+        /// <summary>It goes home, and takes the pilot with it.</summary>
+        private void Away()
+        {
+            try
+            {
+                if (_pilot != null && _pilot.Exists()) _pilot.Delete();
+                if (_heli != null && _heli.Exists()) _heli.Delete();
+            }
+            catch
+            {
+                // Teardown.
+            }
+
+            _pilot = null;
+            _heli = null;
+        }
+
+        private Vehicle _heli;
+        private Ped _pilot;
+        private bool _heliDone;
+        private double _sweep;
+
+        /// <summary>
+        /// When it turns up, where from, and how it flies.
+        ///
+        /// The same half hour the feed waits, so the two things that mark the middle of the
+        /// night happen together: people start talking about it and something starts circling
+        /// over it.
+        /// </summary>
+        private const int HeliAfterMs = 900000;
+        private const float HeliFrom = 420f;
+        private const float HeliHigh = 55f;
+        private const float HeliSpeed = 22f;
+        private const float HeliRing = 60f;
+
+        private const double SweepRate = 0.006;
+        private const float SweepWide = 16f;
+
         /// <summary>One more of them, from a block out.</summary>
         private void Bike()
         {
@@ -1813,11 +2030,19 @@ namespace Hoodrich.Locations
         private const int CareStyle = 1 | 2 | 4 | 8 | 16 | 32 | 128 | 256;
 
         /// <summary>
-        /// And for anything LEAVING, or the police coming in.
+        /// And for anything LEAVING, the police coming in, and the drift cars ARRIVING.
         ///
         /// The same steering, none of the stopping. A car scattering from a police raid that
         /// stops at a red light is not scattering, and a squad car that gives way on the
         /// approach is not a raid. They still go round people, which is the part that matters.
+        ///
+        /// THE DRIFT CARS USE IT COMING IN, and that is the other half of why none of them were
+        /// reaching the middle. CareStyle contains stop-before-peds -- correct for a car
+        /// parking, and fatal for a car whose destination is the centre of a ring of sixty
+        /// people. It drove to the edge of the crowd, did exactly as it was told, and stopped.
+        /// Somebody arriving to work the circle is IN A HURRY: he goes round people rather than
+        /// queueing behind them, which is the only way through a junction that is full by
+        /// design.
         /// </summary>
         private const int RushStyle = 4 | 8 | 16 | 32;
 
@@ -1893,7 +2118,7 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
                               aim.X, aim.Y, aim.Z, 16f, 0, car.Model.Hash,
-                              CareStyle, 2f, true);
+                              RushStyle, 2f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
 
@@ -1997,7 +2222,7 @@ namespace Hoodrich.Locations
 
                         Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
                                       r.Car.Handle, back.X, back.Y, back.Z,
-                                      12f, 0, r.Car.Model.Hash, CareStyle, 4f, true);
+                                      12f, 0, r.Car.Model.Hash, RushStyle, 4f, true);
                     }
                     catch
                     {
@@ -2912,6 +3137,12 @@ namespace Hoodrich.Locations
 
             _riders.Clear();
 
+            // The helicopter is deleted rather than released. A police maverick handed back to
+            // the game with its searchlight on circles the neighbourhood for the rest of the
+            // night, and there is nothing in the world that would ever turn it off.
+            Away();
+            _heliDone = false;
+
             foreach (var l in _law)
             {
                 try
@@ -2955,6 +3186,13 @@ namespace Hoodrich.Locations
                     if (r.Man != null && r.Man.Exists()) r.Man.Delete();
                     if (r.Bike != null && r.Bike.Exists()) r.Bike.Delete();
                 }
+
+                if (_pilot != null && _pilot.Exists()) _pilot.Delete();
+                if (_heli != null && _heli.Exists()) _heli.Delete();
+
+                _pilot = null;
+                _heli = null;
+                _heliDone = false;
 
                 foreach (var l in _law)
                 {
