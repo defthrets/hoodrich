@@ -127,6 +127,30 @@ namespace Hoodrich.Locations
         /// EVERY ONE OF THEM IS FILLED -- one car per spot, no spares, so the length of this
         /// array is the number of cars that turn up. Adding a spot adds a car.
         /// </summary>
+        /// <summary>
+        /// Where a car waits for its turn in the pit.
+        ///
+        /// THE MISSING STEP BETWEEN THE KERB AND THE MIDDLE. A car used to go straight from
+        /// its parking space into the circle, which meant every turn began with a car
+        /// appearing out of the wall at speed -- there was no moment where you could see whose
+        /// go was next. These are the four places they sit and wait, on the edge of the
+        /// circle, engine running, in front of the crowd.
+        ///
+        /// Walked like the kerbs and pointing the way they were walked. They sit between 17
+        /// and 23 metres from the mark, which is right on the crowd's own ring -- close enough
+        /// that a car sitting there is plainly part of it and not parked up.
+        /// </summary>
+        private static readonly Spot[] Stages =
+        {
+            new Spot { At = new Vector3(-127.938f, -1720.288f, 29.512f), Face = 161.493f },
+            new Spot { At = new Vector3(-130.728f, -1758.273f, 29.397f), Face = 295.440f },
+            new Spot { At = new Vector3(-114.296f, -1756.466f, 29.226f), Face =  49.889f },
+            new Spot { At = new Vector3(-109.838f, -1736.300f, 29.549f), Face = 111.229f }
+        };
+
+        /// <summary>How close counts as being on a marker.</summary>
+        private const float StageArrived = 6f;
+
         private static readonly Spot[] Spots =
         {
             new Spot { At = new Vector3( -126.696f,  -1707.998f, 28.945f), Face = 142.974f },
@@ -148,7 +172,22 @@ namespace Hoodrich.Locations
             new Spot { At = new Vector3( -138.892f,  -1767.886f, 29.152f), Face = 303.768f },
             new Spot { At = new Vector3( -132.734f,  -1765.011f, 29.110f), Face = 293.663f },
             new Spot { At = new Vector3( -126.161f,  -1763.270f, 29.117f), Face = 280.911f },
-            new Spot { At = new Vector3( -121.339f,  -1762.843f, 29.120f), Face = 263.718f }
+            new Spot { At = new Vector3( -121.339f,  -1762.843f, 29.120f), Face = 263.718f },
+            new Spot { At = new Vector3( -114.727f,  -1764.777f, 29.103f), Face = 251.262f },
+            new Spot { At = new Vector3( -108.847f,  -1768.191f, 29.099f), Face = 234.561f },
+            new Spot { At = new Vector3( -111.359f,  -1751.880f, 29.252f), Face =  55.836f },
+            new Spot { At = new Vector3( -106.148f,  -1754.537f, 29.109f), Face =   6.575f },
+            new Spot { At = new Vector3( -103.599f,  -1744.991f, 29.345f), Face =  93.326f },
+            new Spot { At = new Vector3(  -95.875f,  -1747.208f, 28.870f), Face = 129.775f },
+            new Spot { At = new Vector3(  -89.966f,  -1743.570f, 28.688f), Face = 111.722f },
+            new Spot { At = new Vector3( -107.462f,  -1728.285f, 29.191f), Face = 105.053f },
+            new Spot { At = new Vector3( -100.096f,  -1725.566f, 28.806f), Face = 111.686f },
+            new Spot { At = new Vector3( -110.690f,  -1722.007f, 29.208f), Face = 135.114f },
+            new Spot { At = new Vector3( -107.650f,  -1717.616f, 28.938f), Face = 140.486f },
+            new Spot { At = new Vector3( -116.845f,  -1719.726f, 29.328f), Face = 139.751f },
+            new Spot { At = new Vector3( -113.291f,  -1715.734f, 29.065f), Face = 136.762f },
+            new Spot { At = new Vector3( -117.400f,  -1712.714f, 29.005f), Face = 140.653f },
+            new Spot { At = new Vector3( -121.357f,  -1717.511f, 29.308f), Face = 141.447f }
         };
 
         /// <summary>
@@ -561,6 +600,15 @@ namespace Hoodrich.Locations
             public bool Circling;
             public bool Leaving;
 
+            /// <summary>Which marker he is holding, or -1 once he is in the pit.</summary>
+            public int Stage;
+
+            /// <summary>He has reached it and is sat on it waiting.</summary>
+            public bool AtStage;
+
+            /// <summary>When he got there, so the longest wait goes first.</summary>
+            public int Waited;
+
             /// <summary>When he stopped on the way home, or nought if he is still moving.</summary>
             public int Stuck;
 
@@ -830,6 +878,11 @@ namespace Hoodrich.Locations
 
             _endsAt = OwnedCars.NowMinutes() + (int)(LastsHours * 60f);
             _startedAt = Game.GameTime;
+
+            // Nothing goes in until the kerbs are full, and this is the flag that says they
+            // are not yet. Cleared HERE rather than at teardown: a takeover that ended badly
+            // must not leave the next one thinking its street is already parked.
+            _ringed = false;
 
             // THE ROADS STAY ON, AND THAT IS A REVERSAL OF SOMETHING TRIED AND MEASURED.
             //
@@ -1645,6 +1698,61 @@ namespace Hoodrich.Locations
                     continue;
                 }
 
+                // WAITING HIS TURN. He is not in the pit and is not trying to be.
+                if (r.Stage >= 0)
+                {
+                    var bay = Stages[r.Stage];
+
+                    if (!r.AtStage)
+                    {
+                        if (r.Car.Position.DistanceTo(bay.At) > StageArrived)
+                        {
+                            // Same patience as a car going home: he is driving round the edge
+                            // of a crowd, so being stopped is normal and asking again is the
+                            // answer rather than forcing through.
+                            Hold(r, now, bay.At);
+                            continue;
+                        }
+
+                        r.AtStage = true;
+                        r.Waited = now;
+
+                        try
+                        {
+                            Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                            // Brake rather than nothing, or he rolls off the mark he just
+                            // reached. Re-issued below for as long as he is sat here.
+                            Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
+                                          r.Car.Handle, 1, 4000);
+
+                            Function.Call(Hash.SET_ENTITY_HEADING, r.Car.Handle, bay.Face);
+                        }
+                        catch
+                        {
+                            // He waits where he stopped.
+                        }
+                    }
+                    else if (now >= r.NextAction)
+                    {
+                        // Held. A temp action expires, and a driver whose action has run out
+                        // creeps forward off the marker, so it is topped up.
+                        r.NextAction = now + 3500;
+
+                        try
+                        {
+                            Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
+                                          r.Car.Handle, 1, 4000);
+                        }
+                        catch
+                        {
+                            // Next time round.
+                        }
+                    }
+
+                    continue;
+                }
+
                 // On the way in. Close enough to its circle and it takes over by hand.
                 if (!r.Circling)
                 {
@@ -1743,6 +1851,9 @@ namespace Hoodrich.Locations
             // Counted separately from the round-the-outside cars all the same: the middle is a
             // PLACE, and letting the two come out of one pool means the mark stands empty
             // whenever the circle happens to be busy.
+            // NOBODY SKIDS UNTIL THE STREET IS PARKED. See Ringed.
+            if (!Ringed(now)) return;
+
             var mark = 0;
             var round = 0;
 
@@ -1750,15 +1861,28 @@ namespace Hoodrich.Locations
             {
                 if (r.Leaving) continue;
 
+                // Waiting his turn is not working. Counting the queue as though it were in
+                // the pit is how the pit ends up empty with four cars sat watching it.
+                if (r.Stage >= 0) continue;
+
                 if (r.Middle) mark++;
                 else round++;
+            }
+
+            // KEEP THE MARKERS OCCUPIED. Somebody should always be sat ready, so the next turn
+            // starts with a car that is already there rather than one that has to be fetched
+            // from a kerb first -- which was the old gap between one car finishing and the
+            // next arriving.
+            while (Queued() < Stages.Length)
+            {
+                if (!Pull(false)) break;
             }
 
             // Only if this stretch of the night is having one. An existing static burnout is
             // left to finish rather than pulled off the mark the moment the roll changes --
             // his go is his go, and a car that vanishes mid-burnout is worse than one that
             // stays a minute longer than the dice wanted.
-            if (_wantMark && mark < 1) Pull(true);
+            if (_wantMark && mark < 1) Turn(true, now);
 
             // TWO TO FOUR WORKING AT ONCE, and never fewer than two.
             //
@@ -1780,10 +1904,67 @@ namespace Hoodrich.Locations
 
             while (round < want)
             {
-                if (!Pull(false)) break;
+                if (!Turn(false, now)) break;
                 round++;
             }
         }
+
+        /// <summary>
+        /// Whether every car that turned up has reached its kerb, so the skidding can start.
+        ///
+        /// THE CARS THAT GO IN ARE THE CARS OFF THE KERB. That is what makes this worth
+        /// waiting for rather than a nicety: a takeover that begins before the ring is full
+        /// starts with half a wall AND pulls its performers out of the half that exists, so
+        /// the street thins out at the exact moment it should be at its fullest. Waiting means
+        /// the first donut happens in front of a finished street -- every spot taken, and then
+        /// somebody pulls out of one.
+        ///
+        /// LATCHED ONCE IT PASSES. After that the ring is permanently short by whoever is out
+        /// taking their turn, so asking again would stop the takeover dead the moment it
+        /// started. This answers "has it filled yet", once, and never again.
+        ///
+        /// WITH A DEADLINE, because "all of them" is a promise about thirty-five cars and any
+        /// one of them can be wedged behind a bin lorry on the way. Ninety seconds and it goes
+        /// with whoever made it: a takeover that never starts is worse than one that starts
+        /// with thirty-three cars parked. The log says which happened, so a build where they
+        /// routinely do not arrive says so rather than just feeling slow.
+        ///
+        /// A car that has been destroyed on the way does not count as still coming. Nothing
+        /// else in here would ever let go of it.
+        /// </summary>
+        private bool Ringed(int now)
+        {
+            if (_ringed) return true;
+
+            var coming = 0;
+
+            foreach (var p in _parked)
+            {
+                if (p.There) continue;
+                if (p.Car == null || !p.Car.Exists()) continue;
+
+                coming++;
+            }
+
+            var late = _startedAt != 0 && now - _startedAt > FillGiveUpMs;
+
+            if (coming > 0 && !late) return false;
+
+            _ringed = true;
+
+            Log.Info(coming > 0
+                ? "Takeover: starting with " + coming + " of " + _parked.Count +
+                  " still on their way in."
+                : "Takeover: all " + _parked.Count + " parked up. Starting.");
+
+            return true;
+        }
+
+        /// <summary>How long the ring gets to fill before it starts without the stragglers.</summary>
+        private const int FillGiveUpMs = 90000;
+
+        /// <summary>Set once the ring has filled. Never asked again -- see Ringed.</summary>
+        private bool _ringed;
 
         /// <summary>How many are actually working the circle right now.</summary>
         private int Spinning()
@@ -2485,6 +2666,110 @@ namespace Hoodrich.Locations
         /// Not the lowriders. They are sat on their hydraulics being looked at, which is its
         /// own act, and a car bouncing on the spot is not one about to go and do donuts.
         /// </summary>
+        /// <summary>A marker nobody has claimed, or -1 when they are all taken.</summary>
+        private int Free()
+        {
+            for (var i = 0; i < Stages.Length; i++)
+            {
+                var taken = false;
+
+                foreach (var r in _running)
+                {
+                    if (r.Stage != i) continue;
+
+                    taken = true;
+                    break;
+                }
+
+                if (!taken) return i;
+            }
+
+            return -1;
+        }
+
+        /// <summary>How many are sat on markers or on their way to one.</summary>
+        private int Queued()
+        {
+            var n = 0;
+
+            foreach (var r in _running)
+            {
+                if (r.Stage >= 0) n++;
+            }
+
+            return n;
+        }
+
+        /// <summary>
+        /// Somebody's turn. The car that has been waiting longest goes in.
+        ///
+        /// LONGEST WAIT FIRST, which is the whole reason the markers have a clock on them. Any
+        /// other order and the same car can be picked twice while somebody sits on a marker
+        /// all night, which from the pavement is not a queue, it is favouritism.
+        ///
+        /// Whether he is the one on the mark or one going round is decided HERE rather than
+        /// when he was fetched. A car waiting its turn has not been promised a particular job,
+        /// so the roll that wants a static burnout can take whoever is next rather than
+        /// waiting for the one car that happened to be labelled for it.
+        /// </summary>
+        private bool Turn(bool middle, int now)
+        {
+            Runner up = null;
+
+            foreach (var r in _running)
+            {
+                if (r.Leaving || r.Stage < 0 || !r.AtStage) continue;
+                if (r.Car == null || !r.Car.Exists()) continue;
+                if (r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive) continue;
+
+                if (up == null || r.Waited < up.Waited) up = r;
+            }
+
+            if (up == null) return false;
+
+            up.Middle = middle;
+
+            // Where he is aiming, and it is not the middle unless he is the burnout. The one
+            // going round is sent to the point on his own circle nearest the marker he is
+            // leaving, so he arrives on the ring already going the right way instead of
+            // crossing it. Same reasoning as when they drove in off the street.
+            var aim = Circle;
+
+            if (!middle)
+            {
+                var inFrom = up.Car.Position - Circle;
+                var len = inFrom.Length();
+
+                if (len > 0.5f)
+                {
+                    inFrom = inFrom * (1f / len);
+                    aim = Circle + inFrom * up.Radius;
+                }
+            }
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, up.Driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, up.Driver.Handle, up.Car.Handle,
+                              aim.X, aim.Y, aim.Z, ComeInSpeed, 0, up.Car.Model.Hash,
+                              RushStyle, 2f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, up.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not send one in from a marker: " + ex.Message);
+                return false;
+            }
+
+            up.Stage = -1;
+            up.AtStage = false;
+            up.Sent = now;
+
+            return true;
+        }
+
         private bool Pull(bool middle)
         {
             // WHOEVER IS UP FOR IT, not whoever spawned first.
@@ -2506,8 +2791,14 @@ namespace Hoodrich.Locations
 
             var pick = able.Count == 0 ? null : able[_rng.Next(able.Count)];
 
-            // Nobody in the ring is in a fit state to go, so one is sent for the old way. This
-            // should be rare -- there are fourteen to twenty of them and at most four out.
+            // And a marker to wait on. No free marker means the queue is full, which is a
+            // perfectly good reason to leave everybody parked where they are.
+            var stage = Free();
+
+            if (stage < 0) return false;
+
+            // Nobody on the kerbs is in a fit state to go, so one is sent for the old way.
+            // Rare: there are thirty-odd of them and at most four out.
             if (pick == null) return In(middle);
 
             pick.Out = true;
@@ -2521,30 +2812,22 @@ namespace Hoodrich.Locations
                 Radius = DriftMin + (float)_rng.NextDouble() * (DriftMax - DriftMin),
                 Speed = 9f + (float)_rng.NextDouble() * 5f,
                 Way = _rng.Next(2) == 0 ? 1 : -1,
+                Stage = stage,
                 Sent = Game.GameTime
             };
-
-            var aim = Circle;
-
-            if (!middle)
-            {
-                var inFrom = pick.Car.Position - Circle;
-                var len = inFrom.Length();
-
-                if (len > 0.5f)
-                {
-                    inFrom = inFrom * (1f / len);
-                    aim = Circle + inFrom * r.Radius;
-                }
-            }
 
             try
             {
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
+                // TO THE MARKER, NOT THE MIDDLE -- and at a normal speed, because this leg is
+                // pulling out of a parking space and driving round the edge of a crowd. The
+                // fast one is the run into the pit, and that does not happen until his turn.
+                var to = Toward(pick.Car.Position, Stages[stage].At);
+
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
-                              aim.X, aim.Y, aim.Z, ComeInSpeed, 0, r.Car.Model.Hash,
-                              RushStyle, 2f, true);
+                              to.X, to.Y, to.Z, 12f, 0, r.Car.Model.Hash,
+                              CareStyle, 3f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
             }
@@ -2586,6 +2869,12 @@ namespace Hoodrich.Locations
                     Car = car,
                     Driver = driver,
                     Middle = middle,
+
+                    // NOT ON A MARKER, AND IT HAS TO BE SAID. Stage is an index and its
+                    // default is zero, which is marker one -- so a spawned car that never
+                    // went near the queue would be treated as sat on it, hold that marker
+                    // against everybody else, and wait for a turn it had already been given.
+                    Stage = -1,
                     Radius = DriftMin + (float)_rng.NextDouble() * (DriftMax - DriftMin),
                     Speed = 9f + (float)_rng.NextDouble() * 5f,
                     Way = _rng.Next(2) == 0 ? 1 : -1
@@ -2780,6 +3069,47 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
                               home.X, home.Y, home.Z, BackSpeed, 0,
                               r.Car.Model.Hash, CareStyle, 3f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
+            }
+            catch
+            {
+                // He tries again in a few seconds.
+            }
+        }
+
+        /// <summary>
+        /// Patience on the way TO a marker, which is the same problem as patience on the way
+        /// home and is answered the same way: rolling is fine, stopped for a few seconds means
+        /// the route ran out or ran into somebody, and then he asks for it again.
+        /// </summary>
+        private void Hold(Runner r, int now, Vector3 at)
+        {
+            try
+            {
+                if (r.Car.Speed > 0.6f)
+                {
+                    r.Stuck = 0;
+                    return;
+                }
+
+                if (r.Stuck == 0)
+                {
+                    r.Stuck = now;
+                    return;
+                }
+
+                if (now - r.Stuck < BlockedMs) return;
+
+                r.Stuck = now;
+
+                var to = Toward(r.Car.Position, at);
+
+                Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
+                              to.X, to.Y, to.Z, 12f, 0, r.Car.Model.Hash,
+                              CareStyle, 3f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
             }
@@ -3853,6 +4183,12 @@ namespace Hoodrich.Locations
         /// </summary>
         private static Vector3 Toward(Vector3 from, Vector3 spot)
         {
+            // A TARGET INSIDE THE ZONE HAS NOTHING TO ROUTE AROUND. The staging marks sit on
+            // the edge of the circle on purpose, and one of them is inside the no-go radius --
+            // without this, the answer for it would be "go round" from every position
+            // including the waypoint, and the car would circle the junction for ever.
+            if ((spot - Middle).Length() < NoGo + 1f) return spot;
+
             if (!Crosses(from, spot)) return spot;
 
             var out_ = spot - Middle;
