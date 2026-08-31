@@ -188,6 +188,7 @@ namespace Hoodrich.Gangs
             {
                 Prune(now);
                 Greet(now);
+                Scrap(now);
 
                 if (!Enabled)
                 {
@@ -292,6 +293,127 @@ namespace Hoodrich.Gangs
 
             return false;
         }
+
+        /// <summary>
+        /// Somebody who is not from round here walks past, and the crew goes for him.
+        ///
+        /// WHY THIS IS NOT JUST RELATIONSHIP GROUPS. The mod only makes two sets hate each
+        /// other while a raid is actually running -- outside one they are neutral, which is
+        /// right, because a city where every gang shoots every other gang on sight the whole
+        /// time is a city on fire by Tuesday afternoon. So a rival walking down our alley is,
+        /// as far as the game is concerned, a stranger, and nothing happens.
+        ///
+        /// This is the exception, and it is deliberately a small one: OUR crews, on OUR block,
+        /// noticing somebody from a set we have a problem with. Rivals come out of gangs.json,
+        /// so who counts is data rather than a list in here.
+        ///
+        /// The whole crew goes, not one man. A greeting is one bloke looking up; this is four
+        /// people deciding at once, which is what a group of them does and the reason they walk
+        /// around in one.
+        /// </summary>
+        private void Scrap(int now)
+        {
+            if (now < _nextScrap) return;
+
+            var mine = _gangs == null ? null : _gangs.Get(_gangId);
+            if (mine == null || mine.Rivals.Count == 0) return;
+
+            // The groups we have a problem with, worked out once rather than per ped.
+            var hated = new List<int>();
+
+            foreach (var id in mine.Rivals)
+            {
+                var them = _gangs.Get(id);
+
+                if (them != null && them.GroupHash != 0) hated.Add(them.GroupHash);
+            }
+
+            if (hated.Count == 0) return;
+
+            foreach (var crew in _out)
+            {
+                if (crew.Men.Count == 0) continue;
+
+                Ped lead = null;
+
+                foreach (var w in crew.Men)
+                {
+                    if (w.Man != null && w.Man.Exists() && w.Man.IsAlive) { lead = w.Man; break; }
+                }
+
+                if (lead == null) continue;
+
+                Ped foe = null;
+                var nearest = ScrapRange;
+
+                try
+                {
+                    foreach (var ped in World.GetNearbyPeds(lead.Position, ScrapRange))
+                    {
+                        if (ped == null || !ped.Exists() || !ped.IsAlive || ped.IsPlayer) continue;
+
+                        var group = Function.Call<int>(Hash.GET_PED_RELATIONSHIP_GROUP_HASH,
+                                                       ped.Handle);
+
+                        if (!hated.Contains(group)) continue;
+
+                        var gap = ped.Position.DistanceTo(lead.Position);
+                        if (gap > nearest) continue;
+
+                        nearest = gap;
+                        foe = ped;
+                    }
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (foe == null) continue;
+
+                _nextScrap = now + ScrapGapMs;
+
+                foreach (var w in crew.Men)
+                {
+                    if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+
+                    // Already on him. Re-issuing restarts the approach, which is how a group
+                    // ends up jogging on the spot instead of arriving.
+                    if (Function.Call<bool>(Hash.IS_PED_IN_COMBAT, w.Man.Handle, foe.Handle))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        // A bottle in the hand is not a weapon and holding one through a fight
+                        // looks daft. It goes.
+                        if (w.Holding != null && w.Holding.Exists())
+                        {
+                            w.Holding.Delete();
+                            w.Holding = null;
+                        }
+
+                        Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, w.Man.Handle, false);
+                        Function.Call(Hash.TASK_COMBAT_PED, w.Man.Handle, foe.Handle, 0, 16);
+                        Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
+                    }
+                    catch
+                    {
+                        // Next man.
+                    }
+                }
+
+                Log.Info("Walkers: a crew went for somebody on the block.");
+                return;
+            }
+        }
+
+        /// <summary>How far they will notice one, and how often a crew starts something.</summary>
+        private const float ScrapRange = 28f;
+        private const int ScrapGapMs = 15000;
+
+        private int _nextScrap;
 
         /// <summary>
         /// Somebody in the crew says hello as you go past.
@@ -561,6 +683,24 @@ namespace Hoodrich.Gangs
                 try
                 {
                     Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, man.Handle, false);
+
+                    // AND THEY CAN FIGHT, which none of them could before.
+                    //
+                    // A ped's willingness to fight is not a default, it is a set of flags, and
+                    // these had none of them -- so a crew walking their own block would watch a
+                    // rival stroll past and carry on drinking. Not because anybody decided they
+                    // should ignore him: because nobody had told them they were allowed not to.
+                    //
+                    // 46 is fight rather than flee, 5 lets an unarmed man square up to an armed
+                    // one, and the flee attributes are cleared so a gunshot does not send the
+                    // whole alley running. Movement is offensive: the difference between a man
+                    // shooting from where he stands and a man walking at you.
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, man.Handle, 46, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, man.Handle, 5, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, man.Handle, 17, false);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, man.Handle, 0, false);
+                    Function.Call(Hash.SET_PED_COMBAT_MOVEMENT, man.Handle, 2);
+                    Function.Call(Hash.SET_PED_COMBAT_ABILITY, man.Handle, 1);
                     Core.Helmets.Off(man);
                 }
                 catch
