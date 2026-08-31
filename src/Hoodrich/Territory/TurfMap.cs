@@ -117,17 +117,21 @@ namespace Hoodrich.Territory
                 Function.Call(Hash.SET_BLIP_COLOUR, handle, gang.BlipColour);
                 Function.Call(Hash.SET_BLIP_ALPHA, handle, Wash);
 
-                // SHORT RANGE, OR THE MINIMAP GROWS A COLUMN OF GREEN DOTS DOWN ITS EDGE.
+                // ON BOTH MAPS, WHICH IS A DECISION RATHER THAN A DEFAULT.
                 //
-                // A blip that is off the minimap does not disappear, it CLAMPS to the edge and
-                // sits there pointing at itself. That is right for a mission marker and absurd
-                // for sixty-one strips of a shaded area: every strip you are not stood on
-                // stacks up on the rim, so a shape you cannot even see is a solid bar of its
-                // own colour down one side of the map.
+                // This was very nearly restricted to the pause map. The minimap is a hundred
+                // times closer in, so at eight-metre strips it was one enormous band across the
+                // corner of the screen with a line drawn through it every join -- and the
+                // obvious fix was to stop drawing it there at all.
                 //
-                // Short range stops the clamping. The strip is drawn when you are on it and
-                // simply is not there when you are not -- and the pause map is unaffected,
-                // which is where the whole shape is meant to be read anyway.
+                // The real fault was the strip count, not the minimap. At twenty-five metres
+                // there are twelve joins instead of forty-two and it reads as a wash you are
+                // standing in, which is worth having: knowing you are ON your own block without
+                // opening anything is most of the value of shading it. So it stays.
+                //
+                // Short range still applies -- a strip that is off the minimap clamps to the
+                // edge and stacks up as a column of dots, which is a different problem and a
+                // real one.
                 Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, handle, true);
 
                 // THE ROTATION IS THE WHOLE POINT. South Los Santos is on a grid turned about
@@ -297,6 +301,7 @@ namespace Hoodrich.Territory
 
         /// <summary>Past this many boxes, say so -- see the note where it is checked.</summary>
         private const int BoxWarnAt = 400;
+
 
         /// <summary>
         /// Reads turf.json.
