@@ -1850,6 +1850,23 @@ namespace Hoodrich
 
                 if (_partyDog != null) pages.ResetTrigger = () => _partyDog.Reset();
 
+                pages.MeasureTurf = () =>
+                {
+                    // Measured, then redrawn from what was measured -- so the map changes while
+                    // you are looking at it rather than next session. The file it wrote is the
+                    // file the redraw reads, which is also the proof it wrote something usable.
+                    var said = Territory.TurfBake.Run(_gangs, _zoneMap);
+
+                    _turfMap.Hide();
+
+                    if (_cfg != null && _cfg.TurfOverlay)
+                    {
+                        _turfMap.Show(_gangs, Territory.TurfMap.Load());
+                    }
+
+                    UI.Notify.Important("~g~" + said + "~s~");
+                };
+
                 pages.AllJobs = () =>
                 {
                     var ids = new List<string>();
