@@ -1313,6 +1313,32 @@ namespace Hoodrich.Wheel
                 // Ten place names are ten things you read, not ten shapes you recognise.
                 page.AsList = true;
 
+                // YOUR OWN MARKER FIRST, WHEN THERE IS ONE.
+                //
+                // The list below is a list of places we thought of. It is a good list and it
+                // is still the quick way to the ones you use -- but a car service you can only
+                // take to eleven addresses is not a car service, and the game already has a
+                // way for you to say "there": you point at the map.
+                //
+                // Top of the list rather than the bottom, because if you have just set a
+                // marker it is almost certainly why you opened this.
+                var mark = Locations.Knowai.Waypoint();
+
+                if (mark != null)
+                {
+                    var to = mark;
+
+                    page.Add(to.Name, ">", () =>
+                    {
+                        var no = RideTo == null ? "Not wired up" : RideTo(to);
+
+                        if (!string.IsNullOrEmpty(no)) UI.Notify.Failure(no);
+                    },
+                        detail: "Where your marker is, on the nearest road to it",
+                        enabled: RideTo != null,
+                        disabledReason: "Not wired up");
+                }
+
                 foreach (var stop in Locations.Knowai.Stops)
                 {
                     // Captured, because the loop variable is one variable and every row would

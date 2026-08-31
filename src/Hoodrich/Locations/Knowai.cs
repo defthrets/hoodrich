@@ -306,6 +306,8 @@ namespace Hoodrich.Locations
             Begin(RideState.Riding);
             Drive(_dropAt, 22f);
 
+            Line();
+
             // THE FARE ON ITS OWN. The destination is already on the row you just pressed,
             // on the blip, and out of the window in about a minute; the number is the only
             // thing here you did not already know.
@@ -708,7 +710,11 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, _car.Handle, 0);
                 Function.Call(Hash.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR, _car.Handle, 255, 255, 255);
                 Function.Call(Hash.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR, _car.Handle, 255, 255, 255);
-                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 1);
+                // CLEAR GLASS. Tint 1 is pure black, which is the one thing a car with
+                // nobody in it must not have -- the whole joke is that you can see there is
+                // no driver, and blacked-out windows hide the only thing worth looking at.
+                // 0 is the stock glass the model shipped with.
+                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, 0);
 
                 return Wheel();
             }
@@ -968,6 +974,112 @@ namespace Hoodrich.Locations
             Drive(to, 20f);
         }
 
+        /// <summary>
+        /// Wherever you have put a marker on the map, as somewhere to be driven.
+        ///
+        /// THE LIST OF PLACES IS A LIST OF PLACES WE THOUGHT OF. It is a good list and it is
+        /// still the fast way to the ones you use, but a car you can only take to eleven
+        /// addresses is not a car service. A waypoint is you saying where, in the one way the
+        /// game already has for saying it.
+        ///
+        /// SNAPPED TO A ROAD, which is the part that matters. A map marker is a point on a
+        /// texture -- it lands in the sea, on a roof, in the middle of a field -- and its Z is
+        /// nothing at all, because the map is flat. The nearest vehicle node is a place a car
+        /// can actually be, so that is what gets driven to.
+        ///
+        /// Null when there is no marker, which is what keeps the row off the list rather than
+        /// putting a dead one on it.
+        /// </summary>
+        public static RideStop Waypoint()
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.IS_WAYPOINT_ACTIVE)) return null;
+
+                var flat = World.WaypointPosition;
+
+                if (flat == Vector3.Zero) return null;
+
+                // GetNextPositionOnStreet rather than the node native directly: the native
+                // hands its answer back through a pointer, this build is not compiled unsafe,
+                // and the wrapper is the same lookup without needing it to be.
+                var road = World.GetNextPositionOnStreet(flat, true);
+
+                if (road == Vector3.Zero) return null;
+
+                return new RideStop { Name = "Your waypoint", Area = "On the map", At = road };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Knowai's own line on the map for the trip you are on.
+        ///
+        /// THE CAR IS DRIVING AND YOU ARE NOT, which is exactly why this is worth having: the
+        /// one thing you can do in the back seat is watch where you are being taken, and until
+        /// now there was nothing on the map that said. The game draws a route to a blip when
+        /// asked, so it is asked.
+        ///
+        /// ITS OWN COLOUR, not the game's yellow. A yellow line is the one YOU set, and having
+        /// the car overwrite it would take away the waypoint you had before you got in -- this
+        /// is a second line, in the app's blue, alongside whatever you were already following.
+        ///
+        /// Short range off, obviously: a route to a blip you cannot see is not a route.
+        /// </summary>
+        private void Line()
+        {
+            Unline();
+
+            try
+            {
+                if (_to == null) return;
+
+                _route = World.CreateBlip(_dropAt);
+
+                if (_route == null || !_route.Exists()) return;
+
+                _route.Sprite = BlipSprite.Standard;
+                _route.Color = BlipColor.Blue;
+                _route.Scale = 0.9f;
+                _route.Name = "Knowai -- " + _to.Name;
+                _route.IsShortRange = false;
+
+                Function.Call(Hash.SET_BLIP_ROUTE, _route.Handle, true);
+                Function.Call(Hash.SET_BLIP_ROUTE_COLOUR, _route.Handle, 3);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Knowai could not draw its route: " + ex.Message);
+
+                _route = null;
+            }
+        }
+
+        /// <summary>The line goes when the trip does. A route to nowhere outlives the ride.</summary>
+        private void Unline()
+        {
+            try
+            {
+                if (_route != null && _route.Exists())
+                {
+                    Function.Call(Hash.SET_BLIP_ROUTE, _route.Handle, false);
+                    _route.Delete();
+                }
+            }
+            catch
+            {
+                // It is going either way.
+            }
+
+            _route = null;
+        }
+
+        /// <summary>The destination blip that carries the route. See Line.</summary>
+        private Blip _route;
+
         private void Drive(Vector3 to, float speed)
         {
             try
@@ -1033,6 +1145,8 @@ namespace Hoodrich.Locations
             {
                 if (_blip != null && _blip.Exists()) _blip.Delete();
                 _blip = null;
+
+                Unline();
 
                 Function.Call(Hash.CLEAR_PED_TASKS, _driver.Handle);
 
@@ -1135,6 +1249,8 @@ namespace Hoodrich.Locations
             {
                 if (_blip != null && _blip.Exists()) _blip.Delete();
                 _blip = null;
+
+                Unline();
 
                 // IT DRIVES OFF. IT IS NOT ABANDONED.
                 //
