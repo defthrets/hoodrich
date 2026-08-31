@@ -44,7 +44,16 @@ namespace Hoodrich.Locations
         private const int UpdateIntervalMs = 900;
 
         /// <summary>Close enough to put a hand on him.</summary>
-        private const float PetRange = 2.6f;
+        private const float PetRange = 2.2f;
+
+        /// <summary>
+        /// How square-on you have to be looking at him. One is straight at, zero is side-on.
+        ///
+        /// Point six is a comfortable cone of about seventy-five degrees to either side --
+        /// generous enough that you do not have to line him up, tight enough that walking past
+        /// him with him at your knee does not count as looking at him.
+        /// </summary>
+        private const float LookingAt = 0.6f;
 
         /// <summary>How long the pet lasts, and how long before he can be petted again.</summary>
         private const int PetMs = 3400;
@@ -743,6 +752,19 @@ namespace Hoodrich.Locations
             if (now < _petUntil) return;
             if (_dog.Position.DistanceTo(player.Position) > PetRange) return;
 
+            // AND YOU HAVE TO BE FACING HIM.
+            //
+            // DISTANCE ALONE CANNOT FIX THIS, because the dog follows you: once he is yours he
+            // is within arm's reach essentially all the time, so a prompt gated only on range
+            // is a prompt that is permanently on screen. Tightening the range makes it flicker
+            // instead of stick, which is worse.
+            //
+            // Facing is the thing that actually separates "the dog is here" from "I am doing
+            // something with the dog". You turn to him and it appears; you turn away and it is
+            // gone, which is also how you dismiss it. He spends the whole time at your heel and
+            // says nothing until you look at him.
+            if (!Facing(player)) return;
+
             Help.ShowThisFrame(Yours
                 ? "Hold ~INPUT_CELLPHONE_RIGHT~ to pet " + Name + ", or ~INPUT_CELLPHONE_LEFT~ "
                   + "to send him back to the yard."
@@ -761,6 +783,43 @@ namespace Hoodrich.Locations
             if (now < _petAgainAt) return;
 
             Pet(player, now);
+        }
+
+        /// <summary>
+        /// Whether you are actually looking at him.
+        ///
+        /// The player's own facing rather than the camera's, so it agrees with what the
+        /// character is doing rather than with where you happen to have swung the view. Both
+        /// vectors are flattened first -- height is not part of the question, and without that
+        /// a dog stood below you on a kerb reads as being off to one side.
+        /// </summary>
+        private bool Facing(Ped player)
+        {
+            try
+            {
+                var to = _dog.Position - player.Position;
+                to = new Vector3(to.X, to.Y, 0f);
+
+                var len = to.Length();
+                if (len < 0.01f) return true;
+
+                to = to * (1f / len);
+
+                var fwd = player.ForwardVector;
+                fwd = new Vector3(fwd.X, fwd.Y, 0f);
+
+                var flen = fwd.Length();
+                if (flen < 0.01f) return true;
+
+                fwd = fwd * (1f / flen);
+
+                return (fwd.X * to.X) + (fwd.Y * to.Y) >= LookingAt;
+            }
+            catch
+            {
+                // If it cannot be worked out, do not withhold the prompt.
+                return true;
+            }
         }
 
         /// <summary>The wave-off, on its own edge so holding it does not fire it twice.</summary>
