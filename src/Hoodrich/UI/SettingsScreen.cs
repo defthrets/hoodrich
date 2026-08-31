@@ -320,6 +320,9 @@ namespace Hoodrich.UI
                  "Optional. Select, then press the key you want");
             Bind("Modifier", "Phone", "Modifier", () => c.PhoneModifier, v => c.PhoneModifier = v,
                  "None for no modifier");
+            Bind("Turn the mod back on", "General", "RescueKey",
+                 () => c.RescueKey, v => c.RescueKey = v,
+                 "The way back in after switching Posted Up off up there");
             Tick("Sounds", "Phone", "PlaySounds", () => c.PlaySounds, v => c.PlaySounds = v,
                  "Clicks and confirmations");
             Tick("Blur behind it", "Phone", "BlurBackground",
@@ -338,6 +341,14 @@ namespace Hoodrich.UI
                         ? "none" : c.TimecycleModifier,
                     "A timecycle name. Ini only -- there is no list to pick from");
 
+            Head("Voices");
+            Tick("Recorded dialogue", "Voice", "VoiceEnabled",
+                 () => c.VoiceEnabled, v => c.VoiceEnabled = v,
+                 "Gerald, Lamar, Hao and Tao, in their own voices. Off leaves the text");
+            Slide("How loud", "Voice", "VoiceVolume",
+                  () => c.VoiceVolume, v => c.VoiceVolume = v, 0f, 1f, 0.05f, "0.00",
+                  note: "Against the game's own dialogue, not against the music");
+
             Head("Lamar's list");
             Slide("He rests between jobs", "Jobs", "LamarRestMinutes",
                   () => c.LamarRestMinutes, v => c.LamarRestMinutes = v, 0f, 60f, 1f, "0", "m",
@@ -351,6 +362,25 @@ namespace Hoodrich.UI
                   () => c.RollerCars, v => c.RollerCars = (int)v, 0f, 6f, 1f, "0");
             Slide("Riders at once", "Block", "RollerBikes",
                   () => c.RollerBikes, v => c.RollerBikes = (int)v, 0f, 6f, 1f, "0");
+            Tick("Riders pull wheelies", "Block", "RollerWheelies",
+                 () => c.RollerWheelies, v => c.RollerWheelies = v,
+                 "On the straights, when they have the room for it");
+            Tick("Crews on foot", "Block", "WalkersEnabled",
+                 () => c.WalkersEnabled, v => c.WalkersEnabled = v,
+                 "Groups of ours walking the back streets, drinking and smoking");
+            Slide("Crews at once", "Block", "WalkerCrews",
+                  () => c.WalkerCrews, v => c.WalkerCrews = (int)v, 0f, 5f, 1f, "0");
+
+            Head("The takeover");
+            Tick("It happens", "Block", "TakeoverEnabled",
+                 () => c.TakeoverEnabled, v => c.TakeoverEnabled = v,
+                 "The junction on Carson, once a night between nine and four. Nothing is asked of you");
+            Slide("The ring of people", "Block", "TakeoverRadius",
+                  () => c.TakeoverRadius, v => c.TakeoverRadius = v, 8f, 40f, 1f, "0", "m",
+                  note: "How far out the crowd stands from the middle");
+            Slide("The circle the cars drive", "Block", "TakeoverSpinRadius",
+                  () => c.TakeoverSpinRadius, v => c.TakeoverSpinRadius = v, 2f, 18f, 0.5f, "0.0", "m",
+                  note: "What they aim at. They slide well outside it, which is the point");
 
             Head("The law");
             Tick("Police patrol the blocks", "Police", "PatrolsEnabled",
@@ -363,6 +393,20 @@ namespace Hoodrich.UI
             Head("Socials");
             Tick("Feed on the right", "Socials", "TweetsOnTheRight",
                  () => c.TweetsOnTheRight, v => c.TweetsOnTheRight = v);
+            Tick("The feed tips you off", "Socials", "BlockTipsEnabled",
+                 () => c.BlockTipsEnabled, v => c.BlockTipsEnabled = v,
+                 "Somebody posts that a block is busy, and it genuinely is");
+            Slide("They notice every", "Socials", "BlockTipEveryMinutes",
+                  () => c.BlockTipEveryMinutes, v => c.BlockTipEveryMinutes = v,
+                  1f, 120f, 1f, "0", "m");
+            Slide("Chance somebody posts", "Socials", "BlockTipChancePercent",
+                  () => c.BlockTipChancePercent, v => c.BlockTipChancePercent = v,
+                  0f, 100f, 5f, "0", "%");
+            Slide("A tip is worth", "Socials", "BlockTipBoost",
+                  () => c.BlockTipBoost, v => c.BlockTipBoost = v, 1f, 4f, 0.1f, "0.0", "x",
+                  note: "How much more often somebody buys on a block that got named");
+            Slide("A tip lasts", "Socials", "BlockTipMinutes",
+                  () => c.BlockTipMinutes, v => c.BlockTipMinutes = v, 1f, 60f, 1f, "0", "m");
 
             Head("Posting up");
             Tick("Show the corner readout", "PostUp", "ShowDealHud",
@@ -385,6 +429,32 @@ namespace Hoodrich.UI
             Slide("Fine when they find it", "PostUp", "PostUpFine",
                   () => c.PostUpFine, v => c.PostUpFine = (int)v, 0f, 50000f, 250f, "N0", "", "$");
 
+            Tick("Blocks get worked out", "PostUp", "BlockSaturationEnabled",
+                 () => c.BlockSaturationEnabled, v => c.BlockSaturationEnabled = v,
+                 "Selling on one corner makes the next customer there slower to turn up");
+            Slide("Grams to dry a block", "PostUp", "BlockSaturationGrams",
+                  () => c.BlockSaturationGrams, v => c.BlockSaturationGrams = v,
+                  10f, 2000f, 10f, "0", "g");
+            Slide("It recovers over", "PostUp", "BlockRecoveryMinutes",
+                  () => c.BlockRecoveryMinutes, v => c.BlockRecoveryMinutes = v,
+                  1f, 240f, 1f, "0", "m", note: "While you are somewhere else");
+            Slide("A dead block still does", "PostUp", "BlockDemandFloor",
+                  () => c.BlockDemandFloor, v => c.BlockDemandFloor = v, 0f, 1f, 0.05f, "0.00", "x",
+                  note: "It never goes to nothing. 0.25 is a quarter of normal");
+
+            Tick("Buyers ring you", "PostUp", "ColdCallsEnabled",
+                 () => c.ColdCallsEnabled, v => c.ColdCallsEnabled = v,
+                 "Somebody calls wanting something, somewhere, for a while");
+            Slide("They try every", "PostUp", "ColdCallEveryMinutes",
+                  () => c.ColdCallEveryMinutes, v => c.ColdCallEveryMinutes = v,
+                  1f, 120f, 1f, "0", "m");
+            Slide("Chance they call", "PostUp", "ColdCallChancePercent",
+                  () => c.ColdCallChancePercent, v => c.ColdCallChancePercent = v,
+                  0f, 100f, 5f, "0", "%");
+            Slide("You have", "PostUp", "ColdCallMinutes",
+                  () => c.ColdCallMinutes, v => c.ColdCallMinutes = v, 1f, 60f, 1f, "0", "m",
+                  note: "Before they go elsewhere");
+
             Head("Risk");
             Slide("Police bust chance", "Risk", "PoliceBustChancePercent",
                   () => c.PoliceBustChancePercent, v => c.PoliceBustChancePercent = v,
@@ -405,6 +475,19 @@ namespace Hoodrich.UI
                   () => c.DeadDropDespawnMinutes, v => c.DeadDropDespawnMinutes = v,
                   0f, 60f, 1f, "0", "m", note: "0 leaves it there forever");
 
+            Tick("The house gets turned over", "Risk", "StashRaidsEnabled",
+                 () => c.StashRaidsEnabled, v => c.StashRaidsEnabled = v,
+                 "Hold enough, get loud enough, and somebody comes while you are out");
+            Slide("Chance of a raid", "Risk", "StashRaidChancePercent",
+                  () => c.StashRaidChancePercent, v => c.StashRaidChancePercent = v,
+                  0f, 100f, 5f, "0", "%");
+            Slide("They take", "Risk", "StashRaidTakePercent",
+                  () => c.StashRaidTakePercent, v => c.StashRaidTakePercent = v,
+                  0f, 100f, 5f, "0", "%");
+            Slide("You are warned", "Risk", "StashRaidWarningMinutes",
+                  () => c.StashRaidWarningMinutes, v => c.StashRaidWarningMinutes = v,
+                  0f, 15f, 0.5f, "0.0", "m", note: "Be at the house when they come and it is off");
+
             Head("Money");
             Slide("Bulk discount", "Economy", "BulkPurchaseDiscountPercent",
                   () => c.BulkPurchaseDiscountPercent, v => c.BulkPurchaseDiscountPercent = v,
@@ -419,6 +502,12 @@ namespace Hoodrich.UI
                   0f, 80f, 5f, "0", "%");
             Slide("Grams a leader fronts you", "Map", "LeaderFrontGrams",
                   () => c.LeaderFrontGrams, v => c.LeaderFrontGrams = v, 0f, 200f, 5f, "0", "g");
+            Slide("Tanya's tow", "Cars", "TowFee",
+                  () => c.TowFee, v => c.TowFee = (int)v, 0f, 5000f, 50f, "N0", "", "$",
+                  note: "What she charges to recover a wreck");
+            Slide("The yard keeps it", "Cars", "TowYardHours",
+                  () => c.TowYardHours, v => c.TowYardHours = v, 1f, 168f, 1f, "0", "h",
+                  note: "In-game hours before it turns up back at Hao's");
 
             Head("Supply");
             Slide("A dealer holds", "Supply", "DealerMaxStockGrams",
