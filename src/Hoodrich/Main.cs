@@ -72,6 +72,9 @@ namespace Hoodrich
         private readonly DeadDrop _deadDrop;
         private readonly PostUp _postUp;
         private readonly ZoneMap _zoneMap;
+
+        /// <summary>Whose block is whose, shaded on the map. See Territory.TurfMap.</summary>
+        private readonly TurfMap _turfMap = new TurfMap();
         private readonly GangLeaders _leaders;
         private readonly LeaderTalk _leaderTalk;
         private readonly Conversation _talk;
@@ -2607,6 +2610,16 @@ namespace Hoodrich
                 {
                     _sweptFaces = true;
                     UI.Headshots.Sweep();
+
+                    // AND THE TURF GOES ON THE MAP, ONCE. These are static map furniture --
+                    // nothing about a zone moves -- so they are made on the first tick that
+                    // has a world to make them in and then left alone. Doing it in the
+                    // constructor would be doing it before the map exists.
+                    if (_cfg != null && _cfg.TurfOverlay && !_turfMap.Showing)
+                    {
+                        try { _turfMap.Show(_gangs, _zoneMap); }
+                        catch (Exception ex) { Log.Debug("Turf map: " + ex.Message); }
+                    }
                 }
 
                 // One step of the face factory. Does nothing at all when nobody is waiting,
@@ -3466,6 +3479,7 @@ namespace Hoodrich
             try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { UI.Headshots.Clear(); } catch { /* teardown */ }
+            try { _turfMap.Hide(); } catch { /* teardown */ }
             try { _tow?.RestoreWorld(); } catch { /* teardown */ }
             try { _ride?.RestoreWorld(); } catch { /* teardown */ }
             try { _bust?.RestoreWorld(); } catch { /* teardown */ }

@@ -371,6 +371,10 @@ namespace Hoodrich.UI
             Slide("Crews at once", "Block", "WalkerCrews",
                   () => c.WalkerCrews, v => c.WalkerCrews = (int)v, 0f, 5f, 1f, "0");
 
+            Tick("Shade the turf on the map", "Map", "TurfOverlay",
+                 () => c.TurfOverlay, v => c.TurfOverlay = v,
+                 "Every set's blocks in their own colour, on the minimap and the pause map");
+
             Head("The takeover");
             Tick("It happens", "Block", "TakeoverEnabled",
                  () => c.TakeoverEnabled, v => c.TakeoverEnabled = v,

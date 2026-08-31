@@ -405,6 +405,14 @@ namespace Hoodrich.Core
         public float TakeoverSpinRadius = 5f;
 
         /// <summary>Whether groups of the set walk the back streets on foot.</summary>
+        /// <summary>
+        /// Whether every set's turf is shaded on the map.
+        ///
+        /// On by default, because the mod already knows all of it and never showed any of it.
+        /// Off for anybody who would rather read the streets.
+        /// </summary>
+        public bool TurfOverlay = true;
+
         public bool WalkersEnabled = true;
 
         /// <summary>How many of those groups are out at once. Each is three or four men.</summary>
@@ -617,6 +625,7 @@ namespace Hoodrich.Core
             s.TakeoverSpinRight = (int)Clamp(ini.GetInt("Block", "TakeoverSpinRight", s.TakeoverSpinRight), 0f, 40f);
             s.TakeoverBurnAction = (int)Clamp(ini.GetInt("Block", "TakeoverBurnAction", s.TakeoverBurnAction), 0f, 40f);
             s.TakeoverSpinRadius = Clamp(ini.GetFloat("Block", "TakeoverSpinRadius", s.TakeoverSpinRadius), 2f, 18f);
+            s.TurfOverlay = ini.GetBool("Map", "TurfOverlay", s.TurfOverlay);
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
