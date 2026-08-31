@@ -142,7 +142,7 @@ namespace Hoodrich.Locations
         /// on top of them. Anything of ours is exempt: the drifters live inside it, the
         /// spectators park on the line, and the police are supposed to come straight through.
         /// </summary>
-        private const float BlockAt = 21f;
+        private const float BlockAt = 30f;
 
         /// <summary>How often one car may be turned round, so it is not re-tasked every tick.</summary>
         private const int TurnGapMs = 4000;
@@ -153,18 +153,31 @@ namespace Hoodrich.Locations
 
         // ---- the crowd ----------------------------------------------------------
 
-        private const int CrowdMin = 28;
-        private const int CrowdMax = 40;
+        private const int CrowdMin = 48;
+        private const int CrowdMax = 68;
 
         /// <summary>How many set off at once, so it fills up rather than materialising.</summary>
-        private const int PerWave = 4;
+        private const int PerWave = 7;
         private const int WaveGapMs = 2600;
 
+        /// <summary>
+        /// What the ring is doing while it watches.
+        ///
+        /// Weighted by repetition rather than by a table of numbers, which is the cheapest way
+        /// to say "mostly cheering and drinking, some smoking, a few filming it on a phone".
+        /// The mobile ones earn their place -- half a real crowd is holding a phone up -- but
+        /// they were a third of this list and it read as a bus queue.
+        /// </summary>
         private static readonly string[] Watching =
         {
-            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_STAND_MOBILE_UPRIGHT",
-            "WORLD_HUMAN_STAND_IMPATIENT", "WORLD_HUMAN_DRINKING",
-            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_CHEERING"
+            "WORLD_HUMAN_CHEERING", "WORLD_HUMAN_CHEERING", "WORLD_HUMAN_CHEERING",
+            "WORLD_HUMAN_CHEERING", "WORLD_HUMAN_CHEERING",
+            "WORLD_HUMAN_DRINKING", "WORLD_HUMAN_DRINKING", "WORLD_HUMAN_DRINKING",
+            "WORLD_HUMAN_DRINKING",
+            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING",
+            "WORLD_HUMAN_PARTYING", "WORLD_HUMAN_PARTYING",
+            "WORLD_HUMAN_STAND_MOBILE_UPRIGHT", "WORLD_HUMAN_STAND_MOBILE_UPRIGHT",
+            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_STAND_IMPATIENT"
         };
 
         private static readonly string[] Faces =
@@ -211,10 +224,20 @@ namespace Hoodrich.Locations
             "slamvan3", "sabregt2", "virgo2", "tornado5", "minivan2"
         };
 
-        private const int ParkedMin = 7;
-        private const int ParkedMax = 12;
-        private const int LowsMin = 2;
-        private const int LowsMax = 4;
+        /// <summary>
+        /// And the cars that came to watch, ringed round the outside.
+        ///
+        /// Nearly double, because they are the wall. The cordon turns strangers round and the
+        /// road nodes stop them being sent, but a line of parked cars is the thing you can
+        /// actually see holding the junction -- and it is what a real one looks like from
+        /// above. They park on a ring OUTSIDE the drift circle and the gaps between them are
+        /// what the drift cars come in through, so more of them closes the junction without
+        /// ever sealing it.
+        /// </summary>
+        private const int ParkedMin = 14;
+        private const int ParkedMax = 20;
+        private const int LowsMin = 4;
+        private const int LowsMax = 7;
 
         // ---- what is out there --------------------------------------------------
 
@@ -321,6 +344,17 @@ namespace Hoodrich.Locations
         private int _nextWord;
 
         private const int TickMs = 700;
+        /// <summary>
+        /// How long the block says nothing about it.
+        ///
+        /// Half of the three hours it runs, in real milliseconds rather than game minutes --
+        /// the posts are paced by the real clock like everything else on the feed, so the
+        /// threshold has to be on the same clock as the gap between them.
+        /// </summary>
+        private const int QuietForMs = 900000;
+
+        private int _startedAt;
+
         private const int WordMinMs = 55000;
         private const int WordMaxMs = 130000;
 
@@ -392,6 +426,7 @@ namespace Hoodrich.Locations
                         Keep(now);
                         Working(now);
                         Chatter(now);
+                        Racket(now);
                         break;
 
                     case TakeoverState.Scattering:
@@ -457,6 +492,23 @@ namespace Hoodrich.Locations
             State = TakeoverState.Running;
 
             _endsAt = OwnedCars.NowMinutes() + (int)(LastsHours * 60f);
+            _startedAt = Game.GameTime;
+
+            // AND THE ROADS THROUGH IT ARE SWITCHED OFF.
+            //
+            // The turn-around cordon works on cars that are already here and it will always be
+            // reacting -- something has to get close before it can be sent back, which is why
+            // one occasionally made it into the middle before anybody noticed. This stops them
+            // being routed here at all: with the nodes off, the game's own traffic generator
+            // treats the junction as somewhere there is no road, and simply plans around it.
+            //
+            // Ours are unaffected because ours are not on the traffic generator. A drift car is
+            // handed a coordinate and drives to it; a spectator is handed a parking slot. The
+            // nodes are for the cars nobody is steering.
+            //
+            // Restored in Pack(), and restored again in RestoreWorld(), because a junction left
+            // with its roads switched off is a permanent hole in the city's traffic.
+            Roads(false);
             _toCome = _rng.Next(CrowdMin, CrowdMax + 1);
             _nextWave = now;
             _nextWord = now + _rng.Next(20000, 45000);
@@ -540,8 +592,12 @@ namespace Hoodrich.Locations
                 // They are allowed to bolt; they are not allowed to keep going.
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, false);
 
+                // THEY RUN. 1.2 is a walk, and a walk from a hundred metres out is two
+                // minutes of somebody strolling towards a thing that has already started.
+                // Nobody walks to a takeover. 3.0 is a run, and the ring fills in seconds
+                // rather than in the time it takes to lose interest.
                 Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, h,
-                              slot.X, slot.Y, slot.Z, 1.2f, -1, 1.5f, true, 0f);
+                              slot.X, slot.Y, slot.Z, 3.0f, -1, 1.5f, true, 0f);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, h, true);
 
@@ -631,7 +687,7 @@ namespace Hoodrich.Locations
                         Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
 
                         Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, w.Man.Handle,
-                                      w.Slot.X, w.Slot.Y, w.Slot.Z, 1.6f, -1, 1.5f, true, 0f);
+                                      w.Slot.X, w.Slot.Y, w.Slot.Z, 3.0f, -1, 1.5f, true, 0f);
 
                         Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
                     }
@@ -972,6 +1028,19 @@ namespace Hoodrich.Locations
 
                 if (now < r.Until) continue;
 
+                // HIS GO IS UP, BUT NOT IF HE IS THE SHOW.
+                //
+                // The burnouts run for the whole night until the police arrive, and that means
+                // there is never a moment with nothing happening in the middle. A car leaving
+                // opens a gap of thirty seconds -- the time it takes the next one to drive in
+                // from a block away -- and if the one leaving was the last one working, that
+                // gap is the entire takeover being empty while somebody drives to it.
+                //
+                // So nobody stands down until somebody else is already going round. The
+                // replacement is sent by the top-up below and this one carries on until it
+                // arrives, which is a driver having a longer turn rather than a driver stuck.
+                if (Spinning() <= 1) continue;
+
                 Leave(r);
             }
 
@@ -991,10 +1060,20 @@ namespace Hoodrich.Locations
 
             if (mark < 1) In(true);
 
-            // TWO OR THREE ROUND THE OUTSIDE, so with the one on the mark there are three or
-            // four cars working at once. It was one-or-two, which read as an empty junction
-            // with a car in it -- and with the mark broken above it was often literally one.
-            var want = _rng.Next(100) < 55 ? 3 : 2;
+            // TWO TO FOUR WORKING AT ONCE, and never fewer than two.
+            //
+            // The count is re-rolled on a clock rather than every tick. Rolling it every tick
+            // meant the target flickered between three and four several times a second, so a
+            // car was constantly being sent for and then not needed -- which is how you get
+            // four cars queueing to enter a circle that wants three.
+            if (now >= _reroll)
+            {
+                _reroll = now + RerollMs;
+                _want = 1 + _rng.Next(1, 4);
+            }
+
+            var want = _want - 1;
+            if (want < 1) want = 1;
 
             while (round < want)
             {
@@ -1002,6 +1081,27 @@ namespace Hoodrich.Locations
                 round++;
             }
         }
+
+        /// <summary>How many are actually working the circle right now.</summary>
+        private int Spinning()
+        {
+            var n = 0;
+
+            foreach (var r in _running)
+            {
+                if (r.Leaving || !r.Circling) continue;
+                if (r.Car == null || !r.Car.Exists()) continue;
+
+                n++;
+            }
+
+            return n;
+        }
+
+        /// <summary>How many should be out there, and when that was last decided.</summary>
+        private int _want = 3;
+        private int _reroll;
+        private const int RerollMs = 45000;
 
         /// <summary>Somebody drives in for their go, on the mark or round the outside.</summary>
         private bool In(bool middle)
@@ -1032,8 +1132,34 @@ namespace Hoodrich.Locations
                     Way = _rng.Next(2) == 0 ? 1 : -1
                 };
 
+                // WHERE HE IS AIMING, AND IT IS NOT THE MIDDLE.
+                //
+                // Everybody was sent to the centre mark, which meant every car that joined
+                // drove straight across the circle -- through whoever was already in it, past
+                // the burnout on the mark, and out the other side before the leash pulled it
+                // back. It read as traffic cutting through a takeover rather than as somebody
+                // arriving at one.
+                //
+                // The one doing the static burnout genuinely is going to the middle. Everybody
+                // else is aimed at the point on their own circle NEAREST THE WAY THEY CAME IN,
+                // so they arrive on the ring tangentially, already where they are meant to be
+                // going round, and start their donut from there.
+                var aim = Middle;
+
+                if (!middle)
+                {
+                    var inFrom = from - Middle;
+                    var len = inFrom.Length();
+
+                    if (len > 0.5f)
+                    {
+                        inFrom = inFrom * (1f / len);
+                        aim = Middle + inFrom * r.Radius;
+                    }
+                }
+
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
-                              Middle.X, Middle.Y, Middle.Z, 16f, 0, car.Model.Hash,
+                              aim.X, aim.Y, aim.Z, 16f, 0, car.Model.Hash,
                               786603, 2f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
@@ -1119,8 +1245,25 @@ namespace Hoodrich.Locations
 
                     try
                     {
+                        // Back to his own circle rather than to the centre, for the same reason
+                        // he was not sent to the centre in the first place -- a car recovering
+                        // from a wide slide should rejoin the ring, not drive across it.
+                        var back = Middle;
+
+                        if (!r.Middle)
+                        {
+                            var out_ = r.Car.Position - Middle;
+                            var len = out_.Length();
+
+                            if (len > 0.5f)
+                            {
+                                out_ = out_ * (1f / len);
+                                back = Middle + out_ * r.Radius;
+                            }
+                        }
+
                         Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
-                                      r.Car.Handle, Middle.X, Middle.Y, Middle.Z,
+                                      r.Car.Handle, back.X, back.Y, back.Z,
                                       12f, 0, r.Car.Model.Hash, 786603, 4f, true);
                     }
                     catch
@@ -1194,12 +1337,74 @@ namespace Hoodrich.Locations
         private const int BurstMs = 3200;
         private const float Wander = 7f;
 
+        /// <summary>
+        /// The crowd, out loud.
+        ///
+        /// A ring of fifty people cheering silently is the uncanny part of every crowd anybody
+        /// has ever built out of scenarios: the animations are right, the place sounds empty,
+        /// and it reads as a screenshot rather than as a night out. This is the difference
+        /// between watching a takeover and being at one.
+        ///
+        /// A FEW OF THEM, NOT ALL OF THEM. Fifty peds shouting on the same frame is a wall of
+        /// noise with no shape to it -- three at a time, a second or so apart, is a crowd.
+        /// They are picked at random each time so it moves around the ring rather than coming
+        /// from the same three men all night.
+        ///
+        /// The speech names are tried and not checked, which is safe here in a way that native
+        /// hashes are not: an ambient speech that does not exist on this build is silence, and
+        /// silence is what we already had.
+        /// </summary>
+        private void Racket(int now)
+        {
+            if (now < _nextNoise || _crowd.Count == 0) return;
+
+            _nextNoise = now + NoiseMinMs + _rng.Next(NoiseMaxMs - NoiseMinMs);
+
+            for (var i = 0; i < NoisyAtOnce; i++)
+            {
+                try
+                {
+                    var w = _crowd[_rng.Next(_crowd.Count)];
+
+                    if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive || !w.There) continue;
+
+                    Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, w.Man.Handle,
+                                  Shouts[_rng.Next(Shouts.Length)], "SPEECH_PARAMS_FORCE_SHOUTED");
+                }
+                catch
+                {
+                    // Next one.
+                }
+            }
+        }
+
+        /// <summary>What a crowd shouts at a car going sideways.</summary>
+        private static readonly string[] Shouts =
+        {
+            "GENERIC_CURSE_HIGH", "GENERIC_CURSE_MED", "GENERIC_SHOCKED_HIGH",
+            "GENERIC_SHOCKED_MED", "GENERIC_WAR_CRY", "CHEER", "GENERIC_INSULT_HIGH",
+            "GENERIC_HOWS_IT_GOING", "GENERIC_FRIGHTENED_HIGH", "GENERIC_WHOA"
+        };
+
+        /// <summary>How many shout at once, and how often.</summary>
+        private const int NoisyAtOnce = 3;
+        private const int NoiseMinMs = 1400;
+        private const int NoiseMaxMs = 3800;
+
+        private int _nextNoise;
+
         // ---- the feed -----------------------------------------------------------
 
         /// <summary>The block says something about it while it is on.</summary>
         private void Chatter(int now)
         {
             if (Social == null || now < _nextWord) return;
+
+            // NOT UNTIL IT HAS BEEN GOING A WHILE. The block posting about a takeover in the
+            // first minute is the block reporting something it cannot have noticed yet -- and
+            // it gave the whole thing away before there was anything at the junction to see.
+            // Half the night in, it is a thing people have walked past and are talking about.
+            if (_startedAt == 0 || Game.GameTime - _startedAt < QuietForMs) return;
 
             _nextWord = now + _rng.Next(WordMinMs, WordMaxMs);
 
@@ -1850,8 +2055,46 @@ namespace Hoodrich.Locations
         private const float GoneRange = 130f;
         private const int GhostMs = 180000;
 
+        /// <summary>
+        /// Turn the roads through the junction off, or put them back.
+        ///
+        /// A box rather than a radius, because that is the shape the native takes. Sized off
+        /// the cordon so the two agree -- a car turned round at thirty metres and a road that
+        /// stops existing at twenty would leave a ten metre band where traffic is routed in
+        /// specifically to be sent back out.
+        /// </summary>
+        private void Roads(bool on)
+        {
+            try
+            {
+                var r = BlockAt;
+
+                if (on)
+                {
+                    Function.Call(Hash.SET_ROADS_BACK_TO_ORIGINAL,
+                                  Middle.X - r, Middle.Y - r, Middle.Z - 20f,
+                                  Middle.X + r, Middle.Y + r, Middle.Z + 20f);
+                }
+                else
+                {
+                    Function.Call(Hash.SET_ROADS_IN_AREA,
+                                  Middle.X - r, Middle.Y - r, Middle.Z - 20f,
+                                  Middle.X + r, Middle.Y + r, Middle.Z + 20f,
+                                  false, true);
+                }
+
+                Log.Info("Takeover: roads through the junction " + (on ? "restored." : "switched off."));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not set the roads: " + ex.Message);
+            }
+        }
+
         private void Pack()
         {
+            Roads(true);
+
             foreach (var r in _running) Out(r);
             _running.Clear();
 
@@ -1941,6 +2184,8 @@ namespace Hoodrich.Locations
             {
                 // Teardown.
             }
+
+            Roads(true);
 
             _crowd.Clear();
             _parked.Clear();
