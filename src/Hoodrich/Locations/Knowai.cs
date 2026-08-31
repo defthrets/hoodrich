@@ -342,6 +342,12 @@ namespace Hoodrich.Locations
                     catch { /* next tick */ }
                 }
 
+                // The same argument as the invisible driver, for the same reason: both are
+                // things that come back on their own and both are things you only notice once
+                // they have broken the illusion.
+                Locks();
+                Backseat(player);
+
                 var now = Game.GameTime;
 
                 if (now - _phaseFrom > PhaseCapMs)
@@ -682,12 +688,95 @@ namespace Hoodrich.Locations
                 // seat and the only question left is which one.
                 Function.Call(Hash.SET_VEHICLE_EXCLUSIVE_DRIVER, _car.Handle, _driver.Handle, 0);
 
+                // AND THE FRONT DOORS DO NOT OPEN FOR YOU EITHER.
+                //
+                // Exclusive driver only defends the WHEEL. It stops the player taking the
+                // driver's seat and then the game does the helpful thing and puts him in the
+                // next one along -- the front passenger seat, beside a man he cannot see, in a
+                // car with nobody driving it. Which is the one seat in this vehicle that makes
+                // the whole idea fall over.
+                //
+                // Both front doors are locked individually, so the rear ones still work and
+                // every ordinary way in is a back seat. Locking the vehicle outright would
+                // lock him out of his own taxi.
+                Locks();
+
                 return true;
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not seat a Knowai driver: " + ex.Message);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Lock the two front doors and leave the back ones alone.
+        ///
+        /// Re-asserted rather than set once, because a door lock is one of the things that
+        /// comes back when a vehicle streams out and in again -- and the car spends its whole
+        /// life driving between two places the player may not be standing at.
+        ///
+        /// The native is addressed by hash. SET_VEHICLE_INDIVIDUAL_DOORS_LOCKED is not carried
+        /// by every build of the scripting library under the same name, and a name that is
+        /// missing is a mod that will not compile, while a hash that is wrong is a door that
+        /// stays unlocked.
+        /// </summary>
+        private void Locks()
+        {
+            if (_car == null || !_car.Exists()) return;
+
+            try
+            {
+                // Door 0 is the driver's, door 1 the front passenger. 2 is "locked".
+                Function.Call((Hash)0xBE70724027F85BCDUL, _car.Handle, 0, 2);
+                Function.Call((Hash)0xBE70724027F85BCDUL, _car.Handle, 1, 2);
+            }
+            catch
+            {
+                // The seat check below is the one that actually has to hold.
+            }
+        }
+
+        /// <summary>
+        /// And if he is in the front anyway, he is moved.
+        ///
+        /// The doors are the polite version and this is the one that cannot be argued with.
+        /// There are ways into a front seat that no lock covers -- another mod warping him, a
+        /// cutscene putting him back, the exclusive driver being cleared by something else --
+        /// and all of them end with the player sat where the illusion breaks.
+        ///
+        /// Near-side rear first, off-side if something is already there. If both are somehow
+        /// taken there is nowhere to move him to and he stays where he is, which is better
+        /// than putting him out of the car mid-fare.
+        /// </summary>
+        private void Backseat(Ped player)
+        {
+            if (_car == null || !_car.Exists()) return;
+            if (player == null || !player.Exists() || !player.IsInVehicle(_car)) return;
+
+            try
+            {
+                var upFront =
+                    Function.Call<int>(Hash.GET_PED_IN_VEHICLE_SEAT, _car.Handle, -1) == player.Handle
+                    || Function.Call<int>(Hash.GET_PED_IN_VEHICLE_SEAT, _car.Handle, 0) == player.Handle;
+
+                if (!upFront) return;
+
+                var seat = RearSeat;
+
+                if (!Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, _car.Handle, RearSeat))
+                {
+                    if (!Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, _car.Handle, 1)) return;
+                    seat = 1;
+                }
+
+                Function.Call(Hash.SET_PED_INTO_VEHICLE, player.Handle, _car.Handle, seat);
+                Log.Info("Knowai: he got in the front, so he was moved to the back.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not move him into the back: " + ex.Message);
             }
         }
 
