@@ -126,9 +126,16 @@ namespace Hoodrich.Phone
                 return;
             }
 
+            // WHOSE ARROW KEY IS IT THIS FRAME?
+            //
+            // Sampled HERE, above our own suppression, or the answer is always "ours" -- we
+            // disable these controls every single frame ourselves, so asking afterwards is
+            // asking about us.
+            var mine = Ours();
+
             SuppressVanillaPhone();
 
-            var edge = ReadOpenEdge();
+            var edge = ReadOpenEdge(mine);
 
             if (!_menu.IsOpen)
             {
@@ -414,12 +421,59 @@ namespace Hoodrich.Phone
             Function.Call(Hash.HIDE_HUD_COMPONENT_THIS_FRAME, HudCellphone);
         }
 
-        /// <summary>Rising edge of whatever opens the phone.</summary>
-        private bool ReadOpenEdge()
+        /// <summary>
+        /// Whether the phone button is still ours to read this frame.
+        ///
+        /// THE WHOLE PROBLEM IS THAT Pressed READS DISABLED CONTROLS. It is
+        /// IS_DISABLED_CONTROL_PRESSED, and it has to be -- we disable the phone controls
+        /// ourselves every frame to keep the game's handset down, so a normal read would never
+        /// see our own button at all.
+        ///
+        /// The cost of that is it also sees through EVERYBODY ELSE'S disabling. A trainer or a
+        /// mod menu opened on a hotkey takes the arrow keys for its own list, the way any menu
+        /// does, by disabling them each frame -- and we carried on reading them through it. So
+        /// scrolling down somebody else's menu opened our phone on top of it.
+        ///
+        /// This asks the plain question instead: is this control enabled right now. Called
+        /// before our own suppression runs, so a "no" is somebody else's no -- another script
+        /// that ticked earlier this frame, or the game itself during a cutscene or a shop.
+        /// Either way it is not a moment to put a phone up.
+        ///
+        /// Both controls, because menus differ in which they take: DISABLE_ALL_CONTROL_ACTIONS
+        /// covers everything, and the ones that pick and choose usually take the directions
+        /// rather than INPUT_CELLPHONE itself.
+        ///
+        /// It cannot see a menu that disables nothing at all. There is no native for "is
+        /// somebody else's menu open" and there is not going to be one -- this is the signal a
+        /// menu actually leaves, and a menu that leaves none is indistinguishable from no menu.
+        /// </summary>
+        private static bool Ours()
         {
-            var down = Pressed(Control.Phone);
+            try
+            {
+                return Function.Call<bool>(Hash.IS_CONTROL_ENABLED, 0, (int)Control.Phone)
+                    && Function.Call<bool>(Hash.IS_CONTROL_ENABLED, 0, (int)Control.PhoneUp);
+            }
+            catch
+            {
+                // If it cannot be asked, it is ours. A phone that stops opening is worse than
+                // one that opens over somebody's menu.
+                return true;
+            }
+        }
 
-            // A key of your own still works, for anybody who would rather keep the real phone.
+        /// <summary>Rising edge of whatever opens the phone.</summary>
+        /// <param name="mine">Whether the game's phone control is ours to read this frame.</param>
+        private bool ReadOpenEdge(bool mine)
+        {
+            var down = mine && Pressed(Control.Phone);
+
+            // A KEY OF YOUR OWN STILL WORKS, AND IS DELIBERATELY NOT GATED ABOVE.
+            //
+            // It is read straight off the keyboard, so no other mod can disable it -- and that
+            // makes it the way back in if something out there holds the arrow keys down for
+            // good rather than only while a menu is up. The arrow key defers to whoever else
+            // claimed it; a key you chose yourself answers to nobody.
             if (!down && _cfg.PhoneKey != Keys.None)
             {
                 if (_cfg.PhoneModifier == Keys.None || Game.IsKeyPressed(_cfg.PhoneModifier))
