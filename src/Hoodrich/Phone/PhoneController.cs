@@ -490,6 +490,9 @@ namespace Hoodrich.Phone
         /// <summary>Set on open; cleared once every direction has actually been let go.</summary>
         private bool _navBlocked;
 
+        /// <summary>When a held press should actually open its app, or nought. See HandleInput.</summary>
+        private int _actAt;
+
         private void HandleInput()
         {
             if (_navBlocked)
@@ -515,8 +518,36 @@ namespace Hoodrich.Phone
             else if (Repeat(3, Pressed(Control.PhoneLeft))) _menu.MoveColumn(-1);
             else if (Repeat(4, Pressed(Control.PhoneRight))) _menu.MoveColumn(1);
 
+            // A PRESSED APP PLAYS ITS ANIMATION BEFORE THE PAGE MOVES.
+            //
+            // The page used to change on the same frame as the press, so the pressed icon was
+            // never drawn once in its pressed state -- the only acknowledgement was the thing
+            // you asked for arriving. A tenth of a second is under the threshold where anybody
+            // calls a menu slow, and it is the whole difference between a button and a jump.
+            //
+            // Held HERE rather than in the menu because this is about when the press takes
+            // effect; the menu's job is to draw it.
+            if (_actAt != 0)
+            {
+                if (Game.GameTime < _actAt) return;
+
+                _actAt = 0;
+                _menu.ClearPress();
+
+                var late = _menu.Pick();
+                if (late != null) Act(late);
+                return;
+            }
+
             if (JustPressed(Control.PhoneSelect))
             {
+                // Only the home grid takes the beat. Press says whether it did.
+                if (_menu.Press())
+                {
+                    _actAt = Game.GameTime + PhoneMenu.PressMs;
+                    return;
+                }
+
                 var picked = _menu.Pick();
                 if (picked != null) Act(picked);
                 return;
@@ -681,6 +712,11 @@ namespace Hoodrich.Phone
         private void ClosePhone(bool handingOver)
         {
             var was = _menu.IsOpen;
+
+            // A press that was still playing when the phone shut does not get to open its app
+            // a tenth of a second later on a menu that is no longer there.
+            _actAt = 0;
+            _menu.ClearPress();
 
             _menu.Close();
             RestoreWorld();

@@ -91,8 +91,6 @@ namespace Hoodrich.Phone
         /// <summary>How wide the sheen is, as a fraction of the row.</summary>
         private const float SheenWide = 0.22f;
 
-        /// <summary>How round the app tiles are, in screen heights.</summary>
-        private const float TileRound = 0.012f;
 
         /// <summary>How round the handset and its screen are.</summary>
         private const float BodyRound = 0.020f;
@@ -116,9 +114,6 @@ namespace Hoodrich.Phone
         private const float TileShadow = 0.0028f;
         private const float TileEdge = 0.0020f;
 
-        /// <summary>How long the light takes to go once round, and how much of the way it covers.</summary>
-        private const int RunnerMs = 1500;
-        private const float RunnerFrac = 0.16f;
 
         /// <summary>
         /// The jiggle on the icon of whatever you are hovering.
@@ -1066,6 +1061,72 @@ namespace Hoodrich.Phone
             }
         }
 
+        /// <summary>
+        /// How far into the press animation the live tile is, nought to one and back.
+        ///
+        /// Only ever non-zero for the tile the cursor is on, because that is the only one that
+        /// can have been pressed -- the cursor cannot move while the press is playing.
+        /// </summary>
+        private float Punch()
+        {
+            if (_pressAt == 0) return 0f;
+
+            var since = Game.GameTime - _pressAt;
+
+            if (since < 0 || since >= PressMs) return 0f;
+
+            return (float)Math.Sin(since / (double)PressMs * Math.PI);
+        }
+
+        /// <summary>Somewhere between two colours, for an icon on its way to being chosen.</summary>
+        private static Color Blend(Color a, Color b, float t)
+        {
+            if (t <= 0f) return a;
+            if (t >= 1f) return b;
+
+            return Color.FromArgb(
+                a.A + (int)((b.A - a.A) * t),
+                a.R + (int)((b.R - a.R) * t),
+                a.G + (int)((b.G - a.G) * t),
+                a.B + (int)((b.B - a.B) * t));
+        }
+
+        /// <summary>How long the press animation runs before the page actually changes.</summary>
+        public const int PressMs = 150;
+
+        /// <summary>How far the icon dips at the bottom of the press, as a fraction.</summary>
+        private const float PunchDip = 0.26f;
+
+        /// <summary>When the live tile was pressed, or nought when nothing is playing.</summary>
+        private int _pressAt;
+
+        /// <summary>
+        /// Somebody pressed the app the cursor is on.
+        ///
+        /// Says whether it took, so the caller knows to wait rather than opening the page on
+        /// the same frame. Only on the home grid: a list row has no icon to punch, and putting
+        /// a tenth of a second in front of every row of every submenu would be latency bought
+        /// for nothing.
+        /// </summary>
+        public bool Press()
+        {
+            if (!AtHome || InCall) return false;
+
+            var item = Selected;
+
+            if (item == null || !item.Enabled) return false;
+
+            _pressAt = Game.GameTime;
+
+            return true;
+        }
+
+        /// <summary>The press is spent. Called when it is acted on, and when the phone shuts.</summary>
+        public void ClearPress()
+        {
+            _pressAt = 0;
+        }
+
         private void Tile(WheelItem item, float x, float y, float w, float h, bool here,
                           int fade)
         {
@@ -1079,20 +1140,25 @@ namespace Hoodrich.Phone
             //
             // Lit is the dark green bed and LitEdge is the light that goes round it. Both
             // were declared for exactly this and neither renderer was using the first one.
-            var back = !item.Enabled ? Palette.SegmentDisabled
-                     : on ? Lit
-                     : Palette.Segment;
+            // NO BOX, NO SHADOW, NO BORDER. Just the icon on the black.
+            //
+            // It looks better and the box was never doing the work anyway. A quiet tile is
+            // near-black at alpha 200 on a near-black body, so nineteen of them were nineteen
+            // rectangles nobody could see -- every bit of the reading came from the icon, the
+            // name, and which one was lit.
+            //
+            // Everything that existed to dress the box goes with it: the shadow that lifted it
+            // off the body, the hairline border, the light that ran round the live one, and
+            // the sheen across it. So does the whole corner-rounding argument, which cost more
+            // rectangles than the rest of the screen put together and was still coming out
+            // with square bites in it. What is left is one sprite and one word per app.
+            //
+            // The highlight moves onto the icon itself: green, swaying, and a punch when it is
+            // chosen. See below.
 
-            // Rounded, and the selected one grows into place.
-            //
-            // The pop is what the eye follows when the cursor jumps two tiles across a grid: a
-            // highlight that simply appears somewhere else leaves you re-finding it, and a
-            // tile that swells out of the row tells you where it went.
-            //
-            // Grown about its own CENTRE and clamped, which the first version was not -- it
-            // overshot by more than the gap between tiles and drew a separate, larger halo
-            // offset from the tile it belonged to, so the live app came out as two shapes that
-            // did not line up.
+            // The grow stays, and now it moves the icon rather than swelling a box. It is what
+            // the eye follows when the cursor jumps two tiles across the grid -- a highlight
+            // that simply appears somewhere else leaves you re-finding it.
             var pop = 0f;
 
             if (on)
@@ -1106,67 +1172,10 @@ namespace Hoodrich.Phone
 
             var popX = Hud.ToX(pop);
 
-            var gx = x - popX;
-            var gy = y - pop;
-            var gw = w + popX * 2f;
-            var gh = h + pop * 2f;
-
-            // ---- shadow, fill, border ----
-            //
-            // The shadow is what a square tile has instead of a corner: it lifts the tile off
-            // the body so the grid reads as objects rather than as panels painted on. Behind
-            // every tile, not just the live one, because a grid where only one thing casts a
-            // shadow is a grid where only one thing is real.
-            Hud.RectFrom(gx + Hud.ToX(TileShadow), gy + TileShadow, gw, gh,
-                         Fade(Color.FromArgb(150, 0, 0, 0), fade));
-
-            // Old comment kept because it is still true: a quiet tile is near-black at alpha
-            // 200 on a near-black body, and nobody has ever been able to make out its edges.
-            //
-            // A quiet tile is near-black at alpha 200 on a near-black body -- its corners are
-            // a difference nobody has ever been able to make out, and rounding all seven of
-            // them cost more rectangles than the rest of the screen put together. The live one
-            // is the only tile with a shape you can actually read, so it is the only one that
-            // gets the treatment.
-            //
-            // RECTANGLE corners, at four bands each. The sprite version is gone and the
-            // reason it was ruled out the first time turned out to be the reason it had to go
-            // the second: A RUNTIME TEXTURE FLOATS ABOVE ANY RECTANGLE DRAWN AFTER IT, and
-            // that was waved away here on the grounds that nothing overlaps a tile.
-            //
-            // Two things do. The corner discs came up through the tile's own fill, so the live
-            // app wore four visible circles at its corners -- and they outlived the phone
-            // itself, still on screen for the frame after it closed, because a sprite in that
-            // later pass is not cleared by the rectangles below it going away.
-            //
-            // Per-row rectangles were what blew the budget before: 208 for one tile at this
-            // radius, on top of the handset's shells, past GTA's ceiling -- and over it the
-            // game silently drops whatever was issued LAST, which is a rounded rect's corners,
-            // which is why it kept coming out with four square bites in it.
-            //
-            // Six-pixel bands are the middle that was never tried: four bands per corner, 32
-            // rectangles rather than 208, on a 13-pixel radius where four steps is a curve
-            // and not a staircase. Peak goes to about 355 in a frame, against the 460 that
-            // broke it.
-            Hud.RectFrom(gx, gy, gw, gh, Fade(back, fade));
-
-            // A hairline border on the live one, and a light that runs round it.
-            if (on)
-            {
-                Edge(gx, gy, gw, gh, TileEdge, Fade(LitEdge, fade));
-                Runner(gx, gy, gw, gh, TileEdge, fade);
-            }
-
-            // No inset any more. The shimmer used to be held out of the corners because it
-            // is a square band and the tile was not -- every pass painted the four patches the
-            // rounding had deliberately left empty and the live app grew square ears twice a
-            // second. On a square tile the band and the shape agree, so it can run edge to edge.
-            if (on) Sheen(gx, gy, gw, gh, fade);
-
-            x = gx;
-            y = gy;
-            w = gw;
-            h = gh;
+            x -= popX;
+            y -= pop;
+            w += popX * 2f;
+            h += pop * 2f;
 
             // White on the live one as well as the quiet ones. See Lit.
             var ink = !item.Enabled ? Palette.TextDisabled : Palette.Text;
@@ -1203,7 +1212,29 @@ namespace Hoodrich.Phone
                 sway = (a + b * 0.35f) * JiggleDegrees * kick;
             }
 
-            Art(item, x + w * 0.5f, y + h * 0.31f, 0.042f, Fade(ink, fade), sway);
+            // GREEN ON THE ONE YOU ARE ON. With the box gone this is what says which app the
+            // cursor is holding, so it is the icon that changes colour and not the name -- the
+            // name is the thing you are trying to read, and green text on black is harder work
+            // than white.
+            var art = on ? Green : ink;
+
+            // AND A PUNCH WHEN IT IS CHOSEN, which is a different event from being hovered and
+            // wants a different animation. The sway says "this is the one you are on"; the
+            // punch says "and you have just picked it". Before this, the only acknowledgement
+            // of a press was the page changing -- which is the result, not the answer.
+            //
+            // DOWN AND BACK rather than out and back. The icon dips the way a key does going
+            // down, and the page arrives before it has finished returning. Something growing
+            // at you reads as an alert; something pressing in reads as a button.
+            var punch = Punch();
+
+            if (punch > 0f)
+            {
+                art = Blend(art, Color.FromArgb(255, 240, 255, 240), punch);
+            }
+
+            Art(item, x + w * 0.5f, y + h * 0.31f, 0.042f * (1f - PunchDip * punch),
+                Fade(art, fade), sway);
 
             // A badge when the tile has something to say -- a count, a price, a "3 waiting".
             // The wheel put this in its hub; a grid has no hub, so it goes with the name.
@@ -1386,69 +1417,6 @@ namespace Hoodrich.Phone
             Hud.RectFrom(x + w - tx, y + t, tx, h - t * 2f, c);
         }
 
-        /// <summary>
-        /// A light running round the border of the live tile.
-        ///
-        /// WALKED IN HEIGHT UNITS, both axes, or it would crawl along the top and sprint down
-        /// the side: w is a fraction of screen WIDTH and h a fraction of screen HEIGHT, and on
-        /// a 16:9 screen those are not the same distance. Converting the width to height units
-        /// first is what makes the speed constant all the way round.
-        ///
-        /// One or two rectangles. The segment only ever spans two edges at a corner, so the
-        /// walk is clipped to the edge it started on and the remainder drawn on the next.
-        /// </summary>
-        private static void Runner(float x, float y, float w, float h, float t, int fade)
-        {
-            var wide = w * 16f / 9f;                 // the width, in height units
-            var loop = (wide + h) * 2f;
-
-            var head = (Game.GameTime % RunnerMs) / (float)RunnerMs * loop;
-            var run = loop * RunnerFrac;
-
-            var c = Fade(Color.FromArgb(255, 255, 255, 255), (int)(fade * 0.55f));
-
-            var tx = Hud.ToX(t);
-
-            // Two passes, because a segment sitting on a corner belongs to two edges.
-            for (var pass = 0; pass < 2 && run > 0f; pass++)
-            {
-                var at = head % loop;
-                var left = run;
-
-                if (at < wide)                        // along the top, left to right
-                {
-                    var span = Math.Min(left, wide - at);
-                    Hud.RectFrom(x + at * 9f / 16f, y, span * 9f / 16f, t, c);
-                    left -= span;
-                }
-                else if (at < wide + h)               // down the right
-                {
-                    var d = at - wide;
-                    var span = Math.Min(left, h - d);
-                    Hud.RectFrom(x + w - tx, y + d, tx, span, c);
-                    left -= span;
-                }
-                else if (at < wide * 2f + h)          // back along the bottom
-                {
-                    var d = at - wide - h;
-                    var span = Math.Min(left, wide - d);
-                    Hud.RectFrom(x + w - (d + span) * 9f / 16f, y + h - t, span * 9f / 16f, t, c);
-                    left -= span;
-                }
-                else                                   // up the left
-                {
-                    var d = at - wide * 2f - h;
-                    var span = Math.Min(left, h - d);
-                    Hud.RectFrom(x, y + h - (d + span), tx, span, c);
-                    left -= span;
-                }
-
-                if (left <= 0f) break;
-
-                head += run - left;
-                run = left;
-            }
-        }
 
         private static void Art(WheelItem item, float cx, float cy, float size, Color c,
                                 float spin = 0f)
