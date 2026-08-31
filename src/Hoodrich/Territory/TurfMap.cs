@@ -66,14 +66,14 @@ namespace Hoodrich.Territory
         /// an install without the file still shows something rather than nothing -- and says
         /// which it used, because "my turf looks like circles again" is otherwise a mystery.
         /// </summary>
-        public void Show(GangRegistry gangs, ZoneMap zones, Dictionary<string, List<TurfBox>> turf)
+        public void Show(GangRegistry gangs, Dictionary<string, List<TurfBox>> turf)
         {
             Hide();
 
             if (gangs == null) return;
 
             var boxes = 0;
-            var discs = 0;
+            var shaded = 0;
 
             foreach (var gang in gangs.All)
             {
@@ -83,33 +83,25 @@ namespace Hoodrich.Territory
 
                 if (turf != null) turf.TryGetValue(gang.Id, out mine);
 
-                if (mine != null && mine.Count > 0)
+                if (mine != null && mine.Count > 0) shaded++;
+
+                // A SET WITH NO WALKED SHAPE GETS NOTHING, and that is deliberate.
+                //
+                // There used to be a fallback: no polygon meant the zone's own bounding circle,
+                // drawn as a disc. It was well meant and it was the thing that made this look
+                // like spilled paint -- a bounding circle is not a shape, so the fallback was
+                // guaranteed to be wrong everywhere it was used, and it covered the map while
+                // being wrong. Nothing is better than approximately something here: an unshaded
+                // set reads as "not done yet", which is true, and a disc read as the answer.
+                if (mine == null || mine.Count == 0) continue;
+
+                foreach (var box in mine)
                 {
-                    foreach (var box in mine)
-                    {
-                        if (Box(box, gang)) boxes++;
-                    }
-
-                    continue;
-                }
-
-                // Nothing shaped for this set, so the old behaviour rather than a gap.
-                if (zones == null) continue;
-
-                foreach (var code in gang.Turf)
-                {
-                    var zone = zones.Get(code);
-                    if (zone == null) continue;
-
-                    if (Disc(zone.Centre, zone.Radius, zone.Name + " -- " + gang.Name, gang))
-                    {
-                        discs++;
-                    }
+                    if (Box(box, gang)) boxes++;
                 }
             }
 
-            Log.Info("Turf map: " + boxes + " box(es)" +
-                     (discs > 0 ? " and " + discs + " unshaped zone(s) as discs." : "."));
+            Log.Info("Turf map: " + boxes + " box(es) across " + shaded + " set(s).");
         }
 
         private bool Box(TurfBox box, GangDef gang)
@@ -144,27 +136,6 @@ namespace Hoodrich.Territory
             catch (Exception ex)
             {
                 Log.Debug("Turf map could not box " + box.Zone + ": " + ex.Message);
-                return false;
-            }
-        }
-
-        private bool Disc(Vector3 at, float radius, string name, GangDef gang)
-        {
-            try
-            {
-                var blip = World.CreateBlip(at, radius);
-                if (blip == null || !blip.Exists()) return false;
-
-                Function.Call(Hash.SET_BLIP_COLOUR, blip.Handle, gang.BlipColour);
-                Function.Call(Hash.SET_BLIP_ALPHA, blip.Handle, Wash);
-
-                blip.Name = name;
-
-                _boxes.Add(blip);
-                return true;
-            }
-            catch
-            {
                 return false;
             }
         }
@@ -278,8 +249,22 @@ namespace Hoodrich.Territory
                         Zone = zone,
                         At = new Vector3(cx + (mx * bcos - y * bsin),
                                          cy + (mx * bsin + y * bcos), 0f),
-                        Wide = wide,
-                        Deep = step,
+
+                        // THE STRIPS OVERLAP EACH OTHER ON PURPOSE, and this is what stops the
+                        // fill looking like a barcode.
+                        //
+                        // Cut exactly to the step, adjacent strips abut perfectly in the maths
+                        // and still show a seam on screen, because an area blip does not have a
+                        // hard edge -- it fades out. Two fades meeting sum to less than one
+                        // solid, so every join reads as a pale line, and forty-three of them in
+                        // a row reads as stripes.
+                        //
+                        // Made deeper than the step so the fades overlap and add back up to a
+                        // flat wash. The shape grows by half a bleed all the way round, which
+                        // at eight metres and a quarter is a metre -- nothing, against a
+                        // boundary walked by a man reading numbers off a screen.
+                        Wide = wide + step * (Bleed - 1f),
+                        Deep = step * Bleed,
                         Rot = rot
                     });
                 }
@@ -288,6 +273,15 @@ namespace Hoodrich.Territory
 
         /// <summary>How thick a strip is when a shape does not say.</summary>
         private const float DefaultStep = 25f;
+
+        /// <summary>
+        /// How much bigger than its step each strip is cut, to hide the joins.
+        ///
+        /// See where it is used. If the fill comes out banded DARKER rather than paler, the
+        /// edges are hard rather than soft and this wants to be 1.0 -- it is one number and
+        /// which way it goes cannot be worked out from here.
+        /// </summary>
+        private const float Bleed = 1.35f;
 
         /// <summary>Past this many boxes, say so -- see the note where it is checked.</summary>
         private const int BoxWarnAt = 400;
