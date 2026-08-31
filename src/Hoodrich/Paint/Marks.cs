@@ -51,6 +51,18 @@ namespace Hoodrich.Paint
 
         /// <summary>True once the player has been far enough away for the game to drop it.</summary>
         public bool Away;
+
+        /// <summary>
+        /// When it went on the wall, in real milliseconds.
+        ///
+        /// Only ever used to protect it. Nothing else about a mark cares how old it is -- but
+        /// the difference between "paint" and "the paint I am looking at right now" is the
+        /// whole of why this was added, and there is no other way to tell them apart.
+        ///
+        /// Not saved. A mark loaded from a previous session is old by definition, and it should
+        /// be: the protection is for the can that is still in your hand.
+        /// </summary>
+        public int Made;
     }
 
     /// <summary>
@@ -120,6 +132,16 @@ namespace Hoodrich.Paint
         /// goes on the wall.
         /// </summary>
         public int Wanted;
+
+        /// <summary>
+        /// How long a mark is protected from being recycled, and how far apart two have to be
+        /// before one may take the other's slot.
+        ///
+        /// The margin is in SQUARED metres, like everything else in the recycler -- a hundred
+        /// and forty-four is twelve metres.
+        /// </summary>
+        private const int FreshMs = 120000;
+        private const float RecycleMargin = 144f;
 
         public int Count => _marks.Count;
 
@@ -191,6 +213,12 @@ namespace Hoodrich.Paint
             }
 
             _refused = 0;
+
+            // Stamped here as well as in Streak, because this is the one that matters: Put is
+            // the ordinary dab from the can and it is what somebody is doing when they say the
+            // paint vanished.
+            mark.Made = Game.GameTime;
+
             _marks.Add(mark);
         }
 
@@ -241,6 +269,7 @@ namespace Hoodrich.Paint
             if (m.Handle == 0 && Recycle(at)) m.Handle = Place(m);
             if (m.Handle == 0) return null;
 
+            m.Made = Game.GameTime;
             _marks.Add(m);
 
             return m;
@@ -455,10 +484,22 @@ namespace Hoodrich.Paint
             // bigger, and at this list size the square roots are the whole cost.
             var mine = me.DistanceToSquared(near);
 
-            // It has to beat what is being sprayed by a margin, or this trades a mark you can
-            // see for another one you can see and thrashes the pool one decal at a time.
+            // IT HAS TO BEAT WHAT IS BEING SPRAYED BY A REAL MARGIN.
+            //
+            // This was four, in SQUARED metres, which is not a margin at all -- two marks on
+            // the same wall a metre apart differ by more than that, so anything already up
+            // could be taken down for anything else going up. On a wall with two thousand marks
+            // on it that is not a pool being managed, it is a pool being churned: every sweep,
+            // everything evicts everything, and what you get is whichever few hundred happened
+            // to be asked last.
+            //
+            // A hundred and forty-four is twelve metres of separation before one mark may take
+            // another's slot. A donor has to be properly somewhere else, not just marginally
+            // further along the same wall.
             var worst = -1;
-            var worstD = mine + 4f;
+            var worstD = mine + RecycleMargin;
+
+            var now = Game.GameTime;
 
             // A BOUNDED, ROLLING SCAN -- NOT THE WHOLE LIST.
             //
@@ -479,6 +520,18 @@ namespace Hoodrich.Paint
                 var m = _marks[_scan];
 
                 if (m.Away || m.Handle == 0) continue;
+
+                // AND FRESH PAINT IS NEVER A DONOR. This is the fault behind "I sprayed it,
+                // turned round, and it was gone": the sweep walks the list restoring old marks,
+                // each one asks for a slot, and the only thing it looks at is distance -- so a
+                // tag from last week, one metre nearer than the one you are still stood in
+                // front of, takes its slot. You watched your own paint be recycled for paint
+                // you had already forgotten about.
+                //
+                // For two minutes after it goes up, a mark cannot be taken down for anything.
+                // Long enough to finish a piece and stand back and look at it, short enough
+                // that it is not a permanent reservation.
+                if (now - m.Made < FreshMs) continue;
 
                 var d = me.DistanceToSquared(m.At);
                 if (d <= worstD) continue;
@@ -526,7 +579,15 @@ namespace Hoodrich.Paint
 
             var stuck = 0;
 
-            for (var i = 0; i < _marks.Count; i++)
+            // NEWEST FIRST, WHICH IS BACKWARDS THROUGH THE LIST.
+            //
+            // The order used to be oldest first, which is the order they went on the wall and
+            // exactly the wrong order to put them back in. Once there are more marks near you
+            // than the pool can hold -- which on a well-used wall is most of the time -- the
+            // ones asked first get the slots, so the oldest paint won and the newest never got
+            // a look in. Walking backwards means what you did most recently is what is on the
+            // wall, and the thing that goes missing is a tag from three sessions ago.
+            for (var i = _marks.Count - 1; i >= 0; i--)
             {
                 var m = _marks[i];
                 var d = me.DistanceToSquared(m.At);
@@ -768,6 +829,11 @@ namespace Hoodrich.Paint
 
                 // Left off the wall. The sweep puts back whatever is near enough to matter,
                 // which on a load is usually none of it.
+                //
+                // Made is deliberately left at nought. A mark read out of a save is old paint
+                // however recently it was sprayed -- the protection above is for the can that
+                // is still in your hand, and a whole wall loading in as "fresh" would make it
+                // meaningless on the one pass where it matters most.
                 m.Away = true;
                 _marks.Add(m);
             }
