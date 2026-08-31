@@ -1,124 +1,238 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using GTA;
+using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.Gangs;
 
 namespace Hoodrich.Territory
 {
+    /// <summary>One box of somebody's turf, out of turf.json.</summary>
+    internal sealed class TurfBox
+    {
+        public string Zone = "";
+        public Vector3 At;
+        public float Wide = 100f;
+        public float Deep = 100f;
+        public float Rot;
+    }
+
     /// <summary>
     /// Whose block is whose, drawn on the map.
     ///
-    /// THE MOD ALREADY KNEW ALL OF THIS AND NEVER SHOWED YOU ANY OF IT. gangs.json says which
-    /// zone codes each set holds and zones.json says where each code is and how big it is, and
-    /// between them that is a complete map of the city's turf -- but the only way to read it
-    /// was to walk into a zone and see the name change in the corner. A player who has not done
-    /// that has no idea Davis is Ballas or that the Vagos hold four zones on the east side.
+    /// FIRST ATTEMPT WAS DISCS AND IT LOOKED LIKE SPILLED PAINT. Every zone was drawn as
+    /// ADD_BLIP_FOR_RADIUS at the zone's own radius -- which is the circle that CONTAINS the
+    /// zone, not the shape of it. Strawberry alone is three hundred and fifty metres of circle.
+    /// Half a dozen of them overlapping buried the streets, and a disc cannot be laid along a
+    /// road no matter how big or small you make it, so no amount of tuning was going to fix it.
     ///
-    /// WHY CIRCLES AND NOT THE SHAPES ON THE PAUSE MAP. There is no native that draws a polygon
-    /// on the map. ADD_BLIP_FOR_RADIUS is what the game itself uses for exactly this -- it is
-    /// how a mission marks an area -- and a radius blip appears on BOTH the minimap and the
-    /// pause map with no extra work and no per-frame drawing. The alternative is drawing over
-    /// the pause map in screen space, which means converting world coordinates to a map that
-    /// pans and zooms, and there is no native for that either.
+    /// ADD_BLIP_FOR_AREA DRAWS A BOX, AND SET_BLIP_ROTATION_WITH_FLOAT TURNS IT. That is the
+    /// whole difference: a turned box has four straight edges that can be put down the middle
+    /// of a street, and a zone can have as many of them as it needs -- two or three laid end to
+    /// end follow a boundary that one shape cannot.
     ///
-    /// So a zone is a disc. The zones themselves are already stored as a centre and a radius,
-    /// so this is not an approximation of the data -- it IS the data, drawn.
+    /// There is still no native that draws a polygon on the map, so this is the closest the
+    /// game gets. It is a real answer rather than the only one available.
     ///
-    /// Made once and left alone. These are static map furniture: nothing moves, nothing
-    /// changes, and a blip that is recreated on a tick is a blip that flickers.
+    /// THE NUMBERS LIVE IN turf.json AND ARE MEANT TO BE CORRECTED. They are seeded from the
+    /// bounding circles in zones.json, which puts them in the right ballpark and no better --
+    /// getting a line onto a particular street means standing on that street and reading the
+    /// coordinate, and that is an edit to a data file rather than a rebuild.
+    ///
+    /// Made once and left alone: nothing about a zone moves, and a blip rebuilt on a tick is a
+    /// blip that flickers.
     /// </summary>
     internal sealed class TurfMap
     {
         /// <summary>
-        /// How solid the discs are, out of 255.
+        /// How solid the boxes are, out of 255.
         ///
-        /// Eighty is enough to read the colour and see the shape while leaving the streets,
-        /// blips and route lines under it legible. A turf overlay that hides the road you are
-        /// trying to follow is a turf overlay people switch off.
+        /// Down from eighty with the discs. Boxes stack far less -- they were only overlapping
+        /// because circles are the wrong shape -- so the same wash now reads much heavier, and
+        /// the point of this is to be able to see the streets underneath it.
         /// </summary>
-        private const int Wash = 80;
+        private const int Wash = 55;
 
-        private readonly List<Blip> _discs = new List<Blip>();
+        private readonly List<Blip> _boxes = new List<Blip>();
 
-        /// <summary>Whether they are up.</summary>
-        public bool Showing => _discs.Count > 0;
+        public bool Showing => _boxes.Count > 0;
 
         /// <summary>
         /// Put them up.
         ///
-        /// A zone code a set claims that zones.json has never heard of is logged by name rather
-        /// than skipped in silence -- it is a typo in one of two data files and the only way
-        /// anybody finds it is being told which code and which set.
+        /// Falls back to the zone discs when turf.json is missing or has nothing for a set, so
+        /// an install without the file still shows something rather than nothing -- and says
+        /// which it used, because "my turf looks like circles again" is otherwise a mystery.
         /// </summary>
-        public void Show(GangRegistry gangs, ZoneMap zones)
+        public void Show(GangRegistry gangs, ZoneMap zones, Dictionary<string, List<TurfBox>> turf)
         {
             Hide();
 
-            if (gangs == null || zones == null) return;
+            if (gangs == null) return;
 
-            var drawn = 0;
-            var missing = 0;
+            var boxes = 0;
+            var discs = 0;
 
             foreach (var gang in gangs.All)
             {
-                if (gang == null || gang.Turf.Count == 0) continue;
+                if (gang == null) continue;
+
+                List<TurfBox> mine = null;
+
+                if (turf != null) turf.TryGetValue(gang.Id, out mine);
+
+                if (mine != null && mine.Count > 0)
+                {
+                    foreach (var box in mine)
+                    {
+                        if (Box(box, gang)) boxes++;
+                    }
+
+                    continue;
+                }
+
+                // Nothing shaped for this set, so the old behaviour rather than a gap.
+                if (zones == null) continue;
 
                 foreach (var code in gang.Turf)
                 {
-                    if (string.IsNullOrEmpty(code)) continue;
-
                     var zone = zones.Get(code);
+                    if (zone == null) continue;
 
-                    if (zone == null)
+                    if (Disc(zone.Centre, zone.Radius, zone.Name + " -- " + gang.Name, gang))
                     {
-                        missing++;
-                        Log.Warn("Turf map: " + gang.Name + " claims zone '" + code +
-                                 "' and zones.json has no such code.");
-                        continue;
-                    }
-
-                    try
-                    {
-                        var blip = World.CreateBlip(zone.Centre, zone.Radius);
-                        if (blip == null || !blip.Exists()) continue;
-
-                        // The set's own colour, by number. The Blip class exposes a colour as a
-                        // short enum of named colours and gangs.json stores the real palette
-                        // index -- going through the enum would round every set to whichever of
-                        // the named ones happened to be nearest.
-                        Function.Call(Hash.SET_BLIP_COLOUR, blip.Handle, gang.BlipColour);
-                        Function.Call(Hash.SET_BLIP_ALPHA, blip.Handle, Wash);
-
-                        // Named, because a radius blip with no name is an unlabelled smear on
-                        // the pause map and the whole point is to say whose it is.
-                        blip.Name = zone.Name + " -- " + gang.Name;
-
-                        _discs.Add(blip);
-                        drawn++;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Debug("Turf map could not draw " + code + ": " + ex.Message);
+                        discs++;
                     }
                 }
             }
 
-            Log.Info("Turf map: " + drawn + " zone(s) shaded" +
-                     (missing > 0 ? ", " + missing + " claimed code(s) not in zones.json." : "."));
+            Log.Info("Turf map: " + boxes + " box(es)" +
+                     (discs > 0 ? " and " + discs + " unshaped zone(s) as discs." : "."));
         }
 
-        /// <summary>Take them down.</summary>
+        private bool Box(TurfBox box, GangDef gang)
+        {
+            try
+            {
+                var handle = Function.Call<int>(Hash.ADD_BLIP_FOR_AREA,
+                                                box.At.X, box.At.Y, box.At.Z,
+                                                box.Wide, box.Deep);
+
+                if (handle == 0) return false;
+
+                Function.Call(Hash.SET_BLIP_COLOUR, handle, gang.BlipColour);
+                Function.Call(Hash.SET_BLIP_ALPHA, handle, Wash);
+
+                // THE ROTATION IS THE WHOLE POINT. South Los Santos is on a grid turned about
+                // twenty-seven degrees, so an unturned box over Chamberlain or Davis sits at an
+                // angle to every street it is supposed to be bounded by -- which is the thing
+                // that reads as wrong without being easy to name.
+                if (Math.Abs(box.Rot) > 0.01f)
+                {
+                    Function.Call(Hash.SET_BLIP_ROTATION_WITH_FLOAT, handle, box.Rot);
+                }
+
+                Function.Call(Hash.BEGIN_TEXT_COMMAND_SET_BLIP_NAME, "STRING");
+                Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, gang.Name);
+                Function.Call(Hash.END_TEXT_COMMAND_SET_BLIP_NAME, handle);
+
+                _boxes.Add(new Blip(handle));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Turf map could not box " + box.Zone + ": " + ex.Message);
+                return false;
+            }
+        }
+
+        private bool Disc(Vector3 at, float radius, string name, GangDef gang)
+        {
+            try
+            {
+                var blip = World.CreateBlip(at, radius);
+                if (blip == null || !blip.Exists()) return false;
+
+                Function.Call(Hash.SET_BLIP_COLOUR, blip.Handle, gang.BlipColour);
+                Function.Call(Hash.SET_BLIP_ALPHA, blip.Handle, Wash);
+
+                blip.Name = name;
+
+                _boxes.Add(blip);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public void Hide()
         {
-            foreach (var blip in _discs)
+            foreach (var blip in _boxes)
             {
                 try { if (blip != null && blip.Exists()) blip.Delete(); }
                 catch { /* going anyway */ }
             }
 
-            _discs.Clear();
+            _boxes.Clear();
+        }
+
+        /// <summary>
+        /// Reads turf.json.
+        ///
+        /// A missing file is not a problem and is not logged as one -- the discs above are a
+        /// perfectly good fallback and an install that has never had this file should not be
+        /// told off for it.
+        /// </summary>
+        public static Dictionary<string, List<TurfBox>> Load()
+        {
+            var all = new Dictionary<string, List<TurfBox>>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                var doc = JsonFile.Read(Path.Combine(Paths.Data, "turf.json"));
+                if (doc == null) return all;
+
+                var turf = doc["turf"];
+
+                foreach (var gangId in turf.Keys)
+                {
+                    var list = new List<TurfBox>();
+
+                    foreach (var b in turf[gangId].Items)
+                    {
+
+                        var wide = b["w"].AsFloat(0f);
+                        var deep = b["h"].AsFloat(0f);
+
+                        // A box with no size is a typo, and drawing it would put an invisible
+                        // blip on the map that nobody can find to delete.
+                        if (wide <= 1f || deep <= 1f) continue;
+
+                        list.Add(new TurfBox
+                        {
+                            Zone = b["zone"].AsString(""),
+                            At = new Vector3(b["x"].AsFloat(0f), b["y"].AsFloat(0f), 0f),
+                            Wide = wide,
+                            Deep = deep,
+                            Rot = b["rot"].AsFloat(0f)
+                        });
+                    }
+
+                    if (list.Count > 0) all[gangId] = list;
+                }
+
+                Log.Info("Turf shapes loaded: " + all.Count + " set(s).");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not read turf.json: " + ex.Message);
+            }
+
+            return all;
         }
     }
 }

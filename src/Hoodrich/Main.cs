@@ -2617,7 +2617,7 @@ namespace Hoodrich
                     // constructor would be doing it before the map exists.
                     if (_cfg != null && _cfg.TurfOverlay && !_turfMap.Showing)
                     {
-                        try { _turfMap.Show(_gangs, _zoneMap); }
+                        try { _turfMap.Show(_gangs, _zoneMap, TurfMap.Load()); }
                         catch (Exception ex) { Log.Debug("Turf map: " + ex.Message); }
                     }
                 }

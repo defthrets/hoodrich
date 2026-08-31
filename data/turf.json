@@ -1,0 +1,203 @@
+{
+ "_comment": [
+  "Where each set's turf is drawn on the map, as rectangles.",
+  "",
+  "WHY RECTANGLES. There is no native that draws a polygon on the map, so the only shapes",
+  "available are the disc (ADD_BLIP_FOR_RADIUS) and the box (ADD_BLIP_FOR_AREA). A box can",
+  "be rotated, so it can be laid along a street; a disc cannot be laid along anything, which",
+  "is why the first version of this looked like spilled paint.",
+  "",
+  "A zone may have as many boxes as it needs. Two or three laid end to end will follow a",
+  "boundary that one box cannot -- that is how you get a hard line down a street rather than",
+  "a shape that approximately covers the area.",
+  "",
+  "x, y      centre of the box, in world coordinates",
+  "w, h      how wide and how deep, in metres, BEFORE rotation",
+  "rot       degrees clockwise. 27 is roughly the South Los Santos street grid",
+  "",
+  "EVERY NUMBER IN HERE IS A STARTING POINT AND IS MEANT TO BE CORRECTED. They are derived",
+  "from the zone centres and radii in zones.json, which are bounding circles rather than",
+  "shapes -- so they are the right ballpark and nothing more. Stand on a corner you want the",
+  "line to run along, read the coordinate off the screen, and put it in. No rebuild."
+ ],
+ "turf": {
+  "aztecas": [
+   {
+    "zone": "BANNING",
+    "x": 113.8,
+    "y": -2192.8,
+    "w": 322.0,
+    "h": 219.0,
+    "rot": 27.0
+   }
+  ],
+  "families": [
+   {
+    "zone": "CHAMH",
+    "x": -173.9,
+    "y": -1593.7,
+    "w": 211.0,
+    "h": 129.0,
+    "rot": 27.0
+   },
+   {
+    "zone": "STRAW",
+    "x": 50.8,
+    "y": -1429.3,
+    "w": 333.0,
+    "h": 263.0,
+    "rot": 27.0
+   }
+  ],
+  "ballas": [
+   {
+    "zone": "DAVIS",
+    "x": 109.9,
+    "y": -1724.0,
+    "w": 355.0,
+    "h": 246.0,
+    "rot": 27.0
+   },
+   {
+    "zone": "STAD",
+    "x": -300.3,
+    "y": -1965.5,
+    "w": 226.0,
+    "h": 154.0,
+    "rot": 27.0
+   }
+  ],
+  "vagos": [
+   {
+    "zone": "RANCHO",
+    "x": 371.1,
+    "y": -1797.2,
+    "w": 379.0,
+    "h": 258.0,
+    "rot": 27.0
+   },
+   {
+    "zone": "LMESA",
+    "x": 812.0,
+    "y": -1206.5,
+    "w": 462.0,
+    "h": 323.0,
+    "rot": 0.0
+   },
+   {
+    "zone": "MURRI",
+    "x": 1187.2,
+    "y": -1406.1,
+    "w": 397.0,
+    "h": 293.0,
+    "rot": 0.0
+   },
+   {
+    "zone": "EBURO",
+    "x": 1503.7,
+    "y": -1844.0,
+    "w": 505.0,
+    "h": 379.0,
+    "rot": 20.0
+   }
+  ],
+  "marabunta": [
+   {
+    "zone": "CYPRE",
+    "x": 776.8,
+    "y": -2213.4,
+    "w": 462.0,
+    "h": 314.0,
+    "rot": 27.0
+   },
+   {
+    "zone": "TEXTI",
+    "x": 395.2,
+    "y": -725.5,
+    "w": 161.0,
+    "h": 110.0,
+    "rot": 0.0
+   }
+  ],
+  "lost": [
+   {
+    "zone": "SLAB",
+    "x": 78.4,
+    "y": 3689.8,
+    "w": 198.0,
+    "h": 134.0,
+    "rot": 0.0
+   },
+   {
+    "zone": "GRAPES",
+    "x": 2170.0,
+    "y": 4653.0,
+    "w": 413.0,
+    "h": 324.0,
+    "rot": 0.0
+   },
+   {
+    "zone": "SANDY",
+    "x": 2051.7,
+    "y": 3665.5,
+    "w": 450.0,
+    "h": 292.0,
+    "rot": 0.0
+   }
+  ],
+  "triads": [
+   {
+    "zone": "MIRR",
+    "x": 938.4,
+    "y": -551.6,
+    "w": 436.0,
+    "h": 297.0,
+    "rot": 0.0
+   },
+   {
+    "zone": "HAWICK",
+    "x": 323.2,
+    "y": -112.7,
+    "w": 231.0,
+    "h": 157.0,
+    "rot": 0.0
+   }
+  ],
+  "armenians": [
+   {
+    "zone": "ALTA",
+    "x": 269.4,
+    "y": -328.8,
+    "w": 249.0,
+    "h": 169.0,
+    "rot": 0.0
+   },
+   {
+    "zone": "BURTON",
+    "x": -322.2,
+    "y": -219.8,
+    "w": 315.0,
+    "h": 214.0,
+    "rot": 0.0
+   },
+   {
+    "zone": "PBOX",
+    "x": -34.6,
+    "y": -865.5,
+    "w": 275.0,
+    "h": 245.0,
+    "rot": 0.0
+   }
+  ],
+  "koreans": [
+   {
+    "zone": "KOREAT",
+    "x": -741.2,
+    "y": -945.3,
+    "w": 366.0,
+    "h": 345.0,
+    "rot": 0.0
+   }
+  ]
+ }
+}
