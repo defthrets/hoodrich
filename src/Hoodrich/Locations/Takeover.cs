@@ -52,6 +52,21 @@ namespace Hoodrich.Locations
         /// <summary>The junction, read off the screen while stood in the middle of it.</summary>
         private static readonly Vector3 Middle = new Vector3(-126.840f, -1737.201f, 30.135f);
 
+        /// <summary>
+        /// The mark the cars actually work around, read off the ground in game.
+        ///
+        /// THREE METRES FROM THE MIDDLE, AND THE THREE METRES MATTER. Middle is the centre of
+        /// the event -- where the ring of people is measured from, where the cordon is centred,
+        /// where the police are sent. This is the centre of the CIRCLE, which is a different
+        /// thing: it is the patch of road the tyre marks are on, and on this junction that is
+        /// not the same spot as the geometric middle of the crossroads.
+        ///
+        /// Kept as its own point rather than nudging Middle, because moving Middle would drag
+        /// the crowd ring, the cordon and the police approach along with it -- and the ring is
+        /// the part that already works.
+        /// </summary>
+        private static readonly Vector3 Circle = new Vector3(-129.056f, -1739.410f, 29.530f);
+
         /// <summary>How far out the ring stands. Measured on the ground: 19.1 metres.</summary>
         private const float RingAt = 19f;
 
@@ -64,8 +79,24 @@ namespace Hoodrich.Locations
         /// a faster-looking one -- the same speed round a smaller radius is more lock, more
         /// angle and more smoke in one place.
         /// </summary>
-        private const float DriftMin = 9f;
-        private const float DriftMax = 10.5f;
+        /// <summary>
+        /// How wide the loops are, in metres, either side of the ini figure.
+        ///
+        /// FIVE, DOWN FROM TEN. A ten metre loop on this junction is a car driving round a
+        /// roundabout; five is a car being thrown at a circle it keeps missing, which is the
+        /// thing this is supposed to look like. They will slide well outside it and that is
+        /// the point -- the radius is what they are AIMING at, not a track they are on, and
+        /// the leash further down is what brings a wide one back rather than anything holding
+        /// them to a line.
+        /// </summary>
+        private float DriftMin { get { return SpinRadius - 0.5f; } }
+        private float DriftMax { get { return SpinRadius + 0.5f; } }
+
+        /// <summary>The ini figure, because this number has been changed by eye four times.</summary>
+        private float SpinRadius
+        {
+            get { return _cfg == null ? 5f : _cfg.TakeoverSpinRadius; }
+        }
 
         /// <summary>How long the one on the mark gets before somebody else has a go.</summary>
         private const int BurnMinMs = 26000;
@@ -290,6 +321,16 @@ namespace Hoodrich.Locations
 
             /// <summary>When they were first noticed away from their spot, or nought.</summary>
             public int Away;
+
+            /// <summary>
+            /// What he was doing, so that after a knock he goes back to doing THAT.
+            ///
+            /// Picked once, when he first arrives, and kept for the rest of the night. Rolling
+            /// a fresh one every time he is put back would have a man who was drinking come
+            /// back from being run over as a man on his phone, which reads as a different
+            /// person standing in the same place.
+            /// </summary>
+            public string Doing;
         }
 
         private sealed class Parkee
@@ -695,13 +736,15 @@ namespace Hoodrich.Locations
                     w.There = true;
                     w.Away = 0;
 
+                    if (string.IsNullOrEmpty(w.Doing)) w.Doing = Watching[_rng.Next(Watching.Length)];
+
                     try
                     {
                         Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
                         Function.Call(Hash.SET_ENTITY_HEADING, w.Man.Handle, Facing(w.Man.Position));
 
                         Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
-                                      Watching[_rng.Next(Watching.Length)], 0, true);
+                                      w.Doing, 0, true);
 
                         // AND AGAIN AFTER THE SCENARIO, not only before it. A scenario picks
                         // its own facing when it starts, so a heading set first is a heading
@@ -712,6 +755,62 @@ namespace Hoodrich.Locations
                     catch
                     {
                         // He stands there either way.
+                    }
+
+                    continue;
+                }
+
+                // KNOCKED OVER, SHOVED, OR IN A FIGHT.
+                //
+                // Distance alone does not catch these. A man clipped by a drift car ends up on
+                // the floor roughly where he was standing, so he never strays far enough to be
+                // noticed -- he just lies there for the rest of the night, or gets up and
+                // stands facing the wrong way with no scenario running, because the thing that
+                // hit him cancelled it. Same for anybody who has squared up to somebody: he is
+                // stood in the right place doing entirely the wrong thing.
+                //
+                // All three are the same fault -- he is no longer doing what he came to do --
+                // and all three get the same answer, which is the one below: he is no longer
+                // "there", so he walks back to his spot and starts his own scenario again.
+                var knocked = false;
+
+                try
+                {
+                    knocked = Function.Call<bool>(Hash.IS_PED_RAGDOLL, w.Man.Handle)
+                              || Function.Call<bool>(Hash.IS_PED_IN_COMBAT, w.Man.Handle, 0)
+                              || Function.Call<bool>(Hash.IS_PED_FLEEING, w.Man.Handle)
+                              || Function.Call<bool>(Hash.IS_PED_BEING_STUNNED, w.Man.Handle, 0);
+                }
+                catch
+                {
+                    // Treated as fine. A false alarm here would reset the whole ring.
+                }
+
+                if (knocked)
+                {
+                    // The clock still applies. A man who has just been hit should be allowed to
+                    // be a man who has just been hit for a few seconds -- yanking him upright
+                    // on the frame he lands is worse than the thing being fixed.
+                    if (w.Away == 0) w.Away = now;
+
+                    if (now - w.Away > LetHimRunMs)
+                    {
+                        w.There = false;
+                        w.Away = 0;
+
+                        try
+                        {
+                            Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+
+                            Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, w.Man.Handle,
+                                          w.Slot.X, w.Slot.Y, w.Slot.Z, 3.0f, -1, 1.5f, true, 0f);
+
+                            Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
+                        }
+                        catch
+                        {
+                            // He finds his own way back or he does not.
+                        }
                     }
 
                     continue;
@@ -1037,7 +1136,7 @@ namespace Hoodrich.Locations
                 if (!r.Circling)
                 {
                     var wants = r.Middle ? OnTheMark : r.Radius + 6f;
-                    var gap = r.Car.Position.DistanceTo(Middle);
+                    var gap = r.Car.Position.DistanceTo(Circle);
 
                     if (gap > wants)
                     {
@@ -1203,17 +1302,17 @@ namespace Hoodrich.Locations
                 // else is aimed at the point on their own circle NEAREST THE WAY THEY CAME IN,
                 // so they arrive on the ring tangentially, already where they are meant to be
                 // going round, and start their donut from there.
-                var aim = Middle;
+                var aim = Circle;
 
                 if (!middle)
                 {
-                    var inFrom = from - Middle;
+                    var inFrom = from - Circle;
                     var len = inFrom.Length();
 
                     if (len > 0.5f)
                     {
                         inFrom = inFrom * (1f / len);
-                        aim = Middle + inFrom * r.Radius;
+                        aim = Circle + inFrom * r.Radius;
                     }
                 }
 
@@ -1294,7 +1393,7 @@ namespace Hoodrich.Locations
                 // THE LEASH, and it is a real drive rather than a shove. A donut wanders --
                 // that is what a donut does -- so anybody who has drifted out of the area gets
                 // an ordinary route back into it and picks up again when it arrives.
-                var gap = r.Car.Position.DistanceTo(Middle);
+                var gap = r.Car.Position.DistanceTo(Circle);
 
                 if (gap > r.Radius + Wander)
                 {
@@ -1307,17 +1406,17 @@ namespace Hoodrich.Locations
                         // Back to his own circle rather than to the centre, for the same reason
                         // he was not sent to the centre in the first place -- a car recovering
                         // from a wide slide should rejoin the ring, not drive across it.
-                        var back = Middle;
+                        var back = Circle;
 
                         if (!r.Middle)
                         {
-                            var out_ = r.Car.Position - Middle;
+                            var out_ = r.Car.Position - Circle;
                             var len = out_.Length();
 
                             if (len > 0.5f)
                             {
                                 out_ = out_ * (1f / len);
-                                back = Middle + out_ * r.Radius;
+                                back = Circle + out_ * r.Radius;
                             }
                         }
 
@@ -1988,8 +2087,11 @@ namespace Hoodrich.Locations
         /// </summary>
         private static float Facing(Vector3 from)
         {
-            var dx = Middle.X - from.X;
-            var dy = Middle.Y - from.Y;
+            // Turned to face the CIRCLE rather than the middle of the junction, because the
+            // circle is where the cars are and looking at the cars is the entire reason
+            // anybody is stood here.
+            var dx = Circle.X - from.X;
+            var dy = Circle.Y - from.Y;
 
             return (float)((Math.Atan2(-dx, dy) * 180.0 / Math.PI + 360.0) % 360.0);
         }

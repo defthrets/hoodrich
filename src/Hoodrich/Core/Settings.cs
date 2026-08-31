@@ -395,6 +395,15 @@ namespace Hoodrich.Core
         /// </summary>
         public int TakeoverBurnAction = 23;
 
+        /// <summary>
+        /// How wide the loops the cars drive are, in metres.
+        ///
+        /// In the ini because it is a number that can only be judged by standing at the
+        /// junction and watching, and it has been judged by eye more than once. The cars aim
+        /// at a circle this wide and slide well outside it, which is what it should look like.
+        /// </summary>
+        public float TakeoverSpinRadius = 5f;
+
         /// <summary>Whether groups of the set walk the back streets on foot.</summary>
         public bool WalkersEnabled = true;
 
@@ -607,6 +616,7 @@ namespace Hoodrich.Core
             s.TakeoverSpinLeft = (int)Clamp(ini.GetInt("Block", "TakeoverSpinLeft", s.TakeoverSpinLeft), 0f, 40f);
             s.TakeoverSpinRight = (int)Clamp(ini.GetInt("Block", "TakeoverSpinRight", s.TakeoverSpinRight), 0f, 40f);
             s.TakeoverBurnAction = (int)Clamp(ini.GetInt("Block", "TakeoverBurnAction", s.TakeoverBurnAction), 0f, 40f);
+            s.TakeoverSpinRadius = Clamp(ini.GetFloat("Block", "TakeoverSpinRadius", s.TakeoverSpinRadius), 2f, 18f);
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
