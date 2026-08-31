@@ -879,11 +879,21 @@ namespace Hoodrich.Locations
                 var seat = Free(car);
                 if (seat == int.MinValue) return;
 
-                // AND THE DOOR OPENS FOR HIM. Only ever reached when he is yours and alive --
-                // this whole method hangs off Mine(), which is the branch for a dog that has
-                // been petted and is following you -- so a car you get into without him keeps
-                // its doors shut.
-                Open(car, seat);
+                // AND THE DOOR OPENS FOR HIM WHEN HE IS ACTUALLY COMING.
+                //
+                // It used to open the moment you got in, which meant it opened for a dog who
+                // was two streets back and stayed open the whole time he was catching up --
+                // and if he never caught up, it stayed open for good. A door standing open
+                // beside you with nothing arriving is worse than a dog that opens his own,
+                // because at least the second one is explicable.
+                //
+                // Twelve metres, which is roughly three seconds of dog. Far enough ahead that
+                // it is already open when he gets there and he never plays the door-nudging
+                // animation; near enough that it is plainly for him.
+                var comingIn = _dog.Position.DistanceTo(car.Position);
+
+                if (comingIn <= OpenFrom) Open(car, seat);
+                else if (comingIn > OpenFrom + 8f) Shut(car);
 
                 // MID-JUMP. The seat is taken at the END of the animation, so this branch is
                 // the one that does nothing -- and it has to come before the task check below
@@ -1106,6 +1116,16 @@ namespace Hoodrich.Locations
         /// the seated pose is checked.</summary>
         private const int JumpMs = 1100;
         private const float JumpFrom = 4.5f;
+
+        /// <summary>
+        /// And how close before the door swings.
+        ///
+        /// Well outside the jump distance on purpose. The whole reason to open it from script
+        /// is so that the door is ALREADY open when he arrives -- if it opened at the same
+        /// range he jumps from, he would reach a shut door and the game would give him the
+        /// business of opening it, which is the thing this exists to avoid.
+        /// </summary>
+        private const float OpenFrom = 12f;
         /// <summary>
         /// Five hundred, down from fifteen hundred.
         ///
