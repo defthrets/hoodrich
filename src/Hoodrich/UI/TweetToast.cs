@@ -272,12 +272,21 @@ namespace Hoodrich.UI
                 else Headshots.Txd(card.By.Handle);
             }
 
-            // THE MONOGRAM GOES UNDERNEATH RATHER THAN INSTEAD OF. It used to be the third of
-            // three choices, so a frame where the image was not ready showed a coloured square
-            // where a face had been. Drawn first and always, it is simply what is behind the
-            // picture -- and a frame the streamer misses shows the same square that was there
-            // before the face arrived instead of a hole. Sprites draw above rectangles
-            // whatever order they are issued in, so the face still covers it.
+            // THE SQUARE GOES UNDERNEATH. THE LETTER DOES NOT.
+            //
+            // Putting the monogram behind the picture rather than instead of it is what stops a
+            // frame where the image is not ready showing a coloured square where a face had
+            // been -- it is simply what is behind the face, and a missed frame shows the same
+            // square that was there before the face arrived rather than a hole.
+            //
+            // That works for the SQUARE because it is a rectangle and a sprite draws over a
+            // rectangle whatever order the two are issued in. IT DOES NOT WORK FOR THE LETTER,
+            // and the difference cost a screenshot of a T sat across somebody's face: text is
+            // drawn in a later pass than sprites, so a monogram letter issued first still comes
+            // out in front of the picture issued after it.
+            //
+            // So the letter is the one thing here that stays conditional. It is the fallback
+            // and it is only drawn when there is nothing to fall back FROM.
             {
                 // A square, not a disc. The width is converted through ToX so it comes out
                 // square on the screen rather than square in the coordinate system -- 0.03 by
@@ -286,8 +295,11 @@ namespace Hoodrich.UI
                 Hud.RectFrom(left + Pad, y + Pad, Hud.ToX(AvatarSize), AvatarSize,
                              Alpha(card.Tint, solid));
 
-                Hud.Text(card.By.Initial, cx, cy - 0.0112f, 0.38f,
-                         Color.FromArgb((int)(240 * fade), 250, 250, 248), Hud.FontChaletLondon);
+                if (string.IsNullOrEmpty(card.Art))
+                {
+                    Hud.Text(card.By.Initial, cx, cy - 0.0112f, 0.38f,
+                             Color.FromArgb((int)(240 * fade), 250, 250, 248), Hud.FontChaletLondon);
+                }
             }
 
             // And the face over the top of it, once there is one.

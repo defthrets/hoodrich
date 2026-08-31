@@ -1296,6 +1296,21 @@ namespace Hoodrich.Supply
 
         private void CreateBlip(DealerDef def, bool route)
         {
+            // ONCE YOU HAVE MET HIM THERE IS NOTHING LEFT FOR THIS BLIP TO SAY.
+            //
+            // It was the thing that made finding the first one a search, and that job is over
+            // the moment you have found him: his corner gets a permanent mark, and the mark is
+            // the answer to "where does he work". A second blip on the man himself is the same
+            // information twice, sat on top of itself on the radar.
+            //
+            // A ROUTE STILL GETS ONE, because that is a different question. You called him out
+            // to meet somewhere, and where he is right now is the whole point of asking.
+            if (!route && HaveMet(def, State))
+            {
+                _liveBlip = null;
+                return;
+            }
+
             try
             {
                 _liveBlip = _livePed.AddBlip();
@@ -1315,15 +1330,14 @@ namespace Hoodrich.Supply
                     _liveBlip.Color = def.Kind == DealerKind.Docks ? BlipColor.Blue : BlipColor.White;
                 }
 
-                // A posted dealer is a local landmark; someone you called out gets a route.
-                // SHORT RANGE UNTIL YOU HAVE MET HIM, which is what makes the first one a
-                // search. It used to be visible at map range, so every dealer in the city
-                // announced himself the moment he loaded and there was nothing to find.
+                // SHORT RANGE, WHICH IS WHAT MAKES THE FIRST ONE A SEARCH. It used to be
+                // visible at map range, so every dealer in the city announced himself the
+                // moment he loaded and there was nothing to find.
                 //
-                // Once he is somebody you know it stops mattering: the permanent mark is on
-                // the map anyway, and a long-range blip on the man himself is then just a way
-                // of seeing whether he is actually out.
-                _liveBlip.IsShortRange = !route && !HaveMet(def, State);
+                // Anything reaching this line is either somebody you have not met or somebody
+                // you called out; the one you called out gets the range, because you are trying
+                // to get to him.
+                _liveBlip.IsShortRange = !route;
                 _liveBlip.ShowRoute = route;
                 _liveBlip.Scale = 0.85f;
             }
