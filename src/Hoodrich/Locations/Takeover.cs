@@ -1314,11 +1314,27 @@ namespace Hoodrich.Locations
                         ? _rng.Next(BurnMinMs, BurnMaxMs)
                         : _rng.Next(24000, 52000));
 
-                    r.NextAction = 0;
+                    // AND THEY PULL UP FIRST.
+                    //
+                    // The donut used to begin on the frame the car arrived, which meant
+                    // whatever speed it came in at went straight into the first burst of lock
+                    // -- so it did not start a donut, it started a slide, from outside the
+                    // circle, across it. That is the "run up" and it is why they looked like
+                    // they were driving through rather than working.
+                    //
+                    // A real one stops. He rolls up, he sits there a second with the crowd
+                    // round him, and THEN he stands on it from nothing. So the first thing
+                    // after arriving is a brake, and the lock does not start until it is done.
+                    r.NextAction = now + SettleMs;
 
                     try
                     {
                         Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                        // Temp action 1 is the brake. Held for the whole settle, so he is
+                        // stopped rather than coasting to a halt across the middle of it.
+                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
+                                      r.Car.Handle, 1, SettleMs);
 
                         // Both, because they are different things: drift tyres are the real
                         // ones off the tuning menu, and reduced grip is the blunt instrument
@@ -2119,8 +2135,12 @@ namespace Hoodrich.Locations
                     }
                 }
 
+                // ELEVEN, DOWN FROM SIXTEEN. Sixteen metres a second is about fifty-eight
+                // kilometres an hour, which is a fine speed to cross a district at and far too
+                // much to be doing on the last twenty metres into a circle full of people. The
+                // approach is not the interesting part and does not need to be quick.
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
-                              aim.X, aim.Y, aim.Z, 16f, 0, car.Model.Hash,
+                              aim.X, aim.Y, aim.Z, ComeInSpeed, 0, car.Model.Hash,
                               RushStyle, 2f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
@@ -2296,6 +2316,10 @@ namespace Hoodrich.Locations
 
         /// <summary>How long one burst of lock lasts, and how far they may wander.</summary>
         private const int BurstMs = 3200;
+
+        /// <summary>How fast they come in, and how long they sit before they start.</summary>
+        private const float ComeInSpeed = 11f;
+        private const int SettleMs = 1500;
         private const float Wander = 7f;
 
         /// <summary>
