@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using Color = System.Drawing.Color;
 using GTA.Math;
@@ -170,6 +170,18 @@ namespace Hoodrich.Locations
         public bool BootOpen;
 
         /// <summary>
+        /// Other doors to stand open, by index, or null for none.
+        ///
+        /// 0 and 1 are the front, 2 and 3 the back, 4 the bonnet, 5 the boot. BootOpen is
+        /// still its own flag because it is the one nearly every car that wants this wants;
+        /// this is for the rest.
+        /// </summary>
+        public int[] Doors;
+
+        /// <summary>What it says on the plate, or null to leave it whatever it came with.</summary>
+        public string Plate;
+
+        /// <summary>
         /// Interior and dashboard paint, or null for whatever it came with.
         ///
         /// The natives for this are in the enum as SET_VEHICLE_EXTRA_COLOUR_5 and _6, which is
@@ -273,6 +285,9 @@ namespace Hoodrich.Locations
             if (player == null || !player.Exists()) return;
 
             if (_car != null && !_car.Exists()) _car = null;
+
+            // And anything that is meant to be standing open still is. See Swing.
+            if (BootOpen || Doors != null) Swing();
 
             // Once it is out there it is left alone. Not put back on its mark, not re-parked --
             // if somebody has taken it for a drive then it is a car that got taken, which is a
@@ -439,9 +454,11 @@ namespace Hoodrich.Locations
                 // Door 5 is the boot. Instantly rather than swung, because the car is being
                 // created in front of you and a boot easing itself open on spawn is a car
                 // doing something rather than a car that was already like that.
-                if (BootOpen)
+                if (BootOpen || Doors != null) Swing();
+
+                if (!string.IsNullOrEmpty(Plate))
                 {
-                    Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, 5, false, true);
+                    Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, _car.Handle, Plate);
                 }
             }
             catch (Exception ex)
@@ -480,6 +497,43 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.TOGGLE_VEHICLE_MOD, _car.Handle, 22, true);   // xenons
             }
             catch { /* neither is worth a log line */ }
+        }
+
+        /// <summary>
+        /// <summary>
+        /// Hold the doors open.
+        ///
+        /// RE-ISSUED RATHER THAN SET ONCE, because a door is not a property of a car -- it is a
+        /// thing with physics on it. Somebody brushes past it, a ped leans on it, the game
+        /// settles the vehicle when it streams back in, and the boot that was open when you
+        /// walked away is shut when you come back. Opening it once is opening it once.
+        ///
+        /// Instantly rather than swung, for the same reason it was on spawn: a boot easing
+        /// itself open while you look at it is a van doing something. This is a van that was
+        /// already like that.
+        ///
+        /// Calling it on a door that is already open costs nothing and does nothing, so there
+        /// is no need to ask first.
+        /// </summary>
+        private void Swing()
+        {
+            if (_car == null || !_car.Exists()) return;
+
+            try
+            {
+                if (BootOpen) Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, 5, false, true);
+
+                if (Doors == null) return;
+
+                foreach (var d in Doors)
+                {
+                    Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, d, false, true);
+                }
+            }
+            catch
+            {
+                // Next time round.
+            }
         }
 
         /// <summary>

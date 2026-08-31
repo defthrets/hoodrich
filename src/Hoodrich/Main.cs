@@ -831,6 +831,14 @@ namespace Hoodrich
                 {
                     Built = true,
                     BootOpen = true,
+
+                    // AND THE BACK DOORS. 2 and 3 are the rear pair -- a van with its boot up
+                    // and its sides shut is a van being loaded; one with all three open is the
+                    // thing the party is coming out of.
+                    Doors = new[] { 2, 3 },
+
+                    Plate = "DAVIS88",
+
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
 
                     // Green inside as well as out, key in it, and something coming out of it.
