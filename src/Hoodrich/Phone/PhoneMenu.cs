@@ -175,7 +175,18 @@ namespace Hoodrich.Phone
         /// text stays WHITE either way -- so the worst this can ever look now is an item that
         /// is merely not highlighted, which is a thing you can still read.
         /// </summary>
-        private static readonly Color Lit = Color.FromArgb(236, 20, 46, 26);
+        /// <summary>
+        /// Brightened, because at 20,46,26 it could not be seen at all.
+        ///
+        /// THE ROW WAS ALWAYS BEING DRAWN. The bug was never a missing highlight -- it was a
+        /// near-black green laid on a near-black panel, which is a highlight in the code and
+        /// nothing on the screen. "Where to?" came out as ten identical lines with no way to
+        /// tell which one you were on.
+        ///
+        /// Still a bed rather than a block: white text has to stay readable on it, which is
+        /// the whole reason this is not the inverted near-white bar it replaced.
+        /// </summary>
+        private static readonly Color Lit = Color.FromArgb(245, 28, 72, 38);
         private static readonly Color LitEdge = Color.FromArgb(255, 108, 196, 106);
 
         // ---- state --------------------------------------------------------------
@@ -1296,7 +1307,12 @@ namespace Hoodrich.Phone
             {
                 Hud.RectFrom(left, top, w, RowH, Fade(Lit, fade));
                 Sheen(left, top, w, RowH, fade);
-                Hud.RectFrom(left, top, Hud.ToX(0.0035f), RowH, Fade(LitEdge, fade));
+
+                // A RAIL RATHER THAN A HAIRLINE. It was 0.0035 of a screen HEIGHT converted to
+                // width, which comes out under four pixels on a 1080p screen -- a line you have
+                // to already know is there to find. Three times that is an edge the eye lands
+                // on without being told to look for it.
+                Hud.RectFrom(left, top, Hud.ToX(0.010f), RowH, Fade(LitEdge, fade));
             }
             else if (alt)
             {
@@ -1317,7 +1333,13 @@ namespace Hoodrich.Phone
             var gutter = 0.030f;
             if (HasArt(item))
             {
-                Art(item, x + Hud.ToX(gutter) * 0.5f, top + RowH * 0.5f, gutter, Fade(ink, fade));
+                // GREEN ON THE ONE YOU ARE ON, the same as the app grid. Three cues rather than
+                // one, because any single one of them can be lost against a given background:
+                // the bed, the rail down the edge, and the icon changing colour. The label
+                // stays white, for the same reason it does on the grid -- it is the thing you
+                // are reading.
+                Art(item, x + Hud.ToX(gutter) * 0.5f, top + RowH * 0.5f, gutter,
+                    Fade(on ? Green : ink, fade));
                 x += Hud.ToX(gutter) + Hud.ToX(0.008f);
             }
 
