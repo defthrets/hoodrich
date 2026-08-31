@@ -1466,9 +1466,20 @@ namespace Hoodrich.Locations
                 Leave(r);
             }
 
-            // ONE ON THE MARK AND ONE OR TWO ROUND THE OUTSIDE, counted separately -- the
-            // middle is a place rather than a share of the traffic, and letting them come out
-            // of the same pool means the mark stands empty whenever the circle is busy.
+            // NEARLY ALL OF THEM GO ROUND, AND NOW AND THEN SOMEBODY SITS STILL.
+            //
+            // It used to be the other way about: there was always exactly one car on the mark
+            // holding a stationary burnout, and it was the first thing sent for. Which made the
+            // static one the centrepiece of every takeover, when it should be the thing that
+            // happens occasionally in among a junction full of cars going round.
+            //
+            // So the mark is now a roll rather than a rule, taken on the same clock as the
+            // count so it holds for a while instead of flickering. When nobody has it, every
+            // car working is doing circles -- which is what a takeover mostly is.
+            //
+            // Counted separately from the round-the-outside cars all the same: the middle is a
+            // PLACE, and letting the two come out of one pool means the mark stands empty
+            // whenever the circle happens to be busy.
             var mark = 0;
             var round = 0;
 
@@ -1480,7 +1491,11 @@ namespace Hoodrich.Locations
                 else round++;
             }
 
-            if (mark < 1) In(true);
+            // Only if this stretch of the night is having one. An existing static burnout is
+            // left to finish rather than pulled off the mark the moment the roll changes --
+            // his go is his go, and a car that vanishes mid-burnout is worse than one that
+            // stays a minute longer than the dice wanted.
+            if (_wantMark && mark < 1) In(true);
 
             // TWO TO FOUR WORKING AT ONCE, and never fewer than two.
             //
@@ -1492,9 +1507,12 @@ namespace Hoodrich.Locations
             {
                 _reroll = now + RerollMs;
                 _want = 1 + _rng.Next(1, 4);
+                _wantMark = _rng.Next(100) < MarkChance;
             }
 
-            var want = _want - 1;
+            // Whatever is not on the mark is going round. When nobody is on it, the whole
+            // count goes to the circle rather than the junction quietly losing a car.
+            var want = _wantMark ? _want - 1 : _want;
             if (want < 1) want = 1;
 
             while (round < want)
@@ -1522,8 +1540,17 @@ namespace Hoodrich.Locations
 
         /// <summary>How many should be out there, and when that was last decided.</summary>
         private int _want = 3;
+        private bool _wantMark;
         private int _reroll;
         private const int RerollMs = 45000;
+
+        /// <summary>
+        /// How often a stretch of the night has somebody parked on the mark.
+        ///
+        /// A quarter. Often enough that it happens and is worth looking at when it does; rare
+        /// enough that it reads as somebody deciding to, rather than as a fixture of the event.
+        /// </summary>
+        private const int MarkChance = 25;
 
         /// <summary>
         /// Two or three of the set, on dirt bikes, riding through it.
