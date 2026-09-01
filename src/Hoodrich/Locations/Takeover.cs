@@ -154,12 +154,10 @@ namespace Hoodrich.Locations
 
         private static readonly Spot[] Spots =
         {
-            new Spot { At = new Vector3( -126.696f,  -1707.998f, 28.945f), Face = 142.974f },
             new Spot { At = new Vector3( -130.816f,  -1712.833f, 29.239f), Face = 140.032f },
             new Spot { At = new Vector3( -136.611f,  -1718.020f, 29.349f), Face = 114.876f },
             new Spot { At = new Vector3( -142.715f,  -1716.573f, 29.404f), Face = 237.634f },
             new Spot { At = new Vector3( -147.696f,  -1712.760f, 29.470f), Face = 228.277f },
-            new Spot { At = new Vector3( -154.136f,  -1720.701f, 29.419f), Face = 229.255f },
             new Spot { At = new Vector3( -150.679f,  -1723.746f, 29.385f), Face = 233.514f },
             new Spot { At = new Vector3( -147.009f,  -1729.062f, 29.337f), Face = 359.130f },
             new Spot { At = new Vector3( -147.731f,  -1733.873f, 29.346f), Face = 160.693f },
@@ -1011,7 +1009,6 @@ namespace Hoodrich.Locations
             _carsIn = false;
 
             // AND A NOTE OF WHAT WAS ALREADY PARKED HERE. See Sweep.
-            Standing();
             _nextWord = now + _rng.Next(20000, 45000);
 
             Cars();
@@ -1476,78 +1473,6 @@ namespace Hoodrich.Locations
         /// badge. Deleting a police car mid-response is a wanted level that never resolves,
         /// and the flag would not have caught them.
         /// </summary>
-        /// <summary>
-        /// Write down every car already parked round the junction, before we touch anything.
-        ///
-        /// THESE ARE THE STREET, NOT TRAFFIC. A residential block has cars on it -- in the
-        /// driveways, along both kerbs, outside the shop -- and they were there before the
-        /// takeover and would be there after it. Clearing them out leaves a bare road with
-        /// nothing on it but our thirty-five, which reads as a film set rather than a street
-        /// somebody has taken over.
-        ///
-        /// Taken ONCE, at the start, so "was it here already" has a fixed answer for the whole
-        /// night rather than one that drifts as the sweep runs.
-        ///
-        /// STATIONARY ONLY, which is the definition doing the work. A car moving through the
-        /// junction at the moment the night starts is traffic that happens to be passing, not a
-        /// parked car -- it is the cordon's business, and if it stops and stays it is fair game.
-        /// It also keeps this list short, which matters: handles are recycled when an entity is
-        /// deleted, so the fewer of them held for hours the smaller the chance of pardoning
-        /// something later that merely inherited a number.
-        /// </summary>
-        private void Standing()
-        {
-            _wereHere.Clear();
-
-            try
-            {
-                foreach (var car in World.GetNearbyVehicles(Middle, SweepRange))
-                {
-                    if (car == null || !car.Exists()) continue;
-                    if (car.Speed > 1f) continue;
-
-                    _wereHere.Add(car.Handle);
-                }
-
-                Log.Info("Takeover: " + _wereHere.Count + " cars already parked here. They stay.");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Takeover could not read the street: " + ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Whether one of our thirty-five spots or four markers is under this car.
-        ///
-        /// The one exception to leaving the street alone. A car parked on a kerb we are about
-        /// to put a spectator on is not scenery, it is an obstacle -- and it would win, because
-        /// a spot that cannot be driven to is placed into after forty seconds, which would put
-        /// two cars in the same space. Being there first does not get you a spot that has a
-        /// car coming for it.
-        /// </summary>
-        private static bool InTheWay(Vehicle car)
-        {
-            var at = car.Position;
-
-            foreach (var s in Spots)
-            {
-                if (at.DistanceTo(s.At) < ClearSpot) return true;
-            }
-
-            foreach (var s in Stages)
-            {
-                if (at.DistanceTo(s.At) < ClearSpot) return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>How close to one of our places counts as being in the way of it.</summary>
-        private const float ClearSpot = 4.5f;
-
-        /// <summary>What was parked here before we arrived. Handles, taken once. See Standing.</summary>
-        private readonly HashSet<int> _wereHere = new HashSet<int>();
 
         private void Sweep(int now)
         {
@@ -1562,28 +1487,37 @@ namespace Hoodrich.Locations
 
             try
             {
+                // NO CAR IS DELETED ANY MORE. THEY ARE TURNED ROUND.
+                //
+                // The delete was catching our own. Every guard on it was a guess about which
+                // cars were ours -- persistent, on one of our lists, not police -- and a guess
+                // that is wrong once is a spectator that vanishes on its way to a kerb it will
+                // now never fill. There is no version of "delete every car near here" that is
+                // safe while thirty-five of ours are driving to the same junction, so the
+                // whole idea goes rather than another guard being added to it.
+                //
+                // A stranger's car was never the problem anyway. A car driving PAST is a
+                // street. A car driving INTO the crowd is the problem, and the answer to that
+                // is the one the cordon has always used at forty metres: send it back the way
+                // it came. This is the same thing at a hundred, so a driver is turned before he
+                // is committed to the junction rather than in the middle of it.
                 foreach (var car in World.GetNearbyVehicles(Middle, SweepRange))
                 {
-                    if (car == null || !car.Exists() || car.IsPersistent) continue;
+                    if (car == null || !car.Exists()) continue;
                     if (riding != null && riding.Exists() && car.Handle == riding.Handle) continue;
                     if (Badged(car)) continue;
                     if (Ours(car)) continue;
 
-                    // IT WAS ALREADY PARKED HERE, so it is part of the street and it stays.
-                    // Only what drives IN afterwards gets cleared -- the point of the sweep is
-                    // to stop the junction filling back up with strangers, not to empty a
-                    // residential block of every car on it.
-                    //
-                    // Unless it is sat on one of our places, which is the single exception:
-                    // that kerb has a spectator coming for it and being there first does not
-                    // win the argument.
-                    if (_wereHere.Contains(car.Handle) && !InTheWay(car)) continue;
-
+                    // An empty car is the street. There is nobody in it to turn round, and one
+                    // somebody left here is scenery, which is now simply true of every parked
+                    // car rather than a list we had to keep.
                     var driver = car.Driver;
 
-                    if (driver != null && driver.Exists() && !driver.IsPersistent) driver.Delete();
+                    if (driver == null || !driver.Exists() || !driver.IsAlive) continue;
+                    if (driver.Handle == player.Handle) continue;
+                    if (Ours(driver)) continue;
 
-                    car.Delete();
+                    Turn(car, driver, now);
                 }
 
                 foreach (var ped in World.GetNearbyPeds(Middle, SweepRange))
@@ -1638,7 +1572,59 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>How far out strangers are cleared, and how often.</summary>
+        /// <summary>
+        /// Point a stranger's car back the way it came, and leave it alone for a while.
+        ///
+        /// AWAY FROM THE MARK RATHER THAN TO AN ADDRESS. The direction is the one he is already
+        /// on -- straight out from the junction through where he is now -- so he carries on
+        /// down the street he was already using instead of performing a U-turn in front of
+        /// sixty people to reach a coordinate on the far side of town.
+        ///
+        /// On the cordon's own list, shared on purpose. It turns cars at forty metres and this
+        /// turns them at a hundred, and two systems handing the same driver two destinations in
+        /// the same second is a driver who sits there deciding.
+        /// </summary>
+        private void Turn(Vehicle car, Ped driver, int now)
+        {
+            int when;
+
+            if (_turned.TryGetValue(car.Handle, out when) && now - when < TurnAgainMs) return;
+
+            _turned[car.Handle] = now;
+
+            try
+            {
+                var out_ = car.Position - Middle;
+                var len = out_.Length();
+
+                out_ = len < 0.5f ? car.ForwardVector : out_ * (1f / len);
+
+                var to = car.Position + out_ * SendAway;
+
+                var road = World.GetNextPositionOnStreet(to, true);
+                if (road != Vector3.Zero) to = road;
+
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, driver.Handle, true);
+                Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, driver.Handle, 0.2f);
+
+                Function.Call(Hash.CLEAR_PED_TASKS, driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
+                              to.X, to.Y, to.Z, 14f, 0, car.Model.Hash, CareStyle, 20f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
+            }
+            catch
+            {
+                // He drives wherever he was going, and the cordon has another go at forty.
+            }
+        }
+
+        /// <summary>How far he is sent, and how long before anything may tell him again.</summary>
+        private const float SendAway = 160f;
+        private const int TurnAgainMs = 20000;
+
+        /// <summary>How far out strangers are turned round, and how often.</summary>
         private const float SweepRange = 100f;
         private const int SweepEveryMs = 4000;
 
@@ -5198,7 +5184,6 @@ namespace Hoodrich.Locations
 
             _law.Clear();
 
-            _wereHere.Clear();
             _coming.Clear();
 
             _scattered = false;
