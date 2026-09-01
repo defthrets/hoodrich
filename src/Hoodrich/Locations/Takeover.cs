@@ -208,13 +208,22 @@ namespace Hoodrich.Locations
         /// the leash further down is what brings a wide one back rather than anything holding
         /// them to a line.
         /// </summary>
-        private float DriftMin { get { return SpinRadius - 0.5f; } }
-        private float DriftMax { get { return SpinRadius + 0.5f; } }
+        /// <summary>
+        /// The spread of circle sizes, and it is a MEASURED one now.
+        ///
+        /// Half a metre either side was a guess and it was far too tight -- every car drove the
+        /// same circle, which is a formation rather than a takeover. Three minutes of somebody
+        /// actually doing donuts on this junction came out at a median radius of 8.3 metres
+        /// with a tenth-to-ninetieth spread of 2.3 to 13.5: tight ones, wide ones, and most of
+        /// them in the middle. Minus three to plus four reproduces that around the setting.
+        /// </summary>
+        private float DriftMin { get { return SpinRadius - 3f; } }
+        private float DriftMax { get { return SpinRadius + 4f; } }
 
         /// <summary>The ini figure, because this number has been changed by eye four times.</summary>
         private float SpinRadius
         {
-            get { return _cfg == null ? 5f : _cfg.TakeoverSpinRadius; }
+            get { return _cfg == null ? 8f : _cfg.TakeoverSpinRadius; }
         }
 
         /// <summary>How long the one on the mark gets before somebody else has a go.</summary>
@@ -626,7 +635,6 @@ namespace Hoodrich.Locations
             /// <summary>When it set off, so a car that never arrives can be given up on.</summary>
             public int Sent;
 
-            public float Speed;
             public int Way;
             public int Until;
 
@@ -3873,7 +3881,6 @@ namespace Hoodrich.Locations
                     // See Turn.
                     Stage = stage,
                     Radius = DriftMin + (float)_rng.NextDouble() * (DriftMax - DriftMin),
-                    Speed = 9f + (float)_rng.NextDouble() * 5f,
                     Way = _rng.Next(2) == 0 ? 1 : -1
                 };
 

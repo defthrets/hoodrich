@@ -391,7 +391,7 @@ namespace Hoodrich.Core
         /// junction and watching, and it has been judged by eye more than once. The cars aim
         /// at a circle this wide and slide well outside it, which is what it should look like.
         /// </summary>
-        public float TakeoverSpinRadius = 5f;
+        public float TakeoverSpinRadius = 8f;
 
         /// <summary>Whether groups of the set walk the back streets on foot.</summary>
         /// <summary>
