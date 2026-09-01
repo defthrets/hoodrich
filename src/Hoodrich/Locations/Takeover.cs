@@ -468,6 +468,12 @@ namespace Hoodrich.Locations
         /// </summary>
         private static readonly string[] Parked =
         {
+            // The set's own, checked against the hashes off the vehicle list rather than
+            // typed from memory -- the same names the rollers drive, so the cars on the block
+            // and the cars at the meet are recognisably one set's cars.
+            "sentinel5", "cavalcade3", "fq2", "rebla", "fr36", "dominator3", "dominator9",
+            "gauntlet4", "ruiner4", "vigero2", "veto", "outlaw",
+
             // Imports.
             "zr350", "euros", "remus", "previon", "calico", "futo2", "penumbra2",
             "jester3", "rt3000", "kanjo", "kanjosj", "warrener2", "s95", "vectre",
@@ -552,6 +558,11 @@ namespace Hoodrich.Locations
 
             /// <summary>When he stepped out of a car's way, or nought. See Step.</summary>
             public int Stepped;
+
+            /// <summary>When his fright wears off, where it came from, and whether he has moved.</summary>
+            public int Spooked;
+            public Vector3 From;
+            public bool Ran;
 
             /// <summary>
             /// What he was doing, so that after a knock he goes back to doing THAT.
@@ -877,6 +888,7 @@ namespace Hoodrich.Locations
                         if (OwnedCars.NowMinutes() >= _endsAt) { Blues(); return; }
 
                         Calm();
+                        Fright(now);
                         Arriving(now);
                         Filling(now);
                         Wave(now);
@@ -1205,6 +1217,13 @@ namespace Hoodrich.Locations
                         Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
                                       w.Doing, 0, true);
 
+                        // DEAF AGAIN NOW HE IS BACK. Somebody who has been spooked had this
+                        // turned OFF so he could hear the thing that spooked him, and a man who
+                        // never gets it back reacts to every bang for the rest of the night --
+                        // which is a ring that empties itself one firework at a time.
+                        Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS,
+                                      w.Man.Handle, true);
+
                         // AND AGAIN AFTER THE SCENARIO, not only before it. A scenario picks
                         // its own facing when it starts, so a heading set first is a heading
                         // thrown away -- which is why the ring kept coming out pointing every
@@ -1221,6 +1240,9 @@ namespace Hoodrich.Locations
 
                 // OUT OF THE WAY OF A CAR, AND THEN BACK. See Step.
                 if (Step(w, now)) continue;
+
+                // AND OUT OF THE WAY OF WHATEVER JUST HAPPENED. See Spook.
+                if (Startled(w, now)) continue;
 
                 // KNOCKED OVER, SHOVED, OR IN A FIGHT.
                 //
@@ -2379,6 +2401,155 @@ namespace Hoodrich.Locations
 
         /// <summary>How long after the car has gone before he walks back to his spot.</summary>
         private const int StepBackMs = 2000;
+
+        /// <summary>
+        /// Something happened, and everybody near it moves.
+        ///
+        /// TWO THINGS SET IT OFF and they are the two you actually see at one of these: a shot,
+        /// and somebody going under a car. Both are read from the world rather than from our own
+        /// bookkeeping -- IS_BULLET_IN_AREA does not care whose gun it was, and a man on the
+        /// floor is a man on the floor whoever put him there.
+        ///
+        /// ONE SCARE AT A TIME, held with a position. Everybody near enough reacts to the same
+        /// event from the same place, which is what makes a crowd move as a crowd -- fifty
+        /// people each deciding separately produces fifty people milling, which is what a crowd
+        /// never does.
+        /// </summary>
+        private void Fright(int now)
+        {
+            if (_crowd.Count == 0) return;
+            if (now < _nextFright) return;
+
+            _nextFright = now + FrightGapMs;
+
+            try
+            {
+                // SOMEBODY ON THE FLOOR, and it is checked first because it is the bigger of
+                // the two. A car has just been through where people were standing.
+                foreach (var w in _crowd)
+                {
+                    if (w.Man == null || !w.Man.Exists()) continue;
+                    if (w.Man.IsAlive && !Function.Call<bool>(Hash.IS_PED_RAGDOLL, w.Man.Handle)) continue;
+
+                    Scare(w.Man.Position, now, RunOverRange, RunOverMs);
+                    return;
+                }
+
+                // OR A SHOT. Radius rather than a source, because from the pavement a gunshot
+                // is a noise and a direction and nothing else.
+                var shot = Function.Call<bool>(Hash.IS_BULLET_IN_AREA,
+                                               Middle.X, Middle.Y, Middle.Z, ShotHeard, true);
+
+                if (shot) Scare(Middle, now, ShotHeard, ShotMs);
+            }
+            catch
+            {
+                // Nobody jumps this time.
+            }
+        }
+
+        /// <summary>Mark everybody near a thing as having seen it.</summary>
+        private void Scare(Vector3 at, int now, float range, int hold)
+        {
+            foreach (var w in _crowd)
+            {
+                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+                if (w.Spooked != 0) continue;
+                if (w.Man.Position.DistanceTo(at) > range) continue;
+
+                w.Spooked = now + hold;
+                w.From = at;
+            }
+        }
+
+        /// <summary>
+        /// One man reacting, and then going back to what he was doing.
+        ///
+        /// HE GOES BACK, and that is the half that makes this usable. A crowd that scatters at
+        /// the first bang is a takeover that ends itself thirty seconds in -- the whole ring is
+        /// deaf to the world on purpose for exactly that reason. This turns that off for a few
+        /// seconds, lets him have his reaction, and turns it back on when he returns.
+        ///
+        /// AWAY FROM IT rather than a flee task. A flee sends him off down the street and he is
+        /// gone for the night; this is a man taking several quick steps back and stopping,
+        /// which is what people at one of these actually do -- they move, and then they turn
+        /// round and look at it.
+        ///
+        /// Returned through the same path a knock already uses: There is cleared, so he walks
+        /// to his spot, faces the circle and starts his own scenario again. Nothing new had to
+        /// be written for the coming-back half.
+        /// </summary>
+        private bool Startled(Watcher w, int now)
+        {
+            if (w.Spooked == 0) return false;
+
+            if (now < w.Spooked)
+            {
+                if (w.Ran) return true;
+
+                w.Ran = true;
+
+                try
+                {
+                    var away = w.Man.Position - w.From;
+                    var len = away.Length();
+
+                    away = len < 0.5f ? w.Man.ForwardVector : away * (1f / len);
+
+                    var to = w.Man.Position + away * BackAway;
+
+                    // Let him hear the world for as long as this lasts, or the game will not
+                    // let him break out of his scenario to move at all.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, w.Man.Handle, false);
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+
+                    Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, w.Man.Handle,
+                                  to.X, to.Y, to.Z, 2.0f, 4000, 0f, 0.3f);
+                }
+                catch
+                {
+                    w.Spooked = 0;
+                    w.Ran = false;
+                }
+
+                return true;
+            }
+
+            w.Spooked = 0;
+            w.Ran = false;
+            w.There = false;
+            w.Away = 0;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, w.Man.Handle,
+                              w.Slot.X, w.Slot.Y, w.Slot.Z, 1.8f, -1, 1.0f, true, 0f);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
+            }
+            catch
+            {
+                // The stray check has another go at him.
+            }
+
+            return true;
+        }
+
+        /// <summary>How far a fright carries, and how long people stay off their mark for it.</summary>
+        private const float ShotHeard = 30f;
+        private const int ShotMs = 4500;
+
+        private const float RunOverRange = 14f;
+        private const int RunOverMs = 6000;
+
+        /// <summary>How far back they go, and how often the world is checked for a fright.</summary>
+        private const float BackAway = 5f;
+        private const int FrightGapMs = 1200;
+
+        private int _nextFright;
 
         /// <summary>The juice. Driven per frame, or it is a car changing height rather than hopping.</summary>
         private void Bounce()
@@ -4801,16 +4972,28 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, 22, true);
                 }
 
-                // NEON, on all four sides, and everybody gets it. It is underglow on a parked
-                // or spinning car either way, and it is the one bit of colour that belongs.
-                var neon = Neons[_rng.Next(Neons.Length)];
-
-                for (var side = 0; side < 4; side++)
+                // NEON ON A FEW OF THEM, NOT ON ALL OF THEM.
+                //
+                // Everybody used to get it, on the reasoning that underglow belongs at one of
+                // these. It does -- and that is exactly why every car having it is wrong: a
+                // thing everybody has is not a statement, it is lighting. Thirty-five glowing
+                // cars round a junction stop reading as somebody's build and start reading as
+                // a fairground, and the two or three that would actually have spent the money
+                // are lost in it.
+                //
+                // A quarter. Enough that there is always some of it on the street and enough
+                // that a car with it stands out from the ones without.
+                if (_rng.Next(100) < NeonChance)
                 {
-                    Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, h, side, true);
-                }
+                    var neon = Neons[_rng.Next(Neons.Length)];
 
-                Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, h, neon[0], neon[1], neon[2]);
+                    for (var side = 0; side < 4; side++)
+                    {
+                        Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, h, side, true);
+                    }
+
+                    Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, h, neon[0], neon[1], neon[2]);
+                }
 
                 Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h, Plates[_rng.Next(Plates.Length)]);
             }
@@ -4841,6 +5024,9 @@ namespace Hoodrich.Locations
                 // It goes without.
             }
         }
+
+        /// <summary>How many of them have underglow, out of a hundred. See Dress.</summary>
+        private const int NeonChance = 25;
 
         /// <summary>Paints, wheel sets, tints, and plates.</summary>
         private static readonly int[] Paints =
