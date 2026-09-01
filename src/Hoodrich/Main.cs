@@ -87,6 +87,9 @@ namespace Hoodrich
         private readonly PocketScreen _pocketScreen;
         private readonly SettingsScreen _settingsScreen = new SettingsScreen();
 
+        /// <summary>Writes down how you drive, for the cars at the junction. See Core.Recorder.</summary>
+        private readonly Core.Recorder _recorder = new Core.Recorder();
+
         /// <summary>Whether this load has cleared the previous load's headshot peds.</summary>
         private bool _sweptFaces;
         private readonly StashHouse _stash;
@@ -1875,6 +1878,13 @@ namespace Hoodrich
                 // that does something rather than setting something.
                 if (_takeover != null) _settingsScreen.StartTakeover = () => _takeover.Force();
 
+                // And it can be started and stopped from the same screen.
+                _settingsScreen.Recording = () => _recorder.Running;
+                _settingsScreen.RecordedSoFar = () => _recorder.Count;
+
+                _settingsScreen.RecordDriving =
+                    () => _recorder.Running ? _recorder.Stop() : _recorder.Start();
+
                 pages.AllJobs = () =>
                 {
                     var ids = new List<string>();
@@ -2176,6 +2186,13 @@ namespace Hoodrich
                 // would close a menu to find four tweets from a minute ago still sat there. It
                 // skips the actual drawing while a UI is up on its own.
                 _toasts.Draw();
+
+                // ABOVE THE AVAILABILITY GATE, and on purpose. A recording that paused whenever
+                // the mod stood down -- a phone opened, a cutscene, a mission flag left set by
+                // somebody else's script -- would come out as a file with holes in it that
+                // nothing reading it could see. It samples while you are in a car and stops
+                // when you get out, and that is the whole rule.
+                _recorder.Update();
 
                 var available = IsPlayable();
 

@@ -204,6 +204,19 @@ namespace Hoodrich.UI
         // ---- the list ----------------------------------------------------------
 
         /// <summary>
+        /// Start or stop recording your driving. Set by Main; returns the line to show.
+        ///
+        /// One hook that toggles, rather than two rows. "Record" and "Stop" as separate lines
+        /// means one of them is always the wrong one to press, and a screen where half the
+        /// controls do nothing is a screen you have to read twice.
+        /// </summary>
+        public Func<string> RecordDriving;
+
+        /// <summary>Whether it is running, and how much it has, for the row's own label.</summary>
+        public Func<bool> Recording;
+        public Func<int> RecordedSoFar;
+
+        /// <summary>
         /// Start a takeover now. Set by Main; returns the line to show the player.
         ///
         /// A hook rather than a reference to the takeover itself, for the same reason every
@@ -390,6 +403,37 @@ namespace Hoodrich.UI
             Slide("The circle the cars drive", "Block", "TakeoverSpinRadius",
                   () => c.TakeoverSpinRadius, v => c.TakeoverSpinRadius = v, 2f, 18f, 0.5f, "0.0", "m",
                   note: "What they aim at. They slide well outside it, which is the point");
+
+            // HOLD TO START, HOLD AGAIN TO STOP. Held for the same reason as the row below
+            // rather than because it is dangerous -- it is a thing you mean to do, and a
+            // recording started by accident is one you find out about when you go looking for
+            // the file you actually wanted.
+            //
+            // The label says which it will do, because a toggle whose text never changes is a
+            // button you press to find out what state you were in.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Record my driving",
+                Note = "Hold in a car to start. Everything you do -- where, how fast, steering, " +
+                       "throttle, brake, handbrake -- goes to data\\drives, for the cars at the " +
+                       "junction to be taught from. Hold again to stop and save",
+                Enabled = () => RecordDriving != null,
+                GetText = () =>
+                {
+                    if (Recording == null || !Recording()) return "off";
+
+                    var got = RecordedSoFar == null ? 0 : RecordedSoFar();
+
+                    return "recording  " + (got / 30) + "s";
+                },
+                Do = () =>
+                {
+                    var said = RecordDriving == null ? null : RecordDriving();
+
+                    if (!string.IsNullOrEmpty(said)) Notify.Important(said);
+                }
+            });
 
             // HELD RATHER THAN PRESSED, and not because it is destructive. It is thirty-five
             // cars, thirty-five drivers and sixty-odd people arriving at once -- not something
