@@ -1,4 +1,4 @@
-{
+﻿{
  "_comment": [
   "The block, talking about itself.",
   "",
@@ -91,7 +91,7 @@
    "verified": false,
    "gender": "female",
    "pic": "",
-   "voice": ""
+   "bars": false, "voice": ""
   },
   {
    "handle": "jaydagreen",
@@ -172,7 +172,7 @@
    "verified": false,
    "gender": "female",
    "pic": "",
-   "voice": ""
+   "bars": false, "voice": ""
   },
   {
    "handle": "ricky_rideout",

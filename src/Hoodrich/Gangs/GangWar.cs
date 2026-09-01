@@ -1456,6 +1456,26 @@ namespace Hoodrich.Gangs
                 _orders[ped.Handle] = order;
             }
 
+            // WALLED IN. Not a spawn problem -- a walking one.
+            //
+            // Raiders are only ever made with CREATE_PED_INSIDE_VEHICLE, in a car put down on a
+            // real street a long way out, so none of them is ever created inside anything. They
+            // DRIVE in, get out, and then the fight walks them into the first fenced yard or
+            // gated carport between them and you -- and a locked gate is a wall the pathfinder
+            // is happy to stand behind for the rest of the night. From your side of the bars it
+            // looks exactly like they spawned in there.
+            //
+            // So it is answered as what it is: a man who has not moved in half a minute while a
+            // fight is going on is not fighting, whatever the reason. Position rather than a
+            // list of cages, because the cages are not the only place this happens -- roofs,
+            // stairwells, the wrong side of a wall, and the next junction we have never seen.
+            //
+            // MOVED OFF-SCREEN ONLY. Yanking a man across a street while you are looking at him
+            // is worse than the thing being fixed, so if he is in view he is left where he is
+            // and simply told again -- often enough, because being told again is what gets most
+            // of them moving.
+            if (theirs) Unstick(ped, player, order, now);
+
             if (now < order.NextThink) return;
             order.NextThink = now + ThinkMs;
 
@@ -1702,6 +1722,71 @@ namespace Hoodrich.Gangs
             return best;
         }
 
+        /// <summary>
+        /// Get a raider who has stopped somewhere he cannot fight from out of it.
+        ///
+        /// Half a minute of not moving is the test. It is deliberately long: a man in cover
+        /// trading shots is stationary and must not be touched, and thirty seconds of a real
+        /// firefight without a single step is not cover, it is a wall.
+        /// </summary>
+        private void Unstick(Ped ped, Ped player, WarOrder order, int now)
+        {
+            if (player == null || !player.Exists()) return;
+
+            try
+            {
+                var at = ped.Position;
+
+                if (order.Still == 0 || at.DistanceTo(order.Was) > MovedFar)
+                {
+                    order.Was = at;
+                    order.Still = now;
+                    return;
+                }
+
+                if (now - order.Still < StuckMs) return;
+
+                // Reset first, so a failed rescue is retried in another half minute rather than
+                // every tick for the rest of the fight.
+                order.Still = now;
+                order.Was = at;
+
+                // Close enough to be in the fight already. If he is stood next to you and not
+                // moving, that is a man in cover and none of this applies.
+                if (at.DistanceTo(player.Position) < CloseEnoughToFight) return;
+
+                Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+
+                if (Function.Call<bool>(Hash.IS_ENTITY_ON_SCREEN, ped.Handle))
+                {
+                    // Told again rather than moved. See the note in Order.
+                    Function.Call(Hash.TASK_GO_TO_ENTITY, ped.Handle, player.Handle,
+                                  -1, 4f, 2.0f, 1073741824, 0);
+                    return;
+                }
+
+                var road = World.GetNextPositionOnStreet(player.Position, true);
+
+                if (road == Vector3.Zero) return;
+
+                Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, ped.Handle,
+                              road.X, road.Y, road.Z, false, false, false);
+
+                Log.Info("Gang war: a raider was walled in and has been moved back to the street.");
+            }
+            catch
+            {
+                // He stays where he is and gets asked again.
+            }
+        }
+
+        /// <summary>How far counts as having moved, and how long counts as not having.</summary>
+        private const float MovedFar = 2.5f;
+        private const int StuckMs = 30000;
+
+        /// <summary>Inside this he is in the fight, and standing still is cover rather than a wall.</summary>
+        private const float CloseEnoughToFight = 12f;
+
         private sealed class WarOrder
         {
             /// <summary>Times this carload has been sent at the block again after stopping.</summary>
@@ -1713,6 +1798,10 @@ namespace Hoodrich.Gangs
 
             /// <summary>Ours, currently walking their own block rather than fighting.</summary>
             public bool Wandering;
+
+            /// <summary>Where he was when we last looked, and when he stopped being anywhere else.</summary>
+            public Vector3 Was;
+            public int Still;
 
             /// <summary>
             /// Ours, already pushed forward for this fight.

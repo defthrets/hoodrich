@@ -397,6 +397,7 @@ namespace Hoodrich.Social
                         Name = node["name"].AsString(handle),
                         Gang = node["gang"].AsString(""),
                         Verified = node["verified"].AsBool(false),
+                        Bars = node["bars"].AsBool(true),
                         Gender = node["gender"].AsString("male"),
                         Pic = node["pic"].AsString(""),
                         Voice = node["voice"].AsString(""),
@@ -1798,6 +1799,9 @@ namespace Hoodrich.Social
 
                     if (oursOnly && !Ours(author)) continue;
 
+                    // AND NOT EVERYBODY RECORDS A DISS TRACK. See Author.Bars.
+                    if (!author.Bars && Rapping(set)) continue;
+
                     if (hoodOnly && !string.IsNullOrEmpty(author.Gang)
                         && !string.Equals(author.Gang, "families", StringComparison.OrdinalIgnoreCase))
                     {
@@ -1885,6 +1889,19 @@ namespace Hoodrich.Social
             // compliment, and a rival does not hand those out about your promotions.
             "RankUp"
         };
+
+        /// <summary>
+        /// The sets that are written as bars rather than as somebody talking.
+        ///
+        /// DissTrack is quoted couplets with a slash through the middle -- it is a verse, and a
+        /// verse needs somebody who would record one. DissedBack is not in here on purpose: it
+        /// is plain speech ("he typing. that's what he doing. typing"), and an auntie saying
+        /// that about a man on the internet is perfectly in character.
+        /// </summary>
+        private static bool Rapping(string set)
+        {
+            return string.Equals(set, "DissTrack", StringComparison.OrdinalIgnoreCase);
+        }
 
         private static bool OursOnly(string set)
         {

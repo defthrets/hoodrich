@@ -17,6 +17,20 @@ namespace Hoodrich.Social
         public bool Verified;
 
         /// <summary>
+        /// Whether this one would record a diss track. Almost everybody would; a few would not.
+        ///
+        /// The shared pool asks "is this person in the right set" and nothing else, which is
+        /// the right question for nearly everything on the feed -- and the wrong one for bars.
+        /// DissTrack is written in quoted couplets with a slash in the middle, and handing them
+        /// to whoever happened to be tagged families put an auntie on the block posting rap
+        /// verses about catching somebody lacking by the wash.
+        ///
+        /// Opt-OUT rather than opt-in, because the exceptions are a handful of elders and the
+        /// rule is everybody else. A new author says nothing about this and can spit.
+        /// </summary>
+        public bool Bars = true;
+
+        /// <summary>
         /// male, female, or none for an organisation.
         ///
         /// Only used to pick which of the game's phone-contact pictures turns up on the
