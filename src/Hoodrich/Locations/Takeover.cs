@@ -579,6 +579,9 @@ namespace Hoodrich.Locations
             /// <summary>When he was sent, so one that cannot get there can be put there.</summary>
             public int Sent;
 
+            /// <summary>When he stopped on the way in, or nought while he is rolling.</summary>
+            public int Stuck;
+
             /// <summary>When the driver may get out. Set on arrival, so he sits a beat first.</summary>
             public int OutAt;
 
@@ -1752,6 +1755,15 @@ namespace Hoodrich.Locations
             {
                 var spot = Spots[idx];
 
+                // SOMEBODY ELSE IS ALREADY PARKED ON IT, so it is not a free kerb tonight.
+                //
+                // This used to be handled by deleting them, and deleting is what was catching
+                // our own cars -- so the kerb is simply given up instead. One car per spot is
+                // the rule that matters; WHICH thirty-odd kerbs get used is not, and a takeover
+                // with thirty-four cars at it and no two of them inside each other is better
+                // than thirty-five with a pair sharing a parking space.
+                if (Taken(spot.At)) continue;
+
                 var kind = made < lows ? Kind.Low
                          : made < lows + donks ? Kind.Donk
                          : Kind.Plain;
@@ -1765,6 +1777,36 @@ namespace Hoodrich.Locations
             // in as well -- the lowriders are not the first three to arrive every night.
             _nextCar = Game.GameTime;
         }
+
+        /// <summary>
+        /// Whether somebody who is not ours is parked on this spot.
+        ///
+        /// Asked of the world rather than of our own lists, because the whole point is the cars
+        /// we did not put there. The player's own is included on purpose: he leaves it at the
+        /// kerb, walks off to watch, and a spectator lands on top of it.
+        /// </summary>
+        private bool Taken(Vector3 at)
+        {
+            try
+            {
+                foreach (var car in World.GetNearbyVehicles(at, OnTheSpot))
+                {
+                    if (car == null || !car.Exists()) continue;
+                    if (Ours(car)) continue;
+
+                    return true;
+                }
+            }
+            catch
+            {
+                // If it cannot be asked, the kerb is free.
+            }
+
+            return false;
+        }
+
+        /// <summary>How close another car has to be to count as being on a spot.</summary>
+        private const float OnTheSpot = 4f;
 
         /// <summary>A car that has a kerb but has not been sent for yet. See Arriving.</summary>
         private sealed class Pending
@@ -1920,11 +1962,18 @@ namespace Hoodrich.Locations
                 // of the night was changed. Placing a car is a car appearing where it was not,
                 // and doing it to an empty street is very different from doing it in front of
                 // sixty people.
-                if (now - p.Sent > ParkGiveUpMs)
-                {
-                    Place(p);
-                    continue;
-                }
+                // STALLED ON THE WAY IN, so he is asked again. THIS is what was making them
+                // teleport.
+                //
+                // Nothing re-tasked a spectator once he had been sent: the only re-task was
+                // when Toward's answer changed, which happens once, and a car that stopped for
+                // a bin lorry or lost its route simply sat there until the give-up timer fired
+                // and put it on its kerb. From the pavement that is a car vanishing and
+                // reappearing parked. Rolling is fine; stopped for four seconds means the route
+                // ran out, and the answer to that is another route.
+                Nudge(p, now);
+
+                if (now - p.Sent > ParkGiveUpMs && Unseen(p)) Place(p);
 
                 // ONCE HE IS ROUND, HE COMES IN. Toward answers "the waypoint" while the
                 // straight line to his kerb would cross the mark, and "the kerb itself" once it
@@ -2057,6 +2106,10 @@ namespace Hoodrich.Locations
         /// </summary>
         private void Place(Parkee p)
         {
+            // AND NEVER INTO SOMEBODY. The kerb was free when it was dealt, and an hour of a
+            // takeover is long enough for anybody to have pulled up on it since.
+            if (Taken(p.Slot)) return;
+
             try
             {
                 Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, p.Car.Handle,
@@ -2091,8 +2144,83 @@ namespace Hoodrich.Locations
         /// <summary>How far a parked car may be shoved off its kerb before it is put back.</summary>
         private const float StrayedFar = 6f;
 
+        /// <summary>
+        /// Ask a stopped spectator for its route again.
+        ///
+        /// The same patience the performers get on their way to a marker, and for the same
+        /// reason: a car in traffic near a junction full of people is stopped most of the time,
+        /// so being stopped is not a fault -- being stopped for SECONDS is.
+        /// </summary>
+        private void Nudge(Parkee p, int now)
+        {
+            try
+            {
+                if (p.Car.Speed > 0.6f)
+                {
+                    p.Stuck = 0;
+                    return;
+                }
+
+                if (p.Stuck == 0)
+                {
+                    p.Stuck = now;
+                    return;
+                }
+
+                if (now - p.Stuck < BlockedMs) return;
+
+                p.Stuck = now;
+
+                if (p.Driver == null || !p.Driver.Exists()) return;
+
+                var want = Toward(p.Car.Position, p.Slot);
+
+                p.Aimed = want;
+
+                Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle, p.Car.Handle,
+                              want.X, want.Y, want.Z, 14f, 0, p.Car.Model.Hash,
+                              CareStyle, 4f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
+            }
+            catch
+            {
+                // He is asked again in a few seconds.
+            }
+        }
+
+        /// <summary>
+        /// Whether nobody is looking at this car, so moving it would not be seen.
+        ///
+        /// PLACING IS A LAST RESORT AND IT MUST NEVER BE WATCHED. A car appearing on a kerb is
+        /// the one thing that gives the whole event away as scenery being assembled, and the
+        /// point of every other change in here is that they DRIVE in. On screen, or close
+        /// enough that you would notice out of the corner of your eye, it keeps trying instead.
+        /// </summary>
+        private bool Unseen(Parkee p)
+        {
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_ENTITY_ON_SCREEN, p.Car.Handle)) return false;
+
+                var player = Game.Player.Character;
+
+                return player == null || !player.Exists()
+                       || player.Position.DistanceTo(p.Car.Position) > OutOfNotice;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Close enough to notice a car appear, even off to one side.</summary>
+        private const float OutOfNotice = 45f;
+
         /// <summary>How long a spectator gets to drive to its kerb before it is placed on it.</summary>
-        private const int ParkGiveUpMs = 40000;
+        private const int ParkGiveUpMs = 90000;
 
         /// <summary>
         /// Nudge a settled car back onto the heading its spot was walked with.
@@ -2605,6 +2733,19 @@ namespace Hoodrich.Locations
         /// A car that has been destroyed on the way does not count as still coming. Nothing
         /// else in here would ever let go of it.
         /// </summary>
+        /// <summary>How many spectators have actually reached their kerb.</summary>
+        private int OnKerbs()
+        {
+            var n = 0;
+
+            foreach (var p in _parked)
+            {
+                if (p.There) n++;
+            }
+
+            return n;
+        }
+
         private bool Ringed(int now)
         {
             if (_ringed) return true;
@@ -2616,18 +2757,20 @@ namespace Hoodrich.Locations
             if (!_carsIn) return false;
             if (_coming.Count > 0) return false;
 
-            var parked = 0;
-
-            foreach (var p in _parked)
-            {
-                if (p.There) parked++;
-            }
-
-            if (_parked.Count > 0 && parked < (int)Math.Ceiling(_parked.Count * MostOfThem)
-                && !(_startedAt != 0 && now - _startedAt > StartGiveUpMs))
-            {
-                return false;
-            }
+            // THE NINE-IN-TEN PARKED TEST IS GONE FROM HERE, and it had to go the moment
+            // placing a car was made conditional on nobody looking.
+            //
+            // It was a second, stricter version of a question _carsIn has already answered.
+            // While a car that could not drive to its kerb was simply put on it, "nine in ten
+            // parked" always came true within forty seconds. Now it only comes true if the
+            // stragglers manage it under their own steam or wander out of sight -- and a
+            // player stood in the middle of his own takeover is looking at most of them. So
+            // the pit waited for a four-minute fallback, and from where you were standing
+            // nothing ever came in and did a skid.
+            //
+            // What is left still enforces the order you asked for: half the kerbs taken, every
+            // car SENT for, and the crowd stood round it. The last few cars arriving while the
+            // first donut goes in is what one of these looks like anyway.
 
             // THEN THE CROWD HAS TO ACTUALLY BE THERE. Not merely spawned -- they are put down
             // fifty to a hundred and thirty metres out and walk in, so "the crowd exists" and
@@ -2652,7 +2795,8 @@ namespace Hoodrich.Locations
             _ringed = true;
 
             Log.Info("Takeover: " + here + " of " + _crowd.Count +
-                     " stood round it. The cars can go in.");
+                     " stood round it, " + OnKerbs() + " of " + _parked.Count +
+                     " parked. The cars can go in.");
 
             return true;
         }

@@ -704,6 +704,13 @@ namespace Hoodrich.Social
         /// on his own arrest, and a Franklin post has to be a Franklin post because he chose to
         /// write it.
         /// </summary>
+        /// <summary>Followers gained since the last time it said so, and when that was.</summary>
+        private int _owed;
+        private int _nextBrag;
+
+        /// <summary>How long between follower notices. Long enough to read one before the next.</summary>
+        private const int BragGapMs = 45000;
+
         private Author _me;
 
         private Author Me
@@ -1313,11 +1320,28 @@ namespace Hoodrich.Social
             Followers = Math.Max(0, Followers + gained);
             if (Changed != null) Changed();
 
-            if (gained > 0 && gained >= 12)
-            {
-                Hoodrich.UI.Notify.Ticker("~b~+" + gained + " followers~s~  ·  " +
-                                          Followers.ToString("N0") + " followers");
-            }
+            // ONE OF THESE AT A TIME, NOT FIVE STACKED UP THE SCREEN.
+            //
+            // Every event that gets a reaction also gets followers, and a busy minute -- a
+            // takeover, a war, a run of posts -- fires several within seconds of each other.
+            // Each was worth saying on its own and five in a column is the game telling you
+            // your own follower count over and over while you are driving.
+            //
+            // So there is a quiet period, and what happens in it is not thrown away: the gains
+            // are added up and the next one that gets through says the total. The number you
+            // see is still the number you got.
+            _owed += gained;
+
+            var now = Game.GameTime;
+
+            if (_owed < 12 || now < _nextBrag) return;
+
+            _nextBrag = now + BragGapMs;
+
+            Hoodrich.UI.Notify.Ticker("~b~+" + _owed + " followers~s~  ·  " +
+                                      Followers.ToString("N0") + " followers");
+
+            _owed = 0;
         }
 
         /// <summary>

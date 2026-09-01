@@ -521,17 +521,27 @@ namespace Hoodrich.UI
                 var here = piece == Chosen;
                 var owned = Owns(piece);
 
-                // The weapon's own art. Its dictionary is named after it, so the name is the
-                // whole lookup -- and a piece whose art this install has not got simply gets
-                // the space, rather than a hole where a row should be.
-                var art = 0f;
-                if (Hud.HasTexture(piece.Weapon, piece.Weapon))
+                // THE GAME'S OWN ART FOR THE GUN. Its dictionary is named after it, so the
+                // weapon name is the whole lookup.
+                //
+                // ASKED WITH EnsureTextureDict RATHER THAN HasTexture, and that is the fix.
+                // HasTexture answers by reading GET_TEXTURE_RESOLUTION and calling a zero a
+                // no -- which is fine for a file we shipped and wrong for these: the streamer
+                // does not always report a size for a dictionary it has perfectly well got,
+                // so every gun in the shop failed a test it should have passed and fell back
+                // to a row of plain text. HAS_STREAMED_TEXTURE_DICT_LOADED is the honest
+                // question and EnsureTextureDict is the one that asks it.
+                //
+                // THE SPACE IS RESERVED EITHER WAY. Art streams in a frame or two after the
+                // screen opens, so a layout that only leaves room once it has arrived is a
+                // list whose every name jumps to the right while you are reading it.
+                var art = Hud.ToX(IconW) + 0.006f;
+
+                if (Hud.EnsureTextureDict(piece.Weapon))
                 {
                     Hud.Sprite(piece.Weapon, piece.Weapon, x + Hud.ToX(IconW) * 0.5f, y + 0.012f,
                                Hud.ToX(IconW), IconH, 0f,
                                here ? Palette.Text : Palette.TextDim);
-
-                    art = Hud.ToX(IconW) + 0.006f;
                 }
 
                 Hud.Text(piece.Name, x + art, y, 0.30f,
