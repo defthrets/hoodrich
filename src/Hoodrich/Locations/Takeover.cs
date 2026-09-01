@@ -3316,6 +3316,22 @@ namespace Hoodrich.Locations
 
                 try
                 {
+                    // NOT WHILE IT IS OFF THE GROUND, AND NOT PAST THE VERTICAL.
+                    //
+                    // This is why they were being launched into the sky. The lift is applied
+                    // every single frame with nothing asking whether it had already worked, so
+                    // a bike that came off a kerb, clipped somebody, or simply pulled up harder
+                    // than expected went on being pushed upward while it was ALREADY airborne.
+                    // At sixty frames a second that is a rocket rather than a wheelie.
+                    //
+                    // Two conditions, answering two different failures. In the air means the
+                    // back wheel has left the road, and a wheelie is a thing done with one
+                    // wheel on it. Past the pitch cap means the front is as high as it is
+                    // going, and anything more only puts him over backwards.
+                    if (Function.Call<bool>(Hash.IS_ENTITY_IN_AIR, r.Bike.Handle)) continue;
+
+                    if (r.Bike.Rotation.X > WheelieHighest) continue;
+
                     Function.Call(Hash.APPLY_FORCE_TO_ENTITY, r.Bike.Handle, 1,
                                   0f, 0f, WheelieLift,
                                   0f, -WheelieBehind, 0f,
@@ -3500,7 +3516,16 @@ namespace Hoodrich.Locations
 
         private const int BikeGapMs = 9000;
         private const float WheelieNeeds = 8f;
-        private const float WheelieLift = 1.9f;
+        /// <summary>
+        /// How hard the front is lifted, and how far past level it may come.
+        ///
+        /// The lift is down from 1.9 as well. With nothing capping the angle it had to be
+        /// enough to get the wheel up on its own; with a cap it only has to hold it there.
+        /// </summary>
+        private const float WheelieLift = 1.55f;
+
+        /// <summary>Degrees of nose-up. Past this he is going over rather than riding.</summary>
+        private const float WheelieHighest = 32f;
         private const float WheelieBehind = 1.15f;
         private const int WheelieMaxMs = 4200;
 
@@ -4390,7 +4415,7 @@ namespace Hoodrich.Locations
                     var car = Make(new[] { "police3", "police", "police2" }, at, false);
                     if (car == null) continue;
 
-                    var cop = Behind(car);
+                    var cop = Officer(car);
 
                     if (cop == null)
                     {
@@ -4861,6 +4886,119 @@ namespace Hoodrich.Locations
         /// obstacle to escape, or takes a knock personally is a car that abandons its own donut
         /// and drives through the spectators -- which is the exact failure this exists to stop.
         /// </summary>
+        /// <summary>
+        /// Somebody with a badge, for a car with a light bar on it.
+        ///
+        /// THE SQUAD CARS WERE BEING DRIVEN BY THE CROWD. Behind picks its model out of Faces,
+        /// which is where the spectators come from -- gang members and people off the block --
+        /// so the police arriving to end the takeover were three men in vests and jerseys
+        /// sitting in marked cars. None of them was a police officer in any sense the game
+        /// understands either: wrong model, wrong ped type, wrong relationship group, no
+        /// sidearm.
+        ///
+        /// Made as a COP rather than dressed as one. The ped type is what makes the rest of the
+        /// game treat him as police -- dispatch, relationship groups, and what everybody at the
+        /// junction thinks is about to happen. A uniform on a civilian ped is a costume.
+        /// </summary>
+        private Ped Officer(Vehicle car)
+        {
+            foreach (var name in Badges)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+
+                    // Ped type 6 is COP.
+                    var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE, car.Handle,
+                                                    6, model.Hash, -1, false, false);
+
+                    model.MarkAsNoLongerNeeded();
+                    if (handle == 0) continue;
+
+                    var ped = Entity.FromHandle(handle) as Ped;
+                    if (ped == null || !ped.Exists()) continue;
+
+                    ped.IsPersistent = true;
+
+                    var h = ped.Handle;
+
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+                    Function.Call(Hash.SET_PED_AS_COP, h, true);
+
+                    Function.Call(Hash.GIVE_WEAPON_TO_PED, h,
+                                  Game.GenerateHash("WEAPON_PISTOL"), 60, false, true);
+
+                    Function.Call(Hash.SET_PED_ACCURACY, h, 35);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, h, false);
+
+                    Function.Call(Hash.SET_DRIVER_ABILITY, h, 1.0f);
+                    Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, h, 0.4f);
+
+                    // And somebody riding with him. One man in a patrol car is a driver; two is
+                    // a unit, which is what turns up to one of these.
+                    Mate(car, name);
+
+                    return ped;
+                }
+                catch
+                {
+                    // Try the next uniform.
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>His partner in the passenger seat. Missing one is not worth failing over.</summary>
+        private void Mate(Vehicle car, string name)
+        {
+            try
+            {
+                var model = new Model(name);
+                if (!model.IsValid || !model.Request(600)) return;
+
+                var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE, car.Handle,
+                                                6, model.Hash, 0, false, false);
+
+                model.MarkAsNoLongerNeeded();
+                if (handle == 0) return;
+
+                var mate = Entity.FromHandle(handle) as Ped;
+                if (mate == null || !mate.Exists()) return;
+
+                mate.IsPersistent = true;
+
+                var h = mate.Handle;
+
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+                Function.Call(Hash.SET_PED_AS_COP, h, true);
+
+                Function.Call(Hash.GIVE_WEAPON_TO_PED, h,
+                              Game.GenerateHash("WEAPON_PISTOL"), 60, false, true);
+
+                Function.Call(Hash.SET_PED_ACCURACY, h, 35);
+                Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, h, false);
+
+                _extras.Add(mate);
+            }
+            catch
+            {
+                // He rides alone.
+            }
+        }
+
+        /// <summary>The uniforms, best first. An install without one quietly gets the next.</summary>
+        private static readonly string[] Badges =
+        {
+            "s_m_y_cop_01", "s_f_y_cop_01", "s_m_y_sheriff_01", "s_f_y_sheriff_01",
+            "s_m_y_hwaycop_01"
+        };
+
+        /// <summary>Passengers, held so they are cleared up with everything else.</summary>
+        private readonly List<Ped> _extras = new List<Ped>();
+
         private Ped Behind(Vehicle car)
         {
             try
@@ -5326,6 +5464,17 @@ namespace Hoodrich.Locations
                 }
             }
 
+            // The partners riding with them go too. They are not on the Law list -- that
+            // pairs one car with one driver -- so without this a squad car's passenger outlives
+            // the takeover that sent him.
+            foreach (var e in _extras)
+            {
+                try { if (e != null && e.Exists()) e.Delete(); }
+                catch { /* already gone */ }
+            }
+
+            _extras.Clear();
+
             _law.Clear();
 
             _coming.Clear();
@@ -5395,6 +5544,17 @@ namespace Hoodrich.Locations
             _turned.Clear();
             _running.Clear();
             _riders.Clear();
+            // The partners riding with them go too. They are not on the Law list -- that
+            // pairs one car with one driver -- so without this a squad car's passenger outlives
+            // the takeover that sent him.
+            foreach (var e in _extras)
+            {
+                try { if (e != null && e.Exists()) e.Delete(); }
+                catch { /* already gone */ }
+            }
+
+            _extras.Clear();
+
             _law.Clear();
             _ghosts.Clear();
 
