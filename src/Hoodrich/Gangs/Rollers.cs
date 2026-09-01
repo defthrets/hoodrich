@@ -247,16 +247,27 @@ namespace Hoodrich.Gangs
         /// </summary>
         private static readonly string[] Cars =
         {
-            // The Sentinel GTS, three times, so it turns up often enough to be the car the set
-            // is known for rather than one you see once an evening. Three names because the
-            // GTS is a late addition and installs disagree about what it is called -- the list
-            // is tried in order and the log says which one actually loaded, so a build without
-            // it quietly gets an ordinary Sentinel instead of nothing.
-            "sentinelgts", "sentinel4", "sentinel3",
+            // EVERY NAME HERE WAS CHECKED AGAINST ITS HASH, not guessed at.
+            //
+            // The list they came from gave a hash beside each car, and a model hash is the
+            // Jenkins one-at-a-time of the lowercase spawn name -- so every candidate could be
+            // hashed and compared rather than typed from memory and hoped for.
+            //
+            // That immediately caught one: the Sentinel GTS was listed here as "sentinelgts",
+            // "sentinel4" and "sentinel3", and the GTS is none of those. It is sentinel5.
+            // "sentinelgts" is not a model at all, sentinel4 is a different car, and sentinel3
+            // is the Sentinel Classic -- so the car this set was supposed to be known for has
+            // never once spawned, and the fallback quietly handed over a classic instead. That
+            // is exactly the failure the three-names-in-a-row trick was meant to prevent, and
+            // it hid it instead.
+            //
+            // The Sentinel GTS stays three times over for the original reason: it should be the
+            // car you associate with the set rather than one you see once an evening. It is
+            // just the right name now.
+            "sentinel5", "sentinel5", "sentinel5",
 
-            "minimus", "woodlander", "hardy", "driftdominator10", "driftgauntlet4",
-            "driftchavosv6", "s95", "vorschlaghammer", "asterope2", "dorado",
-            "driftfr36", "kanjosj", "iwagen", "toros"
+            "cavalcade3", "fq2", "rebla", "fr36", "dominator3", "dominator9",
+            "gauntlet4", "ruiner4", "vigero2", "s95", "veto", "outlaw"
         };
 
         /// <summary>
@@ -1336,7 +1347,29 @@ namespace Hoodrich.Gangs
 
                 if (bike) return;
 
-                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, car.Handle, 1);
+                // DARK SMOKE, NOT PURE BLACK. Tint 1 is limo glass you cannot see a thing
+                // through; 2 is the smoke people actually put on a street car, and it still
+                // reads as tinted from outside while leaving somebody visible behind it. These
+                // are cars with the set IN them, and the men in them are the point.
+                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, car.Handle, 2);
+
+                // AND IT SITS ON ITS ARCHES. Competition is the top suspension index, and the
+                // count is ASKED FOR rather than assumed: hardcoding 3 fits some cars and does
+                // nothing at all on the rest, which looks like the mod not working. The last
+                // index is the lowest the car can go, whatever that car happens to have.
+                try
+                {
+                    var drops = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, car.Handle, 15);
+
+                    if (drops > 0)
+                    {
+                        Function.Call(Hash.SET_VEHICLE_MOD, car.Handle, 15, drops - 1, false);
+                    }
+                }
+                catch
+                {
+                    // It rides at whatever height it came at.
+                }
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, car.Handle, 1f);
 
                 Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, car.Handle, true);

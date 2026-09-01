@@ -84,6 +84,9 @@ namespace Hoodrich.UI
         private const int Quietly = 1;
         private const int WhenLoud = 3;
 
+        /// <summary>And two when there is genuinely a queue. See Room.</summary>
+        private const int WhenBusy = 2;
+
         /// <summary>Set by Main: true while a war or a takeover is on. See Room.</summary>
         public Func<bool> Loud;
 
@@ -92,7 +95,14 @@ namespace Hoodrich.UI
         {
             try
             {
-                return Loud != null && Loud() ? WhenLoud : Quietly;
+                if (Loud != null && Loud()) return WhenLoud;
+
+                // TWO WHEN THERE IS ACTUALLY A QUEUE, and that is what makes it occasional
+                // rather than random. A second card appears because two things really did
+                // happen close together, not because a dice roll said so -- so the pace of the
+                // feed matches the pace of the block, and a quiet stretch still shows one at a
+                // time. Nothing has to decide how often "occasionally" is.
+                return _waiting.Count >= WhenBusy ? WhenBusy : Quietly;
             }
             catch
             {
@@ -100,7 +110,14 @@ namespace Hoodrich.UI
             }
         }
 
-        private const int LifeMs = 8200;
+        /// <summary>
+        /// How long a card stays up. Down from 8.2 seconds.
+        ///
+        /// Long enough to read a tweet twice was the old length, and reading it once is the
+        /// job. Shorter also means the queue behind it drains faster, which is most of what
+        /// makes the feed feel quick.
+        /// </summary>
+        private const int LifeMs = 6600;
         private const int FadeInMs = 220;
         private const int FadeOutMs = 520;
 
