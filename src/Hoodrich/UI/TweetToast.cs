@@ -65,7 +65,40 @@ namespace Hoodrich.UI
         private const float LineHeight = 0.0162f;
 
         /// <summary>Three at once. A fourth waits rather than pushing one off mid-sentence.</summary>
-        private const int MostAtOnce = 3;
+        /// <summary>
+        /// How many may be up at once when the block is quiet, and when it is not.
+        ///
+        /// ONE, NORMALLY. Three was the cap for everything, so the feed reached for three
+        /// whenever it had three -- and it usually did, because most events queue a couple of
+        /// reactions behind them. A permanent stack of three in the corner is not a feed, it is
+        /// a wall: nothing on it is new, nothing is worth looking at, and the one post that
+        /// actually mattered arrived in the middle of two that did not.
+        ///
+        /// A single card is READ. It goes up, you look at it, it goes. The others are not lost
+        /// -- they queue and follow, one after another, which is what a phone does anyway.
+        ///
+        /// THREE WHEN SOMETHING IS ACTUALLY HAPPENING. A gang war or a takeover is the one time
+        /// the block genuinely is all talking at once, and the stack reading as noisy is then
+        /// the correct impression rather than a fault. See Loud.
+        /// </summary>
+        private const int Quietly = 1;
+        private const int WhenLoud = 3;
+
+        /// <summary>Set by Main: true while a war or a takeover is on. See Room.</summary>
+        public Func<bool> Loud;
+
+        /// <summary>How many cards may be up right now.</summary>
+        private int Room()
+        {
+            try
+            {
+                return Loud != null && Loud() ? WhenLoud : Quietly;
+            }
+            catch
+            {
+                return Quietly;
+            }
+        }
 
         private const int LifeMs = 8200;
         private const int FadeInMs = 220;
@@ -122,7 +155,7 @@ namespace Hoodrich.UI
         {
             if (post == null || post.By == null) return;
 
-            if (_live.Count >= MostAtOnce)
+            if (_live.Count >= Room())
             {
                 // A cap on the queue as well. During a raid the feed can produce faster than
                 // this can show them, and a backlog that outlives the fight would still be
@@ -183,7 +216,11 @@ namespace Hoodrich.UI
 
             // Room freed by one ageing out is filled straight away, so a backlog drains at the
             // rate they can actually be read rather than all at once.
-            while (_live.Count < MostAtOnce && _waiting.Count > 0) Put(_waiting.Dequeue());
+            // Room can SHRINK -- a war ends and the cap drops from three to one -- and
+            // nothing is yanked off the screen when it does. The ones already up finish their
+            // eight seconds and are simply not replaced until there is room again, which is a
+            // stack thinning out rather than two cards vanishing mid-sentence.
+            while (_live.Count < Room() && _waiting.Count > 0) Put(_waiting.Dequeue());
 
             if (_live.Count == 0) return;
 

@@ -1405,6 +1405,12 @@ namespace Hoodrich
                 {
                     Enabled = _cfg.TweetsOnTheRight,
 
+                    // Three at a time only while the block is genuinely all talking at once.
+                    // Everything else gets one card, read and gone. See TweetToast.Room.
+                    Loud = () => (_war != null && _war.IsRunning)
+                              || (_takeover != null
+                                  && _takeover.State == Locations.TakeoverState.Running),
+
                     // Not over a full-screen UI. They keep queueing and keep ageing while it is
                     // up, so nothing is lost -- they are simply not drawn across a menu.
                     Hidden = () => _phone.IsOpen || _socialScreen.IsOpen || _messages.IsOpen ||
