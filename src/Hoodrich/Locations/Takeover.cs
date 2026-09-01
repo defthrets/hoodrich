@@ -641,8 +641,18 @@ namespace Hoodrich.Locations
             public bool Circling;
             public bool Leaving;
 
-            /// <summary>Which marker he is holding, or -1 once he is in the pit.</summary>
+            /// <summary>
+            /// Which marker is HIS, for as long as he is at this takeover.
+            ///
+            /// Held the whole time rather than given up when he is called in, which is the
+            /// change that lets him come back to it. Nobody else can be sent to a marker
+            /// somebody is still using, so his place is still there when his go is over --
+            /// the same reasoning the kerbs use, applied to the queue.
+            /// </summary>
             public int Stage;
+
+            /// <summary>He has been called in, so he is not waiting on his marker any more.</summary>
+            public bool Called;
 
             /// <summary>He has reached it and is sat on it waiting.</summary>
             public bool AtStage;
@@ -1965,10 +1975,15 @@ namespace Hoodrich.Locations
                     // Put back, not re-driven. The driver is stood on the pavement by now, so
                     // there is nobody in it to drive it -- and it is going to the same spot it
                     // is supposed to be on already.
+                    // SHOVED OFF ITS KERB. Its kerb moves with it rather than the car being
+                    // dragged back -- same reasoning as Settle. A car nudged three metres by a
+                    // donut is still a parked car; teleporting it back is the thing that reads
+                    // as broken, not the three metres.
                     if (p.Car.Exists() && p.Car.Speed < 0.5f
                         && p.Car.Position.DistanceTo(p.Slot) > StrayedFar)
                     {
-                        Place(p);
+                        p.Slot = p.Car.Position;
+                        p.Face = Facing(p.Car.Position);
                     }
 
                     Aim(p);
@@ -2003,7 +2018,7 @@ namespace Hoodrich.Locations
                 // ran out, and the answer to that is another route.
                 Nudge(p, now);
 
-                if (now - p.Sent > ParkGiveUpMs && Unseen(p)) Place(p);
+                if (now - p.Sent > ParkGiveUpMs) Settle(p, now);
 
                 // ONCE HE IS ROUND, HE COMES IN. Toward answers "the waypoint" while the
                 // straight line to his kerb would cross the mark, and "the kerb itself" once it
@@ -2128,51 +2143,41 @@ namespace Hoodrich.Locations
         private const int SitAMomentMs = 1800;
 
         /// <summary>
-        /// Put a car on its spot, because driving there has not worked.
+        /// He could not get to his kerb, so wherever he stopped becomes his kerb.
         ///
-        /// Everything the arrival would have done, done at once: on the mark, on the walked
-        /// heading, sat properly on the ground, and the driver's task cleared so he does not
-        /// spend the rest of the night trying to resume a drive to where he already is.
+        /// NOTHING IS MOVED AND NOTHING VANISHES. Placing him on the mark was a car appearing
+        /// where it was not, which is the single thing that gives the whole event away as
+        /// scenery being assembled -- and gating it on nobody looking only meant it happened
+        /// behind you instead of in front of you. It is still a car teleporting.
+        ///
+        /// Close enough IS close enough. A spectator four metres off his mark, parked on the
+        /// same street facing the same way, is indistinguishable from one that made it -- and
+        /// it is a car that DROVE there, which the placed one never was.
+        ///
+        /// His slot moves to where he actually is, so everything downstream keeps working:
+        /// the stray check measures against here now rather than dragging him back to a mark
+        /// he could not reach, and Aim turns him to face the circle from where he stands
+        /// instead of holding a walked heading that belongs to a different piece of road.
         /// </summary>
-        private void Place(Parkee p)
+        private void Settle(Parkee p, int now)
         {
-            // AND NEVER INTO SOMEBODY. The kerb was free when it was dealt, and an hour of a
-            // takeover is long enough for anybody to have pulled up on it since.
-            if (Taken(p.Slot)) return;
-
             try
             {
-                Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, p.Car.Handle,
-                              p.Slot.X, p.Slot.Y, p.Slot.Z, false, false, false);
+                // Still rolling. He may yet make it, and a car settled mid-manoeuvre is a car
+                // parked across a lane.
+                if (p.Car.Speed > 0.8f) return;
 
-                Function.Call(Hash.SET_ENTITY_HEADING, p.Car.Handle, p.Face);
-                Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, p.Car.Handle);
-
-                if (p.Driver != null && p.Driver.Exists())
-                {
-                    Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
-                }
-
+                p.Slot = p.Car.Position;
+                p.Face = Facing(p.Car.Position);
                 p.There = true;
 
-                // AND HIS CLOCK STARTS TOO. Arriving sets this; being placed is still arriving,
-                // and without it his door never opens -- one man sat in a car all night for the
-                // sole reason that his car had to be helped onto its kerb.
-                p.OutAt = Game.GameTime + SitAMomentMs;
-
-                // Not logged. It fires for a car that could not drive in AND for one that was
-                // shoved off its kerb later, dozens of times a night either way, and a line per
-                // car buries everything else in the log. The counts in Filling say how many
-                // made it under their own steam, which is the number worth knowing.
+                p.OutAt = now + SitAMomentMs;
             }
             catch
             {
-                // Tried again next tick.
+                // Asked again next tick.
             }
         }
-
-        /// <summary>How far a parked car may be shoved off its kerb before it is put back.</summary>
-        private const float StrayedFar = 6f;
 
         /// <summary>
         /// Ask a stopped spectator for its route again.
@@ -2221,35 +2226,10 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>
-        /// Whether nobody is looking at this car, so moving it would not be seen.
-        ///
-        /// PLACING IS A LAST RESORT AND IT MUST NEVER BE WATCHED. A car appearing on a kerb is
-        /// the one thing that gives the whole event away as scenery being assembled, and the
-        /// point of every other change in here is that they DRIVE in. On screen, or close
-        /// enough that you would notice out of the corner of your eye, it keeps trying instead.
-        /// </summary>
-        private bool Unseen(Parkee p)
-        {
-            try
-            {
-                if (Function.Call<bool>(Hash.IS_ENTITY_ON_SCREEN, p.Car.Handle)) return false;
+        /// <summary>How far a parked car may be shoved off its kerb before the kerb moves.</summary>
+        private const float StrayedFar = 6f;
 
-                var player = Game.Player.Character;
-
-                return player == null || !player.Exists()
-                       || player.Position.DistanceTo(p.Car.Position) > OutOfNotice;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>Close enough to notice a car appear, even off to one side.</summary>
-        private const float OutOfNotice = 45f;
-
-        /// <summary>How long a spectator gets to drive to its kerb before it is placed on it.</summary>
+        /// <summary>How long a spectator drives at its kerb before it settles for near enough.</summary>
         private const int ParkGiveUpMs = 90000;
 
         /// <summary>
@@ -2603,14 +2583,42 @@ namespace Hoodrich.Locations
                     continue;
                 }
 
-                // ON HIS WAY OUT. Every performer is a car we spawned for the job, so there is
-                // nowhere for any of them to go back to -- his go is over and he drives off.
+                // HIS GO IS OVER AND HE IS GOING BACK TO HIS MARKER.
+                //
+                // Not off the map any more. He parks up where he was waiting, somebody else is
+                // called in, and he is in the queue again -- which is what taking turns looks
+                // like from the pavement, and it means the ring of waiting cars stays full
+                // instead of emptying one car per turn.
                 if (r.Leaving)
                 {
-                    if (r.Car.Position.DistanceTo(Middle) < Ring + 14f) continue;
+                    if (r.Stage < 0)
+                    {
+                        // Spawned straight into the pit with no marker of his own. Off the map
+                        // as before -- there is nowhere to send him.
+                        if (r.Car.Position.DistanceTo(Middle) < Ring + 14f) continue;
 
-                    Out(r);
-                    _running.RemoveAt(i);
+                        Out(r);
+                        _running.RemoveAt(i);
+                        continue;
+                    }
+
+                    var bay = Stages[r.Stage];
+
+                    if (r.Car.Position.DistanceTo(bay.At) > StageArrived)
+                    {
+                        Hold(r, now, bay.At);
+                        continue;
+                    }
+
+                    // Back on his mark, and back in the queue. Leaving and Called both clear,
+                    // AtStage false so the waiting branch settles him again from the top --
+                    // brake, face the walked heading, hold it until he is called.
+                    r.Leaving = false;
+                    r.Called = false;
+                    r.AtStage = false;
+                    r.Circling = false;
+                    r.Stuck = 0;
+
                     continue;
                 }
 
@@ -2809,14 +2817,26 @@ namespace Hoodrich.Locations
             if (now >= _reroll)
             {
                 _reroll = now + RerollMs;
-                _want = 1 + _rng.Next(1, 4);
+
+                // ONE CAR IN THE MIDDLE. Not two to four.
+                //
+                // Three cars sliding round the same circle is three cars fighting for the same
+                // twenty metres -- they clip each other, they break each other's line, and no
+                // single one of them is ever the thing you are watching. A takeover is people
+                // taking turns: somebody goes in, everybody watches HIM, he comes out, somebody
+                // else goes in. The waiting is the format, not dead time.
+                _want = 1;
+
                 _wantMark = _rng.Next(100) < MarkChance;
             }
 
-            // Whatever is not on the mark is going round. When nobody is on it, the whole
-            // count goes to the circle rather than the junction quietly losing a car.
+            // WHATEVER IS NOT ON THE MARK IS GOING ROUND, AND WITH ONE CAR THAT IS EITHER OR.
+            //
+            // The clamp that used to be here forced at least one car into the circle, which was
+            // right while the count was two to four and is exactly wrong now: on a night the
+            // roll wants a static burnout, it would have put a car on the mark AND one round
+            // it, which is two cars in a middle that is supposed to hold one.
             var want = _wantMark ? _want - 1 : _want;
-            if (want < 1) want = 1;
 
             while (round < want)
             {
@@ -3507,8 +3527,19 @@ namespace Hoodrich.Locations
                     // back wheel has left the road, and a wheelie is a thing done with one
                     // wheel on it. Past the pitch cap means the front is as high as it is
                     // going, and anything more only puts him over backwards.
-                    if (Function.Call<bool>(Hash.IS_ENTITY_IN_AIR, r.Bike.Handle)) continue;
-
+                    // THE IN-AIR CHECK IS GONE AND IT WAS CAUSING THE HOPPING.
+                    //
+                    // It read well -- do not push a bike that has already left the road -- and
+                    // it built an oscillator. Push, bike lifts, bike leaves the ground, STOP
+                    // pushing, bike drops, bike lands, push again. That cycle at a few hertz is
+                    // a bike hopping down the street, which is what you saw. The check created
+                    // the very state it was testing for.
+                    //
+                    // The pitch cap alone does the job it was brought in for. The launching
+                    // happened because NOTHING limited the angle, so the lift kept being
+                    // applied through the vertical and out the other side; with a ceiling on
+                    // the nose it can hold a wheel up and never go past it. One condition, and
+                    // it is a continuous push rather than a stutter.
                     if (r.Bike.Rotation.X > WheelieHighest) continue;
 
                     Function.Call(Hash.APPLY_FORCE_TO_ENTITY, r.Bike.Handle, 1,
@@ -3701,7 +3732,7 @@ namespace Hoodrich.Locations
         /// The lift is down from 1.9 as well. With nothing capping the angle it had to be
         /// enough to get the wheel up on its own; with a cap it only has to hold it there.
         /// </summary>
-        private const float WheelieLift = 1.55f;
+        private const float WheelieLift = 1.25f;
 
         /// <summary>Degrees of nose-up. Past this he is going over rather than riding.</summary>
         private const float WheelieHighest = 32f;
@@ -3758,7 +3789,9 @@ namespace Hoodrich.Locations
 
             foreach (var r in _running)
             {
-                if (r.Stage >= 0) n++;
+                // Called ones still HOLD a marker -- that is the point -- but they are not
+                // waiting on it, so they do not count towards keeping the queue full.
+                if (r.Stage >= 0 && !r.Called) n++;
             }
 
             return n;
@@ -3782,7 +3815,7 @@ namespace Hoodrich.Locations
 
             foreach (var r in _running)
             {
-                if (r.Leaving || r.Stage < 0 || !r.AtStage) continue;
+                if (r.Leaving || r.Called || r.Stage < 0 || !r.AtStage) continue;
                 if (r.Car == null || !r.Car.Exists()) continue;
                 if (r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive) continue;
 
@@ -3827,7 +3860,8 @@ namespace Hoodrich.Locations
                 return false;
             }
 
-            up.Stage = -1;
+            // HIS MARKER IS NOT RELEASED. He is coming back to it.
+            up.Called = true;
             up.AtStage = false;
             up.Sent = now;
 
@@ -3974,7 +4008,10 @@ namespace Hoodrich.Locations
                 // Carefully rather than in a hurry: he is driving back INTO the ring of people
                 // he has just been performing in front of, which is the one moment on this
                 // whole junction where stopping for somebody is the right behaviour.
-                var back = OnRoad(150f + (float)_rng.NextDouble() * 110f);
+                // HIS OWN MARKER IF HE HAS ONE, and off the map only if he has not.
+                var back = r.Stage >= 0
+                    ? Toward(r.Car.Position, Stages[r.Stage].At)
+                    : OnRoad(150f + (float)_rng.NextDouble() * 110f);
 
                 if (back == Vector3.Zero) back = Middle.Around(190f);
 
