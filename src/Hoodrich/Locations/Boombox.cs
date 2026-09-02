@@ -33,18 +33,18 @@ namespace Hoodrich.Locations
         /// <summary>
         /// What is on.
         ///
-        /// West Coast Classics, because this is a yard in Chamberlain and not a nightclub.
-        /// </summary>
         /// <summary>
-        /// What the speaker is playing. Blonded, found rather than named -- see Core.Radio.
+        /// What the speaker is playing: West Coast Classics, because this is a yard in
+        /// Chamberlain and not a nightclub.
         ///
-        /// A property rather than a const, because the answer depends on what this install
-        /// actually has and a const would have to be a guess.
+        /// NAMED RATHER THAN FOUND, and that is the difference from Core.Radio. That helper
+        /// exists because Blonded is DLC and its internal name varies between builds, so the
+        /// station has to be looked for among the ones an install really has. West Coast
+        /// Classics has none of that problem -- RADIO_09_HIPHOP_OLD ships with every copy of
+        /// the game, and it is what the parked cars round this yard have been playing all
+        /// along. Looking it up would be machinery for a question with one answer.
         /// </summary>
-        private static string Station
-        {
-            get { return Core.Radio.Blonded; }
-        }
+        private const string Station = "RADIO_09_HIPHOP_OLD";
 
         /// <summary>
         /// The speaker.
