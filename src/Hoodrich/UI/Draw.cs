@@ -45,6 +45,8 @@ namespace Hoodrich.UI
 
             RectsThisFrame = 0;
 
+            Pace();
+
             try
             {
                 var res = GTA.UI.Screen.Resolution;
@@ -62,6 +64,69 @@ namespace Hoodrich.UI
                 Log.Debug("Aspect probe failed: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// How often this actually runs, measured once and written to the log.
+        ///
+        /// EVERYTHING THIS MOD DRAWS IS DRAWN FROM THE TICK, and a rectangle in this game exists
+        /// only on the frame it is issued. So if the tick does not run on every rendered frame,
+        /// every panel the mod owns disappears for the frames it missed -- which is not a bug in
+        /// any one panel, it is a flicker across all of them at once, including the war HUD.
+        ///
+        /// That is the one remaining explanation for whole-UI flashing after the others were
+        /// ruled out by evidence: one draw call rather than two, an interval of zero, a
+        /// playability gate that only moves around loading screens, a Franklin gate that has
+        /// never moved at all, sane fade timings, and a rectangle count less than two thirds of
+        /// the number that has actually broken it before.
+        ///
+        /// So it is measured instead of argued about. Six hundred frames -- ten seconds at
+        /// sixty -- and then one line saying how far apart they really were. At sixty frames a
+        /// second a healthy median is about sixteen milliseconds. Thirty-three means the mod is
+        /// drawing on every other frame, which IS the flashing, and points at the tick rather
+        /// than at anything drawn from it.
+        ///
+        /// Once per session and then never again: it is a measurement, not a monitor.
+        /// </summary>
+        private static void Pace()
+        {
+            if (_paced) return;
+
+            var now = Game.GameTime;
+
+            if (_lastTick != 0)
+            {
+                var gap = now - _lastTick;
+
+                if (gap >= 0 && gap < 1000)
+                {
+                    if (_ticks < Gaps.Length) Gaps[_ticks] = gap;
+                    _ticks++;
+                }
+            }
+
+            _lastTick = now;
+
+            if (_ticks < Gaps.Length) return;
+
+            _paced = true;
+
+            var sorted = (int[])Gaps.Clone();
+            Array.Sort(sorted);
+
+            var sum = 0;
+            foreach (var g in sorted) sum += g;
+
+            Log.Info("Tick pace over " + sorted.Length + " frames: min " + sorted[0] +
+                     "ms, median " + sorted[sorted.Length / 2] +
+                     "ms, p90 " + sorted[(int)(sorted.Length * 0.9)] +
+                     "ms, max " + sorted[sorted.Length - 1] +
+                     "ms, mean " + (sum / sorted.Length) + "ms.");
+        }
+
+        private static readonly int[] Gaps = new int[600];
+        private static int _ticks;
+        private static int _lastTick;
+        private static bool _paced;
 
         /// <summary>Converts a height-relative length into a normalized-x length.</summary>
         public static float ToX(float heightFraction) => heightFraction / Aspect;
