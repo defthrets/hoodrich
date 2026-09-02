@@ -322,8 +322,20 @@ namespace Hoodrich.UI
             // table works the same way. A picture on screen is never the one thrown away.
             if (!string.IsNullOrEmpty(card.Art))
             {
-                if (card.Art == card.Pic) Hud.EnsureTextureDict(card.Art);
-                else Headshots.Txd(card.By.Handle);
+                if (card.Art == card.Pic)
+                {
+                    Hud.EnsureTextureDict(card.Art);
+                }
+                else if (string.IsNullOrEmpty(Headshots.Txd(card.By.Handle)))
+                {
+                    // GONE, SO ASK FOR IT BACK. Asking is also what keeps a face alive -- the
+                    // store evicts whichever has gone longest without being asked for -- but a
+                    // face that has ALREADY been thrown away is not protected by asking about
+                    // it, it is just absent. Without this the card sat on its coloured square
+                    // for the rest of its life, or worse, flickered as something else happened
+                    // to ask for the same person.
+                    Headshots.Want(card.By.Handle, card.By.Gang, card.By.Gender);
+                }
             }
 
             // THE SQUARE GOES UNDERNEATH. THE LETTER DOES NOT.

@@ -52,7 +52,21 @@ namespace Hoodrich.UI
         /// whatever else. Eight still covers a screenful of the feed with room over, and it
         /// halves the standing cost of the whole feature.
         /// </summary>
-        private const int Keep = 8;
+        /// <summary>
+        /// How many faces are held at once. Eight was below what one screen needs.
+        ///
+        /// THAT IS WHY THE TOASTS FLASHED. The feed screen asks for a face for every post it
+        /// draws and a page is about ten of them -- so opening it evicted the entire store,
+        /// including whichever face was on the notification in the corner. The next time that
+        /// author came round the feed asked again, the face came back, the one after evicted
+        /// it again. A picture blinking in and out on a two-second cycle.
+        ///
+        /// Twenty. Comfortably more than a full page plus the two or three on screen, and well
+        /// inside what the game will register at once. The eviction is still there for a
+        /// session that runs long enough to meet hundreds of people; it just is not firing
+        /// every time somebody opens their phone.
+        /// </summary>
+        private const int Keep = 20;
 
         /// <summary>How long one is given to render before it is written off.</summary>
         private const int PatienceMs = 4000;
