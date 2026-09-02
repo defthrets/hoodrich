@@ -1282,7 +1282,7 @@ namespace Hoodrich.Gangs
                     // The null placeholder is the lead's own model, carried by reference rather
                     // than by name because a hash is what we have and a hash is what Model takes.
                     var model = name == null ? new Model(matching.Model.Hash) : new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+                    if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     var car = World.CreateVehicle(model, at);
                     model.MarkAsNoLongerNeeded();
@@ -1412,7 +1412,7 @@ namespace Hoodrich.Gangs
                 var name = gang.MemberModels[_rng.Next(gang.MemberModels.Count)];
 
                 var model = new Model(name);
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) return null;
+                if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) return null;
 
                 var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE, car.Handle,
                                                 PedTypeCiv, model.Hash, seat, false, false);

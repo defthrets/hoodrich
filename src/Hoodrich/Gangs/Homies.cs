@@ -367,7 +367,7 @@ namespace Hoodrich.Gangs
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+                    if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     _cab = World.CreateVehicle(model, start);
                     model.MarkAsNoLongerNeeded();
@@ -411,7 +411,7 @@ namespace Hoodrich.Gangs
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+                    if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     var h = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
                                                _cab.Handle, 4, model.Hash, -1, true, false);
@@ -1075,7 +1075,7 @@ namespace Hoodrich.Gangs
             try
             {
                 var model = new Model(what);
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(500)) return;
+                if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) return;
 
                 var prop = World.CreateProp(model, man.Ped.Position, false, false);
                 model.MarkAsNoLongerNeeded();
@@ -1144,7 +1144,7 @@ namespace Hoodrich.Gangs
             try
             {
                 var model = new Model(name);
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) return null;
+                if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) return null;
 
                 var made = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
                                               _cab.Handle, 4, model.Hash, seat, true, false);

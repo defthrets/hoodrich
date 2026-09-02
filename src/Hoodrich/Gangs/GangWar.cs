@@ -1105,7 +1105,7 @@ namespace Hoodrich.Gangs
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+                    if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     _usedCars.Add(name);
                     return model;
@@ -1196,7 +1196,7 @@ namespace Hoodrich.Gangs
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+                    if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
                                                     car.Handle, PedTypeCiv, model.Hash, seat, true, false);
@@ -1292,7 +1292,7 @@ namespace Hoodrich.Gangs
                     try
                     {
                         var model = new Model(name);
-                        if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+                        if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                         // On the mark, spread across a couple of metres of it. The Z is used
                         // verbatim -- two of these spots are on walkways and a ground probe

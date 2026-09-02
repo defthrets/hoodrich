@@ -1742,7 +1742,7 @@ namespace Hoodrich.Locations
 
                     // Not loaded yet is a reason to wait, not a reason to bring a different
                     // dog. Update comes back in under a second.
-                    if (!model.Request(1000)) return;
+                    if (!Core.Models.Ready(model)) return;
 
                     var spot = at;
 

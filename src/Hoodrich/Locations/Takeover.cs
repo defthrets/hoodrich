@@ -1044,6 +1044,18 @@ namespace Hoodrich.Locations
             // AND A NOTE OF WHAT WAS ALREADY PARKED HERE. See Sweep.
             _nextWord = now + _rng.Next(20000, 45000);
 
+            // AND THE STREAMER IS ASKED FOR EVERYTHING BEFORE ANY OF IT IS NEEDED.
+            //
+            // Nothing waits for a model any more, so the cost of a model not being resident is
+            // a spawn deferred by a fraction of a second -- cheap, but it is paid over and over
+            // at the start of a night when nothing has been asked for yet. One pass through the
+            // lists here puts the whole evening's cast on the streamer's queue while the first
+            // car is still driving in, and by the time anything is actually spawned it is
+            // almost always already there.
+            //
+            // Non-blocking, so this is a few dozen calls and no wait at all.
+            Warm();
+
             Cars();
 
             // THE WORD GOES OUT, AND ONLY THE WORD.
@@ -1072,13 +1084,21 @@ namespace Hoodrich.Locations
 
             var want = Math.Min(PerWave, _toCome);
 
-            // Counted down whether or not the spawn succeeded. A failure is a person who did
-            // not come, and retrying forever would have the mod hammering the pavement finder
-            // for the rest of the night on a junction where it cannot find one.
+            // COUNTED DOWN ONLY WHEN SOMEBODY ACTUALLY TURNED UP.
+            //
+            // It used to count down either way, on the reasoning that a failure is a person who
+            // did not come and retrying for ever would hammer the pavement finder all night.
+            // That was right while asking for a model WAITED for it -- failures were rare and
+            // meant something was wrong. Asking does not wait any more, so the first wave of an
+            // evening would mostly answer "not yet" and forty of the crowd would simply never
+            // have existed.
+            //
+            // Retrying is safe because the wave is on a clock: a wave that spawns nobody costs
+            // 1.6 seconds and tries again, and by then the streamer has what it was asked for.
+            // The hammering the old comment worried about is bounded by that clock.
             for (var i = 0; i < want; i++)
             {
-                Somebody();
-                _toCome--;
+                if (Somebody()) _toCome--;
             }
         }
 
@@ -1146,7 +1166,7 @@ namespace Hoodrich.Locations
                 {
                     model = new Model(Faces[_rng.Next(Faces.Length)]);
 
-                    got = model.IsValid && model.IsInCdImage && model.Request(900);
+                    got = model.IsValid && model.IsInCdImage && Core.Models.Ready(model);
                 }
 
                 if (!got) return false;
@@ -1870,17 +1890,58 @@ namespace Hoodrich.Locations
             if (_coming.Count == 0 || now < _nextCar) return;
 
             var one = _coming[0];
-            _coming.RemoveAt(0);
 
-            Spectator(one.What, one.Where);
+            // PUT BACK IF THE MODEL IS NOT HERE YET, and this is the half that stops the
+            // non-blocking loader losing cars.
+            //
+            // Asking for a model used to WAIT for it, so a spawn only failed when something was
+            // really wrong. It does not wait any more -- it says "not yet" and comes back --
+            // which means the very first attempt at a car nobody has spawned this session will
+            // usually say no. Dropping his kerb for that would leave a hole in the ring for the
+            // rest of the night because the streamer was half a second behind.
+            //
+            // So the queue entry stays where it is and he is tried again shortly. The streamer
+            // has been asked by now, so the second attempt nearly always takes.
+            if (!Spectator(one.What, one.Where))
+            {
+                _nextCar = now + RetrySoonMs;
+                return;
+            }
+
+            _coming.RemoveAt(0);
 
             var gap = SpreadMs / Math.Max(1, Spots.Length);
 
             _nextCar = now + Math.Max(500, gap);
         }
 
+        /// <summary>How soon to try again for a car whose model was not loaded yet.</summary>
+        private const int RetrySoonMs = 400;
+
         /// <summary>How long the whole street takes to fill, in milliseconds.</summary>
         private const int SpreadMs = 60000;
+
+        /// <summary>
+        /// Put the whole evening's models on the streamer's list, and wait for none of them.
+        ///
+        /// Models.Ready asks and returns; it is called here purely for the asking. Anything
+        /// already resident answers true and costs nothing, and anything missing is being
+        /// fetched by the time the first spawner wants it.
+        /// </summary>
+        private void Warm()
+        {
+            try
+            {
+                foreach (var set in new[] { Faces, Parked, Lows, Donks, Drifters, Bikers, Badges })
+                {
+                    foreach (var name in set) Core.Models.Ready(new Model(name));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not warm its models: " + ex.Message);
+            }
+        }
 
         /// <summary>What sort of car came to watch.</summary>
         private enum Kind
@@ -1890,7 +1951,7 @@ namespace Hoodrich.Locations
             Donk
         }
 
-        private void Spectator(Kind kind, Spot spot)
+        private bool Spectator(Kind kind, Spot spot)
         {
             try
             {
@@ -1902,19 +1963,21 @@ namespace Hoodrich.Locations
                 // be arriving from somewhere and near enough that the last one is not the
                 // reason the night starts a minute late.
                 var from = OnRoad(ParkFromMin + (float)_rng.NextDouble() * (ParkFromMax - ParkFromMin));
-                if (from == Vector3.Zero) return;
+                if (from == Vector3.Zero) return false;
 
                 var car = Make(kind == Kind.Low ? Lows
                              : kind == Kind.Donk ? Donks
                              : Parked, from);
-                if (car == null) return;
+
+                // The model was not resident yet. Arriving keeps the kerb and tries again.
+                if (car == null) return false;
 
                 var driver = Behind(car);
 
                 if (driver == null)
                 {
                     car.Delete();
-                    return;
+                    return false;
                 }
 
                 // ROUND THE OUTSIDE IF THE DIRECT LINE GOES THROUGH THE MARK. See Toward.
@@ -1939,10 +2002,16 @@ namespace Hoodrich.Locations
                     Hop = _rng.NextDouble() * Math.PI * 2d,
                     Rate = 2.2 + _rng.NextDouble() * 2.6
                 });
+
+                return true;
             }
             catch (Exception ex)
             {
                 Log.Debug("Takeover could not send a spectator: " + ex.Message);
+
+                // Not a "try again": something went wrong rather than something not being
+                // ready. The kerb is given up so a broken one cannot hold the queue for ever.
+                return true;
             }
         }
 
@@ -3216,7 +3285,7 @@ namespace Hoodrich.Locations
                     Middle.Z + HeliHigh);
 
                 var model = new Model("polmav");
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(2000)) return;
+                if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) return;
 
                 _heli = World.CreateVehicle(model, from);
                 model.MarkAsNoLongerNeeded();
@@ -3231,7 +3300,7 @@ namespace Hoodrich.Locations
 
                 var cop = new Model("s_m_y_cop_01");
 
-                if (!cop.IsValid || !cop.Request(2000))
+                if (!cop.IsValid || !Core.Models.Ready(cop))
                 {
                     _heli.Delete();
                     _heli = null;
@@ -4453,7 +4522,7 @@ namespace Hoodrich.Locations
                 {
                     var model = new Model("ind_prop_firework_01");
 
-                    if (model.IsValid && model.IsInCdImage && model.Request(600))
+                    if (model.IsValid && model.IsInCdImage && Core.Models.Ready(model))
                     {
                         _fireProp = World.CreateProp(model, _fireSpot, false, false);
                         model.MarkAsNoLongerNeeded();
@@ -4860,7 +4929,7 @@ namespace Hoodrich.Locations
                         // First time round, only what nobody out there is already driving.
                         if (pass == 0 && _taken.Contains(model.Hash)) continue;
 
-                        if (!model.Request(1200)) continue;
+                        if (!Core.Models.Ready(model)) continue;
 
                         var car = World.CreateVehicle(model, at);
                         model.MarkAsNoLongerNeeded();
@@ -5137,7 +5206,7 @@ namespace Hoodrich.Locations
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+                    if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     // Ped type 6 is COP.
                     var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE, car.Handle,
@@ -5187,7 +5256,7 @@ namespace Hoodrich.Locations
             try
             {
                 var model = new Model(name);
-                if (!model.IsValid || !model.Request(600)) return;
+                if (!model.IsValid || !Core.Models.Ready(model)) return;
 
                 var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE, car.Handle,
                                                 6, model.Hash, 0, false, false);
@@ -5236,7 +5305,7 @@ namespace Hoodrich.Locations
                 var name = Faces[_rng.Next(Faces.Length)];
 
                 var model = new Model(name);
-                if (!model.IsValid || !model.Request(1200)) return null;
+                if (!model.IsValid || !Core.Models.Ready(model)) return null;
 
                 var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE, car.Handle,
                                                 4, model.Hash, -1, false, false);

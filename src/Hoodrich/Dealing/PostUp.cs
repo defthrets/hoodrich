@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -1397,7 +1397,7 @@ namespace Hoodrich.Dealing
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1000)) continue;
+                    if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
                                                     car.Handle, 4, model.Hash, seat, true, false);
@@ -1688,7 +1688,7 @@ namespace Hoodrich.Dealing
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+                    if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE,
                                                     car.Handle, 6, model.Hash, seat, true, false);
@@ -1735,7 +1735,7 @@ namespace Hoodrich.Dealing
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+                    if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     return model;
                 }
@@ -1980,7 +1980,7 @@ namespace Hoodrich.Dealing
                 {
                     var model = new Model(name);
                     if (!model.IsValid || !model.IsInCdImage) continue;
-                    if (!model.Request(1200)) continue;
+                    if (!Core.Models.Ready(model)) continue;
 
                     var spot = RoundTheCorner(player);
                     if (spot == Vector3.Zero) continue;

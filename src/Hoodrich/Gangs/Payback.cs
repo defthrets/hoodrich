@@ -225,11 +225,11 @@ namespace Hoodrich.Gangs
                     : Cars;
 
                 var model = new Model(list[_rng.Next(list.Length)]);
-                if (!model.IsValid || !model.Request(2000))
+                if (!model.IsValid || !Core.Models.Ready(model))
                 {
                     // Their own ride is not in this copy of the game. Anybody can drive a Voodoo.
                     model = new Model(Cars[_rng.Next(Cars.Length)]);
-                    if (!model.IsValid || !model.Request(2000)) { Rearm(); return; }
+                    if (!model.IsValid || !Core.Models.Ready(model)) { Rearm(); return; }
                 }
 
                 _car = World.CreateVehicle(model, spawn);
@@ -490,7 +490,7 @@ namespace Hoodrich.Gangs
             try
             {
                 var model = _car.Model;
-                if (!model.IsValid || !model.Request(1500)) return null;
+                if (!model.IsValid || !Core.Models.Ready(model)) return null;
 
                 var at = World.GetNextPositionOnStreet(near.Around(4f + index * 2.5f));
                 if (at == Vector3.Zero) at = near.Around(3f + index * 2f);
@@ -523,7 +523,7 @@ namespace Hoodrich.Gangs
                     ? _who.MemberModels[_rng.Next(_who.MemberModels.Count)]
                     : AnyGoons[_rng.Next(AnyGoons.Length)];
                 var model = new Model(name);
-                if (!model.IsValid || !model.Request(2000)) return null;
+                if (!model.IsValid || !Core.Models.Ready(model)) return null;
 
                 var man = car.CreatePedOnSeat((VehicleSeat)seat, model);
                 model.MarkAsNoLongerNeeded();
