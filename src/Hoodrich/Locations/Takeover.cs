@@ -3624,7 +3624,19 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>The bikes, and how they ride.</summary>
-        private static readonly string[] Bikers = { "manchez", "manchez2", "manchez3", "sanchez" };
+        /// <summary>
+        /// BMXs, and nothing else.
+        ///
+        /// The game ships exactly one, so this is a list of one -- kept as a list because Make
+        /// takes one and because a build without it should get nothing rather than throw.
+        ///
+        /// EVERY SPEED BELOW HAD TO MOVE WITH IT. A Manchez is a motorbike and a BMX is a
+        /// pushbike: it tops out somewhere near seven metres a second, so a wheelie threshold
+        /// of eight was a wheelie that could never once have happened, and a cruise order of
+        /// thirteen is an instruction it cannot follow -- which reads as a man pedalling
+        /// flat out and going nowhere near where he was told.
+        /// </summary>
+        private static readonly string[] Bikers = { "bmx" };
 
         /// <summary>
         /// One line across the junction, with the two marks the front wheel is up between.
@@ -3723,7 +3735,8 @@ namespace Hoodrich.Locations
         /// as the bike will go.
         /// </summary>
         private const float LoopRadius = 10f;
-        private const float LoopSpeed = 13f;
+        /// <summary>And round the middle, slower again, because it is a circle.</summary>
+        private const float LoopSpeed = 6f;
         private const float LoopDone = 4.5f;
         private const double LoopStep = Math.PI * 2d / 5d;
 
@@ -3780,7 +3793,14 @@ namespace Hoodrich.Locations
         private const int RushStyle = 4 | 8 | 16 | 32;
 
         private const float PassDone = 14f;
-        private const float PassSpeed = 24f;
+        /// <summary>
+        /// How fast he crosses the junction. Seven, down from twenty-four.
+        ///
+        /// Twenty-four metres a second is eighty-six an hour and it was written for a Manchez.
+        /// A cruise order a bike cannot obey is not a fast bike, it is a man pedalling flat out
+        /// and never arriving where he was sent -- and the pass is timed off arriving.
+        /// </summary>
+        private const float PassSpeed = 7f;
         private const int PassGiveUpMs = 40000;
 
         /// <summary>How long a car gets to find its way back to its own spot.</summary>
@@ -3794,14 +3814,29 @@ namespace Hoodrich.Locations
         private const float BackSpeed = 8f;
 
         private const int BikeGapMs = 9000;
-        private const float WheelieNeeds = 8f;
+        /// <summary>
+        /// How fast he has to be going to hold the front up. Four, down from eight.
+        ///
+        /// Eight was a motorbike number and it is above what a BMX can reach at all, so on
+        /// pushbikes it would have meant no wheelies whatsoever rather than bad ones.
+        /// </summary>
+        private const float WheelieNeeds = 4f;
         /// <summary>
         /// How hard the front is lifted, and how far past level it may come.
         ///
         /// The lift is down from 1.9 as well. With nothing capping the angle it had to be
         /// enough to get the wheel up on its own; with a cap it only has to hold it there.
         /// </summary>
-        private const float WheelieLift = 1.25f;
+        /// <summary>
+        /// How hard the front is lifted. Down again, for a bike a fraction of the weight.
+        ///
+        /// There is no mass to scale by -- this build of ScriptHookVDotNet exposes none on
+        /// Vehicle or Entity -- so it is a judgement, and the pitch cap is what makes that
+        /// safe rather than the number being right. The cap is the thing that stops a wheelie
+        /// becoming a launch: past thirty-two degrees nothing is pushed at all, whatever the
+        /// force was. If a BMX still comes up too fast this is the number to drop.
+        /// </summary>
+        private const float WheelieLift = 0.45f;
 
         /// <summary>Degrees of nose-up. Past this he is going over rather than riding.</summary>
         private const float WheelieHighest = 32f;
