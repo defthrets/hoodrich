@@ -286,9 +286,6 @@ namespace Hoodrich.Locations
 
             if (_car != null && !_car.Exists()) _car = null;
 
-            // And anything that is meant to be standing open still is. See Swing.
-            if (BootOpen || Doors != null) Swing();
-
             // Once it is out there it is left alone. Not put back on its mark, not re-parked --
             // if somebody has taken it for a drive then it is a car that got taken, which is a
             // better thing to happen on a block than a car that cannot be moved.
@@ -454,7 +451,18 @@ namespace Hoodrich.Locations
                 // Door 5 is the boot. Instantly rather than swung, because the car is being
                 // created in front of you and a boot easing itself open on spawn is a car
                 // doing something rather than a car that was already like that.
-                if (BootOpen || Doors != null) Swing();
+                // Open on the frame it is created, so it is a van that was already like that
+                // rather than one that opens its own boot while you watch. Swing holds it from
+                // there.
+                if (BootOpen) Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, 5, false, true);
+
+                if (Doors != null)
+                {
+                    foreach (var d in Doors)
+                    {
+                        Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, d, false, true);
+                    }
+                }
 
                 if (!string.IsNullOrEmpty(Plate))
                 {
@@ -503,17 +511,20 @@ namespace Hoodrich.Locations
         /// <summary>
         /// Hold the doors open.
         ///
-        /// RE-ISSUED RATHER THAN SET ONCE, because a door is not a property of a car -- it is a
-        /// thing with physics on it. Somebody brushes past it, a ped leans on it, the game
-        /// settles the vehicle when it streams back in, and the boot that was open when you
-        /// walked away is shut when you come back. Opening it once is opening it once.
+        /// SET_VEHICLE_DOOR_OPEN WAS THE WRONG NATIVE AND IT IS WHAT MADE THE BOOT FLAP. It
+        /// does not mean "this door is open", it means "open this door" -- an ANIMATION. So the
+        /// loop was: the game shuts the boot, we notice a second or two later and play the
+        /// opening animation, it shuts it again, we play it again. A boot dropping and lifting
+        /// on a timer, which is exactly what it looked like. Re-issuing it faster would only
+        /// have made it flap faster.
         ///
-        /// Instantly rather than swung, for the same reason it was on spawn: a boot easing
-        /// itself open while you look at it is a van doing something. This is a van that was
-        /// already like that.
+        /// SET_VEHICLE_DOOR_CONTROL is the native that means what was wanted: hold this door at
+        /// this angle. Called every frame it simply keeps it there -- there is no animation to
+        /// restart, so there is nothing to see. Ratio 1 is as far as it goes.
         ///
-        /// Calling it on a door that is already open costs nothing and does nothing, so there
-        /// is no need to ask first.
+        /// Unlatched on top of that, which is the other half of it. A latched door is one the
+        /// game is entitled to close; unlatching stops it being shut in the first place rather
+        /// than fighting it afterwards.
         /// </summary>
         private void Swing()
         {
@@ -521,19 +532,23 @@ namespace Hoodrich.Locations
 
             try
             {
-                if (BootOpen) Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, 5, false, true);
+                if (BootOpen) Hold(5);
 
                 if (Doors == null) return;
 
-                foreach (var d in Doors)
-                {
-                    Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, d, false, true);
-                }
+                foreach (var d in Doors) Hold(d);
             }
             catch
             {
-                // Next time round.
+                // Next frame.
             }
+        }
+
+        /// <summary>One door, unlatched and held wide.</summary>
+        private void Hold(int door)
+        {
+            Function.Call(Hash.SET_VEHICLE_DOOR_LATCHED, _car.Handle, door, false, false, true);
+            Function.Call(Hash.SET_VEHICLE_DOOR_CONTROL, _car.Handle, door, 1f, 1f);
         }
 
         /// <summary>
