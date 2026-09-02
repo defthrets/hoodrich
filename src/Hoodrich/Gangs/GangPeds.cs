@@ -42,7 +42,10 @@ namespace Hoodrich.Gangs
                     if (string.IsNullOrEmpty(name)) continue;
 
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+                    // Non-blocking. Request(timeout) yields the whole script and blanks every
+                    // panel the mod draws for as long as it waits -- see Core.Models. A caller
+                    // that gets nothing here asks again on its next tick.
+                    if (!Core.Models.Ready(model)) continue;
 
                     var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeCiv, model.Hash,
                                                     at.X, at.Y, at.Z, heading, false, false);

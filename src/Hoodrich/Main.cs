@@ -209,6 +209,9 @@ namespace Hoodrich
 
         /// <summary>The worklight by the skip. See Fixture.Beam.</summary>
         private readonly Fixture _partyLight;
+
+        /// <summary>Nine walked corners with three of ours stood on each. See Gangs.Posted.</summary>
+        private readonly List<Gangs.Posted> _corners = new List<Gangs.Posted>();
         private readonly Fixture _partyCouch;
         /// <summary>The dog in the yard, and yours once you have petted him.</summary>
         private readonly Trigger _partyDog;
@@ -1213,6 +1216,28 @@ namespace Hoodrich
                 // Warm white rather than daylight white: a builder's floodlight is a halogen
                 // and halogens are yellow. A pure white one reads as a film light, which is
                 // the one thing a yard behind a chain fence should not look like.
+                // NINE WALKED CORNERS, three of the set on each.
+                //
+                // Coordinates and headings read off the ground rather than picked off a map,
+                // which is the same reason every other placed thing in this mod is where it is:
+                // a corner somebody stood on is a corner people stand on, and a corner chosen
+                // from above is a spot in the middle of a pavement with nothing to lean on.
+                foreach (var post in new[]
+                {
+                    new Vector3(-218.289f, -1653.724f, 34.463f),
+                    new Vector3(-215.203f, -1587.235f, 34.869f),
+                    new Vector3(-187.164f, -1554.348f, 34.955f),
+                    new Vector3(-136.089f, -1593.801f, 34.244f),
+                    new Vector3(-130.826f, -1656.190f, 33.109f),
+                    new Vector3( -83.090f, -1612.417f, 31.479f),
+                    new Vector3( -31.633f, -1549.419f, 31.401f),
+                    new Vector3( -65.728f, -1521.149f, 34.245f),
+                    new Vector3(-119.966f, -1470.868f, 33.822f)
+                })
+                {
+                    _corners.Add(new Gangs.Posted(post, 0f, _gangs, "families"));
+                }
+
                 _partyLight = new Fixture(new Vector3(-208.392f, -1711.383f, 32.664f), 152.962f,
                                           "prop_worklight_03a", "prop_worklight_03b",
                                           "prop_worklight_01a", "prop_worklight_02a")
@@ -2609,6 +2634,8 @@ namespace Hoodrich
                     _meet.Update();
                     _partyBarrel.Update();
                     _partyLight?.Update();
+
+                    foreach (var corner in _corners) corner.Update();
                     _partyCouch.Update();
                     _partyDog?.Update();
                     _leaderBox.Update();
@@ -3615,6 +3642,11 @@ namespace Hoodrich
             try { _meet?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyLight?.RestoreWorld(); } catch { /* teardown */ }
+
+            foreach (var corner in _corners)
+            {
+                try { corner.RestoreWorld(); } catch { /* teardown */ }
+            }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyDog?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaderBox?.RestoreWorld(); } catch { /* teardown */ }
