@@ -2746,6 +2746,15 @@ namespace Hoodrich.Gangs
 
             End(false, "You went down.", true);
 
+            // AND HE IS NOT A NO-SHOW. He went down AT it.
+            //
+            // The verdict chain is the one message End deliberately leaves running, because it
+            // is about a fight that is over -- but its whole premise is that you did not come.
+            // Telling a man who was shot on that street that nobody saw him there is the mod
+            // getting the story wrong, which is worse than saying nothing at all.
+            _noShowAt = 0;
+            _noShowWho = "";
+
             _deathNotice = true;
 
             Log.Info("Gang war ended: you went down in it.");
@@ -2783,6 +2792,18 @@ namespace Hoodrich.Gangs
             Scatter();
 
             IsRunning = false;
+            // AND NOBODY ASKS YOU TO COME TO A FIGHT THAT IS OVER.
+            //
+            // The nag chain was only ever cleared when you TURNED UP -- nothing cleared it when
+            // the thing you were being chased to simply ended. So a raid that finished without
+            // you, and in particular one that ended because you went down at it, carried on
+            // sending "WHERE YOU AT" every so often afterwards.
+            //
+            // The no-show post-mortem is deliberately NOT cleared here. "You wasn't there" is a
+            // thing said about a fight precisely because it is over, and Chase and Nobody sit
+            // above the IsRunning branch for exactly that reason. One is a summons and one is a
+            // verdict, and only the summons expires with the fight.
+            _nagAt = 0;
 
             // The worse it is between you, the sooner the next one. Somebody who has just lost
             // four men on your block does not wait half an hour to come back.
@@ -3217,6 +3238,7 @@ namespace Hoodrich.Gangs
             ClearMarker();
             Clear();
             IsRunning = false;
+            _nagAt = 0;
         }
 
         // ---- hud ---------------------------------------------------------------
