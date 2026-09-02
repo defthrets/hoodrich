@@ -34,6 +34,10 @@ namespace Hoodrich.Gangs
         /// <summary>When the sitting ends.</summary>
         public int SitUntil;
 
+        /// <summary>When his speed is next reconsidered, and what it was set to. See Pace.</summary>
+        public int PaceAt;
+        public float Cruise;
+
         /// <summary>Where they were when last looked at, and when that was.</summary>
         public Vector3 WasAt;
         public int LookedAt;
@@ -414,6 +418,9 @@ namespace Hoodrich.Gangs
             // and has to run at the rate the physics does.
             Wheelies(now);
 
+            // Read the road, on its own clock. See Pace.
+            Pacing(now);
+
             // The second tap of a double beep, which has to be its own thing -- a horn is a
             // duration, so two beeps is two calls with a gap, and the gap cannot be a sleep.
             if (_secondBeepAt != 0 && now >= _secondBeepAt)
@@ -736,8 +743,22 @@ namespace Hoodrich.Gangs
                               roll.OnFoot ? StyleBike : StyleCar,
                               stop ? 4f : 15f, true);
 
+                // A BIKE'S SPEED IS PACING'S BUSINESS FROM HERE. This sets a sane opening
+                // number and the road takes over on the next look -- otherwise every new
+                // destination would slam him back to the flat cruise and he would arrive at the
+                // next corner at exactly the speed that was putting him in walls.
                 Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, roll.Driver.Handle,
                               roll.OnFoot ? CruiseBike : CruiseCar);
+
+                if (roll.OnFoot)
+                {
+                    roll.Cruise = 0f;
+                    roll.PaceAt = 0;
+
+                    // Good enough to hold a line at fifteen. The default is a rider who can be
+                    // given a speed and not the skill to use it.
+                    Function.Call(Hash.SET_DRIVER_ABILITY, roll.Driver.Handle, 1.0f);
+                }
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, roll.Driver.Handle, true);
             }
@@ -974,6 +995,113 @@ namespace Hoodrich.Gangs
         private int _nextGreet;
         private int _secondBeepAt;
         private Vehicle _beepCar;
+
+        /// <summary>
+        /// Riders look at the road ahead and pick a speed for it.
+        ///
+        /// A FIXED CRUISE IS WHY THEY CRASH. Six metres a second everywhere is slow on a
+        /// straight and still too quick for a ninety-degree turn into a service road, and the
+        /// driving AI does not brake for a corner it was told to take at a constant speed -- it
+        /// arrives at the same rate it left, understeers into the wall, and sits there.
+        ///
+        /// So the speed comes from the road rather than from a constant. A point is taken
+        /// twenty-odd metres ahead, snapped to the nearest road, and the angle between "where
+        /// he is pointing" and "where that road is" says how much it bends. Straight ahead is
+        /// nothing and he opens it up; a sharp bend is most of a right angle and he is down to
+        /// walking pace before he reaches it.
+        ///
+        /// EASED RATHER THAN SNAPPED. Cruise speed set straight from the reading jumps every
+        /// time the look-ahead lands on a different node, which is a bike surging and dropping
+        /// on a straight road. It moves a third of the way each time instead, so it rolls off
+        /// and rolls back on.
+        ///
+        /// Bikes only. A car on these streets is doing eight and a half and is not the thing
+        /// that keeps ending up in a wall.
+        /// </summary>
+        private void Pacing(int now)
+        {
+            foreach (var roll in _out)
+            {
+                if (!roll.OnFoot) continue;
+                if (now < roll.PaceAt) continue;
+
+                roll.PaceAt = now + PaceEveryMs;
+
+                if (roll.Car == null || !roll.Car.Exists()) continue;
+                if (roll.Driver == null || !roll.Driver.Exists() || !roll.Driver.IsAlive) continue;
+
+                try
+                {
+                    var want = ForTheRoad(roll.Car);
+
+                    // First look of his life -- start where the reading says rather than easing
+                    // up from zero, which would have him crawl away from every spawn.
+                    if (roll.Cruise <= 0f) roll.Cruise = want;
+                    else roll.Cruise += (want - roll.Cruise) * PaceEase;
+
+                    Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, roll.Driver.Handle, roll.Cruise);
+                }
+                catch
+                {
+                    // He keeps whatever he had.
+                }
+            }
+        }
+
+        /// <summary>
+        /// The speed the road ahead deserves.
+        ///
+        /// Snapped to a road rather than measured off the raw look-ahead point, because a point
+        /// twenty metres in front of a bike in an alley is frequently inside a building. What
+        /// is wanted is where the ROAD goes, and the node network is the only thing that knows.
+        /// </summary>
+        private static float ForTheRoad(Vehicle bike)
+        {
+            var at = bike.Position;
+            var fwd = bike.ForwardVector;
+
+            var road = World.GetNextPositionOnStreet(at + fwd * LookAhead, true);
+
+            // Nothing out there to read. Middling speed rather than either extreme: guessing
+            // fast puts him in a wall and guessing slow makes every unmapped yard a crawl.
+            if (road == Vector3.Zero) return (BikeStraight + BikeBend) * 0.5f;
+
+            var to = road - at;
+
+            to = new Vector3(to.X, to.Y, 0f);
+
+            var len = to.Length();
+            if (len < 1f) return BikeBend;
+
+            to = to * (1f / len);
+
+            var dot = fwd.X * to.X + fwd.Y * to.Y;
+
+            if (dot > 1f) dot = 1f;
+            if (dot < -1f) dot = -1f;
+
+            var bend = (float)(Math.Acos(dot) * 180.0 / Math.PI);
+
+            if (bend <= StraightUnder) return BikeStraight;
+            if (bend >= BendOver) return BikeBend;
+
+            var t = (bend - StraightUnder) / (BendOver - StraightUnder);
+
+            return BikeStraight + (BikeBend - BikeStraight) * t;
+        }
+
+        /// <summary>How far ahead the road is read, and how often.</summary>
+        private const float LookAhead = 22f;
+        private const int PaceEveryMs = 350;
+
+        /// <summary>How much of the way to the new speed he moves each time. See Pacing.</summary>
+        private const float PaceEase = 0.34f;
+
+        /// <summary>Straight and bent, in metres a second, and the angles that count as each.</summary>
+        private const float BikeStraight = 15f;
+        private const float BikeBend = 5f;
+        private const float StraightUnder = 8f;
+        private const float BendOver = 42f;
 
         private void Wheelies(int now)
         {
