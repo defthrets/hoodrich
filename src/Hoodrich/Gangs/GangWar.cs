@@ -1765,20 +1765,71 @@ namespace Hoodrich.Gangs
                     return;
                 }
 
-                var road = World.GetNextPositionOnStreet(player.Position, true);
+                // BACK TO THE BLOCK, NEVER TO THE PLAYER. This line said player.Position and
+                // that is how armed men ended up appearing on top of Franklin and killing him.
+                //
+                // GetNextPositionOnStreet hands back the nearest road to whatever you give it,
+                // so asking about the player's position and then teleporting somebody there is
+                // a spawn-on-the-player -- and the only guards on it were "twelve metres away"
+                // and "off screen", which describes a man behind a wall a few paces from you.
+                // The intent was to get a stuck raider back into the fight; what it did was put
+                // him inside it.
+                //
+                // The block is where he was going anyway. Several bearings round it are tried
+                // and the first that is both a road and a decent distance from you is taken --
+                // so he rejoins the fight from somewhere he could plausibly have walked, and if
+                // no such place exists he simply is not moved. Staying stuck is a raider you
+                // never see; the alternative was one who arrives in your lap.
+                // No block, nowhere to send him. Left where he is rather than invented a
+                // destination -- a raider standing still is a raider you never notice.
+                if (_target == null) return;
+
+                var home = _target.Where;
+
+                var road = Vector3.Zero;
+
+                for (var i = 0; i < BearingTries; i++)
+                {
+                    var angle = _rng.NextDouble() * Math.PI * 2.0;
+
+                    var probe = home + new Vector3(
+                        (float)Math.Cos(angle) * BackInFrom,
+                        (float)Math.Sin(angle) * BackInFrom, 0f);
+
+                    var got = World.GetNextPositionOnStreet(probe, true);
+
+                    if (got == Vector3.Zero) continue;
+                    if (got.DistanceTo(player.Position) < KeepBack) continue;
+
+                    road = got;
+                    break;
+                }
 
                 if (road == Vector3.Zero) return;
 
                 Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, ped.Handle,
                               road.X, road.Y, road.Z, false, false, false);
 
-                Log.Info("Gang war: a raider was walled in and has been moved back to the street.");
+                Log.Info("Gang war: a raider was walled in and has been put back on the street.");
             }
             catch
             {
                 // He stays where he is and gets asked again.
             }
         }
+
+        /// <summary>Where round the block he is put back, and how many bearings are tried.</summary>
+        private const float BackInFrom = 45f;
+        private const int BearingTries = 8;
+
+        /// <summary>
+        /// And how close to you he may be put back, which is the whole point of the rewrite.
+        ///
+        /// Thirty metres. Far enough that he has to come to you rather than already being
+        /// there, which is the difference between a raider rejoining a fight and a man
+        /// materialising behind your shoulder.
+        /// </summary>
+        private const float KeepBack = 30f;
 
         /// <summary>How far counts as having moved, and how long counts as not having.</summary>
         private const float MovedFar = 2.5f;
