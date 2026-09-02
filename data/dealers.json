@@ -3,9 +3,17 @@
     "Hoodrich dealers -- the people you buy BULK from. Bulk cannot be sold until it has been",
     "bagged up at the kitchen counter in the stash house.",
     "",
-    "Only the dock worker lives here. Buying off a gang is done by walking up to their leader",
-    "and asking him, so there is no second layer of corner dealers standing around doing the",
-    "same job. Independent suppliers for the other products come back later.",
+    "TWO LISTS, AND ONLY ONE OF THEM IS READ. \"dealers\" is who you can actually buy off.",
+    "\"later\" is who you cannot, and nothing loads it -- it is a parking bay rather than a",
+    "disabled flag, so there is no half-live dealer in here waiting to be switched on by",
+    "something nobody remembers writing. Everything about a parked one is intact, down to the",
+    "last text message, and putting him back is moving his object out of \"later\" and into",
+    "\"dealers\". No rebuild.",
+    "",
+    "Gerald and Tao are the whole trade at the moment. The gang corner dealers are parked",
+    "because their leaders are (leaders.json, same arrangement) and a corner man for a set you",
+    "cannot meet is a stranger selling you drugs for no reason; the independents are parked",
+    "with them so the catalogue opens up in one piece rather than a product at a time.",
     "",
     "THE PROGRESSION: Gerald is where you start. Once you have moved enough weight",
     "(Economy > DocksUnlockGrams in Hoodrich.ini, default 50g) he names the port, which is",
@@ -181,7 +189,9 @@
       "purity": 0.75,
       "uncutFromLots": 999,
       "numberLine": "Take my number. You want somethin', text me and I'll bring it to the house -- I ain't standin' on no corner waitin' on you."
-    },
+    }
+  ],
+  "later": [
     {
       "id": "sand_cook",
       "name": "Merle",
