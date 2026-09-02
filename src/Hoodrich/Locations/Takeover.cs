@@ -1984,7 +1984,8 @@ namespace Hoodrich.Locations
                 var aim = Toward(from, slot);
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
-                              aim.X, aim.Y, aim.Z, 14f, 0, car.Model.Hash, CareStyle, 4f, true);
+                              aim.X, aim.Y, aim.Z, ComeToKerb, 0, car.Model.Hash,
+                              CareStyle, 4f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
 
@@ -2052,10 +2053,8 @@ namespace Hoodrich.Locations
                         && p.Car.Position.DistanceTo(p.Slot) > StrayedFar)
                     {
                         p.Slot = p.Car.Position;
-                        p.Face = Facing(p.Car.Position);
                     }
 
-                    Aim(p);
                     Mingle(p, now);
                     continue;
                 }
@@ -2109,7 +2108,7 @@ namespace Hoodrich.Locations
                         if (p.Driver != null && p.Driver.Exists())
                         {
                             Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle,
-                                          p.Car.Handle, want.X, want.Y, want.Z, 14f, 0,
+                                          p.Car.Handle, want.X, want.Y, want.Z, Closing(p), 0,
                                           p.Car.Model.Hash, CareStyle, 4f, true);
 
                             Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
@@ -2133,11 +2132,23 @@ namespace Hoodrich.Locations
                                       p.Car.Handle, 1, 4000);
                     }
 
-                    Function.Call(Hash.SET_ENTITY_HEADING, p.Car.Handle, p.Face);
+                    // NOTHING TURNS THE CAR. IT STOPS HOW IT STOPPED.
+                    //
+                    // SET_ENTITY_HEADING is instant. On a car that has just rolled to a halt it
+                    // is a spin -- the whole vehicle snaps round its own centre in one frame,
+                    // which from the pavement is indistinguishable from teleporting, and it
+                    // happened to every single car as it arrived.
+                    //
+                    // It was there to point the ring at the middle, from when the kerbs were
+                    // generated and a car could stop facing anywhere. They are walked places on
+                    // real streets now: a car that has driven down that street to that kerb is
+                    // ALREADY pointing the way a car parked there points, because that is the
+                    // direction it came from. The snap corrected it to a number it had arrived
+                    // at anyway, and charged a spin for it.
                 }
                 catch
                 {
-                    // It stops where it stops.
+                    // It stops where it stops, which is the whole idea.
                 }
 
                 // AND THEN HE GETS OUT, after a moment. Not on the frame he arrives: a man who
@@ -2237,7 +2248,6 @@ namespace Hoodrich.Locations
                 if (p.Car.Speed > 0.8f) return;
 
                 p.Slot = p.Car.Position;
-                p.Face = Facing(p.Car.Position);
                 p.There = true;
 
                 p.OutAt = now + SitAMomentMs;
@@ -2284,7 +2294,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle, p.Car.Handle,
-                              want.X, want.Y, want.Z, 14f, 0, p.Car.Model.Hash,
+                              want.X, want.Y, want.Z, Closing(p), 0, p.Car.Model.Hash,
                               CareStyle, 4f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
@@ -2295,45 +2305,52 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// How fast he should be going, given how close he is to his kerb.
+        ///
+        /// FOURTEEN METRES A SECOND IS FIFTY AN HOUR, and it was the speed for the whole run --
+        /// including the last twenty metres, which are through a junction lined with parked
+        /// cars and people, towards a gap the width of a car. Most of the crashing is that: a
+        /// car arriving at its space at the speed it left the main road.
+        ///
+        /// So the approach has two halves. Out on the road he moves at an ordinary speed, and
+        /// inside the last stretch he is down to a crawl -- which is also what makes the
+        /// avoidance work at all, because steering round something is a manoeuvre that needs
+        /// room and time and he has neither at fifty.
+        /// </summary>
+        private static float Closing(Parkee p)
+        {
+            try
+            {
+                var gap = p.Car.Position.DistanceTo(p.Slot);
+
+                if (gap > SlowFrom) return ComeToKerb;
+                if (gap < CrawlWithin) return KerbCrawl;
+
+                var t = (gap - CrawlWithin) / (SlowFrom - CrawlWithin);
+
+                return KerbCrawl + (ComeToKerb - KerbCrawl) * t;
+            }
+            catch
+            {
+                return KerbCrawl;
+            }
+        }
+
+        /// <summary>The speed out on the road, and the speed in among the parked cars.</summary>
+        private const float ComeToKerb = 9f;
+        private const float KerbCrawl = 3.5f;
+
+        /// <summary>Where he starts easing off, and where he is fully down to walking pace.</summary>
+        private const float SlowFrom = 35f;
+        private const float CrawlWithin = 8f;
+
         /// <summary>How far a parked car may be shoved off its kerb before the kerb moves.</summary>
         private const float StrayedFar = 6f;
 
         /// <summary>How long a spectator drives at its kerb before it settles for near enough.</summary>
         private const int ParkGiveUpMs = 90000;
 
-        /// <summary>
-        /// Nudge a settled car back onto the heading its spot was walked with.
-        ///
-        /// ONLY WHEN IT IS ACTUALLY STILL, and that is the whole care in this method. Writing a
-        /// heading onto a moving car is a car snapping sideways at speed -- so anything with
-        /// any roll on it is left alone until it has stopped, whatever it is pointing at.
-        ///
-        /// And only when it is properly wrong. A couple of degrees is a car parked by a person;
-        /// correcting that every tick is a ring of cars twitching in unison, which reads far
-        /// worse than the crooked one it fixed.
-        /// </summary>
-        private void Aim(Parkee p)
-        {
-            if (p.Car == null || !p.Car.Exists()) return;
-
-            try
-            {
-                if (p.Car.Speed > 0.4f) return;
-
-                var off = ((p.Face - p.Car.Heading + 540f) % 360f) - 180f;
-
-                if (Math.Abs(off) < AimSlack) return;
-
-                Function.Call(Hash.SET_ENTITY_HEADING, p.Car.Handle, p.Face);
-            }
-            catch
-            {
-                // Next time round.
-            }
-        }
-
-        /// <summary>How far off its line a parked car may sit before it is turned back.</summary>
-        private const float AimSlack = 12f;
 
         /// <summary>
         /// Somebody stood where a car is trying to get past.
@@ -2719,7 +2736,10 @@ namespace Hoodrich.Locations
                             Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
                                           r.Car.Handle, 1, 4000);
 
-                            Function.Call(Hash.SET_ENTITY_HEADING, r.Car.Handle, bay.Face);
+                            // No snap here either. He has just driven onto his marker, so
+                            // he is pointing the way he drove onto it -- and a performer
+                            // spinning on the spot in front of the crowd is the same wrong
+                            // thing the spectators were doing at their kerbs.
                         }
                         catch
                         {
