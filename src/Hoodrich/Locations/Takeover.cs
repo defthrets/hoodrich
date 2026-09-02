@@ -379,14 +379,31 @@ namespace Hoodrich.Locations
         /// </summary>
         private static readonly string[] Watching =
         {
-            "WORLD_HUMAN_CHEERING", "WORLD_HUMAN_CHEERING", "WORLD_HUMAN_CHEERING",
-            "WORLD_HUMAN_CHEERING", "WORLD_HUMAN_CHEERING",
+            // NOBODY CLAPS. Cheering was a third of the ring, and fifty people applauding a
+            // car is a crowd at a display rather than people on a street -- an audience, and
+            // the whole point of this is that they are not one. It is gone entirely.
+            //
+            // FILMING IT is what actually happens, and it is the most of anything here. Half
+            // the value of one of these is that everybody has their phone up.
+            "WORLD_HUMAN_MOBILE_FILM_SHOCKING", "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
+            "WORLD_HUMAN_MOBILE_FILM_SHOCKING", "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
+            "WORLD_HUMAN_MOBILE_FILM_SHOCKING", "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
+
+            // Talking to whoever they came with. HANG_OUT_STREET is the loose-limbed gesturing
+            // idle the game uses for somebody mid-conversation -- it reads as two people
+            // talking when two of them happen to be stood together, which on a ring this
+            // tightly packed is most of them.
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_HANG_OUT_STREET",
+
+            // On a beer.
             "WORLD_HUMAN_DRINKING", "WORLD_HUMAN_DRINKING", "WORLD_HUMAN_DRINKING",
             "WORLD_HUMAN_DRINKING",
+
+            // On a cigarette, and a couple just on their phones rather than filming.
             "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING",
-            "WORLD_HUMAN_PARTYING", "WORLD_HUMAN_PARTYING",
-            "WORLD_HUMAN_STAND_MOBILE_UPRIGHT", "WORLD_HUMAN_STAND_MOBILE_UPRIGHT",
-            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_STAND_IMPATIENT"
+            "WORLD_HUMAN_STAND_MOBILE_UPRIGHT", "WORLD_HUMAN_STAND_MOBILE"
         };
 
         /// <summary>
@@ -663,6 +680,9 @@ namespace Hoodrich.Locations
             /// <summary>When he stopped on the way home, or nought if he is still moving.</summary>
             public int Stuck;
 
+            /// <summary>When he first lifted off for somebody, or nought. See Working.</summary>
+            public int Held;
+
             /// <summary>
             /// This one is on the mark rather than going round it.
             ///
@@ -681,42 +701,7 @@ namespace Hoodrich.Locations
         private readonly List<Parkee> _parked = new List<Parkee>();
         private readonly List<Runner> _running = new List<Runner>();
 
-        /// <summary>
-        /// Somebody from the set riding straight through the middle of it with the front
-        /// wheel up.
-        /// </summary>
-        private sealed class Rider
-        {
-            public Vehicle Bike;
-            public Ped Man;
 
-            /// <summary>Which of the runs he is on, and which end he is heading for.</summary>
-            public int Run;
-            public bool ToFar;
-
-            /// <summary>
-            /// Or he is not on a run at all, and is going round the middle instead.
-            ///
-            /// One of them, and only one. A line rider crosses and leaves; this one never
-            /// leaves, so he is the thing in the middle that is always moving -- which is
-            /// what makes the junction look busy between passes rather than only during them.
-            /// </summary>
-            public bool Looping;
-
-            /// <summary>Where round the circle he is aiming, in radians, and which way round.</summary>
-            public double Angle;
-            public int Round;
-
-            /// <summary>Where that puts him, and when he set off for it.</summary>
-            public Vector3 Aim;
-            public int Sent;
-
-            /// <summary>How long he is holding the front wheel up for.</summary>
-            public int WheelieUntil;
-            public int WheelieAfter;
-        }
-
-        private readonly List<Rider> _riders = new List<Rider>();
 
         /// <summary>
         /// When each outsider was last sent back, by vehicle handle.
@@ -844,7 +829,6 @@ namespace Hoodrich.Locations
                 // Per frame with the hydraulics and for the same reason: a wheelie is held by
                 // pushing on the bike every frame it lasts, and the same push at tick intervals
                 // is a pothole.
-                Wheelie(now);
 
                 // And the beam, which is a draw call and therefore only exists on the frame it
                 // is made -- a spot light drawn every nine hundred milliseconds is a spot light
@@ -917,7 +901,6 @@ namespace Hoodrich.Locations
                         Working(now);
                         Chatter(now);
                         Racket(now);
-                        Bikes(now);
                         Chopper(now);
                         Flares(now);
                         Unarm(now);
@@ -1018,9 +1001,6 @@ namespace Hoodrich.Locations
             // leave a permanent hole in the city's traffic.
             Roads(true);
             _toCome = _rng.Next(CrowdMin, CrowdMax + 1);
-            // Two or three, and the first of them is always the one going round the middle.
-            _wantBikes = _rng.Next(2, 4);
-            _nextBike = now + 8000;
 
             // THE CARS GET THERE FIRST, BUT ONLY JUST.
             //
@@ -1711,11 +1691,6 @@ namespace Hoodrich.Locations
                 if (g.Car != null && g.Car.Exists() && g.Car.Handle == car.Handle) return true;
             }
 
-            foreach (var r in _riders)
-            {
-                if (r.Bike != null && r.Bike.Exists() && r.Bike.Handle == car.Handle) return true;
-            }
-
             if (_heli != null && _heli.Exists() && _heli.Handle == car.Handle) return true;
 
             return false;
@@ -1749,11 +1724,6 @@ namespace Hoodrich.Locations
             // A list that has to be added to every time something new is spawned is a list that
             // will be forgotten again, so this is worth saying plainly: ANYTHING SPAWNED FOR
             // THE TAKEOVER GOES IN HERE.
-            foreach (var r in _riders)
-            {
-                if (r.Man != null && r.Man.Exists() && r.Man.Handle == who.Handle) return true;
-            }
-
             if (_pilot != null && _pilot.Exists() && _pilot.Handle == who.Handle) return true;
 
             return false;
@@ -1932,7 +1902,7 @@ namespace Hoodrich.Locations
         {
             try
             {
-                foreach (var set in new[] { Faces, Parked, Lows, Donks, Drifters, Bikers, Badges })
+                foreach (var set in new[] { Faces, Parked, Lows, Donks, Drifters, Badges })
                 {
                     foreach (var name in set) Core.Models.Ready(new Model(name));
                 }
@@ -3144,122 +3114,7 @@ namespace Hoodrich.Locations
         /// </summary>
         private const int MarkChance = 25;
 
-        /// <summary>
-        /// Two or three of the set, on dirt bikes, riding through it.
-        ///
-        /// THIS IS A DIFFERENT JOB TO THE DRIFT CARS AND IT IS DELIBERATELY NOT ONE OF THEM.
-        /// A car in the circle is working a five metre patch and never leaves it; a bike is
-        /// crossing the junction, at speed, in a straight line, and then coming back the other
-        /// way. It is the thing that gives a takeover its depth -- something moving THROUGH
-        /// while everything else moves around.
-        ///
-        /// Each rider holds a bearing and flips it by a half turn every time he reaches the
-        /// end, so his route is always a line through the middle rather than a random pair of
-        /// points that might not cross it at all. The ends are snapped to a road a hundred odd
-        /// metres out, so he genuinely rides off up the street and genuinely comes back.
-        ///
-        /// HE IS TRYING NOT TO HIT ANYBODY, and that is not a wish -- it is the driving style.
-        /// Steer-around-peds and steer-around-vehicles are both in it, which is the difference
-        /// between a bike that threads through a crowd and a bike that mows one down. Stopping
-        /// flags are left OUT: a rider who stops dead in the middle of a takeover for a man
-        /// crossing the road has ended his own run, and the whole point is that he does not
-        /// stop.
-        /// </summary>
-        private void Bikes(int now)
-        {
-            for (var i = _riders.Count - 1; i >= 0; i--)
-            {
-                var r = _riders[i];
 
-                var dead = r.Bike == null || !r.Bike.Exists()
-                           || r.Man == null || !r.Man.Exists() || !r.Man.IsAlive
-                           || !r.Man.IsInVehicle(r.Bike);
-
-                if (dead)
-                {
-                    Loose(r.Bike, r.Man);
-                    _riders.RemoveAt(i);
-                    continue;
-                }
-
-                // Arrived at his mark, or has been at it long enough that he plainly is not
-                // going to. Either way, on to the next one.
-                var there = r.Bike.Position.DistanceTo(r.Aim) < (r.Looping ? LoopDone : PassDone);
-                var late = now - r.Sent > PassGiveUpMs;
-
-                if (there || late) Send(r, now, true);
-            }
-
-            if (_riders.Count >= _wantBikes) return;
-            if (now < _nextBike) return;
-
-            _nextBike = now + BikeGapMs;
-
-            Bike();
-        }
-
-        /// <summary>Turns a rider round, or moves him on to the next point of his circle.</summary>
-        private void Send(Rider r, int now, bool turn)
-        {
-            if (r.Looping)
-            {
-                // ROUND IN STEPS, NOT ROUND IN ONE GO. There is no native for "drive a circle",
-                // so the circle is a run of points on it -- he is always aimed a fifth of the
-                // way further round, arrives, and is aimed a fifth further again. Small enough
-                // that the path between two of them is a curve rather than a chord, and large
-                // enough that he is never braking for a waypoint he is already on top of.
-                if (turn) r.Angle += LoopStep * r.Round;
-
-                var at = new Vector3(
-                    Circle.X + (float)Math.Cos(r.Angle) * LoopRadius,
-                    Circle.Y + (float)Math.Sin(r.Angle) * LoopRadius,
-                    Circle.Z);
-
-                r.Aim = at;
-                r.Sent = now;
-
-                try
-                {
-                    Function.Call(Hash.CLEAR_PED_TASKS, r.Man.Handle);
-
-                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Man.Handle, r.Bike.Handle,
-                                  at.X, at.Y, at.Z, LoopSpeed, 0, r.Bike.Model.Hash,
-                                  BikeStyle, 3f, true);
-
-                    Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, r.Man.Handle, LoopSpeed);
-                    Function.Call(Hash.SET_PED_KEEP_TASK, r.Man.Handle, true);
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug("Takeover could not send the bike round: " + ex.Message);
-                }
-
-                return;
-            }
-
-            if (turn) r.ToFar = !r.ToFar;
-
-            var run = Runs[r.Run];
-
-            r.Aim = r.ToFar ? run.Far : run.Near;
-            r.Sent = now;
-
-            try
-            {
-                Function.Call(Hash.CLEAR_PED_TASKS, r.Man.Handle);
-
-                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Man.Handle, r.Bike.Handle,
-                              r.Aim.X, r.Aim.Y, r.Aim.Z, PassSpeed, 0, r.Bike.Model.Hash,
-                              BikeStyle, 6f, true);
-
-                Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, r.Man.Handle, PassSpeed);
-                Function.Call(Hash.SET_PED_KEEP_TASK, r.Man.Handle, true);
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Takeover could not send a bike through: " + ex.Message);
-            }
-        }
 
         /// <summary>
         /// Halfway through, a police helicopter turns up and starts circling with its light on.
@@ -3457,287 +3312,10 @@ namespace Hoodrich.Locations
         private const double SweepRate = 0.006;
         private const float SweepWide = 16f;
 
-        /// <summary>One more of them, from a block out.</summary>
-        private void Bike()
-        {
-            try
-            {
-                var from = OnRoad(DriveFromMin + (float)_rng.NextDouble() * (DriveFromMax - DriveFromMin));
-                if (from == Vector3.Zero) return;
 
-                var bike = Make(Bikers, from, true, false);
-                if (bike == null) return;
 
-                var man = Behind(bike);
 
-                if (man == null)
-                {
-                    bike.Delete();
-                    return;
-                }
 
-                // Helmetless, because everybody else at this junction is. A dirt bike through a
-                // street takeover with full safety gear is a man who has come from a track day.
-                try { Core.Helmets.Off(man); }
-                catch { /* he keeps the lid on */ }
-
-                // THE EMPTIER RUN. Two riders both bouncing along the same line would meet
-                // head-on in the middle of it every single pass, which is one collision per
-                // crossing rather than two bikes crossing a junction.
-                // ONE OF THEM GOES ROUND THE MIDDLE and the rest run the lines. The one in
-                // the middle comes first, because he is the one you always want there -- the
-                // lines look after themselves between passes and he does not.
-                var looping = true;
-
-                foreach (var other in _riders)
-                {
-                    if (!other.Looping) continue;
-
-                    looping = false;
-                    break;
-                }
-
-                Rider r;
-
-                if (looping)
-                {
-                    r = new Rider
-                    {
-                        Bike = bike,
-                        Man = man,
-                        Looping = true,
-
-                        // Started from where he actually is, so his first move is onto the
-                        // circle from wherever he spawned rather than across it.
-                        Angle = Math.Atan2(bike.Position.Y - Circle.Y, bike.Position.X - Circle.X),
-
-                        // And he goes round whichever way he feels like, which is the other
-                        // half of it being multi-directional: a bike that always goes anti-
-                        // clockwise round a junction is a roundabout.
-                        Round = _rng.Next(2) == 0 ? 1 : -1
-                    };
-                }
-                else
-                {
-                    // THE EMPTIER RUN. Two riders both bouncing along the same line would meet
-                    // head-on in the middle of it every single pass, which is one collision per
-                    // crossing rather than two bikes crossing a junction.
-                    var which = 0;
-                    var fewest = int.MaxValue;
-
-                    for (var i = 0; i < Runs.Length; i++)
-                    {
-                        var n = 0;
-                        foreach (var other in _riders) if (other.Run == i && !other.Looping) n++;
-
-                        if (n >= fewest) continue;
-
-                        fewest = n;
-                        which = i;
-                    }
-
-                    r = new Rider
-                    {
-                        Bike = bike,
-                        Man = man,
-                        Run = which,
-
-                        // WHICHEVER END HE FEELS LIKE. It used to be "the one he is furthest
-                        // from", which is tidier and makes both runs start the same way every
-                        // night -- and the point of two lines is that they are not in step.
-                        ToFar = _rng.Next(2) == 0
-                    };
-                }
-
-                _riders.Add(r);
-
-                Send(r, Game.GameTime, false);
-
-                Log.Info("Takeover: a bike came through.");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Takeover could not put a bike out: " + ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// The front wheel, held up by hand, every frame.
-        ///
-        /// The same force the rollers use -- upward, applied behind the centre of mass, which
-        /// is what a wheelie is. It has to be per frame: the same push at tick intervals is a
-        /// pothole rather than a wheelie.
-        ///
-        /// It comes down on its own when he slows, rather than being carried nose-up at walking
-        /// pace to the end of a timer, and he only goes for one when he is near the middle --
-        /// the whole point is that it happens where people can see it.
-        /// </summary>
-        private void Wheelie(int now)
-        {
-            foreach (var r in _riders)
-            {
-                if (r.Bike == null || !r.Bike.Exists()) continue;
-                if (r.Man == null || !r.Man.Exists() || !r.Man.IsAlive) continue;
-
-                float speed;
-
-                try { speed = r.Bike.Speed; }
-                catch { continue; }
-
-                // NO TIMER. THE MARKS ARE THE TIMER.
-                //
-                // It used to hold for a fixed few seconds and then have to decide whether to go
-                // again, with a rest in between -- so a crossing that took longer than the
-                // number got a wheel that dropped in the middle of the junction and came back
-                // up on the far side, for no reason anybody watching could see. The marks
-                // already say exactly where it should be up. Nothing else needs to.
-                //
-                // So: between the marks and moving, the wheel is up. Outside them, or too slow
-                // to hold it, it is down. That is the whole rule, it is evaluated fresh every
-                // frame, and there is no state to get out of step.
-                //
-                // The one going round the middle has no marks and no outside -- he is at the
-                // junction by definition, so he is at it the whole time.
-                var up = r.Looping || Runs[r.Run].Between(r.Bike.Position);
-
-                if (!up || speed < WheelieNeeds) continue;
-
-                try
-                {
-                    // NOT WHILE IT IS OFF THE GROUND, AND NOT PAST THE VERTICAL.
-                    //
-                    // This is why they were being launched into the sky. The lift is applied
-                    // every single frame with nothing asking whether it had already worked, so
-                    // a bike that came off a kerb, clipped somebody, or simply pulled up harder
-                    // than expected went on being pushed upward while it was ALREADY airborne.
-                    // At sixty frames a second that is a rocket rather than a wheelie.
-                    //
-                    // Two conditions, answering two different failures. In the air means the
-                    // back wheel has left the road, and a wheelie is a thing done with one
-                    // wheel on it. Past the pitch cap means the front is as high as it is
-                    // going, and anything more only puts him over backwards.
-                    // THE IN-AIR CHECK IS GONE AND IT WAS CAUSING THE HOPPING.
-                    //
-                    // It read well -- do not push a bike that has already left the road -- and
-                    // it built an oscillator. Push, bike lifts, bike leaves the ground, STOP
-                    // pushing, bike drops, bike lands, push again. That cycle at a few hertz is
-                    // a bike hopping down the street, which is what you saw. The check created
-                    // the very state it was testing for.
-                    //
-                    // The pitch cap alone does the job it was brought in for. The launching
-                    // happened because NOTHING limited the angle, so the lift kept being
-                    // applied through the vertical and out the other side; with a ceiling on
-                    // the nose it can hold a wheel up and never go past it. One condition, and
-                    // it is a continuous push rather than a stutter.
-                    if (r.Bike.Rotation.X > WheelieHighest) continue;
-
-                    Function.Call(Hash.APPLY_FORCE_TO_ENTITY, r.Bike.Handle, 1,
-                                  0f, 0f, WheelieLift,
-                                  0f, -WheelieBehind, 0f,
-                                  0, true, true, true, false, true);
-                }
-                catch
-                {
-                    // Next frame.
-                }
-            }
-        }
-
-        /// <summary>The bikes, and how they ride.</summary>
-        /// <summary>
-        /// BMXs, and nothing else.
-        ///
-        /// The game ships exactly one, so this is a list of one -- kept as a list because Make
-        /// takes one and because a build without it should get nothing rather than throw.
-        ///
-        /// EVERY SPEED BELOW HAD TO MOVE WITH IT. A Manchez is a motorbike and a BMX is a
-        /// pushbike: it tops out somewhere near seven metres a second, so a wheelie threshold
-        /// of eight was a wheelie that could never once have happened, and a cruise order of
-        /// thirteen is an instruction it cannot follow -- which reads as a man pedalling
-        /// flat out and going nowhere near where he was told.
-        /// </summary>
-        private static readonly string[] Bikers = { "bmx" };
-
-        /// <summary>
-        /// One line across the junction, with the two marks the front wheel is up between.
-        ///
-        /// THE MARKS ARE THE WHEELIE, NOT THE RIDE, and the difference is the whole reason this
-        /// class exists rather than a pair of coordinates. A bike starting AT the first mark
-        /// would not be doing anything at it: twenty-odd metres from a standstill is a bike
-        /// still accelerating when it reaches the middle, so it would cross the junction at
-        /// walking pace with the wheel down and pop the wheelie on the way OUT -- backwards
-        /// from what is wanted, and the marks would be the two places nothing happened.
-        ///
-        /// So each run extends well past both marks. He arrives at the first already at speed,
-        /// the wheel goes up there, it comes down at the second, and there is road past both to
-        /// slow, turn, and line up again out of everybody's way.
-        ///
-        /// The ends are worked out from the marks rather than written down, so moving a mark
-        /// moves the run with it and there is only ever one pair of numbers that can be wrong.
-        /// </summary>
-        private sealed class Run
-        {
-            public readonly Vector3 From;
-            public readonly Vector3 To;
-
-            /// <summary>Unit vector from the first mark to the second, flat.</summary>
-            public readonly Vector3 Way;
-
-            /// <summary>How long the wheelie stretch is.</summary>
-            public readonly float Length;
-
-            /// <summary>Where he actually rides between, past both marks.</summary>
-            public readonly Vector3 Near;
-            public readonly Vector3 Far;
-
-            public Run(Vector3 from, Vector3 to)
-            {
-                From = from;
-                To = to;
-
-                var d = new Vector3(to.X - from.X, to.Y - from.Y, 0f);
-                var len = d.Length();
-
-                Length = len;
-                Way = len < 0.01f ? new Vector3(1f, 0f, 0f) : d * (1f / len);
-
-                Near = from - Way * RunUp;
-                Far = to + Way * RunUp;
-            }
-
-            /// <summary>
-            /// Whether a bike is between the two marks.
-            ///
-            /// Measured ALONG the line rather than as a distance from either mark, because a
-            /// bike a couple of metres wide of it is still between them as far as anybody
-            /// watching is concerned -- and a plain radius check would drop the wheel every
-            /// time he wandered out of a circle drawn round a point.
-            /// </summary>
-            public bool Between(Vector3 at)
-            {
-                var t = (at.X - From.X) * Way.X + (at.Y - From.Y) * Way.Y;
-
-                return t >= -2f && t <= Length + 2f;
-            }
-        }
-
-        /// <summary>
-        /// The two runs, read off the ground in game.
-        ///
-        /// TWO DIRECTIONS, CROSSING NEAR THE MIDDLE. The first is forty-eight metres of
-        /// diagonal whose midpoint is one and a bit metres off the centre of the circle; the
-        /// second is forty-one metres of the main road, three metres off it. So they cross each
-        /// other roughly where the cars are working, which is what makes two bikes read as a
-        /// junction full of them rather than as one bike going back and forth twice.
-        /// </summary>
-        private static readonly Run[] Runs =
-        {
-            new Run(new Vector3(-146.195f, -1720.760f, 30.131f),
-                    new Vector3(-114.458f, -1757.620f, 29.808f)),
-
-            new Run(new Vector3(-106.582f, -1739.599f, 30.225f),
-                    new Vector3(-147.131f, -1743.940f, 30.132f))
-        };
 
         /// <summary>How much road he gets each side of the marks to get up to speed and turn.</summary>
         private const float RunUp = 60f;
@@ -3834,37 +3412,8 @@ namespace Hoodrich.Locations
         private const float BackSpeed = 8f;
 
         private const int BikeGapMs = 9000;
-        /// <summary>
-        /// How fast he has to be going to hold the front up. Four, down from eight.
-        ///
-        /// Eight was a motorbike number and it is above what a BMX can reach at all, so on
-        /// pushbikes it would have meant no wheelies whatsoever rather than bad ones.
-        /// </summary>
-        private const float WheelieNeeds = 4f;
-        /// <summary>
-        /// How hard the front is lifted, and how far past level it may come.
-        ///
-        /// The lift is down from 1.9 as well. With nothing capping the angle it had to be
-        /// enough to get the wheel up on its own; with a cap it only has to hold it there.
-        /// </summary>
-        /// <summary>
-        /// How hard the front is lifted. Down again, for a bike a fraction of the weight.
-        ///
-        /// There is no mass to scale by -- this build of ScriptHookVDotNet exposes none on
-        /// Vehicle or Entity -- so it is a judgement, and the pitch cap is what makes that
-        /// safe rather than the number being right. The cap is the thing that stops a wheelie
-        /// becoming a launch: past thirty-two degrees nothing is pushed at all, whatever the
-        /// force was. If a BMX still comes up too fast this is the number to drop.
-        /// </summary>
-        private const float WheelieLift = 0.45f;
 
-        /// <summary>Degrees of nose-up. Past this he is going over rather than riding.</summary>
-        private const float WheelieHighest = 32f;
-        private const float WheelieBehind = 1.15f;
-        private const int WheelieMaxMs = 4200;
 
-        private int _wantBikes = 2;
-        private int _nextBike;
 
         /// <summary>
         /// Somebody in the ring pulls out and takes their turn.
@@ -4106,12 +3655,15 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>How far ahead of the nose he looks, and how much room he wants there.</summary>
-        private const float LookAhead = 5.5f;
-        private const float ClearPed = 3.6f;
+        private const float LookAhead = 3.5f;
+        private const float ClearPed = 2.2f;
         private const float ClearCar = 4.2f;
 
         /// <summary>How long he waits before looking again, having lifted off.</summary>
         private const int EaseMs = 500;
+
+        /// <summary>And the longest he will hold off for, whatever is in front of him.</summary>
+        private const int PatientMs = 1500;
 
         /// <summary>Their go is over. Grip back, smoke off, and out the way they came.</summary>
         private void Leave(Runner r)
@@ -4284,11 +3836,35 @@ namespace Hoodrich.Locations
                 //
                 // Our own crowd list rather than a world query, because they are who is stood
                 // there and the list is already in hand.
+                // AND HE ONLY WAITS SO LONG, which is the half that was missing and the
+                // reason nothing was happening.
+                //
+                // A car in the circle looks five and a half metres up its own nose and lifts
+                // off if anybody is within three and a half of that. On a ring of fifty-odd
+                // people standing nineteen metres out, a car drifting at twelve is looking
+                // straight at them for a good part of every lap -- so it lifted off, did not
+                // move, and looked again at a scene that had not changed because it had not
+                // moved. It sat there for the whole night waiting for a crowd that was waiting
+                // for it.
+                //
+                // Two ways out. It looks a shorter way ahead and wants less room, because the
+                // crowd steps aside for cars now and did not when this was written -- a man in
+                // the way moves himself. And it will not hold off for more than a second and a
+                // half no matter what: past that he goes, the crowd scatters the way a crowd
+                // does, and something happens. A donut that never starts is worse than one
+                // somebody has to step back from.
                 if (Crowded(r))
                 {
-                    r.NextAction = now + EaseMs;
-                    continue;
+                    if (r.Held == 0) r.Held = now;
+
+                    if (now - r.Held < PatientMs)
+                    {
+                        r.NextAction = now + EaseMs;
+                        continue;
+                    }
                 }
+
+                r.Held = 0;
 
                 try
                 {
@@ -5781,14 +5357,6 @@ namespace Hoodrich.Locations
             _parked.Clear();
             _turned.Clear();
 
-            foreach (var r in _riders)
-            {
-                try { Loose(r.Bike, r.Man); }
-                catch { /* Already gone. */ }
-            }
-
-            _riders.Clear();
-
             // The helicopter is deleted rather than released. A police maverick handed back to
             // the game with its searchlight on circles the neighbourhood for the rest of the
             // night, and there is nothing in the world that would ever turn it off.
@@ -5857,12 +5425,6 @@ namespace Hoodrich.Locations
                     if (r.Car != null && r.Car.Exists()) r.Car.Delete();
                 }
 
-                foreach (var r in _riders)
-                {
-                    if (r.Man != null && r.Man.Exists()) r.Man.Delete();
-                    if (r.Bike != null && r.Bike.Exists()) r.Bike.Delete();
-                }
-
                 if (_pilot != null && _pilot.Exists()) _pilot.Delete();
                 if (_heli != null && _heli.Exists()) _heli.Delete();
 
@@ -5897,7 +5459,6 @@ namespace Hoodrich.Locations
             _parked.Clear();
             _turned.Clear();
             _running.Clear();
-            _riders.Clear();
             // The partners riding with them go too. They are not on the Law list -- that
             // pairs one car with one driver -- so without this a squad car's passenger outlives
             // the takeover that sent him.
