@@ -2835,7 +2835,7 @@ namespace Hoodrich.Locations
             // PLACE, and letting the two come out of one pool means the mark stands empty
             // whenever the circle happens to be busy.
             // NOBODY SKIDS UNTIL THE STREET IS PARKED. See Ringed.
-            if (!Ringed(now)) return;
+            if (!Ringed()) return;
 
             var mark = 0;
             var round = 0;
@@ -2947,23 +2947,8 @@ namespace Hoodrich.Locations
                      " kerbs taken. The crowd sets off while the rest come in.");
         }
 
-        /// <summary>Nine in ten. What the cars have to be before the first one goes IN.</summary>
-        private const float MostOfThem = 0.9f;
-
         /// <summary>Half the kerbs taken, and the crowd starts walking while the rest arrive.</summary>
         private const float CrowdAfter = 0.5f;
-
-        /// <summary>
-        /// And what the CROWD has to be before the first car goes in. Three in five.
-        ///
-        /// LOWER THAN THE CARS ON PURPOSE, because the two are not the same question. A kerb
-        /// with no car on it is a hole in a wall you can see through; a person still jogging up
-        /// Carson is somebody arriving at a thing that has started, which is what a takeover
-        /// looks like anyway. Holding the first donut until the slowest of sixty-eight has got
-        /// there was most of the wait, and none of it was visible as anything but nothing
-        /// happening.
-        /// </summary>
-        private const float EnoughCrowd = 0.6f;
 
         /// <summary>The cars have their spots, so the crowd may come. See Filling.</summary>
         private bool _carsIn;
@@ -3004,71 +2989,37 @@ namespace Hoodrich.Locations
             return n;
         }
 
-        private bool Ringed(int now)
+        private bool Ringed()
         {
             if (_ringed) return true;
 
-            // Cars first, and now this owns that test rather than inheriting it. _carsIn
-            // means "half the kerbs are taken, the crowd may start" since the two phases were
-            // overlapped -- which is not the same as "the street is ready to be performed in
-            // front of", and the first donut still wants the finished street.
+            // HALF THE KERBS, AND THAT IS THE WHOLE TEST NOW.
+            //
+            // This used to wait for three more things on top of it: every car SENT for, every
+            // spectator spawned, and three in five of them actually stood at the junction. All
+            // three were defensible on their own and together they meant the first donut went
+            // in a minute and a half after the first car did -- and that minute and a half is
+            // a car park. You stand in the middle of thirty-five parked cars watching nothing
+            // happen, which is the one thing a takeover must never look like.
+            //
+            // The order asked for is: the cars fill up, and halfway through that somebody
+            // starts skidding. So the pit opens on exactly the moment the crowd is already
+            // sent for -- see Filling, which sets this at half the kerbs -- and everything
+            // else arrives INTO a running takeover instead of queueing to make one.
+            //
+            // Nobody is performing to an empty street either way: seventeen-odd cars are
+            // parked round the circle by the time this comes true, and the walk-in crowd is on
+            // its way while the first car works. A takeover you arrive at is meant to be
+            // already going.
             if (!_carsIn) return false;
-            if (_coming.Count > 0) return false;
-
-            // THE NINE-IN-TEN PARKED TEST IS GONE FROM HERE, and it had to go the moment
-            // placing a car was made conditional on nobody looking.
-            //
-            // It was a second, stricter version of a question _carsIn has already answered.
-            // While a car that could not drive to its kerb was simply put on it, "nine in ten
-            // parked" always came true within forty seconds. Now it only comes true if the
-            // stragglers manage it under their own steam or wander out of sight -- and a
-            // player stood in the middle of his own takeover is looking at most of them. So
-            // the pit waited for a four-minute fallback, and from where you were standing
-            // nothing ever came in and did a skid.
-            //
-            // What is left still enforces the order you asked for: half the kerbs taken, every
-            // car SENT for, and the crowd stood round it. The last few cars arriving while the
-            // first donut goes in is what one of these looks like anyway.
-
-            // THEN THE CROWD HAS TO ACTUALLY BE THERE. Not merely spawned -- they are put down
-            // fifty to a hundred and thirty metres out and walk in, so "the crowd exists" and
-            // "the crowd is stood round the junction" are half a minute apart. A first donut
-            // thrown in front of nobody is the thing this whole order exists to stop.
-            if (_toCome > 0) return false;
-
-            var here = 0;
-
-            foreach (var w in _crowd)
-            {
-                if (w.There) here++;
-            }
-
-            var enough = _crowd.Count > 0 &&
-                         here >= (int)Math.Ceiling(_crowd.Count * EnoughCrowd);
-
-            var late = _startedAt != 0 && now - _startedAt > StartGiveUpMs;
-
-            if (!enough && !late) return false;
 
             _ringed = true;
 
-            Log.Info("Takeover: " + here + " of " + _crowd.Count +
-                     " stood round it, " + OnKerbs() + " of " + _parked.Count +
-                     " parked. The cars can go in.");
+            Log.Info("Takeover: " + OnKerbs() + " of " + Spots.Length +
+                     " kerbs taken. First car in, the rest arrive around it.");
 
             return true;
         }
-
-        /// <summary>
-        /// The outside limit on the whole build-up, in milliseconds.
-        ///
-        /// Four minutes, which is a minute of cars arriving, a minute of the last of them
-        /// parking, and a crowd walking in behind that -- plus room for a bad night. Long
-        /// enough that it is never reached when things are working, and short enough that a
-        /// takeover which has gone wrong somewhere still happens rather than standing there
-        /// being a car park.
-        /// </summary>
-        private const int StartGiveUpMs = 240000;
 
         /// <summary>
         /// How long the ring gets to fill before it starts without the stragglers.

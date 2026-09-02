@@ -43,7 +43,7 @@ namespace Hoodrich.Gangs
             /// <summary>True while he is wandering rather than stood doing something.</summary>
             public bool Moving;
 
-            /// <summary>What he does when he is stood. Picked once -- see Settle.</summary>
+            /// <summary>What he is stood doing right now. Re-rolled each time -- see Settle.</summary>
             public string Doing = "";
         }
 
@@ -56,6 +56,9 @@ namespace Hoodrich.Gangs
         private readonly List<Man> _men = new List<Man>();
 
         private int _lastUpdate;
+
+        /// <summary>When one of them may next look up at you. See Keep.</summary>
+        private int _nextLook;
 
         /// <summary>True once all three are down. See the note in Update.</summary>
         private bool _staffed;
@@ -95,7 +98,7 @@ namespace Hoodrich.Gangs
                 return;
             }
 
-            Keep(now);
+            Keep(now, player);
         }
 
         /// <summary>Forget anybody who has died or been cleaned up by the game.</summary>
@@ -139,7 +142,29 @@ namespace Hoodrich.Gangs
 
                     Arm(man);
 
-                    _men.Add(new Man { Who = man, SwapAt = 0, Moving = false });
+                    // OUT OF PHASE FROM THE FIRST FRAME, AND ALREADY DOING SOMETHING.
+                    //
+                    // Every man used to be created with SwapAt of zero and Moving false, which
+                    // is three men who stand still until the same tick and then all three
+                    // change at once, for ever -- their timers are different lengths but they
+                    // were started together, and starting together is what you see. Walking up
+                    // on them found three blokes stood to attention in a row.
+                    //
+                    // So each one starts somewhere random in the middle of a stretch: one is
+                    // already drifting, another is smoking, the third is a few seconds off
+                    // changing his mind. They never line up again after that.
+                    var walking = _rng.Next(2) == 0;
+
+                    var one = new Man
+                    {
+                        Who = man,
+                        Moving = walking,
+                        SwapAt = Game.GameTime + _rng.Next(1000, walking ? WalkMaxMs : StandMaxMs)
+                    };
+
+                    if (walking) Roam(man); else Settle(one);
+
+                    _men.Add(one);
                 }
                 catch (Exception ex)
                 {
@@ -232,8 +257,22 @@ namespace Hoodrich.Gangs
         /// A man who has been pulled into a fight is left entirely alone -- re-tasking somebody
         /// mid-gunfight to go and have a cigarette is the mod overriding the thing it wanted.
         /// </summary>
-        private void Keep(int now)
+        private void Keep(int now, Ped player)
         {
+            // ONE OF THEM LOOKS UP, NOT ALL OF THEM. Everybody turning to face you at once is
+            // a cutscene; one man clocking you while the other two carry on is a corner.
+            //
+            // Gated on a clock as well as the dice so it is an occasional thing rather than a
+            // constant low-level staring, and only when you are close enough that a man would
+            // actually have noticed you.
+            var look = false;
+
+            if (now >= _nextLook && player.Position.DistanceTo(_at) <= NoticeRange)
+            {
+                _nextLook = now + _rng.Next(NoticeMinMs, NoticeMaxMs);
+                look = true;
+            }
+
             foreach (var m in _men)
             {
                 if (m.Who == null || !m.Who.Exists() || !m.Who.IsAlive) continue;
@@ -246,6 +285,20 @@ namespace Hoodrich.Gangs
                 catch
                 {
                     continue;
+                }
+
+                if (look && _rng.Next(3) == 0)
+                {
+                    look = false;
+
+                    try
+                    {
+                        GangPeds.Notice(m.Who, player);
+                    }
+                    catch
+                    {
+                        // He did not look. Nothing depends on it.
+                    }
                 }
 
                 if (now < m.SwapAt) continue;
@@ -262,13 +315,7 @@ namespace Hoodrich.Gangs
 
                     if (m.Moving)
                     {
-                        // THE LEASH. Wander in an area is the game's own "mill about here",
-                        // and the radius is the whole point -- he goes where he likes inside
-                        // twenty metres of the mark and never leaves it.
-                        Function.Call(Hash.TASK_WANDER_IN_AREA, m.Who.Handle,
-                                      _at.X, _at.Y, _at.Z, Leash, 3f, 8f);
-
-                        Function.Call(Hash.SET_PED_KEEP_TASK, m.Who.Handle, true);
+                        Roam(m.Who);
                         continue;
                     }
 
@@ -282,15 +329,42 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>
-        /// Stood doing something, and it is the same something every time for that man.
+        /// THE LEASH. Wander in an area is the game's own "mill about here", and the radius is
+        /// the whole point -- he goes where he likes inside twenty metres of the mark and never
+        /// leaves it.
+        /// </summary>
+        private void Roam(Ped man)
+        {
+            Function.Call(Hash.TASK_WANDER_IN_AREA, man.Handle, _at.X, _at.Y, _at.Z,
+                          Leash, 3f, 8f);
+
+            Function.Call(Hash.SET_PED_KEEP_TASK, man.Handle, true);
+        }
+
+        /// <summary>
+        /// Stood doing something, and something different from what he was doing before.
         ///
-        /// Picked once and kept. Rolling a fresh one each time he stops would have the man who
-        /// was drinking come back from a wander smoking, which reads as a different person
-        /// standing in the same place -- the same reasoning the takeover crowd uses.
+        /// THIS IS A REVERSAL AND IT IS DELIBERATE. It used to pick once and keep it for the
+        /// man's whole life, on the reasoning that somebody who was drinking and comes back
+        /// from a wander smoking reads as a different person in the same spot.
+        ///
+        /// That is right for the takeover crowd and wrong here, and the difference is the
+        /// distance. Sixty people seen across a junction are read as a texture, so one of them
+        /// swapping props is a continuity error. Three men you are stood next to for several
+        /// minutes are read as people, and a man who does exactly one thing for ever is a
+        /// waxwork -- you watch him finish a cigarette and start the identical cigarette again.
+        ///
+        /// Never the same thing twice running, because "different" that comes back the same
+        /// half the time is not different. Four tries rather than a loop: the list is short and
+        /// weighted, and it is better to repeat than to spin.
         /// </summary>
         private void Settle(Man m)
         {
-            if (string.IsNullOrEmpty(m.Doing)) m.Doing = Doings[_rng.Next(Doings.Length)];
+            var pick = Doings[_rng.Next(Doings.Length)];
+
+            for (var i = 0; i < 4 && pick == m.Doing; i++) pick = Doings[_rng.Next(Doings.Length)];
+
+            m.Doing = pick;
 
             Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, m.Who.Handle, m.Doing, 0, true);
         }
@@ -330,8 +404,24 @@ namespace Hoodrich.Gangs
         {
             "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_HANG_OUT_STREET",
             "WORLD_HUMAN_HANG_OUT_STREET",
-            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING",
-            "WORLD_HUMAN_DRINKING", "WORLD_HUMAN_DRINKING"
+
+            // What they are actually stood there for. Two of them, because the "hard" one is
+            // the aggressive version of the same idle and the pair of them together read as
+            // two men serving rather than one man doing a routine.
+            "WORLD_HUMAN_DRUG_DEALER", "WORLD_HUMAN_DRUG_DEALER_HARD",
+
+            // Against the wall and the fence. A corner with nobody leaning on anything is a
+            // bus queue.
+            "WORLD_HUMAN_LEANING", "WORLD_HUMAN_LEANING",
+
+            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING_POT",
+            "WORLD_HUMAN_DRINKING", "WORLD_HUMAN_DRINKING",
+
+            // On their phones, which is most of what anybody does stood anywhere.
+            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_STAND_MOBILE_UPRIGHT",
+
+            // Watching the road, and fed up of watching the road.
+            "WORLD_HUMAN_GUARD_STAND", "WORLD_HUMAN_STAND_IMPATIENT"
         };
 
         private const int Three = 3;
@@ -360,6 +450,11 @@ namespace Hoodrich.Gangs
         /// </summary>
         private const float SpawnRange = 220f;
         private const float DespawnRange = 340f;
+
+        /// <summary>How close you have to be to be worth looking at, and how often one does.</summary>
+        private const float NoticeRange = 14f;
+        private const int NoticeMinMs = 9000;
+        private const int NoticeMaxMs = 22000;
 
         private const int UpdateIntervalMs = 1500;
     }

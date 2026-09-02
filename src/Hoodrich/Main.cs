@@ -1544,7 +1544,20 @@ namespace Hoodrich
                 // police, nothing sticks. The ambient patrol system refused to act while you
                 // were wanted for the same reason; the war did not. (That patrol now lives in
                 // Precinct 88 -- see the note where it used to be constructed.)
-                _war.Busy = () => onAJob() || Game.Player.Wanted.WantedLevel > 0;
+                //
+                // AND NOT DURING A TAKEOVER. The takeover already refused to start during a
+                // war; the other half of that was never wired, so a raid could kick off on top
+                // of one -- thirty-five parked cars, sixty people, nine corner men and a police
+                // response, and then a war spawning two carloads of rivals into the middle of
+                // it and pinning the wanted level. That is the crash.
+                //
+                // Scattering counts as well as Running. The blue lights at the end are the
+                // busiest the junction ever gets, and a raid landing in the middle of sixty
+                // people running for their cars is the same pile-up with worse timing.
+                _war.Busy = () => onAJob()
+                                  || Game.Player.Wanted.WantedLevel > 0
+                                  || (_takeover != null
+                                      && _takeover.State != Locations.TakeoverState.None);
 
                 // Whose block you are stood on, so a war you start yourself knows it is being
                 // started on theirs.
