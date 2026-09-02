@@ -130,8 +130,8 @@ namespace Hoodrich.Gangs
                     var a = _rng.NextDouble() * Math.PI * 2d;
                     var r = 0.8f + (float)_rng.NextDouble() * Apart;
 
-                    var spot = new Vector3(_at.X + (float)Math.Cos(a) * r,
-                                           _at.Y + (float)Math.Sin(a) * r, _at.Z);
+                    var spot = Ground(new Vector3(_at.X + (float)Math.Cos(a) * r,
+                                                  _at.Y + (float)Math.Sin(a) * r, _at.Z));
 
                     var man = GangPeds.OnFoot(gang, gang.MemberModels, spot, _heading);
 
@@ -152,6 +152,43 @@ namespace Hoodrich.Gangs
             _staffed = true;
 
             Log.Info("Posted " + _men.Count + " on the corner at " + _at + ".");
+        }
+
+        /// <summary>
+        /// The height of the pavement under a point, rather than the height it was read at.
+        ///
+        /// THIS IS WHY THEY WERE HOVERING. CREATE_PED puts a man exactly where it is told and
+        /// does nothing whatsoever about the floor -- there is no equivalent of the object
+        /// call that drops a prop onto the ground.
+        ///
+        /// And the height it was told was never the pavement to begin with. Those marks were
+        /// read off a player standing at them, and they are also spread a metre or two around
+        /// the mark so three men do not appear inside each other -- so the ground under each of
+        /// them is a kerb, a step or a verge away from the one under the reading. Asking the
+        /// world what is actually beneath THIS point is the only thing that answers that.
+        ///
+        /// Probed from two metres up, because a probe started below a surface finds whatever is
+        /// under it instead. If the world will not answer, the read height stands: it came off
+        /// somebody standing there, so it is wrong by a little rather than by a storey.
+        /// </summary>
+        private static Vector3 Ground(Vector3 at)
+        {
+            try
+            {
+                float z;
+
+                if (World.GetGroundHeight(new Vector3(at.X, at.Y, at.Z + 2f), out z,
+                                          GetGroundHeightMode.Normal))
+                {
+                    return new Vector3(at.X, at.Y, z);
+                }
+            }
+            catch
+            {
+                // The read height stands.
+            }
+
+            return at;
         }
 
         /// <summary>
@@ -309,9 +346,20 @@ namespace Hoodrich.Gangs
         private const int WalkMinMs = 12000;
         private const int WalkMaxMs = 30000;
 
-        /// <summary>Near enough to be worth existing, and far enough to stop.</summary>
-        private const float SpawnRange = 110f;
-        private const float DespawnRange = 190f;
+        /// <summary>
+        /// How near you have to be for a corner to be occupied, and how far to give it up.
+        ///
+        /// A HUNDRED AND TEN WAS A STREET AWAY. These are meant to be the men who are on that
+        /// corner, and a corner that is only occupied once you are almost on it is a corner
+        /// that is empty every time you look down the road at it -- which is worse than not
+        /// having them, because you see it happen.
+        ///
+        /// Two hundred and twenty. Far enough that they are already there when the corner comes
+        /// into view, and the gap up to three hundred and forty stops a corner flickering on
+        /// and off while you stand at the edge of its range.
+        /// </summary>
+        private const float SpawnRange = 220f;
+        private const float DespawnRange = 340f;
 
         private const int UpdateIntervalMs = 1500;
     }
