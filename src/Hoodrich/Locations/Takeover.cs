@@ -633,6 +633,12 @@ namespace Hoodrich.Locations
 
             public bool There;
 
+            /// <summary>How many times he has been handed a different kerb. See Settle.</summary>
+            public int Moved;
+
+            /// <summary>He gave up and drove off. Taken off the list next tick. See Settle.</summary>
+            public bool Gone;
+
             public bool Low;
             public double Hop;
             public double Rate;
@@ -1704,6 +1710,16 @@ namespace Hoodrich.Locations
                 if (l.Cop != null && l.Cop.Exists() && l.Cop.Handle == who.Handle) return true;
             }
 
+            // AND WHOEVER IS DRIVING A CAR OUT. Loose hands the driver back to the game, which
+            // makes him non-persistent -- and the sweep deletes non-persistent strangers within
+            // a hundred metres. So the man steering a car away from the junction was being
+            // taken out of it halfway down the street, leaving a driverless car rolling to a
+            // stop in front of everybody. He is still ours until his car is off the list.
+            foreach (var g in _ghosts)
+            {
+                if (g.Driver != null && g.Driver.Exists() && g.Driver.Handle == who.Handle) return true;
+            }
+
             // THE BIKES AND THE HELICOPTER, WHICH WERE BOTH MISSING FROM THIS LIST.
             //
             // Everything that reads this asks one question -- is this one of ours -- and every
@@ -1852,6 +1868,23 @@ namespace Hoodrich.Locations
 
             var one = _coming[0];
 
+            // SOMEBODY HAS PARKED ON IT SINCE. THE KERB GOES, NOT THE NIGHT.
+            //
+            // Cars() checks every kerb is clear when it deals them out, and then the last one
+            // is not sent for until a minute later -- which is a minute in which an ambient car
+            // can stop on one of them. Sending a spectator to a kerb that now has somebody
+            // else's car on it is sending him somewhere he cannot go: he stops short, in a
+            // lane, and everything behind him stops with him.
+            //
+            // Given up rather than swapped, exactly as Cars() gives one up. WHICH thirty-odd
+            // kerbs get used has never mattered; one car per kerb is the rule that does.
+            if (Taken(one.Where.At))
+            {
+                _coming.RemoveAt(0);
+                _nextCar = now + RetrySoonMs;
+                return;
+            }
+
             // PUT BACK IF THE MODEL IS NOT HERE YET, and this is the half that stops the
             // non-blocking loader losing cars.
             //
@@ -1979,6 +2012,13 @@ namespace Hoodrich.Locations
 
         private void Parking(int now)
         {
+            // The ones that gave up and drove off, taken off the list a tick after they went.
+            // Deliberately not removed inside Settle -- that runs from inside this loop.
+            for (var i = _parked.Count - 1; i >= 0; i--)
+            {
+                if (_parked[i].Gone) _parked.RemoveAt(i);
+            }
+
             foreach (var p in _parked)
             {
                 // OUT TAKING HIS TURN. His slot is held and he is coming back to it, but he is
@@ -2208,16 +2248,151 @@ namespace Hoodrich.Locations
                 // parked across a lane.
                 if (p.Car.Speed > 0.8f) return;
 
-                p.Slot = p.Car.Position;
-                p.There = true;
+                // NEAR ENOUGH TO HIS KERB, AND NOT ON TOP OF SOMEBODY ELSE'S.
+                //
+                // A walked kerb is a kerbside place a car can sit and not always a place the
+                // road nodes will route to, so the game drives to the nearest bit of road it
+                // knows and stops a few metres short. That is still that kerb and the kerb
+                // moves to him.
+                var gap = p.Car.Position.DistanceTo(p.Slot);
 
-                p.OutAt = now + SitAMomentMs;
+                if (gap <= SettleWithin && !Claimed(p.Car.Position, p))
+                {
+                    p.Slot = p.Car.Position;
+                    p.There = true;
+
+                    p.OutAt = now + SitAMomentMs;
+                    return;
+                }
+
+                // AND THIS IS WHERE THE JAM CAME FROM.
+                //
+                // It used to end here: wherever he had stopped became his space, full stop.
+                // But a car only reaches this at all if it is FURTHER than CarArrivedRange
+                // from its kerb -- the arrival test upstairs has already said no -- so every
+                // single car that settled was, by definition, not at a kerb. It was stopped in
+                // a traffic lane because the kerb ahead was blocked, and it then became a
+                // permanent parked car in that lane. The one behind it stopped, settled, and
+                // became another. Ninety seconds apart, the whole street welded shut.
+                //
+                // So there are only two endings now, and parking in the road is not one of
+                // them. He gets a different kerb if there is a free one near him, and if there
+                // is not, he goes home. A takeover with thirty cars at it looks like a takeover.
+                // One with thirty-five and a queue backed up to the boulevard does not.
+                if (p.Moved < MoveOnTimes)
+                {
+                    var other = FreeKerb(p.Car.Position, p);
+
+                    if (other != null)
+                    {
+                        p.Moved++;
+
+                        p.Slot = other.At;
+                        p.Face = other.Face;
+
+                        p.Sent = now;
+                        p.Stuck = 0;
+
+                        var want = Toward(p.Car.Position, p.Slot);
+
+                        p.Aimed = want;
+
+                        if (p.Driver != null && p.Driver.Exists())
+                        {
+                            Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
+
+                            Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle,
+                                          p.Car.Handle, want.X, want.Y, want.Z, Closing(p), 0,
+                                          p.Car.Model.Hash, CareStyle, 4f, true);
+
+                            Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
+                        }
+
+                        Log.Debug("Takeover: a car could not reach its kerb and was given " +
+                                  "another " + gap.ToString("0") + "m away.");
+                        return;
+                    }
+                }
+
+                // Nowhere to put him. Loose hands the driver back to the game and follows the
+                // car out, so it is not left standing empty in the middle of the junction --
+                // which is the other way this used to end up looking like a scrapyard.
+                Loose(p.Car, p.Driver);
+
+                p.Gone = true;
+
+                Log.Info("Takeover: a car with nowhere to park left instead of blocking the road.");
             }
             catch
             {
                 // Asked again next tick.
             }
         }
+
+        /// <summary>
+        /// Is this ground already somebody's?
+        ///
+        /// ASKED OF THE CLAIM, NOT OF THE CAR. A spectator on his way in owns his kerb from
+        /// the moment he is sent for -- that is the whole point of walking them and handing
+        /// them out one each -- so a car that stops on it has taken a space that is spoken
+        /// for, whether or not its owner has arrived yet.
+        ///
+        /// Two and a half metres, because the closest walked pair on this junction is three
+        /// and a half apart and those two are legitimate neighbours along one kerb. Anything
+        /// closer than that is not a neighbour, it is the same parking space twice.
+        /// </summary>
+        private bool Claimed(Vector3 at, Parkee not)
+        {
+            foreach (var p in _parked)
+            {
+                if (p == not || p.Gone) continue;
+                if (p.Car == null || !p.Car.Exists()) continue;
+
+                if (p.Slot.DistanceTo(at) < KerbApart) return true;
+            }
+
+            // The ones still queued have kerbs too. They have not been built yet, so nothing
+            // else in the world knows about them.
+            foreach (var c in _coming)
+            {
+                if (c.Where != null && c.Where.At.DistanceTo(at) < KerbApart) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The nearest walked kerb to a stuck car that nobody has and nothing is standing on.
+        /// </summary>
+        private Spot FreeKerb(Vector3 near, Parkee not)
+        {
+            Spot best = null;
+            var bestGap = ReSpotRange;
+
+            foreach (var spot in Spots)
+            {
+                var gap = spot.At.DistanceTo(near);
+
+                if (gap > bestGap) continue;
+                if (Claimed(spot.At, not)) continue;
+                if (Taken(spot.At)) continue;
+
+                best = spot;
+                bestGap = gap;
+            }
+
+            return best;
+        }
+
+        /// <summary>How far short of his kerb still counts as being at it.</summary>
+        private const float SettleWithin = 11f;
+
+        /// <summary>Closer than this to somebody else's kerb is the same space twice.</summary>
+        private const float KerbApart = 2.5f;
+
+        /// <summary>How far a stuck car will look for a different kerb, and how often it may.</summary>
+        private const float ReSpotRange = 35f;
+        private const int MoveOnTimes = 2;
 
         /// <summary>
         /// Ask a stopped spectator for its route again.
