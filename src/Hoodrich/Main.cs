@@ -2044,6 +2044,14 @@ namespace Hoodrich
                 // and the phone reads it directly; what you have EVER made is ours.
                 _menu.Earned = () => _state == null ? 0L : _state.TotalEarned;
                 _menu.LastDeposit = () => _state == null ? 0L : _state.LastDeal;
+
+                // WHAT THE SHADE SAYS. Assembled here because here is the only place that can
+                // see all of it -- the inbox is a static, the raid is a field, the debt is its
+                // own object -- and none of them should have to learn that a phone exists.
+                //
+                // Ordered by what would make you put the phone down. A raid on your own block
+                // outranks a text, and a text outranks anything ambient.
+                _menu.Alerts = Shade;
                 _phone = new Phone.PhoneController(_cfg, _menu, pages.BuildRoot);
 
                 // A conversation is not a "screen" as far as the frame chain is concerned, so
@@ -3053,6 +3061,63 @@ namespace Hoodrich
 
             _paintSaidAt = Game.GameTime;
             _social.On(Social.SocialEvent.Tagged);
+        }
+
+        /// <summary>
+        /// Everything the phone's notification shade should be telling you, worst first.
+        ///
+        /// REBUILT ON EVERY ASK rather than kept as a list that things push into. A pushed list
+        /// needs somebody to remove from it -- when the text is read, when the raid ends, when
+        /// the debt is paid -- and every one of those is a place to forget. Asked fresh, a
+        /// notification cannot outlive the thing it is about.
+        /// </summary>
+        private List<Phone.Alert> Shade()
+        {
+            var list = new List<Phone.Alert>();
+
+            try
+            {
+                if (_war != null && _war.IsRunning)
+                {
+                    list.Add(new Phone.Alert { Icon = "warning.png", Text = "Your block is being raided" });
+                }
+
+                if (_payback != null && _payback.IsOwed)
+                {
+                    list.Add(new Phone.Alert { Icon = "cash.png", Text = "Somebody wants paying" });
+                }
+
+                // ONE LINE PER PERSON, not one line saying "33 new". A number is a chore and a
+                // name is a reason to open it -- and the inbox already keeps the count per
+                // sender for exactly this sort of question.
+                foreach (var who in Inbox.Senders())
+                {
+                    var n = Inbox.UnreadFrom(who);
+
+                    if (n <= 0) continue;
+
+                    list.Add(new Phone.Alert
+                    {
+                        Icon = "phone.png",
+                        Text = n == 1 ? who + " texted you" : who + " -- " + n + " new"
+                    });
+
+                    // A shade is a glance, not an inbox. Anything past four is what opening
+                    // Messages is for.
+                    if (list.Count >= 4) break;
+                }
+
+                if (_takeover != null && _takeover.State == Locations.TakeoverState.Running)
+                {
+                    list.Add(new Phone.Alert { Icon = "car.png", Text = "Takeover on Carson" });
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not build the phone's notifications: " + ex.Message);
+            }
+
+            return list;
         }
 
         private void SlowTick()

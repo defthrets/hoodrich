@@ -30,6 +30,20 @@ namespace Hoodrich.Phone
     ///   HOME  -- the root page, as a grid of app tiles
     ///   LIST  -- everything below it, as a scrolling text menu
     /// </summary>
+    /// <summary>
+    /// One line in the notification shade: a picture and a sentence.
+    ///
+    /// Deliberately dumb. Everything that could be a notification lives in a different corner
+    /// of the mod -- the inbox is static, the war is a field on Main, the debt is its own
+    /// object -- and none of them should have to know a phone exists. Main assembles these
+    /// from what it can already see and hands over a list of sentences.
+    /// </summary>
+    internal sealed class Alert
+    {
+        public string Icon;
+        public string Text;
+    }
+
     internal sealed class PhoneMenu
     {
         // ---- the handset --------------------------------------------------------
@@ -222,6 +236,19 @@ namespace Hoodrich.Phone
 
         /// <summary>What the last corner sale paid. See PlayerState.LastDeal.</summary>
         public Func<long> LastDeposit;
+
+        /// <summary>Everything worth telling you about, newest concern first. See Shade.</summary>
+        public Func<List<Alert>> Alerts;
+
+        private List<Alert> _alerts = new List<Alert>();
+        private int _askedAt;
+        private int _atAlert;
+        private int _turnedAt;
+
+        /// <summary>How often the list is rebuilt, how long each one is up, and the swap.</summary>
+        private const int AskEveryMs = 1500;
+        private const int HoldMs = 3800;
+        private const int SwapMs = 300;
 
         private readonly Settings _cfg;
 
@@ -917,6 +944,22 @@ namespace Hoodrich.Phone
 
             if (string.IsNullOrEmpty(title)) title = AtHome ? "Unaffiliated" : "Posted Up";
 
+            // THE HOME HEADER IS A NOTIFICATION SHADE WHEN THERE IS ANYTHING IN IT.
+            //
+            // The set's name is a fact that does not change from one week to the next, and it
+            // was taking the widest, boldest line on the phone to say it -- on the one screen
+            // you open BECAUSE something has happened. A phone puts what is new up there and
+            // its own name nowhere, and falls back to something quiet when there is nothing.
+            //
+            // Only on home. Every other page keeps its title, because GANGS or CONTACTS at the
+            // top of a page you have drilled into is a breadcrumb telling you where you are,
+            // and losing that to a rolling ticker would be a straight downgrade.
+            if (AtHome && Shade(left + pad, top, w - pad * 2f, fade))
+            {
+                Hud.RectFrom(left, top + HeaderH - 0.0018f, w, 0.0018f, Fade(Palette.Accent, fade));
+                return;
+            }
+
             Hud.Text(Hud.Fit(title.ToUpperInvariant(), w - pad * 2f, 0.44f, Hud.FontLabel),
                      left + pad, top + (string.IsNullOrEmpty(under) ? 0.016f : 0.007f), 0.44f,
                      Fade(Palette.Text, fade), Hud.FontLabel, centre: false);
@@ -930,6 +973,136 @@ namespace Hoodrich.Phone
 
             Hud.RectFrom(left, top + HeaderH - 0.0018f, w, 0.0018f, Fade(Palette.Accent, fade));
         }
+
+        /// <summary>
+        /// The notification shade: one thing at a time, changing every few seconds.
+        ///
+        /// ONE AT A TIME RATHER THAN A STACK, because the band is one line tall and always was.
+        /// Three shrunk to fit is three things you cannot read; one at full size that changes
+        /// is the same information delivered at a speed a person can take it in, and it is what
+        /// a lock screen does with more than it can show.
+        ///
+        /// SEQUENTIAL, NOT CROSS-FADED. The outgoing one fades out over the first half of the
+        /// swap and the incoming rises in over the second -- no frame has two of them on it.
+        /// A true cross-fade would need both drawn at once, and both drawn at once inside a
+        /// band this shallow means one of them poking up through the status bar, which cannot
+        /// be clipped away because everything here is a rectangle rather than a viewport.
+        ///
+        /// The pips on the right are the other half of "there is more than this". Without them
+        /// a shade that changes is a header that will not sit still.
+        ///
+        /// Returns false when there is nothing to say, and the header goes back to printing
+        /// which set you run with -- which is the right thing for a phone with nothing on it.
+        /// </summary>
+        private bool Shade(float x, float top, float w, int fade)
+        {
+            var now = Game.GameTime;
+
+            if (Alerts != null && now - _askedAt >= AskEveryMs)
+            {
+                _askedAt = now;
+
+                try
+                {
+                    _alerts = Alerts() ?? new List<Alert>();
+                }
+                catch
+                {
+                    // Whatever it said last time stands. A shade is not worth a crash.
+                }
+            }
+
+            if (_alerts.Count == 0) return false;
+
+            // The list is rebuilt from scratch every second and a half, so the thing you were
+            // reading can vanish out from under the cursor -- a text gets read, a war ends.
+            // Clamped rather than reset, so the strip does not jump back to the first one
+            // every time anything at all changes.
+            if (_atAlert >= _alerts.Count) _atAlert = 0;
+
+            if (_alerts.Count > 1 && now - _turnedAt >= HoldMs)
+            {
+                _turnedAt = now;
+                _atAlert = (_atAlert + 1) % _alerts.Count;
+            }
+
+            var since = now - _turnedAt;
+
+            // Nought to one across the whole swap, used as two halves.
+            var half = SwapMs * 0.5f;
+
+            float lift, alpha;
+
+            if (_turnedAt == 0 || since >= SwapMs)
+            {
+                lift = 0f;
+                alpha = 1f;
+            }
+            else if (since < half)
+            {
+                // The one going out. Held still and faded, so nothing travels upwards.
+                lift = 0f;
+                alpha = 1f - since / half;
+            }
+            else
+            {
+                var t = (since - half) / half;
+
+                lift = EnterLift * (1f - t);
+                alpha = t;
+            }
+
+            var one = _alerts[since < half && _alerts.Count > 1
+                              ? (_atAlert + _alerts.Count - 1) % _alerts.Count
+                              : _atAlert];
+
+            var ink = (int)(fade * alpha);
+
+            var tx = x;
+
+            if (!string.IsNullOrEmpty(one.Icon) &&
+                Hud.File(one.Icon, x + Hud.ToX(ShadeIcon) * 0.5f, top + 0.023f - lift,
+                         ShadeIcon, 0f, Fade(LitEdge, ink)))
+            {
+                tx = x + Hud.ToX(ShadeIcon) + 0.007f;
+            }
+
+            // The pips first, so the sentence can be trimmed to what is left rather than
+            // running under them.
+            var pipsW = 0f;
+
+            if (_alerts.Count > 1)
+            {
+                pipsW = _alerts.Count * (Hud.ToX(PipW) + Hud.ToX(PipGap));
+
+                for (var i = 0; i < _alerts.Count; i++)
+                {
+                    var px = x + w - pipsW + i * (Hud.ToX(PipW) + Hud.ToX(PipGap));
+
+                    Hud.RectFrom(px, top + 0.0255f, Hud.ToX(PipW), 0.0030f,
+                                 i == _atAlert
+                                     ? Fade(Palette.Text, fade)
+                                     : Color.FromArgb((int)(fade * 0.30f), 255, 255, 255));
+                }
+
+                pipsW += 0.006f;
+            }
+
+            var room = x + w - pipsW - tx;
+
+            Hud.Text(Hud.Fit(one.Text, room, 0.34f, Hud.FontLabel), tx, top + 0.014f - lift,
+                     0.34f, Fade(Palette.Text, ink), Hud.FontLabel, centre: false);
+
+            return true;
+        }
+
+        /// <summary>The mark on a notification, and how far the incoming one rises.</summary>
+        private const float ShadeIcon = 0.019f;
+        private const float EnterLift = 0.009f;
+
+        /// <summary>One pip per waiting notification.</summary>
+        private const float PipW = 0.0075f;
+        private const float PipGap = 0.0035f;
 
         // ---- home ---------------------------------------------------------------
 
