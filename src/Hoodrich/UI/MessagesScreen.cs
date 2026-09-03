@@ -617,7 +617,16 @@ namespace Hoodrich.UI
         {
             var row = RowFor(_who);
 
-            if (row == null || string.IsNullOrEmpty(row.Id)) return;
+            if (row == null) return;
+
+            // NOT A CONTACT, SO IT IS A CONVERSATION. Everybody who has ever texted you gets
+            // an answer that fits what they said -- see Social.Replies, which reads the last
+            // thing in the thread and picks from the set that claims its words.
+            if (string.IsNullOrEmpty(row.Id) || TextContact == null)
+            {
+                Answer();
+                return;
+            }
 
             if (row.Refusal != null)
             {
@@ -625,8 +634,6 @@ namespace Hoodrich.UI
                 Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 return;
             }
-
-            if (TextContact == null) return;
 
             // Counted BEFORE the send, so his reply is the message that ends the dots.
             //
@@ -653,6 +660,104 @@ namespace Hoodrich.UI
             _scroll = 0;
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>
+        /// Text them back something that fits what they said.
+        ///
+        /// THE LAST THING THEY SAID, not the first. A thread is read from the bottom and the
+        /// message you are answering is the one at the bottom of it -- answering the top of a
+        /// fourteen-message thread is answering something from three days ago.
+        ///
+        /// And it must be THEIRS. Pressing reply twice should not have you answering yourself,
+        /// so the walk backwards skips over anything of your own.
+        /// </summary>
+        private void Answer()
+        {
+            var all = Inbox.From(_who);
+
+            string subject = null;
+            string body = null;
+
+            for (var i = all.Count - 1; i >= 0; i--)
+            {
+                if (all[i].Mine) continue;
+
+                subject = all[i].Subject;
+                body = all[i].Body;
+                break;
+            }
+
+            if (body == null) return;
+
+            string[] back;
+
+            var line = Replies.To(subject, body, out back);
+
+            if (string.IsNullOrEmpty(line)) return;
+
+            Inbox.Sent(_who, line);
+
+            _stamp = -1;
+            _scroll = 0;
+
+            Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+            // AND THEY MIGHT ANSWER THAT. Held rather than sent now, so the dots run and the
+            // reply arrives a beat later like a person typing -- the thread machinery for that
+            // already exists because the plugs use it.
+            var said = Replies.Back(back);
+
+            if (string.IsNullOrEmpty(said)) return;
+
+            _backFrom = _who;
+            _backLine = said;
+            _backAt = Game.GameTime + BackMinMs + _rng.Next(BackSpreadMs);
+
+            _typingFor = _who;
+            _typingCount = Inbox.From(_who).Count;
+            _typingSince = Game.GameTime;
+        }
+
+        /// <summary>A reply of theirs, waiting on its own clock. See Answer.</summary>
+        private string _backFrom = "";
+        private string _backLine = "";
+        private int _backAt;
+
+        private readonly Random _rng = new Random();
+
+        /// <summary>How long they take to answer, at the fastest and how much longer.</summary>
+        private const int BackMinMs = 2200;
+        private const int BackSpreadMs = 2600;
+
+        /// <summary>
+        /// Their answer, when it is due.
+        ///
+        /// Called from the tick rather than the draw, so it lands whether or not you are still
+        /// looking at the thread -- somebody who answers only while you watch is a puppet.
+        /// </summary>
+        /// <summary>
+        /// PUBLIC AND CALLED FROM MAIN, because this screen's Update only runs while the
+        /// screen is open -- and an answer that only arrives while you happen to be looking at
+        /// the thread is a puppet rather than a person. Close the phone after texting somebody
+        /// and their reply should still turn up.
+        /// </summary>
+        public void Pending()
+        {
+            if (_backAt == 0 || Game.GameTime < _backAt) return;
+
+            var who = _backFrom;
+            var line = _backLine;
+
+            _backAt = 0;
+            _backFrom = "";
+            _backLine = "";
+
+            if (string.IsNullOrEmpty(who) || string.IsNullOrEmpty(line)) return;
+
+            Notify.Text(null, who, "", line);
+
+            _stamp = -1;
         }
 
         private static bool Pressed(Control control)
@@ -923,7 +1028,11 @@ namespace Hoodrich.UI
             Hud.RectFrom(x, y - 0.008f, PanelWidth - Pad * 2f, 0.0014f,
                          Palette.Alpha(Palette.Accent, 120));
 
-            var canText = row != null && !string.IsNullOrEmpty(row.Id);
+            // ANYBODY WHO TEXTED YOU CAN BE TEXTED BACK, which was the whole of what was
+            // missing. This was "row has a contact id", so the only threads with a key that did
+            // anything were the plugs and the homies -- and what that key did was place an
+            // ORDER, which is not replying to anybody. Everyone else was a wall you read.
+            var canText = row != null;
 
             var bottom = top + height - KeysHeight
                        - (canText ? FooterHeight : 0f) - 0.006f;
@@ -932,7 +1041,7 @@ namespace Hoodrich.UI
 
             if (canText) Footer(left, x, right, bottom + 0.004f, row);
 
-            Keys(x, right, top, height, canText ? "SEND" : "", "BACK");
+            Keys(x, right, top, height, canText ? "REPLY" : "", "BACK");
         }
 
         /// <summary>
@@ -1084,19 +1193,48 @@ namespace Hoodrich.UI
             return lines.ToArray();
         }
 
+        /// <summary>The widest a bubble may be, and the narrowest, as fractions of the column.</summary>
+        private const float BubbleMost = 0.74f;
+        private const float BubbleLeast = 0.055f;
+
         /// <summary>Draws one message and returns how much room it took.</summary>
         private float DrawMessage(float x, float right, float top, Inbox.Message message)
         {
             var width = right - x;
-            var lines = Lines(message, width);
+
+            // WRAPPED TO WHAT IT MAY USE, THEN SIZED TO WHAT IT ACTUALLY USED.
+            //
+            // Every bubble was the same width as every other bubble, which is what made this
+            // read as a list of grey boxes rather than a conversation. A messaging app does one
+            // thing above all others: the bubble is the SHAPE of the message. "aight" is a
+            // stub and a paragraph is a slab, and the ragged right edge down a thread is most
+            // of what tells you at a glance who said the long thing.
+            //
+            // Two passes, and they are cheap: wrap against the widest it is allowed to be, then
+            // measure the longest line that came out and use that. Measuring is a native call
+            // per line and there are at most a handful of lines in a text message.
+            var most = width * BubbleMost;
+
+            var lines = Lines(message, most - BubblePad * 2f);
+
+            var widest = 0f;
+
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var run = Hud.MeasureText(lines[i], BodyScale, Hud.FontChaletLondon);
+                if (run > widest) widest = run;
+            }
 
             var h = lines.Length * LineHeight + BubblePad * 2f;
-            var w = width - BubbleInset;
 
-            // Yours on the right, his on the left, and the whole point of the inset is that
-            // neither reaches the far edge -- two columns of full-width text with different
-            // tints would still read as one column.
-            var boxLeft = message.Mine ? x + BubbleInset : x;
+            var w = widest + BubblePad * 2f;
+
+            if (w > most) w = most;
+            if (w < BubbleLeast) w = BubbleLeast;
+
+            // Yours hugs the right edge, theirs hugs the left. Neither reaches the far side,
+            // because a bubble that touches both edges is a paragraph again.
+            var boxLeft = message.Mine ? right - w : x;
 
             var wash = message.Mine
                 ? Palette.Alpha(Palette.Standing, 30)
@@ -1122,16 +1260,12 @@ namespace Hoodrich.UI
 
             for (var i = 0; i < lines.Length; i++)
             {
-                if (message.Mine)
-                {
-                    Hud.TextRight(lines[i], boxLeft + w - 0.007f, ty, BodyScale,
-                                  Palette.Text, Hud.FontChaletLondon);
-                }
-                else
-                {
-                    Hud.Text(lines[i], boxLeft + 0.008f, ty, BodyScale,
-                             Palette.Text, Hud.FontChaletLondon, centre: false);
-                }
+                // LEFT-ALIGNED IN BOTH, now the bubble is the width of the words. Right
+                // aligning yours made sense while every bubble was full width and the text had
+                // to be pushed to its own side; in a bubble that already IS its own side it is
+                // a ragged left edge inside a box, which is harder to read for no gain.
+                Hud.Text(lines[i], boxLeft + BubblePad, ty, BodyScale,
+                         Palette.Text, Hud.FontChaletLondon, centre: false);
 
                 ty += LineHeight;
             }
@@ -1140,17 +1274,18 @@ namespace Hoodrich.UI
             // one-line message stays one line high.
             var stamp = Inbox.Ago(message.At);
 
+            // Just outside the bubble on its open side, which is where a phone puts it.
             if (message.Mine)
             {
-                Hud.Text(stamp, x + 0.004f, top + h - LineHeight, SmallScale,
-                         Palette.Alpha(Palette.TextDim, 150), Hud.FontChaletComprimeCologne,
-                         centre: false);
+                Hud.TextRight(stamp, boxLeft - 0.006f, top + h - LineHeight, SmallScale,
+                              Palette.Alpha(Palette.TextDim, 150),
+                              Hud.FontChaletComprimeCologne);
             }
             else
             {
-                Hud.TextRight(stamp, right - 0.004f, top + h - LineHeight, SmallScale,
-                              Palette.Alpha(Palette.TextDim, 150),
-                              Hud.FontChaletComprimeCologne);
+                Hud.Text(stamp, boxLeft + w + 0.006f, top + h - LineHeight, SmallScale,
+                         Palette.Alpha(Palette.TextDim, 150), Hud.FontChaletComprimeCologne,
+                         centre: false);
             }
 
             return h + BubbleGap;

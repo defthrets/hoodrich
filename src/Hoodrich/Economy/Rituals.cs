@@ -61,6 +61,17 @@ namespace Hoodrich.Economy
             /// <summary>How long it takes before the effect lands.</summary>
             public int Ms = 2600;
 
+            /// <summary>
+            /// And how long he carries on doing it afterwards. Nought stops at Ms.
+            ///
+            /// A CIGARETTE IS NOT A BUTTON PRESS. Everything else in here is a single act with
+            /// a beginning and an end -- a needle, a line, a pill -- but smoking is something
+            /// you stand there and DO, and four seconds of it is a man taking one drag and
+            /// marching off. So the joint keeps going after the high has landed, and it ends
+            /// the way it would: when you walk away from it, or when it is finished.
+            /// </summary>
+            public int Linger;
+
             /// <summary>He goes down at the end of it. The junkie nod.</summary>
             public bool Slump;
         }
@@ -72,7 +83,18 @@ namespace Hoodrich.Economy
 
         public bool Busy { get; private set; }
 
+        /// <summary>
+        /// True once the effect has landed and he is only still doing it for the look.
+        ///
+        /// The difference matters to everything upstairs: taking another one while he is
+        /// mid-needle is nonsense, and taking another one while he is finishing a joint is
+        /// Tuesday.
+        /// </summary>
+        public bool Landed { get; private set; }
+
         private int _until;
+        private int _lingerUntil;
+        private int _linger;
 
         /// <summary>Set while a dictionary is still streaming, so it can be asked for again.</summary>
         private Recipe _waiting;
@@ -80,6 +102,10 @@ namespace Hoodrich.Economy
 
         /// <summary>How long a dictionary gets to arrive before the scenario takes over.</summary>
         private const int StreamMs = 1200;
+
+        /// <summary>How fast counts as walking off, and how long he gets before it is asked.</summary>
+        private const float MovedAt = 0.35f;
+        private const int MovedAfterMs = 600;
 
         /// <summary>When to ask whether the scenario actually started, and what to ask about.</summary>
         private int _checkAt;
@@ -101,7 +127,11 @@ namespace Hoodrich.Economy
             Stop();
 
             Busy = true;
+            Landed = false;
+
             _until = Game.GameTime + recipe.Ms;
+            _linger = recipe.Linger;
+            _lingerUntil = 0;
 
             Hold(recipe, me);
 
@@ -189,15 +219,53 @@ namespace Hoodrich.Economy
                 _checking = "";
             }
 
-            if (now < _until) return false;
+            if (!Landed)
+            {
+                if (now < _until) return false;
 
-            var slump = _waiting == null && _slump;
+                Landed = true;
 
-            Stop();
+                var slump = _slump;
 
-            if (slump) Nod(me);
+                if (_linger <= 0)
+                {
+                    Stop();
 
-            return true;
+                    if (slump) Nod(me);
+                    return true;
+                }
+
+                // He carries on. The effect is landing THIS tick either way -- the caller is
+                // told once and the rest of it is scenery.
+                _lingerUntil = now + _linger;
+
+                if (slump) Nod(me);
+                return true;
+            }
+
+            // ---- still at it ----
+            //
+            // ENDED BY WALKING AWAY, which is the natural way to stop smoking and needs no
+            // key of its own. The scenario holds him still, so any speed at all is him having
+            // pushed the stick -- the game breaks its own task the moment he does, and this
+            // only has to notice and tidy up behind it.
+            //
+            // A moment's grace first, because the ragdoll from a needle is movement too.
+            if (now - _until > MovedAfterMs)
+            {
+                try
+                {
+                    if (me.Speed > MovedAt) { Stop(); return false; }
+                }
+                catch
+                {
+                    // Then it ends on the clock like everything else.
+                }
+            }
+
+            if (now >= _lingerUntil) Stop();
+
+            return false;
         }
 
         private bool _slump;
@@ -383,8 +451,12 @@ namespace Hoodrich.Economy
         public void Stop()
         {
             Busy = false;
+            Landed = false;
+
             _waiting = null;
             _until = 0;
+            _lingerUntil = 0;
+            _linger = 0;
 
             try
             {

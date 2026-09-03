@@ -104,7 +104,10 @@ namespace Hoodrich.Economy
             // scenario hands him a lit joint, lifts it to his mouth and blows the smoke out,
             // and no anim-and-prop we could assemble would be closer.
             Scenario = "WORLD_HUMAN_SMOKING_POT",
-            Ms = 4200
+
+            // The first drag is what does it; the rest is standing there smoking. See Linger.
+            Ms = 4200,
+            Linger = SmokeMs
         };
 
         /// <summary>
@@ -128,8 +131,18 @@ namespace Hoodrich.Economy
         private static readonly Ritual.Recipe Blunt = new Ritual.Recipe
         {
             Scenario = "WORLD_HUMAN_SMOKING_POT",
-            Ms = 4600
+            Ms = 4600,
+            Linger = SmokeMs
         };
+
+        /// <summary>
+        /// How long he stands there smoking, if nothing interrupts him.
+        ///
+        /// A minute, and walking off ends it sooner -- which is how it will actually end
+        /// almost every time. The number is the outside limit for somebody who genuinely
+        /// stands still and finishes it.
+        /// </summary>
+        private const int SmokeMs = 60000;
 
         /// <summary>
         /// The pipe. ONE OF THEM, used by both crack and meth.
@@ -459,7 +472,8 @@ namespace Hoodrich.Economy
         {
             if (string.IsNullOrEmpty(drugId)) return "Not that";
             if (Find(drugId) == null) return "Nothing to do with this one";
-            if (_ritual.Busy) return "You're doing it";
+            // Mid-needle is nonsense; mid-joint is Tuesday.
+            if (_ritual.Busy && !_ritual.Landed) return "You're doing it";
             if (_blackFrom != 0) return "You're gone";
             if (_coming) return "Give it a minute";
 
@@ -664,18 +678,19 @@ namespace Hoodrich.Economy
         /// </summary>
         public void Update()
         {
-            // The ritual runs first and on its own. Nothing else in here is true yet.
-            if (_ritual.Busy)
+            // THE RITUAL NO LONGER OWNS THE TICK. It used to return out of here for as long
+            // as it ran, which was fine while every ritual was over in three seconds and is
+            // not now the joint lasts a minute: a high that had already landed would have sat
+            // frozen underneath a man finishing his smoke.
+            //
+            // Update says ONCE, on the tick the effect is due, and after that the ritual is
+            // just something he happens to be doing.
+            if (_ritual.Busy && _ritual.Update() && _taking != null)
             {
-                if (_ritual.Update() && _taking != null)
-                {
-                    var recipe = _taking;
-                    _taking = null;
+                var recipe = _taking;
+                _taking = null;
 
-                    Land(recipe, _said);
-                }
-
-                return;
+                Land(recipe, _said);
             }
 
             if (_blackFrom != 0) { Blackout(); return; }
@@ -717,6 +732,8 @@ namespace Hoodrich.Economy
                     if (went) Recombine();
 
                     Hold(me, _clipset, _shake, _sunny);
+
+                    Trip(me, now);
                     return;
                 }
 
@@ -730,6 +747,73 @@ namespace Hoodrich.Economy
                 Off();
             }
         }
+
+        /// <summary>
+        /// Three things in him and running, and his legs stop agreeing with him.
+        ///
+        /// THE STACK NEEDS A CONSEQUENCE BETWEEN "FINE" AND "UNCONSCIOUS". Three was the limit
+        /// and the fourth was the blackout, so up to three was a straight pile of buffs with a
+        /// wobbly camera on top -- nothing about being on three at once actually cost you
+        /// anything until you took a fourth.
+        ///
+        /// ONLY WHILE HE IS MOVING FAST, because that is when legs matter. Standing on a corner
+        /// on three things is a man having a night; sprinting across four lanes on them is a
+        /// man who is about to find out.
+        ///
+        /// AND BARS DOUBLE IT. Alprazolam is the one in the list whose whole character is not
+        /// being able to walk in a straight line -- it already comes with the heaviest gait and
+        /// the widest sway of the seven -- so a mix with bars in it goes over far more often
+        /// than one without. That is the drug being itself rather than a special case.
+        /// </summary>
+        private void Trip(Ped me, int now)
+        {
+            if (_live.Count < TripsFrom) return;
+            if (now < _nextTrip) return;
+
+            _nextTrip = now + TripEveryMs;
+
+            try
+            {
+                if (me.IsInVehicle()) return;
+                if (me.Speed < TripAbove) return;
+
+                var bars = false;
+
+                foreach (var one in _live)
+                {
+                    if (one.What.Drug != "xanax") continue;
+                    bars = true;
+                    break;
+                }
+
+                if (_rng.Next(100) >= (bars ? TripWithBars : TripChance)) return;
+
+                Function.Call(Hash.SET_PED_TO_RAGDOLL, me.Handle, TripDownMs, TripDownMs + 600,
+                              0, true, true, false);
+
+                Log.Debug("Tripped over on " + _live.Count + (bars ? " with bars in." : "."));
+            }
+            catch
+            {
+                // He stays up, which is the smaller problem.
+            }
+        }
+
+        private int _nextTrip;
+
+        /// <summary>How many in him before his legs are a problem.</summary>
+        private const int TripsFrom = 3;
+
+        /// <summary>How often it is even considered, and how fast he has to be going.</summary>
+        private const int TripEveryMs = 2500;
+        private const float TripAbove = 2.6f;
+
+        /// <summary>The odds each time it is asked, out of a hundred, and with bars in him.</summary>
+        private const int TripChance = 22;
+        private const int TripWithBars = 45;
+
+        /// <summary>How long he is on the floor.</summary>
+        private const int TripDownMs = 1400;
 
         /// <summary>The per-frame half: the gait, the sway, and the sky.</summary>
         private void Hold(Ped me, string clipset, float shake, bool sunny)

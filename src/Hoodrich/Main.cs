@@ -2639,6 +2639,10 @@ namespace Hoodrich
                     _tow.Update(Game.Player.Character);
 
                     _highs.Update();
+
+                    // Somebody answering a text you sent. Out here rather than in the screen,
+                    // because the screen only ticks while it is open.
+                    _messages.Pending();
                     _ride.Update(Game.Player.Character);
 
                     _social.Update();

@@ -1,0 +1,209 @@
+{
+  "_comment": [
+    "What you can text back, and when.",
+    "",
+    "MATCHED ON WORDS RATHER THAN ON A TOPIC LIST. Messages in this mod are written by a",
+    "dozen different systems and none of them files a category with the text -- there is a",
+    "sender, a subject and a body, and that is all. So a set claims the words it answers and",
+    "the first set with a word in the last thing they said is the one that answers it.",
+    "",
+    "Ordered top to bottom: the specific ones first, because \"ballas outside right now\"",
+    "contains both a fight and a summons and the fight is the thing worth answering.",
+    "",
+    "when     lowercase words looked for anywhere in the subject or the body",
+    "lines    what you might send. One is picked at random.",
+    "back     what they might say to that, if anything. Empty means the last word is yours.",
+    "",
+    "TONE IS PER SET AND ON PURPOSE. Somebody telling you their spot got hit does not want a",
+    "joke back; somebody asking where you are at four in the morning is fair game. The sets",
+    "near the top are the serious ones and it shows."
+  ],
+
+  "sets": [
+    {
+      "_": "Somebody is being shot at. Nothing funny in here.",
+      "when": ["ballas", "they hit", "hit the spot", "shooting", "shots", "raid", "jumped", "war"],
+      "lines": [
+        "im moving now. hold it",
+        "on my way. dont do nothing stupid til i get there",
+        "how many of them",
+        "give me two minutes",
+        "everybody get inside. im coming",
+        "who got hit"
+      ],
+      "back": [
+        "hurry up",
+        "just get here",
+        "we holdin it",
+        "aight. dont come slow"
+      ]
+    },
+
+    {
+      "_": "Come here, where are you, get down here. Half serious, half excuses.",
+      "when": ["where are you", "where you at", "get here", "come see", "come down", "you comin", "waiting"],
+      "lines": [
+        "im comin",
+        "give me ten",
+        "on my way now",
+        "i was on my way when you sent that",
+        "traffic. i swear its traffic",
+        "im round the corner. been round the corner a while",
+        "cant right now. later tho",
+        "i can hear you from here"
+      ],
+      "back": [
+        "you said that an hour ago",
+        "aight",
+        "sure you was",
+        "hurry up",
+        ""
+      ]
+    },
+
+    {
+      "_": "Money owed, and every way of not saying no.",
+      "when": ["owe", "money", "paid", "pay", "debt", "cash", "he wants", "collect"],
+      "lines": [
+        "youll get it",
+        "friday. i promise",
+        "i got most of it",
+        "how much we sayin exactly",
+        "im workin on it right now as we speak",
+        "define owe"
+      ],
+      "back": [
+        "friday then",
+        "most of it aint it",
+        "dont make me come lookin",
+        ""
+      ]
+    },
+
+    {
+      "_": "Product, orders, drops.",
+      "when": ["weight", "grams", "bag", "order", "drop", "brick", "pack", "re-up", "reup", "supply", "bricks"],
+      "lines": [
+        "how much you got",
+        "say a number",
+        "im good for it",
+        "send the address",
+        "not on the phone",
+        "cant talk on here"
+      ],
+      "back": [
+        "come see me",
+        "not on the phone. agreed",
+        "ill text you where",
+        ""
+      ]
+    },
+
+    {
+      "_": "Cars, tows, the garage.",
+      "when": ["car", "tow", "wreck", "garage", "ready", "lot", "hook"],
+      "lines": [
+        "nice one",
+        "ill come get it",
+        "how bad is it",
+        "it was like that when i found it",
+        "that thing was fine when i parked it",
+        "be down in a bit"
+      ],
+      "back": [
+        "its here when you want it",
+        "sure it was",
+        ""
+      ]
+    },
+
+    {
+      "_": "The takeover and anything on Carson.",
+      "when": ["carson", "takeover", "meet", "junction", "skids", "donuts"],
+      "lines": [
+        "im already there",
+        "on my way. save me a spot",
+        "who's out",
+        "bringin the car",
+        "is it still goin"
+      ],
+      "back": [
+        "its goin",
+        "come now",
+        ""
+      ]
+    },
+
+    {
+      "_": "Police, heat, being watched.",
+      "when": ["police", "cops", "law", "heat", "rollin past", "raided", "locked up", "warrant"],
+      "lines": [
+        "how long they been sittin there",
+        "dont say nothing on here",
+        "im nowhere near it",
+        "i been inside all day. thats my story",
+        "say nothing. i mean it"
+      ],
+      "back": [
+        "sayin nothin",
+        "they still out there",
+        ""
+      ]
+    },
+
+    {
+      "_": "The house, the block, coming home.",
+      "when": ["home", "house", "block", "corner", "spot"],
+      "lines": [
+        "ill be back later",
+        "keep it locked",
+        "everything alright there",
+        "im not far",
+        "leave the door"
+      ],
+      "back": [
+        "its locked",
+        "all good",
+        ""
+      ]
+    },
+
+    {
+      "_": "Somebody just being rude, which deserves an answer in kind.",
+      "when": ["forget it", "dont come", "remember this", "im done", "whatever"],
+      "lines": [
+        "dont be like that",
+        "aight",
+        "youre being dramatic",
+        "im sensing some tension",
+        "ill let you cool off"
+      ],
+      "back": [
+        "im not bein dramatic",
+        "",
+        ""
+      ]
+    }
+  ],
+
+  "default": [
+    "aight",
+    "say less",
+    "ok",
+    "ill call you",
+    "cant talk right now",
+    "yeah i saw it",
+    "and?",
+    "wild",
+    "noted",
+    "who is this"
+  ],
+
+  "defaultBack": [
+    "",
+    "",
+    "",
+    "aight then",
+    "its me. we spoke yesterday"
+  ]
+}
