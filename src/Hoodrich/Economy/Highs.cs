@@ -122,23 +122,22 @@ namespace Hoodrich.Economy
             Ms = 4600
         };
 
-        /// <summary>A pipe. Crack and meth are the same motion with a different pipe.</summary>
-        private static readonly Ritual.Recipe CrackPipe = new Ritual.Recipe
-        {
-            Dicts = new[]
-            {
-                "amb@world_human_smoking@male@male_a@base",
-                "amb@world_human_aa_smoke@male@idle_a",
-                "switch@trevor@trev_smoking_meth"
-            },
-            Clip = "base",
-            Props = new[] { "prop_cs_crack_pipe", "p_crack_pipe_01", "prop_meth_pipe" },
-            Sits = new Vector3(0.02f, 0.01f, 0.0f),
-            Scenario = "WORLD_HUMAN_SMOKING",
-            Ms = 3400
-        };
-
-        private static readonly Ritual.Recipe MethPipe = new Ritual.Recipe
+        /// <summary>
+        /// The pipe. ONE OF THEM, used by both crack and meth.
+        ///
+        /// They were two recipes with the same motion and a different prop name, which was a
+        /// distinction on paper and nothing at all on the screen -- and the difference in prop
+        /// was between two names that both turned out not to exist. Rocks in a glass pipe is
+        /// rocks in a glass pipe.
+        ///
+        /// THE FIRST THREE NAMES ARE GONE BECAUSE THE GAME SAID SO. prop_cs_crack_pipe,
+        /// p_crack_pipe_01 and prop_meth_pipe were all guesses and the log answered all three
+        /// at once: none of them are in this install. There may be no crack pipe in GTA V at
+        /// all, so the ladder now ends in things that certainly do exist -- a cigarette and a
+        /// joint. At arm's length a small white object held to the mouth is the shape of the
+        /// action, and the shape of the action is what was missing.
+        /// </summary>
+        private static readonly Ritual.Recipe Pipe = new Ritual.Recipe
         {
             Dicts = new[]
             {
@@ -147,7 +146,14 @@ namespace Hoodrich.Economy
                 "amb@world_human_aa_smoke@male@idle_a"
             },
             Clip = "base",
-            Props = new[] { "prop_meth_pipe", "prop_cs_crack_pipe", "p_crack_pipe_01" },
+            Props = new[]
+            {
+                // Still worth asking for, in case an install has one from somewhere.
+                "prop_cs_pipe_01", "prop_glass_pipe", "prop_pipe_01",
+
+                // And these are the fallback that will actually land.
+                "prop_cs_ciggy_01", "p_cs_joint_01", "prop_cigar_01"
+            },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING",
             Ms = 3400
@@ -264,7 +270,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "crack",
-                Doing = CrackPipe,
+                Doing = Pipe,
                 Cycles = new[] { "REDMIST", "drug_drivingfast", "spectator9" },
                 Fx = "DrugsTrevorClownsFightIn",
                 Shake = 0.35f,
@@ -301,10 +307,23 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "meth",
-                Doing = MethPipe,
+                Doing = Pipe,
                 Cycles = new[] { "spectator10", "drug_drivingfast", "drug_wobbly" },
                 Strength = 0.8f,
-                Shake = 0.30f,
+
+                // NOTHING HAPPENED, AND THAT WAS FAIR. This was the only one of the seven with
+                // no time change and no gait: a run multiplier you only feel while sprinting, a
+                // damage number you only feel in a fight, and a camera sway. Stood still on a
+                // pavement it was a slightly different colour and nothing else, for five
+                // minutes.
+                //
+                // The wired one should read as wired. A screen effect, a proper sway, and time
+                // pushed just off normal -- not crack's heavy drag, which is a different drug,
+                // but far enough that the world is not quite right for as long as it lasts.
+                Fx = "RaceTurbo",
+                Clipset = "move_m@drunk@slightlydrunk",
+                Shake = 0.42f,
+                Time = 0.88f,
                 Run = 1.40f,
                 Hits = 1.2f,
                 Takes = 0.85f,

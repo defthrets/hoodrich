@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -190,7 +190,7 @@ namespace Hoodrich.Economy
                                   recipe.Turned.X, recipe.Turned.Y, recipe.Turned.Z,
                                   false, false, false, false, 2, true);
 
-                    Log.Debug("Ritual prop: " + name + ".");
+                    Log.Info("Ritual prop: " + name + ".");
                     return;
                 }
                 catch
@@ -206,7 +206,15 @@ namespace Hoodrich.Economy
             }
         }
 
-        /// <summary>Try each dictionary. True once one is playing.</summary>
+        /// <summary>
+        /// Try each dictionary. True once one is playing.
+        ///
+        /// THE MISSES ARE WORTH A LINE TOO, and finding that out cost a playthrough. Three
+        /// pipe props were named, all three were guesses, all three were wrong -- and the only
+        /// thing the log said was that none of them existed, at INFO, while every SUCCESS was
+        /// at DEBUG and therefore invisible at the level anybody actually runs. So a working
+        /// ritual and a broken one produced the same silence.
+        /// </summary>
         private bool Play(Recipe recipe, Ped me)
         {
             foreach (var dict in recipe.Dicts)
@@ -224,7 +232,7 @@ namespace Hoodrich.Economy
                     _dict = dict;
                     _clip = recipe.Clip;
 
-                    Log.Debug("Ritual anim: " + dict + " / " + recipe.Clip + ".");
+                    Log.Info("Ritual anim: " + dict + " / " + recipe.Clip + ".");
                     return true;
                 }
                 catch
@@ -258,7 +266,7 @@ namespace Hoodrich.Economy
 
                 _scenario = true;
 
-                Log.Debug("Ritual scenario: " + recipe.Scenario + ".");
+                Log.Info("Ritual scenario: " + recipe.Scenario + ".");
             }
             catch
             {
