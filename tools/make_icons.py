@@ -1673,7 +1673,48 @@ def drop():
     save(img, 'drop.png')
 
 
-ALL = [arrow_right, arrow_left, arrow_updown, drop, socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
+# ------------------------------------------------------------------------ bank
+#
+# A PEDIMENT AND FOUR COLUMNS, which is what a bank is in pictures whatever the bank actually
+# looks like. Fleeca's own signage is a wordmark and there is nothing in it to draw at twenty
+# pixels -- letters at this size are a grey smear -- so the widget gets the universal one and
+# says the name in type beside it, which is how a bank app does it anyway.
+def bank():
+    img, d = canvas()
+
+    d.polygon([(28, 196), (256, 62), (484, 196)], fill=W)
+    d.rectangle([44, 196, 468, 244], fill=W)
+
+    # Four, evenly. Three reads as a temple and five is a picket fence at this size.
+    for i in range(4):
+        x = 76 + i * 100
+        d.rectangle([x, 262, x + 60, 396], fill=W)
+
+    d.rectangle([28, 402, 484, 458], fill=W)
+
+    save(img, 'bank.png')
+
+
+# ------------------------------------------------------------------------ card
+#
+# Punched rather than painted, like the skull's eye sockets: the stripe and the chip are cut
+# back to transparent so whatever colour the icon is tinted shows through the holes instead of
+# being drawn on top of them in a second colour it does not have.
+def card():
+    img, d = canvas()
+
+    d.rounded_rectangle([36, 138, 476, 374], radius=36, fill=W)
+
+    # The mag stripe, all the way across. It is the one feature that survives the downsample.
+    d.rectangle([36, 186, 476, 240], fill=CLEAR)
+
+    # And the chip, bottom left, where every card has had one for twenty years.
+    d.rounded_rectangle([84, 276, 176, 340], radius=14, fill=CLEAR)
+
+    save(img, 'card.png')
+
+
+ALL = [bank, card, arrow_right, arrow_left, arrow_updown, drop, socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
        cut_100, cut_75, cut_50, cut_33, cut_25, disc]
 
 

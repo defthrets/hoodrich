@@ -1065,12 +1065,16 @@ namespace Hoodrich.Phone
             var x0 = left + padX;
             var y = top + TilePad;
 
-            // THE CARD, ACROSS ALL THREE COLUMNS. Drawn before the apps and on the same
-            // stagger clock, so it arrives as the first thing on the screen rather than
-            // after everything it sits above.
-            Wallet(x0, y, w - padX * 2f, TileH, fade);
+            // THE CARD SITS AT THE FOOT OF THE SCREEN, across all three columns.
+            //
+            // Under the apps rather than over them, which is where a widget goes on a phone --
+            // the apps are what you came to press and a card above them pushes the thing you
+            // are reaching for down the glass. It is also the shape of every banking widget
+            // anybody has actually seen: a strip along the bottom you glance at on the way
+            // past, not a banner you have to get past first.
+            var cardTop = top + h - TileH - TilePad;
 
-            y += TileH + TilePad;
+            Wallet(x0, cardTop, w - padX * 2f, TileH, fade);
 
             for (var i = 0; i < page.Items.Count; i++)
             {
@@ -1080,7 +1084,8 @@ namespace Hoodrich.Phone
                 var tx = x0 + col * (tileW + padX);
                 var ty = y + row * (TileH + TilePad);
 
-                if (ty + TileH > top + h) break;
+                // Stops at the card rather than at the bottom of the body.
+                if (ty + TileH > cardTop) break;
 
                 // Each app lands a beat after the one before it. The whole run is under a
                 // fifth of a second -- long enough to read as arriving, short enough that
@@ -1147,21 +1152,46 @@ namespace Hoodrich.Phone
             // makes this a widget rather than a fourth row of them.
             Hud.RectFrom(x, y, w, h, Color.FromArgb((int)(fade * 0.14f), 255, 255, 255));
 
-            // The set's green down the left edge. One stripe is enough to say whose bank it is.
-            Hud.RectFrom(x, y, Hud.ToX(0.0022f), h, Fade(LitEdge, fade));
+            // ---- the bank's own colour, not the set's ----
+            //
+            // This was the phone's green, which made the card look like a fourth thing the gang
+            // had built. It is not: it is somebody else's app running on his phone, and the one
+            // cheap signal for that is that it is not in the house colours. A blue band across
+            // the top and a blue mark is the whole of the branding, and it is enough -- every
+            // banking widget anybody has seen is a coloured band with a number under it.
+            Hud.RectFrom(x, y, w, BankBand, Fade(Fleeca, fade));
 
             var ix = x + pad;
 
-            if (Hud.File("money.png", ix + Hud.ToX(0.014f) * 0.5f, y + 0.017f, 0.014f, 0f,
-                         Fade(Palette.Cash, fade)))
+            if (Hud.File("bank.png", ix + Hud.ToX(BankMark) * 0.5f, y + 0.0125f, BankMark, 0f,
+                         Fade(Palette.Text, fade)))
             {
-                ix += Hud.ToX(0.014f) + 0.005f;
+                ix += Hud.ToX(BankMark) + 0.005f;
             }
 
-            Hud.Text("BALANCE", ix, y + 0.010f, 0.26f, Fade(Palette.TextDim, fade),
+            Hud.Text("FLEECA", ix, y + 0.006f, 0.27f, Fade(Palette.Text, fade),
                      Hud.FontLabel, centre: false);
 
-            // ---- what just happened ----
+            // ---- the card, and the four digits every bank app shows you ----
+            //
+            // A fixed number rather than a made-up random one. It is set dressing, and set
+            // dressing that changes every time you open the phone is the one kind anybody
+            // notices.
+            var nx = x + w - pad;
+
+            Hud.TextRight(Account, nx, y + 0.006f, 0.25f,
+                          Fade(Palette.Text, (int)(fade * 0.82f)), Hud.FontLabel);
+
+            nx -= Hud.MeasureText(Account, 0.25f, Hud.FontLabel) + 0.005f;
+
+            Hud.File("card.png", nx - Hud.ToX(BankMark) * 0.5f, y + 0.0125f, BankMark, 0f,
+                     Fade(Palette.Text, (int)(fade * 0.82f)));
+
+            // ---- the figure ----
+            Hud.Text("$" + ((long)_shown).ToString("N0"), x + pad, y + 0.032f, 0.62f,
+                     Fade(Palette.Text, fade), Hud.FontLabel, centre: false);
+
+            // ---- what just happened, on the same line as the balance ----
             var since = Cash.MovedAt == 0 ? int.MaxValue : Game.GameTime - Cash.MovedAt;
 
             if (since < StatementMs && Cash.LastMove != 0)
@@ -1171,17 +1201,19 @@ namespace Hoodrich.Phone
                     : 1f;
 
                 var move = Cash.LastMove;
+                var ink = move > 0 ? Palette.Cash : Palette.Danger;
 
-                Hud.TextRight((move > 0 ? "+$" : "-$") + Math.Abs(move).ToString("N0"),
-                              x + w - pad, y + 0.010f, 0.26f,
-                              Fade(move > 0 ? Palette.Cash : Palette.Danger,
-                                   (int)(fade * left)),
-                              Hud.FontLabel);
+                var chip = (move > 0 ? "+$" : "-$") + Math.Abs(move).ToString("N0");
+
+                // NO ARROW BESIDE IT, and it was drawn and taken out again. The reasoning
+                // was sound -- colour alone fails the moment somebody cannot tell this green
+                // from this red -- and the fix was already there: the plus and the minus say
+                // it without colour. A left arrow for money in and a right one for money out
+                // is a convention nobody holds, so it added a thing to decode rather than a
+                // second way to read the one already there.
+                Hud.TextRight(chip, x + w - pad, y + 0.042f, 0.26f,
+                              Fade(ink, (int)(fade * left)), Hud.FontLabel);
             }
-
-            // ---- the figure ----
-            Hud.Text("$" + ((long)_shown).ToString("N0"), x + pad, y + 0.030f, 0.62f,
-                     Fade(Palette.Text, fade), Hud.FontLabel, centre: false);
 
             // ---- and the lifetime take under a hairline ----
             var ruleY = y + h - 0.024f;
@@ -1191,12 +1223,29 @@ namespace Hoodrich.Phone
 
             var take = Earned == null ? 0L : Earned();
 
-            Hud.Text("ALL TIME", x + pad, ruleY + 0.006f, 0.23f,
+            var tx = x + pad;
+
+            if (Hud.File("money.png", tx + Hud.ToX(0.010f) * 0.5f, ruleY + 0.0115f, 0.010f, 0f,
+                         Fade(Palette.Cash, (int)(fade * 0.9f))))
+            {
+                tx += Hud.ToX(0.010f) + 0.004f;
+            }
+
+            Hud.Text("ALL TIME", tx, ruleY + 0.006f, 0.23f,
                      Fade(Palette.TextDim, fade), Hud.FontLabel, centre: false);
 
             Hud.TextRight("$" + take.ToString("N0"), x + w - pad, ruleY + 0.006f, 0.23f,
                           Fade(Palette.TextDim, fade), Hud.FontLabel);
         }
+
+        /// <summary>The bank's blue, its band, and the size of the two marks on the card.</summary>
+        private static readonly Color Fleeca = Color.FromArgb(255, 41, 128, 185);
+
+        private const float BankBand = 0.0026f;
+        private const float BankMark = 0.013f;
+
+        /// <summary>The four digits. Fixed, because set dressing that moves is set dressing you notice.</summary>
+        private const string Account = "**** 4471";
 
         /// <summary>The rolling figure, and whether it has ever been set.</summary>
         private float _shown;
