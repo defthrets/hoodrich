@@ -634,7 +634,7 @@ namespace Hoodrich
                 //
                 // Everything she needs to know is handed to her, which is why the file does not
                 // mention Hao, OwnedCars or the save: she is given a wreck and gives one back.
-                _tow.Wreck = at => _ownedCars.WreckNear(at, 18f);
+                _tow.Wreck = (at, radius) => _ownedCars.WreckNear(at, radius);
 
                 // The cars with nobody in them.
                 _ride.Busy = () => _war != null && _war.IsRunning;
@@ -1857,6 +1857,7 @@ namespace Hoodrich
                 pages.PocketScreen = _pocketScreen;
                 pages.Bags = _bags;
                 pages.Crew = _homies;
+                pages.Tow = _tow;
                 pages.ShowSocials = () => _socialScreen.Open();
 
                 // Knowai. The page reads the state to decide whether it is a list of places or

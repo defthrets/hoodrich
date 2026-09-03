@@ -1443,6 +1443,30 @@ namespace Hoodrich.Wheel
                 page.WithIcon(Icons.FromFile("people.png"));
             }
 
+            // Tanya, who is a phone number for a thing that was only ever a prompt.
+            //
+            // She has always driven out, lined up and hooked it -- but only if you were STOOD
+            // at the wreck, and the wreck is the one place you are not: it is on its roof in a
+            // ditch and you walked away from it. A recovery service you can only reach by
+            // going back to the car is a recovery service for people who do not need one.
+            if (Tow != null)
+            {
+                var why = Tow.Refusal(Game.Player.Character);
+
+                page.Add("Tanya", ">", () => Recover(),
+                    detail: why ?? "She'll come out, hook it and take it in. It turns up back " +
+                                   "on Hao's lot straightened out",
+                    value: why == null ? "$" + (_cfg == null ? 500 : _cfg.TowFee) : "",
+                    enabled: why == null,
+                    disabledReason: why ?? "");
+
+                // She gets HIS phone out to read the text, and our put-away clip runs on the
+                // same dictionary -- so the menu has to bow out without touching the handset.
+                page.KeepsPhone();
+
+                page.WithIcon(Icons.FromFile("tow.png"));
+            }
+
             // Then the plugs, in the order the data lists them.
             foreach (var def in _dealers.All)
             {
@@ -1492,6 +1516,22 @@ namespace Hoodrich.Wheel
 
         /// <summary>Set by Main. The three who come out when you ask.</summary>
         public Gangs.Homies Crew;
+
+        /// <summary>Set by Main. The recovery truck, so she can be rung rather than found.</summary>
+        public Locations.TowTruck Tow;
+
+        /// <summary>Ring her, and say so either way.</summary>
+        private void Recover()
+        {
+            if (Tow == null) return;
+
+            var no = Tow.Send(Game.Player.Character);
+
+            if (no != null) { Notify.Failure(no); return; }
+
+            Notify.Text(null, "Tanya", "Recovery",
+                        "aight. dont touch nothin, im comin to you", false);
+        }
 
         /// <summary>How many of them are actually answering.</summary>
         private string ContactsSummary()

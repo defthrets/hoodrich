@@ -127,7 +127,16 @@ namespace Hoodrich.Locations
         // ---- wiring -------------------------------------------------------------
 
         /// <summary>Set by Main: a wreck of yours near the player, or null.</summary>
-        public Func<Vector3, Vehicle> Wreck;
+        /// <summary>
+        /// One of yours near a point that cannot be driven away, within a radius.
+        ///
+        /// THE RADIUS IS AN ARGUMENT NOW because there are two ways to reach her and they want
+        /// different ones. Stood at the car it is the prompt range, a few metres, because the
+        /// prompt is about the thing in front of you. Ringing her off the contacts page it is
+        /// most of a district: you have walked away from the wreck, which is exactly why you
+        /// are on the phone instead.
+        /// </summary>
+        public Func<Vector3, float, Vehicle> Wreck;
 
         /// <summary>Set by Main: she has driven off with it. Put it back on the lot.</summary>
         public Action<Vehicle> Recovered;
@@ -222,11 +231,10 @@ namespace Hoodrich.Locations
 
             Vehicle wreck;
 
-            try { wreck = Wreck(player.Position); }
+            try { wreck = Wreck(player.Position, PromptRange); }
             catch { return; }
 
             if (wreck == null || !wreck.Exists()) return;
-            if (wreck.Position.DistanceTo(player.Position) > PromptRange) return;
 
             var fee = Fee == null ? DefaultFee : Fee();
 
@@ -241,6 +249,66 @@ namespace Hoodrich.Locations
                 return;
             }
 
+            Start(player, wreck);
+        }
+
+        /// <summary>
+        /// Why she cannot come right now, or null if she can.
+        ///
+        /// SPLIT OUT SO THE CONTACTS PAGE CAN ASK IT WITHOUT DOING IT. A row that is greyed out
+        /// with a reason on it is worth more than a row that looks pressable and does nothing,
+        /// and the only way to have one is for the check to be a question somebody else can ask
+        /// -- so the reasons are sentences rather than a bool.
+        /// </summary>
+        public string Refusal(Ped player)
+        {
+            if (IsRunning)
+            {
+                return State == TowState.Towing ? "She's got it. Check Hao's lot"
+                                                : "She's already on her way";
+            }
+
+            if (Busy != null && Busy()) return "Not in the middle of this";
+            if (Wreck == null) return "Not now";
+            if (player == null || !player.Exists() || !player.IsAlive) return "Not now";
+
+            return Nearby(player) == null ? "Nothing of yours to recover round here" : null;
+        }
+
+        /// <summary>
+        /// Text her from the contacts page. Returns why not, or null once she is coming.
+        ///
+        /// The same job as walking up to the wreck and pressing right, which is deliberate --
+        /// there are two doors into one sequence rather than two sequences. She still drives
+        /// the whole way, still lines up, still hooks it. The phone only saves you the walk
+        /// back.
+        /// </summary>
+        public string Send(Ped player)
+        {
+            var no = Refusal(player);
+            if (no != null) return no;
+
+            var wreck = Nearby(player);
+            if (wreck == null) return "Nothing of yours to recover round here";
+
+            var fee = Fee == null ? DefaultFee : Fee();
+
+            if (Charge != null && !Charge(fee)) return "You're short. Tanya don't do favours.";
+
+            Start(player, wreck);
+            return null;
+        }
+
+        /// <summary>A wreck of yours she could reach, at telephone range.</summary>
+        private Vehicle Nearby(Ped player)
+        {
+            try { return Wreck(player.Position, CallRange); }
+            catch { return null; }
+        }
+
+        /// <summary>Both doors end here.</summary>
+        private void Start(Ped player, Vehicle wreck)
+        {
             _wreck = wreck;
             _where = wreck.Position;
 
@@ -251,6 +319,16 @@ namespace Hoodrich.Locations
 
             Play(player);
         }
+
+        /// <summary>
+        /// How far she will come for one you rang about rather than stood next to.
+        ///
+        /// Wide, and still not the whole map. The wreck has to be a vehicle that EXISTS to be
+        /// hooked, and one across the city is a record rather than a car -- so this is roughly
+        /// as far as the game keeps yours loaded, and past that the honest answer is that there
+        /// is nothing round here to collect.
+        /// </summary>
+        private const float CallRange = 220f;
 
         /// <summary>The phone comes out and he actually types on it.</summary>
         private void Play(Ped player)

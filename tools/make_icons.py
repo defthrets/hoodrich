@@ -1683,6 +1683,38 @@ def drop():
     save(img, 'drop.png')
 
 
+# ------------------------------------------------------------------------- tow
+#
+# Cab, bed, and the boom up at an angle behind it. The BOOM is the whole icon -- a cab and a
+# flatbed at twenty pixels is a van, and a van is not what you ring somebody for. Two wheels
+# under it, because a truck without wheels is a shed.
+def tow():
+    img, d = canvas()
+
+    # The arm first, so the body draws over its foot and the two read as one object.
+    d.polygon([(238, 300), (196, 268), (388, 132), (424, 168)], fill=W)
+
+    # The hook, hanging off the end of it.
+    d.rectangle([392, 158, 420, 232], fill=W)
+    d.ellipse([378, 218, 434, 274], fill=W)
+    d.ellipse([396, 236, 416, 256], fill=CLEAR)
+
+    # Cab, with a window punched so it does not read as a brick.
+    d.rounded_rectangle([48, 240, 186, 350], radius=16, fill=W)
+    d.rectangle([70, 262, 150, 300], fill=CLEAR)
+
+    # Bed.
+    d.rectangle([186, 290, 356, 350], fill=W)
+
+    d.ellipse([76, 330, 168, 422], fill=W)
+    d.ellipse([104, 358, 140, 394], fill=CLEAR)
+
+    d.ellipse([254, 330, 346, 422], fill=W)
+    d.ellipse([282, 358, 318, 394], fill=CLEAR)
+
+    save(img, 'tow.png')
+
+
 # ------------------------------------------------------------------------ bank
 #
 # A PEDIMENT AND FOUR COLUMNS, which is what a bank is in pictures whatever the bank actually
@@ -1724,7 +1756,7 @@ def card():
     save(img, 'card.png')
 
 
-ALL = [bank, card, arrow_right, arrow_left, arrow_updown, arrow_leftright, drop, socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
+ALL = [tow, bank, card, arrow_right, arrow_left, arrow_updown, arrow_leftright, drop, socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
        cut_100, cut_75, cut_50, cut_33, cut_25, disc]
 
 
