@@ -1653,6 +1653,16 @@ def arrow_left():
     save(img, 'arrow_left.png')
 
 
+# The lying-down one. Same reasoning as its brother: the hint it belongs to is "LEFT and
+# RIGHT", and one arrow would be half an instruction.
+def arrow_leftright():
+    img, d = canvas()
+    d.rectangle([120, 214, 392, 298], fill=W)
+    d.polygon([(196, 126), (56, 256), (196, 386)], fill=W)
+    d.polygon([(316, 126), (456, 256), (316, 386)], fill=W)
+    save(img, 'arrow_leftright.png')
+
+
 # Double headed, because the hint it belongs to is "UP / DOWN" -- one arrow would be half
 # an instruction.
 def arrow_updown():
@@ -1714,7 +1724,7 @@ def card():
     save(img, 'card.png')
 
 
-ALL = [bank, card, arrow_right, arrow_left, arrow_updown, drop, socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
+ALL = [bank, card, arrow_right, arrow_left, arrow_updown, arrow_leftright, drop, socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
        cut_100, cut_75, cut_50, cut_33, cut_25, disc]
 
 

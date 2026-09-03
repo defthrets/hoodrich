@@ -1015,6 +1015,11 @@ namespace Hoodrich.Dealing
             _state.GramsSold += sold;
             _state.TotalDealsMade++;
             _state.TotalEarned += payout;
+
+            // The one the bank card shows as the last transfer. Written here rather than
+            // anywhere else because THIS is the only place money is ever earned dealing --
+            // TotalEarned has exactly one caller and this is it.
+            _state.LastDeal = payout;
             _state.Touch();
 
             // Heat is per-sale AND scaled by how public the spot is.

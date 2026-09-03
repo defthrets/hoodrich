@@ -220,6 +220,9 @@ namespace Hoodrich.Phone
         /// </summary>
         public Func<long> Earned;
 
+        /// <summary>What the last corner sale paid. See PlayerState.LastDeal.</summary>
+        public Func<long> LastDeposit;
+
         private readonly Settings _cfg;
 
         private readonly List<Level> _stack = new List<Level>();
@@ -1191,31 +1194,33 @@ namespace Hoodrich.Phone
             Hud.Text("$" + ((long)_shown).ToString("N0"), x + pad, y + 0.032f, 0.62f,
                      Fade(Palette.Text, fade), Hud.FontLabel, centre: false);
 
-            // ---- what just happened, on the same line as the balance ----
-            var since = Cash.MovedAt == 0 ? int.MaxValue : Game.GameTime - Cash.MovedAt;
+            // ---- the last one in, beside the balance ----
+            //
+            // A STATEMENT LINE, WHICH IS WHY IT DOES NOT EXPIRE. This used to be Cash.LastMove
+            // on a twenty second clock -- any money at all, in or out, briefly. Wrong readout
+            // for a bank card twice over: a card that has gone blank tells you nothing when you
+            // open the phone twenty minutes after a sale, and "any money at all" includes
+            // buying a jumper, which is not a deposit.
+            //
+            // This is the corner money and only the corner money. It says TRANSFER because
+            // that is what an amount arriving from somebody else's account is called, and it
+            // stands until the next one replaces it.
+            var last = LastDeposit == null ? 0L : LastDeposit();
 
-            if (since < StatementMs && Cash.LastMove != 0)
+            if (last > 0L)
             {
-                var left = since > StatementMs - StatementFadeMs
-                    ? (StatementMs - since) / (float)StatementFadeMs
-                    : 1f;
+                var chip = "+$" + last.ToString("N0");
 
-                var move = Cash.LastMove;
-                var ink = move > 0 ? Palette.Cash : Palette.Danger;
-
-                var chip = (move > 0 ? "+$" : "-$") + Math.Abs(move).ToString("N0");
-
-                // NO ARROW BESIDE IT, and it was drawn and taken out again. The reasoning
-                // was sound -- colour alone fails the moment somebody cannot tell this green
-                // from this red -- and the fix was already there: the plus and the minus say
-                // it without colour. A left arrow for money in and a right one for money out
-                // is a convention nobody holds, so it added a thing to decode rather than a
-                // second way to read the one already there.
                 Hud.TextRight(chip, x + w - pad, y + 0.042f, 0.26f,
-                              Fade(ink, (int)(fade * left)), Hud.FontLabel);
+                              Fade(Palette.Cash, fade), Hud.FontLabel);
+
+                Hud.TextRight("TRANSFER",
+                              x + w - pad - Hud.MeasureText(chip, 0.26f, Hud.FontLabel) - 0.006f,
+                              y + 0.0425f, 0.22f,
+                              Fade(Palette.TextDim, (int)(fade * 0.85f)), Hud.FontLabel);
             }
 
-            // ---- and the lifetime take under a hairline ----
+            // ---- and everything the corner has ever paid, under a hairline ----
             var ruleY = y + h - 0.024f;
 
             Hud.RectFrom(x + pad, ruleY, w - pad * 2f, 0.0010f,
@@ -1231,7 +1236,11 @@ namespace Hoodrich.Phone
                 tx += Hud.ToX(0.010f) + 0.004f;
             }
 
-            Hud.Text("ALL TIME", tx, ruleY + 0.006f, 0.23f,
+            // DEPOSITS, not "all time". The figure never changed -- it has always been
+            // TotalEarned, which has exactly one caller and that caller is a corner sale --
+            // but "ALL TIME" beside a balance reads as a lifetime of everything, which
+            // includes heists and fares and whatever the game handed you. It is the takings.
+            Hud.Text("DEPOSITS", tx, ruleY + 0.006f, 0.23f,
                      Fade(Palette.TextDim, fade), Hud.FontLabel, centre: false);
 
             Hud.TextRight("$" + take.ToString("N0"), x + w - pad, ruleY + 0.006f, 0.23f,

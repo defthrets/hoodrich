@@ -401,7 +401,7 @@ namespace Hoodrich.UI
 
             Rounds(x, right, y, panelWidth, pad);
 
-            Keys(x, top + height - 0.020f);
+            Keys(x, right, top + height - 0.020f);
         }
 
         /// <summary>
@@ -639,10 +639,32 @@ namespace Hoodrich.UI
                           afford ? Palette.Cash : Palette.TextDisabled, Hud.FontChaletLondon);
         }
 
-        private static void Keys(float x, float y)
+        /// <summary>
+        /// What the buttons do, with a picture on each and in the names of the device you are
+        /// holding. Same treatment the two shelf screens have.
+        ///
+        /// AND IT NOW MENTIONS PICKING A GUN, which it did not. Up and down have always moved
+        /// the cursor down the rack and the line said nothing about it -- it named buying,
+        /// rounds, racks and the way out, and left the one control you have to use first
+        /// entirely unwritten.
+        /// </summary>
+        private static void Keys(float x, float right, float y)
         {
-            Hud.Text("ENTER  BUY      LEFT/RIGHT  ROUNDS      SPACE  RACK      BACKSPACE  OUT",
-                     x, y, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
+            var pad = Hud.OnPad;
+            var ink = Palette.TextDim;
+
+            var hx = Hud.Hint("arrow_updown.png", "PICK", x, y, 0.24f, ink);
+
+            hx = Hud.Hint("arrow_leftright.png", "ROUNDS", hx, y, 0.24f, ink);
+
+            // LB and RB either side of the rack, or space and cover on a keyboard. Named as
+            // the shoulders on a pad because that is what the hands are doing.
+            hx = Hud.Hint("crate.png", (pad ? "LB / RB" : "SPACE") + "  RACK", hx, y, 0.24f, ink);
+
+            Hud.Hint("cash.png", (pad ? "A" : "ENTER") + "  BUY", hx, y, 0.24f, ink);
+
+            Hud.TextRight(pad ? "B  OUT" : "BACKSPACE  OUT", right, y, 0.24f, ink,
+                          Hud.FontLabel);
         }
     }
 }

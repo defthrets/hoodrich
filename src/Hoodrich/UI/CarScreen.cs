@@ -282,10 +282,22 @@ namespace Hoodrich.UI
             Keys(x, right, top + height - 0.030f);
         }
 
+        /// <summary>
+        /// What the buttons do, with a picture on each. Same treatment as the rest of the
+        /// panels -- and it finally uses the right edge it was already being handed, so the
+        /// way out is where it is on every other screen rather than at the end of a sentence.
+        /// </summary>
         private static void Keys(float x, float right, float y)
         {
-            Hud.Text("UP/DOWN  LOOK      ENTER  BUY IT      BACKSPACE  WALK OFF",
-                     x, y, 0.22f, Palette.TextDim, Hud.FontLabel, centre: false);
+            var pad = Hud.OnPad;
+            var ink = Palette.TextDim;
+
+            var hx = Hud.Hint("arrow_updown.png", "LOOK", x, y, 0.22f, ink);
+
+            Hud.Hint("cash.png", (pad ? "A" : "ENTER") + "  BUY IT", hx, y, 0.22f, ink);
+
+            Hud.TextRight(pad ? "B  WALK OFF" : "BACKSPACE  WALK OFF", right, y, 0.22f, ink,
+                          Hud.FontLabel);
         }
 
         /// <summary>Corner ticks rather than a full frame, the way every panel here is edged.</summary>

@@ -58,6 +58,19 @@ namespace Hoodrich.State
         public int TotalDealsMade;
         public long TotalEarned;
 
+        /// <summary>
+        /// What the last corner sale paid, so the bank card can show it as a transfer.
+        ///
+        /// KEPT RATHER THAN TIMED. Every other "what just happened" readout in this mod is on
+        /// a clock and goes away -- this one is a bank statement line, and a statement line
+        /// does not expire. It shows the last deposit until there is a newer one, which is
+        /// what makes it worth looking at when you open the phone twenty minutes later.
+        ///
+        /// Saved with the total for the same reason: a reload that showed no last transfer
+        /// would read as the money not having happened.
+        /// </summary>
+        public long LastDeal;
+
         /// <summary>Total grams moved hand-to-hand. Drives the docks unlock.</summary>
         public float GramsSold;
 
@@ -708,6 +721,7 @@ namespace Hoodrich.State
 
             TotalDealsMade = 0;
             TotalEarned = 0L;
+            LastDeal = 0L;
             GramsSold = 0f;
 
             ProductRep = Neutral;
@@ -1005,6 +1019,7 @@ namespace Hoodrich.State
                 .Set("notoriety", Math.Round(Notoriety, 2))
                 .Set("totalDeals", TotalDealsMade)
                 .Set("totalEarned", TotalEarned)
+                .Set("lastDeal", LastDeal)
                 .Set("gramsSold", Math.Round(GramsSold, 2))
                 .Set("productRep", Math.Round(ProductRep, 3))
                 .Set("docksUnlocked", DocksUnlocked)
@@ -1047,6 +1062,7 @@ namespace Hoodrich.State
                 Notoriety = Math.Min(100f, Math.Max(0f, doc["notoriety"].AsFloat(0f)));
                 TotalDealsMade = Math.Max(0, doc["totalDeals"].AsInt(0));
                 TotalEarned = Math.Max(0L, doc["totalEarned"].AsLong(0));
+                LastDeal = Math.Max(0L, doc["lastDeal"].AsLong(0));
                 GramsSold = Math.Max(0f, doc["gramsSold"].AsFloat(0f));
 
                 // Saves from before the block had an opinion start neutral rather than at
