@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using GTA;
+using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.UI;
@@ -83,7 +84,123 @@ namespace Hoodrich.Economy
             public int DownMs;
 
             public string Line = "";
+
+            /// <summary>How he takes it, and what is in his hand while he does.</summary>
+            public Ritual.Recipe Doing;
         }
+
+        // ---- how each one is taken ----------------------------------------------
+        //
+        // ROLLED RATHER THAN CHOSEN, where there is more than one way to do it. Weed is a
+        // joint and weed is a bong, and a man who smokes the identical joint every single time
+        // is a man performing a routine rather than getting high.
+
+        /// <summary>A joint, with the game's own lit joint in his hand. See Ritual.</summary>
+        private static readonly Ritual.Recipe Joint = new Ritual.Recipe
+        {
+            // No dictionary named at all, so it goes straight to the scenario -- which is the
+            // RIGHT answer here and the only place in this file where it is. The smoking-pot
+            // scenario hands him a lit joint, lifts it to his mouth and blows the smoke out,
+            // and no anim-and-prop we could assemble would be closer.
+            Scenario = "WORLD_HUMAN_SMOKING_POT",
+            Ms = 4200
+        };
+
+        private static readonly Ritual.Recipe Bong = new Ritual.Recipe
+        {
+            Dicts = new[]
+            {
+                "anim@safehouse@bong",
+                "amb@world_human_smoking_pot@male@base",
+                "amb@world_human_smoking@male@male_a@base"
+            },
+            Clip = "base",
+            Props = new[] { "prop_bong_01", "prop_cs_bong_01" },
+            Sits = new Vector3(0.03f, 0.02f, -0.02f),
+            Turned = new Vector3(0f, 0f, 0f),
+            Scenario = "WORLD_HUMAN_SMOKING_POT",
+            Ms = 4600
+        };
+
+        /// <summary>A pipe. Crack and meth are the same motion with a different pipe.</summary>
+        private static readonly Ritual.Recipe CrackPipe = new Ritual.Recipe
+        {
+            Dicts = new[]
+            {
+                "amb@world_human_smoking@male@male_a@base",
+                "amb@world_human_aa_smoke@male@idle_a",
+                "switch@trevor@trev_smoking_meth"
+            },
+            Clip = "base",
+            Props = new[] { "prop_cs_crack_pipe", "p_crack_pipe_01", "prop_meth_pipe" },
+            Sits = new Vector3(0.02f, 0.01f, 0.0f),
+            Scenario = "WORLD_HUMAN_SMOKING",
+            Ms = 3400
+        };
+
+        private static readonly Ritual.Recipe MethPipe = new Ritual.Recipe
+        {
+            Dicts = new[]
+            {
+                "switch@trevor@trev_smoking_meth",
+                "amb@world_human_smoking@male@male_a@base",
+                "amb@world_human_aa_smoke@male@idle_a"
+            },
+            Clip = "base",
+            Props = new[] { "prop_meth_pipe", "prop_cs_crack_pipe", "p_crack_pipe_01" },
+            Sits = new Vector3(0.02f, 0.01f, 0.0f),
+            Scenario = "WORLD_HUMAN_SMOKING",
+            Ms = 3400
+        };
+
+        /// <summary>The needle, and going over at the end of it.</summary>
+        private static readonly Ritual.Recipe Needle = new Ritual.Recipe
+        {
+            Dicts = new[]
+            {
+                "amb@world_human_drug_dealer_hard@male@base",
+                "amb@world_human_drug_dealer@male@base",
+                "amb@world_human_smoking@male@male_a@base"
+            },
+            Clip = "base",
+            Props = new[] { "prop_syringe_01", "prop_cs_syringe", "v_med_syringe" },
+            Sits = new Vector3(0.02f, 0.0f, 0.0f),
+            Turned = new Vector3(0f, 0f, 90f),
+            Scenario = "WORLD_HUMAN_DRUG_DEALER_HARD",
+
+            // The nod. He goes down at the end of it, which is the half of this that nobody
+            // needs an animation dictionary to read.
+            Slump = true,
+            Ms = 3800
+        };
+
+        /// <summary>A line off the back of a hand. Nothing to hold but the wrap.</summary>
+        private static readonly Ritual.Recipe Line_ = new Ritual.Recipe
+        {
+            Dicts = new[]
+            {
+                "amb@world_human_drug_dealer@male@base",
+                "amb@world_human_smoking@male@male_a@base"
+            },
+            Clip = "base",
+            Props = new[] { "prop_meth_bag_01", "prop_drug_package_02", "prop_drug_package" },
+            Sits = new Vector3(0.02f, 0.01f, 0.0f),
+            Scenario = "WORLD_HUMAN_DRUG_DEALER",
+            Ms = 2800
+        };
+
+        /// <summary>
+        /// Pills go down with a drink, which is the one ritual the game already has perfectly.
+        ///
+        /// WORLD_HUMAN_DRINKING is a bottle to the mouth and a head tipped back, prop included.
+        /// Nothing about it says beer rather than washing two bars down, and it is a great deal
+        /// better than a man swallowing air.
+        /// </summary>
+        private static readonly Ritual.Recipe Swallow = new Ritual.Recipe
+        {
+            Scenario = "WORLD_HUMAN_DRINKING",
+            Ms = 3000
+        };
 
         // ---- what each one is ---------------------------------------------------
 
@@ -108,6 +225,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "ecstasy",
+                Doing = Swallow,
                 Cycles = new[] { "drug_flying_01", "drug_flying_base", "drug_wobbly" },
                 Strength = 0.7f,
                 Clipset = "move_m@drunk@moderatedrunk",
@@ -128,6 +246,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "xanax",
+                Doing = Swallow,
                 Cycles = new[] { "drug_flying_base", "drug_wobbly" },
                 Strength = 0.6f,
                 Clipset = "move_m@drunk@verydrunk",
@@ -145,6 +264,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "crack",
+                Doing = CrackPipe,
                 Cycles = new[] { "REDMIST", "drug_drivingfast", "spectator9" },
                 Fx = "DrugsTrevorClownsFightIn",
                 Shake = 0.35f,
@@ -163,6 +283,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "coke",
+                Doing = Line_,
                 Cycles = new[] { "drug_drivingfast", "spectator10", "REDMIST" },
                 Fx = "RaceTurbo",
                 Strength = 0.9f,
@@ -180,6 +301,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "meth",
+                Doing = MethPipe,
                 Cycles = new[] { "spectator10", "drug_drivingfast", "drug_wobbly" },
                 Strength = 0.8f,
                 Shake = 0.30f,
@@ -196,6 +318,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "heroin",
+                Doing = Needle,
                 Cycles = new[] { "DRUG_2_TRAILS", "drug_flying_02", "drug_flying_base", "drug_wobbly" },
                 Fx = "PeyoteEndOut",
                 Clipset = "move_m@drunk@verydrunk",
@@ -222,6 +345,12 @@ namespace Hoodrich.Economy
         private const float DownTakes = 1.6f;
 
         // ---- where it is up to --------------------------------------------------
+
+        private readonly Ritual _ritual = new Ritual();
+        private readonly Random _rng = new Random();
+
+        /// <summary>Taken, being taken, and not landed yet. See Update.</summary>
+        private Recipe _taking;
 
         private Recipe _on;
         private int _until;
@@ -253,6 +382,7 @@ namespace Hoodrich.Economy
         {
             if (string.IsNullOrEmpty(drugId)) return "Not that";
             if (Find(drugId) == null) return "Nothing to do with this one";
+            if (_ritual.Busy) return "You're doing it";
             if (_coming) return "Give it a minute";
             if (_on != null) return _on.Drug == drugId ? "You're already on it" : "One at a time";
 
@@ -267,6 +397,35 @@ namespace Hoodrich.Economy
 
             var recipe = Find(drugId);
 
+            _said = what;
+
+            // WEED IS A JOINT OR A BONG, ROLLED EACH TIME. Everything else has one way it is
+            // taken; this is the one that has two, and a man who smokes the identical joint
+            // every single time is performing a routine rather than getting high.
+            var doing = recipe.Drug == "weed"
+                ? (_rng.Next(2) == 0 ? Joint : Bong)
+                : recipe.Doing;
+
+            // THE EFFECT DOES NOT LAND UNTIL HE HAS TAKEN IT. He stops, he does it, and THEN
+            // the world changes -- which is the entire difference between a habit and a cheat
+            // code. Update carries it the rest of the way.
+            if (doing != null && _ritual.Start(doing))
+            {
+                _taking = recipe;
+
+                Log.Info("Taking " + drugId + ".");
+
+                return null;
+            }
+
+            Land(recipe, what);
+
+            return null;
+        }
+
+        /// <summary>The moment it actually hits.</summary>
+        private void Land(Recipe recipe, string what)
+        {
             _on = recipe;
             _until = Game.GameTime + recipe.Ms;
 
@@ -275,12 +434,13 @@ namespace Hoodrich.Economy
 
             Apply(recipe);
 
-            Log.Info("High: " + drugId + " for " + (recipe.Ms / 1000) + "s.");
+            Log.Info("High: " + recipe.Drug + " for " + (recipe.Ms / 1000) + "s.");
 
             Notify.Ticker("~g~" + what + "~s~ -- " + recipe.Line);
-
-            return null;
         }
+
+        /// <summary>What the ticker says once it lands, kept from the press that started it.</summary>
+        private string _said = "";
 
         private static Recipe Find(string drugId)
         {
@@ -303,6 +463,20 @@ namespace Hoodrich.Economy
         /// </summary>
         public void Update()
         {
+            // The ritual runs first and on its own. Nothing else in here is true yet.
+            if (_ritual.Busy)
+            {
+                if (_ritual.Update() && _taking != null)
+                {
+                    var recipe = _taking;
+                    _taking = null;
+
+                    Land(recipe, _said);
+                }
+
+                return;
+            }
+
             if (_on == null && !_coming) return;
 
             var now = Game.GameTime;
@@ -510,6 +684,9 @@ namespace Hoodrich.Economy
         /// <summary>Everything back to normal. Safe to call at any time, twice.</summary>
         public void Off()
         {
+            _ritual.Stop();
+            _taking = null;
+
             Clear();
 
             _coming = false;
