@@ -446,6 +446,7 @@ namespace Hoodrich.Economy
         /// <summary>Where the blackout is up to. See Overdo.</summary>
         private int _blackFrom;
         private int _wokeAt;
+        private int _fadeAt;
 
         public bool IsHigh => _live.Count > 0;
         public bool IsRough => _coming;
@@ -1013,18 +1014,28 @@ namespace Hoodrich.Economy
 
             _blackFrom = Game.GameTime;
             _wokeAt = 0;
+            _fadeAt = _blackFrom + DropMs;
 
+            // HE GOES DOWN FIRST AND THE SCREEN FOLLOWS HIM. The fade started on the same
+            // frame as the overdose, so the one thing you never saw was the thing that
+            // happened -- the picture was already going before his knees did, and what it read
+            // as was the mod cutting away rather than a man hitting the pavement.
+            //
+            // A couple of seconds of him falling over, and THEN the lights. The ragdoll is set
+            // to outlast the fade so he is still limp underneath it when it covers him.
             try
             {
-                // The fuzz first and the fade over the top of it, so the picture breaks up
-                // before it goes rather than simply dimming.
-                Fx("DeathFailOut");
+                var me = Game.Player.Character;
 
-                Function.Call(Hash.DO_SCREEN_FADE_OUT, FadeMs);
+                if (me != null && me.Exists())
+                {
+                    Function.Call(Hash.SET_PED_TO_RAGDOLL, me.Handle,
+                                  DropMs + FadeMs, DropMs + FadeMs + 1000, 0, true, true, false);
+                }
             }
             catch
             {
-                // Then it is an abrupt cut, which still reads as passing out.
+                // He stays on his feet and the fade still comes.
             }
         }
 
@@ -1039,9 +1050,50 @@ namespace Hoodrich.Economy
         {
             var now = Game.GameTime;
 
+            // A HARD FLOOR UNDER THE WHOLE THING, because the failure mode is the worst one
+            // this mod can produce: a black screen with no way out of it, on somebody's save.
+            //
+            // Every step below can fail on its own -- a native refusing, a teleport into
+            // ground that has not streamed, a state left half set by something else entirely.
+            // None of those should ever end with the picture gone for good, so past the point
+            // where the sequence could possibly still be running, the screen comes back and
+            // the state is thrown away whatever it thought it was doing.
+            if (now - _blackFrom > GiveUpMs)
+            {
+                Log.Warn("The blackout ran long. Putting the screen back.");
+
+                _blackFrom = 0;
+                _wokeAt = 0;
+                _fadeAt = 0;
+
+                try { Function.Call(Hash.DO_SCREEN_FADE_IN, 800); }
+                catch { }
+
+                return;
+            }
+
+            // The lights, once he has had time to hit the ground.
+            if (_fadeAt != 0 && now >= _fadeAt)
+            {
+                _fadeAt = 0;
+
+                try
+                {
+                    // The fuzz first and the fade over the top of it, so the picture breaks up
+                    // before it goes rather than simply dimming.
+                    Fx("DeathFailOut");
+
+                    Function.Call(Hash.DO_SCREEN_FADE_OUT, FadeMs);
+                }
+                catch
+                {
+                    // Then it is an abrupt cut, which still reads as passing out.
+                }
+            }
+
             if (_wokeAt == 0)
             {
-                if (now - _blackFrom < FadeMs + DarkMs) return;
+                if (now - _blackFrom < DropMs + FadeMs + DarkMs) return;
 
                 Wake();
 
@@ -1141,6 +1193,15 @@ namespace Hoodrich.Economy
             new Vector3(-1130.0f, 4940.0f, 220.9f)     // up in the Chiliad woods
         };
 
+        /// <summary>
+        /// How long you watch him go over before the screen starts to go.
+        ///
+        /// Two and a bit seconds, which is about how long a ragdoll takes to finish arguing
+        /// with the pavement. Shorter and the fade eats the fall; much longer and it stops
+        /// being a blackout and starts being a man having a lie down.
+        /// </summary>
+        private const int DropMs = 2200;
+
         /// <summary>How long the fade takes, how long it stays black, and the beat after.</summary>
         private const int FadeMs = 1200;
         private const int DarkMs = 2600;
@@ -1148,6 +1209,15 @@ namespace Hoodrich.Economy
 
         /// <summary>And how rough he is when he comes round.</summary>
         private const int WokeRoughMs = 45000;
+
+        /// <summary>
+        /// Past this, the sequence is broken and the screen comes back regardless.
+        ///
+        /// Fifteen seconds against a sequence whose longest honest path is about six. Wide
+        /// enough that a slow teleport never trips it and short enough that nobody sits
+        /// looking at a black screen wondering whether the game has gone.
+        /// </summary>
+        private const int GiveUpMs = 15000;
 
         /// <summary>Everything back to normal. Safe to call at any time, twice.</summary>
         public void Off()
@@ -1168,6 +1238,7 @@ namespace Hoodrich.Economy
             {
                 _blackFrom = 0;
                 _wokeAt = 0;
+                _fadeAt = 0;
 
                 try { Function.Call(Hash.DO_SCREEN_FADE_IN, 500); }
                 catch { }

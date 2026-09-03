@@ -2253,6 +2253,23 @@ namespace Hoodrich
                 // when you get out, and that is the whole rule.
                 _recorder.Update();
 
+                // BEFORE THE AVAILABILITY GATE, AND THIS ONE IS NOT A PREFERENCE.
+                //
+                // IsPlayable answers false while the screen is faded out -- reasonably, since
+                // almost nothing in this mod should act during a fade. The overdose blackout
+                // fades the screen out itself, and it is the code that fades it back IN. So it
+                // stood itself down mid-blackout and the game was left on a black screen with
+                // nothing running that could ever undo it.
+                //
+                // A system that takes the screen away has to be one that keeps running while
+                // the screen is away. Update does nothing at all unless something is actually
+                // in him, so this costs a branch.
+                _highs.Update();
+
+                // Somebody answering a text you sent, for the same reason on a smaller scale:
+                // the reply is on a clock and should land whatever else is going on.
+                _messages.Pending();
+
                 var available = IsPlayable();
 
                 WatchForPillbox();
@@ -2638,11 +2655,6 @@ namespace Hoodrich
                     // wreck at all.
                     _tow.Update(Game.Player.Character);
 
-                    _highs.Update();
-
-                    // Somebody answering a text you sent. Out here rather than in the screen,
-                    // because the screen only ticks while it is open.
-                    _messages.Pending();
                     _ride.Update(Game.Player.Character);
 
                     _social.Update();
