@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -76,6 +76,25 @@ namespace Hoodrich.UI
         private DroppedBags _bags;
 
         private readonly List<PocketRow> _rows = new List<PocketRow>();
+
+        /// <summary>
+        /// What Bare Minimum says is in your pockets, if it is installed.
+        ///
+        /// A STRIP OF TILES RATHER THAN MORE LINES. Product is a list because every row is a
+        /// name and a weight and a purity -- things you read. Food is three or four items that
+        /// each have a picture drawn for them, so it is a row of pictures you recognise, and
+        /// putting it under the product rather than beside it keeps one column of reading and
+        /// one band of looking.
+        ///
+        /// Ids only. The names, the pictures and the counts are asked for at draw time, which
+        /// keeps everything about the other mod behind one late-bound wall.
+        /// </summary>
+        private readonly List<string> _food = new List<string>();
+
+        /// <summary>Height of the food band: a label, a row of tiles, and air.</summary>
+        private const float FoodStrip = 0.062f;
+
+        private const float FoodTile = 0.040f;
 
         private int _selected;
         private int _openedAt;
@@ -155,6 +174,9 @@ namespace Hoodrich.UI
         {
             _rows.Clear();
 
+            _food.Clear();
+            foreach (var id in Core.Larder.Ids()) _food.Add(id);
+
             if (_pockets == null || _catalogue == null) return;
 
             foreach (var drug in _catalogue.All)
@@ -210,10 +232,38 @@ namespace Hoodrich.UI
                 return;
             }
 
-            if (_rows.Count == 0) return;
+            if (Places == 0) return;
 
             if (Game.IsControlJustPressed(Control.PhoneUp)) Move(-1);
             else if (Game.IsControlJustPressed(Control.PhoneDown)) Move(1);
+
+            // ---- food ----
+            //
+            // SELECT rather than left/right, because left and right already mean "put it down"
+            // and a key that drops product on one row and eats a taco on the next is the kind
+            // of control nobody trusts twice.
+            if (OnFood)
+            {
+                if (!Game.IsControlJustPressed(Control.PhoneSelect)) return;
+
+                var at = _selected - _rows.Count;
+                if (at < 0 || at >= _food.Count) return;
+
+                if (Core.Larder.Consume(_food[at]))
+                {
+                    Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+                    // The eating animation is the point of it, and it plays out here rather
+                    // than behind a phone screen.
+                    Close();
+                }
+                else
+                {
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                }
+
+                return;
+            }
 
             // Left or right, because there is only one direction anything can go from here and
             // making you learn which of the two it is would be a puzzle rather than a control.
@@ -223,12 +273,17 @@ namespace Hoodrich.UI
             if (down && Game.GameTime >= _nextRepeat) Drop(Game.IsControlPressed(Control.Sprint));
         }
 
+        /// <summary>Product rows first, then one place per food tile.</summary>
+        private int Places => _rows.Count + _food.Count;
+
+        private bool OnFood => _selected >= _rows.Count;
+
         private void Move(int step)
         {
-            if (_rows.Count == 0) return;
+            if (Places == 0) return;
 
-            _selected = (_selected + step) % _rows.Count;
-            if (_selected < 0) _selected += _rows.Count;
+            _selected = (_selected + step) % Places;
+            if (_selected < 0) _selected += Places;
 
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -284,6 +339,10 @@ namespace Hoodrich.UI
 
             var bodyRows = Math.Max(_rows.Count, 1);
             var height = HeadHeight + bodyRows * RowHeight + FootHeight;
+
+            // Only when there is food. An empty band with a heading over it is a promise the
+            // screen is not keeping.
+            if (_food.Count > 0) height += FoodStrip;
 
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
@@ -346,7 +405,7 @@ namespace Hoodrich.UI
                 Hud.Text("Nothing on you.", x, y + 0.006f, 0.28f,
                          Palette.TextDim, Hud.FontBody, centre: false);
             }
-            else
+            else if (!OnFood)
             {
                 _slide += (_selected - _slide) * SlideRate;
                 if (Math.Abs(_selected - _slide) < 0.002f) _slide = _selected;
@@ -376,17 +435,93 @@ namespace Hoodrich.UI
                 y += RowHeight;
             }
 
+            if (_food.Count > 0) FoodBand(x, wide, y + 0.006f, arrive);
+
             var footY = top + height - FootHeight + 0.008f;
 
             Hud.RectFrom(x, footY, wide, 0.0010f, Hairline);
 
-            const string hint =
-                "UP / DOWN  PICK     LEFT or RIGHT  PUT IT DOWN     SPRINT  ALL OF IT     BACKSPACE  DONE";
+            var hint = OnFood
+                ? "UP / DOWN  PICK     ENTER  EAT IT     BACKSPACE  DONE"
+                : "UP / DOWN  PICK     LEFT or RIGHT  PUT IT DOWN     SPRINT  ALL OF IT     BACKSPACE  DONE";
 
             Hud.Text(hint, x, footY + 0.008f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
 
             Hud.Frame(left, top, panelWidth, height,
                       Color.FromArgb(150, 90, 215, 235), Palette.Accent, Rule, Tick);
+        }
+
+        /// <summary>
+        /// The food band: a heading, then one tile per thing you are carrying.
+        ///
+        /// The tiles are drawn from Bare Minimum's own PNGs, by absolute path. Hud.File runs
+        /// its argument through Path.Combine against this mod's icon folder, and Path.Combine
+        /// hands back the second argument whole when it is already rooted -- so a full path
+        /// loads as it is, and neither mod has to know where the other keeps its art.
+        ///
+        /// Tinted with the item's own colour, which crosses the bridge as a packed ARGB int
+        /// because Color is not a type both assemblies can agree on.
+        /// </summary>
+        private void FoodBand(float x, float width, float y, float arrive)
+        {
+            Hud.Text("FOOD", x, y, 0.26f, Palette.Alpha(Palette.TextDim, 210),
+                     Hud.FontLabel, centre: false);
+
+            Hud.TextRight(Core.Larder.Total + " / " + Core.Larder.Slots,
+                          x + width, y, 0.24f, Palette.TextDim, Hud.FontLabel);
+
+            var tileY = y + 0.020f;
+            var tile = Hud.ToX(FoodTile);
+
+            for (var i = 0; i < _food.Count; i++)
+            {
+                var id = _food[i];
+
+                var tx = x + i * (tile + Hud.ToX(0.008f));
+                var picked = _selected - _rows.Count == i;
+
+                Hud.RectFrom(tx, tileY, tile, FoodTile,
+                             picked ? Color.FromArgb((int)(210f * arrive), 240, 170, 56)
+                                    : Color.FromArgb((int)(60f * arrive), 255, 255, 255));
+
+                var art = Core.Larder.IconOf(id);
+
+                if (!string.IsNullOrEmpty(art))
+                {
+                    // Near-black on the picked tile, the item's own colour otherwise. The art
+                    // is white and CustomSprite multiplies, so one file does both.
+                    var ink = picked
+                        ? Color.FromArgb(255, 20, 18, 14)
+                        : Palette.Alpha(Core.Larder.TintOf(id), (int)(235f * arrive));
+
+                    Hud.File(art, tx + tile * 0.5f, tileY + FoodTile * 0.5f,
+                             FoodTile * 0.62f, 0f, ink);
+                }
+
+                var many = Core.Larder.CountOf(id);
+
+                if (many > 1)
+                {
+                    Hud.TextRight(many.ToString(), tx + tile - 0.003f,
+                                  tileY + FoodTile - 0.014f, 0.24f,
+                                  picked ? Color.FromArgb(255, 26, 22, 16) : Palette.Text,
+                                  Hud.FontLabel);
+                }
+            }
+
+            // The name of the one under the cursor, since a picture alone does not say which
+            // taco it is.
+            if (OnFood)
+            {
+                var at = _selected - _rows.Count;
+
+                if (at >= 0 && at < _food.Count)
+                {
+                    Hud.TextRight(Core.Larder.NameOf(_food[at]), x + width,
+                                  tileY + FoodTile * 0.5f - 0.006f, 0.26f,
+                                  Palette.Text, Hud.FontBody);
+                }
+            }
         }
 
         /// <summary>What you are holding out of what you can, with a bar of it.</summary>
