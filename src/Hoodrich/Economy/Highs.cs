@@ -290,10 +290,28 @@ namespace Hoodrich.Economy
             {
                 Drug = "coke",
                 Doing = Line_,
-                Cycles = new[] { "drug_drivingfast", "spectator10", "REDMIST" },
+
+                // SPEEDY LIKE THE OTHERS AND BRIGHT LIKE THE BARS, which is a combination none
+                // of the rest have and is the whole character of this one.
+                //
+                // It was wearing crack's clothes -- REDMIST and a hard drivingfast smear at
+                // nine tenths strength -- so the fastest drug in here LOOKED like the angriest
+                // one, and the two of them were telling you the same thing in the same red.
+                //
+                // The day goes bright the way the bars do, and the timecycle drops to under
+                // half strength so the picture stays SHARP under it. That is the difference
+                // between clear and merely pale: everything crisp and over-lit and slightly
+                // too much, rather than a filter smeared over the top of it.
+                Cycles = new[] { "drug_flying_base", "spectator10", "drug_drivingfast" },
+                Strength = 0.45f,
+                Sunny = true,
+
                 Fx = "RaceTurbo",
-                Strength = 0.9f,
-                Shake = 0.22f,
+
+                // A jitter rather than a sway. Anything heavier reads as drunk, which is the
+                // one thing this is not.
+                Shake = 0.20f,
+
                 Run = 1.49f,
                 Hits = 1.3f,
                 Rage = true,
