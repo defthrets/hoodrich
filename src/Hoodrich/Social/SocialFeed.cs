@@ -1410,12 +1410,18 @@ namespace Hoodrich.Social
                     break;
 
                 case SocialEvent.TakeoverOn:
-                    // ONE POST, AND NOTHING BEHIND IT. A call-out is a call-out: two people
-                    // announcing the same thing in the same minute is a rumour, and the rest
-                    // of the talking happens later, once there is something to talk about.
-                    follow = "TakeoverOn";
-                    count = 1;
-                    break;
+                    // ONE POST, AND THIS IS WHERE IT ACTUALLY BECOMES ONE.
+                    //
+                    // The comment here already said "one post and nothing behind it" and the
+                    // code did not do it: a count of one is one REACTION, on top of the post
+                    // On has already made. Two people announced the same junction seconds
+                    // apart every single time, which is the rumour this was written to avoid.
+                    //
+                    // A count of zero would not have fixed it either -- the burst is clamped
+                    // with Math.Max(1, count) further down, so zero is one. Returning is the
+                    // only way to say none, and none is right: a call-out is one person telling
+                    // you where to be. The block talking about it comes later, off Chatter.
+                    return;
 
                 case SocialEvent.WarStarted:
                     follow = _rng.NextDouble() < 0.5 ? "WarStarted" : "OrgEvent";

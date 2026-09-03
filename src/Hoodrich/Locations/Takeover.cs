@@ -747,15 +747,6 @@ namespace Hoodrich.Locations
         private int _nextWord;
 
         private const int TickMs = 700;
-        /// <summary>
-        /// How long the block says nothing about it.
-        ///
-        /// Half of the three hours it runs, in real milliseconds rather than game minutes --
-        /// the posts are paced by the real clock like everything else on the feed, so the
-        /// threshold has to be on the same clock as the gap between them.
-        /// </summary>
-        private const int QuietForMs = 900000;
-
         private int _startedAt;
 
         private const int WordMinMs = 55000;
@@ -4232,11 +4223,23 @@ namespace Hoodrich.Locations
         {
             if (Social == null || now < _nextWord) return;
 
-            // NOT UNTIL IT HAS BEEN GOING A WHILE. The block posting about a takeover in the
-            // first minute is the block reporting something it cannot have noticed yet -- and
-            // it gave the whole thing away before there was anything at the junction to see.
-            // Half the night in, it is a thing people have walked past and are talking about.
-            if (_startedAt == 0 || Game.GameTime - _startedAt < QuietForMs) return;
+            // HALFWAY IN, ON THE CLOCK THE NIGHT ACTUALLY ENDS ON.
+            //
+            // This waited fifteen REAL minutes, described in its own comment as "half of the
+            // three hours it runs". Those three hours are GAME hours: at the game's own rate
+            // that is about six real minutes end to end, so the gate was more than twice the
+            // length of the whole event and the block has never once said a word about a
+            // takeover. Every takeover post ever seen was the call-out.
+            //
+            // Asked of _endsAt instead -- the same clock the police are called on -- so
+            // halfway is halfway whatever the clock is doing, including when somebody has
+            // sped it up or slowed it down.
+            //
+            // The reason for waiting at all is unchanged: the block posting in the first
+            // minute is the block reporting something it cannot have noticed yet, and it gave
+            // the whole thing away before there was anything at the junction to see.
+            if (_endsAt == 0) return;
+            if (_endsAt - OwnedCars.NowMinutes() > (int)(LastsHours * 30f)) return;
 
             _nextWord = now + _rng.Next(WordMinMs, WordMaxMs);
 
