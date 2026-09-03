@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Reflection;
 using GTA;
@@ -49,6 +49,7 @@ namespace Hoodrich.Core
 
         private static PropertyInfo _ready, _total, _slots;
         private static MethodInfo _ids, _countOf, _nameOf, _iconOf, _tintOf, _consume, _mark;
+        private static MethodInfo _notSleep;
 
         // ======================================================================
 
@@ -115,6 +116,11 @@ namespace Hoodrich.Core
                     // Optional: an older Bare Minimum on the same API version will not
                     // have it, and a null here just means no mark beside the heading.
                     _mark = type.GetMethod("Mark", BindingFlags.Public | BindingFlags.Static);
+
+                    // Also optional, same reasoning. Without it an overdose still skips the
+                    // hours -- they are just counted as a night's sleep over there, which is
+                    // what happened before this existed.
+                    _notSleep = type.GetMethod("NotSleep", BindingFlags.Public | BindingFlags.Static);
 
                     _type = type;
 
@@ -210,6 +216,27 @@ namespace Hoodrich.Core
             {
                 try { return !Present || _slots == null ? 0 : (int)_slots.GetValue(null, null); }
                 catch { return 0; }
+            }
+        }
+
+        /// <summary>
+        /// Tell it the hours about to pass were not restful.
+        ///
+        /// Called immediately BEFORE the clock is moved, because the latch is consumed by the
+        /// jump it is warning about -- set it afterwards and the jump has already been read as
+        /// a night in a bed.
+        /// </summary>
+        public static void NotSleep()
+        {
+            try
+            {
+                if (!Present || _notSleep == null) return;
+
+                _notSleep.Invoke(null, null);
+            }
+            catch
+            {
+                // Then the other mod thinks you had a lie down.
             }
         }
 

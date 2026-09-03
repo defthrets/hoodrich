@@ -1159,6 +1159,19 @@ namespace Hoodrich.Economy
                 // come round in the dark.
                 var hours = 4 + _rng.Next(6);
 
+                // AND THEY WERE NOT RESTFUL, which has to be said before the clock moves
+                // rather than after.
+                //
+                // Bare Minimum watches the clock and reads a jump it did not cause as somebody
+                // having slept -- fair, because the things that move time in hours are beds.
+                // So passing out on four drugs was handing back a full night's rest, and its
+                // log said so in as many words: "Slept 6h (quality 1.00). Sleep 100%." The
+                // most efficient way to sleep in this game was to overdose in the street.
+                //
+                // Optional on the other end: an install without the call gets the old
+                // behaviour, and one without Bare Minimum at all never notices.
+                Core.Larder.NotSleep();
+
                 Function.Call(Hash.ADD_TO_CLOCK_TIME, hours, 0, 0);
 
                 // And he is on the floor when the picture comes back, because nobody who has
