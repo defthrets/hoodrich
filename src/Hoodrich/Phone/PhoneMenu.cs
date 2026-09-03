@@ -56,7 +56,19 @@ namespace Hoodrich.Phone
 
         private const int Columns = 3;
         private const float TilePad = 0.011f;
-        private const float TileH = 0.112f;
+        /// <summary>
+        /// A hair shorter than it was, and the bank card is why.
+        ///
+        /// Ten apps is four rows, and the body has room for five -- so a card a whole row tall
+        /// leaves exactly four, which fits by one thousandth of a screen. It DOES fit, and a
+        /// layout that survives on a thousandth is one bad constant away from the tenth app
+        /// silently not being drawn, with nothing anywhere saying so.
+        ///
+        /// Four per cent off every tile buys two hundredths of clearance and is not visible on
+        /// a handset this size. The alternative was a card shorter than a row, which is not
+        /// what was asked for.
+        /// </summary>
+        private const float TileH = 0.108f;
 
         // ---- the list -----------------------------------------------------------
 
@@ -198,6 +210,15 @@ namespace Hoodrich.Phone
             public int Index;
             public int Scroll;
         }
+
+        /// <summary>
+        /// The lifetime take, for the bank card. Null until Main hands it over.
+        ///
+        /// A hook rather than a reference to the save, because this class knows about a
+        /// Settings object and nothing else, and the one number it wants is not worth handing
+        /// it the whole of PlayerState to reach.
+        /// </summary>
+        public Func<long> Earned;
 
         private readonly Settings _cfg;
 
@@ -1044,6 +1065,13 @@ namespace Hoodrich.Phone
             var x0 = left + padX;
             var y = top + TilePad;
 
+            // THE CARD, ACROSS ALL THREE COLUMNS. Drawn before the apps and on the same
+            // stagger clock, so it arrives as the first thing on the screen rather than
+            // after everything it sits above.
+            Wallet(x0, y, w - padX * 2f, TileH, fade);
+
+            y += TileH + TilePad;
+
             for (var i = 0; i < page.Items.Count; i++)
             {
                 var col = i % Columns;
@@ -1071,6 +1099,115 @@ namespace Hoodrich.Phone
                      i == Top.Index, (int)(fade * lands));
             }
         }
+
+        /// <summary>
+        /// The bank card: what you have, what you have ever had, and what just happened.
+        ///
+        /// WHY IT IS ON THE HOME SCREEN AT ALL. Every other number this mod keeps has somewhere
+        /// to live -- weight is in the pocket, standing is on the gang page, the block is on the
+        /// map. Money had nowhere: it is the game's own stat, so it appears in the pause menu
+        /// and in a green flash by the minimap for four seconds after a sale, and at no other
+        /// time. The one figure the whole mod is about was the one figure you could not look up.
+        ///
+        /// THE BALANCE ROLLS RATHER THAN CUTS. A number that changes between two frames is a
+        /// number you did not see change; one that runs up to its new value over a third of a
+        /// second is the thing a banking app does, and it is the difference between reading a
+        /// figure and watching money arrive. Eased towards, not stepped, so a big sale takes
+        /// visibly longer to count than a small one.
+        ///
+        /// AND THE LAST MOVEMENT SITS BESIDE IT, in the green or the red, for as long as it is
+        /// worth reading. Cash already knows what it last did -- see Cash.LastMove -- so this
+        /// is a statement line rather than a second ledger.
+        /// </summary>
+        private void Wallet(float x, float y, float w, float h, int fade)
+        {
+            int money;
+
+            try { money = Game.Player.Money; }
+            catch { return; }
+
+            // First look of the session lands on the real figure rather than counting up from
+            // nothing, which would be a slot machine every time you open the phone.
+            if (!_walletSeen)
+            {
+                _walletSeen = true;
+                _shown = money;
+            }
+            else
+            {
+                _shown += (money - _shown) * RollRate;
+
+                if (Math.Abs(money - _shown) < 1f) _shown = money;
+            }
+
+            var pad = Hud.ToX(0.010f);
+
+            // A plate a shade lighter than the screen, so it reads as something ON the home
+            // screen rather than a hole in it -- the apps have no plate at all, which is what
+            // makes this a widget rather than a fourth row of them.
+            Hud.RectFrom(x, y, w, h, Color.FromArgb((int)(fade * 0.14f), 255, 255, 255));
+
+            // The set's green down the left edge. One stripe is enough to say whose bank it is.
+            Hud.RectFrom(x, y, Hud.ToX(0.0022f), h, Fade(LitEdge, fade));
+
+            var ix = x + pad;
+
+            if (Hud.File("money.png", ix + Hud.ToX(0.014f) * 0.5f, y + 0.017f, 0.014f, 0f,
+                         Fade(Palette.Cash, fade)))
+            {
+                ix += Hud.ToX(0.014f) + 0.005f;
+            }
+
+            Hud.Text("BALANCE", ix, y + 0.010f, 0.26f, Fade(Palette.TextDim, fade),
+                     Hud.FontLabel, centre: false);
+
+            // ---- what just happened ----
+            var since = Cash.MovedAt == 0 ? int.MaxValue : Game.GameTime - Cash.MovedAt;
+
+            if (since < StatementMs && Cash.LastMove != 0)
+            {
+                var left = since > StatementMs - StatementFadeMs
+                    ? (StatementMs - since) / (float)StatementFadeMs
+                    : 1f;
+
+                var move = Cash.LastMove;
+
+                Hud.TextRight((move > 0 ? "+$" : "-$") + Math.Abs(move).ToString("N0"),
+                              x + w - pad, y + 0.010f, 0.26f,
+                              Fade(move > 0 ? Palette.Cash : Palette.Danger,
+                                   (int)(fade * left)),
+                              Hud.FontLabel);
+            }
+
+            // ---- the figure ----
+            Hud.Text("$" + ((long)_shown).ToString("N0"), x + pad, y + 0.030f, 0.62f,
+                     Fade(Palette.Text, fade), Hud.FontLabel, centre: false);
+
+            // ---- and the lifetime take under a hairline ----
+            var ruleY = y + h - 0.024f;
+
+            Hud.RectFrom(x + pad, ruleY, w - pad * 2f, 0.0010f,
+                         Color.FromArgb((int)(fade * 0.20f), 255, 255, 255));
+
+            var take = Earned == null ? 0L : Earned();
+
+            Hud.Text("ALL TIME", x + pad, ruleY + 0.006f, 0.23f,
+                     Fade(Palette.TextDim, fade), Hud.FontLabel, centre: false);
+
+            Hud.TextRight("$" + take.ToString("N0"), x + w - pad, ruleY + 0.006f, 0.23f,
+                          Fade(Palette.TextDim, fade), Hud.FontLabel);
+        }
+
+        /// <summary>The rolling figure, and whether it has ever been set.</summary>
+        private float _shown;
+        private bool _walletSeen;
+
+        /// <summary>How much of the gap the figure closes each frame. See Wallet.</summary>
+        private const float RollRate = 0.12f;
+
+        /// <summary>How long the last movement stays beside the balance, and its fade.</summary>
+        private const int StatementMs = 20000;
+        private const int StatementFadeMs = 2500;
 
         /// <summary>
         /// How far into the press animation the live tile is, nought to one and back.

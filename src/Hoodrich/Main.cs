@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -2039,6 +2039,10 @@ namespace Hoodrich
 
 
                 _menu = new Phone.PhoneMenu(_cfg);
+
+                // The one number the bank card cannot work out for itself. Cash is the game's
+                // and the phone reads it directly; what you have EVER made is ours.
+                _menu.Earned = () => _state == null ? 0L : _state.TotalEarned;
                 _phone = new Phone.PhoneController(_cfg, _menu, pages.BuildRoot);
 
                 // A conversation is not a "screen" as far as the frame chain is concerned, so

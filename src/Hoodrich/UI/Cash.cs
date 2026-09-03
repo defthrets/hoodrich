@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Native;
 using Color = System.Drawing.Color;
@@ -54,6 +54,20 @@ namespace Hoodrich.UI
         private static int _amount;
         private static int _balance;
 
+        /// <summary>
+        /// The last move, kept after the corner readout has gone.
+        ///
+        /// _shownAt is cleared when the number retires, which is right for the thing on screen
+        /// and useless to anything that wants to ASK what last happened. The phone's bank card
+        /// is open long after a sale and still wants to show the line. So the timestamp is
+        /// kept separately and never cleared.
+        /// </summary>
+        private static int _movedAt;
+
+        /// <summary>What the balance last did, and when. Nought until money has moved.</summary>
+        public static int LastMove { get { return _amount; } }
+        public static int MovedAt { get { return _movedAt; } }
+
         /// <summary>Pays the player, and puts the number up.</summary>
         public static void Give(int amount)
         {
@@ -81,6 +95,7 @@ namespace Hoodrich.UI
         private static void Mark(int amount)
         {
             _shownAt = Game.GameTime;
+            _movedAt = _shownAt;
             _amount = amount;
 
             try { _balance = Game.Player.Money; }
