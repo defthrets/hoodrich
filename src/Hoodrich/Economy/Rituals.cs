@@ -163,35 +163,44 @@ namespace Hoodrich.Economy
         {
             _slump = recipe.Slump;
 
-            foreach (var name in recipe.Props)
+            _held = InHand(me, recipe.Props, recipe.Sits, recipe.Turned);
+        }
+
+        /// <summary>
+        /// The first of these models the install actually has, bolted to a hand.
+        ///
+        /// PUBLIC AND STATIC BECAUSE THE CORNER WANTS IT TOO. Selling somebody a bag is the
+        /// same problem as smoking one: a ladder of names that may or may not exist, a hand
+        /// bone, and a line in the log saying which rung took. Two copies of that would drift,
+        /// and the one that drifted would be the one nobody was looking at.
+        ///
+        /// Blocking on the model, deliberately: this is one prop, once, at a moment somebody
+        /// caused -- not a spawner running every frame. The non-blocking rule exists because a
+        /// per-frame wait is a stutter, and this is neither per-frame nor a surprise.
+        /// </summary>
+        public static Prop InHand(Ped who, string[] names, Vector3 sits, Vector3 turned)
+        {
+            if (who == null || !who.Exists() || names == null) return null;
+
+            foreach (var name in names)
             {
                 try
                 {
                     var model = new Model(name);
 
                     if (!model.IsValid || !model.IsInCdImage) continue;
-
-                    // Blocking, and deliberately so: this is one prop, once, at the moment
-                    // somebody pressed a button -- not a spawner running every frame. The
-                    // non-blocking rule exists because a per-frame wait is a stutter, and this
-                    // is neither per-frame nor a surprise.
                     if (!model.Request(600)) continue;
 
-                    _held = World.CreateProp(model, me.Position, false, false);
+                    var prop = World.CreateProp(model, who.Position, false, false);
 
                     model.MarkAsNoLongerNeeded();
 
-                    if (_held == null || !_held.Exists()) continue;
+                    if (prop == null || !prop.Exists()) continue;
 
-                    var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, RightHand);
+                    Give(prop, who, sits, turned);
 
-                    Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _held.Handle, me.Handle, bone,
-                                  recipe.Sits.X, recipe.Sits.Y, recipe.Sits.Z,
-                                  recipe.Turned.X, recipe.Turned.Y, recipe.Turned.Z,
-                                  false, false, false, false, 2, true);
-
-                    Log.Info("Ritual prop: " + name + ".");
-                    return;
+                    Log.Info("Prop in hand: " + name + ".");
+                    return prop;
                 }
                 catch
                 {
@@ -199,10 +208,36 @@ namespace Hoodrich.Economy
                 }
             }
 
-            if (recipe.Props.Length > 0)
+            if (names.Length > 0)
             {
-                Log.Info("None of these props exist on this install: " +
-                         string.Join(", ", recipe.Props));
+                Log.Info("None of these props exist on this install: " + string.Join(", ", names));
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Move a prop into somebody's hand. Re-attaching is how it changes hands.
+        ///
+        /// ATTACH_ENTITY_TO_ENTITY on something already attached moves it rather than refusing,
+        /// so a bag passing from one man to another is one call and no detach in between --
+        /// which matters, because a frame with it attached to nobody is a frame with it falling.
+        /// </summary>
+        public static void Give(Prop what, Ped who, Vector3 sits, Vector3 turned)
+        {
+            if (what == null || !what.Exists() || who == null || !who.Exists()) return;
+
+            try
+            {
+                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, who.Handle, RightHand);
+
+                Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, what.Handle, who.Handle, bone,
+                              sits.X, sits.Y, sits.Z, turned.X, turned.Y, turned.Z,
+                              false, false, false, false, 2, true);
+            }
+            catch
+            {
+                // It stays where it was, which is somebody's hand either way.
             }
         }
 

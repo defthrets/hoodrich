@@ -590,6 +590,13 @@ namespace Hoodrich.Dealing
             // somewhere else" -- and being somewhere else is exactly when this is not posted.
             _ground.Tick();
 
+            // The bag the last customer walked off with, let go of on its own clock. Before
+            // the early return, because he keeps walking whether or not the pitch is open.
+            if (_baggie != null && _baggieUntil != 0 && Game.GameTime >= _baggieUntil)
+            {
+                DropBaggie();
+            }
+
             // Before the early return as well. A man swinging at you does not stop being a
             // problem because you put the product away, and drawing on him is the same answer
             // whether or not the pitch is still open.
@@ -912,11 +919,90 @@ namespace Hoodrich.Dealing
         /// stays as two ordinary tasks and the alignment is handled by walking the buyer onto
         /// the mark beforehand.
         /// </summary>
-        private static void PlayHandoff(Ped player, Ped buyer)
+        private void PlayHandoff(Ped player, Ped buyer)
         {
             PlayAnim(player, AnimPlayer);
             PlayAnim(buyer, AnimBuyer);
+
+            // AND SOMETHING ACTUALLY CHANGES HANDS. The handshake was two people miming an
+            // exchange with nothing between them -- the whole animation is built around an
+            // object and there was no object, so what you watched was a peculiar high five
+            // that ended in money appearing.
+            Baggie(player);
         }
+
+        /// <summary>
+        /// The bag, put in his hand for the handshake.
+        ///
+        /// The same ladder the coke ritual uses, because it is the same question -- see
+        /// Ritual.InHand, which owns it now so there is one list of names rather than two that
+        /// drift apart.
+        /// </summary>
+        private void Baggie(Ped player)
+        {
+            DropBaggie();
+
+            _baggie = Economy.Ritual.InHand(player, BaggieProps, BaggieSits, BaggieTurned);
+            _baggieUntil = 0;
+        }
+
+        /// <summary>
+        /// It goes to the buyer when the deal closes, and he takes it away with him.
+        ///
+        /// RE-ATTACHED RATHER THAN SWAPPED. One call moves it from one hand to the other, and
+        /// there is never a frame where it belongs to nobody -- a frame like that is a bag
+        /// falling through the pavement in front of the customer.
+        ///
+        /// Then it is on a clock. The buyer is released the same instant and walks off; a prop
+        /// bolted to a stranger the mod has let go of is a bag that exists for the rest of the
+        /// session, on somebody who will eventually be cleaned up around it.
+        /// </summary>
+        private void PassBaggie(Ped buyer)
+        {
+            if (_baggie == null || !_baggie.Exists()) { _baggie = null; return; }
+
+            if (buyer == null || !buyer.Exists())
+            {
+                DropBaggie();
+                return;
+            }
+
+            Economy.Ritual.Give(_baggie, buyer, BaggieSits, BaggieTurned);
+
+            _baggieUntil = Game.GameTime + BaggieGoneMs;
+        }
+
+        private void DropBaggie()
+        {
+            if (_baggie == null) return;
+
+            try
+            {
+                if (_baggie.Exists()) _baggie.Delete();
+            }
+            catch
+            {
+                // The streamer gets it.
+            }
+
+            _baggie = null;
+            _baggieUntil = 0;
+        }
+
+        private Prop _baggie;
+        private int _baggieUntil;
+
+        /// <summary>How long the buyer keeps it before it stops being ours to worry about.</summary>
+        private const int BaggieGoneMs = 7000;
+
+        /// <summary>Names to try, and where it sits. Same list as the coke ritual.</summary>
+        private static readonly string[] BaggieProps =
+        {
+            "prop_meth_bag_01", "prop_drug_package_02", "prop_drug_package", "prop_cash_pile_01"
+        };
+
+        private static readonly Vector3 BaggieSits = new Vector3(0.02f, 0.01f, 0.0f);
+        private static readonly Vector3 BaggieTurned = new Vector3(0f, 0f, 0f);
 
         private static void PlayAnim(Ped ped, string anim)
         {
@@ -935,6 +1021,10 @@ namespace Hoodrich.Dealing
         {
             var product = _product;
             var customer = _customer;
+
+            // BEFORE THE CUSTOMER IS LET GO, because after it he is not ours to hand anything
+            // to -- the reference is cleared and the man has been told to get on with his day.
+            PassBaggie(customer);
 
             ReleaseCustomer();
             State = PostState.Posted;
@@ -2679,6 +2769,10 @@ namespace Hoodrich.Dealing
             // wearing a duffle for the rest of the save, which is the mod not cleaning up
             // after itself in the most visible way possible.
             DropTheBag();
+
+            // And the little one, which is a different bag entirely -- the one that changes
+            // hands on a sale. Same reasoning, smaller prop.
+            DropBaggie();
 
             ReleaseCustomer();
             ReleaseCop();
