@@ -577,51 +577,46 @@ namespace Hoodrich.Paint
             var drop = FarEnough * FarEnough;
             var restore = NearEnough * NearEnough;
 
-            var stuck = 0;
-
-            // NEWEST FIRST, WHICH IS BACKWARDS THROUGH THE LIST.
-            //
-            // The order used to be oldest first, which is the order they went on the wall and
-            // exactly the wrong order to put them back in. Once there are more marks near you
-            // than the pool can hold -- which on a well-used wall is most of the time -- the
-            // ones asked first get the slots, so the oldest paint won and the newest never got
-            // a look in. Walking backwards means what you did most recently is what is on the
-            // wall, and the thing that goes missing is a tag from three sessions ago.
+            // THE FAR ONES COME DOWN BEFORE ANYTHING GOES UP, so the slots they were
+            // holding are free for this same pass rather than the next one.
             for (var i = _marks.Count - 1; i >= 0; i--)
             {
                 var m = _marks[i];
-                var d = me.DistanceToSquared(m.At);
 
-                if (!m.Away && d > drop)
+                if (m.Away) continue;
+
+                if (me.DistanceToSquared(m.At) > drop)
                 {
                     Wipe(m);
                     m.Away = true;
-                    continue;
-                }
-
-                if (m.Away && d < restore)
-                {
-                    m.Handle = Place(m);
-
-                    // THE SAME FALLBACK PLACING HAS ALWAYS HAD, and its absence here is why
-                    // tags came back cut off and why old ones stopped coming back at all.
-                    //
-                    // Put asks Recycle for a slot when the pool refuses; this did not. So the
-                    // restore filled the pool with whatever it reached first -- and the list is
-                    // oldest first, so that is the START of a piece -- and then every remaining
-                    // mark failed, stayed away, and failed again on the next sweep. Walking up
-                    // to an old tag with a full pool did nothing at all, because nothing was
-                    // ever asked to make room for it.
-                    //
-                    // Recycle only takes from marks a good margin further away than this one,
-                    // so the nearest paint wins and two marks cannot evict each other.
-                    if (m.Handle == 0 && Recycle(m.At)) m.Handle = Place(m);
-
-                    m.Away = m.Handle == 0;
-
-                    if (m.Away) stuck++;
                 }
             }
+
+            // THEN TWICE, AND THE WALL YOU ARE STOOD AT GOES FIRST.
+            //
+            // ONE PASS OVER THE WHOLE RING IS WHY A WALL RENDERS HALF-DONE. The restore ring is
+            // a hundred and ten metres and a used block holds thousands of marks inside it --
+            // the log has counted three thousand near enough to want a slot at once. The pool
+            // is two thousand and forty-eight at the absolute most and shared with every bullet
+            // hole, tyre mark and blood splat in the world, so there are never enough slots for
+            // everything in the ring and there never will be. Which ones get them is therefore
+            // the whole question, and it was being answered by list order.
+            //
+            // List order is when it was painted. So walking up to a wall put you in a
+            // competition against paint a hundred metres behind you that you cannot see, the
+            // recent stuff won on age, and the piece in front of your face came out with holes
+            // in it -- permanently, because nothing about standing there changes the answer.
+            //
+            // Near ring first fixes exactly that and costs one extra walk of a list. Everything
+            // within CloseUp is asked before anything beyond it, so what you are LOOKING at is
+            // always complete and the thing that goes short is a wall down the road, which is
+            // the right thing to lose.
+            //
+            // Newest first inside each ring, which is backwards through the list -- among marks
+            // you can equally see, the most recent work is what should survive.
+            var stuck = Restore(me, 0f, CloseUp * CloseUp);
+
+            stuck += Restore(me, CloseUp * CloseUp, restore);
 
             // SAID WHEN IT CHANGES, not every sweep. Paint that is near enough to be on the
             // wall and is not is the one thing this class exists to prevent, and "some of my
@@ -638,6 +633,58 @@ namespace Hoodrich.Paint
                 }
             }
         }
+
+        /// <summary>
+        /// Put back every mark whose distance falls in a band, newest first.
+        ///
+        /// Squared distances in, like everything else in here. Returns how many wanted a slot
+        /// and did not get one.
+        /// </summary>
+        private int Restore(Vector3 me, float fromSq, float toSq)
+        {
+            var stuck = 0;
+
+            for (var i = _marks.Count - 1; i >= 0; i--)
+            {
+                var m = _marks[i];
+
+                if (!m.Away) continue;
+
+                var d = me.DistanceToSquared(m.At);
+
+                if (d < fromSq || d >= toSq) continue;
+
+                m.Handle = Place(m);
+
+                // THE SAME FALLBACK PLACING HAS ALWAYS HAD, and its absence here is why tags
+                // came back cut off and why old ones stopped coming back at all.
+                //
+                // Put asks Recycle for a slot when the pool refuses; this did not. So the
+                // restore filled the pool with whatever it reached first and then every
+                // remaining mark failed, stayed away, and failed again on the next sweep.
+                // Walking up to an old tag with a full pool did nothing at all, because
+                // nothing was ever asked to make room for it.
+                //
+                // Recycle only takes from marks a good margin further away than this one, so
+                // the nearest paint wins and two marks cannot evict each other.
+                if (m.Handle == 0 && Recycle(m.At)) m.Handle = Place(m);
+
+                m.Away = m.Handle == 0;
+
+                if (m.Away) stuck++;
+            }
+
+            return stuck;
+        }
+
+        /// <summary>
+        /// The ring that gets the slots before anything else does.
+        ///
+        /// Forty metres, which is a wall and its neighbours rather than a district. Wide enough
+        /// that a piece does not lose its edges when you step back to look at it, and narrow
+        /// enough that it is genuinely what is in front of you competing for the pool.
+        /// </summary>
+        private const float CloseUp = 40f;
 
         /// <summary>Everything gone, off the wall and out of the record.</summary>
         /// <summary>How far a single area wipe reaches, and how coarsely they are spread.</summary>
