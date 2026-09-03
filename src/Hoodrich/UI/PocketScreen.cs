@@ -257,19 +257,14 @@ namespace Hoodrich.UI
                 var at = _selected - _rows.Count;
                 if (at < 0 || at >= _food.Count) return;
 
-                if (Core.Larder.Consume(_food[at]))
-                {
-                    Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                // QUEUED, NOT EATEN HERE. The phone is an animation as well as a screen, and
+                // starting a meal underneath it is two clips claiming one player. Larder waits
+                // for the handset to be down and then does it -- see EatWhenPhoneIsAway.
+                Core.Larder.EatWhenPhoneIsAway(_food[at]);
 
-                    // The eating animation is the point of it, and it plays out here rather
-                    // than behind a phone screen.
-                    Close();
-                }
-                else
-                {
-                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-                }
+                Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
+                Close();
                 return;
             }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -2259,6 +2259,16 @@ namespace Hoodrich
 
                 _bust.Update();
                 _postUp.Update();
+
+                // A meal chosen on the phone waits for the phone to go away before it starts,
+                // or the eating animation and the put-away clip fight over the same player.
+                if (Core.Larder.WantsPhoneClosed)
+                {
+                    Core.Larder.WantsPhoneClosed = false;
+                    try { _phone.ClosePhone(); } catch { /* already shut */ }
+                }
+
+                Core.Larder.Tick();
 
                 // What is on you owns the screen the same way moving it does. Closed if the
                 // mod goes unavailable underneath it, so a screen cannot outlive the thing it

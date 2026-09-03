@@ -224,6 +224,80 @@ namespace Hoodrich.Core
             catch { return ""; }
         }
 
+        // ======================================================================
+        // Eating from the phone
+        // ======================================================================
+
+        private static string _pending;
+        private static int _readyAt;
+        private static int _giveUpAt;
+
+        /// <summary>Set when a meal is waiting for the phone to go away. Read by Main.</summary>
+        public static bool WantsPhoneClosed { get; set; }
+
+        /// <summary>
+        /// Eat this, but NOT YET -- once the handset is actually down.
+        ///
+        /// THE PHONE IS AN ANIMATION, not just a screen. PhoneController holds the player in
+        /// TASK_PLAY_ANIM on the cellphone dict for as long as it is up, and plays a second
+        /// clip to put it away. Bare Minimum's Begin tasks the same ped the moment it is
+        /// called, so eating straight out of the menu is two animations claiming one player:
+        /// either the meal never appears, or it starts and the put-away clip wipes it a
+        /// moment later. There is already a comment in PhoneController about a clip that
+        /// "takes the OTHER animation's secondary task", so this is a known way to lose.
+        ///
+        /// Waiting for IS_PED_RUNNING_MOBILE_PHONE_TASK to go false is the whole fix. The
+        /// phone finishes, the hand is empty, and the food goes into it.
+        /// </summary>
+        public static void EatWhenPhoneIsAway(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+
+            _pending = id;
+
+            // A moment before even looking, so the put-away clip has started and the native
+            // is reporting the phone as running rather than as already gone.
+            _readyAt = Game.GameTime + 150;
+
+            // And a limit, because a phone that never reports itself finished would otherwise
+            // leave a meal owed forever. Better to eat a beat late than not at all.
+            _giveUpAt = Game.GameTime + 6000;
+
+            WantsPhoneClosed = true;
+        }
+
+        /// <summary>Ticked every frame by Main. Does nothing unless a meal is owed.</summary>
+        public static void Tick()
+        {
+            if (_pending == null) return;
+
+            var now = Game.GameTime;
+            if (now < _readyAt) return;
+
+            if (now < _giveUpAt && OnThePhone()) return;
+
+            var id = _pending;
+            _pending = null;
+
+            if (!Consume(id))
+            {
+                Log.Debug("Bare Minimum would not eat " + id + " -- it has been put back.");
+            }
+        }
+
+        private static bool OnThePhone()
+        {
+            try
+            {
+                var me = GTA.Game.Player.Character;
+                if (me == null || !me.Exists()) return false;
+
+                return GTA.Native.Function.Call<bool>(
+                    GTA.Native.Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, me.Handle);
+            }
+            catch { return false; }
+        }
+
         /// <summary>Eats, drinks or smokes one. True when it actually started.</summary>
         public static bool Consume(string id)
         {
