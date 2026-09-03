@@ -50,6 +50,7 @@ namespace Hoodrich.Core
         private static PropertyInfo _ready, _total, _slots;
         private static MethodInfo _ids, _countOf, _nameOf, _iconOf, _tintOf, _consume, _mark;
         private static MethodInfo _notSleep;
+        private static MethodInfo _drain;
 
         // ======================================================================
 
@@ -121,6 +122,7 @@ namespace Hoodrich.Core
                     // hours -- they are just counted as a night's sleep over there, which is
                     // what happened before this existed.
                     _notSleep = type.GetMethod("NotSleep", BindingFlags.Public | BindingFlags.Static);
+                    _drain = type.GetMethod("Drain", BindingFlags.Public | BindingFlags.Static);
 
                     _type = type;
 
@@ -237,6 +239,28 @@ namespace Hoodrich.Core
             catch
             {
                 // Then the other mod thinks you had a lie down.
+            }
+        }
+
+        /// <summary>
+        /// Take some hunger and some sleep off him, as fractions of the whole meter.
+        ///
+        /// FOR THINGS THAT HAPPEN TO A BODY, not for time passing. Six hours face down after
+        /// an overdose is not neutral time -- the ordinary drain for six hours on an
+        /// eighty-hour meter is seven per cent, which is a Tuesday afternoon rather than
+        /// coming round in a ditch.
+        /// </summary>
+        public static void Drain(float hunger, float sleep)
+        {
+            try
+            {
+                if (!Present || _drain == null) return;
+
+                _drain.Invoke(null, new object[] { hunger, sleep });
+            }
+            catch
+            {
+                // Then he wakes up fine, which is only cosmetic.
             }
         }
 

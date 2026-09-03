@@ -1174,6 +1174,19 @@ namespace Hoodrich.Economy
 
                 Function.Call(Hash.ADD_TO_CLOCK_TIME, hours, 0, 0);
 
+                // AND HE COMES ROUND WRECKED, if there is anything installed that tracks it.
+                //
+                // Not resting was only half of it. The hours passing at the ordinary rate takes
+                // seven per cent off an eighty-hour sleep meter, which is not what six hours
+                // face down in a gutter does to somebody -- it is what an afternoon does. So
+                // the blackout takes a real bite out of both: he wakes up starving and he wakes
+                // up shattered, because that is the state the whole thing is describing.
+                //
+                // Sleep harder than hunger, deliberately. An empty hunger meter costs health
+                // over there, and a blackout that can kill you an hour later is a consequence
+                // nobody could connect back to its cause.
+                Core.Larder.Drain(WokeHungry, WokeTired);
+
                 // And he is on the floor when the picture comes back, because nobody who has
                 // just come round is stood up straight.
                 Function.Call(Hash.SET_PED_TO_RAGDOLL, me.Handle, 4000, 5000, 0, true, true, false);
@@ -1222,6 +1235,17 @@ namespace Hoodrich.Economy
 
         /// <summary>And how rough he is when he comes round.</summary>
         private const int WokeRoughMs = 45000;
+
+        /// <summary>
+        /// What it takes out of him, as fractions of each meter.
+        ///
+        /// Sleep the harder of the two. Both are subtracted rather than set, so somebody who
+        /// went under already rough comes round worse -- but hunger is kept the lighter hit on
+        /// purpose, because an empty hunger meter costs health in the other mod and a blackout
+        /// that quietly kills you an hour later is a consequence nobody can trace back.
+        /// </summary>
+        private const float WokeHungry = 0.30f;
+        private const float WokeTired = 0.55f;
 
         /// <summary>
         /// Past this, the sequence is broken and the screen comes back regardless.
