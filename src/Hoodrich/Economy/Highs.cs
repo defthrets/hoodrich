@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -106,18 +107,26 @@ namespace Hoodrich.Economy
             Ms = 4200
         };
 
-        private static readonly Ritual.Recipe Bong = new Ritual.Recipe
+        /// <summary>
+        /// A blunt. The same scenario as the joint, and that is the honest version.
+        ///
+        /// THE BONG IS GONE AND IT WAS NEVER GOING TO WORK. anim@safehouse@bong was a guess,
+        /// and a prop bolted to a hand with no animation behind it does exactly what you would
+        /// expect: it sits in his fist at whatever angle the attachment happened to give it,
+        /// pointing nowhere, while he stands there. A bong is not a thing you hold, it is a
+        /// thing you lean over and pull on with both hands -- there is no motion in the base
+        /// game that reads as that, and half a bong is worse than no bong.
+        ///
+        /// So weed is a joint or a blunt, both of which ARE things you hold to your mouth, and
+        /// both of which the smoking-pot scenario already does properly with its own prop.
+        ///
+        /// The two are the same animation and only the words differ, which is stated here
+        /// rather than dressed up: rolling between them is variety in what the ticker says
+        /// while you do the same thing, and that is worth exactly what it costs, which is
+        /// nothing.
+        /// </summary>
+        private static readonly Ritual.Recipe Blunt = new Ritual.Recipe
         {
-            Dicts = new[]
-            {
-                "anim@safehouse@bong",
-                "amb@world_human_smoking_pot@male@base",
-                "amb@world_human_smoking@male@male_a@base"
-            },
-            Clip = "base",
-            Props = new[] { "prop_bong_01", "prop_cs_bong_01" },
-            Sits = new Vector3(0.03f, 0.02f, -0.02f),
-            Turned = new Vector3(0f, 0f, 0f),
             Scenario = "WORLD_HUMAN_SMOKING_POT",
             Ms = 4600
         };
@@ -225,6 +234,7 @@ namespace Hoodrich.Economy
                 Ms = 100000,
                 Line = "everything's fine. everything's real slow and fine"
             },
+
 
             // OXYCODONE. The painkiller one, so it is about not feeling things: half damage,
             // healing as you walk, and a soft sway. No speed, no strength, nothing sharp.
@@ -389,8 +399,27 @@ namespace Hoodrich.Economy
         /// <summary>Taken, being taken, and not landed yet. See Update.</summary>
         private Recipe _taking;
 
-        private Recipe _on;
-        private int _until;
+        /// <summary>One thing currently in him, and when it lets go.</summary>
+        private sealed class Live
+        {
+            public Recipe What;
+            public int Until;
+        }
+
+        /// <summary>
+        /// EVERYTHING HE IS ON, not the one thing he is on.
+        ///
+        /// It was a single recipe and a single expiry, which made "one at a time" a rule the
+        /// data structure enforced rather than a decision anybody made. Mixing is the whole
+        /// interesting part of having seven of them -- and it is also the thing that should be
+        /// able to go badly wrong, which a single slot can never express.
+        ///
+        /// The numbers are RECOMBINED whenever the list changes rather than applied on top of
+        /// each other. Applying is not commutative: two drugs each halving the time scale is a
+        /// quarter, and coming off one of them would have to know what the other had set. One
+        /// pass over the list, one set of values, no history to unwind.
+        /// </summary>
+        private readonly List<Live> _live = new List<Live>();
 
         private bool _coming;
         private int _downUntil;
@@ -401,11 +430,22 @@ namespace Hoodrich.Economy
         private bool _shaking;
         private bool _weather;
 
-        public bool IsHigh => _on != null;
+        /// <summary>Where the blackout is up to. See Overdo.</summary>
+        private int _blackFrom;
+        private int _wokeAt;
+
+        public bool IsHigh => _live.Count > 0;
         public bool IsRough => _coming;
+        public bool IsOut => _blackFrom != 0;
+
+        /// <summary>How many things are in him at once.</summary>
+        public int Stacked { get { return _live.Count; } }
 
         /// <summary>What is running, for a readout. "" when nothing is.</summary>
-        public string Current { get { return _on == null ? "" : _on.Drug; } }
+        public string Current
+        {
+            get { return _live.Count == 0 ? "" : _live[_live.Count - 1].What.Drug; }
+        }
 
         // ---- taking one ---------------------------------------------------------
 
@@ -420,8 +460,16 @@ namespace Hoodrich.Economy
             if (string.IsNullOrEmpty(drugId)) return "Not that";
             if (Find(drugId) == null) return "Nothing to do with this one";
             if (_ritual.Busy) return "You're doing it";
+            if (_blackFrom != 0) return "You're gone";
             if (_coming) return "Give it a minute";
-            if (_on != null) return _on.Drug == drugId ? "You're already on it" : "One at a time";
+
+            // MIXING IS ALLOWED AND DOUBLING IS NOT. Two of the same is a bigger dose of one
+            // thing, which is a different feature and would just be a longer timer; two
+            // different things is the point.
+            foreach (var one in _live)
+            {
+                if (one.What.Drug == drugId) return "You're already on that one";
+            }
 
             return null;
         }
@@ -436,12 +484,10 @@ namespace Hoodrich.Economy
 
             _said = what;
 
-            // WEED IS A JOINT OR A BONG, ROLLED EACH TIME. Everything else has one way it is
-            // taken; this is the one that has two, and a man who smokes the identical joint
-            // every single time is performing a routine rather than getting high.
-            var doing = recipe.Drug == "weed"
-                ? (_rng.Next(2) == 0 ? Joint : Bong)
-                : recipe.Doing;
+            // A joint or a blunt. Same motion, different word -- see Blunt.
+            var rolled = recipe.Drug == "weed" && _rng.Next(2) == 0;
+
+            var doing = recipe.Drug != "weed" ? recipe.Doing : (rolled ? Joint : Blunt);
 
             // THE EFFECT DOES NOT LAND UNTIL HE HAS TAKEN IT. He stops, he does it, and THEN
             // the world changes -- which is the entire difference between a habit and a cheat
@@ -463,18 +509,27 @@ namespace Hoodrich.Economy
         /// <summary>The moment it actually hits.</summary>
         private void Land(Recipe recipe, string what)
         {
-            _on = recipe;
-            _until = Game.GameTime + recipe.Ms;
+            _live.Add(new Live { What = recipe, Until = Game.GameTime + recipe.Ms });
 
-            _cycle = "";
-            _clip = "";
+            Log.Info("High: " + recipe.Drug + " for " + (recipe.Ms / 1000) + "s. " +
+                     _live.Count + " in him.");
 
-            Apply(recipe);
+            // THE FOURTH ONE PUTS HIM OUT. Three at once is a night; four is not a decision
+            // anybody makes twice, and the game should agree with that rather than stacking
+            // another timecycle on top and carrying on.
+            if (_live.Count > TooMany)
+            {
+                Overdo();
+                return;
+            }
 
-            Log.Info("High: " + recipe.Drug + " for " + (recipe.Ms / 1000) + "s.");
+            Recombine();
 
             Notify.Ticker("~g~" + what + "~s~ -- " + recipe.Line);
         }
+
+        /// <summary>How many things he can have in him before he goes over.</summary>
+        private const int TooMany = 3;
 
         /// <summary>What the ticker says once it lands, kept from the press that started it.</summary>
         private string _said = "";
@@ -488,6 +543,115 @@ namespace Hoodrich.Economy
 
             return null;
         }
+
+        /// <summary>
+        /// One pass over everything in him, and one set of numbers out of it.
+        ///
+        /// HOW EACH ONE COMBINES IS A DECISION PER NUMBER, not one rule for all of them:
+        ///
+        ///   time      the SLOWEST wins rather than multiplying. Weed at four fifths and
+        ///             heroin at a half multiply to two fifths, which is a slideshow -- and
+        ///             two depressants do not make the world twice as slow, they make it as
+        ///             slow as the worse of them.
+        ///   run       the FASTEST wins, same reasoning the other way up.
+        ///   hits      multiplied, because they genuinely do add up and being hard to hurt is
+        ///             the reward for a bad idea.
+        ///   takes     multiplied and floored, so a stack cannot make him untouchable.
+        ///   shake     SUMMED and capped. This is the one that should get worse with every
+        ///             thing you put in him -- it is the readout that says "you have had too
+        ///             much" before the screen does.
+        ///   look      the NEWEST wins. There is one timecycle slot, one screen effect and one
+        ///             movement clipset on a ped, so these cannot combine at all -- and the
+        ///             last thing you took is the one you are currently feeling arrive.
+        /// </summary>
+        private void Recombine()
+        {
+            var time = 1f;
+            var run = 1f;
+            var hits = 1f;
+            var takes = 1f;
+            var heals = 1f;
+            var shake = 0f;
+            var sunny = false;
+            var rage = false;
+
+            string cycleFrom = null;
+            var strength = 1f;
+            string fx = null;
+            string clipset = null;
+
+            foreach (var one in _live)
+            {
+                var r = one.What;
+
+                if (r.Time < time) time = r.Time;
+                if (r.Run > run) run = r.Run;
+
+                hits *= r.Hits;
+                takes *= r.Takes;
+                heals *= r.Heals;
+
+                shake += r.Shake;
+
+                sunny |= r.Sunny;
+                rage |= r.Rage;
+
+                if (r.Cycles.Length > 0) { cycleFrom = null; strength = r.Strength; }
+                if (!string.IsNullOrEmpty(r.Fx)) fx = r.Fx;
+                if (!string.IsNullOrEmpty(r.Clipset)) clipset = r.Clipset;
+            }
+
+            if (takes < 0.3f) takes = 0.3f;
+            if (shake > 0.9f) shake = 0.9f;
+
+            _time = time;
+            _shake = shake;
+            _sunny = sunny;
+            _clipset = clipset ?? "";
+
+            // The newest one that HAS a look is the look. Walked backwards so the last thing
+            // taken wins without having to remember which it was on the way through.
+            for (var i = _live.Count - 1; i >= 0; i--)
+            {
+                if (_live[i].What.Cycles.Length == 0) continue;
+
+                if (_cycleOwner != _live[i].What)
+                {
+                    _cycleOwner = _live[i].What;
+                    Cycle(_live[i].What.Cycles, _live[i].What.Strength);
+                }
+
+                break;
+            }
+
+            if (!string.IsNullOrEmpty(fx) && fx != _fx) Fx(fx);
+
+            try
+            {
+                var player = Game.Player;
+
+                Function.Call(Hash.SET_TIME_SCALE, time);
+                Function.Call(Hash.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER, player.Handle, run);
+                Function.Call(Hash.SET_PLAYER_WEAPON_DAMAGE_MODIFIER, player.Handle, hits);
+                Function.Call(Hash.SET_PLAYER_WEAPON_DEFENSE_MODIFIER, player.Handle, takes);
+                Function.Call(Hash.SET_PLAYER_HEALTH_RECHARGE_MULTIPLIER, player.Handle, heals);
+
+                if (rage) Function.Call(Hash.SPECIAL_ABILITY_FILL_METER, player.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not combine a high: " + ex.Message);
+            }
+        }
+
+        /// <summary>What the combine last worked out, for the per-frame half to hold.</summary>
+        private float _time = 1f;
+        private float _shake;
+        private bool _sunny;
+        private string _clipset = "";
+
+        /// <summary>Whose look is on the screen, so it is not reapplied every recombine.</summary>
+        private Recipe _cycleOwner;
 
         // ---- keeping it up ------------------------------------------------------
 
@@ -514,7 +678,9 @@ namespace Hoodrich.Economy
                 return;
             }
 
-            if (_on == null && !_coming) return;
+            if (_blackFrom != 0) { Blackout(); return; }
+
+            if (_live.Count == 0 && !_coming) return;
 
             var now = Game.GameTime;
 
@@ -526,11 +692,31 @@ namespace Hoodrich.Economy
                 // Dying sobers you up, which is the one mercy in here.
                 if (!me.IsAlive) { Off(); return; }
 
-                if (_on != null)
+                if (_live.Count > 0)
                 {
-                    if (now >= _until) { Crash(); return; }
+                    // ONE AT A TIME, OLDEST FIRST. They came on separately and they go off
+                    // separately, so a stack thins out rather than ending all at once -- and
+                    // the comedown is the LAST one's, because the last one to let go is the
+                    // one you are left holding.
+                    var went = false;
 
-                    Hold(me, _on.Clipset, _on.Shake, _on.Sunny);
+                    for (var i = _live.Count - 1; i >= 0; i--)
+                    {
+                        if (now < _live[i].Until) continue;
+
+                        var gone = _live[i].What;
+                        _live.RemoveAt(i);
+
+                        went = true;
+
+                        Log.Info("High: " + gone.Drug + " wore off. " + _live.Count + " left.");
+
+                        if (_live.Count == 0) { Crash(gone); return; }
+                    }
+
+                    if (went) Recombine();
+
+                    Hold(me, _clipset, _shake, _sunny);
                     return;
                 }
 
@@ -681,10 +867,10 @@ namespace Hoodrich.Economy
         }
 
         /// <summary>The high ends and the wreckage starts. Or it just ends.</summary>
-        private void Crash()
+        private void Crash(Recipe last)
         {
-            var down = _on == null ? 0 : _on.DownMs;
-            var line = _on == null ? "" : _on.Drug;
+            var down = last == null ? 0 : last.DownMs;
+            var line = last == null ? "" : last.Drug;
 
             Clear();
 
@@ -718,16 +904,190 @@ namespace Hoodrich.Economy
             Notify.Problem("that's it gone. you feel terrible.");
         }
 
+        // ---- going over ---------------------------------------------------------
+
+        /// <summary>
+        /// Four things in him at once, and the lights go out.
+        ///
+        /// THIS IS THE STORY MODE TREVOR BLACKOUT AND IT IS DELIBERATELY THAT. You do not get
+        /// a warning, you do not get a fight, and you do not get to finish what you were
+        /// doing: the screen goes, and you come round somewhere else with hours missing. It is
+        /// the only consequence in this whole system that costs you something you cannot get
+        /// back, which is what makes three a limit rather than a suggestion.
+        ///
+        /// A STATE MACHINE RATHER THAN A WAIT. Everything here runs on one tick of a script
+        /// that must not block -- so the fade, the move and the coming round are three moments
+        /// on a clock, driven by Blackout below.
+        /// </summary>
+        private void Overdo()
+        {
+            Log.Info("Overdose: " + _live.Count + " at once. Out cold.");
+
+            _live.Clear();
+
+            Clear();
+
+            _blackFrom = Game.GameTime;
+            _wokeAt = 0;
+
+            try
+            {
+                // The fuzz first and the fade over the top of it, so the picture breaks up
+                // before it goes rather than simply dimming.
+                Fx("DeathFailOut");
+
+                Function.Call(Hash.DO_SCREEN_FADE_OUT, FadeMs);
+            }
+            catch
+            {
+                // Then it is an abrupt cut, which still reads as passing out.
+            }
+        }
+
+        /// <summary>
+        /// The three moments of it: dark, moved, awake.
+        ///
+        /// The move happens while the screen is black and a beat is left afterwards before the
+        /// fade in, because a teleport is a streaming request and arriving before the world
+        /// does is how you come round inside the floor.
+        /// </summary>
+        private void Blackout()
+        {
+            var now = Game.GameTime;
+
+            if (_wokeAt == 0)
+            {
+                if (now - _blackFrom < FadeMs + DarkMs) return;
+
+                Wake();
+
+                _wokeAt = now;
+                return;
+            }
+
+            if (now - _wokeAt < SettleMs) return;
+
+            try { Function.Call(Hash.DO_SCREEN_FADE_IN, FadeMs); }
+            catch { }
+
+            _blackFrom = 0;
+            _wokeAt = 0;
+
+            // He comes round in the state anybody comes round in.
+            _coming = true;
+            _downUntil = Game.GameTime + WokeRoughMs;
+
+            Cycle(DownCycles, 1f);
+
+            try
+            {
+                var player = Game.Player;
+
+                Function.Call(Hash.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER, player.Handle, 1f);
+                Function.Call(Hash.SET_PLAYER_WEAPON_DAMAGE_MODIFIER, player.Handle, 0.8f);
+                Function.Call(Hash.SET_PLAYER_WEAPON_DEFENSE_MODIFIER, player.Handle, DownTakes);
+                Function.Call(Hash.SET_PLAYER_HEALTH_RECHARGE_MULTIPLIER, player.Handle, 0f);
+            }
+            catch
+            {
+            }
+
+            Notify.Problem("you don't remember getting here.");
+        }
+
+        /// <summary>Somewhere else, some hours later, face down.</summary>
+        private void Wake()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                var spot = Elsewhere[_rng.Next(Elsewhere.Length)];
+
+                // Out of any car first. Coming round in the driver's seat of something doing
+                // sixty is a different mod.
+                if (me.IsInVehicle())
+                {
+                    try { Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, me.Handle); }
+                    catch { }
+                }
+
+                Function.Call(Hash.REQUEST_COLLISION_AT_COORD, spot.X, spot.Y, spot.Z);
+
+                me.Position = spot;
+                me.Heading = (float)(_rng.NextDouble() * 360.0);
+
+                // HOURS ARE MISSING, which is most of what makes it a blackout rather than a
+                // teleport. Between four and nine, so you can go under in the afternoon and
+                // come round in the dark.
+                var hours = 4 + _rng.Next(6);
+
+                Function.Call(Hash.ADD_TO_CLOCK_TIME, hours, 0, 0);
+
+                // And he is on the floor when the picture comes back, because nobody who has
+                // just come round is stood up straight.
+                Function.Call(Hash.SET_PED_TO_RAGDOLL, me.Handle, 4000, 5000, 0, true, true, false);
+
+                Log.Info("Overdose: woke at " + spot + ", " + hours + " hours gone.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not move him: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Where you turn up. Miles from the block, every one of them.
+        ///
+        /// That is the whole joke of the Trevor version: not a random street corner, but the
+        /// far side of the map with no explanation and no car. Walking back IS the punishment.
+        /// </summary>
+        private static readonly Vector3[] Elsewhere =
+        {
+            new Vector3(-1600.0f, -1080.0f, 12.5f),    // Vespucci beach
+            new Vector3(-1041.0f, -1396.0f, 5.0f),     // the sand at Del Perro
+            new Vector3(1975.0f, 3815.0f, 32.4f),      // Sandy Shores, outside the Yellow Jack
+            new Vector3(-434.0f, 6165.0f, 31.5f),      // Paleto Bay
+            new Vector3(501.0f, 5604.0f, 797.9f),      // most of the way up Chiliad
+            new Vector3(1105.0f, -3130.0f, 5.9f),      // the docks
+            new Vector3(722.0f, 4180.0f, 40.7f),       // the Grapeseed fields
+            new Vector3(-3020.0f, 100.0f, 11.6f),      // the Chumash coast road
+            new Vector3(2570.0f, 4680.0f, 34.1f),      // Grapeseed, by the barn
+            new Vector3(-1130.0f, 4940.0f, 220.9f)     // up in the Chiliad woods
+        };
+
+        /// <summary>How long the fade takes, how long it stays black, and the beat after.</summary>
+        private const int FadeMs = 1200;
+        private const int DarkMs = 2600;
+        private const int SettleMs = 900;
+
+        /// <summary>And how rough he is when he comes round.</summary>
+        private const int WokeRoughMs = 45000;
+
         /// <summary>Everything back to normal. Safe to call at any time, twice.</summary>
         public void Off()
         {
             _ritual.Stop();
             _taking = null;
 
+            _live.Clear();
+
             Clear();
 
             _coming = false;
             _downUntil = 0;
+
+            // A teardown in the middle of a blackout must not leave the screen black -- there
+            // would be nothing left running to bring it back.
+            if (_blackFrom != 0)
+            {
+                _blackFrom = 0;
+                _wokeAt = 0;
+
+                try { Function.Call(Hash.DO_SCREEN_FADE_IN, 500); }
+                catch { }
+            }
 
             try
             {
@@ -753,8 +1113,12 @@ namespace Hoodrich.Economy
         /// </summary>
         private void Clear()
         {
-            _on = null;
-            _until = 0;
+            _cycleOwner = null;
+
+            _time = 1f;
+            _shake = 0f;
+            _sunny = false;
+            _clipset = "";
 
             try
             {
