@@ -75,6 +75,9 @@ namespace Hoodrich.UI
         private Drugs _catalogue;
         private DroppedBags _bags;
 
+        /// <summary>Set by Main. What happens when you take some of it yourself.</summary>
+        public Economy.Highs Highs;
+
         private readonly List<PocketRow> _rows = new List<PocketRow>();
 
         /// <summary>
@@ -276,6 +279,17 @@ namespace Hoodrich.UI
                 return;
             }
 
+            // ---- taking some of it yourself ----
+            //
+            // SELECT, the same key that eats a burger one row down. Both are "put this in your
+            // mouth", and giving the two of them different buttons because one is food and one
+            // is not would be a distinction the hand has to remember and the head already knows.
+            if (Game.IsControlJustPressed(Control.PhoneSelect))
+            {
+                Use();
+                return;
+            }
+
             // Left or right, because there is only one direction anything can go from here and
             // making you learn which of the two it is would be a puzzle rather than a control.
             var down = Game.IsControlPressed(Control.PhoneLeft) ||
@@ -283,6 +297,70 @@ namespace Hoodrich.UI
 
             if (down && Game.GameTime >= _nextRepeat) Drop(Game.IsControlPressed(Control.Sprint));
         }
+
+        /// <summary>
+        /// Take one of whatever the cursor is on.
+        ///
+        /// BAGGED ONLY, and that is a rule about the product rather than about the menu. The
+        /// weight rows are uncut bulk -- the thing that has not been cut, weighed or bagged
+        /// yet, which is measured in hundreds of grams and is not a dose. Taking "some" of it
+        /// is a question with no sensible answer, and the kitchen counter is where that stuff
+        /// turns into things a person could actually take.
+        ///
+        /// ONE UNIT. A bar, a pill, a gram -- whatever the product counts itself in, which the
+        /// drug already knows how to say.
+        /// </summary>
+        private void Use()
+        {
+            if (Highs == null || _selected < 0 || _selected >= _rows.Count) return;
+
+            var row = _rows[_selected];
+
+            if (!row.Bagged)
+            {
+                Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                Notify.Failure("that's raw. bag it up first.");
+                return;
+            }
+
+            if (row.Held < UseUnit - 0.001f)
+            {
+                Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            var no = Highs.Refusal(row.Drug.Id);
+
+            if (no != null)
+            {
+                Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                Notify.Failure(no.ToLowerInvariant());
+                return;
+            }
+
+            // TAKEN OFF YOU FIRST, and only then does it do anything. The stash says how much
+            // it actually managed to remove, so a rounding error cannot leave you high on a
+            // gram you still have.
+            var got = _pockets.RemovePackaged(row.Drug.Id, UseUnit);
+
+            if (got <= 0.001f)
+            {
+                Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            Highs.Take(row.Drug.Id, row.Drug.Amount(got));
+
+            Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+            // OUT OF THE MENU, the same as eating. Whatever it does to the picture, the walk
+            // and the camera is the entire point of having done it, and none of it can be seen
+            // from behind a panel.
+            Close();
+        }
+
+        /// <summary>One of whatever it counts itself in.</summary>
+        private const float UseUnit = 1f;
 
         /// <summary>Product rows first, then one place per food tile.</summary>
         private int Places => _rows.Count + _food.Count;
@@ -525,8 +603,17 @@ namespace Hoodrich.UI
             // would be a puzzle rather than a control.
             hx = Hud.Hint("drop.png", "PUT IT DOWN", hx, y, 0.24f, Palette.TextDim);
 
-            Hud.Hint(null, (pad ? "HOLD A" : "SPRINT") + "  ALL OF IT", hx, y, 0.24f,
-                     Palette.TextDim);
+            hx = Hud.Hint(null, (pad ? "HOLD A" : "SPRINT") + "  ALL OF IT", hx, y, 0.24f,
+                          Palette.TextDim);
+
+            // Only on the rows it works on. A bagged line can be taken; a weight line is uncut
+            // bulk and has to go through the kitchen first, and offering it on a row that will
+            // refuse is worse than not offering it.
+            if (_selected >= 0 && _selected < _rows.Count && _rows[_selected].Bagged)
+            {
+                Hud.Hint("pills.png", (pad ? "A" : "ENTER") + "  TAKE ONE", hx, y, 0.24f,
+                         Palette.TextDim);
+            }
         }
 
         /// <summary>

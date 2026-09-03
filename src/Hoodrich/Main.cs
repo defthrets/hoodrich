@@ -481,6 +481,9 @@ namespace Hoodrich
         /// <summary>Tanya, and the truck. See Locations.TowTruck.</summary>
         private readonly TowTruck _tow = new TowTruck();
 
+        /// <summary>What happens when he takes some of his own. See Economy.Highs.</summary>
+        private readonly Economy.Highs _highs = new Economy.Highs();
+
         /// <summary>The driverless cabs. See Locations.Knowai.</summary>
         private readonly Knowai _ride = new Knowai();
         private readonly GangWar _war;
@@ -1663,6 +1666,10 @@ namespace Hoodrich
                 _info = new InfoPanel();
                 _stashScreen = new StashScreen();
                 _pocketScreen = new PocketScreen();
+
+                // The pocket is the only place you can take some of it, because it is the only
+                // place that already knows what is on you and what each line of it is.
+                _pocketScreen.Highs = _highs;
                 _port = new Missions.PortRun(_state)
                 {
                     // Nothing of ours gets swept off a kerb by the port run.
@@ -2630,6 +2637,8 @@ namespace Hoodrich
                     // After OwnedCars, which is what decides a car is still there to be a
                     // wreck at all.
                     _tow.Update(Game.Player.Character);
+
+                    _highs.Update();
                     _ride.Update(Game.Player.Character);
 
                     _social.Update();
@@ -3695,6 +3704,11 @@ namespace Hoodrich
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { UI.Headshots.Clear(); } catch { /* teardown */ }
             try { _tow?.RestoreWorld(); } catch { /* teardown */ }
+
+            // BEFORE ANYTHING ELSE WOULD BE BETTER AND THIS IS FINE. A high holds the global
+            // time scale, and a mod that unloads at 0.55 leaves the whole game in slow motion
+            // with nothing left running that could put it back.
+            try { _highs?.RestoreWorld(); } catch { /* teardown */ }
             try { _ride?.RestoreWorld(); } catch { /* teardown */ }
             try { _bust?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
