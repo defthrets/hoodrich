@@ -1294,6 +1294,41 @@ namespace Hoodrich.UI
         }
 
         /// <summary>Measures rendered text width as a normalized screen fraction.</summary>
+        /// <summary>
+        /// One key hint: a small picture, then what it does. Returns where the next one starts.
+        ///
+        /// THE FOOTER WAS THE LAST PLACE IN THE MOD WITH NO PICTURES IN IT. Every panel ends in
+        /// a run of words -- "LEFT TAKE OUT     RIGHT PUT AWAY" -- and that line is the one
+        /// thing on the screen a new player has to READ rather than recognise, which is
+        /// backwards for the line whose whole job is teaching the controls.
+        ///
+        /// ARROWS RATHER THAN KEY CAPS, and that is the point of doing it this way round. A
+        /// drawn ENTER key is a lie the moment somebody picks up a pad, and the mod now knows
+        /// which they are holding -- so the WORDS change with the device and the picture never
+        /// has to. An arrow says what the action is, not what you press to do it.
+        ///
+        /// Laid out by measuring rather than by padding a string with spaces, because a run of
+        /// spaces is a guess about a proportional font and it is wrong by a different amount
+        /// for every hint.
+        /// </summary>
+        public static float Hint(string icon, string words, float x, float y, float scale,
+                                 Color ink)
+        {
+            if (!string.IsNullOrEmpty(icon) &&
+                File(icon, x + ToX(HintIcon) * 0.5f, y + 0.0055f, HintIcon, 0f, ink))
+            {
+                x += ToX(HintIcon) + 0.004f;
+            }
+
+            Text(words, x, y, scale, ink, FontLabel, centre: false);
+
+            return x + MeasureText(words, scale, FontLabel) + HintGap;
+        }
+
+        /// <summary>How big the mark on a key hint is, and the air after the words.</summary>
+        private const float HintIcon = 0.011f;
+        private const float HintGap = 0.016f;
+
         public static float MeasureText(string text, float scale, int font = FontChaletComprimeCologne)
         {
             if (string.IsNullOrEmpty(text)) return 0f;

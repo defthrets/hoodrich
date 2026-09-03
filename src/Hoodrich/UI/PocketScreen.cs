@@ -506,23 +506,27 @@ namespace Hoodrich.UI
 
             if (Places == 0) return;
 
-            var hint = pad ? "D-PAD  PICK" : "UP / DOWN  PICK";
+            var hx = Hud.Hint("arrow_updown.png", "PICK", x, y, 0.24f, Palette.TextDim);
 
             if (OnFood)
             {
-                hint += pad ? "     A  EAT IT" : "     ENTER  EAT IT";
-            }
-            else
-            {
-                // Left and right both do it, and the pad says D-PAD L/R for the same reason
-                // the keyboard says LEFT or RIGHT: there is only one direction anything can go
-                // from here, and making you work out which of the two it is would be a puzzle.
-                hint += pad
-                    ? "     D-PAD L/R  PUT IT DOWN     HOLD A  ALL OF IT"
-                    : "     LEFT or RIGHT  PUT IT DOWN     SPRINT  ALL OF IT";
+                Hud.Hint(null, pad ? "A  EAT IT" : "ENTER  EAT IT", hx, y, 0.24f,
+                         Palette.TextDim);
+                return;
             }
 
-            Hud.Text(hint, x, y, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
+            // THE DROP MARK IS THE ONE PICTURE ON THIS SCREEN THAT IS DOING REAL WORK. An arrow
+            // onto a line is "onto the floor", and that this screen puts things on the FLOOR --
+            // rather than into a bag, a boot or a shelf -- is the one thing about it nobody
+            // would guess from a list of drugs with a left and right key.
+            //
+            // Left and right both do it, and neither is named. There is only one direction
+            // anything can go from here, so making you work out which of the two keys it is
+            // would be a puzzle rather than a control.
+            hx = Hud.Hint("drop.png", "PUT IT DOWN", hx, y, 0.24f, Palette.TextDim);
+
+            Hud.Hint(null, (pad ? "HOLD A" : "SPRINT") + "  ALL OF IT", hx, y, 0.24f,
+                     Palette.TextDim);
         }
 
         /// <summary>

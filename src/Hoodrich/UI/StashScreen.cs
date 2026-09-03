@@ -413,11 +413,25 @@ namespace Hoodrich.UI
 
             Hud.RectFrom(leftCol, footY, lineWidth, 0.0010f, Hairline);
 
-            const string hint =
-                "UP / DOWN  PICK     LEFT  TAKE OUT     RIGHT  PUT AWAY     SPRINT  ALL     BACKSPACE  DONE";
+            // THE ARROWS SAY THE DIRECTION AND THE WORDS SAY THE ERRAND, which is the
+            // rearrangement that makes this line readable at a glance. It used to name the KEY
+            // and then the errand -- "LEFT  TAKE OUT" -- so the direction was a word you read
+            // and then had to map onto a direction. An arrow pointing left IS left, on a
+            // keyboard and on a d-pad, and it costs no reading at all.
+            var hy = footY + 0.008f;
+            var hx = leftCol;
 
-            Hud.Text(hint, leftCol, footY + 0.008f, 0.24f, Palette.TextDim,
-                     Hud.FontLabel, centre: false);
+            var pad2 = Hud.OnPad;
+
+            hx = Hud.Hint("arrow_updown.png", "PICK", hx, hy, 0.24f, Palette.TextDim);
+            hx = Hud.Hint("arrow_left.png", "TAKE OUT", hx, hy, 0.24f, Palette.TextDim);
+            hx = Hud.Hint("arrow_right.png", "PUT AWAY", hx, hy, 0.24f, Palette.TextDim);
+
+            Hud.Hint(null, (pad2 ? "HOLD A" : "SPRINT") + "  ALL", hx, hy, 0.24f,
+                     Palette.TextDim);
+
+            Hud.TextRight(pad2 ? "B  DONE" : "BACKSPACE  DONE", leftCol + lineWidth, hy, 0.24f,
+                          Palette.TextDim, Hud.FontLabel);
 
             // Last, so nothing paints over it.
             Hud.Frame(left, top, panelWidth, height,

@@ -1624,7 +1624,56 @@ def baggie():
     save(img, 'baggie.png')
 
 
-ALL = [socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
+# ------------------------------------------------------------------- directions
+#
+# THE KEY HINTS ARE THE LAST PLACE IN THE MOD WITH NO PICTURES IN IT. Every panel ends in a
+# line of words -- "LEFT TAKE OUT   RIGHT PUT AWAY" -- and that line is the one thing on the
+# screen a new player HAS to read rather than recognise, which is backwards.
+#
+# Arrows rather than key caps, deliberately. A drawn ENTER key is a lie on a controller, and
+# the mod now knows which one you are holding: the word beside the arrow changes, the arrow
+# does not. An arrow is what the action IS, not what you press to do it.
+#
+# All head and very little shaft. At twenty device pixels a proportionate arrow is a smudge
+# with a dot on it -- the triangle has to be most of the mark to survive the downsample.
+def _shaft_arrow(d, points, shaft):
+    d.polygon(points, fill=W)
+    d.rectangle(shaft, fill=W)
+
+
+def arrow_right():
+    img, d = canvas()
+    _shaft_arrow(d, [(280, 116), (462, 256), (280, 396)], [64, 212, 300, 300])
+    save(img, 'arrow_right.png')
+
+
+def arrow_left():
+    img, d = canvas()
+    _shaft_arrow(d, [(232, 116), (50, 256), (232, 396)], [212, 212, 448, 300])
+    save(img, 'arrow_left.png')
+
+
+# Double headed, because the hint it belongs to is "UP / DOWN" -- one arrow would be half
+# an instruction.
+def arrow_updown():
+    img, d = canvas()
+    d.rectangle([214, 120, 298, 392], fill=W)
+    d.polygon([(126, 196), (256, 56), (386, 196)], fill=W)
+    d.polygon([(126, 316), (256, 456), (386, 316)], fill=W)
+    save(img, 'arrow_updown.png')
+
+
+# Down onto a surface. The bar under it is the whole difference between "down" and "put it
+# on the floor", which is the one action on the pocket screen nobody would guess.
+def drop():
+    img, d = canvas()
+    d.rectangle([214, 48, 298, 258], fill=W)
+    d.polygon([(122, 238), (256, 378), (390, 238)], fill=W)
+    d.rounded_rectangle([92, 428, 420, 478], radius=25, fill=W)
+    save(img, 'drop.png')
+
+
+ALL = [arrow_right, arrow_left, arrow_updown, drop, socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
        cut_100, cut_75, cut_50, cut_33, cut_25, disc]
 
 
