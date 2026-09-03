@@ -110,13 +110,126 @@ namespace Hoodrich.Paint
                 if (me == null || !me.Exists()) return false;
 
                 var want = Function.Call<uint>(Hash.GET_HASH_KEY, Weapon);
-                return Function.Call<uint>(Hash.GET_SELECTED_PED_WEAPON, me.Handle) == want;
+
+                if (Function.Call<uint>(Hash.GET_SELECTED_PED_WEAPON, me.Handle) != want) return false;
+
+                // AND IT IS NOT SOMEBODY ELSE'S EXTINGUISHER. See Fuelling.
+                return !Fuelling();
             }
             catch
             {
                 return false;
             }
         }
+
+        /// <summary>
+        /// Whether somebody else has put a FUEL NOZZLE in his hand.
+        ///
+        /// THE EXTINGUISHER IS NOT OURS ALONE, and assuming it was is the whole bug. This mod
+        /// carries its can on an invisible fire extinguisher because that weapon has a spray
+        /// pose, a carry animation and a trigger -- and that reasoning is not secret or even
+        /// unusual. Running on Fumes hands you an invisible extinguisher for exactly the same
+        /// reason while you are stood at a pump: it is the pose of a man holding a hose.
+        ///
+        /// So the moment you picked up a nozzle, this mod saw its own weapon selected, decided
+        /// the paint tool was out, and bolted a spray can to the hand already holding a fuel
+        /// nozzle. Every gate in the mod runs through Out, so it was not only the prop -- the
+        /// spray clips, the particles and the ammo top-up all came with it. That last one is
+        /// the quiet half: the refill would have handed the borrowed extinguisher five thousand
+        /// rounds and broken the other mod's put-it-back-as-you-found-it on the way out.
+        ///
+        /// ASKED OF THE NOZZLE RATHER THAN OF THE OTHER MOD, on purpose. A handshake between
+        /// two mods is a contract that has to be installed at both ends and stays broken for
+        /// anybody running an older copy of either. A fuel nozzle attached to the player's hand
+        /// is a fact about the world, true whatever put it there, and it needs nothing from
+        /// anybody. It also says the honest thing rather than a mod's name: a man holding a
+        /// fuel hose is not painting.
+        ///
+        /// Four times a second, not per frame. Out is asked from several places every tick and
+        /// a world query per call for a state that changes when you walk up to a pump is a
+        /// scan a second wearing sixty tick's worth of cost.
+        /// </summary>
+        private static bool Fuelling()
+        {
+            var now = Game.GameTime;
+
+            if (now < _nextLook) return _fuelling;
+            _nextLook = now + LookEveryMs;
+
+            _fuelling = false;
+
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return false;
+
+                if (_nozzles == null)
+                {
+                    _nozzles = new int[Nozzles.Length];
+
+                    for (var i = 0; i < Nozzles.Length; i++)
+                    {
+                        _nozzles[i] = new Model(Nozzles[i]).Hash;
+                    }
+                }
+
+                foreach (var prop in World.GetNearbyProps(me.Position, HandReach))
+                {
+                    if (prop == null || !prop.Exists()) continue;
+
+                    var hash = prop.Model.Hash;
+                    var ours = false;
+
+                    for (var i = 0; i < _nozzles.Length; i++)
+                    {
+                        if (_nozzles[i] != hash) continue;
+                        ours = true;
+                        break;
+                    }
+
+                    if (!ours) continue;
+
+                    // NEAR HIM IS NOT IN HIS HAND. A nozzle in its cradle on the pump he is
+                    // stood at is two metres away and means nothing -- the whole question is
+                    // whether it is bolted to him.
+                    if (Function.Call<int>(Hash.GET_ENTITY_ATTACHED_TO, prop.Handle) != me.Handle) continue;
+
+                    _fuelling = true;
+                    break;
+                }
+            }
+            catch
+            {
+                // Nothing found means nothing found. The can behaves as it always did.
+            }
+
+            return _fuelling;
+        }
+
+        /// <summary>
+        /// The fuel-nozzle props, in the order Running on Fumes tries them.
+        ///
+        /// The jerry can is on the list because it is that mod's own last resort when none of
+        /// the nozzles stream -- and a man holding a jerry can is no more painting than a man
+        /// holding a hose.
+        /// </summary>
+        private static readonly string[] Nozzles =
+        {
+            "prop_cs_fuel_nozle",
+            "prop_fuel_nozle",
+            "prop_cs_fuel_nozzle",
+            "w_am_jerrycan"
+        };
+
+        /// <summary>Their hashes, worked out once. Model construction is not free.</summary>
+        private static int[] _nozzles;
+
+        private static bool _fuelling;
+        private static int _nextLook;
+
+        /// <summary>How often the question is actually asked, and how far counts as his hand.</summary>
+        private const int LookEveryMs = 250;
+        private const float HandReach = 2.5f;
 
         /// <summary>
         /// Puts one in his hands.
@@ -217,6 +330,18 @@ namespace Hoodrich.Paint
             {
                 var me = Game.Player.Character;
                 if (me == null || !me.Exists()) { _lastAmmo = -1; return; }
+
+                // NOT SOMEBODY ELSE'S EXTINGUISHER, and this is the half of the collision you
+                // would never have seen happening. Feed is gated on the mod being on rather
+                // than on the can being out, so while another mod borrowed the weapon for a
+                // pose this would have quietly topped it up to full -- and that mod records
+                // the ammo it found so it can hand the weapon back exactly as it borrowed it.
+                // Refilling it behind its back is how a man ends up walking away from a petrol
+                // station with a full extinguisher he never had.
+                //
+                // The ledger is dropped rather than paused: what was spent while somebody else
+                // held it is not this mod's paint and is not owed back.
+                if (Fuelling()) { _lastAmmo = -1; _owed = 0f; return; }
 
                 var hash = Function.Call<uint>(Hash.GET_HASH_KEY, Weapon);
 

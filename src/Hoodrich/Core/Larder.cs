@@ -48,7 +48,7 @@ namespace Hoodrich.Core
         private static int _firstTry;
 
         private static PropertyInfo _ready, _total, _slots;
-        private static MethodInfo _ids, _countOf, _nameOf, _iconOf, _tintOf, _consume;
+        private static MethodInfo _ids, _countOf, _nameOf, _iconOf, _tintOf, _consume, _mark;
 
         // ======================================================================
 
@@ -111,6 +111,10 @@ namespace Hoodrich.Core
                     _iconOf = type.GetMethod("IconOf", BindingFlags.Public | BindingFlags.Static);
                     _tintOf = type.GetMethod("TintOf", BindingFlags.Public | BindingFlags.Static);
                     _consume = type.GetMethod("Consume", BindingFlags.Public | BindingFlags.Static);
+
+                    // Optional: an older Bare Minimum on the same API version will not
+                    // have it, and a null here just means no mark beside the heading.
+                    _mark = type.GetMethod("Mark", BindingFlags.Public | BindingFlags.Static);
 
                     _type = type;
 
@@ -207,6 +211,17 @@ namespace Hoodrich.Core
                 try { return !Present || _slots == null ? 0 : (int)_slots.GetValue(null, null); }
                 catch { return 0; }
             }
+        }
+
+        /// <summary>The other mod's own mark, as a full path. "" when it has none.</summary>
+        public static string Mark(string which)
+        {
+            try
+            {
+                if (!Present || _mark == null) return "";
+                return _mark.Invoke(null, new object[] { which }) as string ?? "";
+            }
+            catch { return ""; }
         }
 
         /// <summary>Eats, drinks or smokes one. True when it actually started.</summary>

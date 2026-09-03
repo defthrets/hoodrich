@@ -91,10 +91,18 @@ namespace Hoodrich.UI
         /// </summary>
         private readonly List<string> _food = new List<string>();
 
-        /// <summary>Height of the food band: a label, a row of tiles, and air.</summary>
-        private const float FoodStrip = 0.062f;
+        /// <summary>
+        /// The food band's own height: a rule, a heading, one row of tiles, and a caption.
+        ///
+        /// Measured from the parts rather than guessed at. The first version reserved less
+        /// than the tiles needed and drew the heading straight over "Nothing on you", which is
+        /// what happens when a panel's height and its contents are two separate opinions.
+        /// </summary>
+        private const float FoodTile = 0.044f;
 
-        private const float FoodTile = 0.040f;
+        private const float FoodHead = 0.022f;
+        private const float FoodCap = 0.020f;
+        private const float FoodStrip = 0.014f + FoodHead + FoodTile + FoodCap;
 
         private int _selected;
         private int _openedAt;
@@ -435,7 +443,12 @@ namespace Hoodrich.UI
                 y += RowHeight;
             }
 
-            if (_food.Count > 0) FoodBand(x, wide, y + 0.006f, arrive);
+            // "Nothing on you." occupies a row that the loop above never walked, and the panel
+            // was already sized for it -- so the cursor has to step over it too, or the food
+            // band starts on top of the sentence.
+            if (_rows.Count == 0) y += RowHeight;
+
+            if (_food.Count > 0) FoodBand(x, wide, y + 0.008f, arrive);
 
             var footY = top + height - FootHeight + 0.008f;
 
@@ -452,76 +465,169 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
-        /// The food band: a heading, then one tile per thing you are carrying.
+        /// The food band: a rule, a heading, a row of square tiles, and the name of the one
+        /// under the cursor.
         ///
-        /// The tiles are drawn from Bare Minimum's own PNGs, by absolute path. Hud.File runs
-        /// its argument through Path.Combine against this mod's icon folder, and Path.Combine
-        /// hands back the second argument whole when it is already rooted -- so a full path
-        /// loads as it is, and neither mod has to know where the other keeps its art.
+        /// LAID OUT LIKE BARE MINIMUM'S OWN POCKET, deliberately. That screen is a grid of
+        /// square tiles with the picture centred, a count in the corner and the name of the
+        /// selected one on a line of its own underneath -- and a player who has seen it once
+        /// should not have to learn a second arrangement of the same three facts because they
+        /// happened to open the phone instead of pressing F11.
         ///
-        /// Tinted with the item's own colour, which crosses the bridge as a packed ARGB int
-        /// because Color is not a type both assemblies can agree on.
+        /// The tiles are that mod's own PNGs, by absolute path. Hud.File runs its argument
+        /// through Path.Combine against this mod's icon folder, and Path.Combine hands back
+        /// the second argument whole when it is already rooted -- so a full path loads as it
+        /// is and neither mod has to know where the other keeps its art.
         /// </summary>
         private void FoodBand(float x, float width, float y, float arrive)
         {
-            Hud.Text("FOOD", x, y, 0.26f, Palette.Alpha(Palette.TextDim, 210),
-                     Hud.FontLabel, centre: false);
+            Hud.RectFrom(x, y, width, 0.0012f, Hairline);
 
+            y += 0.012f;
+
+            // ---- their mark, then the heading ----
+            //
+            // The drumstick is Bare Minimum's own, the same one it puts beside its menu titles
+            // and draws in the corner of the screen. Borrowed rather than drawn again: this
+            // band is that mod's content sitting in this mod's phone, and saying whose it is
+            // costs one icon.
+            var tx = x;
+
+            var mark = Core.Larder.Mark("food");
+
+            if (!string.IsNullOrEmpty(mark) &&
+                Hud.File(mark, x + Hud.ToX(0.014f) * 0.5f, y + 0.007f, 0.014f, 0f,
+                         Palette.Alpha(Palette.Accent, (int)(220f * arrive))))
+            {
+                tx = x + Hud.ToX(0.014f) + 0.005f;
+            }
+
+            Hud.Text("FOOD", tx, y, 0.28f, Palette.Text, Hud.FontLabel, centre: false);
+
+            // Carried out of capacity, the same reading the product band gives above it.
             Hud.TextRight(Core.Larder.Total + " / " + Core.Larder.Slots,
                           x + width, y, 0.24f, Palette.TextDim, Hud.FontLabel);
 
-            var tileY = y + 0.020f;
+            var tileY = y + FoodHead;
+
             var tile = Hud.ToX(FoodTile);
+            var gap = Hud.ToX(0.006f);
+
+            // ---- how the tiles arrive ----
+            //
+            // STAGGERED, a frame or two apart. All of them fading up together is the panel
+            // appearing twice; one after another reads as the pocket being unpacked, and it is
+            // the same trick the shop shelf uses on its row pictures.
+            var age = Game.GameTime - _shownAt;
+
+            // The travelling sheen, on the same clock as the one crossing the panel above, so
+            // the two are never quite in step and never quite unrelated.
+            var sweep = (Game.GameTime % SweepMs) / (float)SweepMs;
 
             for (var i = 0; i < _food.Count; i++)
             {
                 var id = _food[i];
 
-                var tx = x + i * (tile + Hud.ToX(0.008f));
+                var lead = i * 60;
+
+                var land = age <= lead ? 0f : (age - lead) / (float)EnterMs;
+                if (land > 1f) land = 1f;
+
+                // Eased out, so it settles rather than stopping dead.
+                land = 1f - (1f - land) * (1f - land);
+
+                var show = arrive * land;
+                if (show <= 0.01f) continue;
+
+                var tileTop = tileY + EnterRise * 0.5f * (1f - land);
+
+                var tx2 = x + i * (tile + gap);
                 var picked = _selected - _rows.Count == i;
 
-                Hud.RectFrom(tx, tileY, tile, FoodTile,
-                             picked ? Color.FromArgb((int)(210f * arrive), 240, 170, 56)
-                                    : Color.FromArgb((int)(60f * arrive), 255, 255, 255));
+                // The plate. Amber under the cursor, and a dark tile with a hairline otherwise
+                // -- an unfilled square with only an outline reads as an empty slot.
+                Hud.RectFrom(tx2, tileTop, tile, FoodTile,
+                             picked ? Color.FromArgb((int)(235f * show), 240, 170, 56)
+                                    : Color.FromArgb((int)(38f * show), 255, 255, 255));
+
+                if (!picked)
+                {
+                    Hud.RectFrom(tx2, tileTop, tile, 0.0012f,
+                                 Color.FromArgb((int)(70f * show), 255, 255, 255));
+                }
+                else
+                {
+                    // A band of light crossing the chosen tile. Clipped to the tile rather
+                    // than drawn over it, or it is a stripe on the panel that happens to pass
+                    // a tile on its way.
+                    var bandW = tile * 0.34f;
+                    var bandAt = tx2 - bandW + (tile + bandW) * sweep;
+
+                    var lo = Math.Max(tx2, bandAt);
+                    var hi = Math.Min(tx2 + tile, bandAt + bandW);
+
+                    if (hi > lo)
+                    {
+                        Hud.RectFrom(lo, tileTop, hi - lo, FoodTile,
+                                     Color.FromArgb((int)(40f * show), 255, 255, 255));
+                    }
+                }
 
                 var art = Core.Larder.IconOf(id);
 
                 if (!string.IsNullOrEmpty(art))
                 {
-                    // Near-black on the picked tile, the item's own colour otherwise. The art
-                    // is white and CustomSprite multiplies, so one file does both.
+                    // Near-black on the amber tile, the item's own colour otherwise. The art is
+                    // white and CustomSprite multiplies, so one file does both.
                     var ink = picked
-                        ? Color.FromArgb(255, 20, 18, 14)
-                        : Palette.Alpha(Core.Larder.TintOf(id), (int)(235f * arrive));
+                        ? Color.FromArgb((int)(255f * show), 20, 18, 14)
+                        : Palette.Alpha(Core.Larder.TintOf(id), (int)(238f * show));
 
-                    Hud.File(art, tx + tile * 0.5f, tileY + FoodTile * 0.5f,
-                             FoodTile * 0.62f, 0f, ink);
+                    Hud.File(art, tx2 + tile * 0.5f, tileTop + FoodTile * 0.46f,
+                             FoodTile * 0.58f, 0f, ink);
                 }
 
+                // ---- how many ----
+                //
+                // On its own dark chip rather than straight onto the tile. The number has to
+                // read over amber and over a dark square, and one ink cannot do both.
                 var many = Core.Larder.CountOf(id);
 
                 if (many > 1)
                 {
-                    Hud.TextRight(many.ToString(), tx + tile - 0.003f,
-                                  tileY + FoodTile - 0.014f, 0.24f,
-                                  picked ? Color.FromArgb(255, 26, 22, 16) : Palette.Text,
-                                  Hud.FontLabel);
+                    var chip = Hud.ToX(0.013f);
+
+                    Hud.RectFrom(tx2 + tile - chip, tileTop + FoodTile - 0.013f, chip, 0.013f,
+                                 Color.FromArgb((int)(215f * show), 12, 13, 15));
+
+                    Hud.TextRight(many.ToString(), tx2 + tile - 0.0015f,
+                                  tileTop + FoodTile - 0.0125f, 0.23f,
+                                  Palette.Alpha(Palette.Text, (int)(255f * show)), Hud.FontLabel);
                 }
             }
 
-            // The name of the one under the cursor, since a picture alone does not say which
-            // taco it is.
+            // ---- what it is ----
+            //
+            // Under the grid on its own line, which is where the pocket screen puts it. It sat
+            // right-aligned level with the tiles at first, so the name of the thing on the far
+            // left appeared on the far right with the width of the panel between them.
+            var capY = tileY + FoodTile + 0.005f;
+
             if (OnFood)
             {
                 var at = _selected - _rows.Count;
 
                 if (at >= 0 && at < _food.Count)
                 {
-                    Hud.TextRight(Core.Larder.NameOf(_food[at]), x + width,
-                                  tileY + FoodTile * 0.5f - 0.006f, 0.26f,
-                                  Palette.Text, Hud.FontBody);
+                    Hud.Text(Core.Larder.NameOf(_food[at]), x, capY, 0.28f,
+                             Palette.Text, Hud.FontBody, centre: false);
+                    return;
                 }
             }
+
+            Hud.Text(_food.Count == 1 ? "1 thing to eat" : _food.Count + " things to eat",
+                     x, capY, 0.26f, Palette.Alpha(Palette.TextDim, 190),
+                     Hud.FontBody, centre: false);
         }
 
         /// <summary>What you are holding out of what you can, with a bar of it.</summary>
