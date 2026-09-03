@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -123,6 +123,13 @@ namespace Hoodrich.UI
         private int _droppedAt;
         private int _droppedRow = -1;
 
+        /// <summary>When the cursor last moved, so the tile it landed on can grow into it.</summary>
+        private int _pickedAt;
+
+        /// <summary>How long that takes, and how much bigger the chosen tile's picture gets.</summary>
+        private const int PickMs = 150;
+        private const float PickGrow = 0.10f;
+
         private const int DropFlashMs = 420;
 
         /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
@@ -140,6 +147,7 @@ namespace Hoodrich.UI
 
             _selected = 0;
             _openedAt = Game.GameTime;
+            _pickedAt = Game.GameTime;
             _shownAt = Game.GameTime;
             _nextRepeat = 0;
             _droppedRow = -1;
@@ -288,6 +296,8 @@ namespace Hoodrich.UI
             _selected = (_selected + step) % Places;
             if (_selected < 0) _selected += Places;
 
+            _pickedAt = Game.GameTime;
+
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
@@ -389,7 +399,15 @@ namespace Hoodrich.UI
 
             var y = top + 0.088f;
 
-            Hud.Text("INVENTORY", x, y, 0.30f, Palette.Text, Hud.FontLabel, centre: false);
+            var ix = x;
+
+            if (Hud.File("stash.png", x + Hud.ToX(HeadIcon) * 0.5f, y + 0.007f, HeadIcon, 0f,
+                         Palette.Alpha(Palette.Accent, 200)))
+            {
+                ix = x + Hud.ToX(HeadIcon) + 0.006f;
+            }
+
+            Hud.Text("INVENTORY", ix, y, 0.30f, Palette.Text, Hud.FontLabel, centre: false);
 
             Hud.TextRight(_rows.Count + (_rows.Count == 1 ? " LINE" : " LINES"),
                           right, y, 0.24f, Palette.TextDim, Hud.FontLabel);
@@ -405,7 +423,19 @@ namespace Hoodrich.UI
 
             if (_rows.Count == 0)
             {
-                Hud.Text("Nothing on you.", x, y + 0.006f, 0.28f,
+                // AN EMPTY BAG BESIDE THE SENTENCE, not above it. The panel's height is worked
+                // out from a row count and this state occupies exactly one row -- anything
+                // stacked here comes out of the food band's space, which is how the heading
+                // ended up drawn over this sentence the first time round.
+                var ex = x;
+
+                if (Hud.File("baggie.png", x + Hud.ToX(ArtSize) * 0.5f, y + RowHeight * 0.34f,
+                             ArtSize, 0f, Palette.Alpha(Palette.TextDim, 120)))
+                {
+                    ex = x + Hud.ToX(ArtSize) + 0.007f;
+                }
+
+                Hud.Text("Nothing on you.", ex, y + 0.006f, 0.28f,
                          Palette.TextDim, Hud.FontBody, centre: false);
             }
             else if (!OnFood)
@@ -449,14 +479,50 @@ namespace Hoodrich.UI
 
             Hud.RectFrom(x, footY, wide, 0.0010f, Hairline);
 
-            var hint = OnFood
-                ? "UP / DOWN  PICK     ENTER  EAT IT     BACKSPACE  DONE"
-                : "UP / DOWN  PICK     LEFT or RIGHT  PUT IT DOWN     SPRINT  ALL OF IT     BACKSPACE  DONE";
-
-            Hud.Text(hint, x, footY + 0.008f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
+            Keys(x, right, footY + 0.008f);
 
             Hud.Frame(left, top, panelWidth, height,
                       Color.FromArgb(150, 90, 215, 235), Palette.Accent, Rule, Tick);
+        }
+
+        /// <summary>
+        /// What the buttons do, in the names of the buttons this player is actually holding.
+        ///
+        /// SPLIT LEFT AND RIGHT rather than one long run-on line, which is how every other
+        /// panel in the mod does it. The way OUT is the thing you look for when you are lost,
+        /// and it should be in the same place on every screen rather than at the end of a
+        /// sentence whose length depends on what you are carrying.
+        ///
+        /// The pad names are Xbox letters because that is what the game itself prints on PC,
+        /// whatever is plugged in. Naming them A and B and being wrong about a DualSense is
+        /// better than naming neither and being useless to both.
+        /// </summary>
+        private void Keys(float x, float right, float y)
+        {
+            var pad = Hud.OnPad;
+
+            Hud.TextRight(pad ? "B  DONE" : "BACKSPACE  DONE", right, y, 0.24f,
+                          Palette.TextDim, Hud.FontLabel);
+
+            if (Places == 0) return;
+
+            var hint = pad ? "D-PAD  PICK" : "UP / DOWN  PICK";
+
+            if (OnFood)
+            {
+                hint += pad ? "     A  EAT IT" : "     ENTER  EAT IT";
+            }
+            else
+            {
+                // Left and right both do it, and the pad says D-PAD L/R for the same reason
+                // the keyboard says LEFT or RIGHT: there is only one direction anything can go
+                // from here, and making you work out which of the two it is would be a puzzle.
+                hint += pad
+                    ? "     D-PAD L/R  PUT IT DOWN     HOLD A  ALL OF IT"
+                    : "     LEFT or RIGHT  PUT IT DOWN     SPRINT  ALL OF IT";
+            }
+
+            Hud.Text(hint, x, y, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
 
         /// <summary>
@@ -499,9 +565,18 @@ namespace Hoodrich.UI
 
             Hud.Text("FOOD", tx, y, 0.28f, Palette.Text, Hud.FontLabel, centre: false);
 
-            // Carried out of capacity, the same reading the product band gives above it.
-            Hud.TextRight(Core.Larder.Total + " / " + Core.Larder.Slots,
-                          x + width, y, 0.24f, Palette.TextDim, Hud.FontLabel);
+            // Carried out of capacity, the same reading the product band gives above it --
+            // INCLUDING THE COLOUR, which it did not have and needed. The other mod's pantry
+            // can end up over its own cap (its slot count is a setting, and lowering it does
+            // not take anything off you) and "4 / 3" printed in the same grey as "1 / 3" reads
+            // as a broken number rather than as a full bag.
+            var carried = Core.Larder.Total;
+            var slots = Core.Larder.Slots;
+
+            var full = slots > 0 && carried >= slots;
+
+            Hud.TextRight(carried + " / " + slots, x + width, y, 0.24f,
+                          full ? Palette.Warn : Palette.TextDim, Hud.FontLabel);
 
             var tileY = y + FoodHead;
 
@@ -572,6 +647,17 @@ namespace Hoodrich.UI
 
                 if (!string.IsNullOrEmpty(art))
                 {
+                    // THE ONE UNDER THE CURSOR GROWS INTO IT. The plate changing colour is the
+                    // whole of the feedback otherwise, and on a strip of four squares that is a
+                    // colour swap you can miss while your eyes are on the caption underneath.
+                    // A picture that swells over a sixth of a second is movement, and movement
+                    // is what the eye actually catches.
+                    var held = Game.GameTime - _pickedAt;
+                    var grown = held >= PickMs ? 1f : held / (float)PickMs;
+
+                    grown = 1f - (1f - grown) * (1f - grown);
+
+                    var swell = picked ? 1f + PickGrow * grown : 1f;
                     // Near-black on the amber tile, the item's own colour otherwise. The art is
                     // white and CustomSprite multiplies, so one file does both.
                     var ink = picked
@@ -579,7 +665,7 @@ namespace Hoodrich.UI
                         : Palette.Alpha(Core.Larder.TintOf(id), (int)(238f * show));
 
                     Hud.File(art, tx2 + tile * 0.5f, tileTop + FoodTile * 0.46f,
-                             FoodTile * 0.58f, 0f, ink);
+                             FoodTile * 0.58f * swell, 0f, ink);
                 }
 
                 // ---- how many ----

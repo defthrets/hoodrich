@@ -33,6 +33,61 @@ namespace Hoodrich.UI
         /// </summary>
         public static int ScreenHeight { get; private set; } = 1080;
 
+        /// <summary>
+        /// Whether the last thing the player touched was a controller rather than a keyboard.
+        ///
+        /// EVERY KEY HINT IN THIS MOD IS A KEYBOARD KEY, and on a pad every one of them is a
+        /// lie. The controls themselves were never the problem -- the phone screens are all
+        /// driven through PhoneUp, PhoneSelect and PhoneCancel, which the game already binds to
+        /// the d-pad, A and B -- so a pad has always worked and the footer has always said
+        /// BACKSPACE anyway.
+        ///
+        /// Game.LastInputMethod is the wrapper over the game's own answer -- the same question
+        /// Rockstar's scripts ask before choosing between a key name and a button glyph. It
+        /// flips the instant you touch the other device, which is the behaviour you want: pick
+        /// up a pad mid-menu and the hints change under your hand.
+        ///
+        /// Asked through the wrapper rather than the native on purpose. The native was renamed
+        /// -- IS_INPUT_DISABLED became IS_USING_KEYBOARD_AND_MOUSE -- and a rename that inverts
+        /// what the name claims is exactly the kind of thing to get backwards in silence. The
+        /// typed enum cannot be read the wrong way round.
+        ///
+        /// Four times a second. It is asked from every footer of every open panel and it cannot
+        /// meaningfully change between two frames.
+        ///
+        /// (~INPUT_...~ tags would be the better answer and they are not available here. They
+        /// are substituted by the HELP TEXT system only -- a plain DRAW_TEXT prints the raw
+        /// tag, which this mod has shipped once already and it read as a crash. See
+        /// TEXTFORMAT.md.)
+        /// </summary>
+        public static bool OnPad
+        {
+            get
+            {
+                var now = Game.GameTime;
+
+                if (now >= _padAt)
+                {
+                    _padAt = now + PadCheckMs;
+
+                    try
+                    {
+                        _pad = Game.LastInputMethod == InputMethod.GamePad;
+                    }
+                    catch
+                    {
+                        // Keyboard, which is what the hints said before this existed.
+                    }
+                }
+
+                return _pad;
+            }
+        }
+
+        private static bool _pad;
+        private static int _padAt;
+        private const int PadCheckMs = 250;
+
         public static void BeginFrame()
         {
             // Logged only when it gets worse, so this is a handful of lines in a session
