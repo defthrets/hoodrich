@@ -81,6 +81,12 @@ namespace Hoodrich.Economy
         /// <summary>How long a dictionary gets to arrive before the scenario takes over.</summary>
         private const int StreamMs = 1200;
 
+        /// <summary>When to ask whether the scenario actually started, and what to ask about.</summary>
+        private int _checkAt;
+        private string _checking = "";
+
+        private const int CheckMs = 400;
+
         /// <summary>PH_R_Hand -- the non-deforming helper the animators hang props on.</summary>
         private const int RightHand = 28422;
 
@@ -94,11 +100,30 @@ namespace Hoodrich.Economy
 
             Stop();
 
-            _waiting = recipe;
-            _giveUpAt = Game.GameTime + StreamMs;
-
             Busy = true;
             _until = Game.GameTime + recipe.Ms;
+
+            Hold(recipe, me);
+
+            // NOTHING TO STREAM MEANS NOTHING TO WAIT FOR, and this is why the joint looked
+            // like it was not happening.
+            //
+            // The wait exists because an anim dictionary is not in memory on the frame you ask
+            // for it. A recipe with NO dictionaries has nothing to wait for -- and the joint is
+            // exactly that, deliberately: it is a scenario and only a scenario, because the
+            // game's own smoking-pot scenario is better than anything we could assemble. So it
+            // sat doing nothing for the first one-point-two seconds of a four-second ritual,
+            // and then started smoking with under three left, most of which is the blend in.
+            //
+            // Straight to it when there is no ladder to climb.
+            if (recipe.Dicts.Length == 0)
+            {
+                Scenario(recipe, me);
+                return true;
+            }
+
+            _waiting = recipe;
+            _giveUpAt = Game.GameTime + StreamMs;
 
             // Asked for now and played when it arrives. A dictionary requested and played on
             // the same frame is the one thing that never works -- it is not in memory yet and
@@ -108,8 +133,6 @@ namespace Hoodrich.Economy
                 try { Function.Call(Hash.REQUEST_ANIM_DICT, dict); }
                 catch { }
             }
-
-            Hold(recipe, me);
 
             return true;
         }
@@ -143,6 +166,27 @@ namespace Hoodrich.Economy
                     Scenario(_waiting, me);
                     _waiting = null;
                 }
+            }
+
+            if (_checkAt != 0 && now >= _checkAt)
+            {
+                _checkAt = 0;
+
+                try
+                {
+                    if (!Function.Call<bool>(Hash.IS_PED_USING_SCENARIO, me.Handle, _checking))
+                    {
+                        Log.Warn("The scenario " + _checking + " was accepted and is not " +
+                                 "running. Either the game has no such scenario or something " +
+                                 "took the task straight back off him.");
+                    }
+                }
+                catch
+                {
+                    // The check is a diagnostic. It never breaks the ritual.
+                }
+
+                _checking = "";
             }
 
             if (now < _until) return false;
@@ -301,6 +345,17 @@ namespace Hoodrich.Economy
 
                 _scenario = true;
 
+                // AND ASKED WHETHER IT TOOK, which the comment at the top of this file has
+                // claimed all along and the code was not doing. A scenario name the game does
+                // not know is accepted in silence, exactly like a timecycle -- so the one
+                // place that could tell us was writing "Ritual scenario: X" whether or not
+                // anything was happening.
+                //
+                // Not on the same frame. The task is queued and the ped is not in it yet, so
+                // asking now always answers no; Update asks a moment later instead.
+                _checkAt = Game.GameTime + CheckMs;
+                _checking = recipe.Scenario;
+
                 Log.Info("Ritual scenario: " + recipe.Scenario + ".");
             }
             catch
@@ -356,6 +411,8 @@ namespace Hoodrich.Economy
             _dict = "";
             _clip = "";
             _scenario = false;
+            _checkAt = 0;
+            _checking = "";
 
             Drop();
         }
