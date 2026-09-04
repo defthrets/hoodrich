@@ -19,18 +19,19 @@
       "paint2": 112
     },
     {
-      "id": "kanjosj",
-      "model": "kanjosj",
-      "name": "Kanjo SJ",
-      "class": "Coupe",
-      "note": "Built in a driveway. Runs like it.",
-      "price": 22000,
+      "id": "sentinelgts",
+      "model": "sentinel5",
+      "name": "Sentinel GTS",
+      "class": "Sports",
+      "note": "Four doors and no patience.",
+      "price": 38000,
       "x": -55.753,
       "y": -1682.439,
       "z": 28.805,
       "heading": 235.911,
       "paint": 0,
-      "paint2": 1
+      "paint2": 1,
+      "_model": "Sentinel GTS. The spawner reports 0xA17C88F3 and sentinel5 hashes to exactly that, so this one has a real name and does not need the hash route the Hellfire took. sentinelgts is NOT a model -- it hashes to 0x985074EC and the game has never heard of it."
     },
     {
       "id": "minimus",
