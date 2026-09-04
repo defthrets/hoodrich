@@ -298,7 +298,11 @@ namespace Hoodrich.Economy
                 "prop_meth_bag_01", "h4_prop_h4_pouch_01a"
             },
             Sits = new Vector3(0.015f, 0.005f, 0.0f),
-            Scenario = "WORLD_HUMAN_DRUG_DEALER",
+
+            // Same reasoning as the pills. WORLD_HUMAN_DRUG_DEALER is a man loitering with
+            // something in his hands, which is close enough to be tempting and is still a
+            // scenario -- so it would drop the baggie, and the baggie is the only thing on
+            // screen that says what he is doing.
             Ms = 5000
         };
 
@@ -400,7 +404,17 @@ namespace Hoodrich.Economy
                 "hei_prop_pill_bag_01", "prop_cs_script_bottle"
             },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
-            Scenario = "WORLD_HUMAN_DRINKING",
+
+            // NO SCENARIO, AND THAT IS THE FIX. WORLD_HUMAN_DRINKING was the fallback here on
+            // the reasoning that a head tipped back is most of a swallow. What it actually is,
+            // when it fires, is a man producing a CUP OF COFFEE -- reported in exactly those
+            // words. A scenario brings its own prop, and Scenario drops ours to make room, so
+            // the fallback threw away the bottle of pills that was the entire explanation and
+            // replaced it with a hot drink.
+            //
+            // Standing still holding a bottle of pills is a worse animation and a better
+            // picture, and the ladder above has four real rungs before it could ever come to
+            // this.
             Ms = 5200
         };
         // ---- what each one is ---------------------------------------------------
