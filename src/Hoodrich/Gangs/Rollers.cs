@@ -682,6 +682,20 @@ namespace Hoodrich.Gangs
             else if (roll.OnFoot)
             {
                 where = _rng.Next(100) < 55 ? Node(from, true) : Pavement(from);
+
+                // AND IT HAS TO BE SOMEWHERE HE CAN ACTUALLY GET TO. The other picker gets a
+                // go before the fallbacks below do -- one is on the road network and one is on
+                // the pavement, and the one that fails is usually the one that landed the far
+                // side of something.
+                if (where != Vector3.Zero && !Reachable(roll.Car.Position, where))
+                {
+                    where = _rng.Next(100) < 55 ? Pavement(from) : Node(from, true);
+
+                    if (where != Vector3.Zero && !Reachable(roll.Car.Position, where))
+                    {
+                        where = Vector3.Zero;
+                    }
+                }
             }
             else
             {
@@ -1210,6 +1224,58 @@ namespace Hoodrich.Gangs
 
             return Vector3.Zero;
         }
+
+        /// <summary>
+        /// Whether he can actually get there, or whether it is the far side of something.
+        ///
+        /// THE WALL AT B.J. SMITH IS WHY THIS EXISTS. A rider was being sent to a pavement
+        /// point inside the park, which is thirty metres away in a straight line and has a
+        /// four-foot wall across the middle of it. StyleBike carries the shortest-path flag --
+        /// deliberately, because that is what lets a BMX use pavements and cut-throughs
+        /// instead of being stuck on the road network -- and shortest path to somewhere behind
+        /// a wall is the wall.
+        ///
+        /// AND THE STUCK CHECK COULD NEVER CATCH IT. That asks whether he has moved since the
+        /// last look, and a bike hitting a wall is not stationary: it bounces, the rider gets
+        /// back on, and he tries again. He moves plenty. He simply never arrives, for as long
+        /// as anybody is watching.
+        ///
+        /// So the question is asked before he sets off rather than after he fails. The road
+        /// network already knows how far it is to drive somewhere -- if that is more than a
+        /// couple of times the straight line, the straight line goes through something, and
+        /// this is a rider who would spend the next five minutes proving it.
+        ///
+        /// Generous on purpose. A real corner is a detour and a normal one is well under twice
+        /// the crow's distance; twice and a bit only rejects genuinely walled-off ground.
+        /// </summary>
+        private static bool Reachable(Vector3 from, Vector3 to)
+        {
+            try
+            {
+                var straight = from.DistanceTo(to);
+
+                // Close enough that any detour is noise, and short enough that he is nearly
+                // there anyway.
+                if (straight < 6f) return true;
+
+                var road = Function.Call<float>(Hash.CALCULATE_TRAVEL_DISTANCE_BETWEEN_POINTS,
+                                                from.X, from.Y, from.Z, to.X, to.Y, to.Z);
+
+                // Nought or negative is the network saying it cannot route there at all, which
+                // is a clearer no than a long way round.
+                if (road <= 0f) return false;
+
+                return road <= straight * DetourMost;
+            }
+            catch
+            {
+                // If it cannot be asked, he goes. A rider who never rides is worse.
+                return true;
+            }
+        }
+
+        /// <summary>How far round the houses a destination may be before it is not one.</summary>
+        private const float DetourMost = 2.4f;
 
         /// <summary>Somewhere to aim a bike: a stretch of pavement on our blocks.</summary>
         private Vector3 Pavement(Vector3 from)
