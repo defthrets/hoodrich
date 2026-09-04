@@ -662,6 +662,9 @@ namespace Hoodrich.Locations
             public int Until;
 
             public bool Circling;
+
+            /// <summary>Where it is up to on the recorded line, when it is driving one.</summary>
+            public int Point = -1;
             public bool Leaving;
 
             /// <summary>
@@ -1031,6 +1034,11 @@ namespace Hoodrich.Locations
             // almost always already there.
             //
             // Non-blocking, so this is a few dozen calls and no wait at all.
+            // The recorded shape, read once. Nothing before the first takeover needs it, and
+            // reading it at construction would put a file read in the mod's startup for a
+            // feature most sessions never reach.
+            _line.Load();
+
             Warm();
 
             Cars();
@@ -3488,7 +3496,22 @@ namespace Hoodrich.Locations
         /// All eight for anything ARRIVING -- it still stops for people, it just also goes
         /// round them.
         /// </summary>
-        private const int CareStyle = 1 | 2 | 4 | 8 | 16 | 32 | 128 | 256;
+        /// <summary>
+        /// NOTHING COMING TO THIS STOPS AT A RED LIGHT, and 128 is the flag that made them.
+        ///
+        /// The style was the careful one, lights and all, which is right for a taxi and wrong
+        /// for thirty-five people driving to a street takeover at one in the morning. Half of
+        /// them sat at the junction two streets away waiting for a green while the thing they
+        /// were coming to was already going, and a car that queues politely at an empty
+        /// crossing on its way to an illegal meet is the one detail that says none of this is
+        /// really happening.
+        ///
+        /// EVERYTHING THAT STOPS THEM HITTING SOMETHING STAYS. 1 and 2 are stopping before
+        /// vehicles and people, 4 through 32 are the avoidance, and all of it is kept -- they
+        /// are meant to be lawless, not blind, and this street has sixty people stood in it.
+        /// The one thing that goes is the obedience.
+        /// </summary>
+        private const int CareStyle = 1 | 2 | 4 | 8 | 16 | 32 | 256;
 
         /// <summary>
         /// And for anything LEAVING, the police coming in, and the drift cars ARRIVING.
@@ -3887,6 +3910,13 @@ namespace Hoodrich.Locations
         /// and a driver whose action has run out coasts to a stop -- so each is topped up
         /// slightly before it ends, which is what makes it continuous.
         /// </summary>
+        /// <summary>The line somebody drove, loaded once on the first takeover.</summary>
+        private readonly DriftLine _line = new DriftLine();
+
+        /// <summary>How near a waypoint counts as reached, and how fast the line is taken.</summary>
+        private const float ReachedPoint = 5.5f;
+        private const float LineSpeed = 13f;
+
         private void Working(int now)
         {
             foreach (var r in _running)
@@ -3898,6 +3928,16 @@ namespace Hoodrich.Locations
                 // THE LEASH, and it is a real drive rather than a shove. A donut wanders --
                 // that is what a donut does -- so anybody who has drifted out of the area gets
                 // an ordinary route back into it and picks up again when it arrives.
+                // THE ONE ON THE LINE HAS ITS OWN LEASH, WHICH IS THE LINE. See Line below:
+                // it covers most of the junction, so measuring it against a circle round the
+                // mark would haul it back to the middle every time it reached the far end of
+                // the thing it is meant to be driving.
+                if (r.Middle && _line.Ready)
+                {
+                    Line(r, now);
+                    continue;
+                }
+
                 var gap = r.Car.Position.DistanceTo(Circle);
 
                 if (gap > r.Radius + Wander)
@@ -3985,11 +4025,17 @@ namespace Hoodrich.Locations
 
                 try
                 {
-                    // THE ONE ON THE MARK STANDS STILL. It used to be told to hold a burnout
-                    // AND to drive a donut in the same breath, which are two different things
-                    // to do with the same wheels -- so it did the donut, because a temp action
-                    // is a driver input and beats a flag. That is why nothing ever sat there
-                    // smoking: there was a burnout car and it was driving in circles.
+                    // THE ONE ON THE MARK STANDS STILL, WHEN THERE IS NO LINE TO DRIVE.
+                    //
+                    // This is the fallback now rather than the behaviour. With a recording on
+                    // disk the middle car drives the shape somebody actually drove -- see Line
+                    // -- and without one it does what it always did: sits on the mark with the
+                    // back wheels going, which is a takeover with somebody in the middle of it
+                    // rather than an empty junction.
+                    //
+                    // It used to be told to hold a burnout AND to drive a donut in the same
+                    // breath, which are two different things to do with the same wheels, and it
+                    // did the donut because a temp action is a driver input and beats a flag.
                     if (r.Middle)
                     {
                         Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
@@ -4011,6 +4057,71 @@ namespace Hoodrich.Locations
                 }
             }
         }
+
+        /// <summary>
+        /// Drive the shape somebody recorded, sideways, round and round.
+        ///
+        /// WAYPOINT AT A TIME AND RE-AIMED WHEN IT ARRIVES. A driving task is a route, not a
+        /// path, so handing the game the whole line at once is not on offer -- what is on
+        /// offer is one coordinate, and another one when that is reached. Four and a half
+        /// metres apart is close enough that the corners survive it.
+        ///
+        /// RE-ISSUED ONLY WHEN THE TARGET MOVES, which is the difference between this working
+        /// and this doing nothing at all. Every new drive task throws away the routing the
+        /// last one was part way through -- a car re-tasked at the same coordinate every
+        /// couple of seconds never gets far enough to finish any of them and sits there
+        /// twitching. It happened to the spectators on the way in and it is written up in
+        /// Parking; the same trap, one file down.
+        ///
+        /// AND IT NEVER STOPS. The tyres stay off, the loop wraps, and there is no arriving:
+        /// the only thing that ends it is the police, which is what ends a takeover.
+        /// </summary>
+        private void Line(Runner r, int now)
+        {
+            try
+            {
+                // Joining where it stands, so a car that has just pulled up on the mark starts
+                // at the nearest bit of the shape rather than driving across the junction to
+                // reach waypoint zero.
+                if (r.Point < 0) r.Point = _line.Nearest(r.Car.Position);
+
+                var want = _line.At(r.Point);
+
+                var reached = r.Car.Position.DistanceTo(want) < ReachedPoint;
+
+                if (!reached && now < r.NextAction) return;
+
+                if (reached) r.Point = _line.Next(r.Point);
+
+                want = _line.At(r.Point);
+
+                r.NextAction = now + LineHoldMs;
+
+                // Kept on, not assumed. A car that grips up halfway round has visibly stopped
+                // drifting, and this is the only place that runs while it is doing it.
+                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
+                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
+                              want.X, want.Y, want.Z, LineSpeed, 0, r.Car.Model.Hash,
+                              RushStyle, 2f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
+            }
+            catch
+            {
+                // It is asked again in a moment.
+            }
+        }
+
+        /// <summary>
+        /// The longest a waypoint is chased before it is re-issued.
+        ///
+        /// A backstop rather than a clock: the re-aim happens on ARRIVAL, and this only exists
+        /// for a car that has been shoved off the line or wedged against a bumper and would
+        /// otherwise sit forever chasing a coordinate it can no longer reach.
+        /// </summary>
+        private const int LineHoldMs = 2500;
 
         /// <summary>
         /// The stunt action for a donut, one way or the other.
