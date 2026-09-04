@@ -5,29 +5,40 @@
 # White on transparent like every other icon in the set, because the colour goes on at draw
 # time -- the same file is the dim mark on a panel header and a bright one on a dark screen.
 #
-# The reference is a varsity/college block face and no varsity font is installed on a stock
-# Windows box, so this is Impact -- the only heavy condensed face that ships -- widened a
-# little and TRACKED OUT, which is the part that matters. Impact sets almost solid and the
-# reference has real air between its letters; without the tracking the arch just reads as a
-# squashed headline rather than as a wordmark.
+# BLACKLETTER, AND THE FONT SHIPS WITH THE REPO. It was Impact -- the only heavy condensed
+# face on a stock Windows box -- and a varsity block letter is not what this mod is. The
+# reference is the Old English across the front of a Los Santos tee, which is Fraktur, and
+# there is no Fraktur on a stock Windows box either: the machine this was written on has
+# msgothic and two Nanums and nothing else even close.
+#
+# So it is carried rather than found. UnifrakturCook-Bold sits in tools/fonts with its OFL
+# licence beside it, which is the same arrangement Fumes uses, and it means the wordmark
+# renders the same on any machine instead of depending on what somebody has installed.
+#
+# THE ARCH AND THE PROPORTIONS ARE UNCHANGED. Same sweep, same file width, and the tracking
+# and squeeze are tuned so the finished aspect lands back on what the C# already believes --
+# see WordmarkAspect in Draw.cs. Fraktur sets with far more air in it than Impact and the
+# capitals are wider, so both numbers move to stand still.
 #
 # Rendered per glyph and laid along the top of a circle rather than warped as one image: a
 # warped bitmap smears the strokes, and at header size a smeared stroke is all you see.
 
 import math
 import os
+import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
-OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'icons')
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(os.path.dirname(HERE), 'data', 'icons')
 
 TEXT = 'POSTED UP'
-FONT = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts', 'impact.ttf')
+FONT = os.path.join(HERE, 'fonts', 'UnifrakturCook-Bold.ttf')
 
 SIZE = 300          # per-glyph render height, before the arch
 SWEEP = 26.0        # degrees the whole word covers
-SQUEEZE = 1.15      # Impact is narrower than the reference
-TRACK = 26          # pixels of air between letters, at SIZE
+SQUEEZE = 1.00      # Fraktur's own width is right; Impact had to be widened
+TRACK = 19          # tuned so the finished aspect lands on what the C# already had
 WIDE = 1024         # the file's width
 
 
@@ -87,6 +98,10 @@ def build():
 
 if not os.path.isdir(OUT):
     os.makedirs(OUT)
+
+if not os.path.isfile(FONT):
+    print('no font at ' + FONT)
+    sys.exit(1)
 
 art = build()
 k = WIDE / float(art.width)
