@@ -273,6 +273,10 @@ namespace Hoodrich.UI
         /// <summary>What share of the remaining distance it closes each sixtieth of a second.</summary>
         public const float Chase = 0.26f;
 
+        /// <summary>The rim and the glow. Gold and ember by default; the phone sets its own green.</summary>
+        public Color RimInk = Warm.RimGold;
+        public Color GlowInk = Palette.Ember;
+
         private float _x, _y, _w, _h;
         private bool _on;
 
@@ -355,10 +359,10 @@ namespace Hoodrich.UI
             var gX = Hud.ToX(Glow);
 
             Warm.Rim(_x - gX, _y - Glow, _w + gX * 2f, _h + Glow * 2f, Glow,
-                     Palette.Alpha(Palette.Ember, (int)((30f + 40f * pulse) * arrive)));
+                     Palette.Alpha(GlowInk, (int)((30f + 40f * pulse) * arrive)));
 
             Warm.Rim(_x, _y, _w, _h, Rule,
-                     Palette.Alpha(Warm.RimGold, (int)((205f + 50f * pulse) * arrive)));
+                     Palette.Alpha(RimInk, (int)((205f + 50f * pulse) * arrive)));
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Keys = System.Windows.Forms.Keys;
 using Control = GTA.Control;
 using GTA;
@@ -132,6 +132,10 @@ namespace Hoodrich.Phone
 
             if (!_menu.IsOpen)
             {
+                // Still on its way down. It draws for a few frames after it stopped taking
+                // input, so the handset drops out of frame rather than blinking off.
+                if (_menu.Leaving) _menu.Render();
+
                 if (Game.GameTime < _quietUntil) Swing();
                 if (edge && (Busy == null || !Busy())) OpenPhone();
                 return;

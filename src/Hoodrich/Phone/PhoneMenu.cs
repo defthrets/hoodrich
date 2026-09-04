@@ -274,6 +274,33 @@ namespace Hoodrich.Phone
 
         private int _openedAt;
 
+        // ---- the handset's own animations -------------------------------------------
+
+        /// <summary>When it was put away, so it drops and goes dark rather than vanishing.</summary>
+        private int _closedAt;
+        private const int DropMs = 170;
+
+        /// <summary>
+        /// The glass wakes a beat AFTER the body arrives, and how long the waking takes. A
+        /// phone taken out of a pocket is a dark object first and a lit one second; a handset
+        /// that appears already glowing is a panel wearing a phone.
+        /// </summary>
+        private const int WakeLagMs = 70;
+        private const int WakeMs = 170;
+
+        /// <summary>True for the moment after Close while the handset is still on its way down.</summary>
+        public bool Leaving => !IsOpen && _closedAt != 0 && Game.GameTime - _closedAt < DropMs;
+
+        /// <summary>
+        /// The cursor frame that glides between apps and rows, in the handset's own green
+        /// rather than the panels' gold. See UI.Glide.
+        /// </summary>
+        private readonly Glide _glide = new Glide
+        {
+            RimInk = Color.FromArgb(255, 176, 236, 172),
+            GlowInk = Color.FromArgb(255, 108, 196, 106)
+        };
+
         /// <summary>When the page last changed, and which way, so it can slide in.</summary>
         private int _pageAt;
         private int _pageDir;
@@ -330,8 +357,10 @@ namespace Hoodrich.Phone
 
             IsOpen = true;
             _openedAt = Game.GameTime;
+            _closedAt = 0;
             _pageAt = Game.GameTime;
             _pageDir = 0;
+            _glide.Reset();
 
             Beep("SELECT");
         }
@@ -340,7 +369,11 @@ namespace Hoodrich.Phone
         {
             if (!IsOpen) return;
 
+            // The glass goes dark and the body drops -- see Render, which keeps drawing for
+            // DropMs after this. The pages are gone at once: there is nothing on a screen that
+            // has just been switched off.
             IsOpen = false;
+            _closedAt = Game.GameTime;
             _stack.Clear();
         }
 
@@ -355,6 +388,7 @@ namespace Hoodrich.Phone
             InCall = true;
             IsOpen = true;
             _openedAt = Game.GameTime;
+            _closedAt = 0;
         }
 
         public void CloseCall()
@@ -363,6 +397,7 @@ namespace Hoodrich.Phone
 
             InCall = false;
             IsOpen = false;
+            _closedAt = Game.GameTime;
         }
 
         private static int FirstPickable(WheelPage page)
@@ -534,10 +569,11 @@ namespace Hoodrich.Phone
 
         public void Render()
         {
-            if (!IsOpen) return;
-            if (!InCall && _stack.Count == 0) return;
+            if (!IsOpen && !Leaving) return;
+            if (IsOpen && !InCall && _stack.Count == 0) return;
 
-            var t = Ease();
+            // Rising in, or dropping out: the same curve, run the other way on the way down.
+            var t = IsOpen ? Ease() : 1f - Drop();
 
             var bodyW = Hud.ToX(BodyH * BodyRatio);
             var left = BodyRight - bodyW;
@@ -545,7 +581,16 @@ namespace Hoodrich.Phone
 
             var fade = (int)(255 * t);
 
-            Body(left, top, bodyW, BodyH, fade);
+            // The glass lights up a beat after the body arrives and is dark the whole way out.
+            var glass = IsOpen ? Wake() : 0f;
+
+            Body(left, top, bodyW, BodyH, fade, glass);
+
+            // On the way out there is nothing on the screen but the screen.
+            if (!IsOpen) return;
+
+            var screen = (int)(255 * t * glass);
+            if (screen <= 0) return;
 
             var bezX = Hud.ToX(Bezel);
             var scrLeft = left + bezX;
@@ -553,16 +598,16 @@ namespace Hoodrich.Phone
             var scrW = bodyW - bezX * 2f;
             var scrH = BodyH - Bezel * 2f;
 
-            StatusBar(scrLeft, scrTop, scrW, fade);
+            StatusBar(scrLeft, scrTop, scrW, screen);
 
             if (InCall)
             {
-                CallScreen(scrLeft, scrTop + StatusH, scrW, scrH - StatusH, fade);
+                CallScreen(scrLeft, scrTop + StatusH, scrW, scrH - StatusH, screen);
                 return;
             }
 
             var headTop = scrTop + StatusH;
-            Header(scrLeft, headTop, scrW, fade);
+            Header(scrLeft, headTop, scrW, screen);
 
             var bodyTop = headTop + HeaderH;
             var bodyHeight = scrH - StatusH - HeaderH - FooterH;
@@ -572,12 +617,38 @@ namespace Hoodrich.Phone
             // rather than the animation merely being present.
             var landed = Landed();
             var slide = _pageDir == 0 ? 0f : (1f - landed) * Hud.ToX(PageSlide) * _pageDir;
-            var pageFade = (int)(fade * (0.35f + 0.65f * landed));
+            var pageFade = (int)(screen * (0.35f + 0.65f * landed));
+
+            _glide.Begin();
 
             if (AtHome) Grid(scrLeft + slide, bodyTop, scrW, bodyHeight, pageFade);
             else List(scrLeft + slide, bodyTop, scrW, bodyHeight, pageFade);
 
-            Footer(scrLeft, scrTop + scrH - FooterH, scrW, fade);
+            Footer(scrLeft, scrTop + scrH - FooterH, scrW, screen);
+
+            // Last, so it rides over whatever it is pointing at.
+            _glide.Draw(screen / 255f);
+        }
+
+        /// <summary>Nought to one over the drop, eased IN: it leaves quicker than it arrived.</summary>
+        private float Drop()
+        {
+            var age = Game.GameTime - _closedAt;
+            if (age >= DropMs) return 1f;
+
+            var x = Math.Max(0f, Math.Min(1f, age / (float)DropMs));
+            return x * x;
+        }
+
+        /// <summary>How lit the glass is: nought until the body has landed, one a few frames later.</summary>
+        private float Wake()
+        {
+            var age = Game.GameTime - _openedAt - WakeLagMs;
+            if (age <= 0) return 0f;
+            if (age >= WakeMs) return 1f;
+
+            var x = age / (float)WakeMs;
+            return 1f - (1f - x) * (1f - x);
         }
 
         /// <summary>Starts a page transition. +1 drilling in, -1 coming back.</summary>
@@ -659,53 +730,111 @@ namespace Hoodrich.Phone
             return Color.FromArgb(c.A * fade / 255, c.R, c.G, c.B);
         }
 
-        private void Body(float left, float top, float w, float h, int fade)
+        /// <summary>
+        /// THE WALLPAPER: two soft discs of the set's green drifting slowly under the apps, and
+        /// nothing else. A phone has something behind its icons; a flat black home screen reads
+        /// as a menu that happens to be phone-shaped. Faint -- under a tenth of the icons' own
+        /// ink -- so it is a ground rather than a picture, and slow enough that nobody sees it
+        /// move, only that it has.
+        ///
+        /// Drawn in coarse rows: a disc this size is a hundred rectangles at full fineness,
+        /// and a wash does not need a clean edge.
+        /// </summary>
+        private static void Wallpaper(float left, float top, float w, float h, int fade)
         {
-            // The handset, rounded.
+            var t = Game.GameTime / 1000.0;
+
+            var cx = left + w * 0.5f;
+            var cy = top + h * 0.40f;
+
+            var ax = cx + Hud.ToX(0.030f) * (float)Math.Sin(t / 9.1);
+            var ay = cy + 0.030f * (float)Math.Sin(t / 12.7 + 1.0);
+
+            var bx = cx - Hud.ToX(0.026f) * (float)Math.Sin(t / 11.3 + 2.0);
+            var by = cy + 0.050f + 0.024f * (float)Math.Sin(t / 8.3);
+
+            Hud.Disc(ax, ay, 0.085f, Fade(Color.FromArgb(20, 108, 196, 106), fade), 6);
+            Hud.Disc(bx, by, 0.060f, Fade(Color.FromArgb(26, 66, 124, 68), fade), 6);
+        }
+
+        private void Body(float left, float top, float w, float h, int fade, float glass)
+        {
+            // THE RIM, WITH A LIGHT ON IT. Two rounded rectangles a hair apart: the lighter one
+            // shows only along the top edge, where the darker one -- set a fraction lower --
+            // does not cover it. A bevel for the price of one extra shape. Chrome catches
+            // light from above, and a rim that is one flat grey all the way round is a sticker.
             //
-            // It was an angular slab with corner ticks, on the reasoning that every other
-            // panel in this mod is angular. That is true of PANELS, and this is not one -- it
-            // is a picture of an object everybody has in their pocket, and the one thing every
-            // one of those has in common is that the corners are round. A phone with square
-            // corners reads as a menu pretending to be a phone.
-            //
-            // Drawn as a rim and then a body inside it, so the bezel is a real edge rather
-            // than a hairline that disappears at small sizes.
-            // RECTS at the corners here, not the sprite, and that is the whole reason this
-            // argument exists.
-            //
-            // A runtime-texture sprite does not sit in the same queue as DRAW_RECT: it comes out
-            // ON TOP of any rectangle drawn after it, whatever order they were issued in. The
-            // handset is the bottom layer of the screen, so its four corner discs floated up
-            // over everything that is drawn as a rectangle afterwards -- the battery, the signal
-            // bars, the rule under the status bar -- and read as four grey circles sitting on
-            // the phone with the chrome behind them.
-            //
-            // The tiles keep the sprite because nothing is drawn under them; the body cannot,
-            // because everything is.
-            // Coarse bands on the OUTER shell, fine ones on the screen.
-            //
-            // This is the chrome rim, and the body drawn inside it covers all but its outermost
-            // two pixels -- so a per-row corner here was two hundred and thirty rectangles
-            // spent on an arc that is a two-pixel band by the time anything is on top of it.
-            // That is the same waste the tile rim was deleted for, and between them they were
-            // what pushed the frame past GTA's rectangle ceiling and started costing other
-            // shapes their corners. Twenty steps is a three-pixel stagger on a two-pixel band,
-            // which is to say invisible.
+            // RECTS at the corners, not the sprite: a runtime-texture sprite comes out ON TOP
+            // of any rectangle drawn after it, whatever order they were issued in, and the
+            // handset is the bottom layer of everything on this screen. Twenty steps is a
+            // three-pixel stagger on a two-pixel band, which is to say invisible.
+            const float catchLight = 0.0009f;
+
             Hud.RoundRect(left, top, w, h, BodyRound,
-                      Fade(Color.FromArgb(255, 96, 102, 104), fade), sprite: false, steps: 20);
+                          Fade(Color.FromArgb(255, 134, 140, 142), fade), sprite: false, steps: 20);
+
+            Hud.RoundRect(left, top + catchLight, w, h - catchLight, BodyRound,
+                          Fade(Color.FromArgb(255, 72, 76, 78), fade), sprite: false, steps: 20);
 
             var edge = 0.0022f;
             var edgeX = Hud.ToX(edge);
 
             Hud.RoundRect(left + edgeX, top + edge, w - edgeX * 2f, h - edge * 2f,
-                      BodyRound - edge, Fade(Color.FromArgb(252, 8, 9, 10), fade), sprite: false);
+                          BodyRound - edge, Fade(Color.FromArgb(252, 8, 9, 10), fade), sprite: false);
 
-            // And the screen it houses, rounded with it.
+            // THE KEYS ON THE SIDES. Power on the right, two volume keys on the left, the way
+            // every handset anybody has held is laid out. They stand a couple of pixels proud
+            // of the rim, in the rim's own grey, and they are the cheapest thing on this screen
+            // that says "object" rather than "window".
+            var keyOut = Hud.ToX(0.0024f);
+            var keyInk = Fade(Color.FromArgb(255, 98, 104, 106), fade);
+
+            Hud.RectFrom(left + w, top + h * 0.20f, keyOut, 0.046f, keyInk);
+            Hud.RectFrom(left - keyOut, top + h * 0.17f, keyOut, 0.026f, keyInk);
+            Hud.RectFrom(left - keyOut, top + h * 0.17f + 0.032f, keyOut, 0.026f, keyInk);
+
+            // THE SPEAKER AND THE CAMERA, in the top bezel. A dark slit and a darker dot with
+            // a point of light in it: the two marks that make a black rectangle read as the
+            // front of a phone rather than the back of one.
+            var mid = left + w * 0.5f;
+            var slitW = Hud.ToX(0.052f);
+            const float slitH = 0.0030f;
+            var slitY = top + Bezel * 0.5f - slitH * 0.5f;
+
+            Hud.RoundRect(mid - slitW * 0.5f, slitY, slitW, slitH, slitH * 0.5f,
+                          Fade(Color.FromArgb(255, 30, 33, 35), fade), sprite: false, steps: 4);
+
+            var lensX = mid + slitW * 0.5f + Hud.ToX(0.011f);
+            var lensY = top + Bezel * 0.5f;
+
+            Hud.Disc(lensX, lensY, 0.0022f, Fade(Color.FromArgb(255, 24, 28, 32), fade));
+            Hud.Disc(lensX - Hud.ToX(0.0006f), lensY - 0.0006f, 0.0007f,
+                     Fade(Color.FromArgb(210, 120, 150, 170), fade));
+
+            // THE HOME BAR, in the bottom bezel.
+            var barW = Hud.ToX(0.040f);
+
+            Hud.RoundRect(mid - barW * 0.5f, top + h - Bezel * 0.5f - 0.0012f, barW, 0.0024f, 0.0012f,
+                          Fade(Color.FromArgb(255, 88, 94, 96), fade), sprite: false, steps: 4);
+
+            // AND THE GLASS, WAKING. Black until the body has landed, then up to the screen's
+            // own near-black over a few frames, which is what a phone does when it is taken
+            // out. Fine bands on the screen: this is the one shape everything sits on.
             var bezX = Hud.ToX(Bezel);
+            var dark = Color.FromArgb(252, 2, 2, 3);
+            var lit = Color.FromArgb(252, 13, 15, 17);
+
             Hud.RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
-                      ScreenRound, Fade(Color.FromArgb(252, 13, 15, 17), fade),
-                      sprite: false, steps: 0);
+                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 0);
+
+            // A catch of light along the top of the glass, so it is glass rather than paint.
+            if (glass > 0f)
+            {
+                var inX = Hud.ToX(ScreenRound);
+
+                Hud.RectFrom(left + bezX + inX, top + Bezel, w - bezX * 2f - inX * 2f, 0.0014f,
+                             Fade(Color.FromArgb((int)(22 * glass), 255, 255, 255), fade));
+            }
         }
 
         /// <summary>
@@ -729,6 +858,18 @@ namespace Hoodrich.Phone
             var picY = top + 0.070f;
 
             Hud.RectFrom(mid - picW * 0.5f, picY, picW, picH, Fade(Palette.PanelHeader, fade));
+
+            // RINGS LEAVING THE PICTURE, the way a ringing phone's screen does it: two of them,
+            // half a cycle apart, growing and fading. Movement that means "answer me", which
+            // is a different thing from the breathing word underneath that means "still going".
+            for (var k = 0; k < 2; k++)
+            {
+                var ph = ((Game.GameTime + k * 700) % 1400) / 1400f;
+                var g = 0.008f + 0.030f * ph;
+
+                Warm.Rim(mid - picW * 0.5f - Hud.ToX(g), picY - g, picW + Hud.ToX(g) * 2f, picH + g * 2f,
+                         0.0016f, Fade(Color.FromArgb((int)(150 * (1f - ph)), 108, 196, 106), fade));
+            }
 
             if (!string.IsNullOrEmpty(_callPic) && Hud.EnsureTextureDict(_callPic))
             {
@@ -793,7 +934,7 @@ namespace Hoodrich.Phone
             var lift = (float)Math.Sin(turn - Math.PI * 0.5d) * 0.0011f;
             var swell = 1f + 0.03f * breath;
 
-            Hud.Brand(left + pad, mid + lift, 0.0122f * swell,
+            Hud.Brand(left + pad, mid + lift, 0.0150f * swell,
                       Fade(Lerp(GreenDim, Green, breath), fade));
 
             // The game's clock, because a phone that says the wrong time is a prop.
@@ -807,7 +948,7 @@ namespace Hoodrich.Phone
             var right = left + w - pad;
 
             Battery(right, mid, fade);
-            Signal(right - Hud.ToX(0.026f), mid, fade);
+            Signal(right - Hud.ToX(0.026f), mid, fade, Game.GameTime - _openedAt);
 
             Hud.RectFrom(left, top + StatusH - 0.0014f, w, 0.0014f, Fade(GreenDim, fade));
         }
@@ -833,10 +974,15 @@ namespace Hoodrich.Phone
         /// signal falls off the further you get from the block. Stood in Chamberlain Hills you
         /// have all four; out past the airport you are down to one.
         /// </summary>
-        private static void Signal(float rightX, float midY, int fade)
+        private static void Signal(float rightX, float midY, int fade, int wake)
         {
             const int bars = 4;
             var lit = bars;
+
+            // IT FINDS THE NETWORK when the phone wakes: the bars climb one at a time over the
+            // first half second, then hold. A phone that has full reception the instant its
+            // screen comes on is a picture of reception.
+            var climb = wake < 0 ? bars : Math.Min(bars, 1 + Math.Max(0, wake - WakeLagMs) / 110);
 
             try
             {
@@ -867,7 +1013,7 @@ namespace Hoodrich.Phone
                 var x = rightX - (bars - i) * (wide + gap);
 
                 Hud.RectFrom(x, bottom - h, wide, h,
-                             Fade(i < lit ? Green : Color.FromArgb(70, 96, 108, 96), fade));
+                             Fade(i < Math.Min(lit, climb) ? Green : Color.FromArgb(70, 96, 108, 96), fade));
             }
         }
 
@@ -1185,6 +1331,8 @@ namespace Hoodrich.Phone
             {
                 Hud.RectFrom(x, y, Hud.ToX(0.0030f), h, Fade(Green, fade));
                 Edge(x, y, w, h, TileEdge, Fade(LitEdge, fade));
+
+                _glide.Target(x, y, w, h);
             }
 
             var ink = !item.Enabled ? Palette.TextDisabled : Palette.Text;
@@ -1233,6 +1381,8 @@ namespace Hoodrich.Phone
                 Rows(left, top, w, h, fade);
                 return;
             }
+
+            Wallpaper(left, top, w, h, fade);
 
             // The cursor landing somewhere is an event, and the tile it lands on says so.
             if (Top.Index != _lastIndex)
@@ -1562,6 +1712,10 @@ namespace Hoodrich.Phone
             w += popX * 2f;
             h += pop * 2f;
 
+            // The frame glides onto the live app -- see Glide -- so a cursor that jumps two
+            // columns is followed rather than re-found.
+            if (on) _glide.Target(x + Hud.ToX(0.004f), y + 0.004f, w - Hud.ToX(0.008f), h - 0.008f);
+
             // White on the live one as well as the quiet ones. See Lit.
             var ink = !item.Enabled ? Palette.TextDisabled : Palette.Text;
 
@@ -1616,6 +1770,14 @@ namespace Hoodrich.Phone
             if (punch > 0f)
             {
                 art = Blend(art, Color.FromArgb(255, 240, 255, 240), punch);
+
+                // THE RIPPLE. A ring leaving the pressed app and fading as it grows, the way a
+                // touch does on glass. The dip says the button went down; this says where.
+                var spread = Math.Max(0f, Math.Min(1f, (Game.GameTime - _pressAt) / (float)PressMs));
+                var grow = 0.014f * spread;
+
+                Warm.Rim(x - Hud.ToX(grow), y - grow, w + Hud.ToX(grow) * 2f, h + grow * 2f, 0.0016f,
+                         Fade(Color.FromArgb((int)(170 * (1f - spread)), 108, 196, 106), fade));
             }
 
             Art(item, x + w * 0.5f, y + h * 0.31f, 0.042f * (1f - PunchDip * punch),
@@ -1687,6 +1849,8 @@ namespace Hoodrich.Phone
                 // to already know is there to find. Three times that is an edge the eye lands
                 // on without being told to look for it.
                 Hud.RectFrom(left, top, Hud.ToX(0.010f), RowH, Fade(LitEdge, fade));
+
+                _glide.Target(left, top, w, RowH);
             }
             else if (alt)
             {
