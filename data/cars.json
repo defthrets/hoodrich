@@ -158,6 +158,21 @@
       "heading": 278.527,
       "paint": 27,
       "paint2": 27
+    },
+    {
+      "id": "hellfire",
+      "model": "0xEA76439F",
+      "_model": "Gauntlet Hellfire, by HASH rather than by name -- see Hao.Named. It matches no gauntlet1-6 and no brute force over the obvious spellings, and an Enhanced-only car whose spawn name is not published anywhere checkable is a car that silently never appears if you guess at it.",
+      "name": "Gauntlet Hellfire",
+      "class": "Muscle",
+      "note": "Left running with the door open. Twice.",
+      "price": 42000,
+      "x": -45.883,
+      "y": -1691.203,
+      "z": 28.798,
+      "heading": 11.299,
+      "paint": 0,
+      "paint2": 0
     }
   ]
 }

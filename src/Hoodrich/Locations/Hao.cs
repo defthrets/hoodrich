@@ -607,7 +607,7 @@ namespace Hoodrich.Locations
                         try { car.Live.Delete(); } catch { /* it was a wreck anyway */ }
                     }
 
-                    var model = new Model(car.Model);
+                    var model = Named(car.Model);
                     if (!model.IsValid || !model.IsInCdImage || !model.Request(1200))
                     {
                         Log.Debug("Hao has no " + car.Model + " on this install.");
@@ -740,6 +740,44 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>How a car sits on his lot: locked, clean, and on competition suspension.</summary>
+        /// <summary>
+        /// A model from a name, or from a hash written as one.
+        ///
+        /// EVERY CAR ON THIS LOT WAS RESOLVED FROM THE HASH ON A SPAWNER PANEL -- that is how
+        /// "Baller" turned out to be baller2 and "Asterope GZ" asterope2, and it is written at
+        /// the top of cars.json. It works because there is a table to look the hash up in.
+        ///
+        /// THE ENHANCED-ONLY CARS ARE NOT IN THOSE TABLES. The Gauntlet Hellfire reports a hash
+        /// of 0xEA76439F and matches no gauntlet1 through gauntlet6, no hellfire, and nothing
+        /// in a brute force over every one-to-three character suffix on either word. The name
+        /// exists; it is simply not published anywhere that can be checked, and guessing at a
+        /// spawn name is how you ship a car that silently never appears.
+        ///
+        /// So the hash goes in the file. The game takes model hashes rather than names anyway
+        /// -- a name is hashed on the way in -- so this is the same thing one step earlier, and
+        /// it cannot be wrong about a name it never has to know. Anything starting 0x is read
+        /// as one; everything else is a name, exactly as before.
+        /// </summary>
+        private static Model Named(string what)
+        {
+            if (string.IsNullOrEmpty(what)) return new Model(0);
+
+            if (what.Length > 2 && what[0] == '0' && (what[1] == 'x' || what[1] == 'X'))
+            {
+                uint hash;
+
+                if (uint.TryParse(what.Substring(2),
+                                  System.Globalization.NumberStyles.HexNumber,
+                                  System.Globalization.CultureInfo.InvariantCulture,
+                                  out hash))
+                {
+                    return new Model(unchecked((int)hash));
+                }
+            }
+
+            return new Model(what);
+        }
+
         private static void Dress(Vehicle car, CarLot def)
         {
             var h = car.Handle;
