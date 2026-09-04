@@ -631,6 +631,9 @@ namespace Hoodrich.Locations
             /// <summary>He has been sent back to the car and is not in it yet. See Bail.</summary>
             public bool Bailing;
 
+            /// <summary>The earliest he pulls out, so thirty cars do not leave on one frame.</summary>
+            public int OffAt;
+
             public bool There;
 
             /// <summary>How many times he has been handed a different kerb. See Settle.</summary>
@@ -4923,6 +4926,9 @@ namespace Hoodrich.Locations
                         continue;
                     }
 
+                    // In and waiting his turn to pull out. See OffAt.
+                    if (p.OffAt != 0 && now < p.OffAt) continue;
+
                     p.Bailing = false;
                     p.Outside = false;
 
@@ -4930,11 +4936,25 @@ namespace Hoodrich.Locations
                     if (off == Vector3.Zero) off = Middle.Around(250f);
 
                     Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
-                    Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, p.Driver.Handle, 1.0f);
 
+                    // MAXIMUM AGGRESSION WITH DEFAULT ABILITY IS A BAD DRIVER IN A HURRY, and
+                    // that is precisely what this was: aggressiveness pinned at one, ability
+                    // never set at all, twenty-eight metres a second, on the style that does
+                    // not stop for cars or people. Thirty of those in one junction is not
+                    // people leaving, it is a demolition derby with a reason.
+                    //
+                    // The two knobs go the other way round. Ability high, so they can actually
+                    // place a car; aggression a bit over half, so they are hurrying rather than
+                    // suicidal. A frightened driver who can drive gets out of a tight street
+                    // faster than a reckless one who cannot.
+                    Function.Call(Hash.SET_DRIVER_ABILITY, p.Driver.Handle, 1.0f);
+                    Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, p.Driver.Handle, LeaveNerve);
+
+                    // And on the style that stops before cars and before people. They are
+                    // running from the police, not through the crowd they were stood in.
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle, p.Car.Handle,
-                                  off.X, off.Y, off.Z, 28f, 0, p.Car.Model.Hash,
-                                  RushStyle, 15f, true);
+                                  off.X, off.Y, off.Z, LeaveSpeed, 0, p.Car.Model.Hash,
+                                  CareStyle, 15f, true);
 
                     Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
                 }
@@ -4947,6 +4967,18 @@ namespace Hoodrich.Locations
 
         /// <summary>How long a driver gets to reach his car before he runs for it instead.</summary>
         private const int GetInGiveUpMs = 20000;
+
+        /// <summary>
+        /// How they leave: over eight seconds, at sixty-five, hurrying rather than raging.
+        ///
+        /// Eighteen metres a second is still quick out of a side street and it is a long way
+        /// short of the hundred they were doing. The speed was never the thing that made it
+        /// look urgent -- the sirens are -- and it was the thing that made every one of them
+        /// arrive at the same corner at once with no time to do anything about it.
+        /// </summary>
+        private const int LeaveSpreadMs = 8000;
+        private const float LeaveSpeed = 18f;
+        private const float LeaveNerve = 0.55f;
 
         /// <summary>When the police turned up, for Bail's patience.</summary>
         private int _scatteredAt;
@@ -5002,6 +5034,19 @@ namespace Hoodrich.Locations
                         // when the lights come round the corner.
                         Function.Call(Hash.TASK_ENTER_VEHICLE, p.Driver.Handle, p.Car.Handle,
                                       20000, -1, 2.0f, 1, 0);
+
+                        // AND THEY DO NOT ALL PULL OUT AT ONCE.
+                        //
+                        // Getting in takes as long as the run to the car takes, which staggers
+                        // them a little and not nearly enough -- thirty cars parked round one
+                        // junction are all within a few seconds of each other, so thirty
+                        // drivers finished getting in inside about two seconds and thirty cars
+                        // pulled out into the same road. That is the heap.
+                        //
+                        // Eight seconds of spread on top. Everybody is still leaving in a
+                        // hurry; they are leaving in a hurry one after another, which is what
+                        // a car park emptying looks like.
+                        p.OffAt = Game.GameTime + _rng.Next(LeaveSpreadMs);
 
                         p.Bailing = true;
                         continue;
