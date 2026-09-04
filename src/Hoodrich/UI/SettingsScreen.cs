@@ -50,6 +50,23 @@ namespace Hoodrich.UI
     {
         public OptKind Kind = OptKind.Tick;
 
+        /// <summary>
+        /// A ceiling that has to be asked for rather than remembered.
+        ///
+        /// ROWS ARE BUILT ON OPEN, WHICH IS FINE UNTIL ONE ROW'S RANGE DEPENDS ON ANOTHER ONE.
+        /// The mask picker is exactly that: how many things there are to scroll through is a
+        /// property of the SLOT, and the slot is the row above. Franklin's component 1 holds
+        /// five beards and his prop slot 0 holds twenty-two hats, so switching between them
+        /// with a remembered ceiling leaves you able to reach item four of twenty-two and no
+        /// further until you close the screen and open it again.
+        ///
+        /// Null everywhere else, where a fixed Max is the honest answer and cheaper.
+        /// </summary>
+        public Func<float> MaxOf;
+
+        /// <summary>How high this row actually goes, right now.</summary>
+        public float Ceiling => MaxOf != null ? MaxOf() : Max;
+
         public string Label = "";
         public string Note = "";
 
@@ -248,7 +265,7 @@ namespace Hoodrich.UI
         private void Slide(string label, string section, string key, Func<float> get,
                            Action<float> set, float min, float max, float step,
                            string format = "0.##", string suffix = "", string prefix = "",
-                           string note = "")
+                           string note = "", Func<float> maxOf = null)
         {
             _rows.Add(new Opt
             {
@@ -261,6 +278,7 @@ namespace Hoodrich.UI
                 SetNum = set,
                 Min = min,
                 Max = max,
+                MaxOf = maxOf,
                 Step = step,
                 Format = format,
                 Suffix = suffix,
@@ -496,12 +514,14 @@ namespace Hoodrich.UI
                   () => c.MaskDrawable,
                   v => { c.MaskDrawable = (int)Math.Round(v); Core.Mask.Refresh(c); },
                   0f, Math.Max(1f, Core.Mask.Count(c) - 1), 1f, "0", "",
-                  note: "Put it on from the phone first, then scroll and watch his head");
+                  note: "Put it on from the phone first, then scroll and watch his head",
+                  maxOf: () => Math.Max(1f, Core.Mask.Count(c) - 1));
             Slide("Colour", "Mask", "Texture",
                   () => c.MaskTexture,
                   v => { c.MaskTexture = (int)Math.Round(v); Core.Mask.Refresh(c); },
                   0f, Math.Max(1f, Core.Mask.Textures(c) - 1), 1f, "0", "",
-                  note: "Some come in more than one");
+                  note: "Some come in more than one",
+                  maxOf: () => Math.Max(1f, Core.Mask.Textures(c) - 1));
 
             // AND THE WAY YOU ACTUALLY DO IT, which is not to touch any of the four above.
             //
@@ -901,7 +921,7 @@ namespace Hoodrich.UI
                     var now = was + row.Step * steps;
 
                     if (now < row.Min) now = row.Min;
-                    if (now > row.Max) now = row.Max;
+                    if (now > row.Ceiling) now = row.Ceiling;
 
                     // Rounded onto the step, or a slider dragged left and right ends up on a
                     // number nobody chose -- 0.15000001 in a file people read.
@@ -1282,7 +1302,7 @@ namespace Hoodrich.UI
             var trackX = right - numberW - 0.008f - trackW;
             var trackY = y + 0.0105f;
 
-            var span = row.Max - row.Min;
+            var span = row.Ceiling - row.Min;
             var f = span <= 0f ? 0f : (value - row.Min) / span;
 
             if (f < 0f) f = 0f;
