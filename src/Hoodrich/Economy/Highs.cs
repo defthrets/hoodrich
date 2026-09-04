@@ -273,12 +273,19 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Ritual.Recipe Bump = new Ritual.Recipe
         {
+            // HAND TO THE NOSE, THEN THE RUB AFTER IT. This led with the meth pipe clip,
+            // which is a man drawing on a pipe -- fine for meth and wrong for a bump.
+            //
+            // There is no snorting animation in this game and there never was. What the list
+            // does have, once you look for the MOTION rather than the drug, is a deliberate
+            // hand-to-nose emote and an ambient nose rub -- and a bump is those two things in
+            // that order. The wrap in his hand does the rest of the explaining.
             Pairs = new[]
             {
-                "switch@trevor@trev_smoking_meth",            "trev_smoking_meth_loop",
-                "amb@world_human_drug_dealer_hard@male@base", "base",
-                "amb@world_human_smoking@male@male_a@base",   "base",
-                "amb@world_human_aa_smoke@male@idle_a",       "idle_a"
+                "anim@mp_player_intcelebrationmale@nose_pick", "nose_pick",
+                "amb@code_human_wander_idles@male@idle_a",     "idle_b_rubnose",
+                "amb@world_human_drug_dealer_hard@male@base",  "base",
+                "amb@world_human_smoking@male@male_a@base",    "base"
             },
             Props = new[]
             {
@@ -307,11 +314,21 @@ namespace Hoodrich.Economy
         /// <summary>The needle, and going over at the end of it.</summary>
         private static readonly Ritual.Recipe Needle = new Ritual.Recipe
         {
+            // THE GAME HAS NO INJECTION ANIMATION FOR A STANDING PED. Everything with a
+            // needle in it -- bfinjection, cs_fib3_syringe -- is cutscene body data, whole
+            // scenes with their own camera, and none of it can be laid over a man on a corner.
+            //
+            // So it is the dealer's hands. drug_dealer_hard is a man working at something held
+            // close to his own chest and forearm, which under a syringe is the shape of the
+            // act, and the idle variants keep him moving through it rather than freezing. The
+            // nod afterwards -- Slump, below -- is the half that actually reads, and needs no
+            // dictionary at all.
             Pairs = new[]
             {
                 "amb@world_human_drug_dealer_hard@male@base",   "base",
+                "amb@world_human_drug_dealer_hard@male@idle_a", "idle_b",
                 "amb@world_human_drug_dealer_hard@male@idle_a", "idle_a",
-                "amb@world_human_smoking@male@male_a@base",     "base"
+                "amb@world_human_drug_dealer_hard@male@idle_b", "idle_d"
             },
             Props = new[] { "prop_syringe_01", "p_syringe_01_s" },
             Sits = new Vector3(0.02f, 0.0f, 0.0f),
@@ -347,11 +364,20 @@ namespace Hoodrich.Economy
         {
             // amb@world_human_drug_dealer@ does not exist in any form. Only the _hard one
             // does, which is why that rung was dead.
+            // HAND TO MOUTH IS THE WHOLE MOTION AND THE GAME HAS NO SWALLOW. There is no
+            // pill clip anywhere in the list and no drinking dictionary either -- the drinking
+            // SCENARIO is built from something not addressable by name -- so the smoking idle
+            // does the work: it brings a hand up to the mouth and holds it there, and what is
+            // in the hand is a bottle of pills rather than a cigarette.
+            //
+            // The drinking scenario stays underneath as the fallback, where the head-tip is
+            // better than anything here if the dictionaries ever fail to load.
             Pairs = new[]
             {
-                "amb@world_human_smoking@male@male_a@base",   "base",
-                "amb@world_human_drug_dealer_hard@male@base", "base",
-                "amb@world_human_aa_smoke@male@idle_a",       "idle_a"
+                "amb@world_human_smoking@male@male_a@base",     "base",
+                "amb@world_human_smoking@male@male_a@idle_a",   "idle_a",
+                "amb@world_human_drug_dealer_hard@male@base",   "base",
+                "amb@world_human_aa_smoke@male@idle_a",         "idle_a"
             },
             Props = new[]
             {
