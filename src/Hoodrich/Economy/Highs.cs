@@ -288,24 +288,37 @@ namespace Hoodrich.Economy
             // does have, once you look for the MOTION rather than the drug, is a deliberate
             // hand-to-nose emote and an ambient nose rub -- and a bump is those two things in
             // that order. The wrap in his hand does the rest of the explaining.
+            // THE RAISE-TO-THE-FACE CLIPS, WHICH TURNED OUT TO BE THE COKE ONE ALL ALONG.
+            //
+            // These were written for the pills, on the reasoning that a hand going up to the
+            // mouth and coming down is a swallow. It is -- and with a baggie pinched in the
+            // fingers rather than a bottle it is also a man bumping something off the back of
+            // his hand. Same motion, better home: it reads as an act, where the nose-pick emote
+            // it replaces reads as a gesture.
+            //
+            // The nose rub stays under it, because the sniff afterwards is the half that sells
+            // it, and the emote goes.
             Pairs = new[]
             {
-                "anim@mp_player_intcelebrationmale@nose_pick", "nose_pick",
+                "amb@code_human_wander_drinking@male@idle_a",  "idle_a",
+                "amb@code_human_wander_drinking@male@idle_a",  "idle_b",
                 "amb@code_human_wander_idles@male@idle_a",     "idle_b_rubnose",
-                "amb@world_human_drug_dealer_hard@male@base",  "base",
-                "amb@world_human_smoking@male@male_a@base",    "base"
+                "amb@world_human_drug_dealer_hard@male@base",  "base"
             },
-            // A BAGGIE, NOT A BRICK. bkr_prop_coke_block_01a led this and it is a full
-            // kilo package -- a man holding one of those to his nose is carrying luggage.
-            // smallbag is the pinch-sized one, which is what a bump comes out of, and it is
-            // the only thing in the list at that scale that reads as powder rather than as
-            // stock.
+            // THE SAME BAG HE HANDS PEOPLE ON THE CORNER. prop_meth_bag_01 is what PostUp
+            // puts in his hand for a deal -- see BaggieProps there -- and it is sized for a
+            // hand rather than for a shelf. Everything that has led this list so far was
+            // stock: bkr_prop_coke_block_01a is a full kilo package, and the smallbags are
+            // still bags rather than pinches.
+            //
+            // The offsets match the deal for the same reason. One object, one place in the
+            // hand, whichever end of the transaction he happens to be on.
             Props = new[]
             {
-                "bkr_prop_meth_smallbag_01a", "bkr_prop_weed_smallbag_01a",
-                "prop_meth_bag_01", "h4_prop_h4_pouch_01a"
+                "prop_meth_bag_01", "bkr_prop_meth_smallbag_01a",
+                "prop_drug_package_02", "h4_prop_h4_pouch_01a"
             },
-            Sits = new Vector3(0.015f, 0.005f, 0.0f),
+            Sits = new Vector3(0.02f, 0.01f, 0.0f),
 
             // Same reasoning as the pills. WORLD_HUMAN_DRUG_DEALER is a man loitering with
             // something in his hands, which is close enough to be tempting and is still a
@@ -411,12 +424,18 @@ namespace Hoodrich.Economy
             // with a bite and a chew, and drinking ends with the head going back and the hand
             // coming down -- which is a man tipping pills in. The donut stays underneath in
             // case an install is missing the drinker.
+            // THE EATING IDLES, NOW THE DRINKING ONE HAS GONE TO THE COKE.
+            //
+            // Hand up, the thing goes IN, and he works his jaw -- which for a bottle of pills
+            // is tipping two out and getting them down, and is the one thing the drinking clip
+            // does not do. Drinking ends with a tip and a lower; this ends with something
+            // having been consumed, and that is the difference between a swallow and a sip.
             Pairs = new[]
             {
-                "amb@code_human_wander_drinking@male@idle_a",      "idle_a",
-                "amb@code_human_wander_drinking@male@idle_a",      "idle_b",
                 "amb@code_human_wander_eating_donut@male@idle_a",  "idle_a",
-                "amb@code_human_wander_eating_donut@male@idle_a",  "idle_b"
+                "amb@code_human_wander_eating_donut@male@idle_a",  "idle_b",
+                "amb@code_human_wander_eating_donut@male@idle_a",  "idle_c",
+                "amb@code_human_wander_eating_donut@male@base",    "base"
             },
             Props = new[]
             {
