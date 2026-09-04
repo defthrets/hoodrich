@@ -101,8 +101,26 @@ namespace Hoodrich.Paint
         /// <summary>Never expires. The whole point is that it stays.</summary>
         private const float Forever = -1f;
 
-        private const float FarEnough = 150f;
-        private const float NearEnough = 110f;
+        /// <summary>
+        /// How far away paint is taken down, and how much nearer it goes back up.
+        ///
+        /// FOUR HUNDRED, UP FROM A HUNDRED AND FIFTY. A hundred and fifty metres is the length
+        /// of a couple of blocks -- you walk to the end of the street, turn round, and the wall
+        /// behind you is bare. It was chosen when the only question was how many decals the
+        /// pool could hold at once, and answered as if the paint were scenery you would not
+        /// look back at. It is not scenery, it is the thing you spent the evening on.
+        ///
+        /// The gap between the two is what stops it flapping: stand exactly on a boundary and
+        /// a single number would put paint up and take it down on alternate sweeps. A hundred
+        /// metres of hysteresis is more than anybody drifts about while standing still.
+        ///
+        /// COSTS LESS THAN IT LOOKS, because of the near-ring pass in Sweep: everything within
+        /// CloseUp is asked for a slot before anything beyond it, so a bigger ring does not
+        /// take slots away from the wall in front of you. What it changes is which wall gets
+        /// the ones LEFT OVER, and a wall two streets back is a better answer than nothing.
+        /// </summary>
+        private const float FarEnough = 400f;
+        private const float NearEnough = 300f;
 
         /// <summary>How often the cull-and-restore pass runs. It is not a per-frame job.</summary>
         private const int SweepMs = 1500;
@@ -137,11 +155,15 @@ namespace Hoodrich.Paint
         /// How long a mark is protected from being recycled, and how far apart two have to be
         /// before one may take the other's slot.
         ///
-        /// The margin is in SQUARED metres, like everything else in the recycler -- a hundred
-        /// and forty-four is twelve metres.
+        /// The margin is a REAL distance, in metres. It used to be a number added to a squared
+        /// one, which is twelve metres at point blank and seventy centimetres at a hundred --
+        /// see Recycle, where the fault and the fix are written down.
         /// </summary>
         private const int FreshMs = 120000;
-        private const float RecycleMargin = 144f;
+        private const float RecycleMetres = 12f;
+
+        /// <summary>Past this much further again, no donor could be a better one. Squared.</summary>
+        private const float Enough = 900f;
 
         public int Count => _marks.Count;
 
@@ -496,8 +518,43 @@ namespace Hoodrich.Paint
             // A hundred and forty-four is twelve metres of separation before one mark may take
             // another's slot. A donor has to be properly somewhere else, not just marginally
             // further along the same wall.
+            // THE MARGIN HAS TO BE A DISTANCE, NOT A NUMBER ADDED TO A SQUARE.
+            //
+            // This was `mine + RecycleMargin` with both in squared metres, described as twelve
+            // metres of separation -- and it is twelve metres only at point blank. Squares grow
+            // faster than the thing they are squares of, so adding a constant to one buys less
+            // and less separation the further out you go: at twenty metres it is three, at
+            // fifty it is one and a half, and at a hundred it is seventy centimetres.
+            //
+            // Which is exactly the churn the comment on RecycleMargin was written to prevent,
+            // and it is why paint appeared to evaporate as you walked away from it. Once you
+            // were any distance from a wall, every mark on it was a legal donor for every other
+            // mark on it, and the pool spent its whole time taking your work down to put your
+            // other work up.
+            //
+            // One square root per call -- not per candidate -- and the separation is twelve
+            // metres wherever you are standing.
             var worst = -1;
-            var worstD = mine + RecycleMargin;
+            var worstD = (float)Math.Sqrt(mine) + RecycleMetres;
+
+            worstD *= worstD;
+
+            // A SECOND-BEST, HELD BACK FOR WHEN THERE IS NO BEST -- and this is the fix for
+            // "it gets to a point and just stops spraying".
+            //
+            // Fresh paint is protected from being recycled, for two minutes, so that finishing
+            // a piece cannot eat the start of it. That is right and it has a corner: spray hard
+            // enough for long enough and EVERYTHING in the pool is fresh, every candidate is
+            // protected, the recycler finds nothing, and the can quietly stops marking the wall
+            // while still hissing in your hand.
+            //
+            // So a protected mark is still noted, just never preferred. If the strict pass
+            // finds anything at all it wins; only when it finds nothing does the furthest away
+            // of your own recent work give up its slot -- which is the right thing to lose,
+            // because it is the far end of what you have been painting rather than the bit in
+            // front of you.
+            var spare = -1;
+            var spareD = worstD;
 
             var now = Game.GameTime;
 
@@ -531,17 +588,28 @@ namespace Hoodrich.Paint
                 // For two minutes after it goes up, a mark cannot be taken down for anything.
                 // Long enough to finish a piece and stand back and look at it, short enough
                 // that it is not a permanent reservation.
-                if (now - m.Made < FreshMs) continue;
-
                 var d = me.DistanceToSquared(m.At);
+
+                if (now - m.Made < FreshMs)
+                {
+                    // Noted and passed over. See spare, above.
+                    if (d > spareD) { spareD = d; spare = _scan; }
+                    continue;
+                }
+
                 if (d <= worstD) continue;
 
                 worstD = d;
                 worst = _scan;
 
-                // Far enough behind you that looking harder cannot matter. 30m, squared.
-                if (d > mine + 900f) break;
+                // Far enough behind you that looking harder cannot matter. Thirty metres
+                // past you, worked out the same way as the margin above and for the same
+                // reason -- a flat addition to a square is not a distance.
+                if (d > worstD + Enough) break;
             }
+
+            // Nothing old enough to take. The furthest of the new, or nothing at all.
+            if (worst < 0) worst = spare;
 
             if (worst < 0) return false;
 
