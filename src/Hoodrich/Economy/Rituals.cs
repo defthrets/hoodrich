@@ -166,7 +166,16 @@ namespace Hoodrich.Economy
             // and then started smoking with under three left, most of which is the blend in.
             //
             // Straight to it when there is no ladder to climb.
-            if (recipe.Dicts.Length == 0)
+            // THE LADDER, WHICHEVER WAY IT WAS WRITTEN. This asked recipe.Dicts, which is
+            // empty on every recipe that names Pairs instead -- so the moment the joint and
+            // the meth pipe were given real clip names they stopped having any dictionaries at
+            // all as far as this line was concerned, and went straight to the scenario on the
+            // same millisecond they started. The log said "Ritual scenario" where it had said
+            // "Ritual anim" the build before, which is the tell, and both drugs went back to
+            // being a man standing still holding something.
+            var rungs = Rungs(recipe);
+
+            if (rungs.Length < 2)
             {
                 Scenario(recipe, me);
                 return true;
@@ -178,9 +187,9 @@ namespace Hoodrich.Economy
             // Asked for now and played when it arrives. A dictionary requested and played on
             // the same frame is the one thing that never works -- it is not in memory yet and
             // the first play is silently dropped.
-            foreach (var dict in recipe.Dicts)
+            for (var i = 0; i + 1 < rungs.Length; i += 2)
             {
-                try { Function.Call(Hash.REQUEST_ANIM_DICT, dict); }
+                try { Function.Call(Hash.REQUEST_ANIM_DICT, rungs[i]); }
                 catch { }
             }
 
