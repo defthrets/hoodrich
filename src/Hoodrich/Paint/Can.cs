@@ -270,6 +270,42 @@ namespace Hoodrich.Paint
         }
 
         /// <summary>
+        /// Takes it out of his hands and leaves it in his pockets.
+        ///
+        /// THE OPPOSITE OF GIVE, WHICH DID NOT EXIST. There was a way to be handed a can and
+        /// no way to put one down: the only exit was the game's own weapon wheel, and that
+        /// changes what he is HOLDING without changing what the engine thinks the
+        /// extinguisher IS. So the next time the extinguisher came out -- for a fire, or by
+        /// accident scrolling past it -- it came out as a can, and the reticle with it.
+        ///
+        /// Unarmed rather than the last weapon, because "the thing you had before the can"
+        /// is not remembered anywhere and guessing wrong puts a rifle in a man's hands on a
+        /// street corner. Empty hands are never the wrong answer. The extinguisher itself
+        /// stays in the inventory: the promise is that it is never taken off him, only that
+        /// it stops being ours.
+        /// </summary>
+        public static void Holster()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                var want = Function.Call<uint>(Hash.GET_HASH_KEY, Weapon);
+
+                if (Function.Call<uint>(Hash.GET_SELECTED_PED_WEAPON, me.Handle) != want) return;
+
+                var hands = Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_UNARMED");
+
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, me.Handle, hands, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put the extinguisher away: " + ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Paints the can to whichever tint is nearest, when it changes.
         ///
         /// Only on a change: SET_PED_WEAPON_TINT_INDEX every frame is sixty pointless natives a

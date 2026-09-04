@@ -134,6 +134,49 @@ namespace Hoodrich
         private readonly MessagesScreen _messages = new MessagesScreen();
 
         /// <summary>
+        /// The can, out. The same three lines the Graffiti app runs when you take one there,
+        /// so the tile and the app cannot drift apart on what "take a can" means.
+        /// </summary>
+        private void TakeCan()
+        {
+            _paint.SprayCanLook = true;
+            _paint.Armed = true;
+
+            Paint.Can.Give(true);
+
+            Draw.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+            Notify.Important("~g~Can's in your hand.~s~  Aim and hold fire.");
+        }
+
+        /// <summary>
+        /// The can, away -- properly.
+        ///
+        /// IN THIS ORDER, because each line undoes something the one before it depends on.
+        /// The plume stops first, while the nozzle it hangs off still exists. Then the can
+        /// prop goes and the weapon model is made visible again, while the extinguisher is
+        /// still the selected weapon -- Show() is a no-op on a weapon that is not out. THEN
+        /// it is holstered. And only then is the engine disarmed, so that nothing above ran
+        /// against a config that had already been told there was no can.
+        ///
+        /// Disarmed rather than merely holstered, because that is what "properly" means here:
+        /// the extinguisher goes back to being an extinguisher, the way it was before the app
+        /// was ever opened. Picking it off the game's weapon wheel for a fire gets a fire
+        /// extinguisher. Wanting the can back is this tile, or the app.
+        /// </summary>
+        private void PutCanAway()
+        {
+            try { _sprayer.Stop(); } catch { /* the plume stops when the asset unloads */ }
+            try { _spraycan.Away(); } catch { /* the next tick tidies */ }
+
+            Paint.Can.Holster();
+
+            _paint.Armed = false;
+
+            Draw.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+            Notify.Important("Can's away.");
+        }
+
+        /// <summary>
         /// The people who stand near the people who matter. One each for Lamar and Stretch;
         /// their coordinates are the men's own, so the two sets never need keeping in step.
         /// </summary>
@@ -1910,6 +1953,13 @@ namespace Hoodrich
                 pages.RideGoing = () => _ride.Going;
                 pages.CancelRide = () => _ride.Cancel("Ride cancelled.");
                 pages.ShowGraffiti = () => _graffiti.Open();
+
+                // The can tile. Out is the engine's own test for "this is ours and it is in
+                // his hand" -- all three, because an extinguisher that is out but not armed is
+                // somebody else's, and one that is armed but holstered is not out.
+                pages.CanOut = () => Paint.Can.Out() && _paint.Armed && _paint.PaintEnabled;
+                pages.TakeCan = TakeCan;
+                pages.PutCanAway = PutCanAway;
 
                 // The tag run borrows the same engine the app uses.
                 _jobs.PaintKit = _paint;
