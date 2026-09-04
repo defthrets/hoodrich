@@ -175,6 +175,7 @@ namespace Hoodrich.Economy
             _lingerUntil = 0;
 
             _rung = 0;
+            _tries = 0;
             _watchAt = 0;
             _watching = null;
 
@@ -522,13 +523,44 @@ namespace Hoodrich.Economy
 
             if (playing)
             {
+                _tries = 0;
+
                 Log.Info("Ritual anim: " + _dict + " / " + _clip + " -- playing.");
                 return;
             }
 
-            Log.Info("Ritual anim: " + _dict + " / " + _clip + " was accepted and is not " +
-                     "playing. That clip is not in that dictionary; trying the next.");
+            // ---- A SECOND GO ON THE SAME RUNG BEFORE IT IS WRITTEN OFF ----
+            //
+            // THE FIRST ATTEMPT IS LOST EVERY TIME AND IT IS NOT THE NAME'S FAULT. The log
+            // has four different pairs reported as "accepted and not playing" which are all
+            // present in menyooStuff/PedAnimList.txt -- verified, in this install, by name and
+            // clip. In every one of those cases the NEXT rung played immediately.
+            //
+            // That is not a bad name, it is a cancelled task. The drug is taken from the phone,
+            // the phone closes, and the game plays its own put-it-away animation over the top
+            // of ours a moment later. Ours is issued first and killed; the retry lands after
+            // the handset is down and survives.
+            //
+            // So a rung is only wrong if it fails TWICE. The cost when a name really is absent
+            // is one extra check -- four hundred milliseconds -- and the cost of not doing it
+            // was every recipe silently running on its second-choice animation. Which is
+            // exactly what "he sniffs it instead of smoking it" was.
+            if (_tries == 0)
+            {
+                _tries = 1;
 
+                Log.Debug("Ritual anim: " + _dict + " / " + _clip + " did not take; " +
+                          "trying the same one again.");
+
+                _waiting = recipe;
+                _giveUpAt = Game.GameTime + StreamMs;
+                return;
+            }
+
+            Log.Info("Ritual anim: " + _dict + " / " + _clip + " was accepted and is not " +
+                     "playing twice over. That clip is not in that dictionary; trying the next.");
+
+            _tries = 0;
             _rung += 2;
 
             if (_rung + 1 < Rungs(recipe).Length)
@@ -544,11 +576,22 @@ namespace Hoodrich.Economy
         /// <summary>This ritual's length once Length has been applied.</summary>
         private int _ms;
 
+        /// <summary>How many goes the current rung has had. See Watch.</summary>
+        private int _tries;
+
         /// <summary>Which rung of the ladder is being tried, and when to check it.</summary>
         private int _rung;
         private int _watchAt;
 
-        private const int WatchMs = 400;
+        /// <summary>
+        /// How long after issuing an animation before it is fair to ask whether it is playing.
+        ///
+        /// Six hundred rather than four. The thing most likely to have cancelled it is the
+        /// phone being put away, which takes about half a second from the moment the screen
+        /// closes -- so asking at four hundred was asking during the one window where the
+        /// answer is always no.
+        /// </summary>
+        private const int WatchMs = 600;
 
         /// <summary>
         /// The fallback, which brings its own prop and therefore fights ours.

@@ -55,6 +55,10 @@ namespace Hoodrich.UI
         private const float FootHeight = 0.040f;
 
         private const float Rule = 0.0016f;
+
+        /// <summary>How long the light takes to go round, and how much of the edge it is.</summary>
+        private const int FrameLapMs = 8000;
+        private const float FrameRun = 0.16f;
         private const float Tick = 0.024f;
         private const float BarHeight = 0.0075f;
         private const float HeadIcon = 0.016f;
@@ -100,7 +104,15 @@ namespace Hoodrich.UI
         /// than the tiles needed and drew the heading straight over "Nothing on you", which is
         /// what happens when a panel's height and its contents are two separate opinions.
         /// </summary>
-        private const float FoodTile = 0.044f;
+        /// <summary>
+        /// How big a tile is.
+        ///
+        /// UP FROM 0.044, WHICH WAS SIZED WHEN ONLY THE FOOD USED IT. Three or four food
+        /// pictures at that size sat in a corner and looked deliberate; a whole inventory of
+        /// them looks like a row of stamps, and the amount written across the bottom of one had
+        /// nowhere to go. Both bands share the constant, so both grow together.
+        /// </summary>
+        private const float FoodTile = 0.056f;
 
         private const float FoodHead = 0.022f;
         private const float FoodCap = 0.020f;
@@ -265,8 +277,18 @@ namespace Hoodrich.UI
 
             if (Places == 0) return;
 
-            if (Game.IsControlJustPressed(Control.PhoneUp)) Move(-1);
-            else if (Game.IsControlJustPressed(Control.PhoneDown)) Move(1);
+            // ---- LEFT AND RIGHT ALONG THE STRIP, UP AND DOWN BETWEEN THEM ----
+            //
+            // These are rows of squares now, and up and down through a row of squares is the
+            // wrong shape entirely -- the cursor jumped sideways when the key said vertical.
+            // Sideways is what the eye expects and it is what the tiles are laid out for.
+            //
+            // Which freed up nothing, because left and right USED to put things on the floor.
+            // See Jump below.
+            if (Game.IsControlJustPressed(Control.PhoneRight)) Move(1);
+            else if (Game.IsControlJustPressed(Control.PhoneLeft)) Move(-1);
+            else if (Game.IsControlJustPressed(Control.PhoneUp)) Vertical(-1);
+            else if (Game.IsControlJustPressed(Control.PhoneDown)) Vertical(1);
 
             // ---- food ----
             //
@@ -302,12 +324,29 @@ namespace Hoodrich.UI
                 return;
             }
 
-            // Left or right, because there is only one direction anything can go from here and
-            // making you learn which of the two it is would be a puzzle rather than a control.
-            var down = Game.IsControlPressed(Control.PhoneLeft) ||
-                       Game.IsControlPressed(Control.PhoneRight);
+            // ---- PUTTING IT DOWN, ON A KEY OF ITS OWN ----
+            //
+            // Jump: space, or X on a pad. It had to move off left and right so the cursor could
+            // have them, and this is the better home for it anyway -- a key that means "put
+            // something down" should not also be the key that means "look at the next one".
+            //
+            // TAP FOR SOME, HOLD FOR ALL. It was a modifier before, Sprint held down alongside,
+            // which is two hands for one idea and undiscoverable on a pad. Holding the same key
+            // longer is the same escalation with nothing extra to learn.
+            var putting = Game.IsControlPressed(Control.Jump);
 
-            if (down && Game.GameTime >= _nextRepeat) Drop(Game.IsControlPressed(Control.Sprint));
+            if (!putting)
+            {
+                _holdFrom = 0;
+                return;
+            }
+
+            if (_holdFrom == 0) _holdFrom = Game.GameTime;
+
+            if (Game.GameTime >= _nextRepeat)
+            {
+                Drop(Game.GameTime - _holdFrom >= HoldAllMs);
+            }
         }
 
         /// <summary>
@@ -378,6 +417,67 @@ namespace Hoodrich.UI
         private int Places => _rows.Count + _food.Count;
 
         private bool OnFood => _selected >= _rows.Count;
+
+        /// <summary>When the drop key went down, so holding it can mean all of it.</summary>
+        private int _holdFrom;
+
+        /// <summary>How long it has to be held before a tap becomes the lot.</summary>
+        private const int HoldAllMs = 600;
+
+        /// <summary>
+        /// Up and down, which between two strips of tiles means BETWEEN them.
+        ///
+        /// Within the product band it steps a whole line, so a wrapped inventory walks in the
+        /// shape it is drawn in. Off the end of it, it crosses into the food -- keeping the
+        /// column, so going down from the third thing you are carrying lands on the third thing
+        /// you can eat rather than on the first.
+        /// </summary>
+        private void Vertical(int dir)
+        {
+            if (Places == 0) return;
+
+            var across = Across();
+
+            if (!OnFood)
+            {
+                var next = _selected + dir * across;
+
+                if (next >= 0 && next < _rows.Count) { Land(next); return; }
+
+                // Off the bottom, into the food if there is any.
+                if (dir > 0 && _food.Count > 0)
+                {
+                    Land(_rows.Count + Math.Min(_food.Count - 1, _selected % across));
+                }
+
+                return;
+            }
+
+            var col = _selected - _rows.Count;
+
+            var here = col + dir * across;
+
+            if (here >= 0 && here < _food.Count) { Land(_rows.Count + here); return; }
+
+            // Off the top of the food, back into the last line of the product.
+            if (dir < 0 && _rows.Count > 0)
+            {
+                var lastLine = (_rows.Count - 1) / across * across;
+
+                Land(Math.Min(_rows.Count - 1, lastLine + Math.Min(col, across - 1)));
+            }
+        }
+
+        /// <summary>Puts the cursor somewhere and makes the noise. Move does the wrapping.</summary>
+        private void Land(int where)
+        {
+            if (where == _selected) return;
+
+            _selected = where;
+            _pickedAt = Game.GameTime;
+
+            Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
 
         private void Move(int step)
         {
@@ -553,8 +653,15 @@ namespace Hoodrich.UI
 
             Keys(x, right, footY + 0.008f);
 
-            Hud.Frame(left, top, panelWidth, height,
-                      Color.FromArgb(150, 90, 215, 235), Palette.Accent, Rule, Tick);
+            // The light going round it. Slow -- eight seconds a lap -- because this is a
+            // panel you read rather than a thing you are waiting on, and a short segment so it
+            // is a highlight travelling the edge rather than the edge itself changing colour.
+            var lap = (Game.GameTime % FrameLapMs) / (float)FrameLapMs;
+
+            Hud.FrameLive(left, top, panelWidth, height,
+                          Color.FromArgb(150, 90, 215, 235), Palette.Accent, Rule, Tick,
+                          lap, FrameRun,
+                          Palette.Alpha(Palette.Accent, (int)(200f * arrive)));
         }
 
         /// <summary>
@@ -578,7 +685,7 @@ namespace Hoodrich.UI
 
             if (Places == 0) return;
 
-            var hx = Hud.Hint("arrow_updown.png", "PICK", x, y, 0.24f, Palette.TextDim);
+            var hx = Hud.Hint("arrow_leftright.png", "PICK", x, y, 0.24f, Palette.TextDim);
 
             if (OnFood)
             {
@@ -595,10 +702,10 @@ namespace Hoodrich.UI
             // Left and right both do it, and neither is named. There is only one direction
             // anything can go from here, so making you work out which of the two keys it is
             // would be a puzzle rather than a control.
-            hx = Hud.Hint("drop.png", "PUT IT DOWN", hx, y, 0.24f, Palette.TextDim);
-
-            hx = Hud.Hint(null, (pad ? "HOLD A" : "SPRINT") + "  ALL OF IT", hx, y, 0.24f,
+            hx = Hud.Hint("drop.png", (pad ? "X" : "SPACE") + "  PUT IT DOWN", hx, y, 0.24f,
                           Palette.TextDim);
+
+            hx = Hud.Hint(null, "HOLD  ALL OF IT", hx, y, 0.24f, Palette.TextDim);
 
             // Only on the rows it works on. A bagged line can be taken; a weight line is uncut
             // bulk and has to go through the kitchen first, and offering it on a row that will

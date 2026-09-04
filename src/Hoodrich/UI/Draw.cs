@@ -493,6 +493,74 @@ namespace Hoodrich.UI
             RectFrom(right - reach, bottom - rule, reach, rule, edge);
         }
 
+        /// <summary>
+        /// The same frame, with a light running round it.
+        ///
+        /// ONE SEGMENT WALKING THE PERIMETER, not a pulse. A frame that brightens and dims all
+        /// over is a panel with a heartbeat, which is a thing to look at; a short piece of light
+        /// travelling the edge is a thing you notice once and then stop seeing, which is what a
+        /// border is for. It runs clockwise from the top left because that is where a reader
+        /// starts.
+        ///
+        /// The perimeter is walked in the panel's own units -- x-fractions across, y-fractions
+        /// down -- so the runner keeps a constant SPEED rather than a constant fraction, and
+        /// does not sprint along the short edges of a wide panel.
+        /// </summary>
+        public static void FrameLive(float left, float top, float width, float height,
+                                     Color ink, Color edge, float rule, float tick,
+                                     float at, float run, Color glow)
+        {
+            Frame(left, top, width, height, ink, edge, rule, tick);
+
+            var lip = ToX(rule);
+
+            var right = left + width;
+            var bottom = top + height;
+
+            // Clockwise: across the top, down the right, back along the bottom, up the left.
+            var legs = new[] { width, height, width, height };
+
+            var round = legs[0] + legs[1] + legs[2] + legs[3];
+            if (round <= 0f) return;
+
+            var head = (at - (float)Math.Floor(at)) * round;
+            var tail = run * round;
+
+            for (var pass = 0; pass < 2; pass++)
+            {
+                // Twice, because the runner wraps: the piece that has gone past the corner and
+                // the piece that has not are one segment and two draws.
+                var from = head - tail + pass * round;
+                var to = head + pass * round;
+
+                var walked = 0f;
+
+                for (var leg = 0; leg < 4; leg++)
+                {
+                    var len = legs[leg];
+
+                    var lo = Math.Max(from, walked);
+                    var hi = Math.Min(to, walked + len);
+
+                    if (hi > lo)
+                    {
+                        var a = lo - walked;
+                        var b = hi - walked;
+
+                        switch (leg)
+                        {
+                            case 0: RectFrom(left + a, top, b - a, rule, glow); break;
+                            case 1: RectFrom(right - lip, top + a, lip, b - a, glow); break;
+                            case 2: RectFrom(right - b, bottom - rule, b - a, rule, glow); break;
+                            default: RectFrom(left, bottom - b, lip, b - a, glow); break;
+                        }
+                    }
+
+                    walked += len;
+                }
+            }
+        }
+
         public static void Brand(float left, float middle, float height, Color c)
         {
             var wide = ToX(height) * WordmarkAspect;
