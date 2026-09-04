@@ -4776,6 +4776,16 @@
    "you can measure the block by how many people say your name on the walk to {localspot}",
    "the kids on {hood} got the courts from three to dark and the old heads got it after. nobody wrote that down",
    "block been raising each other's kids for so long nobody knows whose is whose and nobody cares"
+  ],
+  "Masked": [
+   "man walking down {hood} in a balaclava in this heat. commitment",
+   "somebody on {hood} got the ski mask on {timeofday} and it ain't skiing weather",
+   "if you see a dude in a balaclava on {hood} mind your business. i did",
+   "balaclava season on {hood} apparently",
+   "man in a mask on {hood} walked past my auntie and she still knew exactly who it was",
+   "{source} {hearsay} somebody in a balaclava by {localspot}. everybody inside",
+   "the mask ain't hiding the walk. everybody on {hood} knows that walk",
+   "somebody masked up outside {localspot} {timeofday}. {reaction}"
   ]
  },
  "voices": {

@@ -122,7 +122,10 @@ namespace Hoodrich.Social
         PortRunDone,
 
         /// <summary>You came out with two of yours behind you.</summary>
-        HomiesOut
+        HomiesOut,
+
+        /// <summary>You pulled a balaclava on in the street.</summary>
+        Masked
     }
 
     /// <summary>
@@ -1646,6 +1649,9 @@ namespace Hoodrich.Social
                 // occasionally, not a press release.
                 case SocialEvent.HomiesOut: return 0.30f;
 
+                // A man in a balaclava is noticed, not reported. Main also spaces these out.
+                case SocialEvent.Masked: return 0.25f;
+
                 case SocialEvent.PortRun: return 0.65f;
                 case SocialEvent.PortRunDone: return 1f;
                 case SocialEvent.Busted: return 0.7f;
@@ -1694,6 +1700,8 @@ namespace Hoodrich.Social
                 // Getting put on to somebody's supply is the biggest single step in the mod
                 // and it should read like one -- more than a job, less than a rank.
                 case SocialEvent.HomiesOut: return 1 + _rng.Next(4);
+
+                case SocialEvent.Masked: return 0;
 
                 case SocialEvent.PortRun: return 4 + _rng.Next(8);
                 case SocialEvent.PortRunDone: return 30 + _rng.Next(40);

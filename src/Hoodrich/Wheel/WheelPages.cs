@@ -94,6 +94,10 @@ namespace Hoodrich.Wheel
         public Action TakeCan;
         public Action PutCanAway;
 
+        /// <summary>Set by Main. Whether the balaclava is on, and the one thing to do about it.</summary>
+        public Func<bool> MaskOn;
+        public Action ToggleMask;
+
         /// <summary>How many marks are up, for the tile. Null while it is not wired.</summary>
         public Func<int> MarksUp;
 
@@ -1063,7 +1067,7 @@ namespace Hoodrich.Wheel
                     ? "You run with " + _crew.Current.Name
                     : "Nobody has put you on yet",
                 value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
-            page.WithIcon(Icons.Mask);
+            page.WithIcon(Icons.Gang);
 
             // What you are carrying, rather than how you are doing -- the stats moved under
             // Gangs, because who rates you is a gang question.
@@ -1146,6 +1150,19 @@ namespace Hoodrich.Wheel
             // squashed-cap trap two comments up all over again. The square one was drawn for
             // exactly this box.
             page.WithIcon(Icons.FromFile("spray.png"));
+
+            // THE MASK. One tile, nothing behind it: on if it is off, off if it is on. The
+            // label stays and the value carries the state, same as the can beside it.
+            var masked = MaskOn != null && MaskOn();
+
+            page.Add("Mask", "*", () => ToggleMask?.Invoke(),
+                detail: masked
+                    ? "Takes the balaclava off"
+                    : "Pulls a balaclava on. Nobody needs to know it was you",
+                value: masked ? "ON" : "",
+                enabled: ToggleMask != null,
+                disabledReason: "Not wired up");
+            page.WithIcon(Icons.FromFile("balaclava.png"));
 
             // LAST, where Socials used to sit. It is a service you use rather than a part of
             // the business, and the only app on here that will still be useful to somebody who
@@ -2229,7 +2246,7 @@ namespace Hoodrich.Wheel
                     ? "You, your set, and what every gang thinks of you"
                     : "Your rank, your heat, and what every gang thinks of you",
                 value: _crew.IsAffiliated ? _crew.Current.Name : _state.RankName);
-            page.WithIcon(Icons.Mask);
+            page.WithIcon(Icons.Gang);
 
             return page;
         }
@@ -2605,7 +2622,7 @@ namespace Hoodrich.Wheel
             page.Add("The numbers", "=", ShowBlockNumbers,
                 detail: "This block, and every set you have history with",
                 value: "");
-            page.WithIcon(Icons.FromFile("mask.png"));
+            page.WithIcon(Icons.FromFile("gang_f.png"));
 
             return page;
         }

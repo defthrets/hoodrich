@@ -471,6 +471,23 @@ namespace Hoodrich.UI
             Slide("A tip lasts", "Socials", "BlockTipMinutes",
                   () => c.BlockTipMinutes, v => c.BlockTipMinutes = v, 1f, 60f, 1f, "0", "m");
 
+            // THE ONE SETTING IN THE MOD THAT CAN ONLY BE FOUND BY LOOKING. Component 1 on
+            // Franklin is beards and masks in one unnamed list, so the slider re-applies as
+            // it moves and you watch his head until the balaclava is on it. Only visible
+            // work when the mask is on -- with it off the number changes and nothing shows,
+            // which the note says.
+            Head("Mask");
+            Slide("Which mask", "Mask", "Drawable",
+                  () => c.MaskDrawable,
+                  v => { c.MaskDrawable = (int)Math.Round(v); Core.Mask.Refresh(c); },
+                  1f, Math.Max(2f, Core.Mask.Count() - 1), 1f, "0", "",
+                  note: "Put the mask on first, then scroll and watch his head");
+            Slide("Colour", "Mask", "Texture",
+                  () => c.MaskTexture,
+                  v => { c.MaskTexture = (int)Math.Round(v); Core.Mask.Refresh(c); },
+                  0f, Math.Max(1f, Core.Mask.Textures(c.MaskDrawable) - 1), 1f, "0", "",
+                  note: "Some masks come in more than one");
+
             Head("Posting up");
             Tick("Show the corner readout", "PostUp", "ShowDealHud",
                  () => c.ShowDealHud, v => c.ShowDealHud = v,

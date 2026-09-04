@@ -1,4 +1,4 @@
-namespace Hoodrich.UI
+﻿namespace Hoodrich.UI
 {
     /// <summary>
     /// A streamed game texture, named so call sites read as intent.
@@ -160,6 +160,13 @@ namespace Hoodrich.UI
         public static readonly Icon Guns = new Icon(Menu, "shop_gunclub_icon_a").WithFile("guns.png");
         public static readonly Icon Garage = new Icon(Menu, "shop_garage_icon_a").WithFile("garage.png");
         public static readonly Icon Mask = new Icon(Menu, "shop_mask_icon_a").WithFile("mask.png");
+
+        /// <summary>
+        /// The Gangs app. An Old English F, because the mask that used to sit here IS a mask
+        /// now -- there is an app that puts one on him -- and two masks on one home screen is
+        /// a guess every time.
+        /// </summary>
+        public static readonly Icon Gang = new Icon(Menu, "shop_mask_icon_a").WithFile("gang_f.png");
         public static readonly Icon Health = new Icon(Menu, "shop_health_icon_a").WithFile("health.png");
         public static readonly Icon Ammo = new Icon(Menu, "shop_ammo_icon_a").WithFile("ammo.png");
         public static readonly Icon Tattoo = new Icon(Menu, "shop_tattoos_icon_a").WithFile("tattoo.png");

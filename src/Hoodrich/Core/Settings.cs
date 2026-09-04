@@ -245,6 +245,17 @@ namespace Hoodrich.Core
 
         public int BustWantedStars = 2;
 
+        /// <summary>
+        /// Which drawable in component 1 is the balaclava, and which texture on it.
+        ///
+        /// FOUND BY EYE, NOT KNOWN. Component 1 on a story character is beards and masks in
+        /// one list and nothing in the game names the entries -- see Core.Mask. The Settings
+        /// app re-applies this as the slider moves so the number can be found by watching his
+        /// head, and it is saved the moment it changes.
+        /// </summary>
+        public int MaskDrawable = 1;
+        public int MaskTexture = 0;
+
         /// <summary>Percent of product dropped as a recoverable bag when you die.</summary>
         public float LoseOnDeathPercent = 100f;
 
@@ -555,6 +566,9 @@ namespace Hoodrich.Core
             s.UndercoverEscapeDistance =
                 Clamp(ini.GetFloat("Risk", "UndercoverEscapeDistance", s.UndercoverEscapeDistance), 5f, 300f);
             s.BustWantedStars = (int)Clamp(ini.GetInt("Risk", "BustWantedStars", s.BustWantedStars), 1f, 5f);
+
+            s.MaskDrawable = (int)Clamp(ini.GetInt("Mask", "Drawable", s.MaskDrawable), 0f, 400f);
+            s.MaskTexture = (int)Clamp(ini.GetInt("Mask", "Texture", s.MaskTexture), 0f, 64f);
             s.LoseOnDeathPercent =
                 Clamp(ini.GetFloat("Risk", "LoseOnDeathPercent", s.LoseOnDeathPercent), 0f, 100f);
             s.LoseOnArrestPercent =

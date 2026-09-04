@@ -747,6 +747,76 @@ def mask():
     save(img, 'mask.png')
 
 
+def balaclava():
+    """
+    A balaclava, as distinct from mask.png -- which was the Gangs icon and is a face.
+
+    THE READ IS THE SLOT. A face with two eye holes and a mouth is any mask, or a skull, or a
+    ghost. What says balaclava at twenty pixels is one wide letterbox where the eyes go and
+    nothing else on the front -- knitted wool has no mouth -- plus the shape of it: a hood
+    that comes down past the jaw and flares into a collar at the neck, because the thing is
+    pulled on over the head and that is where it ends.
+    """
+    img, d = canvas()
+
+    # The hood. A tall rounded head, coming down to a rolled collar rather than a chin.
+    d.rounded_rectangle([118, 44, 394, 400], radius=138, fill=W)
+
+    # The collar, wider than the head, so it reads as a garment and not an egg.
+    d.rounded_rectangle([88, 352, 424, 470], radius=52, fill=W)
+
+    # The eye slot. One, wide, and the only thing on the front.
+    d.rounded_rectangle([160, 178, 352, 250], radius=36, fill=CLEAR)
+
+    # The bridge of the nose pushing the knit up between the eyes -- a small bump in the
+    # bottom edge of the slot, which is what stops it reading as a letterbox in a wall.
+    d.ellipse([226, 222, 286, 268], fill=W)
+
+    save(img, 'balaclava.png')
+
+
+def gang_f():
+    """
+    An Old English F for the Gangs app. Hand drawn, because this PC has no blackletter font
+    and downloading one for a 64px tile is a dependency for nothing.
+
+    BLACKLETTER IS A BROAD PEN HELD AT A FIXED ANGLE: heavy verticals, hairline joins, every
+    stroke ending in a diamond because that is what a chisel nib leaves when it stops. So
+    the stem is a fat bar with lozenges top and bottom, the two arms are pen strokes that end
+    in the same lozenge, and the hairline down the left is the flourish every textura F has
+    beside the stem. Drawn at 512 and downsampled, same as the rest of the set.
+    """
+    img, d = canvas()
+
+    def lozenge(cx, cy, w, h):
+        d.polygon([(cx, cy - h), (cx + w, cy), (cx, cy + h), (cx - w, cy)], fill=W)
+
+    # ---- the stem: a heavy vertical, cut at 45 degrees top and bottom like a pen stroke
+    d.polygon([(178, 108), (274, 60), (274, 420), (178, 468)], fill=W)
+
+    # The pen's diamonds where the stroke starts and stops.
+    lozenge(226, 82, 74, 52)
+    lozenge(226, 446, 74, 52)
+
+    # ---- the top arm: out to the right, ending in a hooked diamond turned down
+    d.polygon([(250, 92), (426, 92), (446, 132), (270, 132)], fill=W)
+    lozenge(440, 118, 46, 58)
+
+    # ---- the middle arm: shorter, sitting a little above centre, same ending
+    d.polygon([(250, 236), (370, 236), (388, 274), (268, 274)], fill=W)
+    lozenge(382, 256, 42, 52)
+
+    # ---- the flourish: a hairline down the left of the stem, with its own small diamonds
+    d.polygon([(120, 150), (146, 136), (146, 404), (120, 418)], fill=W)
+    lozenge(133, 140, 30, 26)
+    lozenge(133, 414, 30, 26)
+
+    # The hairline that ties the flourish to the stem, mid height -- one pen lift.
+    d.polygon([(140, 292), (182, 276), (182, 300), (140, 316)], fill=W)
+
+    save(img, 'gang_f.png')
+
+
 def health():
     """A cross. Nothing else needed and nothing else survives this small."""
     img, d = canvas()
@@ -1756,7 +1826,7 @@ def card():
     save(img, 'card.png')
 
 
-ALL = [tow, bank, card, arrow_right, arrow_left, arrow_updown, arrow_leftright, drop, socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
+ALL = [balaclava, gang_f, tow, bank, card, arrow_right, arrow_left, arrow_updown, arrow_leftright, drop, socials, baggie, eyes, cap, crown, leaf, skull, police, heart, reply, repost, like, tick, crack, pills, heroin, megaphone, weed, coke, meth, money, cash, guns, mobile, ammo, garage, mask, health, tattoo, stash, warning, locked, gang_families, gang_ballas, gang_vagos, gang_aztecas_OLD, gang_marabunta, gang_lost, gang_triads_OLD, gang_armenians, gang_koreans, gang_aztecas, gang_triads, footfall, rank, people, pin, deal, crate, box, phone, spray, fire, car, scales, dog, bed, music, key, lean, acid, shrooms, xanax, hash_, dabs, edibles, vape, speed, ketamine, fentanyl, blunt, brick, crystal, bong, poppy,
        cut_100, cut_75, cut_50, cut_33, cut_25, disc]
 
 

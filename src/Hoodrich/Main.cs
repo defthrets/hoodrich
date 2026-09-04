@@ -177,6 +177,37 @@ namespace Hoodrich
         }
 
         /// <summary>
+        /// The balaclava, on or off. See Core.Mask for why the index is a setting.
+        ///
+        /// The block notices a masked man sometimes -- a quarter of the time, and not more
+        /// than once in ten minutes, because somebody pulling a mask on and off outside the
+        /// shop is one post, not a running commentary.
+        /// </summary>
+        private void ToggleMask()
+        {
+            var was = Core.Mask.Wearing;
+            var why = Core.Mask.Toggle(_cfg);
+
+            if (!string.IsNullOrEmpty(why))
+            {
+                Notify.Important("~r~" + why);
+                return;
+            }
+
+            Draw.PlaySound(was ? "BACK" : "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+            Notify.Important(was ? "Mask off." : "~g~Masked up.");
+
+            if (!was && Game.GameTime > _maskPostAt)
+            {
+                _maskPostAt = Game.GameTime + MaskPostEveryMs;
+                _social.On(SocialEvent.Masked);
+            }
+        }
+
+        private int _maskPostAt;
+        private const int MaskPostEveryMs = 600000;
+
+        /// <summary>
         /// The people who stand near the people who matter. One each for Lamar and Stretch;
         /// their coordinates are the men's own, so the two sets never need keeping in step.
         /// </summary>
@@ -1972,6 +2003,9 @@ namespace Hoodrich
                 pages.TakeCan = TakeCan;
                 pages.PutCanAway = PutCanAway;
 
+                pages.MaskOn = () => Core.Mask.Wearing;
+                pages.ToggleMask = ToggleMask;
+
                 // The tag run borrows the same engine the app uses.
                 _jobs.PaintKit = _paint;
                 _jobs.PaintSprayer = _sprayer;
@@ -2661,6 +2695,8 @@ namespace Hoodrich
                     _sprayer.Update();
 
                     _spraycan.Update(_sprayer.Spraying, Paint.Aiming.Now());
+
+                    Core.Mask.Update(_cfg);
 
                     if (_paint.TintTheCan) _can.Match(_graffiti.Colour, _paint.PaintEnabled);
 
@@ -3794,6 +3830,7 @@ namespace Hoodrich
             // The can comes off his hand and the weapon becomes visible again. Leaving
             // either behind outlives the mod.
             try { _spraycan?.Away(); } catch { /* teardown */ }
+            try { Core.Mask.RestoreWorld(); } catch { /* teardown */ }
             try { _street?.Release(); } catch { /* teardown */ }
 
             // Before the decals come off, or the record is written after the thing it records
