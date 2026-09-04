@@ -4,6 +4,161 @@
 
 
 -------------------------------------------------------------------------------
+  0.6.0  (not released yet)
+-------------------------------------------------------------------------------
+
+A hundred and seventy-one changes since 0.5.1. Four of them are things the mod
+could not do at all before.
+
+
+===============================================================================
+  NEW
+===============================================================================
+
+
+THE TAKEOVER
+
+One junction on Carson, one night, some time between nine and four. Cars and
+people arrive from the surrounding streets, a ring of them parks facing in, and
+somebody works the middle of it sideways until the blue lights turn up. It runs
+for three hours and it happens whether you go or not -- the whole value of it is
+driving past at two in the morning and finding it.
+
+Nothing appears. Every person walks in and every car drives in, from out of
+sight, to a place picked for them before they existed. Thirty-five parking spots
+walked kerb by kerb, four staging markers, and a drift line recorded off real
+driving rather than guessed at.
+
+The crowd is the neighbourhood the junction is in. They film it, drink, talk,
+step back when a car comes close, run when there is a gunshot, and back off when
+somebody gets clipped. Nobody claps. Flares get thrown over it, somebody sets a
+firework up in the road, a helicopter comes over halfway through, and the block
+posts about it once when it starts and again when it has been going a while.
+
+
+TAKING YOUR OWN PRODUCT
+
+Every gram in this mod existed to be bought, cut, bagged, carried and sold, and
+the one thing you could never do with it was use it. Now you can, from the
+pocket screen, and each of the seven does something none of the others do:
+
+  weed      time slows and the world drifts. Nothing is urgent.
+  oxy       everything softens. Half damage, healing as you walk, no speed.
+  bars      a bright shiny day, and you cannot walk in a straight line.
+  crack     rage. Time drags, you hit twice as hard, forty seconds.
+  coke      speed -- the fastest the game allows -- bright and sharp with it.
+  meth      the long one. Five minutes wired and a minute wrecked after.
+  heroin    the trip. Half speed, trails, and you are not going anywhere.
+
+You watch yourself take it, with the right thing in your hand -- a joint or a
+blunt, a pipe, a needle, a wrap, a bottle to wash pills down. The effect does not
+land until the ritual finishes, and the joint carries on until you walk away from
+it. The hard ones cost you a comedown afterwards.
+
+Mix them. Three at once is a night, and past three the lights go out: you drop,
+the screen fuzzes, and you come round four to nine hours later on the far side
+of the map with no car. Three in you and running means your legs stop agreeing
+with you, and bars roughly double the odds of going over.
+
+
+THE PHONE
+
+Rebuilt. The apps are icons on a grid rather than boxes, the one under the
+cursor lights up and punches when you choose it, and the header is a
+notification shade that rolls through whatever is worth telling you -- a raid on
+your block, a debt due, one line per person who has texted, a takeover running.
+A bank card sits along the bottom: balance, last transfer in, and everything the
+corner has ever paid.
+
+Messages are a messaging app now. Bubbles the shape of what is in them rather
+than a column of identical grey slabs, and you can reply to anybody who texts
+you -- matched to what they were actually talking about, and they sometimes
+answer back.
+
+
+TURF ON THE MAP
+
+Whose block is whose, shaded on the minimap and the pause map. Walked corner by
+corner and measured out of the game rather than guessed at, cut into strips that
+sit on the street grid instead of floating discs over it. Cross into your own
+block during a raid and every one of yours comes for you.
+
+
+===============================================================================
+  PEOPLE AND PLACES
+===============================================================================
+
+TRIGGER turns up the way Chop does. He rides with you, waits when you stop, is
+on the map, opens the door, does not die, and can be sent home.
+
+KNOWAI, driverless cars, called off the phone. It takes you to your waypoint,
+draws its own route, and charges you if you bail out of it early. You ride in
+the back and there is no way into the front.
+
+TANYA and the recovery truck. Wreck one of Hao's cars and she drives out, lines
+up on it, drops the arm and takes it in -- and it comes back on his lot
+straightened out. She is a phone number now as well, so you do not have to walk
+back to the wreck to text her.
+
+THREE OF THE SET ON EACH OF NINE WALKED CORNERS, on a leash, smoking, drinking,
+talking, with rifles under their coats. They are there before you reach the
+corner and they are still there when you come back.
+
+GROUPS OF THE SET WALK THE BACK STREETS and roll it in their own cars -- a
+list of Families cars in metallic green on competition suspension. The riders
+read the road: quick on the straights, off the gas for a bend.
+
+THE FAMILIES FEMALE joins the patrols, the parties and the takeover.
+
+ONLY GERALD AND TAO ARE SELLING. The other eight leaders and the eleven other
+dealers are parked, whole, in the data files -- corner, models, dialogue intact
+-- ready to come back.
+
+
+===============================================================================
+  THE FEED
+===============================================================================
+
+About a thousand new posts. Everybody gets a face, made rather than borrowed.
+Cards with edges and something underneath them, the tab marker travels, posts
+land while you watch and their numbers climb. One tweet at a time, three only
+when the block really is all talking at once. Franklin posts about what he has
+actually been doing. The blue tick means something again. Other mods can put a
+post on the timeline.
+
+
+===============================================================================
+  OTHER MODS
+===============================================================================
+
+PRECINCT 88 gets the ambient patrol, which used to be this mod's fourth source
+of police. Busts, raids and robberies still dispatch from here and are handed
+over when it is installed.
+
+BARE MINIMUM: food shows on the phone's pocket screen and is eaten from there,
+and an overdose blackout no longer hands you a full night's sleep -- you come
+round starving and shattered instead.
+
+OVERSPRAY shares the paint engine. The wall you are stood at gets the decal
+slots before anything down the road does.
+
+
+===============================================================================
+  FIXED
+===============================================================================
+
+The whole UI flashing, which turned out to be the tick yielding while it waited
+for models to load. A texture-dictionary leak, the likeliest cause of the
+reported ERR_MEM_EMBEDDEDALLOC. Raw native hashes, one of which closed the game.
+Dying in a gang war not ending it, because its own death check could never fire.
+Raiders being teleported on top of Franklin. Being chased to a war that had
+already finished. The phone button breaking twice. The settings screen missing
+half the settings. Dealer pins cluttering the radar until you are near them.
+Toast avatars flickering. The monogram letter sitting on people's faces. The
+takeover deleting its own cars. Cars parking in the middle of the road and
+welding the street shut.
+
+-------------------------------------------------------------------------------
   0.5.1
 -------------------------------------------------------------------------------
 
