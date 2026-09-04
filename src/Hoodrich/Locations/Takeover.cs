@@ -858,6 +858,9 @@ namespace Hoodrich.Locations
                 // is made -- a spot light drawn every nine hundred milliseconds is a spot light
                 // that is off for eight hundred and ninety of them.
                 Beam();
+
+                // AND THE TAP GETS TURNED DOWN. See Quieter.
+                Quieter();
             }
 
             if (now - _lastTick < TickMs) return;
@@ -5909,6 +5912,64 @@ namespace Hoodrich.Locations
         /// <summary>How far is far enough to go, and how long before one goes anyway.</summary>
         private const float GoneRange = 130f;
         private const int GhostMs = 180000;
+
+        /// <summary>
+        /// Turn the city's own traffic down while the junction is full of ours.
+        ///
+        /// THE LOG COUNTED A HUNDRED AND THIRTEEN CARS DRIVEN INTO IT AND DELETED. That is the
+        /// game doing exactly what it is supposed to -- there is a junction there, the road
+        /// network says cars go through it, so it keeps making cars and sending them in, and
+        /// Sweep keeps taking them out again. Every one of those is a vehicle and a driver
+        /// created and destroyed, on top of the sixty this thing already put there, for as long
+        /// as the takeover lasts.
+        ///
+        /// SET_ROADS_IN_AREA IS STILL NOT THE ANSWER, and Roads below explains why: switching
+        /// the nodes off breaks OUR pathing too and the cars that are meant to arrive then
+        /// cannot. That was tried and it is why Roads is only ever called with true.
+        ///
+        /// The density multipliers are the other end of the same problem. They do not touch the
+        /// road network at all -- every route still exists and our cars still drive it -- they
+        /// only tell the population system to stop MAKING new ones. Traffic already on the road
+        /// carries on and is swept as before; what stops is the queue behind it.
+        ///
+        /// PER FRAME, BECAUSE THAT IS THE ONLY WAY THEY EXIST. They are THIS_FRAME natives:
+        /// set once, they last one frame and the tap opens again. And they are global rather
+        /// than area-scoped, which is why this is fenced by distance -- turning the whole
+        /// city's traffic off because something is happening on Carson is a fix worse than the
+        /// fault. Near enough to see it, and no further.
+        /// </summary>
+        private void Quieter()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                if (me.Position.DistanceToSquared(Middle) > QuietWithin * QuietWithin) return;
+
+                // Not zero. Zero is an empty city, which reads as a bug the moment you look up
+                // the street -- and the ones already driving still have to come from somewhere
+                // or the block outside the cordon dies too.
+                Function.Call(Hash.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, QuietTraffic);
+                Function.Call(Hash.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, QuietTraffic);
+                Function.Call(Hash.SET_PARKED_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, QuietParked);
+
+                // People are left nearly alone. A street takeover with nobody watching it is
+                // the thing this whole file exists to avoid, and a pedestrian costs a fraction
+                // of what a car and its driver cost.
+                Function.Call(Hash.SET_PED_DENSITY_MULTIPLIER_THIS_FRAME, QuietPeople);
+            }
+            catch
+            {
+                // The tap stays open. It is a frame.
+            }
+        }
+
+        /// <summary>How near the junction the damper applies, and how far down it goes.</summary>
+        private const float QuietWithin = 180f;
+        private const float QuietTraffic = 0.15f;
+        private const float QuietParked = 0.3f;
+        private const float QuietPeople = 0.8f;
 
         /// <summary>
         /// Turn the roads through the junction off, or put them back.

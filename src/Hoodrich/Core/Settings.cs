@@ -246,13 +246,20 @@ namespace Hoodrich.Core
         public int BustWantedStars = 2;
 
         /// <summary>
-        /// Which drawable in component 1 is the balaclava, and which texture on it.
+        /// Where the face covering lives, and which one it is.
         ///
-        /// FOUND BY EYE, NOT KNOWN. Component 1 on a story character is beards and masks in
-        /// one list and nothing in the game names the entries -- see Core.Mask. The Settings
-        /// app re-applies this as the slider moves so the number can be found by watching his
-        /// head, and it is saved the moment it changes.
+        /// ALL FOUR ARE FOUND BY EYE, BECAUSE NOTHING IN THE GAME NAMES ANY OF IT. Component 1
+        /// is the mask slot on a freemode ped and the BEARD slot on a story one -- Franklin has
+        /// five things in it and they are all beards, which is measured and in the log. A
+        /// bandana on him is somewhere else, and it may be a PROP rather than clothing, which
+        /// is a different set of natives entirely.
+        ///
+        /// So Settings > Mask walks the lot with the mask on his head, and Core.Mask.Probe
+        /// writes every slot's size to the log so there is somewhere to start. Saved the
+        /// moment they change.
         /// </summary>
+        public int MaskSlot = 1;
+        public bool MaskAsProp;
         public int MaskDrawable = 1;
         public int MaskTexture = 0;
 
@@ -567,6 +574,8 @@ namespace Hoodrich.Core
                 Clamp(ini.GetFloat("Risk", "UndercoverEscapeDistance", s.UndercoverEscapeDistance), 5f, 300f);
             s.BustWantedStars = (int)Clamp(ini.GetInt("Risk", "BustWantedStars", s.BustWantedStars), 1f, 5f);
 
+            s.MaskSlot = (int)Clamp(ini.GetInt("Mask", "Slot", s.MaskSlot), 0f, 11f);
+            s.MaskAsProp = ini.GetBool("Mask", "AsProp", s.MaskAsProp);
             s.MaskDrawable = (int)Clamp(ini.GetInt("Mask", "Drawable", s.MaskDrawable), 0f, 400f);
             s.MaskTexture = (int)Clamp(ini.GetInt("Mask", "Texture", s.MaskTexture), 0f, 64f);
             s.LoseOnDeathPercent =

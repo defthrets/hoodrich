@@ -190,6 +190,11 @@ namespace Hoodrich
 
             if (!string.IsNullOrEmpty(why))
             {
+                // The wardrobe goes to the log every time this fails, not once a session --
+                // the whole point of the message is that somebody is about to go looking, and
+                // the sizes of the slots are the only map there is.
+                Core.Mask.Probe(true);
+
                 Notify.Important("~r~" + why);
                 return;
             }
@@ -1694,9 +1699,17 @@ namespace Hoodrich
 
                 // Nobody goes for a drive round the block during a raid. Existing ones are left
                 // where they are -- they simply stop being replaced.
+                //
+                // AND NOT DURING A TAKEOVER, which the war has said for a while and this had
+                // never been told. The log has Rollers putting a car and three bikes onto
+                // Chamberlain Hills in the same twenty seconds the junction two streets away
+                // was holding sixty vehicles and deleting traffic as fast as the game made it.
+                // They are patrols round a block that is already the busiest place in the city.
                 _rollers.Busy = () => onAJob()
                                       || (_war != null && _war.IsRunning)
-                                      || (_payback != null && _payback.IsRunning);
+                                      || (_payback != null && _payback.IsRunning)
+                                      || (_takeover != null
+                                          && _takeover.State != Locations.TakeoverState.None);
 
                 // The law staying out of a raid, a job and a bust is now told to Precinct 88
                 // rather than to a patrol system of our own -- same rule, one layer out. See
@@ -3830,7 +3843,7 @@ namespace Hoodrich
             // The can comes off his hand and the weapon becomes visible again. Leaving
             // either behind outlives the mod.
             try { _spraycan?.Away(); } catch { /* teardown */ }
-            try { Core.Mask.RestoreWorld(); } catch { /* teardown */ }
+            try { Core.Mask.RestoreWorld(_cfg); } catch { /* teardown */ }
             try { _street?.Release(); } catch { /* teardown */ }
 
             // Before the decals come off, or the record is written after the thing it records

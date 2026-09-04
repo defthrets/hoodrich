@@ -1,89 +1,293 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Native;
 
 namespace Hoodrich.Core
 {
     /// <summary>
-    /// A balaclava, on or off.
+    /// A face covering, on or off.
     ///
-    /// COMPONENT 1 IS THE WHOLE PROBLEM. On a freemode ped it is the mask slot. On a story ped
-    /// -- and Franklin is one -- it is the BEARD slot, with the shop masks somewhere in the
-    /// same list and later DLC beards after those, and nothing in the game says which index is
-    /// which. BikeRide had a MaskUp that took "the last valid drawable in the slot" and it put
-    /// a beard on him every time; the note on its grave is still in that file.
+    /// COMPONENT 1 ON FRANKLIN HOLDS FIVE DRAWABLES AND THEY ARE ALL BEARDS. That is measured,
+    /// not assumed -- the first build of this logged "slot has 5" and put a goatee on him,
+    /// which is the same thing BikeRide's MaskUp did before it was deleted. On a freemode ped
+    /// component 1 is the mask slot; on a story ped it is "berd", the beard slot, and Franklin
+    /// has four beards and no mask in it. There was never an index in there that could work.
     ///
-    /// So this does not guess. The index comes from the ini, it is checked with
-    /// IS_PED_COMPONENT_VARIATION_VALID before it goes anywhere near his head, and the Settings
-    /// app has a slider that re-applies it live so the right number is found by LOOKING -- the
-    /// only way it can be. The count of what is in the slot goes to the log so anybody
-    /// reading it knows the range.
+    /// SO THE SLOT IS A SETTING TOO, AND IT CAN BE A PROP. A bandana or a mask on a story
+    /// character lives somewhere else -- another component, or one of the eight PROP slots,
+    /// which are a different set of natives entirely and the reason nothing found it. Which
+    /// one differs between Legacy and Enhanced and between clothing packs, so this asks the
+    /// game rather than believing a wiki: Probe logs the size of every component and every
+    /// prop slot on whoever is standing there, and Settings > Mask walks all of it live.
     ///
-    /// WHAT WAS UNDER IT IS REMEMBERED. Taking the mask off sets the slot back to what it was
-    /// before, not to zero, because zero is clean-shaven and a man who had a goatee before he
-    /// masked up should have one after. Across a reload the memory is gone; then it is zero
-    /// and the log says so.
+    /// WHAT WAS THERE IS REMEMBERED. Taking it off puts back what the slot held, not zero,
+    /// because zero is clean-shaven or bare-headed and a man who had a beard before he covered
+    /// his face should have one after.
     ///
-    /// It also does not fight anybody. A cutscene, a mission outfit or another mod that
-    /// changes the slot wins: Update notices the slot no longer holds the mask and simply
-    /// stops claiming it is on.
+    /// It does not fight anybody. A cutscene, a mission outfit or another mod that changes the
+    /// slot wins: Update notices it no longer holds ours and stops claiming it is on.
     /// </summary>
     internal static class Mask
     {
-        /// <summary>"berd". Beards, masks, and on this character both.</summary>
-        public const int Slot = 1;
+        /// <summary>How many of each the game has.</summary>
+        public const int Components = 12;
+        public const int Props = 8;
 
-        /// <summary>What the slot held before the mask went on, or -1 for not known.</summary>
+        /// <summary>What the slot held before, or -1 for not known. Props use -1 for nothing on.</summary>
         private static int _wore = -1;
         private static int _woreTexture = -1;
 
         private static bool _on;
         private static int _nextLook;
+        private static bool _probed;
 
         private const int LookEveryMs = 500;
 
-        /// <summary>Whether the balaclava is on right now.</summary>
+        /// <summary>Whether it is on right now.</summary>
         public static bool Wearing => _on;
 
+        // ---- what this install actually has ------------------------------------
+
         /// <summary>
-        /// On if it is off, off if it is on. Returns why it could not, or empty for done.
+        /// Writes the whole wardrobe to the log: every component and every prop slot, with how
+        /// many drawables each holds.
+        ///
+        /// THE ONLY WAY TO KNOW. There is no native that says "this drawable is a mask" and no
+        /// list anywhere that is right for both Legacy and Enhanced. What there is, is a count
+        /// per slot -- and a slot with five things in it is beards, while a slot with thirty
+        /// is the one worth scrolling. Once per session unless something asks again.
         /// </summary>
+        public static void Probe(bool force = false)
+        {
+            if (_probed && !force) return;
+
+            try
+            {
+                var me = Game.Player?.Character;
+                if (me == null || !me.Exists()) return;
+
+                _probed = true;
+
+                var line = "Mask: this character's wardrobe -- components";
+
+                for (var i = 0; i < Components; i++)
+                {
+                    var n = Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS, me.Handle, i);
+                    line += " " + i + ":" + n;
+                }
+
+                line += "  props";
+
+                for (var i = 0; i < Props; i++)
+                {
+                    var n = Function.Call<int>(Hash.GET_NUMBER_OF_PED_PROP_DRAWABLE_VARIATIONS, me.Handle, i);
+                    line += " " + i + ":" + n;
+                }
+
+                Log.Info(line + ".");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Mask: could not read the wardrobe: " + ex.Message);
+            }
+        }
+
+        // ---- learning it from his own wardrobe ---------------------------------
+        //
+        // THE GAME ALREADY KNOWS WHERE THE MASK IS. It is in his wardrobe -- you can walk into
+        // his house and put it on -- so the index exists and is correct and the only thing
+        // missing is which slot it went into. Every attempt to answer that from the outside is
+        // a guess, and the guesses have now cost two builds: the beard, and component 1 having
+        // five things in it.
+        //
+        // So this stops answering it. Remember how he looks, go and put the mask on the way
+        // the game intends, come back, and the mod DIFFS the two and writes down the slot, the
+        // drawable and the texture it finds. It cannot be wrong about a thing it measured, and
+        // it works for a prop as readily as for clothing because it walks both.
+
+        private static readonly int[,] BareComp = new int[Components, 2];
+        private static readonly int[,] BareProp = new int[Props, 2];
+
+        private static bool _based;
+
+        /// <summary>Whether there is a look on file to compare against.</summary>
+        public static bool HasBaseline => _based;
+
+        /// <summary>
+        /// Writes down every slot on him as he stands. Taken automatically once, shortly after
+        /// load, while nothing of ours is on him.
+        /// </summary>
+        public static string Baseline()
+        {
+            try
+            {
+                var me = Game.Player?.Character;
+                if (me == null || !me.Exists()) return "Nobody there.";
+
+                for (var i = 0; i < Components; i++)
+                {
+                    BareComp[i, 0] = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, i);
+                    BareComp[i, 1] = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, me.Handle, i);
+                }
+
+                for (var i = 0; i < Props; i++)
+                {
+                    BareProp[i, 0] = Function.Call<int>(Hash.GET_PED_PROP_INDEX, me.Handle, i);
+                    BareProp[i, 1] = Function.Call<int>(Hash.GET_PED_PROP_TEXTURE_INDEX, me.Handle, i);
+                }
+
+                _based = true;
+
+                Log.Info("Mask: remembered how he looks. Put the mask on in his wardrobe, then " +
+                         "come back and find what changed.");
+
+                return "";
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Mask: could not remember the look: " + ex.Message);
+                return "Couldn't read what he's wearing.";
+            }
+        }
+
+        /// <summary>
+        /// Compares him now against the remembered look and adopts whatever moved.
+        ///
+        /// The FIRST difference wins and the rest go to the log. Change only the mask between
+        /// the two snapshots and there is exactly one; change a whole outfit and the log says
+        /// what else moved so it is obvious what happened.
+        /// </summary>
+        public static string Learn(Settings cfg)
+        {
+            try
+            {
+                var me = Game.Player?.Character;
+                if (me == null || !me.Exists()) return "Nobody there.";
+
+                if (!_based) return "Nothing to compare against yet.";
+
+                if (_on) return "Take ours off first, or it finds itself.";
+
+                var found = false;
+                var also = "";
+
+                for (var i = 0; i < Components; i++)
+                {
+                    var d = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, i);
+                    var t = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, me.Handle, i);
+
+                    if (d == BareComp[i, 0] && t == BareComp[i, 1]) continue;
+
+                    if (!found)
+                    {
+                        found = true;
+
+                        cfg.MaskAsProp = false;
+                        cfg.MaskSlot = i;
+                        cfg.MaskDrawable = d;
+                        cfg.MaskTexture = t;
+                    }
+                    else
+                    {
+                        also += " component " + i + ":" + d + "/" + t;
+                    }
+                }
+
+                for (var i = 0; i < Props; i++)
+                {
+                    var d = Function.Call<int>(Hash.GET_PED_PROP_INDEX, me.Handle, i);
+                    var t = Function.Call<int>(Hash.GET_PED_PROP_TEXTURE_INDEX, me.Handle, i);
+
+                    if (d == BareProp[i, 0] && t == BareProp[i, 1]) continue;
+
+                    if (!found)
+                    {
+                        found = true;
+
+                        cfg.MaskAsProp = true;
+                        cfg.MaskSlot = i;
+                        cfg.MaskDrawable = d;
+                        cfg.MaskTexture = t;
+                    }
+                    else
+                    {
+                        also += " prop " + i + ":" + d + "/" + t;
+                    }
+                }
+
+                if (!found)
+                {
+                    Log.Info("Mask: nothing changed since the look was remembered.");
+                    return "He looks the same as before. Put the mask on first.";
+                }
+
+                // The look he is wearing IS the mask, so this is the state -- and what was
+                // under it is what the baseline says, which is exactly what Off wants.
+                _on = true;
+                _wore = cfg.MaskAsProp ? BareProp[cfg.MaskSlot, 0] : BareComp[cfg.MaskSlot, 0];
+                _woreTexture = cfg.MaskAsProp ? BareProp[cfg.MaskSlot, 1] : BareComp[cfg.MaskSlot, 1];
+
+                Log.Info("Mask: learned it -- " + Where(cfg) + " drawable " + cfg.MaskDrawable +
+                         " texture " + cfg.MaskTexture + ", over " + _wore + "/" + _woreTexture +
+                         (string.IsNullOrEmpty(also) ? "." : ". Also changed:" + also + "."));
+
+                return "";
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Mask: could not work out what changed: " + ex.Message);
+                return "Couldn't work out what changed.";
+            }
+        }
+
+        // ---- counting ----------------------------------------------------------
+
+        /// <summary>How many drawables the configured slot holds, or 0.</summary>
+        public static int Count(Settings cfg)
+        {
+            try
+            {
+                var me = Game.Player?.Character;
+                if (me == null || !me.Exists()) return 0;
+
+                return cfg.MaskAsProp
+                    ? Function.Call<int>(Hash.GET_NUMBER_OF_PED_PROP_DRAWABLE_VARIATIONS,
+                                         me.Handle, cfg.MaskSlot)
+                    : Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS,
+                                         me.Handle, cfg.MaskSlot);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>How many textures the configured drawable has, or 0.</summary>
+        public static int Textures(Settings cfg)
+        {
+            try
+            {
+                var me = Game.Player?.Character;
+                if (me == null || !me.Exists()) return 0;
+
+                return cfg.MaskAsProp
+                    ? Function.Call<int>(Hash.GET_NUMBER_OF_PED_PROP_TEXTURE_VARIATIONS,
+                                         me.Handle, cfg.MaskSlot, cfg.MaskDrawable)
+                    : Function.Call<int>(Hash.GET_NUMBER_OF_PED_TEXTURE_VARIATIONS,
+                                         me.Handle, cfg.MaskSlot, cfg.MaskDrawable);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        // ---- on and off --------------------------------------------------------
+
+        /// <summary>On if it is off, off if it is on. Returns why not, or empty for done.</summary>
         public static string Toggle(Settings cfg)
         {
-            return _on ? Off() : On(cfg);
-        }
-
-        /// <summary>How many drawables the slot has on the current ped, or 0 if nobody is there.</summary>
-        public static int Count()
-        {
-            try
-            {
-                var me = Game.Player?.Character;
-                if (me == null || !me.Exists()) return 0;
-
-                return Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS, me.Handle, Slot);
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-
-        /// <summary>How many textures one drawable has, or 0.</summary>
-        public static int Textures(int drawable)
-        {
-            try
-            {
-                var me = Game.Player?.Character;
-                if (me == null || !me.Exists()) return 0;
-
-                return Function.Call<int>(Hash.GET_NUMBER_OF_PED_TEXTURE_VARIATIONS,
-                                          me.Handle, Slot, drawable);
-            }
-            catch
-            {
-                return 0;
-            }
+            return _on ? Off(cfg) : On(cfg);
         }
 
         public static string On(Settings cfg)
@@ -93,47 +297,58 @@ namespace Hoodrich.Core
                 var me = Game.Player?.Character;
                 if (me == null || !me.Exists()) return "Nobody to mask.";
 
-                var many = Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS, me.Handle, Slot);
+                Probe();
 
-                var drawable = cfg.MaskDrawable;
-                var texture = cfg.MaskTexture;
+                var slot = cfg.MaskSlot;
+                var many = Count(cfg);
 
-                if (drawable < 1 || drawable >= many)
+                if (many <= 0)
                 {
-                    Log.Warn("Mask: drawable " + drawable + " is not in the slot -- component " +
-                             Slot + " has " + many + " on this character. Settings > Mask.");
-                    return "That mask isn't in the slot. Settings > Mask.";
+                    Log.Warn("Mask: " + Where(cfg) + " is empty on this character.");
+                    return "Nothing in that slot. Settings > Mask.";
                 }
 
-                var textures = Function.Call<int>(Hash.GET_NUMBER_OF_PED_TEXTURE_VARIATIONS,
-                                                  me.Handle, Slot, drawable);
+                var drawable = cfg.MaskDrawable;
+
+                if (drawable < 0 || drawable >= many)
+                {
+                    Log.Warn("Mask: " + Where(cfg) + " has " + many +
+                             ", so " + drawable + " is not in it. Settings > Mask.");
+                    return "That one isn't in the slot. Settings > Mask.";
+                }
+
+                var textures = Textures(cfg);
+                var texture = cfg.MaskTexture;
 
                 if (texture < 0 || texture >= Math.Max(1, textures)) texture = 0;
 
-                if (!Function.Call<bool>(Hash.IS_PED_COMPONENT_VARIATION_VALID,
-                                         me.Handle, Slot, drawable, texture))
-                {
-                    Log.Warn("Mask: drawable " + drawable + " texture " + texture +
-                             " is not valid on this character.");
-                    return "That mask isn't valid on him. Settings > Mask.";
-                }
-
-                // Remembered ONCE, on the way from bare to masked. Refresh comes through here
+                // Remembered ONCE, on the way from bare to covered. Refresh comes through here
                 // too, and remembering again then would remember the mask as what was under it.
-                if (!_on)
+                if (!_on) Keep(me, cfg);
+
+                if (cfg.MaskAsProp)
                 {
-                    _wore = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, Slot);
-                    _woreTexture = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, me.Handle, Slot);
+                    Function.Call(Hash.SET_PED_PROP_INDEX, me.Handle, slot, drawable, texture, true);
                 }
+                else
+                {
+                    if (!Function.Call<bool>(Hash.IS_PED_COMPONENT_VARIATION_VALID,
+                                             me.Handle, slot, drawable, texture))
+                    {
+                        Log.Warn("Mask: " + Where(cfg) + " drawable " + drawable + " texture " +
+                                 texture + " is not valid on this character.");
+                        return "Not valid on him. Settings > Mask.";
+                    }
 
-                var palette = Function.Call<int>(Hash.GET_PED_PALETTE_VARIATION, me.Handle, Slot);
+                    var palette = Function.Call<int>(Hash.GET_PED_PALETTE_VARIATION, me.Handle, slot);
 
-                Function.Call(Hash.SET_PED_COMPONENT_VARIATION, me.Handle, Slot,
-                              drawable, texture, palette);
+                    Function.Call(Hash.SET_PED_COMPONENT_VARIATION, me.Handle, slot,
+                                  drawable, texture, palette);
+                }
 
                 _on = true;
 
-                Log.Info("Mask on: component " + Slot + " drawable " + drawable + " texture " +
+                Log.Info("Mask on: " + Where(cfg) + " drawable " + drawable + " texture " +
                          texture + " (slot has " + many + ", this one has " + textures +
                          " texture(s)); was " + _wore + "/" + _woreTexture + ".");
 
@@ -146,24 +361,43 @@ namespace Hoodrich.Core
             }
         }
 
-        public static string Off()
+        public static string Off(Settings cfg)
         {
             try
             {
                 var me = Game.Player?.Character;
                 if (me == null || !me.Exists()) return "Nobody to unmask.";
 
-                // Not known is a reload: the mask survived it and the memory did not. Zero is
-                // the honest fallback and the log says it happened.
-                var back = _wore < 0 ? 0 : _wore;
-                var backTexture = _woreTexture < 0 ? 0 : _woreTexture;
+                var slot = cfg.MaskSlot;
 
-                if (_wore < 0) Log.Info("Mask off: what was under it is not known, using 0.");
+                if (cfg.MaskAsProp)
+                {
+                    // Nothing there before is the normal case for a hat slot, and clearing is
+                    // the only way to express it -- a prop has no "drawable zero means none".
+                    if (_wore < 0)
+                    {
+                        Function.Call(Hash.CLEAR_PED_PROP, me.Handle, slot);
+                    }
+                    else
+                    {
+                        Function.Call(Hash.SET_PED_PROP_INDEX, me.Handle, slot,
+                                      _wore, Math.Max(0, _woreTexture), true);
+                    }
+                }
+                else
+                {
+                    // Not known is a reload: the mask survived it and the memory did not. Zero
+                    // is the honest fallback and the log says it happened.
+                    if (_wore < 0) Log.Info("Mask off: what was under it is not known, using 0.");
 
-                var palette = Function.Call<int>(Hash.GET_PED_PALETTE_VARIATION, me.Handle, Slot);
+                    var back = _wore < 0 ? 0 : _wore;
+                    var backTexture = _woreTexture < 0 ? 0 : _woreTexture;
 
-                Function.Call(Hash.SET_PED_COMPONENT_VARIATION, me.Handle, Slot,
-                              back, backTexture, palette);
+                    var palette = Function.Call<int>(Hash.GET_PED_PALETTE_VARIATION, me.Handle, slot);
+
+                    Function.Call(Hash.SET_PED_COMPONENT_VARIATION, me.Handle, slot,
+                                  back, backTexture, palette);
+                }
 
                 _on = false;
                 _wore = -1;
@@ -179,8 +413,8 @@ namespace Hoodrich.Core
         }
 
         /// <summary>
-        /// Re-applies the configured mask if one is on. This is what the Settings slider calls
-        /// as it moves, so the number is found by watching his head change.
+        /// Re-applies what is configured, if it is on. This is what the Settings sliders call
+        /// as they move, so the right slot and index are found by watching his head.
         /// </summary>
         public static void Refresh(Settings cfg)
         {
@@ -188,43 +422,61 @@ namespace Hoodrich.Core
 
             var why = On(cfg);
 
-            // A bad number mid-scroll is not a reason to leave him bare: the last good one is
-            // still on his head, and the next notch may be fine.
+            // A bad number mid-scroll is not a reason to strip him: the last good one is still
+            // on, and the next notch may be fine.
             if (!string.IsNullOrEmpty(why)) Log.Debug("Mask: refresh skipped -- " + why);
         }
 
         /// <summary>
-        /// Keeps Wearing honest against whatever else touches his head. Cheap, on a clock.
+        /// Puts the mask on the OTHER slot when the sliders move between them.
+        ///
+        /// Changing the slot while something is on would otherwise leave the old slot wearing
+        /// it for ever -- nothing would ever put that one back, because Off only knows about
+        /// whatever is configured NOW.
         /// </summary>
+        public static void MoveTo(Settings cfg, Action change)
+        {
+            var was = _on;
+
+            if (was) Off(cfg);
+
+            change();
+
+            if (was) On(cfg);
+        }
+
+        /// <summary>Keeps Wearing honest against whatever else touches him. Cheap, on a clock.</summary>
         public static void Update(Settings cfg)
         {
             var now = Game.GameTime;
             if (now < _nextLook) return;
             _nextLook = now + LookEveryMs;
 
+            // The first look at a bare-faced man is the one worth writing down, and it costs
+            // twenty natives once. Without it the learner needs a button pressed before the
+            // wardrobe rather than after, which is the step everybody forgets.
+            if (!_based && !_on) Baseline();
+
+            if (!_on) return;
+
             try
             {
                 var me = Game.Player?.Character;
                 if (me == null || !me.Exists()) return;
 
-                var has = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, Slot);
+                var has = cfg.MaskAsProp
+                    ? Function.Call<int>(Hash.GET_PED_PROP_INDEX, me.Handle, cfg.MaskSlot)
+                    : Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, cfg.MaskSlot);
 
-                if (_on && has != cfg.MaskDrawable)
-                {
-                    // Somebody else changed it -- a cutscene, an outfit, another mod. They win,
-                    // and the memory of what was under it is no longer true either.
-                    _on = false;
-                    _wore = -1;
-                    _woreTexture = -1;
+                if (has == cfg.MaskDrawable) return;
 
-                    Log.Info("Mask: the slot changed under it; no longer counted as on.");
-                }
-                else if (!_on && cfg.MaskDrawable >= 1 && has == cfg.MaskDrawable)
-                {
-                    // On his head without this having put it there -- a reload, most likely.
-                    // Counted as on so the tile says the truth; what was under it is not known.
-                    _on = true;
-                }
+                // Somebody else changed it -- a cutscene, an outfit, another mod. They win, and
+                // the memory of what was under it is no longer true either.
+                _on = false;
+                _wore = -1;
+                _woreTexture = -1;
+
+                Log.Info("Mask: the slot changed under it; no longer counted as on.");
             }
             catch
             {
@@ -233,9 +485,31 @@ namespace Hoodrich.Core
         }
 
         /// <summary>For a teardown. Off if it is on; quiet if it is not.</summary>
-        public static void RestoreWorld()
+        public static void RestoreWorld(Settings cfg)
         {
-            if (_on) Off();
+            if (_on) Off(cfg);
+        }
+
+        // ---- bits --------------------------------------------------------------
+
+        private static void Keep(Ped me, Settings cfg)
+        {
+            if (cfg.MaskAsProp)
+            {
+                _wore = Function.Call<int>(Hash.GET_PED_PROP_INDEX, me.Handle, cfg.MaskSlot);
+                _woreTexture = Function.Call<int>(Hash.GET_PED_PROP_TEXTURE_INDEX, me.Handle, cfg.MaskSlot);
+            }
+            else
+            {
+                _wore = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, cfg.MaskSlot);
+                _woreTexture = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, me.Handle, cfg.MaskSlot);
+            }
+        }
+
+        /// <summary>"prop slot 0" or "component 1", for a log line somebody has to act on.</summary>
+        public static string Where(Settings cfg)
+        {
+            return (cfg.MaskAsProp ? "prop slot " : "component ") + cfg.MaskSlot;
         }
     }
 }

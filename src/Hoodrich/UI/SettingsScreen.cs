@@ -476,17 +476,70 @@ namespace Hoodrich.UI
             // it moves and you watch his head until the balaclava is on it. Only visible
             // work when the mask is on -- with it off the number changes and nothing shows,
             // which the note says.
+            // THE ONLY SETTINGS IN THE MOD THAT CAN ONLY BE FOUND BY LOOKING, and there
+            // are four of them because nothing in the game names a single one. Every row
+            // re-applies as it moves, so you put the mask on from the phone and then scroll
+            // here watching his head. The two that change WHERE it lives go through MoveTo,
+            // which takes it off the old slot first -- otherwise the old slot keeps wearing
+            // it for ever, since Off only knows about whatever is configured now.
             Head("Mask");
-            Slide("Which mask", "Mask", "Drawable",
+            Slide("Slot", "Mask", "Slot",
+                  () => c.MaskSlot,
+                  v => Core.Mask.MoveTo(c, () => c.MaskSlot = (int)Math.Round(v)),
+                  0f, Core.Mask.Components - 1, 1f, "0", "",
+                  note: "1 is beards on Franklin. His bandana is in another one");
+            Tick("It's a prop, not clothing", "Mask", "AsProp",
+                 () => c.MaskAsProp,
+                 v => Core.Mask.MoveTo(c, () => c.MaskAsProp = v),
+                 "Hats, glasses and the like are a separate set of eight slots. 0 is hats");
+            Slide("Which one", "Mask", "Drawable",
                   () => c.MaskDrawable,
                   v => { c.MaskDrawable = (int)Math.Round(v); Core.Mask.Refresh(c); },
-                  1f, Math.Max(2f, Core.Mask.Count() - 1), 1f, "0", "",
-                  note: "Put the mask on first, then scroll and watch his head");
+                  0f, Math.Max(1f, Core.Mask.Count(c) - 1), 1f, "0", "",
+                  note: "Put it on from the phone first, then scroll and watch his head");
             Slide("Colour", "Mask", "Texture",
                   () => c.MaskTexture,
                   v => { c.MaskTexture = (int)Math.Round(v); Core.Mask.Refresh(c); },
-                  0f, Math.Max(1f, Core.Mask.Textures(c.MaskDrawable) - 1), 1f, "0", "",
-                  note: "Some masks come in more than one");
+                  0f, Math.Max(1f, Core.Mask.Textures(c) - 1), 1f, "0", "",
+                  note: "Some come in more than one");
+
+            // AND THE WAY YOU ACTUALLY DO IT, which is not to touch any of the four above.
+            //
+            // The game knows where his mask is -- it is in his wardrobe, you can walk in and
+            // put it on. So put it on, and let the mod look at him and write down what moved.
+            // The first snapshot takes itself shortly after load, so most of the time only the
+            // second button is needed.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Remember how he looks",
+                Note = "Only needed if he was already wearing the mask when the mod loaded. " +
+                       "Do it bare-faced, before you go to the wardrobe",
+                Do = () =>
+                {
+                    var said = Core.Mask.Baseline();
+
+                    Notify.Important(string.IsNullOrEmpty(said)
+                        ? "Got it. Now put the mask on in his wardrobe."
+                        : "~r~" + said);
+                }
+            });
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Find the mask he's wearing",
+                Note = "Put it on in his wardrobe first. This works out which slot it went " +
+                       "into and fills in all four settings above",
+                Do = () =>
+                {
+                    var said = Core.Mask.Learn(c);
+
+                    Notify.Important(string.IsNullOrEmpty(said)
+                        ? "~g~Found it.~s~  " + Core.Mask.Where(c) + ", number " + c.MaskDrawable
+                        : "~r~" + said);
+                }
+            });
 
             Head("Posting up");
             Tick("Show the corner readout", "PostUp", "ShowDealHud",
