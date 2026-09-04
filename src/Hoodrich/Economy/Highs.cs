@@ -117,14 +117,26 @@ namespace Hoodrich.Economy
             // NAMED IN PAIRS, because the clip is not called the same thing in all three.
             // aa_smoke's clips are named after the idle, not "base" -- which is why the log
             // said this was playing and Franklin stood there with a joint in his fist.
+            // THE POT DICTIONARY LEADS, AND IT IS NOT THE ONE THIS ASKED FOR.
+            //
+            // It wanted amb@world_human_smoking_pot@male@male_a@base. The real one has no
+            // male_a in it -- amb@world_human_smoking_pot@male@base -- and one wrong segment
+            // is as absent as a name nobody has ever typed. It sat second in the ladder doing
+            // nothing while the generic smoker underneath took the job.
+            //
+            // Checked against menyooStuff/PedAnimList.txt, which is every dictionary and clip
+            // in the game as this install has it. No name in this file is a guess any more.
             Pairs = new[]
             {
-                "amb@world_human_aa_smoke@male@idle_a",           "idle_a",
-                "amb@world_human_smoking_pot@male@male_a@base",   "base",
-                "amb@world_human_smoking@male@male_a@base",       "base",
-                "amb@world_human_smoking@male@male_a@idle_a",     "idle_a"
+                "amb@world_human_smoking_pot@male@base",    "base",
+                "amb@world_human_smoking_pot@male@idle_a",  "idle_a",
+                "amb@world_human_aa_smoke@male@idle_a",     "idle_a",
+                "amb@world_human_smoking@male@male_a@base", "base"
             },
-            Props = new[] { "p_cs_joint_01", "prop_cs_ciggy_01", "prop_cigar_01" },
+            Props = new[]
+            {
+                "p_cs_joint_01", "p_amb_joint_01", "prop_sh_joint_01", "prop_cs_ciggy_01"
+            },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
 
             // Still named, because a fallback that never runs costs nothing and an install
@@ -161,12 +173,12 @@ namespace Hoodrich.Economy
             // why neither of them is a scenario any more.
             Pairs = new[]
             {
-                "amb@world_human_aa_smoke@male@idle_a",           "idle_a",
-                "amb@world_human_smoking_pot@male@male_a@base",   "base",
-                "amb@world_human_smoking@male@male_a@base",       "base",
-                "amb@world_human_smoking@male@male_a@idle_a",     "idle_a"
+                "amb@world_human_smoking_pot@male@base",    "base",
+                "amb@world_human_smoking_pot@male@idle_a",  "idle_a",
+                "amb@world_human_aa_smoke@male@idle_a",     "idle_a",
+                "amb@world_human_smoking@male@male_a@base", "base"
             },
-            Props = new[] { "prop_cigar_01", "prop_cigar_02", "p_cs_joint_01", "prop_cs_ciggy_01" },
+            Props = new[] { "prop_cigar_01", "prop_cigar_02", "p_cs_joint_01" },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING_POT",
             Ms = 4600,
@@ -227,24 +239,22 @@ namespace Hoodrich.Economy
             // So the ped names go first, longest-running first, and the camera one goes last
             // where it can do no harm. Guessing six names into a ladder cost nothing the
             // moment the ladder started checking whether each one actually plays.
+            // The dictionary holds exactly three clips -- _loop, _exit and _exit_cam -- and
+            // the guessed _idle, _enter and bare name are gone. _loop is the one that plays
+            // and the one the log confirmed.
             Pairs = new[]
             {
-                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_loop",
-                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_idle",
-                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_exit",
-                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_enter",
-                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth",
-                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_exit_cam",
-
-                // And the ambient smoker underneath, which is proven to exist.
+                "switch@trevor@trev_smoking_meth",          "trev_smoking_meth_loop",
+                "switch@trevor@trev_smoking_meth",          "trev_smoking_meth_exit",
                 "amb@world_human_aa_smoke@male@idle_a",     "idle_a",
                 "amb@world_human_smoking@male@male_a@base", "base"
             },
-            Props = new[]
-            {
-                "prop_meth_pipe", "prop_glass_pipe", "prop_cs_pipe_01",
-                "prop_test_boss_pipe", "prop_cs_ciggy_01"
-            },
+            // PROP_CS_CRACKPIPE. One word, and every attempt so far spelled it with an
+            // underscore -- prop_cs_crack_pipe -- which is a name the game has never had. Six
+            // guesses across three sessions, all of them missing by a character or by a whole
+            // word, and the log dutifully reported each one absent. RampageFiles/Lists/
+            // ObjectList.txt has had the answer in it the entire time.
+            Props = new[] { "prop_cs_crackpipe", "prop_cs_ciggy_01" },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING",
             Ms = 4000
@@ -265,15 +275,15 @@ namespace Hoodrich.Economy
         {
             Pairs = new[]
             {
-                "switch@trevor@trev_smoking_meth",             "trev_smoking_meth",
-                "amb@world_human_drug_dealer_hard@male@base",  "base",
-                "amb@world_human_smoking@male@male_a@base",    "base",
-                "amb@world_human_aa_smoke@male@idle_a",        "idle_a"
+                "switch@trevor@trev_smoking_meth",            "trev_smoking_meth_loop",
+                "amb@world_human_drug_dealer_hard@male@base", "base",
+                "amb@world_human_smoking@male@male_a@base",   "base",
+                "amb@world_human_aa_smoke@male@idle_a",       "idle_a"
             },
             Props = new[]
             {
-                "prop_coke_block", "prop_meth_bag_01", "prop_cs_package_01",
-                "prop_drug_package_02", "prop_drug_package"
+                "bkr_prop_coke_block_01a", "bkr_prop_meth_smallbag_01a",
+                "prop_meth_bag_01", "prop_cs_package_01", "prop_drug_package_02"
             },
             Sits = new Vector3(0.015f, 0.005f, 0.0f),
             Scenario = "WORLD_HUMAN_DRUG_DEALER",
@@ -282,21 +292,13 @@ namespace Hoodrich.Economy
 
         private static readonly Ritual.Recipe Pipe = new Ritual.Recipe
         {
-            Dicts = new[]
+            Pairs = new[]
             {
-                "switch@trevor@trev_smoking_meth",
-                "amb@world_human_smoking@male@male_a@base",
-                "amb@world_human_aa_smoke@male@idle_a"
+                "switch@trevor@trev_smoking_meth",          "trev_smoking_meth_loop",
+                "amb@world_human_aa_smoke@male@idle_a",     "idle_a",
+                "amb@world_human_smoking@male@male_a@base", "base"
             },
-            Clip = "base",
-            Props = new[]
-            {
-                // Still worth asking for, in case an install has one from somewhere.
-                "prop_cs_pipe_01", "prop_glass_pipe", "prop_pipe_01",
-
-                // And these are the fallback that will actually land.
-                "prop_cs_ciggy_01", "p_cs_joint_01", "prop_cigar_01"
-            },
+            Props = new[] { "prop_cs_crackpipe", "prop_cs_ciggy_01" },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING",
             Ms = 3400
@@ -305,14 +307,13 @@ namespace Hoodrich.Economy
         /// <summary>The needle, and going over at the end of it.</summary>
         private static readonly Ritual.Recipe Needle = new Ritual.Recipe
         {
-            Dicts = new[]
+            Pairs = new[]
             {
-                "amb@world_human_drug_dealer_hard@male@base",
-                "amb@world_human_drug_dealer@male@base",
-                "amb@world_human_smoking@male@male_a@base"
+                "amb@world_human_drug_dealer_hard@male@base",   "base",
+                "amb@world_human_drug_dealer_hard@male@idle_a", "idle_a",
+                "amb@world_human_smoking@male@male_a@base",     "base"
             },
-            Clip = "base",
-            Props = new[] { "prop_syringe_01", "prop_cs_syringe", "v_med_syringe" },
+            Props = new[] { "prop_syringe_01", "p_syringe_01_s" },
             Sits = new Vector3(0.02f, 0.0f, 0.0f),
             Turned = new Vector3(0f, 0f, 90f),
             Scenario = "WORLD_HUMAN_DRUG_DEALER_HARD",
@@ -322,22 +323,6 @@ namespace Hoodrich.Economy
             Slump = true,
             Ms = 3800
         };
-
-        /// <summary>A line off the back of a hand. Nothing to hold but the wrap.</summary>
-        private static readonly Ritual.Recipe Line_ = new Ritual.Recipe
-        {
-            Dicts = new[]
-            {
-                "amb@world_human_drug_dealer@male@base",
-                "amb@world_human_smoking@male@male_a@base"
-            },
-            Clip = "base",
-            Props = new[] { "prop_meth_bag_01", "prop_drug_package_02", "prop_drug_package" },
-            Sits = new Vector3(0.02f, 0.01f, 0.0f),
-            Scenario = "WORLD_HUMAN_DRUG_DEALER",
-            Ms = 2800
-        };
-
         /// <summary>
         /// Pills go down with a drink, which is the one ritual the game already has perfectly.
         ///
@@ -360,28 +345,23 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Ritual.Recipe Pop = new Ritual.Recipe
         {
+            // amb@world_human_drug_dealer@ does not exist in any form. Only the _hard one
+            // does, which is why that rung was dead.
             Pairs = new[]
             {
-                "amb@world_human_smoking@male@male_a@base",  "base",
-                "amb@world_human_drug_dealer@male@base",     "base",
-                "amb@world_human_aa_smoke@male@idle_a",      "idle_a"
+                "amb@world_human_smoking@male@male_a@base",   "base",
+                "amb@world_human_drug_dealer_hard@male@base", "base",
+                "amb@world_human_aa_smoke@male@idle_a",       "idle_a"
             },
             Props = new[]
             {
-                "prop_cs_pills", "prop_pills_01", "prop_cs_script_bottle",
-                "prop_pill_bottle_01", "prop_cs_bottle_01"
+                "prop_cs_pills", "xm3_prop_xm3_bottle_pills_01a",
+                "hei_prop_pill_bag_01", "prop_cs_script_bottle"
             },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_DRINKING",
             Ms = 2600
         };
-
-        private static readonly Ritual.Recipe Swallow = new Ritual.Recipe
-        {
-            Scenario = "WORLD_HUMAN_DRINKING",
-            Ms = 3000
-        };
-
         // ---- what each one is ---------------------------------------------------
 
         private static readonly Recipe[] Book =
