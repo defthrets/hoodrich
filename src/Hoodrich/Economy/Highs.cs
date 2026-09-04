@@ -137,6 +137,11 @@ namespace Hoodrich.Economy
             {
                 "p_cs_joint_01", "p_amb_joint_01", "prop_sh_joint_01", "prop_cs_ciggy_01"
             },
+
+            // THE POT ANIMATION SMOKES LEFT-HANDED. See Ritual.Recipe.Lefty -- the joint was
+            // on the right hand and hanging by his thigh while his empty left hand went to
+            // his mouth, which is what "smoking but not holding the joint" was.
+            Lefty = true,
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
 
             // Still named, because a fallback that never runs costs nothing and an install
@@ -179,6 +184,9 @@ namespace Hoodrich.Economy
                 "amb@world_human_smoking@male@male_a@base", "base"
             },
             Props = new[] { "prop_cigar_01", "prop_cigar_02", "p_cs_joint_01" },
+
+            // Same clips as the joint, so the same hand.
+            Lefty = true,
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING_POT",
             Ms = 7800,

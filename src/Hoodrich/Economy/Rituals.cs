@@ -67,6 +67,14 @@ namespace Hoodrich.Economy
             /// <summary>Where the prop sits in his hand, in metres.</summary>
             public Vector3 Sits = new Vector3(0.0f, 0.0f, 0.0f);
 
+            /// <summary>
+            /// Which hand this recipe's animation actually uses.
+            ///
+            /// A property of the CLIP, not of the drug -- so it lives beside the pairs it
+            /// belongs to. Right unless it says otherwise, because most of them are.
+            /// </summary>
+            public bool Lefty;
+
             /// <summary>And how it is turned, in degrees.</summary>
             public Vector3 Turned = new Vector3(0f, 0f, 0f);
 
@@ -147,8 +155,17 @@ namespace Hoodrich.Economy
 
         private const int CheckMs = 400;
 
-        /// <summary>PH_R_Hand -- the non-deforming helper the animators hang props on.</summary>
+        /// <summary>
+        /// PH_R_Hand and PH_L_Hand -- the non-deforming helpers the animators hang props on.
+        ///
+        /// WHICH ONE MATTERS AND IT IS NOT A DETAIL. Everything was bolted to the right hand,
+        /// and amb@world_human_smoking_pot smokes LEFT-handed -- so the log said the prop was
+        /// in his hand and the animation was playing, both true, and the joint hung by his
+        /// right thigh while his empty left hand went to his mouth. Reported as smoking
+        /// without a joint, which is exactly what it was.
+        /// </summary>
         private const int RightHand = 28422;
+        private const int LeftHand = 60309;
 
         /// <summary>Start it. Returns false only if there is nobody to do it.</summary>
         public bool Start(Recipe recipe)
@@ -344,7 +361,7 @@ namespace Hoodrich.Economy
         {
             _slump = recipe.Slump;
 
-            _held = InHand(me, recipe.Props, recipe.Sits, recipe.Turned);
+            _held = InHand(me, recipe.Props, recipe.Sits, recipe.Turned, recipe.Lefty);
         }
 
         /// <summary>
@@ -359,7 +376,8 @@ namespace Hoodrich.Economy
         /// caused -- not a spawner running every frame. The non-blocking rule exists because a
         /// per-frame wait is a stutter, and this is neither per-frame nor a surprise.
         /// </summary>
-        public static Prop InHand(Ped who, string[] names, Vector3 sits, Vector3 turned)
+        public static Prop InHand(Ped who, string[] names, Vector3 sits, Vector3 turned,
+                                  bool lefty = false)
         {
             if (who == null || !who.Exists() || names == null) return null;
 
@@ -378,9 +396,10 @@ namespace Hoodrich.Economy
 
                     if (prop == null || !prop.Exists()) continue;
 
-                    Give(prop, who, sits, turned);
+                    Give(prop, who, sits, turned, lefty);
 
-                    Log.Info("Prop in hand: " + name + ".");
+                    Log.Info("Prop in hand: " + name + ", " +
+                             (lefty ? "left" : "right") + ".");
                     return prop;
                 }
                 catch
@@ -404,13 +423,15 @@ namespace Hoodrich.Economy
         /// so a bag passing from one man to another is one call and no detach in between --
         /// which matters, because a frame with it attached to nobody is a frame with it falling.
         /// </summary>
-        public static void Give(Prop what, Ped who, Vector3 sits, Vector3 turned)
+        public static void Give(Prop what, Ped who, Vector3 sits, Vector3 turned,
+                                bool lefty = false)
         {
             if (what == null || !what.Exists() || who == null || !who.Exists()) return;
 
             try
             {
-                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, who.Handle, RightHand);
+                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, who.Handle,
+                                              lefty ? LeftHand : RightHand);
 
                 Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, what.Handle, who.Handle, bone,
                               sits.X, sits.Y, sits.Z, turned.X, turned.Y, turned.Z,
