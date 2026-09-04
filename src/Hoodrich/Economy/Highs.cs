@@ -144,7 +144,7 @@ namespace Hoodrich.Economy
             Scenario = "WORLD_HUMAN_SMOKING_POT",
 
             // The first drag is what does it; the rest is standing there smoking. See Linger.
-            Ms = 4200,
+            Ms = 7400,
             Linger = SmokeMs
         };
 
@@ -181,7 +181,7 @@ namespace Hoodrich.Economy
             Props = new[] { "prop_cigar_01", "prop_cigar_02", "p_cs_joint_01" },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING_POT",
-            Ms = 4600,
+            Ms = 7800,
             Linger = SmokeMs
         };
 
@@ -257,7 +257,7 @@ namespace Hoodrich.Economy
             Props = new[] { "prop_cs_crackpipe", "prop_cs_ciggy_01" },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING",
-            Ms = 4000
+            Ms = 7200
         };
 
         /// <summary>
@@ -294,7 +294,7 @@ namespace Hoodrich.Economy
             },
             Sits = new Vector3(0.015f, 0.005f, 0.0f),
             Scenario = "WORLD_HUMAN_DRUG_DEALER",
-            Ms = 2500
+            Ms = 5000
         };
 
         private static readonly Ritual.Recipe Pipe = new Ritual.Recipe
@@ -308,7 +308,7 @@ namespace Hoodrich.Economy
             Props = new[] { "prop_cs_crackpipe", "prop_cs_ciggy_01" },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING",
-            Ms = 3400
+            Ms = 6600
         };
 
         /// <summary>The needle, and going over at the end of it.</summary>
@@ -338,7 +338,7 @@ namespace Hoodrich.Economy
             // The nod. He goes down at the end of it, which is the half of this that nobody
             // needs an animation dictionary to read.
             Slump = true,
-            Ms = 3800
+            Ms = 7000
         };
         /// <summary>
         /// Pills go down with a drink, which is the one ritual the game already has perfectly.
@@ -396,7 +396,7 @@ namespace Hoodrich.Economy
             },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_DRINKING",
-            Ms = 2600
+            Ms = 5200
         };
         // ---- what each one is ---------------------------------------------------
 

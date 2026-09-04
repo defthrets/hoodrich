@@ -270,6 +270,9 @@ namespace Hoodrich.Core
         /// </summary>
         public bool DrugCamera = true;
 
+        /// <summary>How much longer or shorter every drug-taking animation runs.</summary>
+        public float DrugAnimLength = 1f;
+
         public int MaskSlot = 8;
         public bool MaskAsProp;
         public int MaskDrawable = 4;
@@ -587,6 +590,7 @@ namespace Hoodrich.Core
             s.BustWantedStars = (int)Clamp(ini.GetInt("Risk", "BustWantedStars", s.BustWantedStars), 1f, 5f);
 
             s.DrugCamera = ini.GetBool("Highs", "DrugCamera", s.DrugCamera);
+            s.DrugAnimLength = Clamp(ini.GetFloat("Highs", "AnimLength", s.DrugAnimLength), 0.5f, 3f);
 
             s.MaskSlot = (int)Clamp(ini.GetInt("Mask", "Slot", s.MaskSlot), 0f, 11f);
             s.MaskAsProp = ini.GetBool("Mask", "AsProp", s.MaskAsProp);

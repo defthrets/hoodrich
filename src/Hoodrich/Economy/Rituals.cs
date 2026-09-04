@@ -127,6 +127,16 @@ namespace Hoodrich.Economy
         /// </summary>
         public static bool Cinematic = true;
 
+        /// <summary>
+        /// A multiplier on every ritual's length, from the ini.
+        ///
+        /// The numbers in Highs are what each act ought to take -- a bump is short and a joint
+        /// is not -- and this scales all of them together without flattening that out. Somebody
+        /// who wants to watch it gets more of everything; somebody taking one on the way
+        /// somewhere can have it out of the way.
+        /// </summary>
+        public static float Length = 1f;
+
         /// <summary>How fast counts as walking off, and how long he gets before it is asked.</summary>
         private const float MovedAt = 0.35f;
         private const int MovedAfterMs = 600;
@@ -153,7 +163,14 @@ namespace Hoodrich.Economy
             Busy = true;
             Landed = false;
 
-            _until = Game.GameTime + recipe.Ms;
+            // SCALED ONCE, HERE, AND USED EVERYWHERE BELOW. The effect landing, the
+            // animation's own duration and the camera all have to agree about how long this
+            // takes, or the man stops moving while the shot is still running.
+            _ms = (int)(recipe.Ms * Length);
+
+            if (_ms < 600) _ms = 600;
+
+            _until = Game.GameTime + _ms;
             _linger = recipe.Linger;
             _lingerUntil = 0;
 
@@ -166,7 +183,7 @@ namespace Hoodrich.Economy
             // Round the front, for as long as this takes. See RitualCam -- the whole point of
             // choosing the right clip is that somebody can see it, and from behind his own
             // shoulder none of this is visible at all.
-            RitualCam.Start(me, recipe.Ms + Math.Min(recipe.Linger, 2500), Cinematic);
+            RitualCam.Start(me, _ms + Math.Min(recipe.Linger, 2500), Cinematic);
 
             // NOTHING TO STREAM MEANS NOTHING TO WAIT FOR, and this is why the joint looked
             // like it was not happening.
@@ -430,7 +447,7 @@ namespace Hoodrich.Economy
                     // a full-body lock on a man stood on a kerb is a man who snaps to attention
                     // and then teleports his feet back when it ends.
                     Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, dict, clip,
-                                  4f, -2f, recipe.Ms, 49, 0f, false, false, false);
+                                  4f, -2f, _ms, 49, 0f, false, false, false);
 
                     _dict = dict;
                     _clip = clip;
@@ -523,6 +540,9 @@ namespace Hoodrich.Economy
 
             Scenario(recipe, me);
         }
+
+        /// <summary>This ritual's length once Length has been applied.</summary>
+        private int _ms;
 
         /// <summary>Which rung of the ladder is being tried, and when to check it.</summary>
         private int _rung;

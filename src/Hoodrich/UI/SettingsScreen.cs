@@ -505,6 +505,11 @@ namespace Hoodrich.UI
                  () => c.DrugCamera,
                  v => { c.DrugCamera = v; Economy.Ritual.Cinematic = v; },
                  "Swings round the front while you take something, then hands the camera back");
+            Slide("How long it takes", "Highs", "AnimLength",
+                  () => c.DrugAnimLength,
+                  v => { c.DrugAnimLength = v; Economy.Ritual.Length = v; },
+                  0.5f, 3f, 0.1f, "0.0", "x",
+                  note: "Scales every drug animation. The camera follows it");
 
             Head("Mask");
             Slide("Slot", "Mask", "Slot",
