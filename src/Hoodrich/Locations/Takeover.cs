@@ -1573,15 +1573,23 @@ namespace Hoodrich.Locations
                     Turn(car, driver, now);
                 }
 
-                foreach (var ped in World.GetNearbyPeds(Middle, SweepRange))
-                {
-                    if (ped == null || !ped.Exists() || ped.IsPersistent) continue;
-                    if (ped.Handle == player.Handle) continue;
-                    if (Badged(ped)) continue;
-                    if (Ours(ped)) continue;
-
-                    ped.Delete();
-                }
+                // NOBODY ON FOOT IS TOUCHED, AND THAT IS A REVERSAL.
+                //
+                // This deleted every stranger within a hundred metres of the junction, on the
+                // reasoning that the crowd should be the crowd we built rather than whoever
+                // happened to be walking past. Which was true when the crowd was a dozen and
+                // is not now it is sixty: a passer-by is one more person at a street meet, and
+                // a street meet nobody has wandered into is a set.
+                //
+                // It was also the last thing in this file that deleted anything. The cars
+                // stopped being deleted months ago -- there is no version of "remove every
+                // stranger near here" that is safe while our own are driving in, and every
+                // guard on it is another guess about which is which. A driver gets turned
+                // round and walks away from it; a pedestrian was simply erased in front of
+                // whoever was looking at him.
+                //
+                // The cordon still holds the ROAD, which is the half that mattered. Traffic is
+                // turned at a hundred metres and cannot get into the ring. People can.
             }
             catch (Exception ex)
             {

@@ -590,8 +590,6 @@ namespace Hoodrich.Economy
             var sunny = false;
             var rage = false;
 
-            string cycleFrom = null;
-            var strength = 1f;
             string fx = null;
             string clipset = null;
 
@@ -611,7 +609,6 @@ namespace Hoodrich.Economy
                 sunny |= r.Sunny;
                 rage |= r.Rage;
 
-                if (r.Cycles.Length > 0) { cycleFrom = null; strength = r.Strength; }
                 if (!string.IsNullOrEmpty(r.Fx)) fx = r.Fx;
                 if (!string.IsNullOrEmpty(r.Clipset)) clipset = r.Clipset;
             }
