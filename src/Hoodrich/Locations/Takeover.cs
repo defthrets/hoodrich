@@ -2188,6 +2188,20 @@ namespace Hoodrich.Locations
                 // ran out, and the answer to that is another route.
                 Nudge(p, now);
 
+                // HIS KERB HAS GONE AND HE IS STOOD IN THE ROAD WAITING FOR IT.
+                //
+                // Somebody else parked on it while he was driving in -- a stranger, or one of
+                // ours that stopped short and took it. Nothing noticed until the ninety-second
+                // give-up fired, and for that whole minute and a half he sat in a lane with
+                // the rest of the arrivals queueing behind him.
+                //
+                // Asked once he has actually stopped and stayed stopped, so a car merely
+                // waiting at a junction on the way in is not sent somewhere else.
+                if (p.Stuck != 0 && now - p.Stuck > BlockedMs && Taken(p.Slot))
+                {
+                    if (Respot(p, now)) continue;
+                }
+
                 if (now - p.Sent > ParkGiveUpMs) Settle(p, now);
 
                 // ONCE HE IS ROUND, HE COMES IN. Toward answers "the waypoint" while the
@@ -2380,40 +2394,7 @@ namespace Hoodrich.Locations
                 // them. He gets a different kerb if there is a free one near him, and if there
                 // is not, he goes home. A takeover with thirty cars at it looks like a takeover.
                 // One with thirty-five and a queue backed up to the boulevard does not.
-                if (p.Moved < MoveOnTimes)
-                {
-                    var other = FreeKerb(p.Car.Position, p);
-
-                    if (other != null)
-                    {
-                        p.Moved++;
-
-                        p.Slot = other.At;
-                        p.Face = other.Face;
-
-                        p.Sent = now;
-                        p.Stuck = 0;
-
-                        var want = Toward(p.Car.Position, p.Slot);
-
-                        p.Aimed = want;
-
-                        if (p.Driver != null && p.Driver.Exists())
-                        {
-                            Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
-
-                            Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle,
-                                          p.Car.Handle, want.X, want.Y, want.Z, Closing(p), 0,
-                                          p.Car.Model.Hash, CareStyle, 4f, true);
-
-                            Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
-                        }
-
-                        Log.Debug("Takeover: a car could not reach its kerb and was given " +
-                                  "another " + gap.ToString("0") + "m away.");
-                        return;
-                    }
-                }
+                if (Respot(p, now)) return;
 
                 // Nowhere to put him. Loose hands the driver back to the game and follows the
                 // car out, so it is not left standing empty in the middle of the junction --
@@ -2485,15 +2466,86 @@ namespace Hoodrich.Locations
             return best;
         }
 
-        /// <summary>How far short of his kerb still counts as being at it.</summary>
-        private const float SettleWithin = 11f;
+        /// <summary>
+        /// Send him looking for another kerb, if there is one and he has not used up his goes.
+        ///
+        /// LIFTED OUT OF Settle SO IT CAN BE ASKED FOR EARLY. It was the give-up path and
+        /// nothing else could reach it -- so a car whose kerb had been taken by somebody else
+        /// stood in the road for the full ninety seconds of the give-up timer before anybody
+        /// asked whether there was anywhere else to go. Ninety seconds is most of the arrival
+        /// window, and the cars behind it were queueing the whole time. That is the jam.
+        /// </summary>
+        private bool Respot(Parkee p, int now)
+        {
+            if (p.Moved >= MoveOnTimes) return false;
+
+            var other = FreeKerb(p.Car.Position, p);
+
+            if (other == null) return false;
+
+            p.Moved++;
+
+            p.Slot = other.At;
+            p.Face = other.Face;
+
+            p.Sent = now;
+            p.Stuck = 0;
+
+            var want = Toward(p.Car.Position, p.Slot);
+
+            p.Aimed = want;
+
+            try
+            {
+                if (p.Driver != null && p.Driver.Exists())
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
+
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, p.Driver.Handle,
+                                  p.Car.Handle, want.X, want.Y, want.Z, Closing(p), 0,
+                                  p.Car.Model.Hash, CareStyle, 4f, true);
+
+                    Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
+                }
+            }
+            catch
+            {
+                // He is asked again by the give-up timer.
+            }
+
+            Log.Debug("Takeover: a car was sent to a different kerb.");
+            return true;
+        }
+
+        /// <summary>
+        /// How far short of his kerb still counts as being at it.
+        ///
+        /// FIVE, DOWN FROM ELEVEN, AND THIS IS THE ONE THAT WAS PUTTING CARS IN THE ROAD.
+        /// Eleven metres was chosen as slack for the road nodes not routing exactly to a
+        /// kerbside coordinate, and eleven metres from a kerb is not slack -- it is the far
+        /// side of a traffic lane. Anything that stopped that far out was accepted as parked
+        /// and stayed there for the night, which is a queue of cars down the middle of the
+        /// junction with the mod insisting they are all in spaces.
+        ///
+        /// Five is close enough to a walked kerb that a car sitting there is at it, and short
+        /// enough that anything else goes and finds a real one.
+        /// </summary>
+        private const float SettleWithin = 5f;
 
         /// <summary>Closer than this to somebody else's kerb is the same space twice.</summary>
         private const float KerbApart = 2.5f;
 
         /// <summary>How far a stuck car will look for a different kerb, and how often it may.</summary>
         private const float ReSpotRange = 35f;
-        private const int MoveOnTimes = 2;
+        /// <summary>
+        /// How many times a car may be sent to a different kerb before it goes home.
+        ///
+        /// Four rather than two. The cheap outcome is a car driving another twenty metres; the
+        /// expensive one is a gap in the ring for the rest of the night, and now that the
+        /// re-spot can be asked for the moment a kerb is lost rather than ninety seconds later
+        /// there is time in the night to use them.
+        /// </summary>
+        private const int MoveOnTimes = 4;
 
         /// <summary>
         /// Ask a stopped spectator for its route again.
