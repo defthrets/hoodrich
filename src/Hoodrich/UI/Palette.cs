@@ -6,10 +6,18 @@ namespace Hoodrich.UI
     /// <summary>
     /// Hoodrich's colour scheme, tuned to sit next to the vanilla HUD rather than shout over it.
     ///
-    /// The reference is GTA V's own weapon wheel: near-black translucent wedges, a near-WHITE
-    /// highlight with dark text punched out of it, and white labels. Colour is spent only where
-    /// it carries meaning -- money green, warning amber, danger red -- exactly as the game's HUD
-    /// does. There is deliberately no branded accent hue; on the vanilla wheel, white IS the accent.
+    /// The panels are near-black, rounded, and lit in GOLD and EMBER: the wash under a wordmark,
+    /// the stroke on a rule, the plate under whatever is chosen, the frame that glides between
+    /// things. See UI.Warm for all of that -- the screens take it from there rather than
+    /// each having an opinion. Colour beyond that is spent only where it carries meaning --
+    /// money green, warning amber, danger red -- exactly as the game's HUD does.
+    ///
+    /// THE PHONE IS THE EXCEPTION AND STAYS GREEN. It is a handset in his hand rather than a
+    /// screen, with its own make and its own colour, and its chrome -- the mark, the bars, the
+    /// rules, the cursor -- is the set's green. See PhoneMenu.
+    ///
+    /// Accent below is the old near-white highlight, kept for the vanilla-wheel reasoning it
+    /// carries and for anything that has not moved over; nothing on the panels uses it now.
     /// </summary>
     internal static class Palette
     {

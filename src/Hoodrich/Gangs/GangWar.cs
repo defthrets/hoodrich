@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -3262,9 +3262,6 @@ namespace Hoodrich.Gangs
         /// <summary>How long the card flares when a fresh carload turns up.</summary>
         private const int WarFlashMs = 900;
 
-        private const float WarTickLong = 0.024f;
-        private const float WarTickThick = 0.0026f;
-
         private static readonly System.Drawing.Color WarBack =
             System.Drawing.Color.FromArgb(236, 10, 11, 13);
 
@@ -3361,18 +3358,17 @@ namespace Hoodrich.Gangs
             var ink = Wash(theirs, eased);
             var back = Wash(WarBack, eased);
 
-            Hud.RectFrom(left, top, WarWidth, WarHeight, back);
-            Hud.RectFrom(left, top, WarRail, WarHeight, ink);
-            Hud.RectFrom(left, top, WarWidth, 0.0026f, ink);
+            // The rounded black every panel is, with their colour down the rail. No bar along
+            // the top and no corner ticks: the border is gone everywhere.
+            UI.Warm.Card(left, top, WarWidth, WarHeight, back, ink, WarRail);
 
             if (flash > 0f)
             {
-                Hud.RectFrom(left, top, WarWidth, WarHeight,
-                             System.Drawing.Color.FromArgb((int)(70 * flash * eased),
-                                                           theirs.R, theirs.G, theirs.B));
+                Hud.RoundRect(left, top, WarWidth, WarHeight, UI.Warm.CardRound,
+                              System.Drawing.Color.FromArgb((int)(70 * flash * eased),
+                                                            theirs.R, theirs.G, theirs.B),
+                              sprite: false, steps: 12);
             }
-
-            WarCorners(left, top, right, top + WarHeight, ink);
 
             // ---- their colours, as a badge ----
             var iconLeft = left + WarRail + WarPad;
@@ -3473,26 +3469,6 @@ namespace Hoodrich.Gangs
                 Hud.TextRight("that's all of 'em", right - WarPad, top + 0.086f, 0.25f,
                               Wash(Palette.Cash, eased), Hud.FontLabel);
             }
-        }
-
-        /// <summary>Four corner ticks rather than a box, the same frame the other panels wear.</summary>
-        private static void WarCorners(float left, float top, float right, float bottom,
-                                       System.Drawing.Color ink)
-        {
-            var wide = Hud.ToX(WarTickThick);
-            var run = Hud.ToX(WarTickLong);
-
-            Hud.RectFrom(left, top, run, WarTickThick, ink);
-            Hud.RectFrom(left, top, wide, WarTickLong, ink);
-
-            Hud.RectFrom(right - run, top, run, WarTickThick, ink);
-            Hud.RectFrom(right - wide, top, wide, WarTickLong, ink);
-
-            Hud.RectFrom(left, bottom - WarTickThick, run, WarTickThick, ink);
-            Hud.RectFrom(left, bottom - WarTickLong, wide, WarTickLong, ink);
-
-            Hud.RectFrom(right - run, bottom - WarTickThick, run, WarTickThick, ink);
-            Hud.RectFrom(right - wide, bottom - WarTickLong, wide, WarTickLong, ink);
         }
 
         private static System.Drawing.Color Wash(System.Drawing.Color c, float by)

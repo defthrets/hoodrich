@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -3413,12 +3413,10 @@ namespace Hoodrich.Missions
             var left = 0.5f - CardWidth * 0.5f;
             var ink = PhaseColour();
 
-            // Backing, a rail down the left and a hairline along the top. The rail and the
-            // line are the only two things that change colour, so the card reads as the same
-            // object throughout a job while still saying which part of it you are in.
-            Hud.RectFrom(left, CardTop, CardWidth, CardHeight, CardBack);
-            Hud.RectFrom(left, CardTop, CardRail, CardHeight, ink);
-            Hud.RectFrom(left, CardTop, CardWidth, 0.0022f, ink);
+            // The rounded black every panel is, with a rail down the left. The rail is the one
+            // thing that changes colour, so the card reads as the same object throughout a job
+            // while still saying which part of it you are in.
+            Warm.Card(left, CardTop, CardWidth, CardHeight, CardBack, ink, CardRail);
 
             // The icon, in its own well so it reads as a badge rather than as a stray glyph.
             var iconLeft = left + CardRail + CardPad;
@@ -3542,7 +3540,7 @@ namespace Hoodrich.Missions
         /// <summary>
         /// What colour this part of the job is.
         ///
-        /// Amber for going somewhere, white for doing the thing, red for the law. Three states
+        /// Amber for going somewhere, gold for doing the thing, red for the law. Three states
         /// worth telling apart at a glance, rather than five that each need reading.
         /// </summary>
         private Color PhaseColour()
@@ -3563,7 +3561,7 @@ namespace Hoodrich.Missions
 
                     case BikePhase.Home: return Palette.Cash;
 
-                    default: return Palette.Accent;
+                    default: return Palette.Gold;
                 }
             }
 
@@ -3576,7 +3574,7 @@ namespace Hoodrich.Missions
                 case MissionState.Deliver: return Palette.Cash;
                 case MissionState.Dump:
                 case MissionState.Torch: return Palette.Warn;
-                default: return Palette.Accent;
+                default: return Palette.Gold;
             }
         }
 

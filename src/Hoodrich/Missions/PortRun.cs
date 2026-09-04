@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -1555,11 +1555,14 @@ namespace Hoodrich.Missions
             var fade = eased;
 
             var left = 0.5f - CardWidth * 0.5f;
-            var ink = Fade(Stage == StageFetch ? Palette.Standing : Palette.Cash, fade);
 
-            Hud.RectFrom(left, top, CardWidth, CardHeight, Fade(CardBack, fade));
-            Hud.RectFrom(left, top, CardRail, CardHeight, ink);
-            Hud.RectFrom(left, top, CardWidth, 0.0022f, ink);
+            // Amber on the way there and money green on the way back, which is the job card's
+            // own reading of a leg: going somewhere, then getting paid.
+            var ink = Fade(Stage == StageFetch ? Palette.Warn : Palette.Cash, fade);
+
+            // The rounded black every panel is, with the leg's colour down the rail. No bar
+            // along the top: the border is gone everywhere.
+            UI.Warm.Card(left, top, CardWidth, CardHeight, Fade(CardBack, fade), ink, CardRail);
 
             var iconLeft = left + CardRail + CardPad;
             var iconWide = Hud.ToX(IconSize);

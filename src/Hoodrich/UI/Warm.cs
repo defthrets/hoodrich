@@ -107,6 +107,28 @@ namespace Hoodrich.UI
                          Palette.Alpha(Palette.Ember, (int)(215f * arrive)));
         }
 
+        /// <summary>
+        /// A small in-world card -- the job readout, the war banner, the spray card -- as the
+        /// same rounded black the panels are, with a rail down its left in whatever colour the
+        /// card means by. No stripe along the top and no corner ticks: those were the border,
+        /// and the border is gone everywhere.
+        ///
+        /// The rail is inset by the corner radius top and bottom, or it pokes out past the
+        /// curve at both ends and the corners stop being corners.
+        /// </summary>
+        public const float CardRound = 0.010f;
+
+        public static void Card(float left, float top, float w, float h, Color back, Color rail, float railW)
+        {
+            Hud.RoundRect(left, top, w, h, CardRound, back, sprite: false, steps: 12);
+
+            if (rail.A <= 0 || railW <= 0f) return;
+
+            var r = Math.Min(CardRound, h * 0.5f);
+
+            Hud.RectFrom(left, top + r, railW, h - r * 2f, rail);
+        }
+
         // ======================================================================
         // What is chosen
         // ======================================================================

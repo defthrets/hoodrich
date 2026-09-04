@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Control = GTA.Control;
@@ -752,10 +752,6 @@ namespace Hoodrich.Missions
         private const float SprayBarRate = 0.16f;
         private const int SprayBarSweepMs = 1500;
 
-        /// <summary>The corner ticks, which are the frame without drawing a whole box.</summary>
-        private const float TickLong = 0.020f;
-        private const float TickThick = 0.0022f;
-
         private static readonly System.Drawing.Color SprayBack =
             System.Drawing.Color.FromArgb(232, 12, 13, 15);
 
@@ -793,11 +789,11 @@ namespace Hoodrich.Missions
                                                          (int)(b * 255f)), eased);
 
             // ---- the panel ----
-            Hud.RectFrom(left, top, SprayCardWidth, SprayCardHeight, Tint(SprayBack, eased));
-            Hud.RectFrom(left, top, SprayCardRail, SprayCardHeight, ink);
-            Hud.RectFrom(left, top, SprayCardWidth, 0.0022f, ink);
-
-            Corners(left, top, right, top + SprayCardHeight, ink);
+            //
+            // The rounded black every panel is, with your set's colour down the rail. No bar
+            // along the top and no corner ticks: the border is gone everywhere.
+            UI.Warm.Card(left, top, SprayCardWidth, SprayCardHeight, Tint(SprayBack, eased), ink,
+                         SprayCardRail);
 
             // ---- the can ----
             var iconLeft = left + SprayCardRail + SprayCardPad;
@@ -865,36 +861,6 @@ namespace Hoodrich.Missions
                 Hud.RectFrom(lo, barY, hi - lo, SprayBarHeight,
                              System.Drawing.Color.FromArgb((int)(130 * eased), 255, 255, 255));
             }
-        }
-
-        /// <summary>
-        /// Four corner ticks instead of a box.
-        ///
-        /// A full outline round a small panel reads as a dialog and fights the backing; the
-        /// ticks give it the same framed, deliberate look for a fraction of the ink. Same idea
-        /// the wheel and the socials panel use, so it belongs to the same set of screens.
-        /// </summary>
-        private static void Corners(float left, float top, float right, float bottom,
-                                    System.Drawing.Color ink)
-        {
-            var wide = Hud.ToX(TickThick);
-            var run = Hud.ToX(TickLong);
-
-            // top left
-            Hud.RectFrom(left, top, run, TickThick, ink);
-            Hud.RectFrom(left, top, wide, TickLong, ink);
-
-            // top right
-            Hud.RectFrom(right - run, top, run, TickThick, ink);
-            Hud.RectFrom(right - wide, top, wide, TickLong, ink);
-
-            // bottom left
-            Hud.RectFrom(left, bottom - TickThick, run, TickThick, ink);
-            Hud.RectFrom(left, bottom - TickLong, wide, TickLong, ink);
-
-            // bottom right
-            Hud.RectFrom(right - run, bottom - TickThick, run, TickThick, ink);
-            Hud.RectFrom(right - wide, bottom - TickLong, wide, TickLong, ink);
         }
 
         private static System.Drawing.Color Tint(System.Drawing.Color c, float by)
