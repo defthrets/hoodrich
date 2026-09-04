@@ -626,6 +626,9 @@ namespace Hoodrich.Economy
         /// <summary>When the colourless look gives way to the ordinary one, or 0.</summary>
         private int _greyUntil;
 
+        /// <summary>Whether this instance has cleared up after whatever came before it.</summary>
+        private bool _swept;
+
         private string _cycle = "";
         private string _fx = "";
         private string _clip = "";
@@ -878,6 +881,26 @@ namespace Hoodrich.Economy
                 _taking = null;
 
                 Land(recipe, _said);
+            }
+
+            // NOTHING OF OURS IS RUNNING, SO NOTHING OF OURS SHOULD BE ON THE SCREEN.
+            //
+            // Reported as being stuck in black and white, and the log said the mod had just
+            // been reloaded with nothing high and nothing coming down. That is the whole bug:
+            // a timecycle is a global the game holds until somebody clears it, and pressing
+            // Insert throws away the object that knew it had set one. The new one comes up,
+            // finds no highs and no comedown, and returns on the line below -- for ever, while
+            // drug_deadman sits over everything. Teardown is supposed to catch this and
+            // usually does; a script being aborted is not a promise that it ran.
+            //
+            // So the first tick of a new instance clears what the last one may have left. Only
+            // once, and only when there is genuinely nothing of ours live -- which at startup
+            // is always true, and after that this never runs again.
+            if (!_swept)
+            {
+                _swept = true;
+
+                if (_live.Count == 0 && !_coming && _blackFrom == 0) Sweep();
             }
 
             if (_blackFrom != 0) { Blackout(); return; }
@@ -1489,6 +1512,44 @@ namespace Hoodrich.Economy
             catch
             {
                 // Teardown.
+            }
+        }
+
+        /// <summary>
+        /// Put back everything a previous instance of this class may have left set.
+        ///
+        /// CLEAR IS NO USE HERE AND THAT IS THE WHOLE POINT. It only clears the timecycle when
+        /// it can see one in its own _cycle field -- which is right, because it is the thing
+        /// that runs between one high and the next and must not stamp on somebody else's
+        /// screen. A brand new instance has an empty _cycle and a stuck grey screen, and those
+        /// two facts together are exactly the bug: the object that knew it had set a modifier
+        /// went away when Insert was pressed, and the object that could clear it has no idea
+        /// there is anything to clear.
+        ///
+        /// So this asks for nothing and clears unconditionally. It runs once, on the first
+        /// tick, with nothing of ours live -- which is the one moment where "there should be
+        /// no drug effects on this screen" is certainly true.
+        /// </summary>
+        private void Sweep()
+        {
+            try
+            {
+                Function.Call(Hash.CLEAR_TIMECYCLE_MODIFIER);
+                Function.Call(Hash.ANIMPOSTFX_STOP_ALL);
+                Function.Call(Hash.SET_TIME_SCALE, 1f);
+                Function.Call(Hash.STOP_GAMEPLAY_CAM_SHAKING, true);
+
+                var me = Game.Player.Character;
+
+                if (me != null && me.Exists())
+                {
+                    Function.Call(Hash.SET_PED_IS_DRUNK, me.Handle, false);
+                    Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, me.Handle, 0f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not sweep up after the last run: " + ex.Message);
             }
         }
 
