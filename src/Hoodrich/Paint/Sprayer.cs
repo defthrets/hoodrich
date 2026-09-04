@@ -483,6 +483,8 @@ namespace Hoodrich.Paint
             {
                 _streaking = true;
                 _streakFrom = at;
+                _streakDir = Vector3.Zero;
+                _streakBegan = now;
 
                 return false;
             }
@@ -494,6 +496,36 @@ namespace Hoodrich.Paint
             if (span < size * _cfg.StreakStep)
             {
                 return now - _paintedAt < _cfg.StreakIdleMs;
+            }
+
+            // ---- LONG ENOUGH TO LAY, BUT NOT NECESSARILY YET ----
+            //
+            // This used to lay here, every time, which made StreakStep the length of every
+            // streak in the mod rather than the shortest one. Half a metre of dead straight
+            // line down a shutter came out as seven separate decals laid end to end, all of
+            // them the same colour, all of them collinear -- seven things in a pool of two
+            // thousand doing the work of one.
+            //
+            // So the streak keeps growing while it is still honest to draw it as one quad: it
+            // is straight, it is not overlong, and it has not been holding paint back long
+            // enough to feel like lag. The FIRST of those is the real one -- see StreakBend.
+            // The other two are ceilings so nothing can grow forever.
+            //
+            // The direction is taken once, here, at the first point far enough away to have a
+            // reliable one. Taken per tick it would be the direction of a millimetre of hand
+            // movement, which is noise.
+            if (_streakDir.LengthSquared() < 0.5f)
+            {
+                _streakDir = at - _streakFrom;
+                _streakDir.Normalize();
+            }
+            else if (span < size * _cfg.StreakLongest &&
+                     now - _streakBegan < _cfg.StreakHoldMs &&
+                     !Bent(at, size))
+            {
+                // Still growing. Nothing is drawn and -- this is the point -- nothing is
+                // dabbed either, so the whole run stays one decal.
+                return true;
             }
 
             // A flick across a courtyard is not a stroke, and joining those two points draws a
@@ -537,9 +569,35 @@ namespace Hoodrich.Paint
                           c.R / 255f, c.G / 255f, c.B / 255f, hit.Entity);
 
             _streakFrom = at;
+            _streakDir = Vector3.Zero;
+            _streakBegan = now;
             _paintedAt = now;
 
             return true;
+        }
+
+        /// <summary>
+        /// Whether the stroke has bent far enough that one straight quad would lie about it.
+        ///
+        /// MEASURES THE ERROR ITSELF RATHER THAN AN ANGLE. A quad drawn from the start of the
+        /// streak along the direction it set off in is a straight line; the hand is wherever it
+        /// is. The distance between the two is exactly what stretching would get wrong, in
+        /// metres, and comparing THAT to the size of a mark answers the only question that
+        /// matters -- would anybody see it.
+        ///
+        /// An angle would not: ten degrees is nothing over five centimetres and a visible
+        /// corner over a metre, so a fixed angle would cut short strokes that were fine and let
+        /// long ones cut the corners off letters.
+        /// </summary>
+        private bool Bent(Vector3 at, float size)
+        {
+            var off = at - _streakFrom;
+
+            // Along the line, then what is left over -- which is the sideways miss.
+            var down = Vector3.Dot(off, _streakDir);
+            var side = (off - _streakDir * down).Length();
+
+            return side > size * _cfg.StreakBend;
         }
 
         /// <summary>
@@ -685,6 +743,8 @@ namespace Hoodrich.Paint
 
         // Where the streak being laid started, and when anything was last put down. See Dab.
         private Vector3 _streakFrom;
+        private Vector3 _streakDir;
+        private int _streakBegan;
         private bool _streaking;
         private int _paintedAt;
 

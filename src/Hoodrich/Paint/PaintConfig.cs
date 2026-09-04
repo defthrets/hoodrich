@@ -294,6 +294,42 @@
         public float StreakStep = 0.7f;
 
         /// <summary>
+        /// How long ONE streak may run, as a multiple of the mark, before it is cut.
+        ///
+        /// StreakStep above is now the SHORTEST a streak may be, not the length of every one.
+        /// A stroke that stays straight keeps growing the same decal up to this, so a metre of
+        /// clean line down the side of a shutter costs one mark instead of seven.
+        ///
+        /// FOUR IS A LOOK DECISION AS MUCH AS A BUDGET ONE. The texture is a splatter, and a
+        /// splatter stretched four times reads as a drawn line; stretched twenty it reads as a
+        /// smear. Push it in the ini if you want cheaper walls and can live with flatter paint.
+        /// </summary>
+        public float StreakLongest = 4f;
+
+        /// <summary>
+        /// How far the newest point may sit off the straight line before the streak is cut.
+        ///
+        /// A streak is a STRAIGHT quad, so a long one laid across a curve cuts the corner off
+        /// it. This measures exactly that error -- the sideways distance from the line the quad
+        /// would draw to where the hand actually is -- and cuts the streak when it grows past
+        /// half a mark, which is inside the overlap the marks already have and so cannot show.
+        ///
+        /// It is why the length above can be generous: straight sweeps and long letter strokes
+        /// take the whole of it, and the round of a letter gets cut short automatically.
+        /// </summary>
+        public float StreakBend = 0.45f;
+
+        /// <summary>
+        /// The longest a growing streak may hold paint back, whatever else is true.
+        ///
+        /// Nothing is drawn while a streak is still growing, so without this a slow hand on a
+        /// long straight would see the paint arrive a second behind the reticle. A fifth of a
+        /// second is under the threshold where a hand notices lag, and a fast sweep -- which is
+        /// where the marks pile up -- still merges a dozen ticks into one decal.
+        /// </summary>
+        public int StreakHoldMs = 220;
+
+        /// <summary>
         /// How long the spray may put nothing down before a plain round mark is laid anyway.
         ///
         /// Standing still, the reticle never travels, so nothing would ever meet the step above
