@@ -802,8 +802,16 @@ namespace Hoodrich
                     //
                     // Forward 1.4m along his own heading, which walks him out from the couch
                     // into the group rather than leaving him pressed against the arm of it.
+                    //
+                    // AND HE IS BACK ON IT, BY ASKING RATHER THAN BY COORDINATE. What went
+                    // wrong the first time was the seat being a number typed into this file:
+                    // it put him on the arm, and moving him off was the only fix available.
+                    // Seating measures whichever couch this install actually spawned, after it
+                    // has been dropped and frozen, and hands out the cushions on it -- so the
+                    // seat is wherever the couch really is, and if the couch is not there he
+                    // stands on this mark with his drink exactly as he does now.
                     .Stand(new Vector3(-201.910f, -1724.694f, 32.664f), 295.109f,
-                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false)
+                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false, sit: true)
 
                     // Stood in the group, talking. HANG_OUT_STREET is the loose-limbed
                     // gesturing idle the game uses for people in a conversation -- MOBILE is
@@ -812,8 +820,12 @@ namespace Hoodrich
                     // Turning a pistol over in his hands. Armed, but with a pistol rather than
                     // the block's usual rifle -- a man at a party with a choppa out is not at
                     // the party.
+                    // Sat down if there is anywhere -- he is the other one in reach of the
+                    // couch, and a man turning a pistol over on a couch at a house party is
+                    // considerably more at the party than the same man doing it on his feet.
                     .Stand(new Vector3(-203.980f, -1730.601f, 32.664f), 58.749f,
-                           "WORLD_HUMAN_GUARD_STAND", Fam(1), weapon: "WEAPON_PISTOL")
+                           "WORLD_HUMAN_GUARD_STAND", Fam(1), weapon: "WEAPON_PISTOL",
+                           sit: true)
 
                     // On the wall at the back of the lot, smoking, looking out at the freeway.
                     .Stand(new Vector3(-205.225f, -1732.264f, 32.664f), 315.516f,
@@ -1315,6 +1327,24 @@ namespace Hoodrich
                                          "prop_protest_table_01",
                                          "prop_table_04",
                                          "prop_table_03"));
+
+                // And a chair at it, on the far side from the couch.
+                //
+                // THE ONLY REASON IT IS HERE IS THAT SOMEBODY CAN USE IT. Seating hands out the
+                // cushions on anything with a seat in its name, so this is a place at the party
+                // rather than another shape in the yard -- and a table with a couch on one side
+                // and nothing on the other was always half an arrangement.
+                //
+                // Placed by eye off the table's own coordinate, 1.1m out along the way it
+                // faces, same as the stove is placed off the couch in Lamar's yard. The far
+                // side because the couch is 0.7m off the near one and two seats through each
+                // other is worse than one. Send a HUD readout from where it should stand and
+                // it moves.
+                _scenery.Add(new Fixture(new Vector3(-204.919f, -1727.050f, 32.664f), 294.060f,
+                                         "prop_chair_01a",
+                                         "prop_ld_farm_chair01",
+                                         "prop_chair_02",
+                                         "prop_old_deck_chair"));
 
                 // And another box of weight against the back wall, by the shutter.
                 _scenery.Add(new Fixture(new Vector3(-205.039f, -1708.503f, 32.664f), 217.911f,

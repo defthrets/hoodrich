@@ -150,6 +150,12 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _prop.Handle);
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, _prop.Handle, true);
 
+                    // MEASURED AFTER IT IS SETTLED, NOT BEFORE. Both calls above move it --
+                    // one drops it onto the ground and the other pins it there -- and a seat
+                    // worked out from where the prop was asked to go rather than where it
+                    // ended up is a seat hanging in the air above a couch that sank.
+                    if (Seating.IsSeat(name)) Seating.Offer(this, _prop, name);
+
                     Log.Info("Fixture " + name + " placed at " + _where + ".");
                     return;
                 }
@@ -164,6 +170,11 @@ namespace Hoodrich.Locations
 
         private void Clear()
         {
+            // Before the prop goes, so nobody is left holding a seat on a couch that is no
+            // longer in the world. Cheap, unconditional, and safe on a fixture that never
+            // offered any.
+            Seating.Withdraw(this);
+
             try
             {
                 if (_prop != null && _prop.Exists())

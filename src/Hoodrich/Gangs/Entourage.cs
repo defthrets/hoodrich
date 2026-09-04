@@ -4,6 +4,7 @@ using GTA;
 using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
+using Hoodrich.Locations;
 
 namespace Hoodrich.Gangs
 {
@@ -373,8 +374,9 @@ namespace Hoodrich.Gangs
         public Entourage Stand(Vector3 where, float facing, string scenario,
                                string[] models = null, bool armed = true, bool onProp = false,
                                string[] anim = null, string weapon = null, bool nights = false,
-                               float wander = 0f, bool party = false)
+                               float wander = 0f, bool party = false, bool sit = false)
         {
+            _sits.Add(sit);
             _allNight.Add(nights);
             _stations.Add(where);
             _facings.Add(facing);
@@ -927,10 +929,65 @@ namespace Hoodrich.Gangs
                     // and the next pass tries again -- by which time the dict has usually landed.
                 }
 
+                // ---- SOMEWHERE REAL TO SIT, IF THERE IS ANY NEAR HIM ----
+                //
+                // The couches were always there. Fixture drags one into each courtyard and its
+                // own comment says the point of it is that it does nothing, which was fine
+                // while it was scenery and stopped being fine the moment there were six people
+                // stood round it holding drinks. A couch that everybody at the party ignores
+                // is worse than no couch.
+                //
+                // ASKED FOR RATHER THAN AUTHORED, because a seat is not a property of the man:
+                // it is a property of what happens to be in the yard, and what is in the yard
+                // depends on which couch model this install has and where it settled when it
+                // was dropped. Seating measures the prop that actually spawned and hands out
+                // the cushions on it, one to a person.
+                //
+                // It falls straight through when there is nothing -- no couch, all of them
+                // taken, or a station too far from one -- and he does what he did before.
+                if (!seated && Sits(index))
+                {
+                    var cushion = Seating.Take(ped, at, SitRange);
+
+                    if (cushion != null)
+                    {
+                        at = cushion.At;
+                        facing = cushion.Facing;
+                        seated = true;
+
+                        // His own scenario is a standing one -- drinking, smoking, guarding --
+                        // and handing a standing scenario to the seated native gets a man
+                        // standing at the coordinates of a cushion. The seat replaces it.
+                        scenario = SeatDoing[_seatPick % SeatDoing.Length];
+                    }
+                }
+
                 if (seated)
                 {
                     Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, ped.Handle, scenario,
                                   at.X, at.Y, at.Z, facing, 0, true, true);
+
+                    // WHETHER IT TOOK, ASKED LATER RATHER THAN NOW. A scenario reports nothing
+                    // on the frame it is issued, so testing here would fail every time and
+                    // walk the ladder to its end on the first pass. Settle re-enters this
+                    // method whenever task 118 has gone, which is exactly the condition that
+                    // means the last one did not take -- so stepping the pick there costs
+                    // nothing and gets a working name within a couple of seconds.
+                    if (Sits(index) && !Function.Call<bool>(Hash.IS_PED_USING_SCENARIO,
+                                                            ped.Handle, scenario))
+                    {
+                        _seatTried++;
+
+                        if (_seatTried > SeatGiveUp)
+                        {
+                            _seatTried = 0;
+                            _seatPick++;
+
+                            Log.Info("entourage: " + _who + " -- nobody will sit with " +
+                                     scenario + ", trying the next.");
+                        }
+                    }
+
                     return;
                 }
 
@@ -948,6 +1005,46 @@ namespace Hoodrich.Gangs
         {
             return index < _onProp.Count && _onProp[index];
         }
+
+        /// <summary>Whether station i would rather be sat on real furniture.</summary>
+        private bool Sits(int index)
+        {
+            return index < _sits.Count && _sits[index];
+        }
+
+        /// <summary>Which stations would take a seat if one were going.</summary>
+        private readonly List<bool> _sits = new List<bool>();
+
+        /// <summary>Which seat scenario is being tried, and how many passes it has had.</summary>
+        private int _seatPick;
+        private int _seatTried;
+
+        private const int SeatGiveUp = 8;
+
+        /// <summary>
+        /// How far a man will go for somewhere to sit.
+        ///
+        /// UNDER THE LEASH ON PURPOSE. Settle walks anybody more than DriftRange from his mark
+        /// back to it, so a cushion further away than that is a man being pulled off the couch
+        /// by one part of this file and sat back down by another, forever. Four metres is well
+        /// inside five and still reaches the couch from anywhere anybody is stood round it.
+        /// </summary>
+        private const float SitRange = 4f;
+
+        /// <summary>
+        /// The scenario for somebody sat on something that has no scenario of its own.
+        ///
+        /// A ladder, because a name that is not in this install is accepted in silence and
+        /// plays nothing -- the same trap the anim dictionaries had. CHAIR is the one that
+        /// should take; the other two exist so a bad install degrades to a man sat down rather
+        /// than a man stood in a couch.
+        /// </summary>
+        private static readonly string[] SeatDoing =
+        {
+            "PROP_HUMAN_SEAT_CHAIR",
+            "PROP_HUMAN_SEAT_BENCH",
+            "PROP_HUMAN_SEAT_CHAIR_MP_PLAYER",
+        };
 
         /// <summary>Puts anybody who has wandered back on their mark.</summary>
         /// <summary>
