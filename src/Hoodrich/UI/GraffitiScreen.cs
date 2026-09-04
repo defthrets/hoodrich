@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using GTA;
 using GTA.Native;
@@ -108,6 +108,13 @@ namespace Hoodrich.UI
 
         private int _pick = 3;
         private Row _row = Row.Swatches;
+
+        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        private int _lastRow = -1;
+        private int _rowAt;
+
+        /// <summary>The cursor frame that glides between the swatch and the buttons. See UI.Glide.</summary>
+        private readonly Glide _glide = new Glide();
         private int _openedAt;
 
         private int _shakeFrom = int.MinValue / 2;
@@ -140,6 +147,10 @@ namespace Hoodrich.UI
             _curtain.Open();
             _openedAt = Game.GameTime;
             _armed = false;
+
+            _lastRow = -1;
+            _rowAt = Game.GameTime;
+            _glide.Reset();
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -274,6 +285,8 @@ namespace Hoodrich.UI
             if (n < 0) n = LastRow;
             if (n > LastRow) n = 0;
 
+            _lastRow = (int)_row;
+            _rowAt = Game.GameTime;
             _row = (Row)n;
 
             // Walking away from the wipe forgets that it was armed.
@@ -316,8 +329,11 @@ namespace Hoodrich.UI
             var height = 0.340f + SwatchH + ButtonH * 4f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Hud.RectFrom(left, top, width, height, Palette.Hub);
-            Corners(left, top, width, height);
+            Warm.Panel(left, top, width, height);
+
+            _glide.Begin();
+
+            var grown = Warm.Grown(_rowAt);
 
             var x = left + pad;
             var right = left + width - pad;
@@ -384,7 +400,7 @@ namespace Hoodrich.UI
             if ((frame == null || !Hud.File(frame, mx, my, logoW, LogoH, spin, Palette.Text)) &&
                 !Hud.File("graffiti.png", mx, my, logoW, LogoH, spin, Palette.Text))
             {
-                Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Text,
+                Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Gold,
                          Hud.FontCursive, centre: false);
             }
 
@@ -433,8 +449,10 @@ namespace Hoodrich.UI
 
                 if (on)
                 {
-                    Outline(sx - 0.0022f, sy - 0.0022f, each + 0.0044f, sh + 0.0044f, 0.0026f,
-                            focused ? Palette.Accent : Palette.TextDim);
+                    // The frame does the pointing while the swatch row has the cursor; a quiet
+                    // ring says which colour is loaded once it has moved down to the buttons.
+                    if (focused) _glide.Target(sx - 0.0022f, sy - 0.0022f, each + 0.0044f, sh + 0.0044f);
+                    else Outline(sx - 0.0022f, sy - 0.0022f, each + 0.0044f, sh + 0.0044f, 0.0026f, Palette.TextDim);
                 }
             }
 
@@ -451,27 +469,36 @@ namespace Hoodrich.UI
             // A cap sets the NARROWEST line the can can draw, not the widest -- a fat one
             // cannot do fine work however close you hold it, while the far end stays governed
             // by how far off the wall you are standing.
-            CapRow(x, right, y);
+            CapRow(x, right, y, Lit(Row.Cap, grown));
 
             y += ButtonH;
 
-            Button(x, right, y, _row == Row.TakeCan, "TAKE A SPRAY CAN",
+            Button(x, right, y, _row == Row.TakeCan, Lit(Row.TakeCan, grown), "TAKE A SPRAY CAN",
                    has && _cfg.SprayCanLook ? "IN HAND" : "ENTER", false);
 
             y += ButtonH;
 
-            Button(x, right, y, _row == Row.TakeExt, "TAKE AN EXTINGUISHER",
+            Button(x, right, y, _row == Row.TakeExt, Lit(Row.TakeExt, grown), "TAKE AN EXTINGUISHER",
                    has && !_cfg.SprayCanLook ? "IN HAND" : "ENTER", false);
 
             y += ButtonH;
 
             // ---- wipe it all ----
-            Button(x, right, y, _row == Row.Clear,
+            Button(x, right, y, _row == Row.Clear, Lit(Row.Clear, grown),
                    _armed ? "PRESS AGAIN -- THIS CANNOT BE UNDONE" : "CLEAR EVERY WALL",
                    _armed ? "SURE?" : "ENTER", _armed);
 
             Hud.Text("UP/DOWN  MOVE      LEFT/RIGHT  CHANGE      ENTER  TAKE IT      BACKSPACE  BACK",
                      x, top + height - 0.028f, 0.22f, Palette.TextDim, Hud.FontLabel, centre: false);
+
+            // Last, so it rides over whatever it is pointing at.
+            _glide.Draw();
+        }
+
+        /// <summary>How lit a button row is: coming up under the cursor, going down where it just was.</summary>
+        private float Lit(Row row, float grown)
+        {
+            return Warm.Lit((int)row, (int)_row, _lastRow, grown);
         }
 
         /// <summary>
@@ -485,7 +512,7 @@ namespace Hoodrich.UI
         /// Drawn the same way every other icon in this mod is: white art on transparent,
         /// tinted at draw time, so one file is both the dim one and the loaded colour.
         /// </summary>
-        private void CapRow(float x, float right, float y)
+        private void CapRow(float x, float right, float y, float rowLit)
         {
             var active = _row == Row.Cap;
 
@@ -504,7 +531,7 @@ namespace Hoodrich.UI
 
             // Labelled like every other row, with no hint -- three pictures are going where
             // that word would have been.
-            Button(x, right, y, active, "CAP SIZE", "", false);
+            Button(x, right, y, active, rowLit, "CAP SIZE", "", false);
 
             var caps = Caps.All;
 
@@ -531,7 +558,7 @@ namespace Hoodrich.UI
                 if (on)
                 {
                     Hud.RectFrom(left, top, wide, side,
-                                 Color.FromArgb(58 * lit / 255, 255, 255, 255));
+                                 Palette.Alpha(Palette.Gold, 46 * lit / 255));
                 }
 
                 var chip = on ? Legible(Colour) : Palette.TextDim;
@@ -553,23 +580,37 @@ namespace Hoodrich.UI
             }
         }
 
-        private void Button(float x, float right, float y, bool active, string label,
+        private void Button(float x, float right, float y, bool active, float lit, string label,
                             string hint, bool warn)
         {
-            if (active)
+            var bx = x - Hud.ToX(0.008f);
+            var bw = (right - x) + Hud.ToX(0.016f);
+
+            // The plate comes up under the row the cursor lands on and goes down under the one
+            // it left, and the frame travels between them. The wipe is the exception: an
+            // armed, irreversible thing keeps its red, because gold under "this cannot be
+            // undone" is the wrong colour for the sentence.
+            if (warn)
             {
-                Hud.RectFrom(x - Hud.ToX(0.008f), y, (right - x) + Hud.ToX(0.016f), ButtonH,
-                             Color.FromArgb(46, 255, 255, 255));
-                Hud.RectFrom(x - Hud.ToX(0.008f), y, 0.0022f, ButtonH,
-                             warn ? Palette.Danger : Legible(Colour));
+                Hud.RectFrom(bx, y, bw, ButtonH, Palette.Alpha(Palette.Danger, (int)(40f * lit)));
+                Hud.RectFrom(bx, y, 0.0022f, ButtonH, Palette.Alpha(Palette.Danger, (int)(255f * lit)));
+            }
+            else
+            {
+                Warm.Plate(bx, y, bw, ButtonH, lit);
+                Warm.Sheen(bx, y, bw, ButtonH, lit);
             }
 
-            var ink = warn ? Palette.Danger : active ? Palette.Text : Palette.TextDim;
+            if (active) _glide.Target(bx, y, bw, ButtonH);
+
+            var dark = warn ? 0f : lit;
+
+            var ink = Warm.Ink(warn ? Palette.Danger : active ? Palette.Text : Palette.TextDim, dark);
 
             Hud.Text(label, x, y + 0.010f, 0.30f, ink, Hud.FontBody, centre: false);
 
             Hud.TextRight(hint, right, y + 0.011f, 0.24f,
-                          warn ? Palette.Danger : active ? Legible(Colour) : Palette.TextDim,
+                          Warm.Ink(warn ? Palette.Danger : active ? Legible(Colour) : Palette.TextDim, dark),
                           Hud.FontLabel);
         }
 
@@ -715,28 +756,6 @@ namespace Hoodrich.UI
                                   (int)(c.R + (255 - c.R) * t),
                                   (int)(c.G + (255 - c.G) * t),
                                   (int)(c.B + (255 - c.B) * t));
-        }
-
-        /// <summary>Corner ticks rather than a full frame, the way every panel here is edged.</summary>
-        private static void Corners(float left, float top, float w, float h)
-        {
-            var c = Palette.Accent;
-            var len = 0.022f;
-            var lenX = Hud.ToX(len);
-            var t = 0.0022f;
-            var tX = Hud.ToX(t);
-
-            Hud.RectFrom(left, top, lenX, t, c);
-            Hud.RectFrom(left, top, tX, len, c);
-
-            Hud.RectFrom(left + w - lenX, top, lenX, t, c);
-            Hud.RectFrom(left + w - tX, top, tX, len, c);
-
-            Hud.RectFrom(left, top + h - t, lenX, t, c);
-            Hud.RectFrom(left, top + h - len, tX, len, c);
-
-            Hud.RectFrom(left + w - lenX, top + h - t, lenX, t, c);
-            Hud.RectFrom(left + w - tX, top + h - len, tX, len, c);
         }
     }
 }

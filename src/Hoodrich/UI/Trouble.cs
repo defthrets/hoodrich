@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -102,8 +102,14 @@ namespace Hoodrich.UI
                 var top = 0.5f - h * 0.5f;
                 var left = 0.5f - PanelW * 0.5f;
 
-                Hoodrich.UI.Draw.RectFrom(left, top, PanelW, h, Color.FromArgb(238, 8, 8, 8));
-                Hoodrich.UI.Draw.RectFrom(left, top, PanelW, 0.003f, Palette.Danger);
+                // The same rounded panel as everything else, with the red kept for the rule
+                // under the headline rather than a bar along the top.
+                Warm.Panel(left, top, PanelW, h);
+
+                Hoodrich.UI.Draw.RectFrom(left + Pad, top + Pad + TitleH - 0.008f, PanelW - Pad * 2f,
+                                          0.0012f, Warm.Hairline);
+                Hoodrich.UI.Draw.RectFrom(left + Pad, top + Pad + TitleH - 0.0084f, (PanelW - Pad * 2f) * 0.14f,
+                                          0.0020f, Palette.Alpha(Palette.Danger, 215));
 
                 // LEFT ALIGNED, AND THIS IS THE WHOLE FIX FOR THE LAYOUT.
                 //
