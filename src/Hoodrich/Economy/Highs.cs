@@ -99,10 +99,33 @@ namespace Hoodrich.Economy
         /// <summary>A joint, with the game's own lit joint in his hand. See Ritual.</summary>
         private static readonly Ritual.Recipe Joint = new Ritual.Recipe
         {
-            // No dictionary named at all, so it goes straight to the scenario -- which is the
-            // RIGHT answer here and the only place in this file where it is. The smoking-pot
-            // scenario hands him a lit joint, lifts it to his mouth and blows the smoke out,
-            // and no anim-and-prop we could assemble would be closer.
+            // THE SCENARIO WAS THE PROBLEM AND IT LOOKED LIKE THE ANSWER.
+            //
+            // "No dictionary at all, straight to WORLD_HUMAN_SMOKING_POT" is what this said
+            // for weeks, on the reasoning that the game's own scenario hands a ped a lit joint
+            // and does it better than anything we could assemble. That is true of a PED. The
+            // player is not one: IS_PED_USING_SCENARIO answers yes -- the check in Rituals has
+            // never once complained about this one -- and nothing appears in his hand and
+            // nothing plays. He is in a scenario that is not being performed.
+            //
+            // Which is why the diagnostic said the opposite of what the eye said, twice.
+            //
+            // So weed does what everything else in this file already does, and what the log
+            // shows working: a real dictionary, played directly, with a real prop bolted to
+            // his hand. amb@world_human_aa_smoke is the roll-up idle; the plain smoking base
+            // underneath it is proven -- it is the one the coke and meth rituals land on.
+            Dicts = new[]
+            {
+                "amb@world_human_aa_smoke@male@idle_a",
+                "amb@world_human_smoking@male@male_a@base",
+                "amb@world_human_smoking_pot@male@male_a@base"
+            },
+            Clip = "base",
+            Props = new[] { "p_cs_joint_01", "prop_cs_ciggy_01", "prop_cigar_01" },
+            Sits = new Vector3(0.02f, 0.01f, 0.0f),
+
+            // Still named, because a fallback that never runs costs nothing and an install
+            // missing all three dictionaries is better off in a scenario than stood still.
             Scenario = "WORLD_HUMAN_SMOKING_POT",
 
             // The first drag is what does it; the rest is standing there smoking. See Linger.
@@ -130,6 +153,18 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Ritual.Recipe Blunt = new Ritual.Recipe
         {
+            // Same motion as the joint and a fatter thing in his hand, which is the only
+            // difference between the two words that survives at arm's length. See Joint for
+            // why neither of them is a scenario any more.
+            Dicts = new[]
+            {
+                "amb@world_human_aa_smoke@male@idle_a",
+                "amb@world_human_smoking@male@male_a@base",
+                "amb@world_human_smoking_pot@male@male_a@base"
+            },
+            Clip = "base",
+            Props = new[] { "prop_cigar_01", "prop_cigar_02", "p_cs_joint_01", "prop_cs_ciggy_01" },
+            Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING_POT",
             Ms = 4600,
             Linger = SmokeMs
@@ -159,6 +194,70 @@ namespace Hoodrich.Economy
         /// joint. At arm's length a small white object held to the mouth is the shape of the
         /// action, and the shape of the action is what was missing.
         /// </summary>
+        /// <summary>
+        /// The meth pipe. Trevor's own, which is the one animation in the game that is
+        /// literally this.
+        ///
+        /// switch@trevor@trev_smoking_meth is a cutscene switch clip -- it is what the game
+        /// plays when you drop in on Trevor mid-binge -- and it is a man holding a pipe up and
+        /// drawing on it. The log has it landing, so it is first here rather than one rung
+        /// down a ladder shared with crack.
+        ///
+        /// NO METH PIPE PROP EXISTS ON THIS INSTALL and the log said so plainly:
+        /// "None of these props exist: prop_meth_pipe, prop_cs_crack_pipe, p_crack_pipe_01."
+        /// Three guesses, three misses. The bottle fallback is not a pipe, but a small pale
+        /// object held to the mouth under a pipe animation is the shape of the act, and the
+        /// shape is what reads at arm's length.
+        /// </summary>
+        private static readonly Ritual.Recipe MethPipe = new Ritual.Recipe
+        {
+            Dicts = new[]
+            {
+                "switch@trevor@trev_smoking_meth",
+                "amb@world_human_aa_smoke@male@idle_a",
+                "amb@world_human_smoking@male@male_a@base"
+            },
+            Clip = "base",
+            Props = new[]
+            {
+                "prop_meth_pipe", "prop_glass_pipe", "prop_cs_pipe_01",
+                "prop_test_boss_pipe", "prop_cs_ciggy_01"
+            },
+            Sits = new Vector3(0.02f, 0.01f, 0.0f),
+            Scenario = "WORLD_HUMAN_SMOKING",
+            Ms = 4000
+        };
+
+        /// <summary>
+        /// A bump off a key. Hand to the nose, twice, and a sniff.
+        ///
+        /// THERE IS NO SNORTING ANIMATION IN THIS GAME. Nobody in Los Santos does a line on
+        /// camera outside a cutscene, and a cutscene clip is not addressable from here. What
+        /// there is, is a family of hand-to-face idles, and a bump IS a hand-to-face idle with
+        /// a small thing pinched in it -- which is exactly what the meth switch clip does, so
+        /// it leads. The wrap in his other hand does the rest of the explaining.
+        ///
+        /// Short, because a bump is short. Two and a half seconds and he is upright again.
+        /// </summary>
+        private static readonly Ritual.Recipe Bump = new Ritual.Recipe
+        {
+            Dicts = new[]
+            {
+                "switch@trevor@trev_smoking_meth",
+                "amb@world_human_drug_dealer_hard@male@base",
+                "amb@world_human_smoking@male@male_a@base"
+            },
+            Clip = "base",
+            Props = new[]
+            {
+                "prop_coke_block", "prop_meth_bag_01", "prop_cs_package_01",
+                "prop_drug_package_02", "prop_drug_package"
+            },
+            Sits = new Vector3(0.015f, 0.005f, 0.0f),
+            Scenario = "WORLD_HUMAN_DRUG_DEALER",
+            Ms = 2500
+        };
+
         private static readonly Ritual.Recipe Pipe = new Ritual.Recipe
         {
             Dicts = new[]
@@ -224,6 +323,38 @@ namespace Hoodrich.Economy
         /// Nothing about it says beer rather than washing two bars down, and it is a great deal
         /// better than a man swallowing air.
         /// </summary>
+        /// <summary>
+        /// Bars and percs: shaken into a hand and tipped back.
+        ///
+        /// The bottle was doing the work before -- WORLD_HUMAN_DRINKING is a genuinely good
+        /// swallow, head back and all -- but it is a MAN DRINKING A BEER, and washing two
+        /// bars down is not that. The motion wanted is hand to mouth, then head back, and the
+        /// smoking idles are hand-to-mouth: with a pill bottle in the hand instead of a
+        /// cigarette that reads as tipping something in.
+        ///
+        /// Drinking stays as the fallback underneath, because it is still the better half of
+        /// the act and an install missing every dictionary should get the swallow rather than
+        /// a man standing still.
+        /// </summary>
+        private static readonly Ritual.Recipe Pop = new Ritual.Recipe
+        {
+            Dicts = new[]
+            {
+                "amb@world_human_smoking@male@male_a@base",
+                "amb@world_human_drug_dealer@male@base",
+                "amb@world_human_aa_smoke@male@idle_a"
+            },
+            Clip = "base",
+            Props = new[]
+            {
+                "prop_cs_pills", "prop_pills_01", "prop_cs_script_bottle",
+                "prop_pill_bottle_01", "prop_cs_bottle_01"
+            },
+            Sits = new Vector3(0.02f, 0.01f, 0.0f),
+            Scenario = "WORLD_HUMAN_DRINKING",
+            Ms = 2600
+        };
+
         private static readonly Ritual.Recipe Swallow = new Ritual.Recipe
         {
             Scenario = "WORLD_HUMAN_DRINKING",
@@ -254,7 +385,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "ecstasy",
-                Doing = Swallow,
+                Doing = Pop,
                 Cycles = new[] { "drug_flying_01", "drug_flying_base", "drug_wobbly" },
                 Strength = 0.7f,
                 Clipset = "move_m@drunk@moderatedrunk",
@@ -275,7 +406,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "xanax",
-                Doing = Swallow,
+                Doing = Pop,
                 Cycles = new[] { "drug_flying_base", "drug_wobbly" },
                 Strength = 0.6f,
                 Clipset = "move_m@drunk@verydrunk",
@@ -312,7 +443,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "coke",
-                Doing = Line_,
+                Doing = Bump,
 
                 // SPEEDY LIKE THE OTHERS AND BRIGHT LIKE THE BARS, which is a combination none
                 // of the rest have and is the whole character of this one.
@@ -348,7 +479,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "meth",
-                Doing = Pipe,
+                Doing = MethPipe,
                 Cycles = new[] { "spectator10", "drug_drivingfast", "drug_wobbly" },
                 Strength = 0.8f,
 
