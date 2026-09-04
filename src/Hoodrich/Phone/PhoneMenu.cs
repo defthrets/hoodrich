@@ -174,16 +174,22 @@ namespace Hoodrich.Phone
         private const float PopBy = 0.0030f;
 
         /// <summary>
-        /// The phone's own chrome colour: the gold every other screen in the mod is lit with.
+        /// The phone's own green.
         ///
-        /// It was the set's green, and the argument for that -- not money green, spent on
-        /// chrome only, never on a number -- still holds with the colour swapped: this is the
-        /// mark, the bars, the rules and the cursor, and it is the same gold those are on the
-        /// pocket, the stash and the feed. The name is kept so the sixty call sites did not
-        /// have to change for a change of hue.
+        /// Deliberately NOT Palette.Cash. Money green already means money on every other screen
+        /// in this mod, and a handset lit in it would be saying "money" about the clock, the
+        /// signal and the wordmark. This is the SET's green -- whose phone it is -- and it is
+        /// spent on chrome only: the mark, the bars, the rules and the cursor. Never on a
+        /// number, because that is the one place green already means something else.
+        ///
+        /// AND IT STAYS GREEN while every panel in the mod went gold and ember. The phone is
+        /// the one object here that is a THING rather than a screen -- a handset in his hand
+        /// with its own make and its own colour -- and the user asked for it kept. So the
+        /// rails, rules and cursor that used to be white on this handset are green too, rather
+        /// than the panels' gold: one identity per object.
         /// </summary>
-        private static readonly Color Green = Palette.Gold;
-        private static readonly Color GreenDim = Palette.Alpha(Palette.Ember, 170);
+        private static readonly Color Green = Color.FromArgb(255, 108, 196, 106);
+        private static readonly Color GreenDim = Color.FromArgb(150, 66, 124, 68);
 
         /// <summary>One full breath of the wordmark.</summary>
         private const int PulseMs = 2600;
@@ -212,13 +218,8 @@ namespace Hoodrich.Phone
         /// Still a bed rather than a block: white text has to stay readable on it, which is
         /// the whole reason this is not the inverted near-white bar it replaced.
         /// </summary>
-        /// <summary>
-        /// A deep ember bed with the gold round it, now, for the same reason it was a deep green
-        /// bed with the green round it: white text stays readable on it, so the worst a lit row
-        /// can ever look is a row that is merely not highlighted.
-        /// </summary>
-        private static readonly Color Lit = Color.FromArgb(245, 96, 46, 12);
-        private static readonly Color LitEdge = Palette.Gold;
+        private static readonly Color Lit = Color.FromArgb(245, 28, 72, 38);
+        private static readonly Color LitEdge = Color.FromArgb(255, 108, 196, 106);
 
         // ---- state --------------------------------------------------------------
 
@@ -961,7 +962,7 @@ namespace Hoodrich.Phone
             // and losing that to a rolling ticker would be a straight downgrade.
             if (AtHome && Shade(left + pad, top, w - pad * 2f, fade))
             {
-                Hud.RectFrom(left, top + HeaderH - 0.0018f, w, 0.0018f, Fade(Palette.Ember, fade));
+                Hud.RectFrom(left, top + HeaderH - 0.0018f, w, 0.0018f, Fade(Green, fade));
                 return;
             }
 
@@ -976,7 +977,7 @@ namespace Hoodrich.Phone
                          Fade(Palette.TextDim, fade), Hud.FontBody, centre: false);
             }
 
-            Hud.RectFrom(left, top + HeaderH - 0.0018f, w, 0.0018f, Fade(Palette.Ember, fade));
+            Hud.RectFrom(left, top + HeaderH - 0.0018f, w, 0.0018f, Fade(Green, fade));
         }
 
         /// <summary>
@@ -1182,7 +1183,7 @@ namespace Hoodrich.Phone
             // that is enough; in a column of identical bars the eye wants an edge to run down.
             if (on)
             {
-                Hud.RectFrom(x, y, Hud.ToX(0.0030f), h, Fade(Palette.Gold, fade));
+                Hud.RectFrom(x, y, Hud.ToX(0.0030f), h, Fade(Green, fade));
                 Edge(x, y, w, h, TileEdge, Fade(LitEdge, fade));
             }
 
@@ -1614,7 +1615,7 @@ namespace Hoodrich.Phone
 
             if (punch > 0f)
             {
-                art = Blend(art, Color.FromArgb(255, 255, 244, 220), punch);
+                art = Blend(art, Color.FromArgb(255, 240, 255, 240), punch);
             }
 
             Art(item, x + w * 0.5f, y + h * 0.31f, 0.042f * (1f - PunchDip * punch),
@@ -1695,7 +1696,7 @@ namespace Hoodrich.Phone
             var ink = item.Enabled ? Palette.Text : Palette.TextDisabled;
 
             var sub = !item.Enabled ? Palette.TextDisabled
-                    : on ? Palette.Alpha(Palette.Gold, 235)
+                    : on ? Color.FromArgb(235, 176, 214, 178)
                     : Palette.TextDim;
 
             if (item.Tint.HasValue && !on && item.Enabled) ink = item.Tint.Value;
@@ -1781,7 +1782,7 @@ namespace Hoodrich.Phone
             var span = h - barH;
             var at = n - visible <= 0 ? 0f : lvl.Scroll / (float)(n - visible);
 
-            Hud.RectFrom(trackX, top + span * at, trackW, barH, Fade(Palette.Gold, fade));
+            Hud.RectFrom(trackX, top + span * at, trackW, barH, Fade(Green, fade));
         }
 
         // ---- bits ---------------------------------------------------------------
