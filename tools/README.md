@@ -32,3 +32,17 @@ Produces:
 
 If the SDK ever gets repaired, `src\Trapline\Trapline.csproj` builds the same assembly with
 `dotnet build -c Release`.
+
+## The icons
+
+Every PNG in `data\icons` is drawn by `make_icons.py`, from three files of drawings and one
+kit:
+
+- `iconkit.py` -- the rules. White on transparent, tinted at draw time by CustomSprite, in
+  THREE TONES of alpha (body, plane, groove) plus holes; drawn at 512 and written at 128.
+- `icons_a.py` -- the interface, money, places and people. `icons_b.py` -- the product and
+  the tools. `icons_c.py` -- the sets' marks.
+- `make_icons_old.py` -- the 64-pixel stencils this replaced, kept for the record.
+
+`python tools\make_icons.py` redraws the lot; name icons on the command line to redraw just
+those. `make_logo.py` makes the wordmark and prints the aspect to paste into `Draw.cs`.

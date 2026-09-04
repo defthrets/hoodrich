@@ -481,7 +481,7 @@ namespace Hoodrich.UI
         /// expose the source size -- and a wordmark whose proportions are guessed is a wordmark
         /// that is subtly squashed on every screen it appears on.
         /// </summary>
-        public const float WordmarkAspect = 5.2784f;
+        public const float WordmarkAspect = 5.4662f;
 
         /// <summary>
         /// The sprite for a file, made once.

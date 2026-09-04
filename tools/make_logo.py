@@ -35,11 +35,11 @@ OUT = os.path.join(os.path.dirname(HERE), 'data', 'icons')
 TEXT = 'POSTED UP'
 FONT = os.path.join(HERE, 'fonts', 'UnifrakturCook-Bold.ttf')
 
-SIZE = 300          # per-glyph render height, before the arch
-SWEEP = 26.0        # degrees the whole word covers
+SIZE = 420          # per-glyph render height, before the arch -- up from 300, for crisper strokes
+SWEEP = 19.0        # degrees the whole word covers -- a gentler arch than 26, so it sits in a status bar
 SQUEEZE = 1.00      # Fraktur's own width is right; Impact had to be widened
-TRACK = 19          # tuned so the finished aspect lands on what the C# already had
-WIDE = 1024         # the file's width
+TRACK = 13          # tighter than 19: at small sizes the gaps were louder than the letters
+WIDE = 1536         # the file's width -- up from 1024
 
 
 def glyphs(font):
