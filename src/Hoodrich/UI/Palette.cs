@@ -51,6 +51,16 @@ namespace Hoodrich.UI
         public static readonly Color Danger = Color.FromArgb(255, 214, 69, 58);
 
         /// <summary>
+        /// The two warm colours the pocket screen is built on, from the day it stopped being
+        /// white on black. Gold is the light end and ember the hot end: a chosen tile runs
+        /// from one to the other top to bottom, the rules carry a stroke of ember, and the
+        /// frame that glides between tiles is a brighter gold still. Neither MEANS anything
+        /// the way amber and red do above -- they are what that screen is made of.
+        /// </summary>
+        public static readonly Color Gold = Color.FromArgb(255, 250, 196, 64);
+        public static readonly Color Ember = Color.FromArgb(255, 238, 112, 30);
+
+        /// <summary>
         /// The verified blue, and the only blue in the whole palette.
         ///
         /// Deliberately not the accent. Everything else on these screens is white, green, amber

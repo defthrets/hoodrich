@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -54,16 +54,24 @@ namespace Hoodrich.UI
         private const float HeadHeight = 0.160f;
         private const float FootHeight = 0.040f;
 
-        private const float Rule = 0.0016f;
-
-        /// <summary>How long the light takes to go round, and how much of the edge it is.</summary>
-        private const int FrameLapMs = 8000;
-        private const float FrameRun = 0.16f;
-        private const float Tick = 0.024f;
         private const float BarHeight = 0.0075f;
         private const float HeadIcon = 0.016f;
 
         private static readonly Color Hairline = Color.FromArgb(44, 200, 205, 200);
+
+        /// <summary>
+        /// The cursor is a frame that GLIDES from the tile it was on to the tile it is going
+        /// to, rather than appearing on the next one. How thick its rim is, how far the glow
+        /// reaches past it, how long one breath of that glow takes, and what share of the
+        /// remaining distance it closes each sixtieth of a second on the way.
+        /// </summary>
+        private const float CursorRule = 0.0022f;
+        private const float CursorGlow = 0.0030f;
+        private const int PulseMs = 1500;
+        private const float CursorChase = 0.26f;
+
+        /// <summary>How far down the panel the warm wash under the wordmark reaches.</summary>
+        private const float WashDepth = 0.062f;
 
         /// <summary>
         /// What this screen is, in one line, under the mark.
@@ -154,6 +162,16 @@ namespace Hoodrich.UI
         /// <summary>When the cursor last moved, so the tile it landed on can grow into it.</summary>
         private int _pickedAt;
 
+        /// <summary>The tile it was on before that, so its plate goes down as the new one comes up.</summary>
+        private int _lastSelected = -1;
+
+        /// <summary>Where the cursor frame is, and where the tile under the cursor asked it to be.</summary>
+        private float _curX, _curY, _curW, _curH;
+        private bool _curOn;
+
+        private bool _target;
+        private float _tgtX, _tgtY, _tgtW, _tgtH;
+
         /// <summary>How long that takes, and how much bigger the chosen tile's picture gets.</summary>
         private const int PickMs = 150;
         private const float PickGrow = 0.10f;
@@ -174,6 +192,8 @@ namespace Hoodrich.UI
             _bags = bags;
 
             _selected = 0;
+            _lastSelected = -1;
+            _curOn = false;
             _openedAt = Game.GameTime;
             _pickedAt = Game.GameTime;
             _shownAt = Game.GameTime;
@@ -473,6 +493,7 @@ namespace Hoodrich.UI
         {
             if (where == _selected) return;
 
+            _lastSelected = _selected;
             _selected = where;
             _pickedAt = Game.GameTime;
 
@@ -483,6 +504,7 @@ namespace Hoodrich.UI
         {
             if (Places == 0) return;
 
+            _lastSelected = _selected;
             _selected = (_selected + step) % Places;
             if (_selected < 0) _selected += Places;
 
@@ -566,40 +588,37 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
+            // THE BLACK, ROUNDED, AND NOTHING ROUND IT. This panel used to wear a hairline
+            // frame with corner ticks, a stripe along its top edge, a band of light crossing
+            // that stripe and a second light walking the whole perimeter -- four things
+            // happening at the border of a screen whose content is the point. All of it has
+            // gone. An accent with no alpha is Panel's way of being told there is no stripe.
             Hud.Panel(left, top, panelWidth, height,
-                      Color.FromArgb((int)(238f * arrive), 12, 13, 15), Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
+                      Color.FromArgb((int)(238f * arrive), 12, 13, 15), Color.FromArgb(0, 0, 0, 0));
 
-            var barT = (Game.GameTime % SweepMs) / (float)SweepMs;
-            var barW = panelWidth * 0.15f;
-            var barAt = left - barW + (panelWidth + barW) * barT;
-
-            var lit = Math.Max(left, barAt);
-            var out2 = Math.Min(left + panelWidth, barAt + barW);
-
-            if (out2 > lit)
-            {
-                Hud.RectFrom(lit, top, out2 - lit, 0.0028f,
-                             Color.FromArgb((int)(85f * arrive), 255, 255, 255));
-            }
+            // The warmth lives INSIDE instead: an ember wash under the wordmark that has faded
+            // to nothing by the first heading, and the gold and ember on everything that is
+            // yours to pick.
+            Wash(left, top, panelWidth, WashDepth, (int)(30f * arrive));
 
             var x = left + pad;
             var right = left + panelWidth - pad;
             var wide = right - x;
             var middle = left + panelWidth * 0.5f;
 
-            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.TextDim, 180));
+            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Gold, (int)(230f * arrive)));
 
             Hud.Text(Blurb, middle, top + 0.052f, 0.29f,
                      Palette.Alpha(Palette.TextDim, 170), Hud.FontChaletLondon);
 
-            Hud.RectFrom(x, top + 0.078f, wide, 0.0012f, Color.FromArgb(46, 255, 255, 255));
+            WarmRule(x, top + 0.078f, wide, arrive);
 
             var y = top + 0.088f;
 
             var ix = x;
 
             if (Hud.File("stash.png", x + Hud.ToX(HeadIcon) * 0.5f, y + 0.007f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Accent, 200)))
+                         Palette.Alpha(Palette.Gold, 225)))
             {
                 ix = x + Hud.ToX(HeadIcon) + 0.006f;
             }
@@ -613,10 +632,12 @@ namespace Hoodrich.UI
 
             Carrying(x, wide, y);
 
-            y = top + HeadHeight - 0.008f;
-            Hud.RectFrom(x, y, wide, 0.0012f, Hairline);
+            WarmRule(x, top + HeadHeight - 0.008f, wide, arrive);
 
             y = top + HeadHeight;
+
+            // Nothing wants the cursor until a tile asks for it this frame.
+            _target = false;
 
             if (_rows.Count == 0)
             {
@@ -649,19 +670,12 @@ namespace Hoodrich.UI
 
             var footY = top + height - FootHeight + 0.008f;
 
-            Hud.RectFrom(x, footY, wide, 0.0010f, Hairline);
+            WarmRule(x, footY, wide, arrive);
 
             Keys(x, right, footY + 0.008f);
 
-            // The light going round it. Slow -- eight seconds a lap -- because this is a
-            // panel you read rather than a thing you are waiting on, and a short segment so it
-            // is a highlight travelling the edge rather than the edge itself changing colour.
-            var lap = (Game.GameTime % FrameLapMs) / (float)FrameLapMs;
-
-            Hud.FrameLive(left, top, panelWidth, height,
-                          Color.FromArgb(150, 90, 215, 235), Palette.Accent, Rule, Tick,
-                          lap, FrameRun,
-                          Palette.Alpha(Palette.Accent, (int)(200f * arrive)));
+            // Last, so it rides over the tiles it is pointing at.
+            Cursor(arrive);
         }
 
         /// <summary>
@@ -734,7 +748,7 @@ namespace Hoodrich.UI
         /// </summary>
         private void FoodBand(float x, float width, float y, float arrive)
         {
-            Hud.RectFrom(x, y, width, 0.0012f, Hairline);
+            WarmRule(x, y, width, arrive);
 
             y += 0.012f;
 
@@ -750,7 +764,7 @@ namespace Hoodrich.UI
 
             if (!string.IsNullOrEmpty(mark) &&
                 Hud.File(mark, x + Hud.ToX(0.014f) * 0.5f, y + 0.007f, 0.014f, 0f,
-                         Palette.Alpha(Palette.Accent, (int)(220f * arrive))))
+                         Palette.Alpha(Palette.Gold, (int)(230f * arrive))))
             {
                 tx = x + Hud.ToX(0.014f) + 0.005f;
             }
@@ -768,7 +782,7 @@ namespace Hoodrich.UI
             var full = slots > 0 && carried >= slots;
 
             Hud.TextRight(carried + " / " + slots, x + width, y, 0.24f,
-                          full ? Palette.Warn : Palette.TextDim, Hud.FontLabel);
+                          full ? Palette.Ember : Palette.TextDim, Hud.FontLabel);
 
             var tileY = y + FoodHead;
 
@@ -782,9 +796,8 @@ namespace Hoodrich.UI
             // the same trick the shop shelf uses on its row pictures.
             var age = Game.GameTime - _shownAt;
 
-            // The travelling sheen, on the same clock as the one crossing the panel above, so
-            // the two are never quite in step and never quite unrelated.
             var sweep = (Game.GameTime % SweepMs) / (float)SweepMs;
+            var grown = Grown();
 
             for (var i = 0; i < _food.Count; i++)
             {
@@ -804,57 +817,38 @@ namespace Hoodrich.UI
                 var tileTop = tileY + EnterRise * 0.5f * (1f - land);
 
                 var tx2 = x + i * (tile + gap);
-                var picked = _selected - _rows.Count == i;
 
-                // The plate. Amber under the cursor, and a dark tile with a hairline otherwise
-                // -- an unfilled square with only an outline reads as an empty slot.
+                var at = _rows.Count + i;
+                var picked = _selected == at;
+                var lit = Lit(at, grown);
+
+                // The dark tile with its hairline, always; the warm plate comes up over it as
+                // the cursor arrives and goes back down where the cursor just was. Two things
+                // fading rather than one thing switching, so the eye is led rather than told.
                 Hud.RectFrom(tx2, tileTop, tile, FoodTile,
-                             picked ? Color.FromArgb((int)(235f * show), 240, 170, 56)
-                                    : Color.FromArgb((int)(38f * show), 255, 255, 255));
+                             Color.FromArgb((int)(38f * show), 255, 255, 255));
+                Hud.RectFrom(tx2, tileTop, tile, 0.0012f,
+                             Color.FromArgb((int)(70f * (1f - lit) * show), 255, 255, 255));
 
-                if (!picked)
-                {
-                    Hud.RectFrom(tx2, tileTop, tile, 0.0012f,
-                                 Color.FromArgb((int)(70f * show), 255, 255, 255));
-                }
-                else
-                {
-                    // A band of light crossing the chosen tile. Clipped to the tile rather
-                    // than drawn over it, or it is a stripe on the panel that happens to pass
-                    // a tile on its way.
-                    var bandW = tile * 0.34f;
-                    var bandAt = tx2 - bandW + (tile + bandW) * sweep;
+                Plate(tx2, tileTop, tile, FoodTile, lit * show);
 
-                    var lo = Math.Max(tx2, bandAt);
-                    var hi = Math.Min(tx2 + tile, bandAt + bandW);
+                if (lit > 0.01f) Sheen(tx2, tileTop, tile, FoodTile, sweep, lit * show);
 
-                    if (hi > lo)
-                    {
-                        Hud.RectFrom(lo, tileTop, hi - lo, FoodTile,
-                                     Color.FromArgb((int)(40f * show), 255, 255, 255));
-                    }
-                }
+                if (picked) Target(tx2, tileTop, tile, FoodTile);
 
                 var art = Core.Larder.IconOf(id);
 
                 if (!string.IsNullOrEmpty(art))
                 {
-                    // THE ONE UNDER THE CURSOR GROWS INTO IT. The plate changing colour is the
-                    // whole of the feedback otherwise, and on a strip of four squares that is a
-                    // colour swap you can miss while your eyes are on the caption underneath.
-                    // A picture that swells over a sixth of a second is movement, and movement
-                    // is what the eye actually catches.
-                    var held = Game.GameTime - _pickedAt;
-                    var grown = held >= PickMs ? 1f : held / (float)PickMs;
-
-                    grown = 1f - (1f - grown) * (1f - grown);
-
+                    // THE ONE UNDER THE CURSOR GROWS INTO IT. A picture that swells over a
+                    // sixth of a second is movement, and movement is what the eye catches.
                     var swell = picked ? 1f + PickGrow * grown : 1f;
-                    // Near-black on the amber tile, the item's own colour otherwise. The art is
-                    // white and CustomSprite multiplies, so one file does both.
-                    var ink = picked
-                        ? Color.FromArgb((int)(255f * show), 20, 18, 14)
-                        : Palette.Alpha(Core.Larder.TintOf(id), (int)(238f * show));
+
+                    // The item's own colour on the dark tile, near-black once the plate is
+                    // under it, and every shade between while the plate is on its way. The art
+                    // is white and CustomSprite multiplies, so one file does all of it.
+                    var ink = Lerp(Palette.Alpha(Core.Larder.TintOf(id), (int)(238f * show)),
+                                   Color.FromArgb((int)(255f * show), 20, 18, 14), lit);
 
                     Hud.File(art, tx2 + tile * 0.5f, tileTop + FoodTile * 0.46f,
                              FoodTile * 0.58f * swell, 0f, ink);
@@ -863,7 +857,7 @@ namespace Hoodrich.UI
                 // ---- how many ----
                 //
                 // On its own dark chip rather than straight onto the tile. The number has to
-                // read over amber and over a dark square, and one ink cannot do both.
+                // read over the plate and over a dark square, and one ink cannot do both.
                 var many = Core.Larder.CountOf(id);
 
                 if (many > 1)
@@ -875,7 +869,7 @@ namespace Hoodrich.UI
 
                     Hud.TextRight(many.ToString(), tx2 + tile - 0.0015f,
                                   tileTop + FoodTile - 0.0125f, 0.23f,
-                                  Palette.Alpha(Palette.Text, (int)(255f * show)), Hud.FontLabel);
+                                  Palette.Alpha(Palette.Gold, (int)(255f * show)), Hud.FontLabel);
                 }
             }
 
@@ -892,8 +886,7 @@ namespace Hoodrich.UI
 
                 if (at >= 0 && at < _food.Count)
                 {
-                    Hud.Text(Core.Larder.NameOf(_food[at]), x, capY, 0.28f,
-                             Palette.Text, Hud.FontBody, centre: false);
+                    Caption(Core.Larder.NameOf(_food[at]), x, capY, grown);
                     return;
                 }
             }
@@ -903,21 +896,26 @@ namespace Hoodrich.UI
                      Hud.FontBody, centre: false);
         }
 
-        /// <summary>What you are holding out of what you can, with a bar of it.</summary>
+        /// <summary>
+        /// What you are holding out of what you can, with a bar of it.
+        ///
+        /// Gold while there is room, ember once it is getting full, red when it is. Yellow
+        /// into orange into red is the one order of those three that reads as filling up.
+        /// </summary>
         private void Carrying(float x, float width, float y)
         {
             var tx = x;
 
             if (Hud.File("people.png", x + Hud.ToX(HeadIcon) * 0.5f, y + 0.008f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Accent, 210)))
+                         Palette.Alpha(Palette.Gold, 225)))
             {
                 tx = x + Hud.ToX(HeadIcon) + 0.006f;
             }
 
-            Hud.Text("ON YOU", tx, y, 0.28f, Palette.Accent, Hud.FontLabel, centre: false);
+            Hud.Text("ON YOU", tx, y, 0.28f, Palette.Text, Hud.FontLabel, centre: false);
 
             var full = Full();
-            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.Warn : Palette.Standing;
+            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.Ember : Palette.Gold;
 
             Hud.TextRight(_pockets.Total.ToString("0") + " / " + _pockets.Capacity.ToString("0") + "g",
                           x + width, y, 0.28f, full > 0.7f ? tint : Palette.TextDim, Hud.FontBody);
@@ -977,10 +975,7 @@ namespace Hoodrich.UI
 
             var age = Game.GameTime - _shownAt;
             var sweep = (Game.GameTime % SweepMs) / (float)SweepMs;
-
-            var held = Game.GameTime - _pickedAt;
-            var grown = held >= PickMs ? 1f : held / (float)PickMs;
-            grown = 1f - (1f - grown) * (1f - grown);
+            var grown = Grown();
 
             var lines = (_rows.Count + across - 1) / across;
 
@@ -1007,41 +1002,35 @@ namespace Hoodrich.UI
                 var ty = y + line * (Cell + CellGap) + EnterRise * 0.5f * (1f - land);
 
                 var picked = i == _selected;
+                var lit = Lit(i, grown);
 
-                // Flashes on the tile that just had something taken off it, which used to be
-                // a colour change on a number and is now the whole square.
                 var flashing = _droppedRow == i && Game.GameTime - _droppedAt < DropFlashMs;
 
-                // The plate. Accent under the cursor, warn while it is being emptied, and a
-                // dark square with a hairline otherwise -- an outline alone reads as a slot
-                // with nothing in it.
-                var plate = flashing
-                    ? Palette.Alpha(Palette.Warn, (int)(215f * show))
-                    : picked
-                        ? Palette.Alpha(Palette.Accent, (int)(230f * show))
-                        : Color.FromArgb((int)(38f * show), 255, 255, 255);
+                // The dark square with its hairline, always; the plate comes up over it under
+                // the cursor and goes down where the cursor just left.
+                Hud.RectFrom(tx, ty, tile, Cell, Color.FromArgb((int)(38f * show), 255, 255, 255));
+                Hud.RectFrom(tx, ty, tile, 0.0012f,
+                             Color.FromArgb((int)(70f * (1f - lit) * show), 255, 255, 255));
 
-                Hud.RectFrom(tx, ty, tile, Cell, plate);
+                Plate(tx, ty, tile, Cell, lit * show);
 
-                if (!picked && !flashing)
+                // The tile that just had something taken off it flashes gold and fades, over
+                // whatever else it is doing: a whole square lighting up, which used to be a
+                // colour change on a number.
+                if (flashing)
                 {
-                    Hud.RectFrom(tx, ty, tile, 0.0012f,
-                                 Color.FromArgb((int)(70f * show), 255, 255, 255));
-                }
-                else
-                {
-                    var bandW = tile * 0.34f;
-                    var bandAt = tx - bandW + (tile + bandW) * sweep;
+                    var left = 1f - (Game.GameTime - _droppedAt) / (float)DropFlashMs;
 
-                    var lo = Math.Max(tx, bandAt);
-                    var hi = Math.Min(tx + tile, bandAt + bandW);
-
-                    if (hi > lo)
-                    {
-                        Hud.RectFrom(lo, ty, hi - lo, Cell,
-                                     Color.FromArgb((int)(40f * show), 255, 255, 255));
-                    }
+                    Hud.RectFrom(tx, ty, tile, Cell,
+                                 Palette.Alpha(Palette.Gold, (int)(200f * left * show)));
                 }
+
+                // How dark the ink on this tile should be: fully, over a plate or a flash.
+                var dark = flashing ? 1f : lit;
+
+                if (lit > 0.01f) Sheen(tx, ty, tile, Cell, sweep, lit * show);
+
+                if (picked) Target(tx, ty, tile, Cell);
 
                 // ---- the picture ----
                 var art = Icons.ForDrug(row.Drug.Id);
@@ -1050,9 +1039,8 @@ namespace Hoodrich.UI
                 {
                     var swell = picked ? 1f + PickGrow * grown : 1f;
 
-                    var ink = picked || flashing
-                        ? Color.FromArgb((int)(255f * show), 20, 18, 14)
-                        : Palette.Alpha(Palette.Text, (int)(225f * show));
+                    var ink = Lerp(Palette.Alpha(Palette.Text, (int)(225f * show)),
+                                   Color.FromArgb((int)(255f * show), 20, 18, 14), dark);
 
                     Hud.File(art.File, tx + tile * 0.5f, ty + Cell * 0.40f,
                              Cell * 0.52f * swell, 0f, ink);
@@ -1062,25 +1050,26 @@ namespace Hoodrich.UI
                 //
                 // Across the whole tile rather than in a corner chip, because these are not
                 // counts. "57.5g" and "87 bars" are four and seven characters, and a corner
-                // badge sized for a single digit turns both into a smudge.
+                // badge sized for a single digit turns both into a smudge. Gold on the tile
+                // under the cursor, so the number you are about to act on is the lit one.
                 Hud.RectFrom(tx, ty + Cell - ChipHeight, tile, ChipHeight,
-                             Color.FromArgb((int)((picked || flashing ? 150f : 200f) * show),
-                                            12, 13, 15));
+                             Color.FromArgb((int)((200f - 50f * dark) * show), 12, 13, 15));
 
                 var amount = row.Bagged ? row.Drug.Amount(row.Held) : row.Drug.Bulk(row.Held);
 
                 Hud.Text(Hud.Fit(amount, tile - 0.004f, 0.22f, Hud.FontLabel),
                          tx + tile * 0.5f, ty + Cell - ChipHeight - 0.0005f, 0.22f,
-                         Palette.Alpha(Palette.Text, (int)(255f * show)), Hud.FontLabel);
+                         Lerp(Palette.Alpha(Palette.Text, (int)(255f * show)),
+                              Palette.Alpha(Palette.Gold, (int)(255f * show)), lit),
+                         Hud.FontLabel);
 
                 // ---- how cut ----
                 if (row.Purity > 0f)
                 {
                     Hud.File(Stash.Mark(row.Purity), tx + tile - Hud.ToX(0.008f),
                              ty + 0.008f, 0.010f, 0f,
-                             picked || flashing
-                                 ? Color.FromArgb((int)(220f * show), 20, 18, 14)
-                                 : Palette.Alpha(Palette.TextDim, (int)(210f * show)));
+                             Lerp(Palette.Alpha(Palette.TextDim, (int)(210f * show)),
+                                  Color.FromArgb((int)(220f * show), 20, 18, 14), dark));
                 }
             }
 
@@ -1092,8 +1081,7 @@ namespace Hoodrich.UI
             // eye is already going. The weight is on the tile; this is the word.
             if (!OnFood && _selected >= 0 && _selected < _rows.Count)
             {
-                Hud.Text(_rows[_selected].Label, x, capY, 0.28f,
-                         Palette.Text, Hud.FontBody, centre: false);
+                Caption(_rows[_selected].Label, x, capY, grown);
             }
             else
             {
@@ -1102,6 +1090,213 @@ namespace Hoodrich.UI
             }
 
             return capY + CellCap;
+        }
+
+        // ======================================================================
+        // The warm parts, and the cursor
+        // ======================================================================
+
+        /// <summary>
+        /// How far the tile under the cursor has come up: nought the moment it lands, one
+        /// after PickMs, eased so it settles rather than stops.
+        /// </summary>
+        private float Grown()
+        {
+            var held = Game.GameTime - _pickedAt;
+            var grown = held >= PickMs ? 1f : held / (float)PickMs;
+
+            return 1f - (1f - grown) * (1f - grown);
+        }
+
+        /// <summary>
+        /// How lit tile number i is, nought to one: coming up under the cursor, going down on
+        /// the tile the cursor just left, dark everywhere else. Numbered across both bands,
+        /// the food continuing on from the product, the same way _selected counts.
+        /// </summary>
+        private float Lit(int i, float grown)
+        {
+            if (i == _selected) return grown;
+            if (i == _lastSelected) return 1f - grown;
+            return 0f;
+        }
+
+        /// <summary>The tile under the cursor, saying where the cursor frame belongs this frame.</summary>
+        private void Target(float x, float y, float w, float h)
+        {
+            _target = true;
+            _tgtX = x;
+            _tgtY = y;
+            _tgtW = w;
+            _tgtH = h;
+        }
+
+        /// <summary>
+        /// The frame round the chosen tile, drawn where the frame IS rather than where the
+        /// cursor is -- and those are different for about a sixth of a second after every
+        /// press, which is the whole point. The plate under the new tile comes up in the same
+        /// time, so the two arrive together and read as one thing moving.
+        /// </summary>
+        private void Cursor(float arrive)
+        {
+            if (!_target)
+            {
+                _curOn = false;
+                return;
+            }
+
+            if (!_curOn)
+            {
+                // Straight onto the first tile. Gliding in from wherever it was left last
+                // time would be a frame arriving from somewhere off the screen.
+                _curX = _tgtX;
+                _curY = _tgtY;
+                _curW = _tgtW;
+                _curH = _tgtH;
+                _curOn = true;
+            }
+            else
+            {
+                // The same share of what is left every sixtieth of a second whatever the
+                // frame time is, so it lands in the same time at thirty frames and at a
+                // hundred and forty.
+                var dt = Game.LastFrameTime;
+                if (dt <= 0f || dt > 0.25f) dt = 1f / 60f;
+
+                var k = 1f - (float)Math.Pow(1f - CursorChase, dt * 60f);
+
+                _curX += (_tgtX - _curX) * k;
+                _curY += (_tgtY - _curY) * k;
+                _curW += (_tgtW - _curW) * k;
+                _curH += (_tgtH - _curH) * k;
+
+                if (Math.Abs(_tgtX - _curX) < 0.0002f) _curX = _tgtX;
+                if (Math.Abs(_tgtY - _curY) < 0.0002f) _curY = _tgtY;
+                if (Math.Abs(_tgtW - _curW) < 0.0002f) _curW = _tgtW;
+                if (Math.Abs(_tgtH - _curH) < 0.0002f) _curH = _tgtH;
+            }
+
+            // It breathes: a slow rise and fall in the glow and a little in the rim, so a
+            // cursor left alone still reads as the live thing on the screen.
+            var pulse = 0.5f + 0.5f * (float)Math.Sin(Game.GameTime / (double)PulseMs * Math.PI * 2.0);
+
+            var gX = Hud.ToX(CursorGlow);
+
+            Rim(_curX - gX, _curY - CursorGlow, _curW + gX * 2f, _curH + CursorGlow * 2f, CursorGlow,
+                Palette.Alpha(Palette.Ember, (int)((30f + 40f * pulse) * arrive)));
+
+            Rim(_curX, _curY, _curW, _curH, CursorRule,
+                Palette.Alpha(Lerp(Palette.Gold, Color.White, 0.45f), (int)((205f + 50f * pulse) * arrive)));
+        }
+
+        /// <summary>Four strokes round a box. Left and right are the rule turned into an x-width.</summary>
+        private static void Rim(float x, float y, float w, float h, float rule, Color c)
+        {
+            var rX = Hud.ToX(rule);
+
+            Hud.RectFrom(x, y, w, rule, c);
+            Hud.RectFrom(x, y + h - rule, w, rule, c);
+            Hud.RectFrom(x, y + rule, rX, h - rule * 2f, c);
+            Hud.RectFrom(x + w - rX, y + rule, rX, h - rule * 2f, c);
+        }
+
+        /// <summary>
+        /// The lit plate under a chosen tile: gold at the top running to ember at the bottom,
+        /// in a handful of bands. Strength is how lit it is, nought to one, which is what lets
+        /// a plate come up as the cursor arrives and go down as it leaves instead of snapping.
+        /// </summary>
+        private static void Plate(float x, float y, float w, float h, float strength)
+        {
+            if (strength <= 0.01f) return;
+
+            const int bands = 6;
+            var bandH = h / bands;
+
+            for (var i = 0; i < bands; i++)
+            {
+                var c = Lerp(Palette.Gold, Palette.Ember, (i + 0.5f) / bands);
+
+                Hud.RectFrom(x, y + i * bandH, w, bandH, Palette.Alpha(c, (int)(235f * strength)));
+            }
+        }
+
+        /// <summary>
+        /// A band of light crossing a tile. Clipped to the tile rather than drawn over it, or
+        /// it is a stripe on the panel that happens to pass a tile on its way.
+        /// </summary>
+        private static void Sheen(float x, float y, float w, float h, float sweep, float strength)
+        {
+            var bandW = w * 0.34f;
+            var bandAt = x - bandW + (w + bandW) * sweep;
+
+            var lo = Math.Max(x, bandAt);
+            var hi = Math.Min(x + w, bandAt + bandW);
+
+            if (hi > lo)
+            {
+                Hud.RectFrom(lo, y, hi - lo, h, Color.FromArgb((int)(46f * strength), 255, 255, 255));
+            }
+        }
+
+        /// <summary>
+        /// A rule with some heat in it: the grey hairline this panel has always drawn, with a
+        /// short ember stroke at its left end like the tab on a folder. Under every heading,
+        /// so the sections share one mark rather than each having its own idea.
+        /// </summary>
+        private static void WarmRule(float x, float y, float width, float arrive)
+        {
+            Hud.RectFrom(x, y, width, 0.0012f, Palette.Alpha(Hairline, (int)(Hairline.A * arrive)));
+
+            Hud.RectFrom(x, y - 0.0004f, width * 0.14f, 0.0020f,
+                         Palette.Alpha(Palette.Ember, (int)(215f * arrive)));
+        }
+
+        /// <summary>
+        /// A warm wash fading downward from the top of the panel: a few bands, each fainter
+        /// than the last. The panel's corners are round, so the bands that sit level with the
+        /// corners are pulled in by the corner radius rather than pushing colour past the curve.
+        /// </summary>
+        private static void Wash(float left, float top, float width, float height, int alpha)
+        {
+            if (alpha <= 0) return;
+
+            const int bands = 7;
+            var bandH = height / bands;
+
+            var inset = Hud.ToX(Hud.PanelRound);
+
+            for (var i = 0; i < bands; i++)
+            {
+                var a = (int)(alpha * (1f - i / (float)bands));
+                if (a <= 0) continue;
+
+                var bandTop = top + i * bandH;
+                var inCorner = bandTop < top + Hud.PanelRound;
+
+                Hud.RectFrom(left + (inCorner ? inset : 0f), bandTop,
+                             width - (inCorner ? inset * 2f : 0f), bandH,
+                             Palette.Alpha(Palette.Ember, a));
+            }
+        }
+
+        /// <summary>
+        /// The name of the thing under the cursor, sliding in from the left and brightening as
+        /// its tile comes up, so the word arrives with the plate rather than swapping under it.
+        /// </summary>
+        private static void Caption(string words, float x, float y, float grown)
+        {
+            Hud.Text(words, x + Hud.ToX(0.010f) * (1f - grown), y, 0.28f,
+                     Palette.Alpha(Palette.Text, (int)(90f + 165f * grown)), Hud.FontBody, centre: false);
+        }
+
+        private static Color Lerp(Color a, Color b, float t)
+        {
+            if (t < 0f) t = 0f;
+            if (t > 1f) t = 1f;
+
+            return Color.FromArgb((int)(a.A + (b.A - a.A) * t),
+                                  (int)(a.R + (b.R - a.R) * t),
+                                  (int)(a.G + (b.G - a.G) * t),
+                                  (int)(a.B + (b.B - a.B) * t));
         }
     }
 }
