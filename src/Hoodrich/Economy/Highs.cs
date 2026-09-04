@@ -216,11 +216,28 @@ namespace Hoodrich.Economy
         {
             // The switch clip is named after its own dictionary, which is the convention for
             // the whole switch@ family and is nothing like the amb@ one below it.
+            // THE WHOLE SWITCH FAMILY, BECAUSE ONE REAL NAME GIVES YOU THE REST.
+            //
+            // trev_smoking_meth_exit_cam is a genuine clip in this dictionary -- and a _cam
+            // clip is the CAMERA track that runs beside a switch, not the man. Playing it on a
+            // ped moves nothing. What it proves is the naming: a switch dictionary holds
+            // <name>_enter, <name>_exit, <name>_loop and a _cam beside each, so the existence
+            // of the camera half is evidence for the ped half sitting next to it.
+            //
+            // So the ped names go first, longest-running first, and the camera one goes last
+            // where it can do no harm. Guessing six names into a ladder cost nothing the
+            // moment the ladder started checking whether each one actually plays.
             Pairs = new[]
             {
-                "switch@trevor@trev_smoking_meth",       "trev_smoking_meth",
-                "switch@trevor@trev_smoking_meth",       "base",
-                "amb@world_human_aa_smoke@male@idle_a",  "idle_a",
+                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_loop",
+                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_idle",
+                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_exit",
+                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_enter",
+                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth",
+                "switch@trevor@trev_smoking_meth",  "trev_smoking_meth_exit_cam",
+
+                // And the ambient smoker underneath, which is proven to exist.
+                "amb@world_human_aa_smoke@male@idle_a",     "idle_a",
                 "amb@world_human_smoking@male@male_a@base", "base"
             },
             Props = new[]
