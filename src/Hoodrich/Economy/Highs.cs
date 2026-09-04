@@ -391,12 +391,24 @@ namespace Hoodrich.Economy
             // disappears into it, and he chews. Filed under eating because it was written for
             // a donut, and it is the swallow this wanted all along. The static clip is the
             // standing-still one, which is what somebody stopped in the street is doing.
+            // THE IDLES ARE THE ACT. BASE AND STATIC ARE JUST CARRYING IT.
+            //
+            // "He is holding his arm out" is precisely what base and static are: the pose a
+            // wandering ped holds while it walks along with a thing in its hand. The raising,
+            // the tip and the swallow are in the idle_* clips of the same family -- those are
+            // what the ped plays when it stops and actually uses what it is holding, and they
+            // are the reason this dictionary is worth having at all.
+            //
+            // And drinking rather than eating. Both raise a hand to the mouth, but eating ends
+            // with a bite and a chew, and drinking ends with the head going back and the hand
+            // coming down -- which is a man tipping pills in. The donut stays underneath in
+            // case an install is missing the drinker.
             Pairs = new[]
             {
-                "amb@code_human_wander_eating_donut@male@base",   "static",
-                "amb@code_human_wander_eating_donut@male@base",   "base",
-                "amb@code_human_wander_eating_donut@male@idle_a", "idle_a",
-                "amb@world_human_smoking@male@male_a@base",       "base"
+                "amb@code_human_wander_drinking@male@idle_a",      "idle_a",
+                "amb@code_human_wander_drinking@male@idle_a",      "idle_b",
+                "amb@code_human_wander_eating_donut@male@idle_a",  "idle_a",
+                "amb@code_human_wander_eating_donut@male@idle_a",  "idle_b"
             },
             Props = new[]
             {
