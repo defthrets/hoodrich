@@ -892,6 +892,7 @@ namespace Hoodrich.Locations
                         Calm();
                         Fright(now);
                         Arriving(now);
+                        TopUp(now);
                         Filling(now);
                         Wave(now);
                         Walking();
@@ -1920,6 +1921,86 @@ namespace Hoodrich.Locations
 
             _nextCar = now + Math.Max(500, gap);
         }
+
+        /// <summary>
+        /// Keep sending cars until the street is properly full.
+        ///
+        /// THE RING LEAKED CARS AT FOUR DIFFERENT POINTS AND NOTHING EVER REPLACED THEM. Cars
+        /// deals out one per kerb, once, at the start of the night -- and between that moment
+        /// and the ring being full a spot can be lost to a stranger already parked on it, to a
+        /// stranger arriving on it before ours does, to a model that was not resident, or to a
+        /// driver who could not reach it and went home rather than blocking the road. Each of
+        /// those is handled correctly on its own and every one of them is a gap in the wall
+        /// for the rest of the night.
+        ///
+        /// So the deal is not the end of it. Anything short of a full street gets another car
+        /// sent for, on a slow clock, for as long as the takeover runs.
+        ///
+        /// COUNTED AS CLAIMS, NOT AS ARRIVALS. A car still driving in has its kerb and must not
+        /// be sent a second one -- counting only what has parked would send thirty more cars
+        /// during the minute the first thirty are on their way, and the junction would end up
+        /// with sixty.
+        ///
+        /// AND A KERB THAT IS OCCUPIED IS SKIPPED RATHER THAN RETRIED FOREVER. If somebody's
+        /// van is parked on it, it is not a free space this evening -- but it is asked again
+        /// each pass, because vans drive away.
+        /// </summary>
+        private void TopUp(int now)
+        {
+            if (now < _nextTopUp) return;
+            _nextTopUp = now + TopUpEveryMs;
+
+            var have = _coming.Count;
+
+            foreach (var p in _parked)
+            {
+                if (p.Gone) continue;
+                if (p.Car == null || !p.Car.Exists()) continue;
+
+                have++;
+            }
+
+            if (have >= Fewest) return;
+
+            var sent = 0;
+
+            foreach (var spot in Spots)
+            {
+                if (have >= Fewest) break;
+
+                if (Claimed(spot.At, null)) continue;
+                if (Taken(spot.At)) continue;
+
+                _coming.Add(new Pending { Where = spot, What = Kind.Plain });
+
+                have++;
+                sent++;
+            }
+
+            if (sent == 0) return;
+
+            // Sent for now rather than on the original minute-long spread: the street is
+            // already full of people and the point of a top-up is to close a hole in the wall
+            // while it still matters.
+            if (_nextCar > now) _nextCar = now;
+
+            Log.Info("Takeover: " + sent + " more sent for -- " + have + " of " +
+                     Fewest + " wanted.");
+        }
+
+        /// <summary>
+        /// The fewest kerbs that should ever have a car on them.
+        ///
+        /// Thirty out of the walked list. Not all of them: a couple are usually under somebody
+        /// else's parked car on any given night, and holding the night to a number the street
+        /// cannot always give would have the top-up trying forever.
+        /// </summary>
+        private const int Fewest = 30;
+
+        private int _nextTopUp;
+
+        /// <summary>How often the street is counted. It is not a per-frame job.</summary>
+        private const int TopUpEveryMs = 5000;
 
         /// <summary>How soon to try again for a car whose model was not loaded yet.</summary>
         private const int RetrySoonMs = 400;
