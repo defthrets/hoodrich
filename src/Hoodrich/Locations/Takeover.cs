@@ -736,6 +736,18 @@ namespace Hoodrich.Locations
         /// <summary>Close enough for the junction to notice them.</summary>
         private const float LawSeen = 70f;
 
+        /// <summary>
+        /// How far out they stop, and how fast they come.
+        ///
+        /// Thirty-five metres is the outside of the ring: close enough that the lights are all
+        /// over the junction and everybody can see them, far enough that they are not driving
+        /// through the parked cars to get there. Fourteen metres a second is fifty rather than
+        /// seventy -- fast enough to read as a response, slow enough that the avoidance in the
+        /// driving style has room to work.
+        /// </summary>
+        private const float LawHold = 35f;
+        private const float LawSpeed = 14f;
+
         public Func<bool> Busy;
 
         /// <summary>Set by Main: the feed, so the block can talk about it.</summary>
@@ -3180,6 +3192,30 @@ namespace Hoodrich.Locations
                 if (!In()) break;
             }
 
+            // AN EMPTY PIT IS THE ONE FAILURE THIS FILE CANNOT SEE.
+            //
+            // Everything between a takeover starting and a car going sideways in the middle of
+            // it is a chain of quiet falses: In returns false with no stage free, no road
+            // point, no model or no driver; Turn returns false with nobody sat at a marker.
+            // Not one of them says anything, so a night where the middle stayed empty produced
+            // a log identical to one where it did not -- which is exactly the night that
+            // happened, twice.
+            //
+            // So it says where the chain broke, once every fifteen seconds and only while
+            // there is genuinely nothing happening in the middle. Three numbers is enough to
+            // name the link: no runners at all is In failing, runners but none waiting is them
+            // not reaching a marker, and runners waiting with nothing in the pit is Turn.
+            if (mark + round == 0 && now >= _nextEmpty)
+            {
+                _nextEmpty = now + EmptyEveryMs;
+
+                var waiting = Queued();
+
+                Log.Info("Takeover: nothing in the middle -- " + _running.Count +
+                         " performer(s), " + waiting + " waiting at markers, " +
+                         (Stages.Length - waiting) + " marker(s) free.");
+            }
+
             // Only if this stretch of the night is having one. An existing static burnout is
             // left to finish rather than pulled off the mark the moment the roll changes --
             // his go is his go, and a car that vanishes mid-burnout is worse than one that
@@ -3372,6 +3408,11 @@ namespace Hoodrich.Locations
 
         /// <summary>How many should be out there, and when that was last decided.</summary>
         private int _want = 3;
+
+        /// <summary>When the empty-pit line may next be written. See the pit tick.</summary>
+        private int _nextEmpty;
+
+        private const int EmptyEveryMs = 15000;
         private bool _wantMark;
         private int _reroll;
         private const int RerollMs = 45000;
@@ -4761,9 +4802,37 @@ namespace Hoodrich.Locations
 
                     Function.Call(Hash.SET_VEHICLE_SIREN, car.Handle, true);
 
+                    // THEY PULL UP AT THE EDGE OF IT, NOT INTO THE MIDDLE OF IT.
+                    //
+                    // They were driven at the centre of the junction at twenty metres a second
+                    // on the avoidance-only style -- no stopping before vehicles, no stopping
+                    // before people -- and the centre of the junction is thirty parked cars
+                    // and sixty people. So three squad cars came in at fifty and ploughed
+                    // through the lot, which is a pile of wreckage rather than a raid.
+                    //
+                    // Police block a street. They come up it, stop across it, and get out --
+                    // the scattering is caused by the lights and the noise, not by being run
+                    // over. So the destination is a point out on the ring rather than the mark
+                    // in the middle, worked out along the bearing they are already coming from
+                    // so each one holds the street it arrived on.
+                    var back = at - Middle;
+
+                    var len = back.Length();
+
+                    var stop = len < 1f ? at
+                        : Middle + back * (LawHold / len);
+
+                    var road = World.GetNextPositionOnStreet(stop, true);
+
+                    if (road != Vector3.Zero) stop = road;
+
+                    // CareStyle, which stops before vehicles and before people. It is the same
+                    // style everything else at this junction drives on, minus the traffic
+                    // lights, and there is no version of a police response worth watching that
+                    // begins by killing eleven spectators.
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, cop.Handle, car.Handle,
-                                  Middle.X, Middle.Y, Middle.Z, 20f, 0,
-                                  car.Model.Hash, RushStyle, 6f, true);
+                                  stop.X, stop.Y, stop.Z, LawSpeed, 0,
+                                  car.Model.Hash, CareStyle, 5f, true);
 
                     Function.Call(Hash.SET_PED_KEEP_TASK, cop.Handle, true);
 
