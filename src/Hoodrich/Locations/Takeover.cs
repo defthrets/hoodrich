@@ -908,6 +908,10 @@ namespace Hoodrich.Locations
                         break;
 
                     case TakeoverState.Scattering:
+                        // Still calling for them. See Blues -- the first ask can come back
+                        // empty-handed and that must not be the end of it.
+                        MoreLaw(now);
+
                         // The police are driving in. Nothing runs until one of them is close
                         // enough to be worth running from.
                         if (!_scattered && Closing())
@@ -1934,7 +1938,7 @@ namespace Hoodrich.Locations
         {
             try
             {
-                foreach (var set in new[] { Faces, Parked, Lows, Donks, Drifters, Badges })
+                foreach (var set in new[] { Faces, Parked, Lows, Donks, Drifters, Badges, Sirens })
                 {
                     foreach (var name in set) Core.Models.Ready(new Model(name));
                 }
@@ -4544,12 +4548,48 @@ namespace Hoodrich.Locations
         /// what makes it work. So this only sends them -- the running is in Closing(), when
         /// somebody is near enough to be worth running from.
         /// </summary>
+        /// <summary>
+        /// Call them, and KEEP calling them until they come.
+        ///
+        /// THIS RAN ONCE AND THAT IS WHY NO POLICE EVER ARRIVED. The log said it in four
+        /// words -- "Takeover: 0 units on the way" -- and the cause is the non-blocking model
+        /// loader meeting a one-shot.
+        ///
+        /// Asking for a model does not wait any more; it says "not yet" and fetches. Every
+        /// other spawner in this file was taught to come back for that -- a kerb is put back on
+        /// the queue rather than losing its car, a crowd wave that spawns nobody tries again
+        /// on the next tick. Blues was not. It asked for police3 at the one moment it would
+        /// ever ask, on a night where no police car had been anywhere near the junction for
+        /// three hours, got "not yet" three times, wrote zero in the log and stood down.
+        ///
+        /// So it is two things now. The squad cars are warmed with the rest of the cast at the
+        /// start of the night, which is the fix -- and this keeps asking for a minute either
+        /// way, which is the thing that stops one bad moment ending the night quietly.
+        /// </summary>
         private void Blues()
         {
             State = TakeoverState.Scattering;
             _lastDrive = Game.GameTime + 60000;
 
-            for (var i = 0; i < Units; i++)
+            _lawUntil = Game.GameTime + LawKeepAskingMs;
+            _nextLaw = 0;
+
+            MoreLaw(Game.GameTime);
+        }
+
+        /// <summary>
+        /// Top the response up to strength, on a clock. Called every tick while they scatter.
+        /// </summary>
+        private void MoreLaw(int now)
+        {
+            if (_law.Count >= Units || now > _lawUntil) return;
+            if (now < _nextLaw) return;
+
+            _nextLaw = now + LawAgainMs;
+
+            var had = _law.Count;
+
+            for (var i = _law.Count; i < Units; i++)
             {
                 try
                 {
@@ -4567,7 +4607,7 @@ namespace Hoodrich.Locations
                     // NOT DRESSED. Everything else that turns up here is somebody's own car
                     // and gets neon, rims and a plate; a squad car with underglow and a set of
                     // deep dish is the joke landing in the wrong scene entirely.
-                    var car = Make(new[] { "police3", "police", "police2" }, at, false);
+                    var car = Make(Sirens, at, false);
                     if (car == null) continue;
 
                     var cop = Officer(car);
@@ -4594,8 +4634,28 @@ namespace Hoodrich.Locations
                 }
             }
 
-            Log.Info("Takeover: " + _law.Count + " units on the way.");
+            // Only when it changes, or a minute of retries is sixty identical lines.
+            if (_law.Count == had) return;
+
+            Log.Info("Takeover: " + _law.Count + " of " + Units + " units on the way.");
         }
+
+        /// <summary>Until when the response is topped up, and how often it is tried.</summary>
+        private int _lawUntil;
+        private int _nextLaw;
+
+        private const int LawKeepAskingMs = 60000;
+        private const int LawAgainMs = 900;
+
+        /// <summary>
+        /// What turns up at the end of it.
+        ///
+        /// A FIELD RATHER THAN AN ARRAY BUILT AT THE CALL, and that is not tidiness. Warm asks
+        /// the streamer for everything the night will need before any of it is wanted, and it
+        /// can only ask for lists it can see -- these were written inline inside Blues, so
+        /// they were the one cast member nobody warmed. See Blues for what that cost.
+        /// </summary>
+        private static readonly string[] Sirens = { "police3", "police", "police2" };
 
         /// <summary>Whether any of them is close enough to be worth running from.</summary>
         private bool Closing()
