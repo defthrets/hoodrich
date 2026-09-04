@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -34,11 +34,26 @@ namespace Hoodrich.Economy
         private static int _until;
         private static int _from;
 
-        private static float _sweep;
+        private static float _side;
         private static float _close;
 
-        /// <summary>Where it starts, relative to the way he is facing, and how far it travels.</summary>
-        private const float StartBehind = 155f;
+        /// <summary>
+        /// Where it starts, as an angle off the way he is FACING, and how far it travels.
+        ///
+        /// ZERO IS DEAD IN FRONT OF HIM. Place works the position from his heading, and a ped's
+        /// forward vector at heading H is (-sin H, cos H) -- so an offset of nothing puts the
+        /// camera on his nose and a hundred and eighty puts it on the back of his head.
+        ///
+        /// It was a hundred and fifty-five, which is close enough to behind that seventy
+        /// degrees of sweep never got anywhere near the front: it ran from 155 to 225, which is
+        /// one shoulder to the other, and the whole move was a slow push into his back. The
+        /// animation is on his hands and his face, and none of that is visible from there.
+        ///
+        /// Forty off centre now, crossing to thirty the other side. He is face on for the whole
+        /// move and the camera passes his eyeline in the middle of it rather than starting
+        /// there, which is what stops it reading as a mugshot.
+        /// </summary>
+        private const float StartOff = 40f;
         private const float Sweep = 70f;
 
         /// <summary>How far out it starts and finishes, and how high up his body it looks.</summary>
@@ -80,9 +95,9 @@ namespace Hoodrich.Economy
                 _from = Game.GameTime;
                 _until = _from + Math.Min(MostMs, Math.Max(1200, ms));
 
-                // Which way round he gets filmed. Both look fine and alternating stops a run
-                // of them reading as one repeated shot.
-                _sweep = (Game.GameTime & 1) == 0 ? Sweep : -Sweep;
+                // Which side it comes in on. Both look fine, and alternating stops a run of
+                // them reading as one repeated shot.
+                _side = (Game.GameTime & 1) == 0 ? 1f : -1f;
                 _close = 0f;
 
                 _cam = Function.Call<int>(Hash.CREATE_CAM, "DEFAULT_SCRIPTED_CAMERA", true);
@@ -170,7 +185,8 @@ namespace Hoodrich.Economy
         /// <summary>Puts it where it belongs for a given point through the move.</summary>
         private static void Place(Ped me, float t)
         {
-            var around = StartBehind + _sweep * t;
+            // From one side of his face across to the other, never round the back.
+            var around = _side * (StartOff - Sweep * t);
 
             var heading = me.Heading + around;
 
