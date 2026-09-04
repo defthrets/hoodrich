@@ -853,6 +853,15 @@ namespace Hoodrich.Economy
             }
         }
 
+        /// <summary>
+        /// Every screen effect this run has asked for, so all of them can be stopped.
+        ///
+        /// A set rather than one string, because more than one can be on him at once and the
+        /// single string only ever remembered the last.
+        /// </summary>
+        private readonly System.Collections.Generic.HashSet<string> _played =
+            new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>What the combine last worked out, for the per-frame half to hold.</summary>
         private float _time = 1f;
         private float _shake;
@@ -1156,7 +1165,29 @@ namespace Hoodrich.Economy
         {
             try
             {
+                // THE ONE BEFORE IT STOPS FIRST, WHICH IS THE WHOLE OF THE BUG.
+                //
+                // This played the new effect and overwrote _fx, and ANIMPOSTFX_PLAY here is
+                // asked to LOOP -- so the previous one carried on running with nothing left
+                // pointing at it. Clear stops _fx, which by then names the newest, and every
+                // effect before it was orphaned on the screen for the rest of the session.
+                //
+                // Reported as effects lingering and stuck after a minute, and it needs two
+                // drugs to happen: one on its own is started and stopped by the same name.
+                // The overdose mechanic is three or four.
+                if (!string.IsNullOrEmpty(_fx) && _fx != name)
+                {
+                    try { Function.Call(Hash.ANIMPOSTFX_STOP, _fx); }
+                    catch { }
+                }
+
                 Function.Call(Hash.ANIMPOSTFX_PLAY, name, 0, true);
+
+                // Remembered whether or not it took. A name that fails ANIMPOSTFX_IS_RUNNING
+                // here may still be running by the time anybody checks -- the flag is not
+                // instant -- and a set of names we have asked for is the only honest record
+                // of what might need stopping later.
+                _played.Add(name);
 
                 if (Function.Call<bool>(Hash.ANIMPOSTFX_IS_RUNNING, name))
                 {
@@ -1582,11 +1613,18 @@ namespace Hoodrich.Economy
                     _cycle = "";
                 }
 
-                if (!string.IsNullOrEmpty(_fx))
+                // EVERY EFFECT THIS RUN HAS EVER STARTED, not just the newest. See Fx.
+                // Named rather than ANIMPOSTFX_STOP_ALL, which would also switch off whatever
+                // another mod is running -- this stops exactly what we started and nothing
+                // else.
+                foreach (var name in _played)
                 {
-                    Function.Call(Hash.ANIMPOSTFX_STOP, _fx);
-                    _fx = "";
+                    try { Function.Call(Hash.ANIMPOSTFX_STOP, name); }
+                    catch { }
                 }
+
+                _played.Clear();
+                _fx = "";
 
                 // TIME GOES BACK WHATEVER HAPPENED. It is a global the whole game reads, and a
                 // mod that unloads while it is at 0.55 leaves the player in slow motion with
