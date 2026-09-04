@@ -500,6 +500,12 @@ namespace Hoodrich.UI
             // here watching his head. The two that change WHERE it lives go through MoveTo,
             // which takes it off the old slot first -- otherwise the old slot keeps wearing
             // it for ever, since Off only knows about whatever is configured now.
+            Head("Getting high");
+            Tick("Cinematic camera", "Highs", "DrugCamera",
+                 () => c.DrugCamera,
+                 v => { c.DrugCamera = v; Economy.Ritual.Cinematic = v; },
+                 "Swings round the front while you take something, then hands the camera back");
+
             Head("Mask");
             Slide("Slot", "Mask", "Slot",
                   () => c.MaskSlot,

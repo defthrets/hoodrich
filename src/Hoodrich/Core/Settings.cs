@@ -261,6 +261,15 @@ namespace Hoodrich.Core
         /// Core.Mask.Probe writes each one's size to the log so there is somewhere to start.
         /// Saved the moment they change.
         /// </summary>
+        /// <summary>
+        /// Whether the camera swings round the front while he takes something.
+        ///
+        /// On, because the animation is on his hands and his face and the gameplay camera is
+        /// behind his head. Off for anybody who would rather keep their own -- it is taken for
+        /// a few seconds and handed straight back either way.
+        /// </summary>
+        public bool DrugCamera = true;
+
         public int MaskSlot = 8;
         public bool MaskAsProp;
         public int MaskDrawable = 4;
@@ -576,6 +585,8 @@ namespace Hoodrich.Core
             s.UndercoverEscapeDistance =
                 Clamp(ini.GetFloat("Risk", "UndercoverEscapeDistance", s.UndercoverEscapeDistance), 5f, 300f);
             s.BustWantedStars = (int)Clamp(ini.GetInt("Risk", "BustWantedStars", s.BustWantedStars), 1f, 5f);
+
+            s.DrugCamera = ini.GetBool("Highs", "DrugCamera", s.DrugCamera);
 
             s.MaskSlot = (int)Clamp(ini.GetInt("Mask", "Slot", s.MaskSlot), 0f, 11f);
             s.MaskAsProp = ini.GetBool("Mask", "AsProp", s.MaskAsProp);

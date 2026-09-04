@@ -119,6 +119,14 @@ namespace Hoodrich.Economy
         /// <summary>How long a dictionary gets to arrive before the scenario takes over.</summary>
         private const int StreamMs = 1200;
 
+        /// <summary>
+        /// Whether the camera goes round the front. Set from the ini by Main.
+        ///
+        /// A static because a Ritual is created in more than one place and this is one answer
+        /// for the whole mod rather than a property of any single one of them.
+        /// </summary>
+        public static bool Cinematic = true;
+
         /// <summary>How fast counts as walking off, and how long he gets before it is asked.</summary>
         private const float MovedAt = 0.35f;
         private const int MovedAfterMs = 600;
@@ -154,6 +162,11 @@ namespace Hoodrich.Economy
             _watching = null;
 
             Hold(recipe, me);
+
+            // Round the front, for as long as this takes. See RitualCam -- the whole point of
+            // choosing the right clip is that somebody can see it, and from behind his own
+            // shoulder none of this is visible at all.
+            RitualCam.Start(me, recipe.Ms + Math.Min(recipe.Linger, 2500), Cinematic);
 
             // NOTHING TO STREAM MEANS NOTHING TO WAIT FOR, and this is why the joint looked
             // like it was not happening.
@@ -216,6 +229,11 @@ namespace Hoodrich.Economy
                 Stop();
                 return true;
             }
+
+            // Every frame this runs, which is what a camera move needs. It gives itself back
+            // when its own clock runs out, so a ritual that lingers for a minute does not mean
+            // a minute of not being able to look where you like.
+            RitualCam.Update(me);
 
             if (_waiting != null)
             {
@@ -575,6 +593,14 @@ namespace Hoodrich.Economy
             Landed = false;
 
             _waiting = null;
+            _watching = null;
+            _watchAt = 0;
+
+            // WHATEVER ELSE THIS IS DOING, THE CAMERA COMES BACK. Stop runs on the ritual
+            // finishing, on it being cut short, on the player dying and on the mod being
+            // switched off, and a script camera left running is a player who cannot see and
+            // cannot get it back without reloading.
+            RitualCam.Stop();
             _until = 0;
             _lingerUntil = 0;
             _linger = 0;

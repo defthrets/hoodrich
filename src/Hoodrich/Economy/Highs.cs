@@ -372,12 +372,22 @@ namespace Hoodrich.Economy
             //
             // The drinking scenario stays underneath as the fallback, where the head-tip is
             // better than anything here if the dictionaries ever fail to load.
+            // A SWALLOW, WHICH DOES EXIST -- IT IS JUST NOT FILED UNDER PILLS.
+            //
+            // There is no pill clip in the game and no drinking dictionary either, so the
+            // smoking idle was standing in: hand to mouth and hold. It is the holding that is
+            // wrong, because a cigarette goes up and STAYS up and a pill goes up and goes in.
+            //
+            // amb@code_human_wander_eating_donut is a man eating: hand to the mouth, the thing
+            // disappears into it, and he chews. Filed under eating because it was written for
+            // a donut, and it is the swallow this wanted all along. The static clip is the
+            // standing-still one, which is what somebody stopped in the street is doing.
             Pairs = new[]
             {
-                "amb@world_human_smoking@male@male_a@base",     "base",
-                "amb@world_human_smoking@male@male_a@idle_a",   "idle_a",
-                "amb@world_human_drug_dealer_hard@male@base",   "base",
-                "amb@world_human_aa_smoke@male@idle_a",         "idle_a"
+                "amb@code_human_wander_eating_donut@male@base",   "static",
+                "amb@code_human_wander_eating_donut@male@base",   "base",
+                "amb@code_human_wander_eating_donut@male@idle_a", "idle_a",
+                "amb@world_human_smoking@male@male_a@base",       "base"
             },
             Props = new[]
             {

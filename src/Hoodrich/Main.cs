@@ -2016,6 +2016,10 @@ namespace Hoodrich
                 pages.TakeCan = TakeCan;
                 pages.PutCanAway = PutCanAway;
 
+                // One answer for the whole mod, taken off the ini at startup and kept in step
+                // by the Settings row. See Economy.RitualCam.
+                Economy.Ritual.Cinematic = _cfg.DrugCamera;
+
                 pages.MaskOn = () => Core.Mask.Wearing;
                 pages.ToggleMask = ToggleMask;
 
