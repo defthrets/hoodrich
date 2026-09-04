@@ -46,6 +46,21 @@ namespace Hoodrich.Economy
             /// <summary>The clip inside whichever dictionary loaded.</summary>
             public string Clip = "";
 
+            /// <summary>
+            /// Dictionary and clip together, in pairs, tried in order.
+            ///
+            /// ONE CLIP NAME FOR EVERY DICTIONARY IN A LADDER IS A LADDER THAT CANNOT WORK,
+            /// and that is what Dicts plus Clip was. amb@world_human_aa_smoke@male@idle_a does
+            /// not contain a clip called "base" -- its clips are named after the idle -- so
+            /// asking for one got exactly what asking the game for a name it does not have
+            /// always gets: silence, and nothing playing. The dictionary loaded, the call was
+            /// accepted, the log said "Ritual anim: ... / base", and the man stood there.
+            ///
+            /// Pairs are how Entourage has always done this and it is the reason its stations
+            /// animate. Same shape: dict, clip, dict, clip.
+            /// </summary>
+            public string[] Pairs = new string[0];
+
             /// <summary>Prop models to try, in order. The first the install has is used.</summary>
             public string[] Props = new string[0];
 
@@ -98,6 +113,7 @@ namespace Hoodrich.Economy
 
         /// <summary>Set while a dictionary is still streaming, so it can be asked for again.</summary>
         private Recipe _waiting;
+        private Recipe _watching;
         private int _giveUpAt;
 
         /// <summary>How long a dictionary gets to arrive before the scenario takes over.</summary>
@@ -132,6 +148,10 @@ namespace Hoodrich.Economy
             _until = Game.GameTime + recipe.Ms;
             _linger = recipe.Linger;
             _lingerUntil = 0;
+
+            _rung = 0;
+            _watchAt = 0;
+            _watching = null;
 
             Hold(recipe, me);
 
@@ -190,13 +210,17 @@ namespace Hoodrich.Economy
 
             if (_waiting != null)
             {
-                if (Play(_waiting, me)) _waiting = null;
+                if (Play(_waiting, me)) { _watching = _waiting; _waiting = null; }
                 else if (now >= _giveUpAt)
                 {
                     Scenario(_waiting, me);
                     _waiting = null;
                 }
             }
+
+            // A moment after it was asked for, which is the only time the answer means
+            // anything. See Watch.
+            if (_watchAt != 0 && now >= _watchAt && _watching != null) Watch(_watching, me);
 
             if (_checkAt != 0 && now >= _checkAt)
             {
@@ -364,8 +388,13 @@ namespace Hoodrich.Economy
         /// </summary>
         private bool Play(Recipe recipe, Ped me)
         {
-            foreach (var dict in recipe.Dicts)
+            var pairs = Rungs(recipe);
+
+            for (var i = _rung; i + 1 < pairs.Length; i += 2)
             {
+                var dict = pairs[i];
+                var clip = pairs[i + 1];
+
                 try
                 {
                     if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
@@ -373,13 +402,17 @@ namespace Hoodrich.Economy
                     // 49 is upper body, looping, and lets the rest of him keep his footing --
                     // a full-body lock on a man stood on a kerb is a man who snaps to attention
                     // and then teleports his feet back when it ends.
-                    Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, dict, recipe.Clip,
+                    Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, dict, clip,
                                   4f, -2f, recipe.Ms, 49, 0f, false, false, false);
 
                     _dict = dict;
-                    _clip = recipe.Clip;
+                    _clip = clip;
 
-                    Log.Info("Ritual anim: " + dict + " / " + recipe.Clip + ".");
+                    // NOT LOGGED AS A SUCCESS YET. See Watch: the call being accepted says
+                    // nothing at all about whether the clip exists.
+                    _rung = i;
+                    _watchAt = Game.GameTime + WatchMs;
+
                     return true;
                 }
                 catch
@@ -390,6 +423,85 @@ namespace Hoodrich.Economy
 
             return false;
         }
+
+        /// <summary>
+        /// The recipe's ladder as dict/clip pairs, whichever way it was written.
+        ///
+        /// Older recipes name a list of dictionaries and one clip for all of them, which works
+        /// only where every dictionary in the list happens to use the same clip name. Kept
+        /// working rather than rewritten, because for the amb@world_human_*@base family that
+        /// really is the case and those recipes are correct as they stand.
+        /// </summary>
+        private static string[] Rungs(Recipe recipe)
+        {
+            if (recipe.Pairs.Length >= 2) return recipe.Pairs;
+
+            var out_ = new string[recipe.Dicts.Length * 2];
+
+            for (var i = 0; i < recipe.Dicts.Length; i++)
+            {
+                out_[i * 2] = recipe.Dicts[i];
+                out_[i * 2 + 1] = recipe.Clip;
+            }
+
+            return out_;
+        }
+
+        /// <summary>
+        /// Whether what we asked for is actually playing, asked late enough to be fair.
+        ///
+        /// THE WHOLE FILE'S DOC SAID IT VERIFIED AND ONLY THE SCENARIO PATH EVER DID. An anim
+        /// dictionary that loads proves the dictionary exists; it proves nothing whatsoever
+        /// about the clip name inside it, and TASK_PLAY_ANIM with a clip the dictionary has
+        /// not got is accepted in silence and plays nothing. Three drugs were reported as
+        /// having no animation while the log said, for each of them, that one had started.
+        ///
+        /// So it is asked -- not on the same frame, because the task is queued and the answer
+        /// is always no -- and a rung that did not take steps to the next one. When the ladder
+        /// runs out the scenario has it, which is where this always meant to end up.
+        /// </summary>
+        private void Watch(Recipe recipe, Ped me)
+        {
+            _watchAt = 0;
+
+            var playing = false;
+
+            try
+            {
+                playing = Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM,
+                                              me.Handle, _dict, _clip, 3);
+            }
+            catch
+            {
+                // Treated as not playing, which walks the ladder rather than trusting it.
+            }
+
+            if (playing)
+            {
+                Log.Info("Ritual anim: " + _dict + " / " + _clip + " -- playing.");
+                return;
+            }
+
+            Log.Info("Ritual anim: " + _dict + " / " + _clip + " was accepted and is not " +
+                     "playing. That clip is not in that dictionary; trying the next.");
+
+            _rung += 2;
+
+            if (_rung + 1 < Rungs(recipe).Length)
+            {
+                _waiting = recipe;
+                _giveUpAt = Game.GameTime + StreamMs;
+                return;
+            }
+
+            Scenario(recipe, me);
+        }
+
+        /// <summary>Which rung of the ladder is being tried, and when to check it.</summary>
+        private int _rung;
+        private int _watchAt;
+
+        private const int WatchMs = 400;
 
         /// <summary>
         /// The fallback, which brings its own prop and therefore fights ours.

@@ -114,13 +114,16 @@ namespace Hoodrich.Economy
             // shows working: a real dictionary, played directly, with a real prop bolted to
             // his hand. amb@world_human_aa_smoke is the roll-up idle; the plain smoking base
             // underneath it is proven -- it is the one the coke and meth rituals land on.
-            Dicts = new[]
+            // NAMED IN PAIRS, because the clip is not called the same thing in all three.
+            // aa_smoke's clips are named after the idle, not "base" -- which is why the log
+            // said this was playing and Franklin stood there with a joint in his fist.
+            Pairs = new[]
             {
-                "amb@world_human_aa_smoke@male@idle_a",
-                "amb@world_human_smoking@male@male_a@base",
-                "amb@world_human_smoking_pot@male@male_a@base"
+                "amb@world_human_aa_smoke@male@idle_a",           "idle_a",
+                "amb@world_human_smoking_pot@male@male_a@base",   "base",
+                "amb@world_human_smoking@male@male_a@base",       "base",
+                "amb@world_human_smoking@male@male_a@idle_a",     "idle_a"
             },
-            Clip = "base",
             Props = new[] { "p_cs_joint_01", "prop_cs_ciggy_01", "prop_cigar_01" },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
 
@@ -156,13 +159,13 @@ namespace Hoodrich.Economy
             // Same motion as the joint and a fatter thing in his hand, which is the only
             // difference between the two words that survives at arm's length. See Joint for
             // why neither of them is a scenario any more.
-            Dicts = new[]
+            Pairs = new[]
             {
-                "amb@world_human_aa_smoke@male@idle_a",
-                "amb@world_human_smoking@male@male_a@base",
-                "amb@world_human_smoking_pot@male@male_a@base"
+                "amb@world_human_aa_smoke@male@idle_a",           "idle_a",
+                "amb@world_human_smoking_pot@male@male_a@base",   "base",
+                "amb@world_human_smoking@male@male_a@base",       "base",
+                "amb@world_human_smoking@male@male_a@idle_a",     "idle_a"
             },
-            Clip = "base",
             Props = new[] { "prop_cigar_01", "prop_cigar_02", "p_cs_joint_01", "prop_cs_ciggy_01" },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING_POT",
@@ -211,13 +214,15 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Ritual.Recipe MethPipe = new Ritual.Recipe
         {
-            Dicts = new[]
+            // The switch clip is named after its own dictionary, which is the convention for
+            // the whole switch@ family and is nothing like the amb@ one below it.
+            Pairs = new[]
             {
-                "switch@trevor@trev_smoking_meth",
-                "amb@world_human_aa_smoke@male@idle_a",
-                "amb@world_human_smoking@male@male_a@base"
+                "switch@trevor@trev_smoking_meth",       "trev_smoking_meth",
+                "switch@trevor@trev_smoking_meth",       "base",
+                "amb@world_human_aa_smoke@male@idle_a",  "idle_a",
+                "amb@world_human_smoking@male@male_a@base", "base"
             },
-            Clip = "base",
             Props = new[]
             {
                 "prop_meth_pipe", "prop_glass_pipe", "prop_cs_pipe_01",
@@ -241,13 +246,13 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Ritual.Recipe Bump = new Ritual.Recipe
         {
-            Dicts = new[]
+            Pairs = new[]
             {
-                "switch@trevor@trev_smoking_meth",
-                "amb@world_human_drug_dealer_hard@male@base",
-                "amb@world_human_smoking@male@male_a@base"
+                "switch@trevor@trev_smoking_meth",             "trev_smoking_meth",
+                "amb@world_human_drug_dealer_hard@male@base",  "base",
+                "amb@world_human_smoking@male@male_a@base",    "base",
+                "amb@world_human_aa_smoke@male@idle_a",        "idle_a"
             },
-            Clip = "base",
             Props = new[]
             {
                 "prop_coke_block", "prop_meth_bag_01", "prop_cs_package_01",
@@ -338,13 +343,12 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly Ritual.Recipe Pop = new Ritual.Recipe
         {
-            Dicts = new[]
+            Pairs = new[]
             {
-                "amb@world_human_smoking@male@male_a@base",
-                "amb@world_human_drug_dealer@male@base",
-                "amb@world_human_aa_smoke@male@idle_a"
+                "amb@world_human_smoking@male@male_a@base",  "base",
+                "amb@world_human_drug_dealer@male@base",     "base",
+                "amb@world_human_aa_smoke@male@idle_a",      "idle_a"
             },
-            Clip = "base",
             Props = new[]
             {
                 "prop_cs_pills", "prop_pills_01", "prop_cs_script_bottle",
