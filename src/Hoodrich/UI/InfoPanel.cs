@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -291,8 +291,8 @@ namespace Hoodrich.UI
         private static readonly Color Ground = Color.FromArgb(238, 12, 13, 15);
         private static readonly Color Groove = Color.FromArgb(70, 200, 205, 200);
         private static readonly Color PipOff = Color.FromArgb(90, 200, 205, 200);
-        private static readonly Color HeroWash = Color.FromArgb(46, 255, 255, 255);
-        private static readonly Color Hairline = Color.FromArgb(60, 200, 205, 200);
+        /// <summary>Under the one big number: the ember, faintly, rather than a grey wash.</summary>
+        private static readonly Color HeroWash = Color.FromArgb(26, 238, 112, 30);
         private static readonly Color TrackBg = Color.FromArgb(50, 200, 205, 200);
         private static readonly Color SpriteNeutral = Color.FromArgb(235, 255, 255, 255);
 
@@ -342,7 +342,6 @@ namespace Hoodrich.UI
         /// <summary>How the panel arrives, and the light that runs along its bar.</summary>
         private const int EnterMs = 170;
         private const float EnterRise = 0.014f;
-        private const int SweepMs = 2600;
 
         /// <summary>
         /// How long each row waits its turn on the way in, and how long it takes once it does.
@@ -554,31 +553,13 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Hud.Panel(x, top, PanelWidth, height,
-                      Color.FromArgb((int)(Ground.A * arrive), Ground.R, Ground.G, Ground.B), Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
-
-            // And a light running along the bar. This screen has no cursor on it -- there is
-            // nothing to select, it is a readout -- so this is the only thing telling you it is
-            // live rather than a photograph of itself.
-            var barT = (Game.GameTime % SweepMs) / (float)SweepMs;
-            var barW = PanelWidth * 0.15f;
-            var barAt = x - barW + (PanelWidth + barW) * barT;
-
-            var barLeft = Math.Max(x, barAt);
-            var barRight = Math.Min(x + PanelWidth, barAt + barW);
-
-            if (barRight > barLeft)
-            {
-                Hud.RectFrom(barLeft, top, barRight - barLeft, 0.0028f,
-                             Color.FromArgb((int)(85f * arrive), 255, 255, 255));
-            }
+            Warm.Panel(x, top, PanelWidth, height, arrive);
 
             // The mark sits above the screen's own title: the mod saying who is talking,
-            // then the screen saying what about. Dim, because it is a letterhead rather than
-            // a heading -- it should be the second thing read, not the first.
-            Hud.BrandCentre(0.5f, top + 0.024f, BrandHeight, Palette.Alpha(Palette.TextDim, 165));
+            // then the screen saying what about.
+            Hud.BrandCentre(0.5f, top + 0.024f, BrandHeight, Palette.Alpha(Palette.Gold, (int)(225f * arrive)));
 
-            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.041f, 0.74f, Palette.Text,
+            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.041f, 0.74f, Palette.Gold,
                      Hud.FontCursive, centre: false);
 
             if (!string.IsNullOrEmpty(_subtitle))
@@ -632,7 +613,7 @@ namespace Hoodrich.UI
                 y += it.Cells * RowHeight;
             }
 
-            Hud.RectFrom(x + Pad, top + height - 0.026f, PanelWidth - Pad * 2f, 0.0012f, Hairline);
+            Warm.Rule(x + Pad, top + height - 0.026f, PanelWidth - Pad * 2f, arrive);
 
             var maxScroll = MaxScroll();
 
@@ -652,7 +633,7 @@ namespace Hoodrich.UI
                 Hud.RectFrom(x + PanelWidth - 0.0034f, trackTop, 0.0014f, trackH, TrackBg);
 
                 Hud.RectFrom(x + PanelWidth - 0.0034f, trackTop + (trackH - thumbH) * posF,
-                             0.0014f, thumbH, Palette.Alpha(Palette.Accent, 170));
+                             0.0014f, thumbH, Palette.Alpha(Palette.Gold, 170));
             }
         }
 
@@ -661,11 +642,7 @@ namespace Hoodrich.UI
             // Full width, and ABOVE the words, which is what a divider is. The old one ran from
             // the end of the title to the right edge, which is a line that starts wherever the
             // heading happened to stop.
-            if (!first)
-            {
-                Hud.RectFrom(x + Pad, y - 0.008f, PanelWidth - Pad * 2f, 0.0022f,
-                             Palette.Alpha(Palette.Accent, 60));
-            }
+            if (!first) Warm.Rule(x + Pad, y - 0.008f, PanelWidth - Pad * 2f);
 
             // Dim, not accent. Headings were the brightest text on the panel, labelling the
             // least important thing on it.
@@ -802,7 +779,7 @@ namespace Hoodrich.UI
                 {
                     if (i == row.PipAt)
                     {
-                        Hud.Disc(px, cy, 0.0062f, Palette.Accent);
+                        Hud.Disc(px, cy, 0.0062f, Palette.Gold);
                         Hud.Disc(px, cy, 0.0036f, Color.FromArgb(255, 12, 13, 15));
                     }
                     else if (i < row.PipsOn) Hud.Disc(px, cy, 0.0046f, row.Colour);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -156,6 +156,13 @@ namespace Hoodrich.UI
         private string _who;
 
         private int _pick;
+
+        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        private int _lastPick = -1;
+        private int _pickedAt;
+
+        /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
+        private readonly Glide _glide = new Glide();
         private int _scroll;
         private int _openedAt;
 
@@ -210,6 +217,9 @@ namespace Hoodrich.UI
 
             _who = null;
             _pick = 0;
+            _lastPick = -1;
+            _pickedAt = Game.GameTime;
+            _glide.Reset();
             _scroll = 0;
             _openedAt = Game.GameTime;
             _stamp = -1;
@@ -543,6 +553,9 @@ namespace Hoodrich.UI
             if (next > _rows.Count - 1) next = _rows.Count - 1;
             if (next == _pick) return;
 
+            _lastPick = _pick;
+            _pickedAt = Game.GameTime;
+
             _pick = next;
             Steady();
 
@@ -844,8 +857,7 @@ namespace Hoodrich.UI
             // Centred, and riding the curtain in. Every other panel in the mod opens this way.
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Hud.Panel(left, top, PanelWidth, height,
-                      Color.FromArgb(238, 12, 13, 15), Palette.Accent);
+            Warm.Panel(left, top, PanelWidth, height);
 
             if (_who == null) DrawList(left, x, right, top, height);
             else DrawThread(left, x, right, top, height);
@@ -862,11 +874,11 @@ namespace Hoodrich.UI
             if (unread > 0)
             {
                 Hud.TextRight(unread + " NEW", right, y + 0.003f,
-                              SmallScale, Palette.Accent, Hud.FontChaletComprimeCologne);
+                              SmallScale, Palette.Gold, Hud.FontChaletComprimeCologne);
             }
 
             y += 0.030f;
-            Hud.RectFrom(x, y, PanelWidth - Pad * 2f, 0.0014f, Palette.Alpha(Palette.Accent, 120));
+            Warm.Rule(x, y, PanelWidth - Pad * 2f);
 
             y = top + HeaderHeight;
 
@@ -881,28 +893,35 @@ namespace Hoodrich.UI
             var fits = Fits();
             var shown = 0;
 
+            // The plate comes up under the row the cursor lands on and goes down under the one
+            // it left, and the frame travels between them. Same as every other screen.
+            var grown = Warm.Grown(_pickedAt);
+
+            _glide.Begin();
+
             for (var i = _scroll; i < _rows.Count && shown < fits; i++, shown++)
             {
-                DrawRow(left, x, right, y, _rows[i], i == _pick);
+                DrawRow(left, x, right, y, _rows[i], i == _pick,
+                        Warm.Lit(i, _pick, _lastPick, grown));
                 y += RowHeight;
             }
 
             if (_rows.Count > fits) Rail(left, top + HeaderHeight, fits, shown);
 
             Keys(x, right, top, height, "OPEN", "CLOSE");
+
+            // Last, so it rides over the rows it is pointing at.
+            _glide.Draw();
         }
 
-        private void DrawRow(float left, float x, float right, float top, Row row, bool on)
+        private void DrawRow(float left, float x, float right, float top, Row row, bool on, float lit)
         {
             var h = RowHeight - 0.004f;
 
-            if (on)
-            {
-                Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.004f, h,
-                             Color.FromArgb(30, 255, 255, 255));
+            Warm.Plate(left + 0.002f, top, PanelWidth - 0.004f, h, lit);
+            Warm.Sheen(left + 0.002f, top, PanelWidth - 0.004f, h, lit);
 
-                Hud.RectFrom(left + 0.002f, top, 0.0022f, h, Palette.Accent);
-            }
+            if (on) _glide.Target(left + 0.002f, top, PanelWidth - 0.004f, h);
 
             var cx = x + Hud.ToX(AvatarSize) * 0.5f;
             var cy = top + h * 0.5f;
@@ -928,14 +947,14 @@ namespace Hoodrich.UI
                 catch { stampW = 0.016f; }
 
                 Hud.TextRight(row.When, right, top + 0.006f, SmallScale,
-                              Palette.TextDim, Hud.FontChaletComprimeCologne);
+                              Warm.Ink(Palette.TextDim, lit), Hud.FontChaletComprimeCologne);
             }
 
             var nameRoom = right - textX - stampW - 0.008f;
 
             Hud.Text(Hud.Fit(row.Name, nameRoom, NameScale, Hud.FontChaletLondon),
                      textX, top + 0.004f, NameScale,
-                     row.Unread > 0 ? Palette.Text : Palette.Alpha(Palette.Text, 225),
+                     Warm.Ink(row.Unread > 0 ? Palette.Text : Palette.Alpha(Palette.Text, 225), lit),
                      Hud.FontChaletLondon, centre: false);
 
             // ON THE FACE, not at the end of the preview.
@@ -950,10 +969,12 @@ namespace Hoodrich.UI
                 var bx = cx + Hud.ToX(AvatarSize) * 0.42f;
                 var by = cy - AvatarSize * 0.36f;
 
-                Hud.Disc(bx, by, 0.0078f, Palette.Accent);
+                // Gold on the dark; on the plate the badge goes dark and the number gold, so
+                // it reads on both grounds.
+                Hud.Disc(bx, by, 0.0078f, Warm.Ink(Palette.Gold, lit));
 
                 Hud.Text(row.Unread.ToString(), bx, by - 0.0090f, 0.26f,
-                         Color.FromArgb(255, 14, 15, 17), Hud.FontChaletLondon);
+                         Warm.Lerp(Color.FromArgb(255, 14, 15, 17), Palette.Gold, lit), Hud.FontChaletLondon);
             }
 
             var preview = row.Preview;
@@ -975,7 +996,7 @@ namespace Hoodrich.UI
 
                 Hud.Text(Hud.Fit(Flatten(preview), room, BodyScale, Hud.FontChaletLondon),
                          textX, top + 0.024f, BodyScale,
-                         row.Unread > 0 ? Palette.Alpha(Palette.Text, 210) : Palette.TextDim,
+                         Warm.Ink(row.Unread > 0 ? Palette.Alpha(Palette.Text, 210) : Palette.TextDim, lit),
                          Hud.FontChaletLondon, centre: false);
             }
         }
@@ -1025,8 +1046,7 @@ namespace Hoodrich.UI
             }
 
             y = top + HeaderHeight;
-            Hud.RectFrom(x, y - 0.008f, PanelWidth - Pad * 2f, 0.0014f,
-                         Palette.Alpha(Palette.Accent, 120));
+            Warm.Rule(x, y - 0.008f, PanelWidth - Pad * 2f);
 
             // ANYBODY WHO TEXTED YOU CAN BE TEXTED BACK, which was the whole of what was
             // missing. This was "row has a contact id", so the only threads with a key that did
@@ -1236,13 +1256,15 @@ namespace Hoodrich.UI
             // because a bubble that touches both edges is a paragraph again.
             var boxLeft = message.Mine ? right - w : x;
 
+            // Yours is warm, theirs is grey: the ember means you on this screen the way it
+            // means you everywhere else in the mod.
             var wash = message.Mine
-                ? Palette.Alpha(Palette.Standing, 30)
+                ? Palette.Alpha(Palette.Ember, 34)
                 : Color.FromArgb(26, 255, 255, 255);
 
             Hud.RectFrom(boxLeft, top, w, h, wash);
 
-            var rail = message.Mine ? Palette.Standing : Palette.Alpha(Palette.Accent, 170);
+            var rail = message.Mine ? Palette.Ember : Palette.Alpha(Palette.TextDim, 170);
 
             // The rail goes on the outside edge of the bubble -- the side the message came
             // from. Both on the left would make the tint the only thing separating them, and
@@ -1306,7 +1328,7 @@ namespace Hoodrich.UI
             var h = LineHeight + BubblePad * 2f;
 
             Hud.RectFrom(x, top, w, h, Color.FromArgb(26, 255, 255, 255));
-            Hud.RectFrom(x, top, Hud.ToX(0.0022f), h, Palette.Alpha(Palette.Accent, 170));
+            Hud.RectFrom(x, top, Hud.ToX(0.0022f), h, Palette.Alpha(Palette.TextDim, 170));
 
             var lit = (Game.GameTime / TypingStepMs) % 3;
             var cy = top + h * 0.5f;
@@ -1332,15 +1354,15 @@ namespace Hoodrich.UI
             var h = FooterHeight - 0.008f;
 
             Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.004f, h,
-                         open ? Palette.Alpha(Palette.Standing, 26)
+                         open ? Palette.Alpha(Palette.Ember, 26)
                               : Color.FromArgb(24, 255, 255, 255));
 
             Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.004f, 0.0012f,
-                         open ? Palette.Standing : Palette.Alpha(Palette.TextDim, 120));
+                         open ? Palette.Ember : Palette.Alpha(Palette.TextDim, 120));
 
             if (open)
             {
-                Hud.Text("SEND", x, top + 0.006f, SmallScale, Palette.Standing,
+                Hud.Text("SEND", x, top + 0.006f, SmallScale, Palette.Gold,
                          Hud.FontChaletComprimeCologne, centre: false);
 
                 var line = string.IsNullOrEmpty(row.Line) ? "you got anything?" : row.Line;
@@ -1387,7 +1409,7 @@ namespace Hoodrich.UI
             var at = (float)_scroll / Math.Max(1, _rows.Count);
 
             Hud.RectFrom(x, top + height * at, Hud.ToX(0.0018f), height * span,
-                         Palette.Alpha(Palette.Accent, 190));
+                         Palette.Alpha(Palette.Gold, 190));
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -198,15 +198,7 @@ namespace Hoodrich.UI
         private const float RowArt = 0.017f;
         private const float SplitGap = 0.034f;
 
-        private static readonly Color RowWash = Color.FromArgb(46, 255, 255, 255);
-        private static readonly Color DeadWash = Color.FromArgb(22, 255, 255, 255);
-        private static readonly Color Hairline = Color.FromArgb(40, 200, 205, 200);
 
-        /// <summary>Border thickness, as a height fraction. Sideways it goes through ToX.</summary>
-        private const float Rule = 0.0016f;
-
-        /// <summary>How far a corner tick runs along each edge.</summary>
-        private const float Tick = 0.026f;
         private static readonly Color SplitInk = Color.FromArgb(70, 200, 205, 200);
 
         /// <summary>One line you can put out that costs nothing.</summary>
@@ -255,6 +247,13 @@ namespace Hoodrich.UI
         /// <summary>Where the cursor is inside the current action tab's list.</summary>
         private int _pick;
         private int _tabAt;
+
+        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        private int _lastPick = -1;
+        private int _pickedAt;
+
+        /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
+        private readonly Glide _glide = new Glide();
 
         private int _holdFrom;
         private bool _holdArmed;
@@ -336,6 +335,9 @@ namespace Hoodrich.UI
             _openedAt = Game.GameTime;
 
             _pick = 0;
+            _lastPick = -1;
+            _pickedAt = Game.GameTime;
+            _glide.Reset();
             _tabAt = Game.GameTime;
             _holdFrom = 0;
             _holdArmed = false;
@@ -567,6 +569,9 @@ namespace Hoodrich.UI
             if (next > rows - 1) next = rows - 1;
             if (next == _pick) return;
 
+            _lastPick = _pick;
+            _pickedAt = Game.GameTime;
+
             _pick = next;
 
             // A cursor move cancels a hold. Otherwise a bar started on one gang finishes on
@@ -764,7 +769,11 @@ namespace Hoodrich.UI
             _tab = next;
             _tabAt = Game.GameTime;
 
+            // A new tab is a new list: the plate comes up under its first row with nothing
+            // going down, and the frame glides over from wherever it was.
             _pick = 0;
+            _lastPick = -1;
+            _pickedAt = Game.GameTime;
             _holdFrom = 0;
             _holdSpent = false;
             _note = null;
@@ -869,19 +878,17 @@ namespace Hoodrich.UI
             var x = left + Pad;
             var right = left + PanelWidth - Pad;
 
-            // The hub's ground and the hub's bar across the top.
-            //
-            // The soft grey halo that used to sit outside the panel is gone. Two framing
-            // systems on one screen -- a glow out here and an accent rule in the header -- was
-            // one more than the rest of the mod uses, and the rule is the one that matches.
-            // The bar across the very top turns red on the two tabs that start fights. It is
-            // the one mode signal readable without looking at any particular element.
-            var edge = _tab >= TabDiss ? Palette.Danger : Palette.Accent;
+            // The same panel as every other screen: rounded black with the ember wash, and no
+            // bar, frame or corner tick anywhere round it. The one mode signal -- red on the
+            // two tabs that start fights -- lives on the tab strip's marker and the rules,
+            // which is where you are looking when you change tabs.
+            var edge = _tab >= TabDiss ? Palette.Danger : Palette.Ember;
 
-            Hud.Panel(left, PanelTop, PanelWidth, PanelHeight,
-                      Color.FromArgb(238, 12, 13, 15), edge);
+            Warm.Panel(left, PanelTop, PanelWidth, PanelHeight);
 
             Count();
+
+            _glide.Begin();
 
             var y = DrawHeader(left, right, edge);
             y = Tabs(x, right, y + 0.010f, edge);
@@ -890,7 +897,7 @@ namespace Hoodrich.UI
             {
                 Action(left, x, right, y);
                 Keys(x, right);
-                Frame(left, edge);
+                _glide.Draw();
                 return;
             }
 
@@ -925,45 +932,8 @@ namespace Hoodrich.UI
             else Rail(left, feedTop, bottom, count, shown);
 
             Keys(x, right);
-            Frame(left, edge);
+            _glide.Draw();
         }
-
-        /// <summary>
-        /// The border, drawn last so nothing paints over it.
-        ///
-        /// The panel had a bar across the top and three open sides, which is not a window --
-        /// it is a dark rectangle that happens to end. On a bright street at midday the bottom
-        /// edge genuinely disappears into whatever is behind it and the feed reads as text
-        /// floating over the road.
-        ///
-        /// Thickness is one number taken two ways. Sideways it goes through ToX, which divides
-        /// by the aspect, so the frame is the same number of PIXELS thick all the way round on
-        /// any monitor -- a plain fraction used for both would draw a hairline top and bottom
-        /// and a fat post down either side of an ultrawide.
-        ///
-        /// The corners are the mode colour and the rest is grey. A full accent frame would put
-        /// the loudest colour on the screen around the outside of everything and leave the top
-        /// bar with nothing to say; corner ticks carry the same signal in a tenth of the ink.
-        /// </summary>
-        private void Frame(float left, Color edge)
-        {
-            // Cyan, and brighter than a hairline.
-            //
-            // The border carries the sweep and the corner ticks, and at sixty alpha in grey it
-            // was doing that where nobody could see it -- a moving thing you cannot make out is
-            // the same as a still one. Cyan because nothing else on this screen is: the sets
-            // own the warm colours and the greens, the mode bar owns the accent, and a frame
-            // that shares a colour with any of them stops being the frame.
-            //
-            // The corner ticks keep the MODE colour rather than going cyan with it. They are
-            // the one thing on the border that means something -- red on the tabs that start
-            // fights -- and a signal painted the same colour as the thing it sits on is not a
-            // signal any more.
-            Hud.Frame(left, PanelTop, PanelWidth, PanelHeight, FrameInk, edge, Rule, Tick);
-        }
-
-        /// <summary>The border's own colour, which is nobody else's on this screen.</summary>
-        private static readonly Color FrameInk = Color.FromArgb(150, 90, 215, 235);
 
         /// <summary>
         /// The tab strip, which is the armourer's shelf strip with the array swapped.
@@ -996,11 +966,11 @@ namespace Hoodrich.UI
             var markX = _tabX.To(goingTo, 13f);
             var markW = _tabW.To(_stripW[_tab] + 0.008f, 13f);
 
-            // Under the labels, so it slides behind the words rather than over them.
-            Hud.RectFrom(markX - 0.004f, y - 0.004f, markW, 0.024f, RowWash);
+            // Under the labels, so it slides behind the words rather than over them. Gold,
+            // faintly, with the mode colour underlining it.
+            Hud.RectFrom(markX - 0.004f, y - 0.004f, markW, 0.024f, Palette.Alpha(Palette.Gold, 26));
 
-            Hud.RectFrom(markX - 0.004f, y + 0.019f, markW, 0.0022f,
-                         _tab < 2 ? Palette.Accent : Palette.Danger);
+            Hud.RectFrom(markX - 0.004f, y + 0.019f, markW, 0.0022f, edge);
 
             var cx = x;
 
@@ -1017,7 +987,7 @@ namespace Hoodrich.UI
                 // An empty feed tab says so before you press it. NOT Palette.TextDisabled: that
                 // is full alpha and composites BRIGHTER than TextDim, which would make the
                 // empty tab the loudest thing on the row.
-                var ink = here ? Palette.Text
+                var ink = here ? (i >= TabDiss ? Palette.Danger : Palette.Gold)
                     : i < 2 ? (empty ? Palette.Alpha(Palette.TextDim, 90) : Palette.TextDim)
                     : i == TabPost ? Palette.TextDim
                     : Palette.Alpha(Palette.Warn, 170);
@@ -1043,7 +1013,7 @@ namespace Hoodrich.UI
                               Palette.TextDim, Hud.FontLabel);
             }
             y += 0.032f;
-            Hud.RectFrom(x, y, PanelWidth - Pad * 2f, 0.0022f, edge);
+            ModeRule(x, y, PanelWidth - Pad * 2f, edge);
             return y + 0.012f;
         }
 
@@ -1066,10 +1036,14 @@ namespace Hoodrich.UI
             var head = _tab == TabPost ? "SAY SOMETHING" : "WHO";
 
             Hud.Text(head, x, top, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
-            Hud.RectFrom(x, top + 0.022f, PanelWidth - Pad * 2f, 0.0010f, Hairline);
+            Warm.Rule(x, top + 0.022f, PanelWidth - Pad * 2f);
 
             var first = top + 0.034f;
             var t = Progress();
+
+            // The plate comes up under the row the cursor lands on and goes down under the one
+            // it left, and the frame travels between them. Same as every other screen.
+            var grown = Warm.Grown(_pickedAt);
 
             // Whatever fits between here and the floor, rather than a count that was true when
             // the page began higher up.
@@ -1139,8 +1113,8 @@ namespace Hoodrich.UI
                     valueInk = beefing ? Palette.Warn : Palette.TextDim;
                 }
 
-                Row(left, x, right, rowY, here, !_live, tick, label, value, valueInk,
-                    here && t > 0f ? t : 0f, Art(i));
+                Row(left, x, right, rowY, here, !_live, Warm.Lit(i, _pick, _lastPick, grown),
+                    tick, label, value, valueInk, here && t > 0f ? t : 0f, Art(i));
             }
 
             if (rows == 0)
@@ -1200,7 +1174,7 @@ namespace Hoodrich.UI
             if (_feed == null) return;
 
             Hud.Text("WHAT YOU'VE SAID", x, top, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
-            Hud.RectFrom(x, top + 0.022f, PanelWidth - Pad * 2f, 0.0010f, Hairline);
+            Warm.Rule(x, top + 0.022f, PanelWidth - Pad * 2f);
 
             var y = top + 0.034f;
             var floor = PanelTop + PanelHeight - 0.034f;
@@ -1226,26 +1200,35 @@ namespace Hoodrich.UI
                      Palette.Alpha(Palette.TextDim, 110), Hud.FontChaletLondon, centre: false);
         }
 
+        /// <summary>
+        /// Warm.Rule with the stroke in the MODE colour rather than the ember: red under the
+        /// tabs that start fights, ember everywhere else. The one place the mode colour lives
+        /// now the bar along the top is gone.
+        /// </summary>
+        private static void ModeRule(float x, float y, float width, Color edge)
+        {
+            Hud.RectFrom(x, y, width, 0.0012f, Warm.Hairline);
+            Hud.RectFrom(x, y - 0.0004f, width * 0.14f, 0.0020f, Palette.Alpha(edge, 215));
+        }
+
         /// <summary>A darker version of a colour, for edges and rings.</summary>
         private static Color Shade(Color c, float by)
         {
             return Color.FromArgb(c.A, (int)(c.R * by), (int)(c.G * by), (int)(c.B * by));
         }
 
-        private static void Row(float left, float x, float right, float top, bool here, bool dead,
-                                Color tick, string label, string value, Color valueInk, float fill,
-                                string art = "")
+        private void Row(float left, float x, float right, float top, bool here, bool dead, float lit,
+                         Color tick, string label, string value, Color valueInk, float fill,
+                         string art = "")
         {
-            if (here)
-            {
-                // Under a dead row the cursor is still visibly SOMEWHERE, but visibly on
-                // something inert.
-                Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.012f, RowHeight,
-                             dead ? DeadWash : RowWash);
+            // Under a dead row the cursor is still visibly SOMEWHERE, but visibly on something
+            // inert: the plate at a third of its strength.
+            var plate = dead ? lit * 0.35f : lit;
 
-                Hud.RectFrom(left + 0.002f, top, 0.0022f, RowHeight,
-                             dead ? Palette.Alpha(Palette.TextDim, 120) : Palette.Accent);
-            }
+            Warm.Plate(left + 0.002f, top, PanelWidth - 0.012f, RowHeight, plate);
+            Warm.Sheen(left + 0.002f, top, PanelWidth - 0.012f, RowHeight, plate);
+
+            if (here) _glide.Target(left + 0.002f, top, PanelWidth - 0.012f, RowHeight);
 
             var textX = x + 0.006f;
 
@@ -1262,21 +1245,21 @@ namespace Hoodrich.UI
             // simply keeps its words where they were.
             if (!string.IsNullOrEmpty(art) &&
                 Hud.File(art, textX + Hud.ToX(RowArt) * 0.5f, top + 0.015f, RowArt, 0f,
-                         dead ? Palette.Alpha(Palette.TextDim, 110) : Palette.Text))
+                         Warm.Ink(dead ? Palette.Alpha(Palette.TextDim, 110) : Palette.Text, plate)))
             {
                 textX += Hud.ToX(RowArt) + 0.006f;
             }
 
-            var ink = dead ? Palette.Alpha(Palette.TextDim, 110)
-                : here ? Palette.Text
-                : Palette.Alpha(Palette.Text, 175);
+            var ink = Warm.Ink(dead ? Palette.Alpha(Palette.TextDim, 110)
+                             : here ? Palette.Text
+                             : Palette.Alpha(Palette.Text, 175), plate);
 
             Hud.Text(label, textX, top + 0.006f, 0.30f, ink, Hud.FontChaletLondon, centre: false);
 
             if (!string.IsNullOrEmpty(value))
             {
                 Hud.TextRight(value, right, top + 0.008f, 0.24f,
-                              dead ? Palette.Alpha(Palette.TextDim, 110) : valueInk,
+                              Warm.Ink(dead ? Palette.Alpha(Palette.TextDim, 110) : valueInk, plate),
                               Hud.FontLabel);
             }
 
@@ -1298,7 +1281,7 @@ namespace Hoodrich.UI
         /// </summary>
         private void NoteStrip(float x, float right, float top, float t)
         {
-            Hud.RectFrom(x, top, PanelWidth - Pad * 2f, 0.0010f, Hairline);
+            Warm.Rule(x, top, PanelWidth - Pad * 2f);
 
             // The hold again, across the words it is about, so the bar and the warning read as
             // one object rather than two.
@@ -1449,7 +1432,7 @@ namespace Hoodrich.UI
             if (pos > 1f) pos = 1f;
 
             Hud.RectFrom(rx, top + (h - thumbH) * pos, 0.0022f, thumbH,
-                         Palette.Alpha(Palette.Accent, 160));
+                         Palette.Alpha(Palette.Gold, 160));
         }
 
         /// <summary>
@@ -1478,8 +1461,7 @@ namespace Hoodrich.UI
         {
             var y = PanelTop + PanelHeight - 0.019f;
 
-            Hud.RectFrom(x, PanelTop + PanelHeight - 0.026f, PanelWidth - Pad * 2f, 0.0012f,
-                         Color.FromArgb(60, 200, 205, 200));
+            Warm.Rule(x, PanelTop + PanelHeight - 0.026f, PanelWidth - Pad * 2f);
 
             // "TABS" rather than "FILTER", which would be a lie about half the strip now. And
             // every line ends in BACKSPACE OUT, so the way out is the last thing read in every
@@ -1520,20 +1502,16 @@ namespace Hoodrich.UI
         /// </summary>
         private float DrawHeader(float left, float right, Color edge)
         {
-            Hud.RectFrom(left, PanelTop, PanelWidth, CardHeight, Color.FromArgb(240, 18, 20, 22));
-
-            // Re-asserted, so draw order cannot eat it.
-            Hud.RectFrom(left, PanelTop, PanelWidth, 0.0028f, edge);
-
+            // NO CARD GROUND. It was a square slab of grey drawn over the top of a panel whose
+            // top corners are round, and with the frame gone that squared them off. The panel's
+            // own wash is the masthead's ground now, which is what the wash is for.
             var headX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
             var middle = left + PanelWidth * 0.5f;
-
-            Sweep(left, edge);
 
             // The mark over the middle of the panel, the same letterhead every other screen in
             // the mod carries.
             Hud.BrandCentre(middle, PanelTop + 0.023f, 0.024f,
-                            Palette.Alpha(Palette.TextDim, 175));
+                            Palette.Alpha(Palette.Gold, 225));
 
             // And the word under it, centred on the same axis, in the face the rest of the mod
             // reads in rather than the script one.
@@ -1547,18 +1525,14 @@ namespace Hoodrich.UI
 
             Live(middle, TitleTop + 0.0080f);
 
-            // A hairline under the two of them, so the masthead is visibly a masthead and the
+            // A rule under the two of them, so the masthead is visibly a masthead and the
             // account below it is visibly the account.
-            Hud.RectFrom(left + Pad, PanelTop + 0.0635f, PanelWidth - Pad * 2f, 0.0012f,
-                         Color.FromArgb(46, 255, 255, 255));
+            Warm.Rule(left + Pad, PanelTop + 0.0635f, PanelWidth - Pad * 2f);
 
-            // The card's own floor, full width rather than inset.
-            //
-            // The hairline above it separates the title from the account INSIDE the card; this
-            // is where the card stops and the feed starts, and the two jobs were being done by
-            // one line eight thousandths from the wrong place.
-            Hud.RectFrom(left, PanelTop + CardHeight - 0.0012f, PanelWidth, 0.0012f,
-                         Palette.Alpha(edge, 100));
+            // The masthead's floor, in the mode colour: where the account stops and the strip
+            // starts, and red on the tabs that start fights.
+            Hud.RectFrom(left + Pad, PanelTop + CardHeight - 0.0012f, PanelWidth - Pad * 2f, 0.0012f,
+                         Palette.Alpha(edge, 110));
 
             var cx = left + Pad + Hud.ToX(HeadSize) * 0.5f;
             var cy = PanelTop + 0.0935f;
@@ -1631,36 +1605,6 @@ namespace Hoodrich.UI
             // No underline here. The tab strip's rule closes the masthead, and two full-width
             // accent rules a few hundredths apart on a panel this narrow is a ladder.
             return PanelTop + CardHeight;
-        }
-
-        /// <summary>
-        /// A bright segment travelling along the accent rule, once every two and a half seconds.
-        ///
-        /// The whole animation budget of this screen, spent in one place. A feed is a thing that
-        /// is supposed to be live and every pixel of it was static, so one moving highlight on
-        /// the rule at the top says "this is running" without anything underneath it moving --
-        /// which matters, because the thing underneath is text somebody is trying to read.
-        ///
-        /// Clipped to the panel rather than drawn over it: it enters from off the left edge and
-        /// leaves past the right, and a rectangle that starts outside the card would be a bar
-        /// across the screen for the frames either side.
-        /// </summary>
-        private void Sweep(float left, Color edge)
-        {
-            const int PeriodMs = 2600;
-
-            var t = (Game.GameTime % PeriodMs) / (float)PeriodMs;
-            var wide = PanelWidth * 0.20f;
-
-            var from = left - wide + (PanelWidth + wide * 2f) * t;
-
-            var x0 = Math.Max(left, from);
-            var x1 = Math.Min(left + PanelWidth, from + wide);
-
-            if (x1 <= x0) return;
-
-            Hud.RectFrom(x0, PanelTop, x1 - x0, 0.0028f,
-                         Color.FromArgb(150, 255, 255, 255));
         }
 
         /// <summary>
@@ -1868,7 +1812,7 @@ namespace Hoodrich.UI
                 // existing, which a badge cannot -- and it never competes with the about-you
                 // rail, because it is gone within six seconds and that one is permanent.
                 Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.012f, PostHeight(post) - PostGap,
-                             Palette.Alpha(Palette.Accent, (int)(58f * glow)));
+                             Palette.Alpha(Palette.Gold, (int)(48f * glow)));
             }
 
             // Anything about you gets a change of ground as well as a rail.
@@ -1920,9 +1864,10 @@ namespace Hoodrich.UI
                 Hud.RectFrom(cardX, top, cardW, cardH, Color.FromArgb(26, 255, 255, 255));
 
                 // The rail down the left, which is the one permanent mark on this screen.
-                Hud.RectFrom(cardX, top, 0.0026f, cardH, Palette.Accent);
+                // Ember: about you is warm, the way you are everywhere else in the mod.
+                Hud.RectFrom(cardX, top, 0.0026f, cardH, Palette.Ember);
 
-                var trim = Palette.Alpha(Palette.Accent, 70);
+                var trim = Palette.Alpha(Palette.Ember, 90);
 
                 Hud.RectFrom(cardX, top, cardW, 0.0010f, trim);
                 Hud.RectFrom(cardX, top + cardH - 0.0010f, cardW, 0.0010f, trim);
@@ -1941,7 +1886,7 @@ namespace Hoodrich.UI
                 var run = (1f - glow) / 0.2f;
 
                 Hud.RectFrom(cardX, top, 0.0026f, cardH * run,
-                             Palette.Alpha(Palette.Accent, 220));
+                             Palette.Alpha(Palette.Gold, 220));
             }
 
             // Content sits inside the card from here down. One shift rather than a padding
@@ -1983,7 +1928,7 @@ namespace Hoodrich.UI
                 var beat = 0.55f + 0.45f * (0.5f + 0.5f * (float)Math.Sin(Game.GameTime * 0.011));
 
                 Hud.Disc(left + PanelWidth - 0.018f, top + 0.010f, 0.0032f,
-                         Palette.Alpha(Palette.Accent, (int)(230f * glow * beat)));
+                         Palette.Alpha(Palette.Gold, (int)(230f * glow * beat)));
             }
 
             var textX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
