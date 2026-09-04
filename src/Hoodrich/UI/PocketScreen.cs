@@ -57,7 +57,6 @@ namespace Hoodrich.UI
         private const float Rule = 0.0016f;
         private const float Tick = 0.024f;
         private const float BarHeight = 0.0075f;
-        private const float MarkSize = 0.0125f;
         private const float HeadIcon = 0.016f;
 
         private static readonly Color Hairline = Color.FromArgb(44, 200, 205, 200);
@@ -107,6 +106,22 @@ namespace Hoodrich.UI
         private const float FoodCap = 0.020f;
         private const float FoodStrip = 0.014f + FoodHead + FoodTile + FoodCap;
 
+        /// <summary>
+        /// The product tiles, which are the food tiles.
+        ///
+        /// SAME SIZE, SAME GAP, SAME CAPTION UNDERNEATH -- literally the same numbers, because
+        /// the two bands sit one above the other and any difference between them reads as a
+        /// mistake rather than as a distinction. The product used to be a list of lines with a
+        /// 0.019 icon on the left and the food a grid of 0.044 squares, and stacked together
+        /// they looked like two screens that had been glued.
+        /// </summary>
+        private const float Cell = FoodTile;
+        private const float CellGap = 0.006f;
+        private const float CellCap = 0.020f;
+
+        /// <summary>The bottom strip on a tile that carries the amount.</summary>
+        private const float ChipHeight = 0.0125f;
+
         private int _selected;
         private int _openedAt;
         private int _nextRepeat;
@@ -118,9 +133,7 @@ namespace Hoodrich.UI
         private const int SweepMs = 2400;
         private const int EnterMs = 170;
         private const float EnterRise = 0.014f;
-        private const float SlideRate = 0.30f;
 
-        private float _slide;
         private int _shownAt;
 
         private int _droppedAt;
@@ -157,7 +170,6 @@ namespace Hoodrich.UI
 
             Rebuild();
 
-            _slide = 0f;
             _fill = Full();
 
             _curtain.Open();
@@ -428,8 +440,15 @@ namespace Hoodrich.UI
         {
             if (!IsOpen) return;
 
-            var bodyRows = Math.Max(_rows.Count, 1);
-            var height = HeadHeight + bodyRows * RowHeight + FootHeight;
+            // HOW MANY ROWS OF TILES, not how many items. Worked out here because the panel
+            // has to be tall enough before anything is drawn into it, and it is the same sum
+            // the band itself does -- see Across.
+            var lines = _rows.Count == 0 ? 1 : (_rows.Count + Across() - 1) / Across();
+
+            var height = HeadHeight + FootHeight +
+                         (_rows.Count == 0
+                              ? RowHeight
+                              : lines * (Cell + CellGap) - CellGap + CellCap + 0.006f);
 
             // Only when there is food. An empty band with a heading over it is a promise the
             // screen is not keeping.
@@ -516,39 +535,14 @@ namespace Hoodrich.UI
                 Hud.Text("Nothing on you.", ex, y + 0.006f, 0.28f,
                          Palette.TextDim, Hud.FontBody, centre: false);
             }
-            else if (!OnFood)
+            else
             {
-                _slide += (_selected - _slide) * SlideRate;
-                if (Math.Abs(_selected - _slide) < 0.002f) _slide = _selected;
-
-                var rowY = y - 0.004f + _slide * RowHeight;
-
-                Hud.RectFrom(x - pad * 0.35f, rowY, wide + pad * 0.7f, RowHeight,
-                             Color.FromArgb((int)(45f * arrive), 255, 255, 255));
-
-                Hud.RectFrom(x - pad * 0.35f, rowY, 0.0022f, RowHeight, Palette.Accent);
-
-                var sweepW = wide * 0.16f;
-                var sweepAt = x - pad * 0.35f - sweepW + (wide + pad * 0.7f + sweepW) * barT;
-
-                var lo = Math.Max(x - pad * 0.35f, sweepAt);
-                var hi = Math.Min(x + wide + pad * 0.35f, sweepAt + sweepW);
-
-                if (hi > lo)
-                {
-                    Hud.RectFrom(lo, rowY, hi - lo, RowHeight, Color.FromArgb(16, 255, 255, 255));
-                }
+                y = ProductBand(x, wide, y, arrive);
             }
 
-            for (var i = 0; i < _rows.Count; i++)
-            {
-                Line(_rows[i], i, x, right, y);
-                y += RowHeight;
-            }
-
-            // "Nothing on you." occupies a row that the loop above never walked, and the panel
-            // was already sized for it -- so the cursor has to step over it too, or the food
-            // band starts on top of the sentence.
+            // "Nothing on you." occupies a row nothing above walked, and the panel was already
+            // sized for it -- so the cursor has to step over it too, or the food band starts
+            // on top of the sentence.
             if (_rows.Count == 0) y += RowHeight;
 
             if (_food.Count > 0) FoodBand(x, wide, y + 0.008f, arrive);
@@ -833,41 +827,174 @@ namespace Hoodrich.UI
             Hud.RectFrom(x, barY + BarHeight, width, 0.0010f, Palette.Alpha(tint, 90));
         }
 
-        private void Line(PocketRow row, int i, float x, float right, float y)
+        /// <summary>
+        /// How many tiles fit across the panel.
+        ///
+        /// Asked rather than fixed, because the panel width is a constant but the aspect ratio
+        /// is not -- Hud.ToX turns a height fraction into a width one, and on an ultrawide that
+        /// answer is different. A hardcoded four would wrap on some screens and leave a gap on
+        /// others.
+        /// </summary>
+        private static int Across()
         {
-            var picked = i == _selected;
-            var tint = picked ? Palette.Text : Palette.TextDim;
+            var wide = Hud.ToX(PanelWidthH) - Hud.ToX(PadH) * 2f;
+            var step = Hud.ToX(Cell) + Hud.ToX(CellGap);
 
-            var art = Icons.ForDrug(row.Drug.Id);
-            var tx = x;
+            var many = step <= 0f ? 4 : (int)((wide + Hud.ToX(CellGap)) / step);
 
-            if (art.HasFile &&
-                Hud.File(art.File, x + Hud.ToX(ArtSize) * 0.5f, y + RowHeight * 0.34f,
-                         ArtSize, 0f, tint))
+            if (many < 1) many = 1;
+            if (many > 8) many = 8;
+
+            return many;
+        }
+
+        /// <summary>
+        /// What is on you, as squares. Returns the y the next thing may start at.
+        ///
+        /// THE SAME BAND AS THE FOOD, ON PURPOSE. See Cell -- the two sit one above the other
+        /// and the product being a list of lines while the food was a grid of squares made the
+        /// panel read as two screens glued together. Now the only difference between the bands
+        /// is what is written under them.
+        ///
+        /// The picture carries the drug, the chip along the bottom carries the amount, the
+        /// corner carries how cut it is, and the caption under the strip carries the name of
+        /// whichever one is under the cursor. A tile is a glance; the line underneath is for
+        /// reading.
+        /// </summary>
+        private float ProductBand(float x, float width, float y, float arrive)
+        {
+            var tile = Hud.ToX(Cell);
+            var gap = Hud.ToX(CellGap);
+
+            var across = Across();
+
+            var age = Game.GameTime - _shownAt;
+            var sweep = (Game.GameTime % SweepMs) / (float)SweepMs;
+
+            var held = Game.GameTime - _pickedAt;
+            var grown = held >= PickMs ? 1f : held / (float)PickMs;
+            grown = 1f - (1f - grown) * (1f - grown);
+
+            var lines = (_rows.Count + across - 1) / across;
+
+            for (var i = 0; i < _rows.Count; i++)
             {
-                tx = x + Hud.ToX(ArtSize) + 0.007f;
+                var row = _rows[i];
+
+                // Staggered a frame or two apart, same as the food -- all of them fading up
+                // together is the panel appearing twice, one after another is a pocket being
+                // unpacked.
+                var lead = i * 55;
+
+                var land = age <= lead ? 0f : (age - lead) / (float)EnterMs;
+                if (land > 1f) land = 1f;
+                land = 1f - (1f - land) * (1f - land);
+
+                var show = arrive * land;
+                if (show <= 0.01f) continue;
+
+                var col = i % across;
+                var line = i / across;
+
+                var tx = x + col * (tile + gap);
+                var ty = y + line * (Cell + CellGap) + EnterRise * 0.5f * (1f - land);
+
+                var picked = i == _selected;
+
+                // Flashes on the tile that just had something taken off it, which used to be
+                // a colour change on a number and is now the whole square.
+                var flashing = _droppedRow == i && Game.GameTime - _droppedAt < DropFlashMs;
+
+                // The plate. Accent under the cursor, warn while it is being emptied, and a
+                // dark square with a hairline otherwise -- an outline alone reads as a slot
+                // with nothing in it.
+                var plate = flashing
+                    ? Palette.Alpha(Palette.Warn, (int)(215f * show))
+                    : picked
+                        ? Palette.Alpha(Palette.Accent, (int)(230f * show))
+                        : Color.FromArgb((int)(38f * show), 255, 255, 255);
+
+                Hud.RectFrom(tx, ty, tile, Cell, plate);
+
+                if (!picked && !flashing)
+                {
+                    Hud.RectFrom(tx, ty, tile, 0.0012f,
+                                 Color.FromArgb((int)(70f * show), 255, 255, 255));
+                }
+                else
+                {
+                    var bandW = tile * 0.34f;
+                    var bandAt = tx - bandW + (tile + bandW) * sweep;
+
+                    var lo = Math.Max(tx, bandAt);
+                    var hi = Math.Min(tx + tile, bandAt + bandW);
+
+                    if (hi > lo)
+                    {
+                        Hud.RectFrom(lo, ty, hi - lo, Cell,
+                                     Color.FromArgb((int)(40f * show), 255, 255, 255));
+                    }
+                }
+
+                // ---- the picture ----
+                var art = Icons.ForDrug(row.Drug.Id);
+
+                if (art.HasFile)
+                {
+                    var swell = picked ? 1f + PickGrow * grown : 1f;
+
+                    var ink = picked || flashing
+                        ? Color.FromArgb((int)(255f * show), 20, 18, 14)
+                        : Palette.Alpha(Palette.Text, (int)(225f * show));
+
+                    Hud.File(art.File, tx + tile * 0.5f, ty + Cell * 0.40f,
+                             Cell * 0.52f * swell, 0f, ink);
+                }
+
+                // ---- how much ----
+                //
+                // Across the whole tile rather than in a corner chip, because these are not
+                // counts. "57.5g" and "87 bars" are four and seven characters, and a corner
+                // badge sized for a single digit turns both into a smudge.
+                Hud.RectFrom(tx, ty + Cell - ChipHeight, tile, ChipHeight,
+                             Color.FromArgb((int)((picked || flashing ? 150f : 200f) * show),
+                                            12, 13, 15));
+
+                var amount = row.Bagged ? row.Drug.Amount(row.Held) : row.Drug.Bulk(row.Held);
+
+                Hud.Text(Hud.Fit(amount, tile - 0.004f, 0.22f, Hud.FontLabel),
+                         tx + tile * 0.5f, ty + Cell - ChipHeight - 0.0005f, 0.22f,
+                         Palette.Alpha(Palette.Text, (int)(255f * show)), Hud.FontLabel);
+
+                // ---- how cut ----
+                if (row.Purity > 0f)
+                {
+                    Hud.File(Stash.Mark(row.Purity), tx + tile - Hud.ToX(0.008f),
+                             ty + 0.008f, 0.010f, 0f,
+                             picked || flashing
+                                 ? Color.FromArgb((int)(220f * show), 20, 18, 14)
+                                 : Palette.Alpha(Palette.TextDim, (int)(210f * show)));
+                }
             }
 
-            var label = picked ? "> " + row.Label : "  " + row.Label;
+            var capY = y + lines * (Cell + CellGap) - CellGap + 0.005f;
 
-            Hud.Text(Hud.Fit(label, right - tx - 0.075f, 0.30f, Hud.FontBody),
-                     tx, y, 0.30f, tint, Hud.FontBody, centre: false);
-
-            // How cut it is, in its own column clear of both the name and the figure -- the
-            // same reasoning as the stash house, where a mark after the words collides with a
-            // right-aligned number on exactly the longest lines and nothing else.
-            if (row.Purity > 0f)
+            // ---- what it is ----
+            //
+            // One line under the strip, which is where the food band puts it and where the
+            // eye is already going. The weight is on the tile; this is the word.
+            if (!OnFood && _selected >= 0 && _selected < _rows.Count)
             {
-                Hud.File(Stash.Mark(row.Purity), right - 0.062f, y + RowHeight * 0.34f,
-                         MarkSize, 0f, tint);
+                Hud.Text(_rows[_selected].Label, x, capY, 0.28f,
+                         Palette.Text, Hud.FontBody, centre: false);
+            }
+            else
+            {
+                Hud.Text(_rows.Count == 1 ? "1 line on you" : _rows.Count + " lines on you",
+                         x, capY, 0.28f, Palette.TextDim, Hud.FontBody, centre: false);
             }
 
-            var flashing = _droppedRow == i && Game.GameTime - _droppedAt < DropFlashMs;
-
-            Hud.TextRight(row.Bagged ? row.Drug.Amount(row.Held) : row.Drug.Bulk(row.Held),
-                          right, y, 0.30f,
-                          flashing ? Palette.Warn : picked ? Palette.Standing : Palette.TextDim,
-                          Hud.FontBody);
+            return capY + CellCap;
         }
     }
 }

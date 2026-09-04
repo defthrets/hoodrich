@@ -287,10 +287,15 @@ namespace Hoodrich.Economy
                 "amb@world_human_drug_dealer_hard@male@base",  "base",
                 "amb@world_human_smoking@male@male_a@base",    "base"
             },
+            // A BAGGIE, NOT A BRICK. bkr_prop_coke_block_01a led this and it is a full
+            // kilo package -- a man holding one of those to his nose is carrying luggage.
+            // smallbag is the pinch-sized one, which is what a bump comes out of, and it is
+            // the only thing in the list at that scale that reads as powder rather than as
+            // stock.
             Props = new[]
             {
-                "bkr_prop_coke_block_01a", "bkr_prop_meth_smallbag_01a",
-                "prop_meth_bag_01", "prop_cs_package_01", "prop_drug_package_02"
+                "bkr_prop_meth_smallbag_01a", "bkr_prop_weed_smallbag_01a",
+                "prop_meth_bag_01", "h4_prop_h4_pouch_01a"
             },
             Sits = new Vector3(0.015f, 0.005f, 0.0f),
             Scenario = "WORLD_HUMAN_DRUG_DEALER",
