@@ -186,8 +186,19 @@ namespace Hoodrich.Social
         /// twenty minutes of play -- long enough to notice a repeat and too short to prevent
         /// one. Raised well past the biggest single pool so a set has to be genuinely
         /// exhausted before anything comes round again.
+        ///
+        /// A THOUSAND, UP FROM 220, AND THE 220 WAS THE BUG. It was sized against the pools --
+        /// "well past the biggest single set" -- and never against the clock. The clock is an
+        /// ambient post every ten to twenty seconds, which is about two hundred and forty an
+        /// hour. So the memory of what had been said ran out in under an hour, and a line
+        /// that came round once an hour was not bad luck, it was the arithmetic. This one is
+        /// four hours of play, which is longer than a session and longer than any pool.
+        ///
+        /// It survives a restart now as well -- see Said and Remember. Cleared on load, the
+        /// opening backfill picked from the whole city with no idea what it said yesterday,
+        /// which is why starting the game showed the same faces every time.
         /// </summary>
-        private const int RecentMemory = 220;
+        private const int RecentMemory = 1000;
 
         /// <summary>How hard to try for something nobody has said yet.</summary>
         private const int UniqueTries = 24;
@@ -255,6 +266,35 @@ namespace Hoodrich.Social
         /// </summary>
         private readonly Queue<string> _recent = new Queue<string>();
         private readonly HashSet<string> _recentSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>What has been said lately, oldest first, for the save.</summary>
+        public IEnumerable<string> Said => _recent;
+
+        /// <summary>Raised after every post lands, so the save can keep up with Said.</summary>
+        public Action Remembered;
+
+        /// <summary>
+        /// Pre-loads the memory from a save, BEFORE the opening backfill runs.
+        ///
+        /// Order matters: Start puts a dozen backdated posts on the timeline the moment it is
+        /// called, and it picks them against this memory. Handed the list afterwards, those
+        /// twelve would already be on screen and half of them would be yesterday's.
+        /// </summary>
+        public void Remember(IEnumerable<string> said)
+        {
+            if (said == null) return;
+
+            foreach (var line in said)
+            {
+                if (string.IsNullOrEmpty(line)) continue;
+                if (_recentSet.Contains(line)) continue;
+
+                _recent.Enqueue(line);
+                _recentSet.Add(line);
+            }
+
+            while (_recent.Count > RecentMemory) _recentSet.Remove(_recent.Dequeue());
+        }
 
         /// <summary>An event still spilling out across several posts.</summary>
         private string _burstSet = "";
@@ -2480,6 +2520,9 @@ namespace Hoodrich.Social
 
             while (_recent.Count > RecentMemory) _recentSet.Remove(_recent.Dequeue());
             while (_timeline.Count > Capacity) _timeline.RemoveAt(_timeline.Count - 1);
+
+            try { Remembered?.Invoke(); }
+            catch (Exception ex) { Log.Debug("Remembered hook threw: " + ex.Message); }
 
             // After the post is actually on the timeline, and wrapped, because a listener
             // throwing is not a reason for the post not to have happened.

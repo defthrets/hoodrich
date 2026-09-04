@@ -1591,6 +1591,17 @@ namespace Hoodrich
                 _social.YourGang = () => _crew.IsAffiliated ? _crew.Current.Name : "";
                 _social.Changed = () => { _state.Followers = _social.Followers; _state.Touch(); };
 
+                // What it said last time, BEFORE Start -- Start backfills a dozen posts on the
+                // spot and picks them against this. See SocialFeed.Remember.
+                _social.Remember(_state.Said);
+
+                _social.Remembered = () =>
+                {
+                    _state.Said.Clear();
+                    _state.Said.AddRange(_social.Said);
+                    _state.Touch();
+                };
+
                 _social.Start(_state.Followers);
 
                 _state.RankedUp = rank => _social.On(SocialEvent.RankUp);

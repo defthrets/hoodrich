@@ -303,6 +303,15 @@ namespace Hoodrich.State
         /// </summary>
         public int Followers;
 
+        /// <summary>
+        /// What the feed has said lately, so a restart does not start the neighbourhood over.
+        ///
+        /// Written by the feed through its Remembered hook and handed back through Remember
+        /// before the opening backfill -- see SocialFeed.RecentMemory for why it was needed.
+        /// A thousand short strings, which is a few tens of kilobytes in the save.
+        /// </summary>
+        public readonly List<string> Said = new List<string>();
+
         /// <summary>Raised when a rank is crossed, so the block can notice.</summary>
         public Action<int> RankedUp;
 
@@ -645,6 +654,7 @@ namespace Hoodrich.State
             SleptAtStashHouse = false;
             TriggerIsYours = false;
             Followers = 0;
+            Said.Clear();
 
             ClearFronted();
 
@@ -928,6 +938,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json SaidJson()
+        {
+            var arr = Json.Array();
+            foreach (var line in Said) arr.Add(Json.Str(line));
+            return arr;
+        }
+
         private Json VoiceHeardJson()
         {
             var arr = Json.Array();
@@ -1034,6 +1051,7 @@ namespace Hoodrich.State
                 .Set("lamarCalled", LamarCalled)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("followers", Followers)
+                .Set("said", SaidJson())
                 .Set("frontedDrug", FrontedDrug)
                 .Set("frontedGrams", FrontedGrams)
                 .Set("frontDoneTexted", FrontDoneTexted)
@@ -1093,6 +1111,13 @@ namespace Hoodrich.State
                 SeenWelcome = doc["seenWelcome"].AsBool(false);
                 SentForYou = doc["sentForYou"].AsBool(false);
                 Followers = Math.Max(0, doc["followers"].AsInt(0));
+
+                Said.Clear();
+                foreach (var node in doc["said"].Items)
+                {
+                    var line = node.AsString("");
+                    if (!string.IsNullOrEmpty(line)) Said.Add(line);
+                }
 
                 FrontedDrug = doc["frontedDrug"].AsString("");
                 FrontedGrams = doc["frontedGrams"].AsFloat(0f);
