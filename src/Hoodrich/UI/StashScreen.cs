@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -89,6 +89,9 @@ namespace Hoodrich.UI
             _onChange = onChange;
 
             _selected = 0;
+            _lastSelected = -1;
+            _pickedAt = Game.GameTime;
+            _glide.Reset();
             _openedAt = Game.GameTime;
             _curtain.Open();
 
@@ -200,9 +203,17 @@ namespace Hoodrich.UI
 
         private void Move(int step)
         {
+            var before = _selected;
+
             _selected += step;
             if (_selected < 0) _selected = _rows.Count - 1;
             if (_selected >= _rows.Count) _selected = 0;
+
+            if (_selected != before)
+            {
+                _lastSelected = before;
+                _pickedAt = Game.GameTime;
+            }
 
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -311,11 +322,6 @@ namespace Hoodrich.UI
         /// <summary>And the rule and the key line under the last one.</summary>
         private const float FootHeight = 0.040f;
 
-        private const float Rule = 0.0016f;
-        private const float Tick = 0.024f;
-
-        private static readonly Color Hairline = Color.FromArgb(44, 200, 205, 200);
-
         /// <summary>
         /// What this screen is, in one line, under the mark.
         ///
@@ -334,8 +340,12 @@ namespace Hoodrich.UI
         private float _fillYou;
         private float _fillHome;
 
-        /// <summary>The travelling highlight on the selected row.</summary>
-        private const int SweepMs = 2400;
+        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        private int _lastSelected = -1;
+        private int _pickedAt;
+
+        /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
+        private readonly Glide _glide = new Glide();
 
         /// <summary>What just moved, which way, and when -- for the flash on the numbers.</summary>
         private int _movedAt;
@@ -359,8 +369,7 @@ namespace Hoodrich.UI
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Hud.Panel(left, top, panelWidth, height,
-                      Color.FromArgb(238, 12, 13, 15), Palette.Accent);
+            Warm.Panel(left, top, panelWidth, height);
 
             var colWidth = (panelWidth - pad * 2f - columnGap) * 0.5f;
             var leftCol = left + pad;
@@ -370,13 +379,12 @@ namespace Hoodrich.UI
 
             // The letterhead, the same one every other screen in the mod carries, and one line
             // under it saying what you are looking at.
-            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.TextDim, 180));
+            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Gold, 230));
 
             Hud.Text(Blurb, middle, top + 0.052f, 0.29f,
                      Palette.Alpha(Palette.TextDim, 170), Hud.FontChaletLondon);
 
-            Hud.RectFrom(leftCol, top + 0.078f, lineWidth, 0.0012f,
-                         Color.FromArgb(46, 255, 255, 255));
+            Warm.Rule(leftCol, top + 0.078f, lineWidth);
 
             var y = top + 0.088f;
 
@@ -393,7 +401,7 @@ namespace Hoodrich.UI
 
             y = top + HeadHeight - 0.008f;
 
-            Hud.RectFrom(leftCol, y, lineWidth, 0.0012f, Hairline);
+            Warm.Rule(leftCol, y, lineWidth);
 
             y = top + HeadHeight;
 
@@ -403,15 +411,19 @@ namespace Hoodrich.UI
                          Palette.TextDim, Hud.FontBody, centre: false);
             }
 
+            var grown = Warm.Grown(_pickedAt);
+
+            _glide.Begin();
+
             for (var i = 0; i < _rows.Count; i++)
             {
-                Line(_rows[i], i, leftCol, rightCol, colWidth, columnGap, pad, y);
+                Line(_rows[i], i, grown, leftCol, rightCol, colWidth, columnGap, pad, y);
                 y += RowHeight;
             }
 
             var footY = top + height - FootHeight + 0.008f;
 
-            Hud.RectFrom(leftCol, footY, lineWidth, 0.0010f, Hairline);
+            Warm.Rule(leftCol, footY, lineWidth);
 
             // THE ARROWS SAY THE DIRECTION AND THE WORDS SAY THE ERRAND, which is the
             // rearrangement that makes this line readable at a glance. It used to name the KEY
@@ -433,49 +445,32 @@ namespace Hoodrich.UI
             Hud.TextRight(pad2 ? "B  DONE" : "BACKSPACE  DONE", leftCol + lineWidth, hy, 0.24f,
                           Palette.TextDim, Hud.FontLabel);
 
-            // Last, so nothing paints over it.
-            Hud.Frame(left, top, panelWidth, height,
-                      Color.FromArgb(64, 205, 212, 205), Palette.Accent, Rule, Tick);
+            // Last, so it rides over the rows it is pointing at.
+            _glide.Draw();
         }
 
         /// <summary>
         /// One product line: art, name, how cut it is, and the two numbers.
         /// </summary>
-        private void Line(StashRow row, int i, float leftCol, float rightCol,
+        private void Line(StashRow row, int i, float grown, float leftCol, float rightCol,
                           float colWidth, float columnGap, float pad, float y)
         {
             var picked = i == _selected;
 
-            if (picked)
-            {
-                var wash = leftCol - pad * 0.35f;
-                var wide = colWidth * 2f + columnGap + pad * 0.7f;
+            // The plate comes up under the row the cursor lands on and goes down under the one
+            // it left, and the frame travels between them. Same as every other screen.
+            var lit = Warm.Lit(i, _selected, _lastSelected, grown);
 
-                Hud.RectFrom(wash, y - 0.004f, wide, RowHeight, Color.FromArgb(45, 255, 255, 255));
+            var wash = leftCol - pad * 0.35f;
+            var wide = colWidth * 2f + columnGap + pad * 0.7f;
 
-                // A rail down the near edge, and a highlight travelling along the row.
-                //
-                // The wash alone was the whole cursor, and a still wash on a still list is easy
-                // to lose track of when every line says roughly the same thing. The sweep is
-                // the one moving object on the panel and it is always the line you are on.
-                Hud.RectFrom(wash, y - 0.004f, 0.0022f, RowHeight, Palette.Accent);
+            Warm.Plate(wash, y - 0.004f, wide, RowHeight, lit);
+            Warm.Sheen(wash, y - 0.004f, wide, RowHeight, lit);
 
-                var t = (Game.GameTime % SweepMs) / (float)SweepMs;
-                var band = wide * 0.16f;
-                var at = wash - band + (wide + band) * t;
+            if (picked) _glide.Target(wash, y - 0.004f, wide, RowHeight);
 
-                var clippedLeft = Math.Max(wash, at);
-                var clippedRight = Math.Min(wash + wide, at + band);
-
-                if (clippedRight > clippedLeft)
-                {
-                    Hud.RectFrom(clippedLeft, y - 0.004f, clippedRight - clippedLeft, RowHeight,
-                                 Color.FromArgb(16, 255, 255, 255));
-                }
-            }
-
-            var label = picked ? "> " + row.Label : "  " + row.Label;
-            var tint = picked ? Palette.Text : Palette.TextDim;
+            var label = row.Label;
+            var tint = Warm.Ink(picked ? Palette.Text : Palette.TextDim, lit);
 
             // The product's own art, the way the kitchen and the wheel show it. Hud.File places
             // by its CENTRE and Hud.Text by its TOP edge, so the art drops half a row to sit
@@ -525,21 +520,21 @@ namespace Hoodrich.UI
             var flashing = _movedRow == i && Game.GameTime - _movedAt < MovedFlashMs;
 
             Hud.TextRight(Amount(row.Drug, row.OnYou, row.Bagged), leftCol + colWidth, y, 0.30f,
-                          Side(row.OnYou, picked, flashing && !_movedHome, Palette.Text),
+                          Warm.Ink(Side(row.OnYou, picked, flashing && !_movedHome), lit),
                           Hud.FontBody);
 
             Hud.TextRight(Amount(row.Drug, row.AtHome, row.Bagged), rightCol + colWidth, y, 0.30f,
-                          Side(row.AtHome, picked, flashing && _movedHome, Palette.Standing),
+                          Warm.Ink(Side(row.AtHome, picked, flashing && _movedHome), lit),
                           Hud.FontBody);
         }
 
         /// <summary>What one side's number is coloured, including for the moment it changed.</summary>
-        private static Color Side(float held, bool picked, bool flashing, Color own)
+        private static Color Side(float held, bool picked, bool flashing)
         {
             if (held <= 0.005f) return Palette.TextDisabled;
             if (flashing) return Palette.Cash;
 
-            return picked ? own : Palette.TextDim;
+            return picked ? Palette.Text : Palette.TextDim;
         }
 
         /// <summary>
@@ -567,12 +562,12 @@ namespace Hoodrich.UI
             var tx = x;
 
             if (Hud.File(icon, x + Hud.ToX(HeadIcon) * 0.5f, y + 0.008f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Accent, 210)))
+                         Palette.Alpha(Palette.Gold, 225)))
             {
                 tx = x + Hud.ToX(HeadIcon) + 0.006f;
             }
 
-            Hud.Text(title, tx, y, 0.28f, Palette.Accent, Hud.FontLabel, centre: false);
+            Hud.Text(title, tx, y, 0.28f, Palette.Text, Hud.FontLabel, centre: false);
 
             var full = stash == null || stash.Capacity <= 0.01f
                 ? 0f
@@ -581,7 +576,9 @@ namespace Hoodrich.UI
             if (full < 0f) full = 0f;
             if (full > 1f) full = 1f;
 
-            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.Warn : Palette.Standing;
+            // Gold while there is room, ember once it is getting full, red when it is. Yellow
+            // into orange into red is the one order of those three that reads as filling up.
+            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.Ember : Palette.Gold;
 
             Hud.TextRight((stash == null ? 0f : stash.Total).ToString("0") + " / " +
                           (stash == null ? 0f : stash.Capacity).ToString("0") + "g",

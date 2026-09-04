@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -35,7 +35,12 @@ namespace Hoodrich.UI
 
         private int _row;
         private int _openedAt;
-        private float _slide;
+        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        private int _lastRow = -1;
+        private int _pickedAt;
+
+        /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
+        private readonly Glide _glide = new Glide();
 
         public CarScreen(Hao hao)
         {
@@ -55,7 +60,9 @@ namespace Hoodrich.UI
             _curtain.Open();
             _openedAt = Game.GameTime;
             _row = 0;
-            _slide = 0f;
+            _lastRow = -1;
+            _pickedAt = Game.GameTime;
+            _glide.Reset();
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -134,7 +141,16 @@ namespace Hoodrich.UI
             var count = Stock.Count;
             if (count == 0) return;
 
+            var before = _row;
+
             _row = ((_row + step) % count + count) % count;
+
+            if (_row != before)
+            {
+                _lastRow = before;
+                _pickedAt = Game.GameTime;
+            }
+
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
@@ -187,8 +203,7 @@ namespace Hoodrich.UI
             var height = 0.250f + rows * RowHeight;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Hud.RectFrom(left, top, width, height, Palette.Hub);
-            Corners(left, top, width, height);
+            Warm.Panel(left, top, width, height);
 
             var x = left + pad;
             var right = left + width - pad;
@@ -196,7 +211,7 @@ namespace Hoodrich.UI
             var y = top + 0.020f;
 
             // ---- his name over the door ----
-            Hud.Text("HAO'S", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            Hud.Text("HAO'S", x, y - 0.004f, 0.74f, Palette.Gold, Hud.FontCursive, centre: false);
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash);
 
@@ -208,7 +223,7 @@ namespace Hoodrich.UI
                           right, y, 0.24f, Palette.TextDim);
 
             y += 0.026f;
-            Hud.RectFrom(x, y, right - x, 0.0016f, Palette.Accent);
+            Warm.Rule(x, y, right - x);
             y += 0.010f;
 
             if (stock.Count == 0)
@@ -219,46 +234,45 @@ namespace Hoodrich.UI
                 return;
             }
 
-            // ---- the eased selection bar ----
-            var want = _row * RowHeight;
-            _slide += (want - _slide) * 0.34f;
-            if (Math.Abs(want - _slide) < 0.0004f) _slide = want;
-
-            var barY = y - 0.004f + _slide;
-
-            Hud.RectFrom(x - pad * 0.35f, barY, (right - x) + pad * 0.7f, RowHeight,
-                         Color.FromArgb(46, 255, 255, 255));
-            Hud.RectFrom(x - pad * 0.35f, barY, 0.0022f, RowHeight, Palette.Accent);
-
-            // A travelling sheen, inside the bar and nowhere else.
-            var t = (Game.GameTime % 1500) / 1500f;
-            var sheenW = (right - x) * 0.18f;
-            var at = x - pad * 0.35f - sheenW + ((right - x) + pad * 0.7f + sheenW * 2f) * t;
-            var a = Math.Max(x - pad * 0.35f, at);
-            var b = Math.Min(right + pad * 0.35f, at + sheenW);
-            if (b > a) Hud.RectFrom(a, barY, b - a, RowHeight, Color.FromArgb(30, 255, 255, 255));
-
             // ---- the stock ----
-            foreach (var car in stock)
+            //
+            // THE PLATE COMES UP UNDER THE ROW rather than sliding to it: the one under the
+            // new row rises over a sixth of a second while the one under the old row sinks,
+            // and the frame -- see Glide -- travels between them. Same as every other screen.
+            var grown = Warm.Grown(_pickedAt);
+            var barWide = (right - x) + pad * 0.7f;
+
+            _glide.Begin();
+
+            for (var i = 0; i < stock.Count; i++)
             {
-                var here = car == Chosen;
+                var car = stock[i];
+
+                var here = i == _row;
                 var afford = Game.Player.Money >= car.Price;
 
-                var ink = here ? Palette.Text : Palette.TextDim;
+                var lit = Warm.Lit(i, _row, _lastRow, grown);
+
+                Warm.Plate(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
+                Warm.Sheen(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
+
+                if (here) _glide.Target(x - pad * 0.35f, y - 0.004f, barWide, RowHeight);
+
+                var ink = Warm.Ink(here ? Palette.Text : Palette.TextDim, lit);
 
                 Hud.Text(car.Name, x, y, 0.32f, ink, Hud.FontBody, centre: false);
 
                 Hud.Text(car.Class, x + Hud.ToX(0.175f), y + 0.003f, 0.24f,
-                         Palette.TextDim, Hud.FontBody, centre: false);
+                         Warm.Ink(Palette.TextDim, lit), Hud.FontBody, centre: false);
 
                 Hud.TextRight("$" + car.Price.ToString("N0"), right, y + 0.002f, 0.28f,
-                              afford ? Palette.Cash : Palette.Danger);
+                              Warm.Ink(afford ? Palette.Cash : Palette.Danger, lit));
 
                 y += RowHeight;
             }
 
             y += 0.010f;
-            Hud.RectFrom(x, y, right - x, 0.0016f, Color.FromArgb(46, 255, 255, 255));
+            Warm.Rule(x, y, right - x);
             y += 0.012f;
 
             // ---- what he says about the one you are on ----
@@ -280,6 +294,9 @@ namespace Hoodrich.UI
             }
 
             Keys(x, right, top + height - 0.030f);
+
+            // Last, so it rides over the rows it is pointing at.
+            _glide.Draw();
         }
 
         /// <summary>
@@ -298,28 +315,6 @@ namespace Hoodrich.UI
 
             Hud.TextRight(pad ? "B  WALK OFF" : "BACKSPACE  WALK OFF", right, y, 0.22f, ink,
                           Hud.FontLabel);
-        }
-
-        /// <summary>Corner ticks rather than a full frame, the way every panel here is edged.</summary>
-        private static void Corners(float left, float top, float w, float h)
-        {
-            var c = Palette.Accent;
-            var len = 0.022f;
-            var lenX = Hud.ToX(len);
-            var t = 0.0022f;
-            var tX = Hud.ToX(t);
-
-            Hud.RectFrom(left, top, lenX, t, c);
-            Hud.RectFrom(left, top, tX, len, c);
-
-            Hud.RectFrom(left + w - lenX, top, lenX, t, c);
-            Hud.RectFrom(left + w - tX, top, tX, len, c);
-
-            Hud.RectFrom(left, top + h - t, lenX, t, c);
-            Hud.RectFrom(left, top + h - len, tX, len, c);
-
-            Hud.RectFrom(left + w - lenX, top + h - t, lenX, t, c);
-            Hud.RectFrom(left + w - tX, top + h - len, tX, len, c);
         }
     }
 }

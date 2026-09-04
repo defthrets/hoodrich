@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -122,9 +122,11 @@ namespace Hoodrich.UI
             _curtain.Open();
             _shownAt = Game.GameTime;
 
-            // Snapped on open. A bar sliding in from wherever it was last time is a bar
-            // arriving from a different screen.
-            _slide = _selected;
+            // Landed, not arrived at: nothing fades out on open and the frame drops straight
+            // onto the first row rather than gliding in from wherever it was last time.
+            _lastSelected = -1;
+            _pickedAt = Game.GameTime;
+            _glide.Reset();
 
             Rebuild();
 
@@ -348,9 +350,17 @@ namespace Hoodrich.UI
 
         private void Move(int step)
         {
+            var before = _selected;
+
             _selected += step;
             if (_selected < 0) _selected = _rows.Count - 1;
             if (_selected >= _rows.Count) _selected = 0;
+
+            if (_selected != before)
+            {
+                _lastSelected = before;
+                _pickedAt = Game.GameTime;
+            }
 
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -483,14 +493,18 @@ namespace Hoodrich.UI
 
         // ---- drawing -----------------------------------------------------------
 
-        /// <summary>Where the bar has got to, and when the screen went up.</summary>
-        private float _slide;
+        /// <summary>When the screen went up, for its entrance.</summary>
         private int _shownAt;
 
-        private const float SlideRate = 0.30f;
+        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        private int _lastSelected = -1;
+        private int _pickedAt;
+
+        /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
+        private readonly Glide _glide = new Glide();
+
         private const int EnterMs = 170;
         private const float EnterRise = 0.014f;
-        private const int SweepMs = 2600;
 
         public void Draw()
         {
@@ -514,24 +528,7 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Hud.Panel(left, top, panelWidth, height,
-                      Color.FromArgb((int)(238f * arrive), 12, 13, 15), Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
-
-            // A light running along the bar. On this screen it is doing a second job: the
-            // counter is where you stand and wait, and a panel with something moving on it is
-            // a panel that has not frozen.
-            var barT = (Game.GameTime % SweepMs) / (float)SweepMs;
-            var barW = panelWidth * 0.15f;
-            var barAt = left - barW + (panelWidth + barW) * barT;
-
-            var barLeft = Math.Max(left, barAt);
-            var barRight = Math.Min(left + panelWidth, barAt + barW);
-
-            if (barRight > barLeft)
-            {
-                Hud.RectFrom(barLeft, top, barRight - barLeft, 0.0028f,
-                             Color.FromArgb((int)(85f * arrive), 255, 255, 255));
-            }
+            Warm.Panel(left, top, panelWidth, height, arrive);
 
             var x = left + pad;
             var right = left + panelWidth - pad;
@@ -543,57 +540,46 @@ namespace Hoodrich.UI
             // the panel TOP rather than to the title, because measuring it off the title put
             // it half a centimetre above the panel and outside its own ground.
             Hud.BrandCentre(left + panelWidth * 0.5f, top + 0.025f, 0.024f,
-                            Palette.Alpha(Palette.TextDim, 165));
+                            Palette.Alpha(Palette.Gold, 225));
 
             // The house script, the same face every other screen in the mod is titled in --
             // and in the case it is written in rather than shouted. A cursive face set in block
             // capitals is two decisions fighting each other: handwriting is the informal one
             // and capitals are the formal one, and a room in somebody's house is the informal
             // thing.
-            Hud.Text("The Kitchen", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            Hud.Text("The Kitchen", x, y - 0.004f, 0.74f, Palette.Gold, Hud.FontCursive, centre: false);
 
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash, Hud.FontChaletLondon);
 
             y += 0.044f;
 
-            Hud.RectFrom(x, y, panelWidth - pad * 2f, 0.0022f, Palette.Accent);
+            Warm.Rule(x, y, panelWidth - pad * 2f, arrive);
             y += 0.012f;
 
             Hud.Text("WHAT YOU'RE WORKING", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
             y += 0.026f;
 
-
-            // The bar is eased to wherever the cursor is and drawn ONCE, under all the rows,
-            // so moving down the list slides it instead of making you re-find it.
-            _slide += (_selected - _slide) * SlideRate;
-            if (Math.Abs(_selected - _slide) < 0.002f) _slide = _selected;
-
-            var barY = y - 0.005f + _slide * RowHeight;
+            // THE PLATE COMES UP UNDER THE ROW rather than sliding to it: the one under the
+            // new row rises over a sixth of a second while the one under the old row sinks,
+            // and the frame -- see Glide -- travels between them. Same as every other screen.
+            var grown = Warm.Grown(_pickedAt);
             var barWide = panelWidth - pad * 1.3f;
 
-            Hud.RectFrom(x - pad * 0.35f, barY, barWide, RowHeight,
-                         Color.FromArgb((int)(52f * arrive), 255, 255, 255));
+            _glide.Begin();
 
-            // A rail on it, the way the readouts mark what is yours.
-            Hud.RectFrom(x - pad * 0.35f, barY, 0.0022f, RowHeight, Palette.Accent);
-
-            var sweepT = (Game.GameTime % SweepMs) / (float)SweepMs;
-            var sweepW = barWide * 0.16f;
-            var sweepAt = x - pad * 0.35f - sweepW + (barWide + sweepW) * sweepT;
-
-            var sweepLeft = Math.Max(x - pad * 0.35f, sweepAt);
-            var sweepRight = Math.Min(x - pad * 0.35f + barWide, sweepAt + sweepW);
-
-            if (sweepRight > sweepLeft)
+            for (var i = 0; i < _rows.Count; i++)
             {
-                Hud.RectFrom(sweepLeft, barY, sweepRight - sweepLeft, RowHeight,
-                             Color.FromArgb(20, 255, 255, 255));
-            }
+                var row = _rows[i];
 
-            foreach (var row in _rows)
-            {
-                var picked = _rows[_selected] == row;
+                var picked = i == _selected;
+                var lit = Warm.Lit(i, _selected, _lastSelected, grown) * arrive;
+
+                Warm.Plate(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
+                Warm.Sheen(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
+
+                if (picked) _glide.Target(x - pad * 0.35f, y - 0.005f, barWide, RowHeight);
+
                 var have = Held(row.Source);
                 var stored = _house == null ? 0f : _house.BulkOf(row.Source.Id);
 
@@ -607,17 +593,17 @@ namespace Hoodrich.UI
                 var art = Icons.ForDrug(row.Source.Id);
                 var ax = x + Hud.ToX(ArtSize) * 0.5f;
 
+                var ink = Warm.Ink(picked ? Palette.Text : Palette.TextDim, lit);
+
                 var drew = art.HasFile &&
-                           Hud.File(art.File, ax, y + RowHeight * 0.32f, ArtSize, 0f,
-                                    picked ? Palette.Text : Palette.TextDim);
+                           Hud.File(art.File, ax, y + RowHeight * 0.32f, ArtSize, 0f, ink);
 
                 // Indented past the art when there is art, and left where it was when there is
                 // not -- a row that silently loses its icon should lose the space with it
                 // rather than sit in a column of its own.
                 var tx = drew ? x + Hud.ToX(ArtSize) + 0.008f : x;
 
-                Hud.Text((picked ? "> " : "  ") + row.Label, tx, y, 0.30f,
-                         picked ? Palette.Text : Palette.TextDim, Hud.FontBody, centre: false);
+                Hud.Text(row.Label, tx, y, 0.30f, ink, Hud.FontBody, centre: false);
 
                 // Where it is, when it is not simply on you. Otherwise a number that includes
                 // the cupboard reads as a number in your pocket, and the two are not the same
@@ -628,8 +614,7 @@ namespace Hoodrich.UI
                         : "  (in the cupboard)")
                     : row.Source.Bulk(have);
 
-                Hud.TextRight(where, right, y, 0.30f,
-                              picked ? Palette.Warn : Palette.TextDim, Hud.FontBody);
+                Hud.TextRight(where, right, y, 0.30f, ink, Hud.FontBody);
 
                 y += RowHeight;
             }
@@ -656,8 +641,7 @@ namespace Hoodrich.UI
             var risk = Pricing.BadCutChance(purity);
             var fits = _stash.FreeSpace >= yield - batch - 0.001f;
 
-            Hud.RectFrom(x, y - 0.006f, panelWidth - pad * 2f, 0.0015f,
-                         Color.FromArgb(90, 255, 255, 255));
+            Warm.Rule(x, y - 0.006f, panelWidth - pad * 2f, arrive);
 
             // Every cut on screen at once, with the one you are on lit up. They were always
             // all available -- left and right has stepped through them since the day it was
@@ -700,10 +684,11 @@ namespace Hoodrich.UI
                 var width = markW + 0.004f +
                             Hud.MeasureText(label, 0.30f, Hud.FontBody) + 0.011f;
 
+                // The same plate the rows get, so the chosen cut and the chosen product are
+                // visibly the same kind of thing.
                 if (on && !tooStrong)
                 {
-                    Hud.RectFrom(cx - 0.004f, y - 0.002f, width, 0.026f,
-                                 Color.FromArgb(210, 240, 242, 240));
+                    Warm.Plate(cx - 0.004f, y - 0.002f, width, 0.026f, 1f);
                 }
 
                 var ink = tooStrong
@@ -767,10 +752,10 @@ namespace Hoodrich.UI
                     if (outArt.HasFile && room > wide + Hud.ToX(ArtSize) + 0.006f)
                     {
                         Hud.File(outArt.File, wx - Hud.ToX(ArtSize) * 0.65f, y + 0.010f,
-                                 ArtSize, 0f, Palette.Accent);
+                                 ArtSize, 0f, Palette.Gold);
                     }
 
-                    Hud.Text(fitted, wx, y + 0.001f, 0.28f, Palette.Accent, Hud.FontLabel,
+                    Hud.Text(fitted, wx, y + 0.001f, 0.28f, Palette.Gold, Hud.FontLabel,
                              centre: false);
                 }
             }
@@ -791,6 +776,9 @@ namespace Hoodrich.UI
             Hud.Text("UP / DOWN  PICK PRODUCT      LEFT / RIGHT  HOW FAR      " +
                      "ENTER  START      BACKSPACE  LEAVE",
                      x, top + height - 0.020f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
+
+            // Last, so it rides over the rows it is pointing at.
+            _glide.Draw(arrive);
         }
 
         private static string PurityWord(float purity)

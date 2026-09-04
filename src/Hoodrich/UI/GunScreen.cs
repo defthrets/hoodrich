@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -88,9 +88,11 @@ namespace Hoodrich.UI
             _curtain.Open();
             _shownAt = Game.GameTime;
 
-            // Snapped on open. A bar travelling in from wherever it was last time is a bar
-            // arriving from another screen.
-            _slide = 0f;
+            // Snapped on open. An underline travelling in from wherever it was last time is
+            // an underline arriving from another screen; same for the row frame.
+            _glide.Reset();
+            _lastRow = -1;
+            _pickedAt = Game.GameTime;
             _tabAt = 0f;
             _tabWide = 0f;
             _openedAt = Game.GameTime;
@@ -195,8 +197,16 @@ namespace Hoodrich.UI
             var count = Current.Stock.Length;
             if (count == 0) return;
 
+            var before = _row;
+
             _row = (_row + step) % count;
             if (_row < 0) _row += count;
+
+            if (_row != before)
+            {
+                _lastRow = before;
+                _pickedAt = Game.GameTime;
+            }
 
             // A gun with no magazine has no lots to step through, so the amount is put back to
             // the first rather than left pointing at an option the block below does not draw.
@@ -210,7 +220,11 @@ namespace Hoodrich.UI
             _rack = (_rack + step) % Racks.Length;
             if (_rack < 0) _rack += Racks.Length;
 
+            // A new rack is a new list: the plate comes up under its first row with nothing
+            // going down, and the frame glides over from wherever it was.
             _row = 0;
+            _lastRow = -1;
+            _pickedAt = Game.GameTime;
             _lot = 0;
 
             Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -367,21 +381,7 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Hud.Panel(left, top, panelWidth, height,
-                      Color.FromArgb((int)(238f * arrive), 12, 13, 15), Palette.Alpha(Palette.Accent, (int)(255f * arrive)));
-
-            var barT = (Game.GameTime % SweepMs) / (float)SweepMs;
-            var barW = panelWidth * 0.15f;
-            var barAt = left - barW + (panelWidth + barW) * barT;
-
-            var barLeft = Math.Max(left, barAt);
-            var barRight = Math.Min(left + panelWidth, barAt + barW);
-
-            if (barRight > barLeft)
-            {
-                Hud.RectFrom(barLeft, top, barRight - barLeft, 0.0028f,
-                             Color.FromArgb((int)(85f * arrive), 255, 255, 255));
-            }
+            Warm.Panel(left, top, panelWidth, height, arrive);
 
             var x = left + pad;
             var right = left + panelWidth - pad;
@@ -389,7 +389,7 @@ namespace Hoodrich.UI
 
             // The shop's name in the house script, and what is in your pocket, which is the only
             // other number that decides anything on this screen.
-            Hud.Text("HOOD WEAPONRY", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            Hud.Text("HOOD WEAPONRY", x, y - 0.004f, 0.74f, Palette.Gold, Hud.FontCursive, centre: false);
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash, Hud.FontChaletLondon);
 
@@ -397,11 +397,14 @@ namespace Hoodrich.UI
 
             y = Shelves(x, y, panelWidth, pad);
 
-            y = Stock(x, right, y, panelWidth, pad);
+            y = Stock(x, right, y, panelWidth, pad, arrive);
 
             Rounds(x, right, y, panelWidth, pad);
 
             Keys(x, right, top + height - 0.020f);
+
+            // Last, so it rides over the rows it is pointing at.
+            _glide.Draw(arrive);
         }
 
         /// <summary>
@@ -452,15 +455,15 @@ namespace Hoodrich.UI
             if (Math.Abs(wide[_rack] - _tabWide) < 0.0005f) _tabWide = wide[_rack];
 
             Hud.RectFrom(_tabAt - 0.004f, y - 0.004f, _tabWide + 0.008f, 0.024f,
-                         Color.FromArgb(46, 255, 255, 255));
+                         Palette.Alpha(Palette.Gold, 26));
 
-            Hud.RectFrom(_tabAt - 0.004f, y + 0.019f, _tabWide + 0.008f, 0.0022f, Palette.Accent);
+            Hud.RectFrom(_tabAt - 0.004f, y + 0.019f, _tabWide + 0.008f, 0.0022f, Palette.Ember);
 
             for (var i = 0; i < Racks.Length; i++)
             {
                 var here = i == _rack;
 
-                Hud.Text(Racks[i].Name, at[i], y, 0.26f, here ? Palette.Text : Palette.TextDim,
+                Hud.Text(Racks[i].Name, at[i], y, 0.26f, here ? Palette.Gold : Palette.TextDim,
                          Hud.FontLabel, centre: false);
 
                 // How much of that rack is already yours, which is the question the strip was
@@ -482,44 +485,38 @@ namespace Hoodrich.UI
             // through the descenders of a number, and reads as the number being broken.
             y += 0.038f;
 
-            Hud.RectFrom(x, y, panelWidth - pad * 2f, 0.0022f, Palette.Accent);
+            Warm.Rule(x, y, panelWidth - pad * 2f);
             return y + 0.012f;
         }
 
-        private float Stock(float x, float right, float y, float panelWidth, float pad)
+        private float Stock(float x, float right, float y, float panelWidth, float pad, float arrive)
         {
             Hud.Text("WHAT HE'S GOT", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
             y += 0.026f;
 
-            // One bar, eased to wherever the cursor is, drawn before the rows go over it.
-            _slide += (_row - _slide) * SlideRate;
-            if (Math.Abs(_row - _slide) < 0.002f) _slide = _row;
-
-            var barY = y - 0.005f + _slide * RowHeight;
+            // THE PLATE COMES UP UNDER THE ROW rather than sliding to it: the one under the
+            // new row rises over a sixth of a second while the one under the old row sinks,
+            // and the frame -- see Glide -- travels between them. Same as every other screen.
+            var grown = Warm.Grown(_pickedAt);
             var barWide = panelWidth - pad * 1.3f;
 
-            Hud.RectFrom(x - pad * 0.35f, barY, barWide, RowHeight,
-                         Color.FromArgb(52, 255, 255, 255));
+            _glide.Begin();
 
-            Hud.RectFrom(x - pad * 0.35f, barY, 0.0022f, RowHeight, Palette.Accent);
-
-            var sweepT = (Game.GameTime % SweepMs) / (float)SweepMs;
-            var sweepW = barWide * 0.16f;
-            var sweepAt = x - pad * 0.35f - sweepW + (barWide + sweepW) * sweepT;
-
-            var sweepLeft = Math.Max(x - pad * 0.35f, sweepAt);
-            var sweepRight = Math.Min(x - pad * 0.35f + barWide, sweepAt + sweepW);
-
-            if (sweepRight > sweepLeft)
+            for (var i = 0; i < Current.Stock.Length; i++)
             {
-                Hud.RectFrom(sweepLeft, barY, sweepRight - sweepLeft, RowHeight,
-                             Color.FromArgb(20, 255, 255, 255));
-            }
+                var piece = Current.Stock[i];
 
-            foreach (var piece in Current.Stock)
-            {
-                var here = piece == Chosen;
+                var here = i == _row;
                 var owned = Owns(piece);
+
+                var lit = Warm.Lit(i, _row, _lastRow, grown) * arrive;
+
+                Warm.Plate(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
+                Warm.Sheen(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
+
+                if (here) _glide.Target(x - pad * 0.35f, y - 0.005f, barWide, RowHeight);
+
+                var ink = Warm.Ink(here ? Palette.Text : Palette.TextDim, lit);
 
                 // THE GAME'S OWN ART FOR THE GUN. Its dictionary is named after it, so the
                 // weapon name is the whole lookup.
@@ -540,29 +537,27 @@ namespace Hoodrich.UI
                 if (Hud.EnsureTextureDict(piece.Weapon))
                 {
                     Hud.Sprite(piece.Weapon, piece.Weapon, x + Hud.ToX(IconW) * 0.5f, y + 0.012f,
-                               Hud.ToX(IconW), IconH, 0f,
-                               here ? Palette.Text : Palette.TextDim);
+                               Hud.ToX(IconW), IconH, 0f, ink);
                 }
 
-                Hud.Text(piece.Name, x + art, y, 0.30f,
-                         here ? Palette.Text : Palette.TextDim, Hud.FontBody, centre: false);
+                Hud.Text(piece.Name, x + art, y, 0.30f, ink, Hud.FontBody, centre: false);
 
                 // What it is for, quietly, because the name alone does not say why you would
                 // take a Double Action over a Pistol.
                 Hud.Text(piece.Note, x + art + Hud.ToX(0.20f), y + 0.003f, 0.24f,
-                         Palette.TextDim, Hud.FontLabel, centre: false);
+                         Warm.Ink(Palette.TextDim, lit), Hud.FontLabel, centre: false);
 
                 if (owned)
                 {
                     var rounds = piece.AmmoBox > 0 ? "  ·  " + Held(piece) + " rounds" : "";
 
                     Hud.TextRight("OWNED" + rounds, right, y + 0.002f, 0.26f,
-                                  Palette.Cash, Hud.FontLabel);
+                                  Warm.Ink(Palette.Cash, lit), Hud.FontLabel);
                 }
                 else
                 {
                     Hud.TextRight("$" + piece.Price.ToString("N0"), right, y, 0.30f,
-                                  Game.Player.Money >= piece.Price ? Palette.Text : Palette.TextDisabled,
+                                  Warm.Ink(Game.Player.Money >= piece.Price ? Palette.Text : Palette.TextDisabled, lit),
                                   Hud.FontChaletLondon);
                 }
 
@@ -570,23 +565,27 @@ namespace Hoodrich.UI
             }
 
             y += 0.010f;
-            Hud.RectFrom(x, y, panelWidth - pad * 2f, 0.0022f, Palette.Accent);
+            Warm.Rule(x, y, panelWidth - pad * 2f);
             return y + 0.012f;
         }
 
-        /// <summary>Where the row bar and the rack underline have got to.</summary>
-        private float _slide;
+        /// <summary>Where the rack underline has got to.</summary>
         private float _tabAt;
         private float _tabWide;
 
-        private const float SlideRate = 0.30f;
         private const float TabRate = 0.28f;
 
-        /// <summary>The arrival, and the light that runs along the top bar.</summary>
+        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        private int _lastRow = -1;
+        private int _pickedAt;
+
+        /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
+        private readonly Glide _glide = new Glide();
+
+        /// <summary>The arrival.</summary>
         private int _shownAt;
         private const int EnterMs = 170;
         private const float EnterRise = 0.014f;
-        private const int SweepMs = 2600;
 
         private const float IconW = 0.052f;
         private const float IconH = 0.026f;
@@ -627,12 +626,12 @@ namespace Hoodrich.UI
             var cost = AmmoPrice(piece) * lots;
             var afford = Game.Player.Money >= cost;
 
-            Hud.Text("<", x, y, 0.32f, Palette.Accent, Hud.FontChaletLondon, centre: false);
+            Hud.Text("<", x, y, 0.32f, Palette.Gold, Hud.FontChaletLondon, centre: false);
 
             Hud.Text(lots + (lots == 1 ? " box" : " boxes") + "   ·   " + rounds + " rounds",
                      x + 0.018f, y, 0.32f, Palette.Text, Hud.FontChaletLondon, centre: false);
 
-            Hud.Text(">", x + Hud.ToX(0.30f), y, 0.32f, Palette.Accent,
+            Hud.Text(">", x + Hud.ToX(0.30f), y, 0.32f, Palette.Gold,
                      Hud.FontChaletLondon, centre: false);
 
             Hud.TextRight("$" + cost.ToString("N0"), right, y, 0.32f,
