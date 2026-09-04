@@ -152,6 +152,15 @@ namespace Hoodrich.Locations
         /// <summary>How close counts as being on a marker.</summary>
         private const float StageArrived = 6f;
 
+        /// <summary>
+        /// How long a performer tries to reach its marker before waiting where it is.
+        ///
+        /// Twenty-five seconds. Long enough that a car merely held up by the crowd gets there
+        /// properly, short enough that one which cannot is available for its turn rather than
+        /// grinding at a kerb for the whole night while the middle stands empty.
+        /// </summary>
+        private const int StageGiveUpMs = 25000;
+
         private static readonly Spot[] Spots =
         {
             new Spot { At = new Vector3( -130.816f,  -1712.833f, 29.239f), Face = 140.032f },
@@ -998,6 +1007,10 @@ namespace Hoodrich.Locations
             // are not yet. Cleared HERE rather than at teardown: a takeover that ended badly
             // must not leave the next one thinking its street is already parked.
             _ringed = false;
+
+            _topUps = 0;
+            _saidTopUp = false;
+            _nextTopUp = 0;
 
             // THE ROADS STAY ON, AND THAT IS A REVERSAL OF SOMETHING TRIED AND MEASURED.
             //
@@ -1985,6 +1998,31 @@ namespace Hoodrich.Locations
 
             if (have >= Fewest) return;
 
+            // A BUDGET, BECAUSE THIS CAN OTHERWISE RUN ALL NIGHT AND IT DID.
+            //
+            // The log from the night it crashed shows "1 more sent for -- 30 of 30 wanted"
+            // every five seconds for minutes on end: it reached thirty, a car failed to park
+            // and went home, it dropped to twenty-nine, and it sent another. Forever.
+            //
+            // That is a vehicle and a driver created every five seconds for three game hours,
+            // on top of the performers, the police and sixty people -- and the game has a
+            // finite number of each. An unbounded spawner is a crash with a delay on it.
+            //
+            // Fifteen replacements is more than a bad night needs and far short of what a
+            // pathological one would take. Past that the ring is however full it is.
+            if (_topUps >= MostTopUps)
+            {
+                if (!_saidTopUp)
+                {
+                    _saidTopUp = true;
+
+                    Log.Info("Takeover: stopped topping the ring up after " + MostTopUps +
+                             " replacements. It is as full as this junction will get tonight.");
+                }
+
+                return;
+            }
+
             var sent = 0;
 
             foreach (var spot in Spots)
@@ -1998,6 +2036,10 @@ namespace Hoodrich.Locations
 
                 have++;
                 sent++;
+
+                _topUps++;
+
+                if (_topUps >= MostTopUps) break;
             }
 
             if (sent == 0) return;
@@ -2021,6 +2063,12 @@ namespace Hoodrich.Locations
         private const int Fewest = 30;
 
         private int _nextTopUp;
+
+        /// <summary>How many replacements have been sent, and the ceiling on it.</summary>
+        private int _topUps;
+        private bool _saidTopUp;
+
+        private const int MostTopUps = 15;
 
         /// <summary>How often the street is counted. It is not a per-frame job.</summary>
         private const int TopUpEveryMs = 5000;
@@ -3021,11 +3069,32 @@ namespace Hoodrich.Locations
                     {
                         if (r.Car.Position.DistanceTo(bay.At) > StageArrived)
                         {
-                            // Same patience as a car going home: he is driving round the edge
-                            // of a crowd, so being stopped is normal and asking again is the
-                            // answer rather than forcing through.
-                            Hold(r, now, bay.At);
-                            continue;
+                            // HE WAITS WHERE HE IS RATHER THAN NOT AT ALL, and this is why the
+                            // middle stayed empty all night.
+                            //
+                            // Turn only ever calls in a car that has ARRIVED at a marker, and
+                            // Queued -- the thing that decides whether to fetch more -- only
+                            // asks whether a car has been GIVEN one. So four performers with
+                            // markers, none of whom could reach one, read as a full queue to
+                            // the fetcher and as nobody at all to the caller. The log said it
+                            // exactly: "4 performers, 3 waiting at markers", and an empty pit
+                            // between them.
+                            //
+                            // Six metres from a walked marker on a junction with thirty parked
+                            // cars round it is not always reachable, and the marker was never
+                            // the point. It is somewhere to sit until called, and a man sat
+                            // fifteen metres from it is just as available.
+                            if (now - r.Sent < StageGiveUpMs)
+                            {
+                                // Same patience as a car going home: he is driving round the
+                                // edge of a crowd, so being stopped is normal and asking again
+                                // is the answer rather than forcing through.
+                                Hold(r, now, bay.At);
+                                continue;
+                            }
+
+                            Log.Info("Takeover: a performer could not reach its marker and " +
+                                     "waits where it stopped.");
                         }
 
                         r.AtStage = true;
