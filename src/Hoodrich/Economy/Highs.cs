@@ -568,6 +568,24 @@ namespace Hoodrich.Economy
         /// </summary>
         private static readonly string[] DownCycles = { "drug_deadman", "CAMERA_BW", "drug_wobbly" };
 
+        /// <summary>
+        /// What the come-down looks like once the grey has had its twenty seconds.
+        ///
+        /// drug_deadman is the drained, colourless look the game uses for a man who has just
+        /// been scraped off the floor, and it is exactly right for the moment you come round
+        /// in a car park with no idea how you got there. It is not right for the forty-five
+        /// seconds after that, because a filter that strong stops being a state you are in and
+        /// starts being a thing on your screen -- you go from feeling wrecked to waiting for
+        /// your game back.
+        ///
+        /// So the grey is the arrival and this is the hangover. Same wobble, same ruined
+        /// damage numbers, same injured walk -- the colour just comes back.
+        /// </summary>
+        private static readonly string[] DownAfterGrey = { "drug_wobbly", "drug_flying_base" };
+
+        /// <summary>How long the colourless look lasts before it steps down.</summary>
+        private const int GreyMs = 20000;
+
         private const string DownClipset = "move_m@injured";
         private const float DownShake = 0.18f;
         private const float DownTakes = 1.6f;
@@ -604,6 +622,9 @@ namespace Hoodrich.Economy
 
         private bool _coming;
         private int _downUntil;
+
+        /// <summary>When the colourless look gives way to the ordinary one, or 0.</summary>
+        private int _greyUntil;
 
         private string _cycle = "";
         private string _fx = "";
@@ -905,6 +926,13 @@ namespace Hoodrich.Economy
 
                 if (now >= _downUntil) { Off(); return; }
 
+                // The grey steps down to the wobble, once. See DownAfterGrey.
+                if (_greyUntil != 0 && now >= _greyUntil)
+                {
+                    _greyUntil = 0;
+                    Cycle(DownAfterGrey, 1f);
+                }
+
                 Hold(me, DownClipset, DownShake, false);
             }
             catch (Exception ex)
@@ -1134,6 +1162,7 @@ namespace Hoodrich.Economy
             _downUntil = Game.GameTime + down;
 
             Cycle(DownCycles, 1f);
+            _greyUntil = Game.GameTime + GreyMs;
 
             try
             {
@@ -1279,6 +1308,7 @@ namespace Hoodrich.Economy
             _downUntil = Game.GameTime + WokeRoughMs;
 
             Cycle(DownCycles, 1f);
+            _greyUntil = Game.GameTime + GreyMs;
 
             try
             {
@@ -1433,6 +1463,7 @@ namespace Hoodrich.Economy
 
             _coming = false;
             _downUntil = 0;
+            _greyUntil = 0;
 
             // A teardown in the middle of a blackout must not leave the screen black -- there
             // would be nothing left running to bring it back.
