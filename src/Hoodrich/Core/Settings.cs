@@ -248,19 +248,22 @@ namespace Hoodrich.Core
         /// <summary>
         /// Where the face covering lives, and which one it is.
         ///
-        /// ALL FOUR ARE FOUND BY EYE, BECAUSE NOTHING IN THE GAME NAMES ANY OF IT. Component 1
-        /// is the mask slot on a freemode ped and the BEARD slot on a story one -- Franklin has
-        /// five things in it and they are all beards, which is measured and in the log. A
-        /// bandana on him is somewhere else, and it may be a PROP rather than clothing, which
-        /// is a different set of natives entirely.
+        /// COMPONENT 8, DRAWABLE 4. Franklin's balaclava, measured rather than guessed, and
+        /// it took three wrong answers to get here. Component 1 is the mask slot on a freemode
+        /// ped and the BEARD slot on a story one -- his holds five things and all five are
+        /// beards, which is why the first build put a goatee on him. Component 8 is "accs",
+        /// the undershirt slot, which is not where anybody would look for a balaclava and is
+        /// exactly where Rockstar put it.
         ///
-        /// So Settings > Mask walks the lot with the mask on his head, and Core.Mask.Probe
-        /// writes every slot's size to the log so there is somewhere to start. Saved the
-        /// moment they change.
+        /// STILL SETTINGS RATHER THAN CONSTANTS, because a clothing pack or a different game
+        /// build moves these, and because nothing in the game NAMES any of it -- there is no
+        /// native that says "drawable 4 is a mask". Settings > Mask walks every slot live, and
+        /// Core.Mask.Probe writes each one's size to the log so there is somewhere to start.
+        /// Saved the moment they change.
         /// </summary>
-        public int MaskSlot = 1;
+        public int MaskSlot = 8;
         public bool MaskAsProp;
-        public int MaskDrawable = 1;
+        public int MaskDrawable = 4;
         public int MaskTexture = 0;
 
         /// <summary>Percent of product dropped as a recoverable bag when you die.</summary>

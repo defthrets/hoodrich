@@ -170,6 +170,7 @@ namespace Hoodrich.Core
 
                 var found = false;
                 var also = "";
+                var moved = 0;
 
                 for (var i = 0; i < Components; i++)
                 {
@@ -178,7 +179,9 @@ namespace Hoodrich.Core
 
                     if (d == BareComp[i, 0] && t == BareComp[i, 1]) continue;
 
-                    if (!found)
+                    moved++;
+
+                    if (!found && Plausible(i, d))
                     {
                         found = true;
 
@@ -200,7 +203,10 @@ namespace Hoodrich.Core
 
                     if (d == BareProp[i, 0] && t == BareProp[i, 1]) continue;
 
-                    if (!found)
+                    moved++;
+
+                    // A prop that has been taken OFF is not the thing that was put on.
+                    if (!found && d >= 0)
                     {
                         found = true;
 
@@ -230,6 +236,17 @@ namespace Hoodrich.Core
                 Log.Info("Mask: learned it -- " + Where(cfg) + " drawable " + cfg.MaskDrawable +
                          " texture " + cfg.MaskTexture + ", over " + _wore + "/" + _woreTexture +
                          (string.IsNullOrEmpty(also) ? "." : ". Also changed:" + also + "."));
+
+                // A WHOLE OUTFIT MOVED, SO THIS IS A GUESS AMONG SEVERAL. It happened: a
+                // trainer used to put the mask on reset his face, hair, torso, legs, shoes and
+                // both props at the same time, eight slots changed, and the first plausible one
+                // is not necessarily the right one. Worth saying out loud rather than letting
+                // somebody wonder why they are wearing trousers on their head.
+                if (moved > 2)
+                {
+                    return "Found " + Where(cfg) + " " + cfg.MaskDrawable + ", but " + moved +
+                           " things changed. Change only the mask if it is wrong.";
+                }
 
                 return "";
             }
@@ -504,6 +521,27 @@ namespace Hoodrich.Core
                 _wore = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, cfg.MaskSlot);
                 _woreTexture = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, me.Handle, cfg.MaskSlot);
             }
+        }
+
+        /// <summary>
+        /// Whether a component that moved could be the thing somebody just put on.
+        ///
+        /// TWO SLOTS ALWAYS MOVE AND NEITHER IS EVER THE MASK. Component 0 is his face, which
+        /// a trainer resets as a side effect of touching anything; component 2 is his hair,
+        /// which a mask HIDES -- so putting one on sets the hair to none every single time and
+        /// it is the change most likely to be seen first. Between them they cost this the
+        /// right answer once already: the log picked "component 0 drawable 0" out of eight
+        /// slots that had moved, while component 8 drawable 4 -- the balaclava -- sat further
+        /// down the same line.
+        ///
+        /// A slot cleared to nothing is out for the same reason: a thing taken OFF is not the
+        /// thing that was put on.
+        /// </summary>
+        private static bool Plausible(int component, int drawable)
+        {
+            if (component == 0 || component == 2) return false;
+
+            return drawable > 0;
         }
 
         /// <summary>"prop slot 0" or "component 1", for a log line somebody has to act on.</summary>

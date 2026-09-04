@@ -555,9 +555,25 @@ namespace Hoodrich.UI
                 {
                     var said = Core.Mask.Learn(c);
 
-                    Notify.Important(string.IsNullOrEmpty(said)
-                        ? "~g~Found it.~s~  " + Core.Mask.Where(c) + ", number " + c.MaskDrawable
-                        : "~r~" + said);
+                    if (!string.IsNullOrEmpty(said))
+                    {
+                        Notify.Important("~r~" + said);
+                        return;
+                    }
+
+                    // WRITTEN TO THE INI HERE, because Learn changes the settings OBJECT and
+                    // nothing else was going to. Every other row on this screen saves through
+                    // Write when you nudge it; this one sets four values at once without any
+                    // of them being touched, so without this the mask is found, works for the
+                    // session, and is gone the next time the mod loads -- which is the most
+                    // annoying way for a thing to be broken.
+                    Settings.Put("Mask", "Slot", c.MaskSlot.ToString(CultureInfo.InvariantCulture));
+                    Settings.Put("Mask", "AsProp", c.MaskAsProp ? "true" : "false");
+                    Settings.Put("Mask", "Drawable", c.MaskDrawable.ToString(CultureInfo.InvariantCulture));
+                    Settings.Put("Mask", "Texture", c.MaskTexture.ToString(CultureInfo.InvariantCulture));
+
+                    Notify.Important("~g~Found it.~s~  " + Core.Mask.Where(c) +
+                                     ", number " + c.MaskDrawable + ". Saved.");
                 }
             });
 
