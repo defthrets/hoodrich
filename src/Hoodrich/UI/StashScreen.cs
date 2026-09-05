@@ -379,7 +379,7 @@ namespace Hoodrich.UI
 
             // The letterhead, the same one every other screen in the mod carries, and one line
             // under it saying what you are looking at.
-            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Brand, 230));
+            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Text, 230));
 
             Hud.Text(Blurb, middle, top + 0.052f, 0.29f,
                      Palette.Alpha(Palette.TextDim, 170), Hud.FontChaletLondon);
@@ -562,7 +562,7 @@ namespace Hoodrich.UI
             var tx = x;
 
             if (Hud.File(icon, x + Hud.ToX(HeadIcon) * 0.5f, y + 0.008f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Brand, 225)))
+                         Palette.Alpha(Palette.Text, 225)))
             {
                 tx = x + Hud.ToX(HeadIcon) + 0.006f;
             }

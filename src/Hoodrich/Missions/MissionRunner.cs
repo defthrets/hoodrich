@@ -3561,7 +3561,7 @@ namespace Hoodrich.Missions
 
                     case BikePhase.Home: return Palette.Cash;
 
-                    default: return Palette.Brand;
+                    default: return Palette.Text;
                 }
             }
 
@@ -3574,7 +3574,7 @@ namespace Hoodrich.Missions
                 case MissionState.Deliver: return Palette.Cash;
                 case MissionState.Dump:
                 case MissionState.Torch: return Palette.Warn;
-                default: return Palette.Brand;
+                default: return Palette.Text;
             }
         }
 

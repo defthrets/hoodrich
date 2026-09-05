@@ -525,24 +525,34 @@ def mask():
 
 
 def balaclava():
+    """
+    A balaclava: a hood with a face opening and two eyes looking out of it.
+
+    THE EYES ARE THE WHOLE READ. The first one was a hood with an empty letterbox slot and
+    it looked like an egg with a hole in it -- because a slot with nothing in it is a slot.
+    Every balaclava glyph anybody recognises is the same three things: a rounded head, a
+    dark opening across the middle of it, and two white eyes inside the opening. Take the
+    eyes away and it is a mailbox.
+
+    The opening is punched to transparent so it reads dark on any tint; the eyes are drawn
+    back in white on top of it.
+    """
     img, d = canvas()
 
-    ellipse(d, 256, 228, 172, 204)
-    rrect(d, 116, 372, 396, 474, 44)
+    # The hood: dome on top, sides drawn in a little toward the neck, then a collar.
+    d.rounded_rectangle([104, 40, 408, 396], radius=150, fill=W)
+    d.polygon([(104, 250), (408, 250), (392, 420), (120, 420)], fill=W)
+    d.rounded_rectangle([84, 396, 428, 472], radius=44, fill=W)
 
-    for y in (100, 124, 148):
-        stroke(d, [(150, y), (362, y)], 8, LOW)
+    # The face opening, wide and rounded, sitting just above the middle of the head.
+    d.rounded_rectangle([152, 168, 360, 286], radius=52, fill=CLEAR)
 
-    rrect(d, 152, 168, 360, 272, 52, CLEAR)
-    ellipse(d, 206, 220, 32, 18)
-    ellipse(d, 306, 220, 32, 18)
-    disc(d, 206, 220, 12, MID)
-    disc(d, 306, 220, 12, MID)
+    # And the two eyes in it, which is what makes it a balaclava and not a letterbox.
+    d.ellipse([176, 200, 236, 252], fill=W)
+    d.ellipse([276, 200, 336, 252], fill=W)
 
     save(img, "balaclava.png")
 
-
-# ---------------------------------------------------------------- places and motors
 
 def garage():
     img, d = canvas()

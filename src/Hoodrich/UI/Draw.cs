@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -95,7 +95,22 @@ namespace Hoodrich.UI
             if (RectsThisFrame > PeakRects)
             {
                 PeakRects = RectsThisFrame;
-                Log.Info("Draw budget: " + PeakRects + " rectangles in a frame (new peak).");
+
+                // PAST THE GAME'S CEILING IS A WARNING, NOT A STATISTIC. The frame that first
+                // went over it drew a phone with no battery, no signal, no rules and no
+                // plates, and the only sign was this line saying "new peak" at INFO. The
+                // number is where things start going missing on the busiest resolution seen;
+                // the exact ceiling is the game's and is not published.
+                if (PeakRects >= RectCeiling)
+                {
+                    Log.Warn("Draw budget: " + PeakRects + " rectangles in a frame. Past about " +
+                             RectCeiling + " the game drops the rest of the frame's rectangles " +
+                             "-- whatever draws last that frame is what goes missing.");
+                }
+                else
+                {
+                    Log.Info("Draw budget: " + PeakRects + " rectangles in a frame (new peak).");
+                }
             }
 
             RectsThisFrame = 0;
@@ -344,6 +359,9 @@ namespace Hoodrich.UI
         /// staring at a shape that is drawn correctly.
         /// </summary>
         public static int RectsThisFrame { get; private set; }
+
+        /// <summary>Where the game starts dropping rectangles. See BeginFrame.</summary>
+        private const int RectCeiling = 800;
 
         public static int PeakRects { get; private set; }
 

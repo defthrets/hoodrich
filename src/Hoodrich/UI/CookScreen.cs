@@ -540,14 +540,14 @@ namespace Hoodrich.UI
             // the panel TOP rather than to the title, because measuring it off the title put
             // it half a centimetre above the panel and outside its own ground.
             Hud.BrandCentre(left + panelWidth * 0.5f, top + 0.025f, 0.024f,
-                            Palette.Alpha(Palette.Brand, 225));
+                            Palette.Alpha(Palette.Text, 225));
 
             // The house script, the same face every other screen in the mod is titled in --
             // and in the case it is written in rather than shouted. A cursive face set in block
             // capitals is two decisions fighting each other: handwriting is the informal one
             // and capitals are the formal one, and a room in somebody's house is the informal
             // thing.
-            Hud.Text("The Kitchen", x, y - 0.004f, 0.74f, Palette.Brand, Hud.FontCursive, centre: false);
+            Hud.Text("The Kitchen", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
 
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash, Hud.FontChaletLondon);
@@ -752,10 +752,10 @@ namespace Hoodrich.UI
                     if (outArt.HasFile && room > wide + Hud.ToX(ArtSize) + 0.006f)
                     {
                         Hud.File(outArt.File, wx - Hud.ToX(ArtSize) * 0.65f, y + 0.010f,
-                                 ArtSize, 0f, Palette.Brand);
+                                 ArtSize, 0f, Palette.Text);
                     }
 
-                    Hud.Text(fitted, wx, y + 0.001f, 0.28f, Palette.Brand, Hud.FontLabel,
+                    Hud.Text(fitted, wx, y + 0.001f, 0.28f, Palette.Text, Hud.FontLabel,
                              centre: false);
                 }
             }

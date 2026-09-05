@@ -389,7 +389,7 @@ namespace Hoodrich.UI
 
             // The shop's name in the house script, and what is in your pocket, which is the only
             // other number that decides anything on this screen.
-            Hud.Text("HOOD WEAPONRY", x, y - 0.004f, 0.74f, Palette.Brand, Hud.FontCursive, centre: false);
+            Hud.Text("HOOD WEAPONRY", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash, Hud.FontChaletLondon);
 
@@ -463,7 +463,7 @@ namespace Hoodrich.UI
             {
                 var here = i == _rack;
 
-                Hud.Text(Racks[i].Name, at[i], y, 0.26f, here ? Palette.Brand : Palette.TextDim,
+                Hud.Text(Racks[i].Name, at[i], y, 0.26f, here ? Palette.Text : Palette.TextDim,
                          Hud.FontLabel, centre: false);
 
                 // How much of that rack is already yours, which is the question the strip was
@@ -626,12 +626,12 @@ namespace Hoodrich.UI
             var cost = AmmoPrice(piece) * lots;
             var afford = Game.Player.Money >= cost;
 
-            Hud.Text("<", x, y, 0.32f, Palette.Brand, Hud.FontChaletLondon, centre: false);
+            Hud.Text("<", x, y, 0.32f, Palette.Text, Hud.FontChaletLondon, centre: false);
 
             Hud.Text(lots + (lots == 1 ? " box" : " boxes") + "   ·   " + rounds + " rounds",
                      x + 0.018f, y, 0.32f, Palette.Text, Hud.FontChaletLondon, centre: false);
 
-            Hud.Text(">", x + Hud.ToX(0.30f), y, 0.32f, Palette.Brand,
+            Hud.Text(">", x + Hud.ToX(0.30f), y, 0.32f, Palette.Text,
                      Hud.FontChaletLondon, centre: false);
 
             Hud.TextRight("$" + cost.ToString("N0"), right, y, 0.32f,

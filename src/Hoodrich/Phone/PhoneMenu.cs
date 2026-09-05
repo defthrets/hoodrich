@@ -125,9 +125,6 @@ namespace Hoodrich.Phone
         /// <summary>How long a tile takes to pop when the cursor lands on it.</summary>
         private const int PopMs = 150;
 
-        /// <summary>The plate under an app icon: its height (width follows the aspect) and its corners.</summary>
-        private const float PlateSize = 0.060f;
-        private const float PlateRound = 0.011f;
 
         /// <summary>
         /// The tiles are SQUARE, and everything below is what replaced the rounding.
@@ -828,8 +825,21 @@ namespace Hoodrich.Phone
             var dark = Color.FromArgb(252, 2, 2, 3);
             var lit = Color.FromArgb(252, 13, 15, 17);
 
+            // NOT STEPS ZERO. Zero is one rectangle per screen ROW, and the glass is three
+            // quarters of the screen tall -- eight hundred rectangles at 1080p and sixteen
+            // hundred at 4K, for one flat near-black shape. The game keeps a fixed buffer of
+            // script rectangles per frame and throws away everything past it, and the things
+            // past it were the LAST rectangles of the phone: the battery, the signal, the
+            // rule under the status bar, the Fleeca band, the plate under every app. Text and
+            // sprites come out of different buffers, which is why the clock and the icons
+            // drew and nothing around them did -- and why it read as "missing icons" rather
+            // than as a broken phone. The log had the number the whole time: a thousand and
+            // thirty-nine in a frame, against a busiest-ever of five hundred.
+            //
+            // Twenty steps is about eighty rectangles and a corner stagger nobody can see on a
+            // near-black shape.
             Hud.RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
-                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 0);
+                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 20);
 
             // A catch of light along the top of the glass, so it is glass rather than paint.
             if (glass > 0f)
@@ -1794,43 +1804,6 @@ namespace Hoodrich.Phone
             // columns is followed rather than re-found.
             if (on) _glide.Target(x + Hud.ToX(0.004f), y + 0.004f, w - Hud.ToX(0.008f), h - 0.008f);
 
-            // ---- A PLATE UNDER THE ICON, WHICH IS WHAT A PHONE HAS ----
-            //
-            // The box that was taken off these tiles was a near-black rectangle round the
-            // WHOLE tile -- icon, badge and name -- at alpha 200 on a near-black glass. Nobody
-            // could see it, so it was doing nothing, so it went, and the note above is right
-            // about all of that. This is not that box. It is a rounded plate behind the icon
-            // alone, a shade LIGHTER than the glass, which is the one arrangement every phone
-            // anybody owns has settled on: the picture sits on a tile, the name sits under it
-            // on the glass.
-            //
-            // Lighter rather than darker, so it exists. Quiet tiles get a faint one; the tile
-            // under the cursor gets one in the set's green, which is the plate doing the job
-            // the icon's colour was doing alone -- and the icon is now white on green rather
-            // than green on black, which reads at twice the distance.
-            //
-            // Ten steps a corner. The old argument against rounding was made about a plate
-            // the size of the tile with square bites in its corners; this is a third the size,
-            // and at this radius ten is round.
-            var plateH = PlateSize;
-            var plateW = Hud.ToX(PlateSize);
-            var plateX = x + (w - plateW) * 0.5f;
-            var plateY = y + h * 0.31f - plateH * 0.5f;
-
-            var plate = !item.Enabled
-                ? Color.FromArgb(14, 255, 255, 255)
-                : on ? Lerp(GreenDim, Green, 0.35f)
-                     : Color.FromArgb(26, 255, 255, 255);
-
-            Hud.RoundRect(plateX, plateY, plateW, plateH, PlateRound, Fade(plate, fade),
-                          sprite: false, steps: 10);
-
-            // A catch of light along the top of the plate, so it is a tile and not a stain.
-            var lipX = Hud.ToX(PlateRound);
-
-            Hud.RectFrom(plateX + lipX, plateY, plateW - lipX * 2f, 0.0010f,
-                         Fade(Color.FromArgb(on ? 70 : 34, 255, 255, 255), fade));
-
             // White on the live one as well as the quiet ones. See Lit.
             var ink = !item.Enabled ? Palette.TextDisabled : Palette.Text;
 
@@ -1866,10 +1839,16 @@ namespace Hoodrich.Phone
                 sway = (a + b * 0.35f) * JiggleDegrees * kick;
             }
 
-            // WHITE ON THE GREEN PLATE, GREEN ON NOTHING. The plate says which app the cursor
-            // is holding now, so the icon on it goes to near-white for contrast; the name
-            // stays white on the glass because the name is the thing you are reading.
-            var art = on ? Color.FromArgb(255, 244, 252, 244) : ink;
+            // GREEN ON THE ONE YOU ARE ON. This is what says which app the cursor is holding,
+            // so it is the icon that changes colour and not the name -- the name is the thing
+            // you are trying to read, and green text on black is harder work than white.
+            //
+            // A PLATE WENT UNDER THESE FOR ONE BUILD AND CAME OFF AGAIN. It was never seen:
+            // the frame was over the game's rectangle ceiling, so the plate was dropped, and
+            // the icon -- turned near-white to sit on a plate that was not there -- lost its
+            // green. What was left looked broken, and the green icon with the sway and the
+            // pop was the thing that was asked for in the first place.
+            var art = on ? Green : ink;
 
             // AND A PUNCH WHEN IT IS CHOSEN, which is a different event from being hovered and
             // wants a different animation. The sway says "this is the one you are on"; the

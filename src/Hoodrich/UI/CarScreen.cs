@@ -211,7 +211,7 @@ namespace Hoodrich.UI
             var y = top + 0.020f;
 
             // ---- his name over the door ----
-            Hud.Text("HAO'S", x, y - 0.004f, 0.74f, Palette.Brand, Hud.FontCursive, centre: false);
+            Hud.Text("HAO'S", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash);
 

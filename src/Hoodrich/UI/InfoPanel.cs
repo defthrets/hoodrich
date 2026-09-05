@@ -557,9 +557,9 @@ namespace Hoodrich.UI
 
             // The mark sits above the screen's own title: the mod saying who is talking,
             // then the screen saying what about.
-            Hud.BrandCentre(0.5f, top + 0.024f, BrandHeight, Palette.Alpha(Palette.Brand, (int)(225f * arrive)));
+            Hud.BrandCentre(0.5f, top + 0.024f, BrandHeight, Palette.Alpha(Palette.Text, (int)(225f * arrive)));
 
-            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.041f, 0.74f, Palette.Brand,
+            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.041f, 0.74f, Palette.Text,
                      Hud.FontCursive, centre: false);
 
             if (!string.IsNullOrEmpty(_subtitle))

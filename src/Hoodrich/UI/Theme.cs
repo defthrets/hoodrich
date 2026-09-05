@@ -63,7 +63,10 @@ namespace Hoodrich.UI
                       Color.FromArgb((int)(238f * arrive), Body.R, Body.G, Body.B),
                       Color.FromArgb(0, 0, 0, 0));
 
-            Wash(left, top, w, WashDepth, (int)(30f * arrive));
+            // Half what it was. At thirty it was the first thing you saw on every panel,
+            // and with the words white now it is the only colour on a screen that is not the
+            // cursor -- so it has to be a hint of green at the top, not a green top.
+            Wash(left, top, w, WashDepth, (int)(15f * arrive));
         }
 
         /// <summary>
@@ -274,7 +277,7 @@ namespace Hoodrich.UI
             Hud.RectFrom(x + w - rX, y + rule, rX, h - rule * 2f, c);
         }
 
-        /// <summary>The rim of the cursor frame: a brighter gold than the plate's top, so it reads on it.</summary>
+        /// <summary>The rim of the cursor frame: brighter than the plate's top, so it reads on it.</summary>
         public static readonly Color RimInk = Lerp(Palette.Brand, Color.White, 0.45f);
     }
 

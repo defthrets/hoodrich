@@ -874,7 +874,7 @@ namespace Hoodrich.UI
             if (unread > 0)
             {
                 Hud.TextRight(unread + " NEW", right, y + 0.003f,
-                              SmallScale, Palette.Brand, Hud.FontChaletComprimeCologne);
+                              SmallScale, Palette.Text, Hud.FontChaletComprimeCologne);
             }
 
             y += 0.030f;
@@ -974,7 +974,7 @@ namespace Hoodrich.UI
                 Hud.Disc(bx, by, 0.0078f, Theme.Ink(Palette.Brand, lit));
 
                 Hud.Text(row.Unread.ToString(), bx, by - 0.0090f, 0.26f,
-                         Theme.Lerp(Color.FromArgb(255, 14, 15, 17), Palette.Brand, lit), Hud.FontChaletLondon);
+                         Theme.Lerp(Color.FromArgb(255, 14, 15, 17), Palette.Text, lit), Hud.FontChaletLondon);
             }
 
             var preview = row.Preview;
@@ -1362,7 +1362,7 @@ namespace Hoodrich.UI
 
             if (open)
             {
-                Hud.Text("SEND", x, top + 0.006f, SmallScale, Palette.Brand,
+                Hud.Text("SEND", x, top + 0.006f, SmallScale, Palette.Text,
                          Hud.FontChaletComprimeCologne, centre: false);
 
                 var line = string.IsNullOrEmpty(row.Line) ? "you got anything?" : row.Line;

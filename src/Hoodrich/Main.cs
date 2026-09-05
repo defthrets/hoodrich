@@ -2008,6 +2008,7 @@ namespace Hoodrich
                 pages.RideGoing = () => _ride.Going;
                 pages.CancelRide = () => _ride.Cancel("Ride cancelled.");
                 pages.ShowGraffiti = () => _graffiti.Open();
+                _graffiti.PutAway = PutCanAway;
 
                 // The can tile. Out is the engine's own test for "this is ours and it is in
                 // his hand" -- all three, because an extinguisher that is out but not armed is

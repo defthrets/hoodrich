@@ -1035,7 +1035,7 @@ namespace Hoodrich.Wheel
             page.AddSub("Contacts", "#", BuildContactsPage,
                 detail: "Everyone you can reach, and what you can say to them",
                 value: ContactsSummary());
-            page.WithIcon(Icons.FromFile("phone.png"));
+            page.WithIcon(Icons.FromFile("people.png"));
 
             // A baggie, not a bong. The old one was a picture of SMOKING and this menu is
             // about selling, which is the one thing nobody in it ever does with the product.
@@ -1118,38 +1118,6 @@ namespace Hoodrich.Wheel
             // the line, bigger hole. It holds down to sixteen pixels, which is the only test a
             // tile has to pass.
             page.WithIcon(Icons.FromFile("capapp.png"));
-
-            // THE CAN ITSELF, NEXT TO THE APP THAT LOADS IT.
-            //
-            // One tile, two jobs, and which one it does is decided by what is in his hand at
-            // the moment the phone opens. Graffiti is where you pick a colour and a cap; this
-            // is the thing you do sixty times a night between walls -- can out, can away --
-            // and reaching into a colour picker for it was one screen too deep.
-            //
-            // PUTTING IT AWAY IS THE HALF THAT WAS MISSING. Taking a can out had a button;
-            // putting it down did not, and the game's own weapon wheel only changes what he
-            // is holding, not what the engine thinks the extinguisher is. So it stayed a can
-            // for the rest of the session, and came out as one every time anything handed him
-            // the extinguisher back. See Can.Holster.
-            //
-            // The label stays put and the value carries the state, because a tile whose NAME
-            // changes between opens is a tile you have to re-find every time.
-            var canOut = CanOut != null && CanOut();
-
-            page.Add("Spray can", "*",
-                () => { if (canOut) PutCanAway?.Invoke(); else TakeCan?.Invoke(); },
-                detail: canOut
-                    ? "Puts the can away. Empty hands, and the extinguisher is just an extinguisher again"
-                    : "A can in your hand, in whatever the picker has loaded",
-                value: canOut ? "OUT" : "",
-                enabled: TakeCan != null && PutCanAway != null,
-                disabledReason: "Not wired up");
-
-            // spray.png rather than spraycan.png. Both are the same object; the tall one is
-            // drawn as a 150x340 letterbox and this tile forces a 64x64 square, which is the
-            // squashed-cap trap two comments up all over again. The square one was drawn for
-            // exactly this box.
-            page.WithIcon(Icons.FromFile("spray.png"));
 
             // THE MASK. One tile, nothing behind it: on if it is off, off if it is on. The
             // label stays and the value carries the state, same as the can beside it.

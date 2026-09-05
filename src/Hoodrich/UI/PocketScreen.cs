@@ -580,7 +580,7 @@ namespace Hoodrich.UI
             var wide = right - x;
             var middle = left + panelWidth * 0.5f;
 
-            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Brand, (int)(230f * arrive)));
+            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Text, (int)(230f * arrive)));
 
             Hud.Text(Blurb, middle, top + 0.052f, 0.29f,
                      Palette.Alpha(Palette.TextDim, 170), Hud.FontChaletLondon);
@@ -592,7 +592,7 @@ namespace Hoodrich.UI
             var ix = x;
 
             if (Hud.File("stash.png", x + Hud.ToX(HeadIcon) * 0.5f, y + 0.007f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Brand, 225)))
+                         Palette.Alpha(Palette.Text, 225)))
             {
                 ix = x + Hud.ToX(HeadIcon) + 0.006f;
             }
@@ -738,7 +738,7 @@ namespace Hoodrich.UI
 
             if (!string.IsNullOrEmpty(mark) &&
                 Hud.File(mark, x + Hud.ToX(0.014f) * 0.5f, y + 0.007f, 0.014f, 0f,
-                         Palette.Alpha(Palette.Brand, (int)(230f * arrive))))
+                         Palette.Alpha(Palette.Text, (int)(230f * arrive))))
             {
                 tx = x + Hud.ToX(0.014f) + 0.005f;
             }
@@ -756,7 +756,7 @@ namespace Hoodrich.UI
             var full = slots > 0 && carried >= slots;
 
             Hud.TextRight(carried + " / " + slots, x + width, y, 0.24f,
-                          full ? Palette.BrandDeep : Palette.TextDim, Hud.FontLabel);
+                          full ? Palette.Text : Palette.TextDim, Hud.FontLabel);
 
             var tileY = y + FoodHead;
 
@@ -842,7 +842,7 @@ namespace Hoodrich.UI
 
                     Hud.TextRight(many.ToString(), tx2 + tile - 0.0015f,
                                   tileTop + FoodTile - 0.0125f, 0.23f,
-                                  Palette.Alpha(Palette.Brand, (int)(255f * show)), Hud.FontLabel);
+                                  Palette.Alpha(Palette.Text, (int)(255f * show)), Hud.FontLabel);
                 }
             }
 
@@ -880,7 +880,7 @@ namespace Hoodrich.UI
             var tx = x;
 
             if (Hud.File("people.png", x + Hud.ToX(HeadIcon) * 0.5f, y + 0.008f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Brand, 225)))
+                         Palette.Alpha(Palette.Text, 225)))
             {
                 tx = x + Hud.ToX(HeadIcon) + 0.006f;
             }
@@ -888,7 +888,7 @@ namespace Hoodrich.UI
             Hud.Text("ON YOU", tx, y, 0.28f, Palette.Text, Hud.FontLabel, centre: false);
 
             var full = Full();
-            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.BrandDeep : Palette.Brand;
+            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.Text : Palette.Text;
 
             Hud.TextRight(_pockets.Total.ToString("0") + " / " + _pockets.Capacity.ToString("0") + "g",
                           x + width, y, 0.28f, full > 0.7f ? tint : Palette.TextDim, Hud.FontBody);
@@ -1032,7 +1032,7 @@ namespace Hoodrich.UI
                 Hud.Text(Hud.Fit(amount, tile - 0.004f, 0.22f, Hud.FontLabel),
                          tx + tile * 0.5f, ty + Cell - ChipHeight - 0.0005f, 0.22f,
                          Theme.Lerp(Palette.Alpha(Palette.Text, (int)(255f * show)),
-                              Palette.Alpha(Palette.Brand, (int)(255f * show)), lit),
+                              Palette.Alpha(Palette.Text, (int)(255f * show)), lit),
                          Hud.FontLabel);
 
                 // ---- how cut ----

@@ -987,7 +987,7 @@ namespace Hoodrich.UI
                 // An empty feed tab says so before you press it. NOT Palette.TextDisabled: that
                 // is full alpha and composites BRIGHTER than TextDim, which would make the
                 // empty tab the loudest thing on the row.
-                var ink = here ? (i >= TabDiss ? Palette.Danger : Palette.Brand)
+                var ink = here ? (i >= TabDiss ? Palette.Danger : Palette.Text)
                     : i < 2 ? (empty ? Palette.Alpha(Palette.TextDim, 90) : Palette.TextDim)
                     : i == TabPost ? Palette.TextDim
                     : Palette.Alpha(Palette.Warn, 170);
@@ -1511,7 +1511,7 @@ namespace Hoodrich.UI
             // The mark over the middle of the panel, the same letterhead every other screen in
             // the mod carries.
             Hud.BrandCentre(middle, PanelTop + 0.023f, 0.024f,
-                            Palette.Alpha(Palette.Brand, 225));
+                            Palette.Alpha(Palette.Text, 225));
 
             // And the word under it, centred on the same axis, in the face the rest of the mod
             // reads in rather than the script one.

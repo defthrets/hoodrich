@@ -1180,7 +1180,7 @@ namespace Hoodrich.UI
                 : "UP / DOWN  PICK     LEFT / RIGHT  CHANGE     ENTER  TOGGLE     SPRINT  x10     BACKSPACE  DONE";
 
             Hud.Text(hint, x, top + height - 0.019f, 0.24f,
-                     _listening >= 0 ? Palette.Brand : Palette.TextDim, Hud.FontLabel,
+                     _listening >= 0 ? Palette.Text : Palette.TextDim, Hud.FontLabel,
                      centre: false);
 
             // Last, so it rides over the rows it is pointing at.
@@ -1204,13 +1204,13 @@ namespace Hoodrich.UI
 
                 if (!string.IsNullOrEmpty(art) &&
                     Hud.File(art, x + Hud.ToX(HeadIcon) * 0.5f, y + 0.011f, HeadIcon, 0f,
-                             Palette.Alpha(Palette.Brand, 230)))
+                             Palette.Alpha(Palette.Text, 230)))
                 {
                     tx = x + Hud.ToX(HeadIcon) + 0.006f;
                 }
 
                 Hud.Text(row.Label.ToUpperInvariant(), tx, y + 0.004f, 0.26f,
-                         Palette.Alpha(Palette.Brand, 230), Hud.FontLabel, centre: false);
+                         Palette.Alpha(Palette.Text, 230), Hud.FontLabel, centre: false);
 
                 Theme.Rule(x, y + RowHeight - 0.007f, right - x);
                 return;
@@ -1254,7 +1254,7 @@ namespace Hoodrich.UI
 
                     Hud.TextRight(listening ? "PRESS A KEY" : key.ToString().ToUpperInvariant(),
                                   right, y, 0.28f,
-                                  Theme.Ink(listening ? Palette.Brand
+                                  Theme.Ink(listening ? Palette.Text
                                                      : picked ? Palette.Text : Palette.TextDim, lit),
                                   Hud.FontBody);
                     break;
@@ -1293,7 +1293,7 @@ namespace Hoodrich.UI
                 // which is the only pairing that reads on both grounds.
                 Hud.RectFrom(bx, by, w, size, Theme.Ink(Palette.Alpha(Palette.Cash, 210), lit));
                 Hud.File("tick.png", bx + w * 0.5f, by + size * 0.5f, size * 0.78f, 0f,
-                         Theme.Lerp(Color.FromArgb(255, 12, 13, 15), Palette.Brand, lit));
+                         Theme.Lerp(Color.FromArgb(255, 12, 13, 15), Palette.Text, lit));
             }
             else
             {

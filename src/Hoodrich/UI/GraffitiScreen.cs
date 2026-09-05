@@ -94,13 +94,23 @@ namespace Hoodrich.UI
         /// </summary>
         private static readonly Paint.Swatch[] Tins = Paint.Rack.All;
 
-        private enum Row { Swatches, Cap, TakeCan, TakeExt, Clear }
+        private enum Row { Swatches, Cap, TakeCan, TakeExt, PutAway, Clear }
 
         /// <summary>Derived, because the bounds below were written out as a 3 in two places.</summary>
         private static readonly int LastRow = Enum.GetValues(typeof(Row)).Length - 1;
 
         private readonly PaintConfig _cfg;
         private readonly Marks _marks;
+
+        /// <summary>
+        /// Set by Main. Puts the can away properly -- plume off, prop gone, holstered to empty
+        /// hands, engine disarmed -- which is the one thing this screen could not do before.
+        ///
+        /// It lived on its own home-screen tile for a day, beside this app, and two things
+        /// about a spray can on one phone is one too many. Taking a can out is here; putting
+        /// it back belongs on the same screen.
+        /// </summary>
+        public Action PutAway;
 
         private readonly Curtain _curtain = new Curtain();
 
@@ -209,6 +219,17 @@ namespace Hoodrich.UI
 
                 case Row.TakeExt:
                     Take(false);
+                    break;
+
+                case Row.PutAway:
+                    if (!(Can.Out() && _cfg.Armed))
+                    {
+                        Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                        break;
+                    }
+
+                    PutAway?.Invoke();
+                    Close();
                     break;
 
                 case Row.Clear:
@@ -326,7 +347,7 @@ namespace Hoodrich.UI
             var left = 0.5f - width * 0.5f;
             var pad = Hud.ToX(PadH);
 
-            var height = 0.340f + SwatchH + ButtonH * 4f;
+            var height = 0.340f + SwatchH + ButtonH * 5f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             Theme.Panel(left, top, width, height);
@@ -400,7 +421,7 @@ namespace Hoodrich.UI
             if ((frame == null || !Hud.File(frame, mx, my, logoW, LogoH, spin, Palette.Text)) &&
                 !Hud.File("graffiti.png", mx, my, logoW, LogoH, spin, Palette.Text))
             {
-                Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Brand,
+                Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Text,
                          Hud.FontCursive, centre: false);
             }
 
@@ -480,6 +501,17 @@ namespace Hoodrich.UI
 
             Button(x, right, y, _row == Row.TakeExt, Lit(Row.TakeExt, grown), "TAKE AN EXTINGUISHER",
                    has && !_cfg.SprayCanLook ? "IN HAND" : "ENTER", false);
+
+            y += ButtonH;
+
+            // ---- and back again ----
+            //
+            // The right-hand word says whether there is anything to put away, so pressing it
+            // with empty hands is never a mystery.
+            var out_ = Can.Out() && _cfg.Armed;
+
+            Button(x, right, y, _row == Row.PutAway, Lit(Row.PutAway, grown), "PUT IT AWAY",
+                   out_ ? "ENTER" : "NOT OUT", false);
 
             y += ButtonH;
 

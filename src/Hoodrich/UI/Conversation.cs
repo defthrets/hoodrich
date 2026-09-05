@@ -828,14 +828,14 @@ namespace Hoodrich.UI
             Theme.Panel(PanelX, top, PanelWidth, total, arrive);
 
             // Same idea as the info panels: the mod first, quietly, then who is speaking.
-            Hud.BrandCentre(0.5f, top + 0.024f, 0.022f, Palette.Alpha(Palette.Brand, (int)(225f * arrive)));
+            Hud.BrandCentre(0.5f, top + 0.024f, 0.022f, Palette.Alpha(Palette.Text, (int)(225f * arrive)));
 
             var y = top + 0.039f;
 
             if (!string.IsNullOrEmpty(Title))
             {
                 Hud.Text(Title.ToUpperInvariant(), PanelX + 0.014f, y - 0.004f, 0.62f,
-                         Palette.Brand, Hud.FontCursive, centre: false);
+                         Palette.Text, Hud.FontCursive, centre: false);
                 y += 0.036f;
             }
 
