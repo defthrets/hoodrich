@@ -4,11 +4,11 @@
 
 
 -------------------------------------------------------------------------------
-  0.6.0  (not released yet)
+  0.6.0  (5 September 2026)
 -------------------------------------------------------------------------------
 
-A hundred and seventy-one changes since 0.5.1. Four of them are things the mod
-could not do at all before.
+Two hundred and forty-eight changes since 0.5.1, and more of them than usual
+are things the mod could not do at all before.
 
 
 ===============================================================================
@@ -84,6 +84,86 @@ sit on the street grid instead of floating discs over it. Cross into your own
 block during a raid and every one of yours comes for you.
 
 
+THE MUFFLER SHOP
+
+A low-end Los Santos Customs on the corner of Hao's yard, with a spanner on the
+map. Drive up to the roller door and it asks; say yes and the car is driven in
+for you while a camera watches from the side, the screen goes down, and it
+comes back up on the car in the bay with the menu over it. Respray, second
+colour, pearlescent, wheels and wheel colour, engine, brakes, transmission,
+suspension, armour, turbo, every body part the car has, horn, tint, xenons,
+tyre smoke, neon, livery and plate style -- each by the game's own name, each
+going onto the car as the cursor lands on it, at under half the price of the
+shop over the river. Drive out and, if the car is one of yours, the whole kit is
+read off it and kept: it is stood up with its rims on from then on.
+
+
+THE MASK
+
+An app that puts a balaclava on and takes it off -- and the balaclava means
+something. The police are looking for whoever they last had eyes on, a man in
+a mask or a bare face. Change that while they are not looking, round a corner
+with the stars grey, and the man they are after stops existing: they ignore
+you and the search runs out on its own. Change it in front of them and they
+have simply watched you do it. Put it back on while they are ignoring you and
+that is the face they want again. Nothing touches the wanted level itself.
+
+
+KNOWAI, PROPERLY
+
+You pick the place before the car is sent. The app opens a picker with the
+place itself behind it, live -- a camera goes out to it and circles it while
+you look -- with the fare from where you are stood and about how long it will
+take. Twenty-five places, from Aunt Denise's to Paleto Bay. The car comes and
+pulls away for the place the moment you are in. Drop a marker on the map
+mid-ride and it becomes a stop on the way: the car swings by, waits, and
+carries on. The tile on the phone says what it is.
+
+
+PLATES
+
+Buy a car off Hao and a small panel comes up over it: what the plate says, on
+the game's own keyboard, and which of the thirteen styles it is -- the story's
+six and the seven the tuners added -- each going onto the car as you land on
+it. The plate is how the mod finds the car again, so two of yours cannot wear
+the same one, and Hao knows a car of yours by the plate it actually wears.
+
+
+STRETCH'S COUNTER
+
+Redrawn, and the pictures work for the first time. The stock down the left by
+rack; the gun you are on laid out on the right, its picture large, what it is
+for, rounds by the box with what you are holding, and a shelf of everything
+that bolts to it -- scopes, sights, suppressors, muzzles, grips, lights,
+barrels, magazines and special rounds, whatever this gun actually takes. R
+steps across to the shelf. Enter fits a part and takes the money; Enter on a
+fitted one takes it off, and putting it back is free. Fitted parts survive a
+save and come back with the gun.
+
+
+THE CAMERA FOR A CONVERSATION
+
+A talk with somebody stood in front of you is shot over your shoulder, on
+their face, pushing in slowly while they speak and cutting to the other
+shoulder on each new line. Shallow depth of field, pulled in off walls, and on
+a bike too. The panel hangs from the bottom of the screen so the face is in
+shot. Phone calls keep the game's own camera.
+
+
+AND SMALLER THINGS
+
+You can take the same thing twice. The first one is half of what it used to
+be, the second is the full dose and the one you notice, the third and fourth
+are more; four of one and he has had enough. Every animation is now one the
+game has, verified as playing rather than assumed, with the right prop in the
+right hand -- and where a prop sits in his hand is yours to set, by eye, from
+the settings screen. The phone is green rather than orange, casts a shadow,
+and has a punch-hole camera in the glass. The block has a lot more to say and
+does not repeat itself. The people at the flats use the chairs. A paint streak
+runs as long as the stroke stays straight. Hao sells a tinted Vectre. The
+patrol is called over a walkie-talkie.
+
+
 ===============================================================================
   PEOPLE AND PLACES
 ===============================================================================
@@ -157,6 +237,17 @@ half the settings. Dealer pins cluttering the radar until you are near them.
 Toast avatars flickering. The monogram letter sitting on people's faces. The
 takeover deleting its own cars. Cars parking in the middle of the road and
 welding the street shut.
+
+The takeover crashing the game, which was a top-up with no budget. The phone's
+icons, battery and signal "missing" for a week, which was the whole phone being
+drawn past the game's rectangle ceiling. Meth playing as a cigarette on the
+first go of every session, which was the animation ladder racing dictionaries
+as they streamed in. Drift cars sat still in the road mid-run, twice over: aimed
+at a point behind them, and wedged with nowhere to reverse. The waiting stages
+in the road, jamming the junction. A black-and-white filter that survived a
+reload, and drug effects that outlived their drug. Lamar's two greetings,
+recorded and never played, because they asked by name and the file was under
+its words. A joint hung by his thigh while his empty hand went to his mouth.
 
 -------------------------------------------------------------------------------
   0.5.1

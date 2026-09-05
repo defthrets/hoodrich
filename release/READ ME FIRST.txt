@@ -1,5 +1,5 @@
 ﻿===============================================================================
-  POSTED UP 0.5.1  --  FULL PACKAGE
+  POSTED UP {VERSION}  --  FULL PACKAGE
 ===============================================================================
 
   DRAG EVERYTHING IN THIS ZIP INTO YOUR GTA V FOLDER. SAY YES TO MERGING.

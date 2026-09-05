@@ -55,15 +55,33 @@ stopping. Getting searched holding product costs you the product; holding nothin
 a fine — which is why dropping a bag before they reach you works. And stood near a car with
 no stars, you can put a finger up at them, which they cannot do you for and they know it.
 
-**A social feed that reacts to what you actually do.** 173 people with fixed handles and
-avatars, 1,600 template lines across 93 event sets, filled in with the block you are on, the
+**A social feed that reacts to what you actually do.** 174 people with fixed handles and
+avatars, 2,727 template lines across 102 event sets, filled in with the block you are on, the
 set you run with and the money involved. Post up and the word goes out in a language that
 does not say anything outright.
 
 **Seven products** from weed to heroin, each with its own price, heat and street name. Eleven
 cars from Hao, all on competition suspension, permanent and persistent across saves. Guns
-from Stretch with extended mags on everything. Bodyguards who lock the doors once you are
-rolling. Turf war, dead drops, a stash house, graffiti.
+from Stretch with extended mags on everything, and a shelf of what bolts to each of them.
+Bodyguards who lock the doors once you are rolling. Turf war, dead drops, a stash house,
+graffiti.
+
+**A street takeover** on Carson once a night: thirty-five cars on walked kerbs, a crowd from
+the neighbourhood, and somebody working the middle sideways off a drift line recorded from
+real driving, until the blue lights arrive. It happens whether you go or not.
+
+**You can take your own product**, and each of the seven does something different — weed
+slows the world, coke makes you fast and bright, meth is a high you can feel, and heroin is
+the one that ends with you on the ground. The second one is the one you notice; four in you
+and you wake up somewhere else.
+
+**Driverless cars off the phone.** Pick the place first — the app shows it to you live, with
+the fare and how long — and the car comes and goes the moment you are in. A marker dropped
+mid-ride is a stop on the way.
+
+**A low-end mod shop** on Hao's corner that does everything the one over the river does for
+under half the money, and keeps what it does to your car. **Plates you choose** when you buy.
+**A balaclava the police can lose you behind**, if you take it off where they cannot see.
 
 ---
 

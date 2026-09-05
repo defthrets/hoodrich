@@ -448,7 +448,9 @@ if ($Package) {
         $lic = Join-Path $ShvdnFrom 'Licenses'
         if (Test-Path $lic) { Copy-Item $lic $stage -Recurse }
 
-        Copy-Item (Join-Path $relDir 'READ ME FIRST.txt') $stage
+        # Stamped like README.txt -- the 0.6.0 full package would have announced 0.5.1.
+        (Get-Content (Join-Path $relDir 'READ ME FIRST.txt') -Raw) -replace '\{VERSION\}', $version |
+            Set-Content (Join-Path $stage 'READ ME FIRST.txt') -Encoding UTF8 -NoNewline
         $zip = Join-Path $relDir "PostedUp-$version-full.zip"
     }
 

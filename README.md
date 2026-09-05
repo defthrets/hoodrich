@@ -180,7 +180,7 @@ else's wall. Homies follow as bodyguards and get back in the car afterwards.
 A working in-game feed, and the largest single thing in the mod by content.
 
 ```
-174 accounts   ·   101 written voices   ·   70 post sets   ·   2,462 lines
+174 accounts   ·   102 written voices   ·   102 post sets   ·   2,727 lines
 ```
 
 - **Everybody has their own voice.** A hundred and one named characters — Wei Cheng, Tao Cheng,
@@ -206,6 +206,9 @@ timeline with tabs for what is about you.
 ## Around the map
 
 - **The stash house** — Aunt Denise's. Holds 300kg. Sleep there to pass time.
+- **The muffler shop** — a low-end Los Santos Customs on Hao's corner. Drive up to the roller door;
+  what it does to a car of yours is saved with the car.
+- **Knowai** — driverless cars off the phone. Pick the place, see it live, and it comes to you.
 - **The kitchen** — where weight becomes product.
 - **The grow room** and **the pill press** — real interiors, streamed in and waited on properly.
 - **Grimes** — sells guns and ammo out of the courtyard on Forum Drive, and says something when
