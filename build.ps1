@@ -288,7 +288,7 @@ function Deploy-To([string]$gameDir, [string]$label) {
     # A list is the wrong shape for this and it is kept deliberately short: anything added to
     # Paths that the mod WRITES has to be added here in the same change, or it gets destroyed
     # by the next fresh deploy and nothing anywhere says why.
-    $ours = @('save.json', 'save.json.bak', 'paint.json', 'paint.json.bak')
+    $ours = @('save.json', 'save.json.bak', 'paint.json', 'paint.json.bak', 'gunart.json')
 
     Get-ChildItem $dataDst -File -Filter *.json | ForEach-Object {
         if ($ours -contains $_.Name) { return }

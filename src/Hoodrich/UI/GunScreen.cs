@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Native;
@@ -441,25 +441,6 @@ namespace Hoodrich.UI
 
         // ---- the pictures ----------------------------------------------------------
 
-        /// <summary>The dictionaries the game keeps its gun icons in, one an update. Asked in turn.</summary>
-        private static readonly string[] IconDicts =
-        {
-            "mpweaponscommon", "mpweaponsgang0", "mpweaponsgang1", "mpweaponsgang2", "mpweaponscommon2",
-            "mpweaponsbiker", "mpweaponslowrider", "mpweaponslowrider2", "mpweaponsexecutive",
-            "mpweaponsheist", "mpweaponsheist3", "mpweaponsheist4", "mpweaponsgunrunning",
-            "mpweaponssmuggler", "mpweaponschristmas2017", "mpweaponsapartment", "mpweaponsbusiness",
-            "mpweaponsbusiness2", "mpweaponsxmas2", "mpweaponscasino", "mpweaponssum20", "mpweaponstuner",
-            "mpweaponssecurity", "mpweaponssum2", "mpweaponsxmas3", "mpweaponsluxe", "mpweaponshalloween",
-            "mpweaponsindependence", "mpweaponsimportexport", "mpweaponsstunt", "mpweaponsassault",
-            "mpweaponshipster", "mpweaponsvalentines", "mpweaponsm23_1", "mpweaponsm23_2", "mpweaponsxmas",
-            "mpweaponsag", "mpweaponssum23", "mpweaponsm24_1", "mpweaponsm24_2"
-        };
-
-        /// <summary>Icon to the dictionary it was found in; "" when every dictionary has been asked and none had it.</summary>
-        private static readonly Dictionary<string, string> DictFor = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private static readonly Dictionary<string, int> LookingSince = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private const int LookMostMs = 5000;
-
         private string IconOf(Piece piece)
         {
             if (Guns == null || piece == null) return "";
@@ -474,50 +455,31 @@ namespace Hoodrich.UI
             }
         }
 
-        /// <summary>Draws the icon if it has been found, and keeps looking for it if not. True when drawn.</summary>
+        /// <summary>
+        /// The gun's photograph, if the game has one on this install.
+        ///
+        /// All of the finding moved to UI.GunArt, which sweeps for the art packs once and then
+        /// remembers what it found between sessions. This used to ask for forty texture
+        /// dictionaries every frame and give up on each gun after five seconds, which found
+        /// five guns out of twenty and wrote the other fifteen off as having no picture.
+        /// </summary>
         private static bool Art(string icon, float cx, float cy, float w, float h, System.Drawing.Color ink)
         {
-            if (string.IsNullOrEmpty(icon)) return false;
-
-            string dict;
-            if (DictFor.TryGetValue(icon, out dict))
-            {
-                if (dict.Length == 0) return false;
-                if (!Hud.EnsureTextureDict(dict)) return false;
-                Hud.Sprite(dict, icon, cx, cy, w, h, 0f, ink);
-                return true;
-            }
-
-            int since;
-            if (!LookingSince.TryGetValue(icon, out since))
-            {
-                since = Game.GameTime;
-                LookingSince[icon] = since;
-            }
-
-            foreach (var candidate in IconDicts)
-            {
-                if (!Hud.EnsureTextureDict(candidate)) continue;
-                if (!Hud.HasTexture(candidate, icon)) continue;
-
-                DictFor[icon] = candidate;
-                Log.Info("Gun art: " + icon + " is in " + candidate + ".");
-                Hud.Sprite(candidate, icon, cx, cy, w, h, 0f, ink);
-                return true;
-            }
-
-            if (Game.GameTime - since > LookMostMs)
-            {
-                DictFor[icon] = "";
-                Log.Info("Gun art: nothing has " + icon + "; the name will do.");
-            }
-
-            return false;
+            return GunArt.Draw(icon, cx, cy, w, h, ink);
         }
 
         // ---- drawing --------------------------------------------------------------
 
         public void Draw()
+        {
+            // The one place the sweep is allowed to run: the counter is open, so a few frames
+            // spent finding out which art packs this install has are frames nobody is driving.
+            GunArt.Update();
+
+            DrawIt();
+        }
+
+        private void DrawIt()
         {
             if (!IsOpen) return;
 

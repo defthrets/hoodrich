@@ -480,6 +480,18 @@ namespace Hoodrich.UI
                   0.5f, 3f, 0.1f, "0.0", "x",
                   note: "Scales every drug animation. The camera follows it");
 
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Find the gun pictures again",
+                Note = "Forgets where the game's gun photographs are and looks again. For after a game update",
+                Do = () =>
+                {
+                    GunArt.Again();
+                    Notify.Important("Open Stretch's counter and it will look again.");
+                }
+            });
+
             // WHAT SOMEBODY BUILT IN THE SPOONER. Menyoo saves a placement file; this builds
             // it, from the mod's folder and from Menyoo's own, streamed in by distance.
             Head("Spooner scenes");

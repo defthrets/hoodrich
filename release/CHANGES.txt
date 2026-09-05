@@ -161,6 +161,18 @@ scene file that opens in Menyoo -- for the hour of spooner work that has not
 been saved yet.
 
 
+STRETCH'S COUNTER FINDS ITS PICTURES
+
+Every gun now shows the game's own photograph of it. It used to show five of
+them: the search asked for forty texture packs at once every frame and gave up
+on each gun after five seconds, which is not a search but a queue nothing gets
+to the front of -- so most guns, including base-game ones, were written off as
+having no picture at all. It now sweeps for the packs once, four at a time,
+gives each batch long enough to actually arrive, and writes down what it found.
+Every session after the first draws every picture on the first frame. There is
+a row in the settings to make it look again after a game update.
+
+
 THE CORNER READOUT
 
 Both bars have marks at the points that mean something -- where heat turns
