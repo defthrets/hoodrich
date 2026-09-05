@@ -1718,12 +1718,6 @@ namespace Hoodrich
                 // Chamberlain Hills in the same twenty seconds the junction two streets away
                 // was holding sixty vehicles and deleting traffic as fast as the game made it.
                 // They are patrols round a block that is already the busiest place in the city.
-                // The muffler shop keeps quiet while a job is on -- a car being dropped at
-                // Hao's is not a car being pulled in for rims -- and while a war is.
-                _garage.Busy = () => onAJob()
-                                     || (_war != null && _war.IsRunning)
-                                     || (_payback != null && _payback.IsRunning);
-
                 _rollers.Busy = () => onAJob()
                                       || (_war != null && _war.IsRunning)
                                       || (_payback != null && _payback.IsRunning)
@@ -1933,6 +1927,12 @@ namespace Hoodrich
                     },
                     Tuned = () => _social.On(SocialEvent.Tuned)
                 };
+
+                // The muffler shop keeps quiet while a job is on -- a car being dropped at
+                // Hao's is not a car being pulled in for rims -- and while a war is.
+                _garage.Busy = () => onAJob()
+                                     || (_war != null && _war.IsRunning)
+                                     || (_payback != null && _payback.IsRunning);
 
                 _plateScreen = new PlateScreen
                 {
