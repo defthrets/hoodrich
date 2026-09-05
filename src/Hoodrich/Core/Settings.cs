@@ -415,6 +415,15 @@ namespace Hoodrich.Core
         /// <summary>Whether the junction gets taken over at night. See Locations.Takeover.</summary>
         public bool TakeoverEnabled = true;
 
+        /// <summary>
+        /// How many nights apart the takeovers are. 1 is every night, 3 is one night in three.
+        ///
+        /// It ran every single night, which is what made it a fixture rather than an event:
+        /// a thing that is always on is scenery, and the whole point of this one is turning
+        /// up to it.
+        /// </summary>
+        public int TakeoverEveryNights = 3;
+
         /// <summary>How far out the ring of watchers stands. 0 uses the measured 19 metres.</summary>
         public float TakeoverRadius = 19f;
 
@@ -656,6 +665,8 @@ namespace Hoodrich.Core
             s.TowReturnH = ini.GetFloat("Cars", "TowReturnH", s.TowReturnH);
 
             s.TakeoverEnabled = ini.GetBool("Block", "TakeoverEnabled", s.TakeoverEnabled);
+            s.TakeoverEveryNights =
+                (int)Clamp(ini.GetInt("Block", "TakeoverEveryNights", s.TakeoverEveryNights), 1f, 14f);
             s.TakeoverSpinRadius = Clamp(ini.GetFloat("Block", "TakeoverSpinRadius", s.TakeoverSpinRadius), 2f, 18f);
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 

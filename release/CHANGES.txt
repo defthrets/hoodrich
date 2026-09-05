@@ -18,6 +18,13 @@ are things the mod could not do at all before.
 
 THE TAKEOVER
 
+It is one night in three now, not every night. A thing that is always on is
+scenery, and the point of this one is turning up to it. The nights are counted
+rather than worked out from the date, because the day of the month wraps at the
+end of it and the special case is the part that would be wrong. Hoodrich.ini
+has the number under [Block] if one in three is not the rhythm you want.
+
+
 One junction on Carson, one night, some time between nine and four. Cars and
 people arrive from the surrounding streets, a ring of them parks facing in, and
 four of them spin the back end round on four places in the junction until the blue

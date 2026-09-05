@@ -765,6 +765,16 @@ namespace Hoodrich.Locations
         public TakeoverState State { get; private set; }
 
         private int _plannedFor = -1;
+
+        /// <summary>
+        /// How many nights have passed since the last one was put in the diary.
+        ///
+        /// Counted rather than worked out from the date. The day of the month wraps at the end
+        /// of it, so "three days since the twenty-ninth" is arithmetic with a special case in
+        /// it, and the special case is the bit that would be wrong. This counts the nights it
+        /// actually sees instead -- and starts full, so the first night of a session is one.
+        /// </summary>
+        private int _nightsSince = int.MaxValue;
         private int _startsAt = -1;
         private int _endsAt;
 
@@ -971,10 +981,28 @@ namespace Hoodrich.Locations
 
             _plannedFor = day;
 
+            // A NIGHT HAS TURNED OVER. Whether there is one tonight is decided here and
+            // nowhere else: _startsAt of -1 is the whole of "not tonight", and Tonight()
+            // already reads it that way.
+            var every = _cfg == null ? 3 : Math.Max(1, _cfg.TakeoverEveryNights);
+
+            if (_nightsSince < int.MaxValue) _nightsSince++;
+
+            if (_nightsSince < every)
+            {
+                _startsAt = -1;
+
+                Log.Info("Takeover: none tonight -- " + _nightsSince + " of " + every +
+                         " night(s) since the last.");
+                return;
+            }
+
+            _nightsSince = 0;
+
             var span = (24 - FromHour) + ToHour;
             _startsAt = (FromHour + _rng.Next(span)) % 24;
 
-            Log.Info("Takeover: tonight's is at " + _startsAt + ":00.");
+            Log.Info("Takeover: tonight's is at " + _startsAt + ":00. One night in " + every + ".");
         }
 
         private bool Tonight()
@@ -3076,9 +3104,18 @@ namespace Hoodrich.Locations
                                      "waits where it stopped.");
                         }
 
+                        // IT DRIVES IN. It used to be teleported onto the mark and turned to
+                        // face the walked heading, which put it exactly where it belonged and
+                        // looked exactly like what it was: a car that was somewhere else on
+                        // the previous frame. It has driven the whole way here under its own
+                        // power, so it is left where it stopped and starts from there.
+                        //
+                        // Nothing is lost by that. The mark is where the show HAPPENS, not a
+                        // parking bay, and a car going round on the spot is going round on the
+                        // spot wherever within a few metres it came to rest. The leash below
+                        // is what keeps it near the mark from then on.
                         r.AtStage = true;
                         r.Waited = now;
-                        Snap(r.Car, bay.At, bay.Face);
 
                         try
                         {
@@ -3114,9 +3151,19 @@ namespace Hoodrich.Locations
                         // on the moment it lands, so nothing is lost but the sliding.
                         try
                         {
+                            // GRIP BACK, THEN STOP, THEN DRIVE. A car that has slid wide is
+                            // still sideways and still sliding; handing it a route in that
+                            // state is a car that understeers off in the direction it was
+                            // already going. Braking for a moment first is what a person does
+                            // -- gather it up, then turn round and come back.
                             Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
                             Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, false);
                             Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                            // 1 is brake. Long enough to gather it, short enough that it reads
+                            // as a correction rather than a stop.
+                            Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
+                                          r.Car.Handle, 1, GatherMs);
                         }
                         catch
                         {
@@ -3125,7 +3172,10 @@ namespace Hoodrich.Locations
 
                         r.AtStage = false;
                         r.Sent = now;
-                        r.NextAction = now;
+
+                        // Nothing asked of it while the brake has its moment; the arrival
+                        // branch takes over from there and drives it back.
+                        r.NextAction = now + GatherMs;
                     }
                     else if (now >= r.NextAction)
                     {
@@ -4352,6 +4402,9 @@ namespace Hoodrich.Locations
         {
             return way > 0 ? 7 : 8;
         }
+
+        /// <summary>How long a car that slid wide is given to gather itself before it drives back.</summary>
+        private const int GatherMs = 900;
 
         /// <summary>How long one burst of lock lasts, and how far they may wander.</summary>
         private const int BurstMs = 3200;
