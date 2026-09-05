@@ -23,6 +23,9 @@ namespace Hoodrich.Locations
         public Vector3 Spot;
         public float Heading;
 
+        /// <summary>Window tint, or -1 for the glass it came with. 2 is dark smoke.</summary>
+        public int Tint = -1;
+
         /// <summary>
         /// What it is painted, as indices into the game's own colour table.
         ///
@@ -165,7 +168,8 @@ namespace Hoodrich.Locations
                     Spot = new Vector3(node["x"].AsFloat(), node["y"].AsFloat(), node["z"].AsFloat()),
                     Heading = node["heading"].AsFloat(),
                     Paint = node["paint"].AsInt(-1),
-                    Paint2 = node["paint2"].AsInt(-1)
+                    Paint2 = node["paint2"].AsInt(-1),
+                    Tint = node["tint"].AsInt(-1)
                 };
 
                 // EVERY CAR IS KEPT, not only the ones for sale. The catalogue is what a
@@ -824,6 +828,13 @@ namespace Hoodrich.Locations
             catch
             {
                 // It sits at stock ride height. Still sells.
+            }
+
+            // After the mod kit, which the tint needs to have been set first.
+            if (def != null && def.Tint >= 0)
+            {
+                try { Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, h, def.Tint); }
+                catch { /* clear glass. Still sells. */ }
             }
         }
 

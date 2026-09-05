@@ -141,6 +141,59 @@ namespace Hoodrich.Locations
         /// and 23 metres from the mark, which is right on the crowd's own ring -- close enough
         /// that a car sitting there is plainly part of it and not parked up.
         /// </summary>
+        /// <summary>
+        /// The stages moved to the side of the road they are on, once.
+        ///
+        /// KERB SIDE ONLY. The four were walked on the edge of the circle, in the road, which
+        /// read as a car waiting its turn in front of the crowd and drove as a car parked
+        /// across the way in: anything coming through the junction stopped behind them and
+        /// the street jammed. The game knows where the side of a road is, so each one is
+        /// asked for, and a stage it cannot answer for stays where it was walked.
+        /// </summary>
+        private static bool _kerbed;
+
+        private const float StageMoveMost = 14f;
+
+        private static void KerbTheStages()
+        {
+            if (_kerbed) return;
+            _kerbed = true;
+
+            for (var i = 0; i < Stages.Length; i++)
+            {
+                try
+                {
+                    var was = Stages[i].At;
+                    var best = Vector3.Zero;
+                    var bestGap = float.MaxValue;
+
+                    for (var side = 0; side <= 1; side++)
+                    {
+                        var got = new OutputArgument();
+                        if (!Function.Call<bool>(Hash.GET_POSITION_BY_SIDE_OF_ROAD, was.X, was.Y, was.Z, side, got)) continue;
+
+                        var at = got.GetResult<Vector3>();
+                        if (at == Vector3.Zero) continue;
+
+                        var gap = at.DistanceTo(was);
+                        if (gap > StageMoveMost || gap >= bestGap) continue;
+
+                        best = at;
+                        bestGap = gap;
+                    }
+
+                    if (best == Vector3.Zero) continue;
+
+                    Stages[i].At = best;
+                    Log.Info("Takeover: stage " + i + " moved " + bestGap.ToString("0.0") + " m to the kerb.");
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Takeover could not kerb a stage: " + ex.Message);
+                }
+            }
+        }
+
         private static readonly Spot[] Stages =
         {
             new Spot { At = new Vector3(-127.938f, -1720.288f, 29.512f), Face = 161.493f },
@@ -704,6 +757,11 @@ namespace Hoodrich.Locations
             /// <summary>When he first lifted off for somebody, or nought. See Working.</summary>
             public int Held;
 
+            /// <summary>The line's standing burnout runs until this, and the hard launch after it until the next.</summary>
+            public int DropUntil;
+            public int LaunchUntil;
+            public bool Dropped;
+
             /// <summary>
             /// This one is on the mark rather than going round it.
             ///
@@ -1074,6 +1132,7 @@ namespace Hoodrich.Locations
             // reading it at construction would put a file read in the mod's startup for a
             // feature most sessions never reach.
             _line.Load();
+            KerbTheStages();
 
             Theme();
 
@@ -3899,6 +3958,7 @@ namespace Hoodrich.Locations
             if (up == null) return false;
 
             up.Middle = middle;
+            up.Point = -1;
 
             // Where he is aiming, and it is not the middle unless he is the burnout. The one
             // going round is sent to the point on his own circle nearest the marker he is
@@ -4341,37 +4401,94 @@ namespace Hoodrich.Locations
         {
             try
             {
-                // Joining where it stands, so a car that has just pulled up on the mark starts
-                // at the nearest bit of the shape rather than driving across the junction to
-                // reach waypoint zero.
-                if (r.Point < 0) r.Point = _line.Nearest(r.Car.Position);
+                var car = r.Car.Handle;
 
-                var want = _line.At(r.Point);
+                // ---- THE DROP: a standing burnout, then it goes ----
+                //
+                // "As they drop it": the first thing a car does on the line is sit on the
+                // brakes with the rear wheels lit for most of a second, then let go. The
+                // burnout mode holds a car in place by design, which is what it is for here
+                // and why it is taken off again the moment the drop is over -- a car left in
+                // it is a car sat still in the road with its wheels spinning.
+                if (r.Point < 0)
+                {
+                    r.Point = _line.Nearest(r.Car.Position);
+                    r.DropUntil = now + DropMs;
+                    r.LaunchUntil = r.DropUntil + LaunchMs;
+                    r.Dropped = false;
+                    r.Stuck = 0;
 
-                var reached = r.Car.Position.DistanceTo(want) < ReachedPoint;
+                    Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, car, true);
+                    Function.Call(Hash.SET_DRIFT_TYRES, car, true);
+                    Function.Call(Hash.SET_VEHICLE_BURNOUT, car, true);
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, car, Burn(), DropMs);
 
-                if (!reached && now < r.NextAction) return;
+                    r.NextAction = 0;
+                    return;
+                }
 
-                if (reached) r.Point = _line.Next(r.Point);
+                if (now < r.DropUntil) return;
 
-                want = _line.At(r.Point);
+                if (!r.Dropped)
+                {
+                    r.Dropped = true;
+                    Function.Call(Hash.SET_VEHICLE_BURNOUT, car, false);
+                }
 
+                // ---- A MOVING BURNOUT, NOT A DRIVE ----
+                //
+                // Every tick, because the game forgets it every tick: the engine is given
+                // several times its torque while the grip is reduced, so that every time the
+                // driver touches the throttle the rear end lights up and steps out. Hard for
+                // the launch, then eased back to a slide that still smokes.
+                //
+                // SET_VEHICLE_CHEAT_POWER_INCREASE is this ScriptHookVDotNet's name for what
+                // the native database now calls SET_VEHICLE_ENGINE_TORQUE_MULTIPLIER.
+                Function.Call(Hash.SET_VEHICLE_CHEAT_POWER_INCREASE, car,
+                              now < r.LaunchUntil ? LaunchTorque : LineTorque);
+
+                // ---- STUCK: reverse off whatever it is against, then carry on ----
+                //
+                // Wedged on a kerb, a parked car or somebody's shin, a driver told to drive
+                // forward sits there. A short reverse first, then the line again.
+                if (r.Car.Speed > 0.6f) r.Stuck = 0;
+                else if (r.Stuck == 0) r.Stuck = now;
+                else if (now - r.Stuck > StillMs)
+                {
+                    r.Stuck = now;
+                    Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, car, ReverseAction, BackOffMs);
+                    r.NextAction = now + BackOffMs;
+                    return;
+                }
+
+                // ---- THE POINT IT AIMS AT IS AHEAD OF IT, ALWAYS ----
+                //
+                // A car sliding wide misses the circle round its point and was then asked to
+                // reach a point behind it, which a driver answers by stopping and turning
+                // round in the road -- the "stuck in place" after a few seconds of the line.
+                // The nearest point on the line is found afresh each time and the aim is a
+                // few points past it, so the target only ever moves on.
+                var nearest = _line.Nearest(r.Car.Position);
+                var aim = nearest;
+                for (var i = 0; i < Lead; i++) aim = _line.Next(aim);
+
+                if (aim == r.Point && now < r.NextAction) return;
+
+                r.Point = aim;
                 r.NextAction = now + LineHoldMs;
 
-                // Kept on, not assumed. A car that grips up halfway round has visibly stopped
-                // drifting, and this is the only place that runs while it is doing it.
-                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
-                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
+                var want = _line.At(aim);
 
-                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
+                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, car, true);
+                Function.Call(Hash.SET_DRIFT_TYRES, car, true);
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, car,
                               want.X, want.Y, want.Z, LineSpeed, 0, r.Car.Model.Hash,
                               RushStyle, 2f, true);
-
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
             }
             catch
             {
-                // It is asked again in a moment.
             }
         }
 
@@ -4383,6 +4500,20 @@ namespace Hoodrich.Locations
         /// otherwise sit forever chasing a coordinate it can no longer reach.
         /// </summary>
         private const int LineHoldMs = 2500;
+
+        /// <summary>The standing burnout at the start of a run, and the hard launch after it.</summary>
+        private const int DropMs = 900;
+        private const int LaunchMs = 3500;
+        private const float LaunchTorque = 4f;
+        private const float LineTorque = 2f;
+
+        /// <summary>How many points past the nearest one the car aims at: three is thirteen metres.</summary>
+        private const int Lead = 3;
+
+        /// <summary>Stopped this long on the line means wedged; it reverses for this long first.</summary>
+        private const int StillMs = 2500;
+        private const int BackOffMs = 900;
+        private const int ReverseAction = 3;
 
         /// <summary>
         /// The stunt action for a donut, one way or the other.

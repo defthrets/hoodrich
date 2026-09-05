@@ -77,18 +77,19 @@
       "paint2": 11
     },
     {
-      "id": "vorschlaghammer",
-      "model": "vorschlaghammer",
-      "name": "Vorschlaghammer",
-      "class": "Sedan",
-      "note": "German. Old money. New plates.",
-      "price": 28000,
+      "id": "vectre",
+      "model": "vectre",
+      "name": "Emperor Vectre",
+      "class": "Sports",
+      "note": "Japanese. Sits on the floor. Nobody's seen inside it.",
+      "price": 44000,
       "x": -40.336,
       "y": -1688.842,
       "z": 28.727,
       "heading": 24.953,
       "paint": 2,
-      "paint2": 0
+      "paint2": 0,
+      "tint": 2
     },
     {
       "id": "woodlander",
