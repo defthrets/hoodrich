@@ -598,6 +598,13 @@ namespace Hoodrich.Core
 
             s.DrugCamera = ini.GetBool("Highs", "DrugCamera", s.DrugCamera);
             s.RidePreview = ini.GetBool("Knowai", "Preview", s.RidePreview);
+
+            // Where each held thing sits in his hand, as set on the settings screen. See Economy.Fit.
+            foreach (var prop in Economy.Fit.Names)
+            {
+                var packed = ini.GetString("HandFit", prop, "");
+                if (!string.IsNullOrEmpty(packed)) Economy.Fit.Set(prop, Economy.Fit.Unpack(packed), persist: false);
+            }
             s.DrugAnimLength = Clamp(ini.GetFloat("Highs", "AnimLength", s.DrugAnimLength), 0.5f, 3f);
 
             s.MaskSlot = (int)Clamp(ini.GetInt("Mask", "Slot", s.MaskSlot), 0f, 11f);

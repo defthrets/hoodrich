@@ -51,6 +51,9 @@ namespace Hoodrich.Economy
             /// <summary>How hard the timecycle is laid on, nought to one.</summary>
             public float Strength = 1f;
 
+            /// <summary>What one dose counts for toward an overdose. Weed is half of one.</summary>
+            public float Load = 1f;
+
             /// <summary>A screen effect to run underneath it, or "".</summary>
             public string Fx = "";
 
@@ -133,9 +136,12 @@ namespace Hoodrich.Economy
                 "amb@world_human_aa_smoke@male@idle_a",     "idle_a",
                 "amb@world_human_smoking@male@male_a@base", "base"
             },
+            // THE SCENARIO'S OWN JOINT FIRST. p_amb_joint_01 is the one the pot animation
+            // was built around, so it sits in the hand the way the hand expects; the cutscene
+            // joints have their own origins and want a fit (see Economy.Fit).
             Props = new[]
             {
-                "p_cs_joint_01", "p_amb_joint_01", "prop_sh_joint_01", "prop_cs_ciggy_01"
+                "p_amb_joint_01", "p_cs_joint_01", "p_cs_joint_02", "prop_sh_joint_01"
             },
 
             // THE POT ANIMATION SMOKES LEFT-HANDED. See Ritual.Recipe.Lefty -- the joint was
@@ -183,7 +189,9 @@ namespace Hoodrich.Economy
                 "amb@world_human_aa_smoke@male@idle_a",     "idle_a",
                 "amb@world_human_smoking@male@male_a@base", "base"
             },
-            Props = new[] { "prop_cigar_01", "prop_cigar_02", "p_cs_joint_01" },
+            // A JOINT, NOT A CIGAR. The cigar props read as a cigar at arm's length -- a
+            // fat brown thing with a gold band -- which is not what anybody means by weed.
+            Props = new[] { "p_amb_joint_01", "p_cs_joint_01", "p_cs_joint_02" },
 
             // Same clips as the joint, so the same hand.
             Lefty = true,
@@ -262,7 +270,9 @@ namespace Hoodrich.Economy
             // guesses across three sessions, all of them missing by a character or by a whole
             // word, and the log dutifully reported each one absent. RampageFiles/Lists/
             // ObjectList.txt has had the answer in it the entire time.
-            Props = new[] { "prop_cs_crackpipe", "prop_cs_ciggy_01" },
+            // A METH PIPE. There is one -- prop_cs_meth_pipe, from the same cutscenes as the
+            // crack pipe -- and the crack pipe is the fallback, not a cigarette.
+            Props = new[] { "prop_cs_meth_pipe", "prop_cs_crackpipe" },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING",
             Ms = 7200
@@ -465,6 +475,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "weed",
+                Load = 0.5f,
                 Cycles = new[] { "drug_wobbly", "stoned", "drug_flying_base", "spectator5" },
                 Strength = 0.85f,
                 Clipset = "move_m@drunk@slightlydrunk",
@@ -650,6 +661,12 @@ namespace Hoodrich.Economy
 
         // ---- where it is up to --------------------------------------------------
 
+        /// <summary>The props the settings screen can fit, each with the ritual it is held in. See Economy.Fit.</summary>
+        static Highs()
+        {
+            Fit.Wire(new[] { Joint, MethPipe, Pipe, Needle, Bump, Pop });
+        }
+
         private readonly Ritual _ritual = new Ritual();
         private readonly Random _rng = new Random();
 
@@ -661,6 +678,23 @@ namespace Hoodrich.Economy
         {
             public Recipe What;
             public int Until;
+
+            /// <summary>How many times it has been taken this go. See Power.</summary>
+            public int Doses = 1;
+
+            /// <summary>
+            /// How hard it is hitting, nought upwards: half on the first one, the recipe's
+            /// own on the second, more after, and a ceiling. Every effect a recipe has is
+            /// scaled by this in Recombine, so the first joint is a mild one and the second
+            /// is the one you notice.
+            /// </summary>
+            public float Power => Math.Min(MostPower, HalfDose * Doses);
+
+            /// <summary>What it counts for toward an overdose: the recipe's weight, per dose.</summary>
+            public float Load => What.Load * Doses;
+
+            private const float HalfDose = 0.5f;
+            private const float MostPower = 1.6f;
         }
 
         /// <summary>
@@ -728,12 +762,12 @@ namespace Hoodrich.Economy
             if (_blackFrom != 0) return "You're gone";
             if (_coming) return "Give it a minute";
 
-            // MIXING IS ALLOWED AND DOUBLING IS NOT. Two of the same is a bigger dose of one
-            // thing, which is a different feature and would just be a longer timer; two
-            // different things is the point.
+            // MIXING IS ALLOWED, AND SO IS ANOTHER OF THE SAME. A second one of the same
+            // thing is a bigger dose of it -- see Live.Power -- up to a ceiling, past which
+            // he has had enough of that one for now.
             foreach (var one in _live)
             {
-                if (one.What.Drug == drugId) return "You're already on that one";
+                if (one.What.Drug == drugId && one.Doses >= MostDoses) return "You've had enough of that";
             }
 
             return null;
@@ -774,15 +808,30 @@ namespace Hoodrich.Economy
         /// <summary>The moment it actually hits.</summary>
         private void Land(Recipe recipe, string what)
         {
-            _live.Add(new Live { What = recipe, Until = Game.GameTime + recipe.Ms });
+            var again = _live.Find(one => one.What == recipe);
 
-            Log.Info("High: " + recipe.Drug + " for " + (recipe.Ms / 1000) + "s. " +
-                     _live.Count + " in him.");
+            if (again != null)
+            {
+                // ANOTHER OF THE SAME: a bigger dose, and the clock starts over.
+                again.Doses++;
+                again.Until = Math.Max(again.Until, Game.GameTime + recipe.Ms);
 
-            // THE FOURTH ONE PUTS HIM OUT. Three at once is a night; four is not a decision
-            // anybody makes twice, and the game should agree with that rather than stacking
-            // another timecycle on top and carrying on.
-            if (_live.Count > TooMany)
+                Log.Info("High: " + recipe.Drug + " again, dose " + again.Doses + ".");
+            }
+            else
+            {
+                _live.Add(new Live { What = recipe, Until = Game.GameTime + recipe.Ms });
+
+                Log.Info("High: " + recipe.Drug + " for " + (recipe.Ms / 1000) + "s. " +
+                         _live.Count + " in him.");
+            }
+
+            // TOO MUCH IS MEASURED IN DOSES NOW, NOT IN DRUGS. Four of anything hard, one
+            // kind or four, is the same night; weed counts half.
+            var load = 0f;
+            foreach (var one in _live) load += one.Load;
+
+            if (load > TooMany)
             {
                 Overdo();
                 return;
@@ -790,11 +839,14 @@ namespace Hoodrich.Economy
 
             Recombine();
 
-            Notify.Ticker("~g~" + what + "~s~ -- " + recipe.Line);
+            Notify.Ticker("~g~" + what + "~s~ -- " + (again != null ? "again. " : "") + recipe.Line);
         }
 
         /// <summary>How many things he can have in him before he goes over.</summary>
         private const int TooMany = 3;
+
+        /// <summary>Doses of one thing before it refuses. See Live.Power for what each does.</summary>
+        private const int MostDoses = 4;
 
         /// <summary>What the ticker says once it lands, kept from the press that started it.</summary>
         private string _said = "";
@@ -846,21 +898,28 @@ namespace Hoodrich.Economy
             foreach (var one in _live)
             {
                 var r = one.What;
+                var p = one.Power;
 
-                if (r.Time < time) time = r.Time;
-                if (r.Run > run) run = r.Run;
+                // HALF ON THE FIRST ONE. Each effect's distance from "nothing" is scaled by
+                // the dose: half the slow-down, half the shake, half the colour on the first,
+                // the recipe's own on the second, more on the third. The walk and the screen
+                // effect cannot be halved, so they wait for the second one -- which is what
+                // makes the second one the one you notice.
+                var slow = 1f - (1f - r.Time) * p;
+                if (slow < time) time = slow;
 
-                hits *= r.Hits;
-                takes *= r.Takes;
-                heals *= r.Heals;
+                var quick = 1f + (r.Run - 1f) * p;
+                if (quick > run) run = quick;
 
-                shake += r.Shake;
-
+                hits *= 1f + (r.Hits - 1f) * p;
+                takes *= 1f + (r.Takes - 1f) * p;
+                heals *= 1f + (r.Heals - 1f) * p;
+                shake += r.Shake * p;
                 sunny |= r.Sunny;
                 rage |= r.Rage;
 
-                if (!string.IsNullOrEmpty(r.Fx)) fx = r.Fx;
-                if (!string.IsNullOrEmpty(r.Clipset)) clipset = r.Clipset;
+                if (p >= 1f && !string.IsNullOrEmpty(r.Fx)) fx = r.Fx;
+                if (p >= 1f && !string.IsNullOrEmpty(r.Clipset)) clipset = r.Clipset;
             }
 
             if (takes < 0.3f) takes = 0.3f;
@@ -877,10 +936,11 @@ namespace Hoodrich.Economy
             {
                 if (_live[i].What.Cycles.Length == 0) continue;
 
-                if (_cycleOwner != _live[i].What)
+                if (_cycleOwner != _live[i].What || _cyclePower != _live[i].Power)
                 {
                     _cycleOwner = _live[i].What;
-                    Cycle(_live[i].What.Cycles, _live[i].What.Strength);
+                    _cyclePower = _live[i].Power;
+                    Cycle(_live[i].What.Cycles, _live[i].What.Strength * _cyclePower);
                 }
 
                 break;
@@ -923,6 +983,7 @@ namespace Hoodrich.Economy
 
         /// <summary>Whose look is on the screen, so it is not reapplied every recombine.</summary>
         private Recipe _cycleOwner;
+        private float _cyclePower;
 
         // ---- keeping it up ------------------------------------------------------
 
@@ -1652,6 +1713,7 @@ namespace Hoodrich.Economy
         private void Clear()
         {
             _cycleOwner = null;
+            _cyclePower = 0f;
 
             _time = 1f;
             _shake = 0f;

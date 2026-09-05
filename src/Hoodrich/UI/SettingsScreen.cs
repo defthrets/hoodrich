@@ -204,6 +204,7 @@ namespace Hoodrich.UI
             // The button that got you out of here does not also swing at somebody.
             if (IsOpen) Core.InputGuard.Swallow();
             _curtain.Close();
+            Economy.Fit.Hide();
             _listening = -1;
             _holdingSince = 0;
             _holdSpent = false;
@@ -519,6 +520,28 @@ namespace Hoodrich.UI
                  v => { c.RidePreview = v; RideScreen.Preview = v; },
                  "Looks at where you're going while you're choosing it, live. Off keeps the street");
 
+            // WHERE A THING SITS IN HIS HAND, BY EYE. Every prop has its own origin and no
+            // animation agrees with it; these put the thing in his hand with the pose it is
+            // used in and let you move it while you look. Written to the ini as you go.
+            Head("In his hand");
+            Pick("Which one", "", "", Economy.Fit.Labels,
+                 () => Economy.Fit.Picked,
+                 i => Economy.Fit.Pick(i),
+                 "Puts it in his hand with the pose it's used in, so you can see it while you move it");
+            Slide("Forward", "", "", () => Economy.Fit.Value(0), v => Economy.Fit.Value(0, v),
+                  -10f, 10f, 0.25f, "0.00", " cm", note: "Along his fingers");
+            Slide("Right", "", "", () => Economy.Fit.Value(1), v => Economy.Fit.Value(1, v),
+                  -10f, 10f, 0.25f, "0.00", " cm");
+            Slide("Up", "", "", () => Economy.Fit.Value(2), v => Economy.Fit.Value(2, v),
+                  -10f, 10f, 0.25f, "0.00", " cm");
+            Slide("Pitch", "", "", () => Economy.Fit.Value(3), v => Economy.Fit.Value(3, v),
+                  -180f, 180f, 5f, "0", " deg", note: "End over end. 180 points it the other way");
+            Slide("Roll", "", "", () => Economy.Fit.Value(4), v => Economy.Fit.Value(4, v),
+                  -180f, 180f, 5f, "0", " deg");
+            Slide("Yaw", "", "", () => Economy.Fit.Value(5), v => Economy.Fit.Value(5, v),
+                  -180f, 180f, 5f, "0", " deg",
+                  note: "Saved to the ini as you go. Change which one to put it in his hand; leaving takes it out");
+
             Head("Mask");
             Slide("Slot", "Mask", "Slot",
                   () => c.MaskSlot,
@@ -728,6 +751,8 @@ namespace Hoodrich.UI
 
         public void Update()
         {
+            Economy.Fit.Tick();
+
             if (!IsOpen)
             {
                 // Gone for good now, so the list and the settings reference can go with it.

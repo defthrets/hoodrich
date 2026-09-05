@@ -275,8 +275,20 @@ namespace Hoodrich.Economy
                 if (Play(_waiting, me)) { _watching = _waiting; _waiting = null; }
                 else if (now >= _giveUpAt)
                 {
-                    Scenario(_waiting, me);
-                    _waiting = null;
+                    // THIS RUNG'S DICTIONARY NEVER CAME. Down one, with a fresh stream clock,
+                    // rather than straight to the scenario -- see Play.
+                    _rung += 2;
+                    _tries = 0;
+
+                    if (_rung + 1 < Rungs(_waiting).Length)
+                    {
+                        _giveUpAt = now + StreamMs;
+                    }
+                    else
+                    {
+                        Scenario(_waiting, me);
+                        _waiting = null;
+                    }
                 }
             }
 
@@ -396,7 +408,8 @@ namespace Hoodrich.Economy
 
                     if (prop == null || !prop.Exists()) continue;
 
-                    Give(prop, who, sits, turned, lefty);
+                    // Plus whatever was settled on for this prop on the settings screen.
+                    Give(prop, who, sits + Fit.Offset(name), turned + Fit.Turn(name), lefty);
 
                     Log.Info("Prop in hand: " + name + ", " +
                              (lefty ? "left" : "right") + ".");
@@ -455,39 +468,41 @@ namespace Hoodrich.Economy
         private bool Play(Recipe recipe, Ped me)
         {
             var pairs = Rungs(recipe);
+            if (_rung + 1 >= pairs.Length) return false;
 
-            for (var i = _rung; i + 1 < pairs.Length; i += 2)
+            var dict = pairs[_rung];
+            var clip = pairs[_rung + 1];
+
+            try
             {
-                var dict = pairs[i];
-                var clip = pairs[i + 1];
+                // THIS RUNG OR NOTHING. This used to walk on down the ladder to the first
+                // dictionary that happened to be resident, which on a fresh session was never
+                // the one at the top: the Trevor switch dictionary streams in over a second
+                // while the ambient smoking one is always loaded, so meth played as a
+                // cigarette every first time and as Trevor every time after. A rung waits on
+                // its own dictionary and is given up only when the stream clock runs out --
+                // see Update -- so the ladder is an order of preference, not a race.
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) return false;
 
-                try
-                {
-                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
+                // 49 is upper body, looping, and lets the rest of him keep his footing --
+                // a full-body lock on a man stood on a kerb is a man who snaps to attention
+                // and then teleports his feet back when it ends.
+                Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, dict, clip,
+                              4f, -2f, _ms, 49, 0f, false, false, false);
 
-                    // 49 is upper body, looping, and lets the rest of him keep his footing --
-                    // a full-body lock on a man stood on a kerb is a man who snaps to attention
-                    // and then teleports his feet back when it ends.
-                    Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, dict, clip,
-                                  4f, -2f, _ms, 49, 0f, false, false, false);
+                _dict = dict;
+                _clip = clip;
 
-                    _dict = dict;
-                    _clip = clip;
+                // NOT LOGGED AS A SUCCESS YET. See Watch: the call being accepted says
+                // nothing at all about whether the clip exists.
+                _watchAt = Game.GameTime + WatchMs;
 
-                    // NOT LOGGED AS A SUCCESS YET. See Watch: the call being accepted says
-                    // nothing at all about whether the clip exists.
-                    _rung = i;
-                    _watchAt = Game.GameTime + WatchMs;
-
-                    return true;
-                }
-                catch
-                {
-                    // Next one.
-                }
+                return true;
             }
-
-            return false;
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>
