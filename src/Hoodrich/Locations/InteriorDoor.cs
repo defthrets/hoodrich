@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -25,6 +26,22 @@ namespace Hoodrich.Locations
 
         public float DoorX, DoorY, DoorZ, DoorHeading;
         public float InsideX, InsideY, InsideZ, InsideHeading;
+
+        /// <summary>
+        /// Other places the room might be, tried in order when the one above turns out to
+        /// have nothing in it.
+        ///
+        /// AN INTERIOR COORDINATE IS A GUESS UNTIL SOMEBODY HAS STOOD IN IT. It cannot be
+        /// looked up: there is no call that turns an interior's name into where it is, and
+        /// the rooms these doors use sit forty metres under the map where nobody wanders
+        /// past them by accident. One wrong number and the door says the room is not there.
+        ///
+        /// So the door carries the addresses of the whole terrace rather than one house, and
+        /// asks the game which of them has anything in it. That question is free -- it needs
+        /// no warp and no wait -- and it turns a number somebody has to get right into a
+        /// number somebody only has to get NEAR.
+        /// </summary>
+        public readonly List<Vector3> Elsewhere = new List<Vector3>();
     }
 
     /// <summary>
@@ -235,6 +252,45 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
+        /// Which of the coordinates this room is actually at.
+        ///
+        /// Asked of the game rather than trusted from the file. GET_INTERIOR_AT_COORDS answers
+        /// for any point on the loaded map whether or not anybody is near it, so the whole list
+        /// can be tried in one frame for nothing -- and the first one with an interior in it is
+        /// the room. The one from the ini goes first, so a coordinate somebody has actually
+        /// measured always wins over the fallbacks.
+        ///
+        /// When none of them has anything, the ini's own coordinate is handed back anyway and
+        /// the checks after the warp do what they always did: bounce him out and say so. A
+        /// silent wrong answer is the one outcome worth ruling out.
+        /// </summary>
+        private Vector3 Somewhere()
+        {
+            var first = Inside;
+
+            try
+            {
+                if (Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, first.X, first.Y, first.Z) != 0) return first;
+
+                foreach (var maybe in _spec.Elsewhere)
+                {
+                    if (Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, maybe.X, maybe.Y, maybe.Z) == 0) continue;
+
+                    Log.Info("The " + _spec.Name + " is not at " + first + " -- using " + maybe +
+                             ", which has one. Put that in [" + _spec.Section + "] Inside to keep it.");
+
+                    return maybe;
+                }
+            }
+            catch
+            {
+                // The ini's own coordinate, and the checks below will judge it.
+            }
+
+            return first;
+        }
+
+        /// <summary>
         /// In. Fade, load, warp, check, fade back.
         ///
         /// The check is the important part. The interior coordinate is a guess until somebody
@@ -255,9 +311,19 @@ namespace Hoodrich.Locations
             {
                 Fade(false);
 
-                Function.Call(Hash.REQUEST_IPL, _spec.Ipl);
+                // EVERY NAME, not one. Interior IPLs are named for where the game PLACES
+                // them rather than for the room -- the weed farm's archetype is called
+                // bkr_biker_dlc_int_ware02 and its placement is a forty-character string with
+                // an index in the middle -- and asking for the archetype does nothing at all
+                // while looking exactly like asking for the right thing. Semicolons in the ini
+                // separate them; asking for a name the game does not have costs nothing.
+                foreach (var name in _spec.Ipl.Split(';'))
+                {
+                    var one = name.Trim();
+                    if (one.Length > 0) Function.Call(Hash.REQUEST_IPL, one);
+                }
 
-                var to = Inside;
+                var to = Somewhere();
 
                 // Asked for BEFORE the warp, so the streamer has the whole fade to work in
                 // rather than being told about the room only once somebody is standing in it.

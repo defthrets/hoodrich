@@ -138,6 +138,7 @@ namespace Hoodrich
         private readonly WardrobeScreen _wardrobeScreen;
         private readonly Wardrobe _wardrobe;
         private bool _dressed;
+        private int _dressedBody;
 
         /// <summary>The inbox. Its store is static; only the screen is an object.</summary>
         private readonly MessagesScreen _messages = new MessagesScreen();
@@ -2854,8 +2855,17 @@ namespace Hoodrich
 
                     Core.Mask.Update(_cfg);
 
-                    // What he settled on at the closet goes back on him once, the first time
-                    // he is stood in the world -- and keeps being asked until he is Franklin.
+                    // What he settled on at the closet goes back on him once he is stood in
+                    // the world -- and AGAIN whenever the body changes, because what is saved
+                    // is filed per body and a body swap makes the last lot the wrong lot.
+                    var body = Game.Player.Character == null ? 0 : Game.Player.Character.Model.Hash;
+
+                    if (body != _dressedBody)
+                    {
+                        _dressedBody = body;
+                        _dressed = false;
+                    }
+
                     if (!_dressed) _dressed = Wardrobe.Apply(_state);
 
                     if (_paint.TintTheCan) _can.Match(_graffiti.Colour, _paint.PaintEnabled);

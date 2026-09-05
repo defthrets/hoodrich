@@ -255,13 +255,14 @@ hair, arms, legs, bag, shoes, chain, undershirt, vest, badge and top -- and all
 five props, hat, glasses, ears, watch and bracelet. Nothing is gated behind
 having bought it: what the model owns is what the rail offers.
 
-And a Body row at the top of it, which is the only door to the online clothes.
-A drawable number is an index into ONE model's wardrobe and means something else
-entirely on another, so there is no such thing as putting a multiplayer jacket
-on Franklin -- he would get whatever is forty-first on his own list, or nothing.
-The online clothes live on the freemode models, so the row makes him one. His
-face changes with it, and it is one keypress back. What he settles on is filed
-under the body he was wearing at the time, so each body keeps its own look.
+The Body row at the top of it only goes one way: home. It briefly offered the
+online bodies, which is the only door to the online clothes -- a drawable number
+is an index into ONE model's wardrobe, so there is no putting a multiplayer
+jacket on Franklin. But swapping the player's model in a story game is not a
+wardrobe choice, it is a different save, and somebody used it and could not get
+back. A row that can strand you is not worth the clothes behind it. What is left
+puts him back in his own body, and there is a second button for it on the
+settings screen for anybody not stood at the closet.
 
 He also turns to a fixed heading as the closet opens. The camera stands in front
 of whichever way he happened to be facing, so half the shots were of the inside

@@ -1,6 +1,7 @@
 ﻿using System;
 using Hoodrich.Locations;
 using GTA;
+using GTA.Math;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
@@ -524,10 +525,30 @@ namespace Hoodrich.Core
 
             // One block per door, all read the same way. Adding a third room is a section in
             // the ini and a line here, not another class.
-            s.Doors.Add(ReadDoor(ini, "GrowRoom", "grow room", "bkr_biker_dlc_int_ware02",
+            // THE IPL IS THE PLACEMENT, NOT THE ARCHETYPE. bkr_biker_dlc_int_ware02 is what
+            // the room is called; what the game will actually load is the placement it sits
+            // in, whose name carries an index. Taken from the interior loader on this machine
+            // rather than guessed: its own list runs interior_0 to interior_5 over the two
+            // clubhouses and the warehouses, so ware02 is index 3. Both names are asked for,
+            // because the archetype costs nothing and the day one of them is wrong the other
+            // may not be.
+            //
+            // The coordinates are the biker warehouse terrace. They all sit within a hundred
+            // metres of each other forty metres under the airport, and which of the five is
+            // the weed farm is exactly the sort of thing that cannot be checked from here --
+            // so the door tries them in turn and keeps the one the game says has a room in it.
+            s.Doors.Add(Also(ReadDoor(ini, "GrowRoom", "grow room",
+                                 "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo;"
+                                 + "bkr_biker_dlc_int_ware02",
                                  BlipSprite.Weed,
                                  -201.384f, -1707.909f, 32.664f, 313.362f,
-                                 1039.000f, -3098.000f, -39.000f, 180f));
+                                 1064.000f, -3183.000f, -39.000f, 180f),
+                             1039.000f, -3098.000f, -39.000f,
+                             1063.000f, -3195.000f, -39.000f,
+                             1093.000f, -3195.000f, -39.000f,
+                             1137.000f, -3197.000f, -39.000f,
+                             1165.000f, -3196.000f, -39.000f,
+                             997.000f, -3200.000f, -37.000f));
 
             // radar_production_crack, 497 -- the razor blade.
             //
@@ -539,10 +560,15 @@ namespace Hoodrich.Core
             // The ini section keeps its old name so an existing Hoodrich.ini with a [CrackDen]
             // block in it still overrides the right door. What it is CALLED on screen comes
             // from the default below, which the ini can override on its own.
-            s.Doors.Add(ReadDoor(ini, "CrackDen", "pill press garage", "tr_tuner_methlab_1",
+            s.Doors.Add(Also(ReadDoor(ini, "CrackDen", "pill press garage",
+                                 "tr_tuner_meth_lab;tr_tuner_methlab_1;"
+                                 + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo",
                                  (BlipSprite)497,
                                  -105.053f, -1408.631f, 29.673f, 226.934f,
-                                 1000.000f, -3200.000f, -38.000f, 180f));
+                                 997.000f, -3200.000f, -37.000f, 180f),
+                             1000.000f, -3200.000f, -38.000f,
+                             1009.000f, -3196.000f, -38.000f,
+                             1064.000f, -3183.000f, -39.000f));
             s.PlaySounds = ini.GetBool("Phone", "PlaySounds",
                                         ini.GetBool("Wheel", "PlaySounds", s.PlaySounds));
 
@@ -717,6 +743,20 @@ namespace Hoodrich.Core
                 InsideZ = ini.GetFloat(section, "InsideZ", iz),
                 InsideHeading = ini.GetFloat(section, "InsideHeading", ih),
             };
+        }
+
+        /// <summary>
+        /// The rest of the terrace: the other coordinates a door will try when the one it was
+        /// given has nothing in it. See InteriorDoor.Somewhere.
+        /// </summary>
+        private static DoorSpec Also(DoorSpec door, params float[] xyz)
+        {
+            for (var i = 0; i + 2 < xyz.Length; i += 3)
+            {
+                door.Elsewhere.Add(new Vector3(xyz[i], xyz[i + 1], xyz[i + 2]));
+            }
+
+            return door;
         }
 
         private static float Clamp(float v, float min, float max) => v < min ? min : v > max ? max : v;

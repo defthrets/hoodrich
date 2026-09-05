@@ -73,23 +73,23 @@ namespace Hoodrich.UI
         };
 
         /// <summary>
-        /// The bodies the rail can dress, in the order the Body row cycles them.
+        /// The bodies the rail can put him in. One of them, and it is his own.
         ///
-        /// THE ONLY WAY TO REACH THE ONLINE CLOTHES. A drawable number means nothing on its own
-        /// -- it is an index into ONE model's wardrobe -- so there is no such thing as putting
-        /// a multiplayer jacket on Franklin. Jacket forty-one of his own list is what he gets,
-        /// and if his list is shorter than that he gets nothing at all. The online clothes live
-        /// on the freemode models and the only door to them is to be one, which is what this
-        /// row does. His face changes with it; that is the deal, and it is one keypress back.
+        /// THE ONLINE BODIES WERE HERE AND THEY CAME STRAIGHT BACK OUT. Being one of them is
+        /// the only way to reach the online clothes -- a drawable number is an index into ONE
+        /// model's wardrobe, so there is no putting a multiplayer jacket on Franklin -- but
+        /// swapping the player's model in the middle of a story game is not a wardrobe choice,
+        /// it is a different save. Somebody used it and could not get back, which is the whole
+        /// argument: a row that can strand you is not worth the clothes behind it.
+        ///
+        /// What is left is the way home. The row does nothing while he is himself and puts him
+        /// back when he is not, so anybody stranded by the version that offered more has the
+        /// button in front of them at the closet where they got stranded. There is a second one
+        /// on the settings screen for anybody who is not standing at it.
         /// </summary>
-        private static readonly PedHash[] Bodies =
-        {
-            PedHash.Franklin,
-            PedHash.FreemodeMale01,
-            PedHash.FreemodeFemale01
-        };
+        private static readonly PedHash[] Bodies = { PedHash.Franklin };
 
-        private static readonly string[] BodyNames = { "Franklin", "Online man", "Online woman" };
+        private static readonly string[] BodyNames = { "Franklin" };
 
         private int _row;
         private int _lastRow = -1;
@@ -309,8 +309,15 @@ namespace Hoodrich.UI
                 if (me == null || !me.Exists()) return;
 
                 var now = BodyNow(me);
-                var next = ((now < 0 ? 0 : now) + by + Bodies.Length) % Bodies.Length;
-                if (next == now) return;
+
+                // Already himself: there is nowhere for this row to go.
+                if (now == 0)
+                {
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    return;
+                }
+
+                const int next = 0;
 
                 var model = new Model(Bodies[next]);
 
@@ -498,8 +505,7 @@ namespace Hoodrich.UI
                 {
                     if (s.Body)
                     {
-                        var which = BodyNow(me);
-                        value = which < 0 ? "SOMEBODY ELSE" : BodyNames[which].ToUpperInvariant();
+                        value = BodyNow(me) == 0 ? "FRANKLIN" : "PRESS TO GO BACK";
                     }
                     else
                     {

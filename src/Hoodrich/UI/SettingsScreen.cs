@@ -601,6 +601,38 @@ namespace Hoodrich.UI
             _rows.Add(new Opt
             {
                 Kind = OptKind.Action,
+                Label = "Put him back in Franklin's body",
+                Note = "For anybody left as somebody else. Does nothing when he is already himself",
+                Do = () =>
+                {
+                    var me = Game.Player.Character;
+
+                    if (me != null && me.Exists() && (uint)me.Model.Hash == (uint)PedHash.Franklin)
+                    {
+                        Notify.Important("He is already himself.");
+                        return;
+                    }
+
+                    var model = new GTA.Model(PedHash.Franklin);
+                    model.Request(3000);
+
+                    if (!model.IsLoaded)
+                    {
+                        Notify.Problem("Franklin would not load. Try again in a moment.");
+                        return;
+                    }
+
+                    Function.Call(Hash.SET_PLAYER_MODEL, Game.Player.Handle, model.Hash);
+                    model.MarkAsNoLongerNeeded();
+
+                    Log.Info("Put the player back in Franklin's body from the settings screen.");
+                    Notify.Important("Back in his own body.");
+                }
+            });
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
                 Label = "Ask the art packs what they have",
                 Note = "Asks every pack about every weapon name in the game and writes what exists to gunart-probe.txt",
                 Do = () =>
