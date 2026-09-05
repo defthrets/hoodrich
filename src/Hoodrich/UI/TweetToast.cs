@@ -278,7 +278,7 @@ namespace Hoodrich.UI
             // A thin lift along the top edge, and the author's colour down the left. The colour
             // belongs on the edge on a card this small -- anywhere else and a purple card and a
             // green card stop reading as the same object.
-            Hud.RectFrom(left, y, Width, 0.0012f, Alpha(Palette.Brand, (int)(44 * fade)));
+            Hud.RectFrom(left, y, Width, 0.0012f, Alpha(card.Tint, (int)(44 * fade)));
             Hud.RectFrom(left, y, 0.0024f, card.Height, Alpha(card.Tint, solid));
 
             var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;
@@ -448,15 +448,20 @@ namespace Hoodrich.UI
 
             if (run > 0.001f)
             {
+                // IN THE POSTER'S OWN COLOUR. The rail down the left edge already says whose
+                // set this is -- purple for a Balla, yellow for a Vago -- and the bar was
+                // running in the mod's green regardless, so a Ballas post carried two colours
+                // that disagreed about who wrote it. Same tint as the rail: one card, one set.
                 Hud.RectFrom(left + Pad, rule - 0.0003f, ruleW * run, 0.0017f,
-                             Alpha(Palette.Brand, (int)(215 * fade)));
+                             Alpha(card.Tint, (int)(215 * fade)));
 
                 // A brighter head on the leading edge, so the eye has something to follow
-                // rather than a bar it has to remember the length of.
+                // rather than a bar it has to remember the length of. The tint lifted toward
+                // white, so it reads as the same colour catching light rather than a fourth one.
                 var head = Math.Min(ruleW * run, Hud.ToX(0.010f));
 
                 Hud.RectFrom(left + Pad + ruleW * run - head, rule - 0.0005f, head, 0.0021f,
-                             Alpha(Theme.RimInk, (int)(235 * fade)));
+                             Alpha(Theme.Lerp(card.Tint, Color.White, 0.45f), (int)(235 * fade)));
             }
 
             line = rule + RuleGap;
