@@ -55,18 +55,21 @@ namespace Hoodrich.Locations
 
         // ---- what he wears, kept ----------------------------------------------------
 
-        /// <summary>The slots the closet dresses. Slot 8 is left alone: that is where the balaclava lives (see Mask).</summary>
-        public static readonly int[] Components = { 2, 11, 3, 4, 6, 7 };
-        public static readonly int[] Props = { 0, 1, 6, 7 };
+        /// <summary>Every component and prop slot the game has. See WardrobeScreen for what each is.</summary>
+        public static readonly int[] Components = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+        public static readonly int[] Props = { 0, 1, 2, 6, 7 };
 
         /// <summary>
-        /// Whether the man in front of the camera is the one whose clothes these are. Drawable
-        /// numbers mean nothing across models: Franklin's third jacket is Michael's third
-        /// something else, so the record is only ever read off him or put on him.
+        /// Whether there is a body in front of the camera worth writing down.
+        ///
+        /// Anything the player can be. It used to be Franklin and only Franklin, which was
+        /// right while he was the only body the closet could dress -- now that the rail can put
+        /// him in the online models, refusing to record those would mean an hour of choosing
+        /// that survives until the next load and no longer.
         /// </summary>
         private static bool Him(Ped me)
         {
-            return me != null && me.Exists() && (uint)me.Model.Hash == (uint)PedHash.Franklin;
+            return me != null && me.Exists() && me.Model.IsPed;
         }
 
         /// <summary>Reads what he has on into the record, as "c:slot:drawable:texture" and "p:slot:drawable:texture".</summary>
@@ -77,7 +80,14 @@ namespace Hoodrich.Locations
             var me = Game.Player.Character;
             if (!Him(me)) return;
 
-            state.Outfit.Clear();
+            // FILED UNDER THE BODY IT WAS WORN ON, because a drawable number is an index into
+            // one model's wardrobe and means something else entirely on another. Putting the
+            // online man's forty-first jacket on Franklin gets whatever is forty-first on him,
+            // or nothing. So the rows carry the model, only rows for the body he is in are
+            // ever put back on, and choosing a look for each body keeps each of them.
+            var body = unchecked((uint)me.Model.Hash).ToString("X8");
+
+            state.Outfit.RemoveAll(row => row.StartsWith(body + "|", StringComparison.Ordinal));
 
             try
             {
@@ -85,14 +95,14 @@ namespace Hoodrich.Locations
                 {
                     var d = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, slot);
                     var t = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, me.Handle, slot);
-                    state.Outfit.Add("c:" + slot + ":" + d + ":" + t);
+                    state.Outfit.Add(body + "|c:" + slot + ":" + d + ":" + t);
                 }
 
                 foreach (var slot in Props)
                 {
                     var d = Function.Call<int>(Hash.GET_PED_PROP_INDEX, me.Handle, slot);
                     var t = Function.Call<int>(Hash.GET_PED_PROP_TEXTURE_INDEX, me.Handle, slot);
-                    state.Outfit.Add("p:" + slot + ":" + d + ":" + t);
+                    state.Outfit.Add(body + "|p:" + slot + ":" + d + ":" + t);
                 }
             }
             catch (Exception ex)
@@ -116,11 +126,28 @@ namespace Hoodrich.Locations
             if (!Him(me)) return false;
 
             var put = 0;
+            var body = unchecked((uint)me.Model.Hash).ToString("X8");
 
-            foreach (var entry in state.Outfit)
+            foreach (var row in state.Outfit)
             {
                 try
                 {
+                    var entry = row;
+
+                    // Rows from before this was written down carry no body. They were all
+                    // Franklin's, because he was the only one the closet could dress.
+                    var bar = entry.IndexOf('|');
+
+                    if (bar >= 0)
+                    {
+                        if (string.Compare(entry.Substring(0, bar), body, StringComparison.OrdinalIgnoreCase) != 0) continue;
+                        entry = entry.Substring(bar + 1);
+                    }
+                    else if ((uint)me.Model.Hash != (uint)PedHash.Franklin)
+                    {
+                        continue;
+                    }
+
                     var bits = entry.Split(':');
                     if (bits.Length != 4) continue;
 

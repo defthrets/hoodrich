@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -29,22 +29,67 @@ namespace Hoodrich.UI
         {
             public string Name;
             public bool Prop;
+            public bool Body;
             public int Index;
         }
 
+        /// <summary>
+        /// Every slot the game has, and the body they hang on.
+        ///
+        /// ALL TWELVE COMPONENTS AND ALL FIVE PROPS. Six of the twelve were listed before, on
+        /// the reasoning that nobody changes their face at a wardrobe -- which is true right up
+        /// until somebody wants the bag, the vest under the shirt, the badge on the chest or
+        /// the earrings, and finds the closet does not have them. Nothing here is gated: what
+        /// the model owns is what the rail offers, and a story character owns his whole
+        /// wardrobe from the first frame whether or not the game's own shop ever sold it to him.
+        ///
+        /// SLOT 8 IS ALSO WHERE THE BALACLAVA GOES. It is on the rail anyway. The mask puts
+        /// itself on and takes itself off around whatever is there, so the only way the two
+        /// collide is choosing an undershirt while masked, and the answer to that is to take
+        /// the mask off.
+        /// </summary>
         private static readonly Slot[] Slots =
         {
+            new Slot { Name = "Body", Body = true },
+
+            new Slot { Name = "Face", Index = 0 },
+            new Slot { Name = "Mask", Index = 1 },
             new Slot { Name = "Hair", Index = 2 },
-            new Slot { Name = "Top", Index = 11 },
             new Slot { Name = "Arms", Index = 3 },
             new Slot { Name = "Legs", Index = 4 },
+            new Slot { Name = "Bag", Index = 5 },
             new Slot { Name = "Shoes", Index = 6 },
             new Slot { Name = "Chain", Index = 7 },
+            new Slot { Name = "Undershirt", Index = 8 },
+            new Slot { Name = "Vest", Index = 9 },
+            new Slot { Name = "Badge", Index = 10 },
+            new Slot { Name = "Top", Index = 11 },
+
             new Slot { Name = "Hat", Prop = true, Index = 0 },
             new Slot { Name = "Glasses", Prop = true, Index = 1 },
+            new Slot { Name = "Ears", Prop = true, Index = 2 },
             new Slot { Name = "Watch", Prop = true, Index = 6 },
             new Slot { Name = "Bracelet", Prop = true, Index = 7 }
         };
+
+        /// <summary>
+        /// The bodies the rail can dress, in the order the Body row cycles them.
+        ///
+        /// THE ONLY WAY TO REACH THE ONLINE CLOTHES. A drawable number means nothing on its own
+        /// -- it is an index into ONE model's wardrobe -- so there is no such thing as putting
+        /// a multiplayer jacket on Franklin. Jacket forty-one of his own list is what he gets,
+        /// and if his list is shorter than that he gets nothing at all. The online clothes live
+        /// on the freemode models and the only door to them is to be one, which is what this
+        /// row does. His face changes with it; that is the deal, and it is one keypress back.
+        /// </summary>
+        private static readonly PedHash[] Bodies =
+        {
+            PedHash.Franklin,
+            PedHash.FreemodeMale01,
+            PedHash.FreemodeFemale01
+        };
+
+        private static readonly string[] BodyNames = { "Franklin", "Online man", "Online woman" };
 
         private int _row;
         private int _lastRow = -1;
@@ -63,11 +108,36 @@ namespace Hoodrich.UI
 
         public bool IsOpen => _curtain.Showing;
 
+        /// <summary>
+        /// Which way he stands while the closet is open.
+        ///
+        /// The camera is placed in front of whatever way he happens to be facing, so the shot
+        /// was different every time and half of them were of the inside of the wardrobe door.
+        /// Turned to a fixed heading on the way in, the picture is the same one every time --
+        /// him, against the open closet, with the room behind the camera.
+        /// </summary>
+        private const float FaceHeading = 222.743f;
+
         public void Open()
         {
             _row = 0;
             _lastRow = -1;
             _pickedAt = _openedAt = Game.GameTime;
+
+            try
+            {
+                var me = Game.Player.Character;
+
+                if (me != null && me.Exists())
+                {
+                    me.Heading = FaceHeading;
+                    Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, me.Handle);
+                }
+            }
+            catch
+            {
+                // He is looked at whichever way he ended up.
+            }
 
             _curtain.Open();
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -210,6 +280,85 @@ namespace Hoodrich.UI
             }
         }
 
+        /// <summary>Which body he is wearing now, or -1 for one this rail does not know.</summary>
+        private static int BodyNow(Ped me)
+        {
+            if (me == null || !me.Exists()) return -1;
+
+            for (var i = 0; i < Bodies.Length; i++)
+            {
+                if ((uint)me.Model.Hash == (uint)Bodies[i]) return i;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Become one of the other bodies.
+        ///
+        /// The blocking form of the model request on purpose: this is one deliberate keypress,
+        /// not a spawner, and half a body arriving is worse than a frame. Everything after the
+        /// swap has to be redone -- the ped is a NEW ped, so the camera is pointed at a handle
+        /// that no longer exists until it is rebuilt.
+        /// </summary>
+        private void Wear(int by)
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                var now = BodyNow(me);
+                var next = ((now < 0 ? 0 : now) + by + Bodies.Length) % Bodies.Length;
+                if (next == now) return;
+
+                var model = new Model(Bodies[next]);
+
+                if (!model.IsValid || !model.IsInCdImage)
+                {
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    return;
+                }
+
+                model.Request(3000);
+
+                if (!model.IsLoaded)
+                {
+                    Log.Warn("The " + BodyNames[next] + " body would not load.");
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    return;
+                }
+
+                Unlook();
+
+                Function.Call(Hash.SET_PLAYER_MODEL, Game.Player.Handle, model.Hash);
+                model.MarkAsNoLongerNeeded();
+
+                var him = Game.Player.Character;
+
+                if (him != null && him.Exists())
+                {
+                    // A freemode model arrives with nothing on it at all. The game's own
+                    // default set is a person in clothes rather than a mannequin, which is
+                    // where somebody wants to start choosing from.
+                    Function.Call(Hash.SET_PED_DEFAULT_COMPONENT_VARIATION, him.Handle);
+                    him.Heading = FaceHeading;
+                }
+
+                Look();
+
+                _pickedAt = Game.GameTime;
+                Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+                Log.Info("The closet put him in the " + BodyNames[next] + " body.");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not change body: " + ex.Message);
+                Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+            }
+        }
+
         /// <summary>The next or previous drawable in the slot. A prop can also be nothing, which sits before its first.</summary>
         private void Step(int by)
         {
@@ -219,6 +368,12 @@ namespace Hoodrich.UI
                 if (me == null || !me.Exists()) return;
 
                 var s = Slots[_row];
+
+                if (s.Body)
+                {
+                    Wear(by);
+                    return;
+                }
                 var n = Count(me, s);
                 if (n <= 0) { Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET"); return; }
 
@@ -256,6 +411,8 @@ namespace Hoodrich.UI
                 if (me == null || !me.Exists()) return;
 
                 var s = Slots[_row];
+                if (s.Body) { Wear(1); return; }
+
                 var d = Drawable(me, s);
                 var n = Colours(me, s, d);
                 if (n <= 1) { Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET"); return; }
@@ -339,14 +496,22 @@ namespace Hoodrich.UI
                 string value;
                 try
                 {
-                    var d = Drawable(me, s);
-                    var n = Count(me, s);
-                    var c = Colours(me, s, d);
-                    var t = Texture(me, s);
+                    if (s.Body)
+                    {
+                        var which = BodyNow(me);
+                        value = which < 0 ? "SOMEBODY ELSE" : BodyNames[which].ToUpperInvariant();
+                    }
+                    else
+                    {
+                        var d = Drawable(me, s);
+                        var n = Count(me, s);
+                        var c = Colours(me, s, d);
+                        var t = Texture(me, s);
 
-                    value = d < 0
-                        ? "NONE  /  " + n
-                        : (d + 1) + "  /  " + n + (c > 1 ? "     COLOUR " + (t + 1) + " / " + c : "");
+                        value = d < 0
+                            ? "NONE  /  " + n
+                            : (d + 1) + "  /  " + n + (c > 1 ? "     COLOUR " + (t + 1) + " / " + c : "");
+                    }
                 }
                 catch
                 {
