@@ -398,7 +398,14 @@ namespace Hoodrich.Locations
                     Wait(400);
                     Fade(true);
 
-                    Notify.Problem("that room ain't there. check [" + _spec.Section + "] Inside in the ini.");
+                    // WHICH OF THE THREE, because they have different fixes and the log
+                    // already knows the answer. An IPL that never went active is a wrong or
+                    // dead IPL NAME; an IPL that loaded with nothing at the coordinate is a
+                    // wrong Inside. Telling somebody to check the coordinate when the name is
+                    // what is broken sends them to re-measure a number that was always right.
+                    Notify.Problem(iplOn
+                        ? "that room ain't there. check [" + _spec.Section + "] Inside in the ini."
+                        : "ipl '" + _spec.Ipl + "' never loaded. check [" + _spec.Section + "] Ipl in the ini.");
                     return;
                 }
 
