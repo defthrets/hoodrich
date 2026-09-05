@@ -66,9 +66,9 @@ from Stretch with extended mags on everything, and a shelf of what bolts to each
 Bodyguards who lock the doors once you are rolling. Turf war, dead drops, a stash house,
 graffiti.
 
-**A street takeover** on Carson once a night: thirty-five cars on walked kerbs, a crowd from
-the neighbourhood, and somebody working the middle sideways off a drift line recorded from
-real driving, until the blue lights arrive. It happens whether you go or not.
+**A street takeover** on Carson once a night: a ring of cars on walked kerbs, a crowd from the
+neighbourhood, and four cars burning out and spinning on their own places in the junction
+until the blue lights arrive. It happens whether you go or not.
 
 **You can take your own product**, and each of the seven does something different — weed
 slows the world, coke makes you fast and bright, meth is a high you can feel, and heroin is

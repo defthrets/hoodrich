@@ -87,9 +87,6 @@ namespace Hoodrich
         private readonly PocketScreen _pocketScreen;
         private readonly SettingsScreen _settingsScreen = new SettingsScreen();
 
-        /// <summary>Writes down how you drive, for the cars at the junction. See Core.Recorder.</summary>
-        private readonly Core.Recorder _recorder = new Core.Recorder();
-
         /// <summary>Whether this load has cleared the previous load's headshot peds.</summary>
         private bool _sweptFaces;
         private readonly StashHouse _stash;
@@ -2130,11 +2127,6 @@ namespace Hoodrich
                 if (_takeover != null) _settingsScreen.StartTakeover = () => _takeover.Force();
 
                 // And it can be started and stopped from the same screen.
-                _settingsScreen.Recording = () => _recorder.Running;
-                _settingsScreen.RecordedSoFar = () => _recorder.Count;
-
-                _settingsScreen.RecordDriving =
-                    () => _recorder.Running ? _recorder.Stop() : _recorder.Start();
 
                 pages.AllJobs = () =>
                 {
@@ -2456,7 +2448,6 @@ namespace Hoodrich
                 // somebody else's script -- would come out as a file with holes in it that
                 // nothing reading it could see. It samples while you are in a car and stops
                 // when you get out, and that is the whole rule.
-                _recorder.Update();
 
                 // BEFORE THE AVAILABILITY GATE, AND THIS ONE IS NOT A PREFERENCE.
                 //

@@ -143,14 +143,14 @@ namespace Hoodrich.Locations
         /// </summary>
         private static readonly Spot[] Stages =
         {
-            // FOUR OF THE WALKED KERBS, one a street, since 0.6.0. They used to sit on the
-            // edge of the circle, in the road, which jammed the junction; a car waits its
-            // turn at the kerb now like every other car here, and nothing stands in the road
-            // that is not driving.
-            new Spot { At = new Vector3(-132.886f, -1714.133f, 29.308f), Face = 322.568f },
-            new Spot { At = new Vector3(-141.929f, -1750.508f, 29.466f), Face = 320.431f },
-            new Spot { At = new Vector3(-108.431f, -1728.656f, 29.189f), Face = 104.682f },
-            new Spot { At = new Vector3(-129.291f, -1764.954f, 29.090f), Face = 286.766f }
+            // THE FOUR PLACES THE PERFORMERS PERFORM ON, walked and written down, in the
+            // junction. A car drives to one, is set on it, and does its thing there until
+            // the police come: a standing burnout or a spinning one, decided on arrival.
+            // Four places is four cars at once, and no more.
+            new Spot { At = new Vector3(-134.609f, -1730.354f, 29.474f), Face = 309.695f },
+            new Spot { At = new Vector3(-121.989f, -1735.803f, 29.498f), Face = 194.406f },
+            new Spot { At = new Vector3(-121.690f, -1748.387f, 29.531f), Face = 127.029f },
+            new Spot { At = new Vector3(-130.422f, -1738.134f, 29.471f), Face =  29.370f }
         };
 
         /// <summary>How close counts as being on a marker.</summary>
@@ -660,12 +660,13 @@ namespace Hoodrich.Locations
             public int Sent;
 
             public int Way;
+
+            /// <summary>Whether the show on the marker is a standing burnout (true) or a spinning one.</summary>
+            public bool Standing;
             public int Until;
 
             public bool Circling;
 
-            /// <summary>Where it is up to on the recorded line, when it is driving one.</summary>
-            public int Point = -1;
             public bool Leaving;
 
             /// <summary>
@@ -692,11 +693,6 @@ namespace Hoodrich.Locations
 
             /// <summary>When he first lifted off for somebody, or nought. See Working.</summary>
             public int Held;
-
-            /// <summary>The line's standing burnout runs until this, and the hard launch after it until the next.</summary>
-            public int DropUntil;
-            public int LaunchUntil;
-            public bool Dropped;
 
             /// <summary>
             /// This one is on the mark rather than going round it.
@@ -1054,20 +1050,6 @@ namespace Hoodrich.Locations
             // AND A NOTE OF WHAT WAS ALREADY PARKED HERE. See Sweep.
             _nextWord = now + _rng.Next(20000, 45000);
 
-            // AND THE STREAMER IS ASKED FOR EVERYTHING BEFORE ANY OF IT IS NEEDED.
-            //
-            // Nothing waits for a model any more, so the cost of a model not being resident is
-            // a spawn deferred by a fraction of a second -- cheap, but it is paid over and over
-            // at the start of a night when nothing has been asked for yet. One pass through the
-            // lists here puts the whole evening's cast on the streamer's queue while the first
-            // car is still driving in, and by the time anything is actually spawned it is
-            // almost always already there.
-            //
-            // Non-blocking, so this is a few dozen calls and no wait at all.
-            // The recorded shape, read once. Nothing before the first takeover needs it, and
-            // reading it at construction would put a file read in the mod's startup for a
-            // feature most sessions never reach.
-            _line.Load();
 
             Theme();
 
@@ -3095,14 +3077,12 @@ namespace Hoodrich.Locations
                         {
                             Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
-                            // Brake rather than nothing, or he rolls off the mark he just
-                            // reached. Re-issued below for as long as he is sat here.
-                            Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
-                                          r.Car.Handle, 1, 4000);
-
-                            // Set on the marker above, the way the spectators are set on
-                            // their kerbs: the markers are kerbs now, and a car "near" a kerb
-                            // is a car in the road.
+                            // THE SHOW, DECIDED ONCE. Half of them sit on the brakes and light
+                            // the rears; half spin it, one way or the other. Kept up in bursts
+                            // below for as long as the car is on its place.
+                            r.Standing = _rng.Next(2) == 0;
+                            r.Way = _rng.Next(2) == 0 ? 1 : -1;
+                            Show(r, now);
                         }
                         catch
                         {
@@ -3111,19 +3091,8 @@ namespace Hoodrich.Locations
                     }
                     else if (now >= r.NextAction)
                     {
-                        // Held. A temp action expires, and a driver whose action has run out
-                        // creeps forward off the marker, so it is topped up.
-                        r.NextAction = now + 3500;
-
-                        try
-                        {
-                            Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
-                                          r.Car.Handle, 1, 4000);
-                        }
-                        catch
-                        {
-                            // Next time round.
-                        }
+                        // A temp action expires; the show is topped up before it does.
+                        Show(r, now);
                     }
 
                     continue;
@@ -3267,22 +3236,11 @@ namespace Hoodrich.Locations
             // there is genuinely nothing happening in the middle. Three numbers is enough to
             // name the link: no runners at all is In failing, runners but none waiting is them
             // not reaching a marker, and runners waiting with nothing in the pit is Turn.
-            if (mark + round == 0 && now >= _nextEmpty)
-            {
-                _nextEmpty = now + EmptyEveryMs;
-
-                var waiting = Queued();
-
-                Log.Info("Takeover: nothing in the middle -- " + _running.Count +
-                         " performer(s), " + waiting + " waiting at markers, " +
-                         (Stages.Length - waiting) + " marker(s) free.");
-            }
 
             // Only if this stretch of the night is having one. An existing static burnout is
             // left to finish rather than pulled off the mark the moment the roll changes --
             // his go is his go, and a car that vanishes mid-burnout is worse than one that
             // stays a minute longer than the dice wanted.
-            if (_wantMark && mark < 1) Turn(true, now);
 
             // TWO TO FOUR WORKING AT ONCE, and never fewer than two.
             //
@@ -3872,6 +3830,11 @@ namespace Hoodrich.Locations
         /// </summary>
         private bool Turn(bool middle, int now)
         {
+            // NOBODY IS SENT OFF A MARKER ANY MORE. The four markers are the show: a car
+            // gets to its place and performs there, all night, and the middle is what the
+            // crowd looks at them across. The line it used to be sent to drive is gone.
+            return false;
+
             Runner up = null;
 
             foreach (var r in _running)
@@ -3886,7 +3849,6 @@ namespace Hoodrich.Locations
             if (up == null) return false;
 
             up.Middle = middle;
-            up.Point = -1;
 
             // Where he is aiming, and it is not the middle unless he is the burnout. The one
             // going round is sent to the point on his own circle nearest the marker he is
@@ -4139,32 +4101,7 @@ namespace Hoodrich.Locations
         /// <summary>How long a car going home may sit still before it asks for the route again.</summary>
         private const int BlockedMs = 4000;
 
-        /// <summary>
-        /// Keeping the ones on the floor doing what they came to do.
-        ///
-        /// NOTHING HERE MOVES A CAR ANY MORE, and that is the fix. The first version advanced
-        /// an angle and then wrote the heading and the forward speed straight onto the vehicle
-        /// every frame -- which is not driving, it is teleporting sixty times a second. A car
-        /// moved that way has no momentum, takes no notice of what it hits, and goes through a
-        /// crowd like a plough. It also could not be steered by anything, which is why they
-        /// ended up off course: they were never on a course, they were being dragged round a
-        /// circle drawn in the script.
-        ///
-        /// So the game drives them. The stunt actions on TASK_VEHICLE_TEMP_ACTION are a real
-        /// driver putting real lock on with real throttle, so the physics, the collision and
-        /// the tyre smoke all happen for the ordinary reasons -- and a car about to hit
-        /// somebody behaves like a car about to hit somebody.
-        ///
-        /// The action is re-issued rather than held. A temp action has a duration and expires,
-        /// and a driver whose action has run out coasts to a stop -- so each is topped up
-        /// slightly before it ends, which is what makes it continuous.
-        /// </summary>
-        /// <summary>The line somebody drove, loaded once on the first takeover.</summary>
-        private readonly DriftLine _line = new DriftLine();
 
-        /// <summary>How near a waypoint counts as reached, and how fast the line is taken.</summary>
-        private const float ReachedPoint = 5.5f;
-        private const float LineSpeed = 13f;
 
         private void Working(int now)
         {
@@ -4181,11 +4118,6 @@ namespace Hoodrich.Locations
                 // it covers most of the junction, so measuring it against a circle round the
                 // mark would haul it back to the middle every time it reached the far end of
                 // the thing it is meant to be driving.
-                if (r.Middle && _line.Ready)
-                {
-                    Line(r, now);
-                    continue;
-                }
 
                 var gap = r.Car.Position.DistanceTo(Circle);
 
@@ -4307,118 +4239,6 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>
-        /// Drive the shape somebody recorded, sideways, round and round.
-        ///
-        /// WAYPOINT AT A TIME AND RE-AIMED WHEN IT ARRIVES. A driving task is a route, not a
-        /// path, so handing the game the whole line at once is not on offer -- what is on
-        /// offer is one coordinate, and another one when that is reached. Four and a half
-        /// metres apart is close enough that the corners survive it.
-        ///
-        /// RE-ISSUED ONLY WHEN THE TARGET MOVES, which is the difference between this working
-        /// and this doing nothing at all. Every new drive task throws away the routing the
-        /// last one was part way through -- a car re-tasked at the same coordinate every
-        /// couple of seconds never gets far enough to finish any of them and sits there
-        /// twitching. It happened to the spectators on the way in and it is written up in
-        /// Parking; the same trap, one file down.
-        ///
-        /// AND IT NEVER STOPS. The tyres stay off, the loop wraps, and there is no arriving:
-        /// the only thing that ends it is the police, which is what ends a takeover.
-        /// </summary>
-        private void Line(Runner r, int now)
-        {
-            try
-            {
-                var car = r.Car.Handle;
-
-                // ---- THE DROP: a standing burnout, then it goes ----
-                //
-                // "As they drop it": the first thing a car does on the line is sit on the
-                // brakes with the rear wheels lit for most of a second, then let go. The
-                // burnout mode holds a car in place by design, which is what it is for here
-                // and why it is taken off again the moment the drop is over -- a car left in
-                // it is a car sat still in the road with its wheels spinning.
-                if (r.Point < 0)
-                {
-                    r.Point = _line.Nearest(r.Car.Position);
-                    r.DropUntil = now + DropMs;
-                    r.LaunchUntil = r.DropUntil + LaunchMs;
-                    r.Dropped = false;
-                    r.Stuck = 0;
-
-                    Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, car, true);
-                    Function.Call(Hash.SET_DRIFT_TYRES, car, true);
-                    Function.Call(Hash.SET_VEHICLE_BURNOUT, car, true);
-                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, car, Burn(), DropMs);
-
-                    r.NextAction = 0;
-                    return;
-                }
-
-                if (now < r.DropUntil) return;
-
-                if (!r.Dropped)
-                {
-                    r.Dropped = true;
-                    Function.Call(Hash.SET_VEHICLE_BURNOUT, car, false);
-                }
-
-                // ---- A MOVING BURNOUT, NOT A DRIVE ----
-                //
-                // Every tick, because the game forgets it every tick: the engine is given
-                // several times its torque while the grip is reduced, so that every time the
-                // driver touches the throttle the rear end lights up and steps out. Hard for
-                // the launch, then eased back to a slide that still smokes.
-                //
-                // SET_VEHICLE_CHEAT_POWER_INCREASE is this ScriptHookVDotNet's name for what
-                // the native database now calls SET_VEHICLE_ENGINE_TORQUE_MULTIPLIER.
-                Function.Call(Hash.SET_VEHICLE_CHEAT_POWER_INCREASE, car,
-                              now < r.LaunchUntil ? LaunchTorque : LineTorque);
-
-                // ---- STUCK: reverse off whatever it is against, then carry on ----
-                //
-                // Wedged on a kerb, a parked car or somebody's shin, a driver told to drive
-                // forward sits there. A short reverse first, then the line again.
-                if (r.Car.Speed > 0.6f) r.Stuck = 0;
-                else if (r.Stuck == 0) r.Stuck = now;
-                else if (now - r.Stuck > StillMs)
-                {
-                    r.Stuck = now;
-                    Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
-                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, car, ReverseAction, BackOffMs);
-                    r.NextAction = now + BackOffMs;
-                    return;
-                }
-
-                // ---- THE POINT IT AIMS AT IS AHEAD OF IT, ALWAYS ----
-                //
-                // A car sliding wide misses the circle round its point and was then asked to
-                // reach a point behind it, which a driver answers by stopping and turning
-                // round in the road -- the "stuck in place" after a few seconds of the line.
-                // The nearest point on the line is found afresh each time and the aim is a
-                // few points past it, so the target only ever moves on.
-                var nearest = _line.Nearest(r.Car.Position);
-                var aim = nearest;
-                for (var i = 0; i < Lead; i++) aim = _line.Next(aim);
-
-                if (aim == r.Point && now < r.NextAction) return;
-
-                r.Point = aim;
-                r.NextAction = now + LineHoldMs;
-
-                var want = _line.At(aim);
-
-                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, car, true);
-                Function.Call(Hash.SET_DRIFT_TYRES, car, true);
-                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, car,
-                              want.X, want.Y, want.Z, LineSpeed, 0, r.Car.Model.Hash,
-                              RushStyle, 2f, true);
-                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
-            }
-            catch
-            {
-            }
-        }
 
         /// <summary>
         /// The longest a waypoint is chased before it is re-issued.
@@ -4427,21 +4247,6 @@ namespace Hoodrich.Locations
         /// for a car that has been shoved off the line or wedged against a bumper and would
         /// otherwise sit forever chasing a coordinate it can no longer reach.
         /// </summary>
-        private const int LineHoldMs = 2500;
-
-        /// <summary>The standing burnout at the start of a run, and the hard launch after it.</summary>
-        private const int DropMs = 900;
-        private const int LaunchMs = 3500;
-        private const float LaunchTorque = 4f;
-        private const float LineTorque = 2f;
-
-        /// <summary>How many points past the nearest one the car aims at: three is thirteen metres.</summary>
-        private const int Lead = 3;
-
-        /// <summary>Stopped this long on the line means wedged; it reverses for this long first.</summary>
-        private const int StillMs = 2500;
-        private const int BackOffMs = 900;
-        private const int ReverseAction = 3;
 
         /// <summary>
         /// The stunt action for a donut, one way or the other.
@@ -4452,6 +4257,35 @@ namespace Hoodrich.Locations
         /// they are something else on a given build they are in the ini, so finding the right
         /// pair is a matter of trying two numbers rather than rebuilding anything.
         /// </summary>
+        /// <summary>
+        /// The show on a marker: a standing burnout or a spinning one, in a burst that is
+        /// re-issued before it runs out. The standing one is held in place by the burnout
+        /// mode; the spinning one has its grip reduced so it actually goes round.
+        /// </summary>
+        private void Show(Runner r, int now)
+        {
+            r.NextAction = now + BurstMs - 400;
+
+            try
+            {
+                if (r.Standing)
+                {
+                    Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Burn(), BurstMs);
+                }
+                else
+                {
+                    Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
+                    Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), BurstMs);
+                }
+            }
+            catch
+            {
+                r.NextAction = now + BurstMs;
+            }
+        }
+
         private int Spin(int way)
         {
             if (_cfg == null) return way > 0 ? 30 : 31;
