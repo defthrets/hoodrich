@@ -314,31 +314,38 @@ namespace Hoodrich.UI
 
         // ---- drawing -----------------------------------------------------------
 
-        // ---- the panel's proportions -------------------------------------------
+        /// <summary>Where the rows start: the letterhead, then the two meters under it.</summary>
+        private const float ContentTop = UiKit.HeadH + 0.046f;
 
-        /// <summary>Everything above the first row: mark, line, heading, columns, bars.</summary>
-        private const float HeadHeight = 0.166f;
+        /// <summary>A row, and the captions over the two amount columns.</summary>
+        private const float RowH = 0.032f;
+        private const float CapsH = 0.020f;
 
-        /// <summary>And the rule and the key line under the last one.</summary>
-        private const float FootHeight = 0.040f;
+        private const float MarkSize = 0.0125f;
 
         /// <summary>
-        /// What this screen is, in one line, under the mark.
+        /// What this screen is, in one line, beside the title.
         ///
-        /// Every other panel in the mod is a thing you DO -- a menu of jobs, a list of guns, a
-        /// feed. This one is a place you put things, and a person opening it for the first time
-        /// is looking at two columns of numbers with no idea which side is which until they
-        /// press something and watch it move. One sentence removes that entirely.
+        /// A person opening this for the first time is looking at two columns of numbers with
+        /// no idea which side is which until they press something and watch it move. One
+        /// sentence removes that entirely.
         /// </summary>
         private const string Blurb = "what's on you, and what's at the house";
 
-        /// <summary>How tall the capacity bars are, and the purity mark beside a name.</summary>
-        private const float BarHeight = 0.0075f;
-        private const float MarkSize = 0.0125f;
+        private const int EnterMs = 170;
+        private const float EnterRise = 0.014f;
 
-        /// <summary>Eased fills, so a transfer slides the bar instead of teleporting it.</summary>
-        private float _fillYou;
-        private float _fillHome;
+        /// <summary>The two needles, easing toward how full each side is. See UI.Eased.</summary>
+        private readonly Eased _meterYou = new Eased();
+        private readonly Eased _meterHome = new Eased();
+
+        /// <summary>
+        /// Every figure on the screen, easing toward the truth, one per product per form per
+        /// side. Keyed rather than kept on the rows, because the rows are rebuilt after every
+        /// press and a figure that started over each time would never be seen to move.
+        /// </summary>
+        private readonly Dictionary<string, Eased> _figures = new Dictionary<string, Eased>();
+        private int _figuresFor;
 
         /// <summary>The row the cursor was on before this one, and when it moved. See Theme.Lit.</summary>
         private int _lastSelected = -1;
@@ -347,67 +354,98 @@ namespace Hoodrich.UI
         /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
         private readonly Glide _glide = new Glide();
 
-        /// <summary>What just moved, which way, and when -- for the flash on the numbers.</summary>
+        /// <summary>What just moved, which way, and when -- for the chevrons and the flash.</summary>
         private int _movedAt;
         private int _movedRow = -1;
         private bool _movedHome;
 
-        private const int MovedFlashMs = 420;
+        private const int MovedFlashMs = 520;
 
         public void Draw()
         {
             if (!IsOpen) return;
 
+            // Figures from the last visit would roll into this one's. Start them over.
+            if (_figuresFor != _openedAt)
+            {
+                _figuresFor = _openedAt;
+                _figures.Clear();
+            }
+
             var bodyRows = Math.Max(_rows.Count, 1);
-            var height = HeadHeight + bodyRows * RowHeight + FootHeight;
+            var height = ContentTop + CapsH + bodyRows * RowH + 0.008f + UiKit.FootH;
 
             // Everything converted from height fractions, so the proportions hold on any screen.
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
-            var columnGap = Hud.ToX(ColumnGapH);
 
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Theme.Panel(left, top, panelWidth, height);
+            // Up and in, eased out so it slows as it lands -- the same arrival every other
+            // screen in the mod uses.
+            var age = Game.GameTime - _openedAt;
+            var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
+            arrive = 1f - (1f - arrive) * (1f - arrive);
 
-            var colWidth = (panelWidth - pad * 2f - columnGap) * 0.5f;
-            var leftCol = left + pad;
-            var rightCol = leftCol + colWidth + columnGap;
-            var middle = left + panelWidth * 0.5f;
-            var lineWidth = colWidth * 2f + columnGap;
+            top += EnterRise * (1f - arrive);
 
-            // The letterhead, the same one every other screen in the mod carries, and one line
-            // under it saying what you are looking at.
-            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Text, 230));
+            Theme.Panel(left, top, panelWidth, height, arrive);
 
-            Hud.Text(Blurb, middle, top + 0.052f, 0.29f,
-                     Palette.Alpha(Palette.TextDim, 170), Hud.FontChaletLondon);
+            var x = left + pad;
+            var right = left + panelWidth - pad;
+            var wide = right - x;
 
-            Theme.Rule(leftCol, top + 0.078f, lineWidth);
+            // ---- the letterhead, and a meter for each side ----
+            var y = UiKit.Head(left, top, panelWidth, pad, "stash.png", "STASH HOUSE", Blurb,
+                             _rows.Count + (_rows.Count == 1 ? " LINE" : " LINES"), arrive);
 
-            var y = top + 0.088f;
+            var gap = Hud.ToX(ColumnGapH);
+            var half = (wide - gap) * 0.5f;
 
-            Hud.Text("STASH HOUSE", leftCol, y, 0.30f, Palette.Text, Hud.FontLabel, centre: false);
+            var fullYou = UiKit.Full(_pockets);
+            var fullHome = UiKit.Full(_house);
 
-            Hud.TextRight(_rows.Count + (_rows.Count == 1 ? " LINE" : " LINES"),
-                          leftCol + lineWidth, y, 0.24f, Palette.TextDim, Hud.FontLabel);
+            UiKit.Meter(x, y + 0.004f, half, "people.png", "ON YOU", UiKit.Holding(_pockets),
+                      _meterYou.To(fullYou), fullYou, arrive);
 
-            y += 0.028f;
+            UiKit.Meter(x + half + gap, y + 0.004f, half, "stash.png", "AT HOME", UiKit.Holding(_house),
+                      _meterHome.To(fullHome), fullHome, arrive);
 
-            // Both sides, each with its own picture, its own numbers and its own bar.
-            Column(leftCol, colWidth, y, "ON YOU", "people.png", _pockets, ref _fillYou);
-            Column(rightCol, colWidth, y, "AT HOME", "stash.png", _house, ref _fillHome);
+            y = top + ContentTop;
 
-            y = top + HeadHeight - 0.008f;
+            // ---- the two places ----
+            //
+            // The name has the left half of the line. The right half is two columns with a
+            // gap between them, and the gap is the thing you operate: what is on you sits on
+            // the left of it, what is at home on the right, and pressing left or right pushes
+            // the figure across. Each column has a faint ground of its own so the two read
+            // as places rather than as numbers.
+            var nameW = wide * 0.46f;
+            var area = wide - nameW;
+            var colW = area * 0.36f;
 
-            Theme.Rule(leftCol, y, lineWidth);
+            var youX = x + nameW;
+            var homeX = right - colW;
+            var gapX = youX + colW;
+            var gapW = homeX - gapX;
 
-            y = top + HeadHeight;
+            var rowsH = bodyRows * RowH;
+
+            Hud.RectFrom(youX, y, colW, CapsH + rowsH, Color.FromArgb((int)(12f * arrive), 255, 255, 255));
+            Hud.RectFrom(homeX, y, colW, CapsH + rowsH, Color.FromArgb((int)(12f * arrive), 255, 255, 255));
+
+            var caps = Palette.Alpha(Palette.TextDim, (int)(190f * arrive));
+
+            Hud.Text("PRODUCT", x, y + 0.002f, 0.22f, caps, Hud.FontLabel, centre: false);
+            Hud.TextRight("ON YOU", youX + colW - 0.004f, y + 0.002f, 0.22f, caps, Hud.FontLabel);
+            Hud.TextRight("AT HOME", homeX + colW - 0.004f, y + 0.002f, 0.22f, caps, Hud.FontLabel);
+
+            y += CapsH;
 
             if (_rows.Count == 0)
             {
-                Hud.Text("Nothing on you and nothing at home.", leftCol, y + 0.006f, 0.28f,
+                Hud.Text("Nothing on you and nothing at home.", x, y + 0.006f, 0.28f,
                          Palette.TextDim, Hud.FontBody, centre: false);
             }
 
@@ -417,43 +455,39 @@ namespace Hoodrich.UI
 
             for (var i = 0; i < _rows.Count; i++)
             {
-                Line(_rows[i], i, grown, leftCol, rightCol, colWidth, columnGap, pad, y);
-                y += RowHeight;
+                Line(_rows[i], i, grown, x, wide, pad, youX, homeX, colW, gapX, gapW, y, arrive);
+                y += RowH;
             }
 
-            var footY = top + height - FootHeight + 0.008f;
+            // ---- the keys ----
+            //
+            // THE ARROWS SAY THE DIRECTION AND THE WORDS SAY THE ERRAND. An arrow pointing
+            // left IS left, on a keyboard and on a d-pad, and it costs no reading at all.
+            var footY = top + height - UiKit.FootH + 0.006f;
 
-            Theme.Rule(leftCol, footY, lineWidth);
+            Theme.Rule(x, footY, wide, arrive);
 
-            // THE ARROWS SAY THE DIRECTION AND THE WORDS SAY THE ERRAND, which is the
-            // rearrangement that makes this line readable at a glance. It used to name the KEY
-            // and then the errand -- "LEFT  TAKE OUT" -- so the direction was a word you read
-            // and then had to map onto a direction. An arrow pointing left IS left, on a
-            // keyboard and on a d-pad, and it costs no reading at all.
-            var hy = footY + 0.008f;
-            var hx = leftCol;
+            var ky = footY + 0.011f;
 
-            var pad2 = Hud.OnPad;
+            UiKit.KeyRight(right, ky, UiKit.Back, "DONE", arrive);
 
-            hx = Hud.Hint("arrow_updown.png", "PICK", hx, hy, 0.24f, Palette.TextDim);
-            hx = Hud.Hint("arrow_left.png", "TAKE OUT", hx, hy, 0.24f, Palette.TextDim);
-            hx = Hud.Hint("arrow_right.png", "PUT AWAY", hx, hy, 0.24f, Palette.TextDim);
-
-            Hud.Hint(null, (pad2 ? "HOLD A" : "SPRINT") + "  ALL", hx, hy, 0.24f,
-                     Palette.TextDim);
-
-            Hud.TextRight(pad2 ? "B  DONE" : "BACKSPACE  DONE", leftCol + lineWidth, hy, 0.24f,
-                          Palette.TextDim, Hud.FontLabel);
+            var kx = UiKit.Key(x, ky, null, "arrow_updown.png", "PICK", arrive);
+            kx = UiKit.Key(kx, ky, null, "arrow_left.png", "TAKE OUT", arrive);
+            kx = UiKit.Key(kx, ky, null, "arrow_right.png", "PUT AWAY", arrive);
+            UiKit.Key(kx, ky, UiKit.All, null, "ALL OF IT", arrive);
 
             // Last, so it rides over the rows it is pointing at.
-            _glide.Draw();
+            _glide.Draw(arrive);
         }
 
         /// <summary>
-        /// One product line: art, name, how cut it is, and the two numbers.
+        /// One product line: art, name, a tag for raw weight, how cut it is, the two figures
+        /// easing toward the truth, and the chevrons running across the gap when something
+        /// just crossed it.
         /// </summary>
-        private void Line(StashRow row, int i, float grown, float leftCol, float rightCol,
-                          float colWidth, float columnGap, float pad, float y)
+        private void Line(StashRow row, int i, float grown, float x, float wide, float pad,
+                          float youX, float homeX, float colW, float gapX, float gapW, float y,
+                          float arrive)
         {
             var picked = i == _selected;
 
@@ -461,85 +495,116 @@ namespace Hoodrich.UI
             // it left, and the frame travels between them. Same as every other screen.
             var lit = Theme.Lit(i, _selected, _lastSelected, grown);
 
-            var wash = leftCol - pad * 0.35f;
-            var wide = colWidth * 2f + columnGap + pad * 0.7f;
+            var wash = x - pad * 0.35f;
+            var wideRow = wide + pad * 0.7f;
 
-            Theme.Plate(wash, y - 0.004f, wide, RowHeight, lit);
-            Theme.Sheen(wash, y - 0.004f, wide, RowHeight, lit);
+            Theme.Plate(wash, y, wideRow, RowH, lit * arrive);
+            Theme.Sheen(wash, y, wideRow, RowH, lit * arrive);
 
-            if (picked) _glide.Target(wash, y - 0.004f, wide, RowHeight);
+            if (picked) _glide.Target(wash, y, wideRow, RowH);
 
-            var label = row.Label;
-            var tint = Theme.Ink(picked ? Palette.Text : Palette.TextDim, lit);
+            var ink = Theme.Ink(Palette.Alpha(picked ? Palette.Text : Palette.TextDim, (int)(255f * arrive)), lit);
 
-            // The product's own art, the way the kitchen and the wheel show it. Hud.File places
-            // by its CENTRE and Hud.Text by its TOP edge, so the art drops half a row to sit
-            // level with the words.
+            var textY = y + 0.0055f;
+            var midY = y + RowH * 0.5f;
+
+            // ---- the art, then the name fitted to what is left ----
             var art = Icons.ForDrug(row.Drug.Id);
-            var tx = leftCol;
+            var tx = x;
 
             if (art.HasFile &&
-                Hud.File(art.File, leftCol + Hud.ToX(ArtSize) * 0.5f, y + RowHeight * 0.34f,
-                         ArtSize, 0f, tint))
+                Hud.File(art.File, x + Hud.ToX(ArtSize) * 0.5f, midY, ArtSize, 0f, ink))
             {
-                tx = leftCol + Hud.ToX(ArtSize) + 0.007f;
+                tx = x + Hud.ToX(ArtSize) + 0.007f;
             }
 
-            // Fitted to the space it actually has rather than trusted to be short enough.
-            //
-            // The names on this screen are the longest in the game and the figure beside them
-            // is right-aligned to a fixed edge, so on a wide monitor -- where the panel is a
-            // card rather than a strip and the columns are narrower in screen terms -- the
-            // widest of them ran into its own number. Measured against the gap that is left
-            // once the art has taken its share.
-            Hud.Text(Hud.Fit(label, leftCol + colWidth - tx - 0.008f, 0.30f, Hud.FontBody),
-                     tx, y, 0.30f, tint, Hud.FontBody, centre: false);
+            var markW = Hud.ToX(MarkSize);
+            var tagRoom = row.Bagged ? 0f : 0.042f;
 
-            // How cut it is, the same mark the cook screen and the buy menus use, drawn in
-            // the gap between the two columns.
-            //
-            // Not after the name, which is where it belongs everywhere else in the mod and is
-            // the one place it cannot go here. The names on this screen are the longest in the
-            // game -- "Alprazolam  (weight)" -- and the number beside them is right-aligned to
-            // a fixed edge, so a mark after the words collides with the figure on the widest
-            // lines and on nothing else, which is the worst kind of bug: correct in testing.
-            //
-            // The gap is empty by construction and the same width on every row, so the marks
-            // stack into a column of their own down the middle of the panel. Whichever side
-            // actually holds any is the side that answers -- a purity read off an empty pocket
-            // is a hundred per cent of nothing.
+            var name = Hud.Fit(row.Drug.Name, youX - 0.010f - markW - 0.006f - tx - tagRoom, 0.30f,
+                               Hud.FontBody);
+
+            Hud.Text(name, tx, textY, 0.30f, ink, Hud.FontBody, centre: false);
+
+            // Raw weight says so on a tag, rather than as a longer name.
+            if (!row.Bagged)
+            {
+                var after = tx + Hud.MeasureText(name, 0.30f, Hud.FontBody) + 0.008f;
+
+                UiKit.Tag(after, textY + 0.0025f, "WEIGHT", Palette.TextDim, arrive * (0.75f + 0.25f * lit));
+            }
+
+            // How cut it is, in a column of its own just before the figures. Whichever side
+            // actually holds any is the side that answers -- a purity read off an empty
+            // pocket is a hundred per cent of nothing.
             var strength = Strength(row);
 
             if (strength > 0f)
             {
-                Hud.File(Stash.Mark(strength),
-                         leftCol + colWidth + columnGap * 0.5f, y + RowHeight * 0.34f,
-                         MarkSize, 0f, tint);
+                Hud.File(Stash.Mark(strength), youX - 0.006f - markW * 0.5f, midY, MarkSize, 0f, ink);
             }
 
-            var flashing = _movedRow == i && Game.GameTime - _movedAt < MovedFlashMs;
+            // ---- the two figures ----
+            //
+            // Each eases toward the truth, so ten grams pressed across is a number counting
+            // down on one side and up on the other rather than two numbers swapping. The side
+            // that just grew is lit green for half a second.
+            var flashLeft = _movedRow == i ? UiKit.Flash(_movedAt, MovedFlashMs) : 0f;
 
-            Hud.TextRight(Amount(row.Drug, row.OnYou, row.Bagged), leftCol + colWidth, y, 0.30f,
-                          Theme.Ink(Side(row.OnYou, picked, flashing && !_movedHome), lit),
+            var youShown = Figure(row, false, row.OnYou);
+            var homeShown = Figure(row, true, row.AtHome);
+
+            Hud.TextRight(Amount(row.Drug, youShown, row.Bagged), youX + colW - 0.004f, textY, 0.30f,
+                          Theme.Ink(Side(row.OnYou, picked, flashLeft > 0f && !_movedHome, arrive), lit),
                           Hud.FontBody);
 
-            Hud.TextRight(Amount(row.Drug, row.AtHome, row.Bagged), rightCol + colWidth, y, 0.30f,
-                          Theme.Ink(Side(row.AtHome, picked, flashing && _movedHome), lit),
+            Hud.TextRight(Amount(row.Drug, homeShown, row.Bagged), homeX + colW - 0.004f, textY, 0.30f,
+                          Theme.Ink(Side(row.AtHome, picked, flashLeft > 0f && _movedHome, arrive), lit),
                           Hud.FontBody);
+
+            // ---- the gap ----
+            //
+            // Chevrons run the way the product just went; on the row under the cursor with
+            // nothing moving they sit dim, both ways, saying that it can.
+            if (flashLeft > 0f)
+            {
+                UiKit.Flow(gapX, textY, gapW, _movedHome ? 1 : -1, flashLeft, Palette.Cash);
+            }
+            else if (picked)
+            {
+                Hud.Text("<   >", gapX + gapW * 0.5f, textY, 0.28f,
+                         Palette.Alpha(Palette.Brand, (int)(110f * grown * arrive)), Hud.FontBody,
+                         centre: true);
+            }
+        }
+
+        /// <summary>The figure shown for one side of one line, easing toward what it really is.</summary>
+        private float Figure(StashRow row, bool home, float target)
+        {
+            var key = row.Drug.Id + (row.Bagged ? "|b" : "|w") + (home ? "|h" : "|y");
+
+            Eased eased;
+
+            if (!_figures.TryGetValue(key, out eased))
+            {
+                eased = new Eased();
+                _figures[key] = eased;
+            }
+
+            return eased.To(target, 8f);
         }
 
         /// <summary>What one side's number is coloured, including for the moment it changed.</summary>
-        private static Color Side(float held, bool picked, bool flashing)
+        private static Color Side(float held, bool picked, bool flashing, float arrive)
         {
-            if (held <= 0.005f) return Palette.TextDisabled;
-            if (flashing) return Palette.Cash;
+            var c = held <= 0.005f ? Palette.TextDisabled
+                  : flashing ? Palette.Cash
+                  : picked ? Palette.Text : Palette.TextDim;
 
-            return picked ? Palette.Text : Palette.TextDim;
+            return Palette.Alpha(c, (int)(c.A * arrive));
         }
 
-        /// <summary>
-        /// How strong this line is, asked of whichever side is holding any of it.
-        /// </summary>
+        /// <summary>How strong this line is, asked of whichever side is holding any of it.</summary>
         private float Strength(StashRow row)
         {
             var where = row.OnYou > 0.005f ? _pockets : row.AtHome > 0.005f ? _house : null;
@@ -548,70 +613,11 @@ namespace Hoodrich.UI
             return row.Bagged ? where.PurityOf(row.Drug.Id) : where.BulkPurityOf(row.Drug.Id);
         }
 
-        /// <summary>
-        /// One side's heading: its picture, its name, what it is holding, and a bar of it.
-        ///
-        /// The bar eases toward the true figure rather than being set to it. Two numbers
-        /// swapping places is arithmetic; a bar sliding one way while the other slides back is
-        /// the thing you actually did, and it is the only way this screen can show a transfer
-        /// as a movement rather than as a redraw.
-        /// </summary>
-        private static void Column(float x, float width, float y, string title, string icon,
-                                   Stash stash, ref float eased)
-        {
-            var tx = x;
-
-            if (Hud.File(icon, x + Hud.ToX(HeadIcon) * 0.5f, y + 0.008f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Text, 225)))
-            {
-                tx = x + Hud.ToX(HeadIcon) + 0.006f;
-            }
-
-            Hud.Text(title, tx, y, 0.28f, Palette.Text, Hud.FontLabel, centre: false);
-
-            var full = stash == null || stash.Capacity <= 0.01f
-                ? 0f
-                : stash.Total / stash.Capacity;
-
-            if (full < 0f) full = 0f;
-            if (full > 1f) full = 1f;
-
-            // Gold while there is room, ember once it is getting full, red when it is. Yellow
-            // into orange into red is the one order of those three that reads as filling up.
-            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.BrandDeep : Palette.Brand;
-
-            Hud.TextRight((stash == null ? 0f : stash.Total).ToString("0") + " / " +
-                          (stash == null ? 0f : stash.Capacity).ToString("0") + "g",
-                          x + width, y, 0.28f,
-                          full > 0.7f ? tint : Palette.TextDim, Hud.FontBody);
-
-            // Toward the figure rather than at it, and snapped once it is close enough that
-            // another frame of easing would be a frame of nothing.
-            eased += (full - eased) * 0.18f;
-            if (Math.Abs(full - eased) < 0.002f) eased = full;
-
-            var barY = y + 0.024f;
-
-            Hud.RectFrom(x, barY, width, BarHeight, Color.FromArgb(150, 26, 28, 30));
-
-            if (eased > 0f)
-            {
-                Hud.RectFrom(x, barY, width * eased, BarHeight, tint);
-            }
-
-            Hud.RectFrom(x, barY + BarHeight, width, 0.0010f, Palette.Alpha(tint, 90));
-        }
-
-        /// <summary>The picture beside a column's name.</summary>
-        private const float HeadIcon = 0.016f;
-
         private static string Amount(DrugDef drug, float quantity, bool bagged)
         {
             if (quantity <= 0.005f) return "-";
             if (drug == null) return quantity.ToString("0.#") + "g";
 
-            // The row already knows which of the two it is -- it puts "(weight)" after the name
-            // for one of them -- so it may as well say so in the number too.
             return bagged ? drug.Amount(quantity) : drug.Bulk(quantity);
         }
     }

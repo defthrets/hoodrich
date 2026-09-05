@@ -149,6 +149,49 @@ fitted one takes it off, and putting it back is free. Fitted parts survive a
 save and come back with the gun.
 
 
+THE POCKET, THE STASH HOUSE AND THE KITCHEN, REDRAWN
+
+Three screens that show the same product, and they had each grown their own
+letterhead, their own capacity bar and their own idea of a key hint -- one
+wrote the keys as a run-on sentence, one as icons, one as both. They are built
+out of one set of parts now and agree with each other.
+
+The letterhead is one row where it was three: the wordmark, then the room in
+capitals with what it is in small words beside it and the count on the right,
+then a rule. A sixth of the screen of introduction is gone from each.
+
+Capacity is a meter: the figure on the right, a track under it with a bright
+tip on the fill, green while there is room, amber as it fills, red when it is
+full, easing toward the truth rather than jumping to it. The stash house has
+one for each side.
+
+The keys are drawn as keys: a small cap with the letter on it and the errand
+in dim words after, the arrows as arrows, and the way out in the same corner on
+every screen.
+
+THE POCKET has a card under the tiles that says what the chosen one is: the
+picture large, the name in full, a tag for bagged or raw weight, the amount
+rolling as you put it down, how stepped on it is in words, and the percentage
+with its mark on the right. It slides in as the plate comes up under the tile.
+
+THE STASH HOUSE reads as two places. The name has the left half of the line;
+the right half is two columns on their own grounds, ON YOU and AT HOME, with a
+gap between them that you operate. Press a direction and the figure counts down
+on one side and up on the other while chevrons run across the gap the way it
+went. Raw weight says so on a tag rather than as a longer name.
+
+THE KITCHEN has a gauge for how far you step on it: the four cuts on one row,
+each with the mark it leaves on the bag, the lit plate sliding to the one you
+are on, the cuts stronger than what is on the counter greyed and locked, the
+one under the floor in red. What is on the counter is written on the right of
+the gauge so the locked ones explain themselves. The batch is a card: what goes
+in on the left, chevrons running through the press, what comes out, and what
+it is worth large on the right -- green while it can start, red when there is
+no room for what would come out.
+
+Nothing about what any of the three DO has changed. Every key does what it did.
+
+
 A BLIP FOR EVERY ONE OF THEM
 
 A list of a hundred and thirty-five places is a list. Eighty-three of them now

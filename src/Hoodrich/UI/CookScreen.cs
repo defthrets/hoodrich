@@ -506,13 +506,24 @@ namespace Hoodrich.UI
         private const int EnterMs = 170;
         private const float EnterRise = 0.014f;
 
+        /// <summary>The heights of the parts, so the panel is as tall as what is in it.</summary>
+        private const float LabelH = 0.026f;
+        private const float RowH = 0.030f;
+        private const float GaugeH = 0.086f;
+        private const float BatchH = 0.104f;
+        private const float RungH = 0.032f;
+
+        /// <summary>
+        /// Where the lit rung is, easing toward the one chosen so the plate slides along the
+        /// gauge rather than jumping between steps. See UI.Eased.
+        /// </summary>
+        private readonly Eased _rung = new Eased();
+
         public void Draw()
         {
             if (!IsOpen || _rows.Count == 0) return;
 
-            // 0.286 rather than 0.268: the wordmark added a band above the title and the
-            // panel has to own that height, or the last row hangs off the bottom of it.
-            var height = 0.300f + _rows.Count * RowHeight;
+            var height = UiKit.HeadH + LabelH + _rows.Count * RowH + 0.014f + GaugeH + BatchH + UiKit.FootH;
 
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
@@ -532,37 +543,32 @@ namespace Hoodrich.UI
 
             var x = left + pad;
             var right = left + panelWidth - pad;
-            // The title line, moved down to leave room for the mark above it. Everything
-            // below steps off this, so shifting it here shifts the whole screen together.
-            var y = top + 0.045f;
+            var wide = right - x;
 
-            // The mark, then the room -- the same order as every other screen. Anchored to
-            // the panel TOP rather than to the title, because measuring it off the title put
-            // it half a centimetre above the panel and outside its own ground.
-            Hud.BrandCentre(left + panelWidth * 0.5f, top + 0.025f, 0.024f,
-                            Palette.Alpha(Palette.Text, 225));
+            // ---- the letterhead ----
+            //
+            // The mark, then the room in the house script -- written rather than shouted,
+            // because a room in somebody's house is the informal thing -- and the money on
+            // the right, the same rhythm as the other two screens' heads.
+            Hud.BrandCentre(left + panelWidth * 0.5f, top + 0.021f, 0.019f,
+                            Palette.Alpha(Palette.Text, (int)(225f * arrive)));
 
-            // The house script, the same face every other screen in the mod is titled in --
-            // and in the case it is written in rather than shouted. A cursive face set in block
-            // capitals is two decisions fighting each other: handwriting is the informal one
-            // and capitals are the formal one, and a room in somebody's house is the informal
-            // thing.
-            Hud.Text("The Kitchen", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            Hud.Text("The Kitchen", x, top + 0.026f, 0.70f, Palette.Alpha(Palette.Text, (int)(255f * arrive)),
+                     Hud.FontCursive, centre: false);
 
-            Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
-                          Palette.Cash, Hud.FontChaletLondon);
+            Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, top + 0.047f, 0.32f,
+                          Palette.Alpha(Palette.Cash, (int)(255f * arrive)), Hud.FontChaletLondon);
 
-            y += 0.044f;
+            Theme.Rule(x, top + UiKit.HeadH - 0.006f, wide, arrive);
 
-            Theme.Rule(x, y, panelWidth - pad * 2f, arrive);
-            y += 0.012f;
+            var y = top + UiKit.HeadH;
 
-            Hud.Text("WHAT YOU'RE WORKING", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
-            y += 0.026f;
+            // ---- what you are working ----
+            Hud.Text("WHAT YOU'RE WORKING", x, y, 0.24f, Palette.Alpha(Palette.TextDim, (int)(200f * arrive)),
+                     Hud.FontLabel, centre: false);
 
-            // THE PLATE COMES UP UNDER THE ROW rather than sliding to it: the one under the
-            // new row rises over a sixth of a second while the one under the old row sinks,
-            // and the frame -- see Glide -- travels between them. Same as every other screen.
+            y += LabelH;
+
             var grown = Theme.Grown(_pickedAt);
             var barWide = panelWidth - pad * 1.3f;
 
@@ -570,224 +576,281 @@ namespace Hoodrich.UI
 
             for (var i = 0; i < _rows.Count; i++)
             {
-                var row = _rows[i];
-
-                var picked = i == _selected;
-                var lit = Theme.Lit(i, _selected, _lastSelected, grown) * arrive;
-
-                Theme.Plate(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
-                Theme.Sheen(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
-
-                if (picked) _glide.Target(x - pad * 0.35f, y - 0.005f, barWide, RowHeight);
-
-                var have = Held(row.Source);
-                var stored = _house == null ? 0f : _house.BulkOf(row.Source.Id);
-
-                // The product's own art, in the gutter, the way every other screen in the mod
-                // marks a row. Drawn from the SOURCE rather than the output: this column is
-                // what you are putting on the counter, and the arrow in the label already says
-                // what comes off it.
-                //
-                // Hud.File places by its CENTRE and Hud.Text by its TOP edge, so the art is
-                // pushed down half a row to sit level with the words rather than above them.
-                var art = Icons.ForDrug(row.Source.Id);
-                var ax = x + Hud.ToX(ArtSize) * 0.5f;
-
-                var ink = Theme.Ink(picked ? Palette.Text : Palette.TextDim, lit);
-
-                var drew = art.HasFile &&
-                           Hud.File(art.File, ax, y + RowHeight * 0.32f, ArtSize, 0f, ink);
-
-                // Indented past the art when there is art, and left where it was when there is
-                // not -- a row that silently loses its icon should lose the space with it
-                // rather than sit in a column of its own.
-                var tx = drew ? x + Hud.ToX(ArtSize) + 0.008f : x;
-
-                Hud.Text(row.Label, tx, y, 0.30f, ink, Hud.FontBody, centre: false);
-
-                // Where it is, when it is not simply on you. Otherwise a number that includes
-                // the cupboard reads as a number in your pocket, and the two are not the same
-                // thing the moment you walk out of the room.
-                var where = stored > 0.005f
-                    ? row.Source.Bulk(have) + (_stash.BulkOf(row.Source.Id) > 0.005f
-                        ? "  (some in the cupboard)"
-                        : "  (in the cupboard)")
-                    : row.Source.Bulk(have);
-
-                Hud.TextRight(where, right, y, 0.30f, ink, Hud.FontBody);
-
-                y += RowHeight;
+                Line(_rows[i], i, grown, x, right, pad, barWide, y, arrive);
+                y += RowH;
             }
 
-            y += 0.012f;
+            y += 0.014f;
 
-            // The batch, spelled out: what goes in, what comes out, what it is worth.
+            Theme.Rule(x, y - 0.008f, wide, arrive);
+
+            // ---- how far you step on it ----
             var chosen = _rows[_selected];
             var product = chosen.Source;
             var made = chosen.Output ?? chosen.Source;
 
-            // What is on the counter, and what you can cut it to.
-            //
-            // A target above the source is not a choice, it is arithmetic that does not exist:
-            // no amount of filler makes a gram stronger. So the chooser is capped at what the
-            // weight already is, and fifty per cent weight simply has fewer options than
-            // untouched weight does.
-            var from = _stash.BulkPurityOf(product.Id);
+            // What is on the counter, and what you can cut it to. A target above the source
+            // is not a choice: no amount of filler makes a gram stronger.
+            var from = Strongest();
             var purity = Math.Min(from, Purities[_purity]);
 
+            Gauge(x, wide, y, from, arrive);
+
+            y += GaugeH;
+
+            // ---- the batch, spelled out ----
             var batch = Math.Min(MaxBatch, Workable(product));
             var yield = Cutting.YieldOf(product, made, batch, from, purity);
             var worth = _pricing.SaleValue(made, yield, purity);
             var risk = Pricing.BadCutChance(purity);
             var fits = _stash.FreeSpace >= yield - batch - 0.001f;
 
-            Theme.Rule(x, y - 0.006f, panelWidth - pad * 2f, arrive);
+            Batch(x, wide, y, chosen, product, made, batch, yield, worth, risk, purity, fits, arrive);
 
-            // Every cut on screen at once, with the one you are on lit up. They were always
-            // all available -- left and right has stepped through them since the day it was
-            // written -- but the screen only ever showed the one, so there was nothing to tell
-            // you the other three existed.
-            // The scales mark the row, and the chips start after them.
-            //
-            // They were drawn at x -- the same x the chips start at -- so the picture landed
-            // straight on top of the first percentage. An icon over a number is worse than no
-            // icon at all, because now neither can be read.
-            var cx = x;
+            // ---- the keys ----
+            var footY = top + height - UiKit.FootH + 0.006f;
 
-            if (Hud.File("scales.png", x + Hud.ToX(ArtSize) * 0.5f, y + 0.011f, ArtSize, 0f,
-                         Palette.TextDim))
+            Theme.Rule(x, footY, wide, arrive);
+
+            var ky = footY + 0.011f;
+
+            UiKit.KeyRight(right, ky, UiKit.Back, "LEAVE", arrive);
+
+            var kx = UiKit.Key(x, ky, null, "arrow_updown.png", "PICK PRODUCT", arrive);
+            kx = UiKit.Key(kx, ky, null, "arrow_leftright.png", "HOW FAR", arrive);
+            UiKit.Key(kx, ky, UiKit.Confirm, null, "START", arrive);
+
+            // Last, so it rides over the rows it is pointing at.
+            _glide.Draw(arrive);
+        }
+
+        /// <summary>
+        /// One thing on the counter: its picture, its name, what it turns into if it turns
+        /// into something, how much of it there is, and where it is when it is not on you.
+        /// </summary>
+        private void Line(CookRow row, int i, float grown, float x, float right, float pad,
+                          float barWide, float y, float arrive)
+        {
+            var picked = i == _selected;
+            var lit = Theme.Lit(i, _selected, _lastSelected, grown) * arrive;
+
+            Theme.Plate(x - pad * 0.35f, y, barWide, RowH, lit);
+            Theme.Sheen(x - pad * 0.35f, y, barWide, RowH, lit);
+
+            if (picked) _glide.Target(x - pad * 0.35f, y, barWide, RowH);
+
+            var have = Held(row.Source);
+            var stored = _house == null ? 0f : _house.BulkOf(row.Source.Id);
+            var onYou = _stash == null ? 0f : _stash.BulkOf(row.Source.Id);
+
+            var ink = Theme.Ink(Palette.Alpha(picked ? Palette.Text : Palette.TextDim, (int)(255f * arrive)), lit);
+
+            var textY = y + 0.005f;
+            var midY = y + RowH * 0.5f;
+
+            // The SOURCE's art in the gutter: this column is what you put on the counter,
+            // and the arrow in the label says what comes off it.
+            var art = Icons.ForDrug(row.Source.Id);
+            var tx = x;
+
+            if (art.HasFile && Hud.File(art.File, x + Hud.ToX(ArtSize) * 0.5f, midY, ArtSize, 0f, ink))
             {
-                cx = x + Hud.ToX(ArtSize) + 0.008f;
+                tx = x + Hud.ToX(ArtSize) + 0.008f;
             }
+
+            // ---- how much, and where, on the right ----
+            var amount = row.Source.Bulk(have);
+            var amountW = Hud.MeasureText(amount, 0.30f, Hud.FontBody);
+
+            Hud.TextRight(amount, right, textY, 0.30f, ink, Hud.FontBody);
+
+            var leftEdge = right - amountW - 0.010f;
+
+            // Where it is, when it is not simply on you. A number that includes the cupboard
+            // reads as a number in your pocket, and the two are not the same thing the moment
+            // you walk out of the room.
+            if (stored > 0.005f)
+            {
+                var tag = onYou > 0.005f ? "SOME IN CUPBOARD" : "IN CUPBOARD";
+                var tagW = Hud.MeasureText(tag, 0.19f, Hud.FontLabel) + 0.007f;
+
+                UiKit.Tag(leftEdge - tagW, textY + 0.0025f, tag, Palette.TextDim, arrive * (0.75f + 0.25f * lit));
+
+                leftEdge -= tagW + 0.010f;
+            }
+
+            // ---- the name, and what it becomes ----
+            var label = row.Rolling ? row.Source.Name + "   >   " + row.Output.Name : row.Source.Name;
+
+            var outArt = row.Rolling ? Icons.ForDrug(row.Output.Id) : default(Icon);
+            var outW = outArt.HasFile ? Hud.ToX(ArtSize) + 0.006f : 0f;
+
+            var fitted = Hud.Fit(label, leftEdge - tx - outW, 0.30f, Hud.FontBody);
+
+            Hud.Text(fitted, tx, textY, 0.30f, ink, Hud.FontBody, centre: false);
+
+            if (outArt.HasFile && fitted == label)
+            {
+                var after = tx + Hud.MeasureText(fitted, 0.30f, Hud.FontBody) + 0.006f;
+
+                Hud.File(outArt.File, after + Hud.ToX(ArtSize) * 0.5f, midY, ArtSize, 0f, ink);
+            }
+        }
+
+        /// <summary>
+        /// The gauge: every cut on one row, the lit plate sliding to the one you are on.
+        ///
+        /// Rungs stronger than what is on the counter are greyed and locked -- the maths has
+        /// always refused them, but a rung that looks pickable and does nothing looks like a
+        /// broken control. Under the sellable floor the rung is red whether the cursor is on
+        /// it or not: "nobody will buy this" is a fact about the step, not about where you
+        /// happen to be looking.
+        /// </summary>
+        private void Gauge(float x, float wide, float y, float from, float arrive)
+        {
+            var tx = x;
+
+            if (Hud.File("scales.png", x + Hud.ToX(0.015f) * 0.5f, y + 0.0085f, 0.015f, 0f,
+                         Palette.Alpha(Palette.TextDim, (int)(220f * arrive))))
+            {
+                tx = x + Hud.ToX(0.015f) + 0.006f;
+            }
+
+            Hud.Text("HOW FAR YOU STEP ON IT", tx, y, 0.24f,
+                     Palette.Alpha(Palette.TextDim, (int)(200f * arrive)), Hud.FontLabel, centre: false);
+
+            // What it is now, on the right, so the locked rungs explain themselves.
+            Hud.TextRight("ON THE COUNTER  " + Stash.Percent(from) + "%", x + wide, y, 0.24f,
+                          Palette.Alpha(Palette.TextDim, (int)(200f * arrive)), Hud.FontLabel);
+
+            var rungY = y + 0.028f;
+            var gap = Hud.ToX(0.006f);
+            var rungW = (wide - gap * (Purities.Length - 1)) / Purities.Length;
+
+            // The track: one dark square per rung.
+            for (var i = 0; i < Purities.Length; i++)
+            {
+                Hud.RectFrom(x + i * (rungW + gap), rungY, rungW, RungH,
+                             Color.FromArgb((int)(24f * arrive), 255, 255, 255));
+            }
+
+            // The plate, sliding.
+            var slid = _rung.To(x + _purity * (rungW + gap), 14f);
+
+            Theme.Plate(slid, rungY, rungW, RungH, arrive);
+            Theme.Sheen(slid, rungY, rungW, RungH, arrive);
+
+            var markW = Hud.ToX(MarkSize);
 
             for (var i = 0; i < Purities.Length; i++)
             {
-                var label = (Purities[i] * 100f).ToString("0") + "%";
+                var rungX = x + i * (rungW + gap);
                 var on = i == _purity;
 
-                // Above what is already on the counter, so it is not a choice.
-                //
-                // No amount of filler makes a gram stronger, and half-strength weight simply has
-                // fewer rungs left than untouched weight does. The maths has always refused this
-                // -- the target is clamped to the source -- but the rung still looked pickable,
-                // so choosing it appeared to do nothing. It is shown and greyed instead: what he
-                // has and what he cannot get to, in one row.
                 var tooStrong = Purities[i] > from + 0.001f;
+                var under = Purities[i] < Stash.Unsellable;
 
-                // The mark this step would leave on the bag, beside the number that makes it.
-                // The same discs the stash shows afterwards, so what you pick here and what you
-                // read on the shelf later are visibly one thing rather than two ways of saying
-                // it.
-                var mark = Stash.Mark(Purities[i]);
-                var markW = Hud.ToX(MarkSize);
+                var ink = tooStrong ? Palette.Alpha(Palette.TextDisabled, 110)
+                        : under ? (on ? Palette.Danger : Palette.Alpha(Palette.Danger, 175))
+                        : on ? Palette.Text : Palette.TextDim;
 
-                var width = markW + 0.004f +
-                            Hud.MeasureText(label, 0.30f, Hud.FontBody) + 0.011f;
+                ink = Palette.Alpha(ink, (int)(ink.A * arrive));
 
-                // The same plate the rows get, so the chosen cut and the chosen product are
-                // visibly the same kind of thing.
-                if (on && !tooStrong)
+                // The mark this step leaves on the bag -- the same disc the stash shows
+                // afterwards -- then the number that makes it.
+                Hud.File(Stash.Mark(Purities[i]), rungX + 0.008f + markW * 0.5f, rungY + RungH * 0.5f,
+                         MarkSize, 0f, ink);
+
+                Hud.Text((Purities[i] * 100f).ToString("0") + "%", rungX + 0.008f + markW + 0.006f,
+                         rungY + 0.006f, 0.30f, ink, Hud.FontBody, centre: false);
+
+                if (tooStrong)
                 {
-                    Theme.Plate(cx - 0.004f, y - 0.002f, width, 0.026f, 1f);
+                    Hud.File("locked.png", rungX + rungW - 0.006f - Hud.ToX(0.011f) * 0.5f,
+                             rungY + RungH * 0.5f, 0.011f, 0f, ink);
                 }
-
-                var ink = tooStrong
-                    ? Palette.Alpha(Palette.TextDisabled, 120)
-                    : on ? Palette.Text : Palette.TextDim;
-
-                // Under the floor it is drawn in the danger colour whether the cursor is on it
-                // or not: "nobody will buy this" is a fact about the step, not about what you
-                // happen to be looking at.
-                if (!tooStrong && Purities[i] < Stash.Unsellable)
-                {
-                    ink = on ? Palette.Danger : Palette.Alpha(Palette.Danger, 175);
-                }
-
-                Hud.File(mark, cx + 0.003f + markW * 0.5f, y + 0.0115f, MarkSize, 0f, ink);
-
-                Hud.Text(label, cx + 0.003f + markW + 0.005f, y + 0.002f, 0.30f, ink,
-                         Hud.FontBody, centre: false);
-
-                cx += width + 0.006f;
             }
+        }
 
-            var outArt = Icons.ForDrug(made.Id);
-            var words = (chosen.Rolling ? made.WorkVerb : product.WorkVerb) + "  ·  " + PurityWord(purity);
+        /// <summary>
+        /// The batch as a card: what goes in on the left, chevrons running through the
+        /// press, what comes out, and what it is worth on the right. The verb and the purity
+        /// word underneath, and the note under the card -- how it will be received, or why it
+        /// cannot start.
+        /// </summary>
+        private void Batch(float x, float wide, float y, CookRow chosen, DrugDef product, DrugDef made,
+                           float batch, float yield, float worth, float risk, float purity, bool fits,
+                           float arrive)
+        {
+            var cardH = BatchH - 0.034f;
 
-            y += 0.032f;
+            Theme.Plate(x, y, wide, cardH, 0.5f * arrive);
 
-            // Weight in, count out. That arrow IS the press: grams of powder on the left and
-            // whatever it presses into on the right, and writing both sides the same way was
-            // what made the whole screen look like it turned pills into pills.
-            var arrow = product.Bulk(batch) + "  ->  " + made.Amount(yield);
+            var good = fits ? Palette.Cash : Palette.Danger;
+            var goodInk = Palette.Alpha(good, (int)(255f * arrive));
+            var white = Palette.Alpha(Palette.Text, (int)(240f * arrive));
 
-            Hud.Text(arrow, x, y, 0.30f, fits ? Palette.Cash : Palette.Danger,
-                     Hud.FontBody, centre: false);
+            var lineY = y + 0.009f;
+            var midY = lineY + 0.011f;
 
-            var money = "$" + worth.ToString("N0");
+            // ---- in ----
+            var inArt = Icons.ForDrug(product.Id);
+            var cx = x + 0.010f;
 
-            Hud.TextRight(money, right, y, 0.30f, fits ? Palette.Cash : Palette.Danger,
-                          Hud.FontBody);
-
-            // The verb and the purity word live on THIS line now, in the gap between what you
-            // put in and what it is worth.
-            //
-            // They used to sit right-aligned on the row of percentages, which fitted exactly
-            // until the percentages grew a disc each and then the two ran through one another.
-            // Fitted to the space that is actually left rather than trusted to be short enough,
-            // because that is the assumption that broke it the first time.
-            try
+            if (inArt.HasFile &&
+                Hud.File(inArt.File, cx + Hud.ToX(BatchArt) * 0.5f, midY, BatchArt, 0f, white))
             {
-                var used = Hud.MeasureText(arrow, 0.30f, Hud.FontBody);
-                var owed = Hud.MeasureText(money, 0.30f, Hud.FontBody);
-
-                var room = right - owed - 0.010f - (x + used + 0.010f);
-
-                if (room > 0.03f)
-                {
-                    var fitted = Hud.Fit(words, room, 0.28f, Hud.FontLabel);
-                    var wide = Hud.MeasureText(fitted, 0.28f, Hud.FontLabel);
-                    var wx = right - owed - 0.010f - wide;
-
-                    if (outArt.HasFile && room > wide + Hud.ToX(ArtSize) + 0.006f)
-                    {
-                        Hud.File(outArt.File, wx - Hud.ToX(ArtSize) * 0.65f, y + 0.010f,
-                                 ArtSize, 0f, Palette.Text);
-                    }
-
-                    Hud.Text(fitted, wx, y + 0.001f, 0.28f, Palette.Text, Hud.FontLabel,
-                             centre: false);
-                }
+                cx += Hud.ToX(BatchArt) + 0.008f;
             }
-            catch { /* the note underneath still says how far you are stepping on it */ }
 
-            y += 0.028f;
+            var inText = product.Bulk(batch);
 
+            Hud.Text(inText, cx, lineY, 0.32f, white, Hud.FontBody, centre: false);
+            cx += Hud.MeasureText(inText, 0.32f, Hud.FontBody) + 0.010f;
+
+            // ---- through the press ----
+            //
+            // The chevrons ARE the press: grams of powder on the left and whatever it presses
+            // into on the right. Green while the batch can start, red when there is no room
+            // for what would come out of it.
+            var flowW = 0.040f;
+
+            UiKit.Flow(cx, lineY, flowW, 1, arrive, good, 0.32f);
+            cx += flowW + 0.010f;
+
+            // ---- out ----
+            var outArt = Icons.ForDrug(made.Id);
+
+            if (outArt.HasFile &&
+                Hud.File(outArt.File, cx + Hud.ToX(BatchArt) * 0.5f, midY, BatchArt, 0f, goodInk))
+            {
+                cx += Hud.ToX(BatchArt) + 0.008f;
+            }
+
+            Hud.Text(made.Amount(yield), cx, lineY, 0.32f, goodInk, Hud.FontBody, centre: false);
+
+            // ---- worth ----
+            Hud.TextRight("$" + worth.ToString("N0"), x + wide - 0.010f, y + 0.006f, 0.44f, goodInk,
+                          Hud.FontLabel);
+
+            // ---- the verb and the purity word ----
+            var words = (chosen.Rolling ? made.WorkVerb : product.WorkVerb) + "  ·  " + UiKit.PurityWord(purity);
+
+            Hud.Text(words, x + 0.010f, y + 0.040f, 0.27f,
+                     Palette.Alpha(UiKit.PurityInk(purity), (int)(220f * arrive)), Hud.FontBody, centre: false);
+
+            // ---- the note ----
             var note = !fits ? "Need room for " + made.Amount(Math.Max(0f, yield - batch)) +
                                " more -- leave some at home first"
                      : risk < 0.01f ? "Nobody is going to complain about this"
                      : risk < 0.2f ? "The odd buyer might notice"
                      : "Expect people to hand it back";
 
-            Hud.Text(note, x, y, 0.26f, fits ? Palette.TextDim : Palette.Danger,
+            Hud.Text(note, x, y + cardH + 0.008f, 0.26f,
+                     Palette.Alpha(fits ? Palette.TextDim : Palette.Danger, (int)(220f * arrive)),
                      Hud.FontBody, centre: false);
-            y += 0.026f;
-
-            Hud.Text("UP / DOWN  PICK PRODUCT      LEFT / RIGHT  HOW FAR      " +
-                     "ENTER  START      BACKSPACE  LEAVE",
-                     x, top + height - 0.020f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
-
-            // Last, so it rides over the rows it is pointing at.
-            _glide.Draw(arrive);
         }
 
-        private static string PurityWord(float purity)
-        {
-            if (purity >= 0.95f) return "Untouched";
-            if (purity >= 0.75f) return "Barely stepped on";
-            if (purity >= 0.50f) return "Cut half and half";
-            if (purity < Stash.Unsellable) return "~r~Nobody will buy this";
-            return "Stepped on hard";
-        }
+        private const float BatchArt = 0.026f;
     }
 }
