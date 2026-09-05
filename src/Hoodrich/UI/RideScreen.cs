@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -92,6 +92,10 @@ namespace Hoodrich.UI
         {
             if (!IsOpen) return;
 
+            // From here and not from Main: Main returns before its own camera tick while a
+            // screen is up, so the circling and the HUD hiding would never run.
+            RideCam.Update();
+
             LockControls();
 
             if (!_curtain.Taking) return;
@@ -172,7 +176,10 @@ namespace Hoodrich.UI
         {
             if (!IsOpen) return;
 
-            var lift = _curtain.Lift;
+            // SOLID IS THE ALPHA. Lift is the slide -- a distance in screen height that is
+            // zero once the panel is in place -- and used as an alpha it drew nothing at all.
+            var lift = _curtain.Solid;
+            var slide = _curtain.Lift;
             var live = RideCam.Showing;
 
             // THE PLACE, OR THE STREET. Live, what is behind is the destination, black only
@@ -188,9 +195,11 @@ namespace Hoodrich.UI
                 Hud.RectFrom(0f, 0f, 1f, 1f, Dim(Palette.Backdrop, lift));
             }
 
-            var sheetTop = 1f - Sheet;
+            // The sheet comes up from the bottom edge and the band down from the top.
+            var sheetTop = 1f - Sheet + slide;
+            var bandTop = -slide;
 
-            Hud.RectFrom(0f, 0f, 1f, TopBand, Dim(Color.FromArgb(238, Theme.Body), lift));
+            Hud.RectFrom(0f, bandTop, 1f, TopBand, Dim(Color.FromArgb(238, Theme.Body), lift));
             Hud.RectFrom(0f, sheetTop, 1f, Sheet, Dim(Color.FromArgb(238, Theme.Body), lift));
             Theme.Wash(0f, sheetTop, 1f, 0.05f, (int)(15f * lift));
 
@@ -200,9 +209,9 @@ namespace Hoodrich.UI
             var dim = Dim(Palette.TextDim, lift);
 
             // ---- the band: whose app, what it wants, and how far through the list ----
-            var bandText = TopBand * 0.5f - 0.013f;
+            var bandText = bandTop + TopBand * 0.5f - 0.013f;
 
-            Hud.File("car.png", SideX + Hud.ToX(0.016f), TopBand * 0.5f, 0.034f, 0f, ink);
+            Hud.File("car.png", SideX + Hud.ToX(0.016f), bandTop + TopBand * 0.5f, 0.034f, 0f, ink);
             Hud.Text("KNOWAI", SideX + Hud.ToX(0.040f), bandText, 0.36f, ink, Hud.FontLabel, centre: false);
             Hud.Text("WHERE TO?", 0.5f, bandText, 0.36f, dim, Hud.FontLabel);
             Hud.TextRight((_pick + 1) + " / " + _stops.Length, 1f - SideX, bandText, 0.36f, dim, Hud.FontLabel);
@@ -225,14 +234,16 @@ namespace Hoodrich.UI
 
             var fare = Fare(_pick);
             var me = Game.Player.Character;
-            var km = me != null && me.Exists() ? me.Position.DistanceTo(stop.At) / 1000f : 0f;
+            var metres = me != null && me.Exists() ? me.Position.DistanceTo(stop.At) : 0f;
+            var km = metres / 1000f;
+            var mins = Minutes(metres);
 
             // The number arrives a beat after the name, so a fast scroll reads as names
             // going past rather than as figures flickering.
             Hud.TextRight(fare < 0 ? "WON'T GO" : "$" + fare, 1f - SideX, y, 0.70f,
                           Dim(fare < 0 ? Palette.Danger : Palette.Cash, lift * grown), Hud.FontBody);
-            Hud.TextRight(km.ToString("0.0") + " KM FROM HERE", 1f - SideX, y + 0.070f, 0.30f,
-                          Dim(Palette.TextDim, lift * grown), Hud.FontLabel);
+            Hud.TextRight(fare < 0 ? "" : "ABOUT " + mins + (mins == 1 ? " MIN" : " MINS") + "   -   " + km.ToString("0.0") + " KM",
+                          1f - SideX, y + 0.070f, 0.30f, Dim(Palette.TextDim, lift * grown), Hud.FontLabel);
 
             // ---- the strip: one mark a place, the neighbours named either side ----
             var stripY = sheetTop + 0.140f;
@@ -304,6 +315,22 @@ namespace Hoodrich.UI
 
             Hud.RectFrom(right - lenX, bottom - t, lenX, t, c);
             Hud.RectFrom(right - tx, bottom - len, tx, len, c);
+        }
+
+        /// <summary>
+        /// How long the ride is, from a straight line. Roads wind about a third further than
+        /// the crow flies, and a Knowai in traffic averages nearer thirteen metres a second
+        /// than the twenty-two it is allowed -- the same two numbers a real app quietly
+        /// rounds with. Never under a minute: nobody is told "0 mins".
+        /// </summary>
+        private static int Minutes(float metres)
+        {
+            const float roadWind = 1.3f;
+            const float pace = 13f;
+
+            var mins = (int)Math.Round(metres * roadWind / pace / 60f);
+
+            return mins < 1 ? 1 : mins;
         }
 
         private static Color Dim(Color c, float k)

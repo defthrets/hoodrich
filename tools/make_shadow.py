@@ -18,7 +18,7 @@ is 26 pixels.
 
 import os
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), "data", "icons", "phone_shadow.png")
@@ -49,6 +49,19 @@ def main():
     contact = contact.filter(ImageFilter.GaussianBlur(MARGIN * 0.30))
 
     img = Image.alpha_composite(ambient, contact)
+
+    # HOLLOW. The game composites script sprites above script rectangles and text whatever
+    # order they were submitted in, so a shadow drawn "under" the phone lands on top of it:
+    # the first build of this darkened the whole screen of the handset and the text went
+    # unreadable. The body's own rectangle is punched clean out of the file -- with the
+    # body's corner rounding, so the shadow still shows through the rounded-off tips --
+    # and only the fringe exists, which is the only part of a shadow you were ever going
+    # to see.
+    hole = Image.new("L", (w, h), 255)
+    ImageDraw.Draw(hole).rounded_rectangle([MARGIN, MARGIN, w - MARGIN - 1, h - MARGIN - 1],
+                                           radius=4, fill=0)
+    img.putalpha(ImageChops.multiply(img.getchannel("A"), hole))
+
     img.save(OUT)
 
     print("wrote %s (%dx%d)" % (OUT, w, h))

@@ -129,10 +129,12 @@ namespace Hoodrich.Phone
         /// </summary>
         private const float BodyRound = 0.007f;
 
-        /// <summary>The shadow under the body: how far it spreads past the edge, and how far it drops.</summary>
+        /// <summary>
+        /// How far the shadow spreads past the body's edge. The file it draws was rendered
+        /// with this same margin (tools/make_shadow.py), and the body must land exactly on
+        /// the hole in it, so there is no offset here -- the drop is baked into the file.
+        /// </summary>
         private const float ShadowSpread = 0.048f;
-        private const float ShadowDropY = 0.008f;
-        private const float ShadowDropX = 0.003f;
         private const float ScreenRound = 0.005f;
 
         /// <summary>How long a tile takes to pop when the cursor lands on it.</summary>
@@ -755,7 +757,7 @@ namespace Hoodrich.Phone
         }
 
         /// <summary>
-        /// A soft shadow under the handset, so it stands off whatever is behind it -- a bright
+        /// A soft shadow round the handset, so it stands off whatever is behind it -- a bright
         /// street at noon had the dark body sat flat on the picture like a sticker.
         ///
         /// ONE SPRITE, NOT RECTANGLES. A blurred shape wants dozens of stacked rectangles to
@@ -764,11 +766,17 @@ namespace Hoodrich.Phone
         /// softer than any stack. It is rendered at the body's own proportions with the same
         /// margin all round, and drawn here as the body plus that margin, so the fall-off is
         /// even rather than stretched.
+        ///
+        /// HOLLOW, AND IT HAS TO BE. The game composites script sprites above script
+        /// rectangles and text whatever order they were submitted in, so this lands on top
+        /// of the phone however early it is drawn -- the first build darkened the whole
+        /// screen and the text went unreadable. The file has the body's own rectangle
+        /// punched out of it, so only the fringe exists.
         /// </summary>
         private void Shadow(float left, float top, float w, float h, int fade)
         {
             Hud.File("phone_shadow.png",
-                     left + w * 0.5f + Hud.ToX(ShadowDropX), top + h * 0.5f + ShadowDropY,
+                     left + w * 0.5f, top + h * 0.5f,
                      w + Hud.ToX(ShadowSpread) * 2f, h + ShadowSpread * 2f, 0f,
                      Fade(Color.FromArgb(255, 0, 0, 0), fade));
         }
