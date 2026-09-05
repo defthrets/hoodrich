@@ -483,6 +483,31 @@ namespace Hoodrich.UI
             _rows.Add(new Opt
             {
                 Kind = OptKind.Danger,
+                Label = "Ask the art packs what they have",
+                Note = "Asks every pack about every weapon name in the game and writes what exists to gunart-probe.txt",
+                Do = () =>
+                {
+                    if (GunArtProbe.Running)
+                    {
+                        Notify.Important("Already asking.");
+                        return;
+                    }
+
+                    if (!GunArt.Ready)
+                    {
+                        Notify.Important("Open Stretch's counter first so the packs are found.");
+                        return;
+                    }
+
+                    Notify.Important(GunArtProbe.Start(GunArt.Packs)
+                        ? "Asking. It writes gunart-probe.txt when it is done."
+                        : "No art packs were found on this install.");
+                }
+            });
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
                 Label = "Find the gun pictures again",
                 Note = "Forgets where the game's gun photographs are and looks again. For after a game update",
                 Do = () =>

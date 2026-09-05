@@ -100,6 +100,9 @@ namespace Hoodrich.UI
         /// <summary>Whether the sweep has finished, for the settings screen to say.</summary>
         public static bool Ready => _done;
 
+        /// <summary>The packs this install turned out to have. What the probe interrogates.</summary>
+        public static IEnumerable<string> Packs => Real;
+
         public static string Tally()
         {
             if (!_done) return _ticks == 0 ? "not looked yet" : "looking, " + Real.Count + " pack(s) so far";
@@ -130,6 +133,9 @@ namespace Hoodrich.UI
         /// </summary>
         public static void Update()
         {
+            // The probe runs after the sweep and takes over the same slice of the tick.
+            GunArtProbe.Update();
+
             if (_done) return;
 
             if (!_read) Recall();

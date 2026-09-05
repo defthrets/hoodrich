@@ -2886,6 +2886,12 @@ namespace Hoodrich
                     _wardrobe.Update();
                     _scenes.Update();
 
+                    // The gun art sweep and its probe. Both stop dead once they are finished,
+                    // so this is a branch and nothing else for the rest of the session -- and
+                    // ticking it here rather than only at the counter means the probe can be
+                    // started from the settings screen and run wherever he happens to be.
+                    UI.GunArt.Update();
+
                     // THE SET'S OWN JOIN IN. Anybody placed in a spooner scene whose model is
                     // one of your set's stops being scenery for as long as the war runs, and
                     // goes back to its mark when it is over. Told on the change rather than

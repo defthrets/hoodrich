@@ -60,8 +60,13 @@ namespace Hoodrich.Locations
         private const float CamFov = 45f;
         private const float Around = 6.5f;
 
-        /// <summary>How far to one side the camera looks, which is how far the car moves off centre.</summary>
-        private const float Shoulder = 2.1f;
+        /// <summary>
+        /// How far to one side the camera looks, which is how far the car moves off centre.
+        ///
+        /// NEGATIVE, so the car sits to the RIGHT of the picture: the menu is down the left
+        /// now, and the car belongs in the half of the screen the menu is not in.
+        /// </summary>
+        private const float Shoulder = -2.1f;
         private const float Up = 1.7f;
         private const float SpinPerSec = 4f;
         private const int Sprite = 72;

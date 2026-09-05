@@ -47,8 +47,15 @@ namespace Hoodrich.UI
         private const float RowHeight = 0.034f;
         private const float PadH = 0.024f;
 
-        /// <summary>How far the panel sits off the right edge.</summary>
-        private const float RightMarginH = 0.030f;
+        /// <summary>How far the panel sits off the left edge, and where its bottom rests.</summary>
+        private const float LeftMarginH = 0.030f;
+
+        /// <summary>
+        /// The bottom of the panel, in screen height. Above the minimap rather than beside it:
+        /// the minimap owns the bottom-left corner and a menu overlapping it is a menu you
+        /// cannot read and a map you cannot use.
+        /// </summary>
+        private const float FootY = 0.74f;
         private const int Shown = 11;
         private const int OpenGraceMs = 220;
 
@@ -532,15 +539,17 @@ namespace Hoodrich.UI
 
             var width = Hud.ToX(PanelWidthH);
 
-            // AGAINST THE RIGHT EDGE, not in the middle. This is a menu about the look of a
-            // car, and in the middle of the screen it sat on top of the car -- every respray
-            // and every set of rims changed something you could not see while you chose it.
-            var left = 1f - RightMarginH / Hud.Aspect - width;
+            // DOWN THE LEFT, ABOVE THE MINIMAP. This is a menu about the look of a car, and
+            // in the middle of the screen it sat on top of the car -- every respray and every
+            // set of rims changed something you could not see while you chose it.
+            var left = Hud.ToX(LeftMarginH);
             var pad = Hud.ToX(PadH);
             var n = _inside ? _cats[_cat].Count() : _cats.Count;
             var rows = Math.Max(1, Math.Min(Shown, n));
             var height = 0.250f + rows * RowHeight;
-            var top = 0.5f - height * 0.5f + _curtain.Lift;
+            // Hung from its bottom rather than centred, so a long list grows upwards into
+            // empty screen instead of downwards into the map.
+            var top = FootY - height + _curtain.Lift;
 
             Theme.Panel(left, top, width, height);
 

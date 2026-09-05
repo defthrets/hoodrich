@@ -175,6 +175,15 @@ been saved yet.
 
 STRETCH'S COUNTER FINDS ITS PICTURES
 
+There is also a probe, in the settings under "Finding things": it asks every
+art pack on the install about every weapon model name in the game, plus the
+obvious respellings of each, and writes what exists to gunart-probe.txt. The
+game has no call that lists the contents of a texture pack, so naming a texture
+and asking whether it has a size is the only way to find out what art is there
+-- and knowing what is NOT there is worth as much, because it stops anybody
+hunting for a picture that was never shipped.
+
+
 Every gun now shows the game's own photograph of it. It used to show five of
 them: the search asked for forty texture packs at once every frame and gave up
 on each gun after five seconds, which is not a search but a queue nothing gets
