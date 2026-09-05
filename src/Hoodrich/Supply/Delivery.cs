@@ -1717,9 +1717,14 @@ namespace Hoodrich.Supply
                         // hand around and not for a taped envelope a quarter of a metre wide.
                         var off = HandOffset(model, out yaw);
 
+                        // Plus whatever was settled on for this prop on the settings screen --
+                        // "In his hand" fits the package the same way it fits the joint.
+                        var fit = Economy.Fit.Offset(name);
+                        var turn = Economy.Fit.Turn(name);
+
                         Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _box.Handle, _driver.Handle,
                                       Function.Call<int>(Hash.GET_PED_BONE_INDEX, _driver.Handle, 60309),
-                                      off.X, off.Y, off.Z, 0f, 0f, yaw,
+                                      off.X + fit.X, off.Y + fit.Y, off.Z + fit.Z, turn.X, turn.Y, yaw + turn.Z,
                                       false, false, false, false, 2, true);
                     }
 

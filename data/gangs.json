@@ -195,9 +195,10 @@
       "turf": [
         "SLAB",
         "GRAPES",
-        "SANDY"
+        "SANDY",
+        "EAST_V"
       ],
-      "turfHint": "Stab City, Sandy Shores and Grapeseed",
+      "turfHint": "Stab City, Sandy Shores, Grapeseed, and the clubhouse in East Vinewood",
       "joinRespect": 250,
       "paint": 1,
       "colourWord": "leather"

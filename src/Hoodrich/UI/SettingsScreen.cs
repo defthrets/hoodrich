@@ -505,6 +505,34 @@ namespace Hoodrich.UI
                   -180f, 180f, 5f, "0", " deg",
                   note: "Saved to the ini as you go. Change which one to put it in his hand; leaving takes it out");
 
+            // FOR BUILDING ROUND THINGS THE GAME ALREADY PUT THERE. A shrine on a pavement, a
+            // memorial on a wall: the game does not say what it called them, and the object
+            // list has twenty-one thousand names. Stand at the thing, press this, and the log
+            // has the hash and the distance of everything within four metres.
+            Head("Finding things");
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Name the props around me",
+                Note = "Writes the model of every prop within four metres to Hoodrich.log, with how far off it is",
+                Do = () =>
+                {
+                    var me = Game.Player.Character;
+                    if (me == null || !me.Exists()) return;
+
+                    var n = 0;
+                    foreach (var prop in World.GetNearbyProps(me.Position, 4f))
+                    {
+                        if (prop == null || !prop.Exists()) continue;
+                        n++;
+                        Log.Info("Prop near him: 0x" + ((uint)prop.Model.Hash).ToString("X8") +
+                                 "  " + prop.Position.DistanceTo(me.Position).ToString("0.0") + " m  at " + prop.Position);
+                    }
+
+                    Notify.Important(n + (n == 1 ? " prop" : " props") + " written to the log.");
+                }
+            });
+
             Head("Mask");
             Slide("Slot", "Mask", "Slot",
                   () => c.MaskSlot,
