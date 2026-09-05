@@ -2299,6 +2299,7 @@ namespace Hoodrich.Locations
                 if (p.Car.Position.DistanceTo(p.Slot) > CarArrivedRange) continue;
 
                 p.There = true;
+                Snap(p.Car, p.Slot, p.Face);
 
                 try
                 {
@@ -2308,19 +2309,10 @@ namespace Hoodrich.Locations
                                       p.Car.Handle, 1, 4000);
                     }
 
-                    // NOTHING TURNS THE CAR. IT STOPS HOW IT STOPPED.
-                    //
-                    // SET_ENTITY_HEADING is instant. On a car that has just rolled to a halt it
-                    // is a spin -- the whole vehicle snaps round its own centre in one frame,
-                    // which from the pavement is indistinguishable from teleporting, and it
-                    // happened to every single car as it arrived.
-                    //
-                    // It was there to point the ring at the middle, from when the kerbs were
-                    // generated and a car could stop facing anywhere. They are walked places on
-                    // real streets now: a car that has driven down that street to that kerb is
-                    // ALREADY pointing the way a car parked there points, because that is the
-                    // direction it came from. The snap corrected it to a number it had arrived
-                    // at anyway, and charged a spin for it.
+                    // SET ON ITS PLACE, ABOVE (see Snap). This used to let the car stop how
+                    // it stopped, to spare the spin of an instant heading -- and a car that
+                    // stops how it stops is a car a metre into the road, which is the one thing
+                    // the walked places exist to rule out.
                 }
                 catch
                 {
@@ -2427,13 +2419,14 @@ namespace Hoodrich.Locations
                 //
                 // A walked kerb is a kerbside place a car can sit and not always a place the
                 // road nodes will route to, so the game drives to the nearest bit of road it
-                // knows and stops a few metres short. That is still that kerb and the kerb
-                // moves to him.
+                // knows and stops a few metres short. That is still that kerb, and he is set
+                // on it (see Snap) -- the kerb used to move to him, which made wherever the
+                // game stopped him, in the road, his official place for the night.
                 var gap = p.Car.Position.DistanceTo(p.Slot);
 
                 if (gap <= SettleWithin && !Claimed(p.Car.Position, p))
                 {
-                    p.Slot = p.Car.Position;
+                    Snap(p.Car, p.Slot, p.Face);
                     p.There = true;
 
                     p.OutAt = now + SitAMomentMs;
@@ -3096,6 +3089,7 @@ namespace Hoodrich.Locations
 
                         r.AtStage = true;
                         r.Waited = now;
+                        Snap(r.Car, bay.At, bay.Face);
 
                         try
                         {
@@ -3106,10 +3100,9 @@ namespace Hoodrich.Locations
                             Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
                                           r.Car.Handle, 1, 4000);
 
-                            // No snap here either. He has just driven onto his marker, so
-                            // he is pointing the way he drove onto it -- and a performer
-                            // spinning on the spot in front of the crowd is the same wrong
-                            // thing the spectators were doing at their kerbs.
+                            // Set on the marker above, the way the spectators are set on
+                            // their kerbs: the markers are kerbs now, and a car "near" a kerb
+                            // is a car in the road.
                         }
                         catch
                         {
@@ -5759,6 +5752,33 @@ namespace Hoodrich.Locations
         /// One test per car rather than a route: the answer changes exactly once, when it has
         /// got round, which is what the re-task in Parking watches for.
         /// </summary>
+        /// <summary>
+        /// The car put exactly on its walked place, pointing exactly the way it was walked.
+        ///
+        /// THE PLACES ARE THE RULE. A driver stops short of a kerb, or a metre into the
+        /// road, or across a corner, and a ring of thirty cars stopping "near enough" is a
+        /// street with cars in it. The eighteen places were walked one screenshot at a time
+        /// and the instruction was nowhere else -- so a car that has got to within a few
+        /// metres of its place is set on it, still, the way a car parked there sits. The
+        /// snap is a shuffle of a metre or two on a car that has already stopped, which is
+        /// a smaller wrong thing than a car in the road all night.
+        /// </summary>
+        private static void Snap(Vehicle car, Vector3 at, float face)
+        {
+            if (car == null || !car.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_FORWARD_SPEED, car.Handle, 0f);
+                Function.Call(Hash.SET_ENTITY_COORDS, car.Handle, at.X, at.Y, at.Z, false, false, false, true);
+                Function.Call(Hash.SET_ENTITY_HEADING, car.Handle, face);
+                Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
+            }
+            catch
+            {
+            }
+        }
+
         private static Vector3 Toward(Vector3 from, Vector3 spot)
         {
             // A TARGET INSIDE THE ZONE HAS NOTHING TO ROUTE AROUND. The staging marks sit on
