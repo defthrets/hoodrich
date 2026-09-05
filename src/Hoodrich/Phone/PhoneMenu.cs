@@ -799,12 +799,8 @@ namespace Hoodrich.Phone
             Hud.RoundRect(mid - slitW * 0.5f, slitY, slitW, slitH, slitH * 0.5f,
                           Fade(Color.FromArgb(255, 30, 33, 35), fade), sprite: false, steps: 4);
 
-            var lensX = mid + slitW * 0.5f + Hud.ToX(0.011f);
-            var lensY = top + Bezel * 0.5f;
-
-            Hud.Disc(lensX, lensY, 0.0022f, Fade(Color.FromArgb(255, 24, 28, 32), fade));
-            Hud.Disc(lensX - Hud.ToX(0.0006f), lensY - 0.0006f, 0.0007f,
-                     Fade(Color.FromArgb(210, 120, 150, 170), fade));
+            // The camera is a punch-hole in the glass now -- see StatusBar -- so the bezel
+            // keeps only the speaker.
 
             // THE HOME BAR, in the bottom bezel.
             var barW = Hud.ToX(0.040f);
@@ -949,9 +945,29 @@ namespace Hoodrich.Phone
             var hh = Function.Call<int>(Hash.GET_CLOCK_HOURS);
             var mm = Function.Call<int>(Hash.GET_CLOCK_MINUTES);
 
+            // Beside the wordmark rather than in the middle, because the middle is where the
+            // camera is now. That is the layout every punch-hole handset has settled on: the
+            // clock at the left, the lens centred, the icons at the right.
+            var markW = Hud.ToX(0.0150f) * Hud.WordmarkAspect;
+
             Hud.Text(hh.ToString("00") + ":" + mm.ToString("00"),
-                     left + w * 0.5f, top + 0.006f, 0.26f,
-                     Fade(Palette.Text, fade), Hud.FontLabel, centre: true);
+                     left + pad + markW + Hud.ToX(0.008f), top + 0.006f, 0.26f,
+                     Fade(Palette.Text, fade), Hud.FontLabel, centre: false);
+
+            // ---- THE FRONT CAMERA, punched through the glass ----
+            //
+            // A ring the colour of the rim, a black lens inside it, and a point of light
+            // where the glass catches. It began life as an accident -- sprite corners drew a
+            // whole circle at each corner of the handset -- and the circle looked so much like
+            // a punch-hole camera that it was asked for on purpose, smaller, where a camera
+            // goes. The pinhole that used to sit in the top bezel is gone; a phone has one.
+            var camX = left + w * 0.5f;
+            var camY = mid;
+
+            Hud.Disc(camX, camY, CamRadius, Fade(Color.FromArgb(255, 72, 76, 78), fade), 2);
+            Hud.Disc(camX, camY, CamRadius - CamRing, Fade(Color.FromArgb(255, 6, 7, 9), fade), 2);
+            Hud.Disc(camX - Hud.ToX(CamRadius * 0.28f), camY - CamRadius * 0.28f, CamRadius * 0.22f,
+                     Fade(Color.FromArgb(200, 120, 150, 170), fade), 1);
 
             var right = left + w - Hud.ToX(StatusPadRight);
 
@@ -976,6 +992,10 @@ namespace Hoodrich.Phone
             Hud.RectFrom(left + ruleIn, top + StatusH - 0.0014f, w - ruleIn * 2f, 0.0014f,
                          Fade(GreenDim, fade));
         }
+
+        /// <summary>The punch-hole camera: its radius and the width of the rim-coloured ring round it.</summary>
+        private const float CamRadius = 0.0068f;
+        private const float CamRing = 0.0012f;
 
         /// <summary>How far in from the right edge the status icons end: the same as the left pad.</summary>
         private const float StatusPadRight = 0.012f;
