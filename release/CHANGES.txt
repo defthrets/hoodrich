@@ -151,6 +151,20 @@ save and come back with the gun.
 
 THE TWO ROOMS
 
+The grow room stopped opening and the reason was not the coordinate. An
+interior IPL is named for the PLACEMENT rather than for the room: the archetype
+is bkr_biker_dlc_int_ware02 and asking the game for that does nothing at all
+while looking exactly like asking for the right thing. It appeared to work for
+months because another mod on the machine was loading those interiors anyway;
+the day that stopped, so did the door.
+
+The correct name went into the code's default, which is the one thing an
+existing Hoodrich.ini overrides -- so nothing changed for anybody who already
+had one. A door now carries IPL names the ini cannot take away: yours are added
+to, never replaced, and every name asked for is written to the log so that
+"the room is not there" and "the name is wrong" stop being the same sentence.
+
+
 The grow room and the pill press garage are no longer gated on having joined
 the set. They were, and it meant standing at Lamar's roller door with nothing
 happening and no way to find out why -- a prompt that does not appear leaves

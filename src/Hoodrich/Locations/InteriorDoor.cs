@@ -21,6 +21,19 @@ namespace Hoodrich.Locations
         public string Section = "";
         public string Name = "room";
         public string Ipl = "";
+
+        /// <summary>
+        /// IPL names the mod asks for whatever the ini says, semicolons between them.
+        ///
+        /// THE INI MAY ADD, IT MAY NOT TAKE AWAY. Ipl above is the player's, and an ini written
+        /// before a name was corrected keeps the old one for ever -- which is exactly what
+        /// happened here: the grow room's ini carried the ARCHETYPE name, the correction went
+        /// into the code's default, and the default is the one thing an existing ini overrides.
+        /// The room went on not loading and the file looked untouched.
+        ///
+        /// Asking for a name the game does not have costs nothing, so both are always asked.
+        /// </summary>
+        public string Extra = "";
         public bool Blip = true;
         public BlipSprite Sprite = BlipSprite.Standard;
 
@@ -317,10 +330,16 @@ namespace Hoodrich.Locations
                 // an index in the middle -- and asking for the archetype does nothing at all
                 // while looking exactly like asking for the right thing. Semicolons in the ini
                 // separate them; asking for a name the game does not have costs nothing.
-                foreach (var name in _spec.Ipl.Split(';'))
+                foreach (var name in (_spec.Ipl + ";" + _spec.Extra).Split(';'))
                 {
                     var one = name.Trim();
-                    if (one.Length > 0) Function.Call(Hash.REQUEST_IPL, one);
+                    if (one.Length == 0) continue;
+
+                    Function.Call(Hash.REQUEST_IPL, one);
+
+                    // Said out loud, because "the room is not there" and "the name is wrong"
+                    // are the same sentence from the pavement and different jobs to fix.
+                    Log.Info("Asked for ipl '" + one + "' for the " + _spec.Name + ".");
                 }
 
                 var to = Somewhere();
