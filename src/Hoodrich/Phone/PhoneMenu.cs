@@ -1896,10 +1896,16 @@ namespace Hoodrich.Phone
 
             // A badge when the tile has something to say -- a count, a price, a "3 waiting".
             // The wheel put this in its hub; a grid has no hub, so it goes with the name.
-            if (!string.IsNullOrEmpty(item.Value) && item.Value.Length <= 12)
+            //
+            // A LONGER ONE GOES SMALLER RATHER THAN MISSING. The cut-off was twelve characters,
+            // which is why Knowai's caption never showed; a line of three words fits the tile
+            // at a slightly smaller size, and Fit still trims anything that will not.
+            if (!string.IsNullOrEmpty(item.Value) && item.Value.Length <= 18)
             {
-                Hud.Text(Hud.Fit(item.Value, w * 0.94f, 0.21f, Hud.FontLabel),
-                         x + w * 0.5f, badged, 0.21f,
+                var badge = item.Value.Length > 12 ? 0.185f : 0.21f;
+
+                Hud.Text(Hud.Fit(item.Value, w * 0.94f, badge, Hud.FontLabel),
+                         x + w * 0.5f, badged, badge,
                          Fade(on ? Green : Palette.TextDim, fade),
                          Hud.FontLabel, centre: true);
             }

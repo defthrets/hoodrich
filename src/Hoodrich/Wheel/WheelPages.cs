@@ -1412,7 +1412,7 @@ namespace Hoodrich.Wheel
                 // menu rather than the app -- and it stopped being true the moment the flow
                 // changed to hailing a car first and choosing where from the back seat. The
                 // number was also the least interesting thing about it.
-                default: return "tap to call one";
+                default: return "self driving taxi";
             }
         }
 
