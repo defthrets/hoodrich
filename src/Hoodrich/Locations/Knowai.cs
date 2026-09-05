@@ -192,7 +192,62 @@ namespace Hoodrich.Locations
                            At = new Vector3(-103.338f, -1417.405f, 29.170f) },
 
             new RideStop { Name = "Cypress Flats", Area = "East side",
-                           At = new Vector3(500.6f, -1697.562f, 29.789f) }
+                           At = new Vector3(500.6f, -1697.562f, 29.789f) },
+
+            // ---- AND THE REST OF THE MAP ----
+            //
+            // The hood first, because that is where most rides start and end, then the city,
+            // the water, the hills and the county, in that order -- which is roughly the order
+            // of how far they are and how much they cost, so the list reads as a meter climbing.
+            //
+            // Every point is near the place rather than on a doorstep; OnRoad snaps it to the
+            // nearest street when the fare is quoted and when the car pulls away, so a point
+            // on a pier or a lawn still drops you at the kerb beside it.
+
+            new RideStop { Name = "Legion Square", Area = "Downtown",
+                           At = new Vector3(195.2f, -934.0f, 30.7f) },
+
+            new RideStop { Name = "The Vanilla Unicorn", Area = "Strawberry, under the freeway",
+                           At = new Vector3(129.5f, -1299.0f, 29.2f) },
+
+            new RideStop { Name = "Grove Street", Area = "Davis. Ballas turf",
+                           At = new Vector3(108.6f, -1963.9f, 20.9f) },
+
+            new RideStop { Name = "The hospital", Area = "Central Los Santos Medical",
+                           At = new Vector3(293.6f, -1448.0f, 29.9f) },
+
+            new RideStop { Name = "Mission Row station", Area = "The police station, Downtown",
+                           At = new Vector3(428.9f, -984.2f, 30.7f) },
+
+            new RideStop { Name = "Los Santos Customs", Area = "Burton",
+                           At = new Vector3(-365.4f, -131.7f, 37.9f) },
+
+            new RideStop { Name = "The airport", Area = "Los Santos International",
+                           At = new Vector3(-1034.6f, -2733.6f, 13.8f) },
+
+            new RideStop { Name = "Vespucci Beach", Area = "The boardwalk, Muscle Sands",
+                           At = new Vector3(-1213.0f, -1520.0f, 4.4f) },
+
+            new RideStop { Name = "Del Perro Pier", Area = "The west side, by the water",
+                           At = new Vector3(-1850.1f, -1231.8f, 13.0f) },
+
+            new RideStop { Name = "Vinewood Boulevard", Area = "The theatre, Vinewood",
+                           At = new Vector3(293.1f, 180.5f, 104.4f) },
+
+            new RideStop { Name = "The casino", Area = "Vinewood racetrack, east side",
+                           At = new Vector3(924.9f, 47.3f, 81.1f) },
+
+            new RideStop { Name = "The hills house", Area = "Whispymound Drive, Vinewood Hills",
+                           At = new Vector3(7.3f, 536.6f, 176.0f) },
+
+            new RideStop { Name = "The observatory", Area = "Galileo Park, up the hill",
+                           At = new Vector3(-438.8f, 1076.1f, 352.4f) },
+
+            new RideStop { Name = "Sandy Shores", Area = "Blaine County. A long way",
+                           At = new Vector3(1972.5f, 3817.0f, 33.4f) },
+
+            new RideStop { Name = "Paleto Bay", Area = "The top of the map. A very long way",
+                           At = new Vector3(-104.6f, 6470.4f, 31.6f) }
         };
 
         // ---- wiring -------------------------------------------------------------

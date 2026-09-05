@@ -184,11 +184,37 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
-        /// The lit plate under a chosen thing: gold at the top running to ember at the bottom,
-        /// in bands. Strength is how lit it is, nought to one, which is what lets a plate come
-        /// up as the cursor arrives and go down as it leaves instead of snapping either way.
+        /// The lit plate under a chosen thing: a dark green-grey slab a shade up from the
+        /// panel, with the brand green on a rail down its left edge. Strength is how lit it
+        /// is, nought to one, which is what lets a plate come up as the cursor arrives and go
+        /// down as it leaves instead of snapping either way.
+        ///
+        /// IT USED TO BE THE BRAND COLOUR ITSELF, top to bottom in bands. That worked in gold,
+        /// which reads as an accent at any size, and did not survive the move to green, which
+        /// at the same size reads as a tint: a row of white words on a slab of bright green
+        /// was the worst-looking thing on the messages screen. The green is on the rail now,
+        /// where the cursor's colour belongs, and the words stay white on something dark. Two
+        /// rectangles where there were six, which the phone's budget notices.
         /// </summary>
         public static void Plate(float x, float y, float w, float h, float strength)
+        {
+            if (strength <= 0.01f || w <= 0f || h <= 0f) return;
+
+            Hud.RectFrom(x, y, w, h, Palette.Alpha(PlateBack, (int)(235f * strength)));
+
+            var rail = Math.Min(Hud.ToX(RailW), w);
+            Hud.RectFrom(x, y, rail, h, Palette.Alpha(Palette.Brand, (int)(255f * strength)));
+        }
+
+        private static readonly Color PlateBack = Color.FromArgb(255, 30, 48, 36);
+        private const float RailW = 0.0045f;
+
+        /// <summary>
+        /// The brand colour as a fill, gold-to-ember as was and green-to-deep-green now, in
+        /// bands: for a bar that is a measure of something rather than a cursor. The plate
+        /// under a chosen row used to be this, and is not any more -- see Plate.
+        /// </summary>
+        public static void Fill(float x, float y, float w, float h, float strength)
         {
             if (strength <= 0.01f || w <= 0f || h <= 0f) return;
 
@@ -238,7 +264,9 @@ namespace Hoodrich.UI
         {
             if (lit <= 0f) return ordinary;
 
-            return Lerp(ordinary, Color.FromArgb(ordinary.A, Dark.R, Dark.G, Dark.B), lit);
+            // Brighter, not darker. This went to near-black when the plate was bright; the
+            // plate is dark now, so the chosen word goes to full white instead.
+            return Lerp(ordinary, Color.FromArgb(ordinary.A, 255, 255, 255), lit);
         }
 
         /// <summary>

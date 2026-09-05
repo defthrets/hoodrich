@@ -693,7 +693,7 @@ namespace Hoodrich.UI
 
                 var ink = tooStrong
                     ? Palette.Alpha(Palette.TextDisabled, 120)
-                    : on ? Palette.TextOnHover : Palette.TextDim;
+                    : on ? Palette.Text : Palette.TextDim;
 
                 // Under the floor it is drawn in the danger colour whether the cursor is on it
                 // or not: "nobody will buy this" is a fact about the step, not about what you

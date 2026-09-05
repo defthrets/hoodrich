@@ -439,10 +439,9 @@ namespace Hoodrich.Economy
             UI.Draw.Rect(cx, cy, w + 0.004f, h + 0.004f, Color.FromArgb(190, 8, 8, 10));
             UI.Draw.Rect(cx, cy, w, h, Color.FromArgb(160, 30, 32, 34));
 
-            // Grow from the left edge rather than the centre, in the same gold-to-ember the
-            // chosen thing on every panel is lit with.
+            // Grow from the left edge rather than the centre, in the brand fill.
             var filled = w * fraction;
-            UI.Theme.Plate(cx - w * 0.5f, cy - h * 0.5f, filled, h, 1f);
+            UI.Theme.Fill(cx - w * 0.5f, cy - h * 0.5f, filled, h, 1f);
         }
     }
 }
