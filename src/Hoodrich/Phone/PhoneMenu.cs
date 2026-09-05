@@ -125,6 +125,10 @@ namespace Hoodrich.Phone
         /// <summary>How long a tile takes to pop when the cursor lands on it.</summary>
         private const int PopMs = 150;
 
+        /// <summary>The plate under an app icon: its height (width follows the aspect) and its corners.</summary>
+        private const float PlateSize = 0.060f;
+        private const float PlateRound = 0.011f;
+
         /// <summary>
         /// The tiles are SQUARE, and everything below is what replaced the rounding.
         ///
@@ -1790,6 +1794,43 @@ namespace Hoodrich.Phone
             // columns is followed rather than re-found.
             if (on) _glide.Target(x + Hud.ToX(0.004f), y + 0.004f, w - Hud.ToX(0.008f), h - 0.008f);
 
+            // ---- A PLATE UNDER THE ICON, WHICH IS WHAT A PHONE HAS ----
+            //
+            // The box that was taken off these tiles was a near-black rectangle round the
+            // WHOLE tile -- icon, badge and name -- at alpha 200 on a near-black glass. Nobody
+            // could see it, so it was doing nothing, so it went, and the note above is right
+            // about all of that. This is not that box. It is a rounded plate behind the icon
+            // alone, a shade LIGHTER than the glass, which is the one arrangement every phone
+            // anybody owns has settled on: the picture sits on a tile, the name sits under it
+            // on the glass.
+            //
+            // Lighter rather than darker, so it exists. Quiet tiles get a faint one; the tile
+            // under the cursor gets one in the set's green, which is the plate doing the job
+            // the icon's colour was doing alone -- and the icon is now white on green rather
+            // than green on black, which reads at twice the distance.
+            //
+            // Ten steps a corner. The old argument against rounding was made about a plate
+            // the size of the tile with square bites in its corners; this is a third the size,
+            // and at this radius ten is round.
+            var plateH = PlateSize;
+            var plateW = Hud.ToX(PlateSize);
+            var plateX = x + (w - plateW) * 0.5f;
+            var plateY = y + h * 0.31f - plateH * 0.5f;
+
+            var plate = !item.Enabled
+                ? Color.FromArgb(14, 255, 255, 255)
+                : on ? Lerp(GreenDim, Green, 0.35f)
+                     : Color.FromArgb(26, 255, 255, 255);
+
+            Hud.RoundRect(plateX, plateY, plateW, plateH, PlateRound, Fade(plate, fade),
+                          sprite: false, steps: 10);
+
+            // A catch of light along the top of the plate, so it is a tile and not a stain.
+            var lipX = Hud.ToX(PlateRound);
+
+            Hud.RectFrom(plateX + lipX, plateY, plateW - lipX * 2f, 0.0010f,
+                         Fade(Color.FromArgb(on ? 70 : 34, 255, 255, 255), fade));
+
             // White on the live one as well as the quiet ones. See Lit.
             var ink = !item.Enabled ? Palette.TextDisabled : Palette.Text;
 
@@ -1825,11 +1866,10 @@ namespace Hoodrich.Phone
                 sway = (a + b * 0.35f) * JiggleDegrees * kick;
             }
 
-            // GREEN ON THE ONE YOU ARE ON. With the box gone this is what says which app the
-            // cursor is holding, so it is the icon that changes colour and not the name -- the
-            // name is the thing you are trying to read, and green text on black is harder work
-            // than white.
-            var art = on ? Green : ink;
+            // WHITE ON THE GREEN PLATE, GREEN ON NOTHING. The plate says which app the cursor
+            // is holding now, so the icon on it goes to near-white for contrast; the name
+            // stays white on the glass because the name is the thing you are reading.
+            var art = on ? Color.FromArgb(255, 244, 252, 244) : ink;
 
             // AND A PUNCH WHEN IT IS CHOSEN, which is a different event from being hovered and
             // wants a different animation. The sway says "this is the one you are on"; the
@@ -2084,8 +2124,15 @@ namespace Hoodrich.Phone
             Hud.RectFrom(left, top, w, FooterH, Fade(Color.FromArgb(220, 16, 18, 20), fade));
             Hud.RectFrom(left, top, w, 0.0014f, Fade(Color.FromArgb(46, 255, 255, 255), fade));
 
-            var hint = AtHome ? "ARROWS  MOVE      ENTER  OPEN      BACKSPACE  PUT IT AWAY"
-                              : "ARROWS  MOVE      ENTER  PICK      BACKSPACE  BACK";
+            // Named for what is actually in his hand. Every other screen in the mod does
+            // this; the phone was the one still telling a pad player to press Enter.
+            var pad = Hud.OnPad;
+
+            var hint = AtHome
+                ? (pad ? "D-PAD  MOVE      A  OPEN      B  PUT IT AWAY"
+                       : "ARROWS  MOVE      ENTER  OPEN      BACKSPACE  PUT IT AWAY")
+                : (pad ? "D-PAD  MOVE      A  PICK      B  BACK"
+                       : "ARROWS  MOVE      ENTER  PICK      BACKSPACE  BACK");
 
             Hud.Text(Hud.Fit(hint, w * 0.96f, 0.20f, Hud.FontLabel),
                      left + w * 0.5f, top + 0.012f, 0.20f,

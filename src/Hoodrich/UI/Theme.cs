@@ -78,7 +78,7 @@ namespace Hoodrich.UI
             const int bands = 7;
             var bandH = height / bands;
 
-            var inset = Hud.ToX(Hud.PanelRound);
+            var r = Hud.PanelRound;
 
             for (var i = 0; i < bands; i++)
             {
@@ -86,10 +86,34 @@ namespace Hoodrich.UI
                 if (a <= 0) continue;
 
                 var bandTop = top + i * bandH;
-                var inCorner = bandTop < top + Hud.PanelRound;
 
-                Hud.RectFrom(left + (inCorner ? inset : 0f), bandTop,
-                             width - (inCorner ? inset * 2f : 0f), bandH,
+                // ---- THE SQUARES IN THE TOP CORNERS ----
+                //
+                // Every band level with the corner used to be pulled in by the WHOLE radius,
+                // as if the corner were a square bite out of the panel. It is a quarter
+                // circle, and a quarter circle only takes the full radius off the very top
+                // row -- by the third band down it has nearly reached the panel's edge. So
+                // three bands were being cut short by 0.018 of screen when the arc wanted a
+                // fraction of that, and what was left in each corner was a rectangle of bare
+                // body inside the curve with no wash on it: a lighter square, top left and
+                // top right, on every panel in the mod. Reported as exactly that.
+                //
+                // The inset follows the arc now. For a band whose top edge sits d above the
+                // corner's centre line, the circle has come in by r - sqrt(r^2 - d^2), and
+                // that is what the band gives up. Measured at the band's TOP edge, because
+                // that is the widest the arc is anywhere in the band, so nothing leaks past
+                // the curve either.
+                var inset = 0f;
+
+                var d = r - (bandTop - top);
+
+                if (d > 0f)
+                {
+                    var reach = d >= r ? 0f : (float)Math.Sqrt(r * r - d * d);
+                    inset = Hud.ToX(r - reach);
+                }
+
+                Hud.RectFrom(left + inset, bandTop, width - inset * 2f, bandH,
                              Palette.Alpha(Palette.BrandDeep, a));
             }
         }

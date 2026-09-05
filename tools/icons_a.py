@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 #
 # Group A: the interface, the money, the places and the people. See iconkit for the rules.
 #
@@ -246,17 +246,30 @@ def rank():
 
 
 def people():
+    """
+    A contact card: a head and shoulders on the left of a rounded card, two lines of
+    detail on the right.
+
+    IT WAS THREE HEADS IN A ROW, and three heads in a row is a crowd -- which is the Gangs
+    app, or the block, or anyone. What a contacts app opens is a CARD for one person, and
+    that is the glyph every phone uses for it: a silhouette beside some writing. At sixty
+    pixels the card edge, the head and two bars are all that survive, and they are enough.
+
+    The details are punched out of the card rather than drawn on it, like the skull's eye
+    sockets, so whatever colour the icon is tinted shows through them.
+    """
     img, d = canvas()
 
-    for cx in (108, 404):
-        disc(d, cx, 196, 50, MID)
-        rrect(d, cx - 84, 262, cx + 84, 420, 70, MID)
+    # The card.
+    rrect(d, 40, 112, 472, 400, 46)
 
-    disc(d, 256, 154, 68)
-    rrect(d, 146, 240, 366, 420, 90)
+    # The person, punched out of it: head and shoulders.
+    disc(d, 158, 212, 44, CLEAR)
+    rrect(d, 96, 262, 220, 348, 40, CLEAR)
 
-    # The collar of the middle one, so he is a person rather than a peg.
-    poly(d, [(256, 246), (222, 296), (290, 296)], MID)
+    # And two lines beside them, the longer one on top the way a name sits over a number.
+    rrect(d, 262, 196, 424, 232, 18, CLEAR)
+    rrect(d, 262, 262, 372, 298, 18, CLEAR)
 
     save(img, "people.png")
 
