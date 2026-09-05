@@ -1,49 +1,56 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Drawing;
-using Control = GTA.Control;
 using GTA;
 using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.Locations;
 using Hoodrich.State;
+using Hoodrich.Weapons;
+using Control = GTA.Control;
 using Hud = Hoodrich.UI.Draw;
 
 namespace Hoodrich.UI
 {
     /// <summary>
-    /// The armourer's rack.
+    /// Stretch's counter: what he has, by rack, with the one you are looking at laid out on
+    /// the right -- its picture, what it is for, rounds by the box, and everything that bolts
+    /// to it.
     ///
-    /// He used to sell through the dialogue panel, which is the right shape for a person and
-    /// the wrong shape for a stock list: every rack was its own page, the rows were plain text
-    /// with the price bolted on the end, and rounds came in one fixed lot you bought over and
-    /// over. It read as a conversation you were having with a spreadsheet.
+    /// TWO COLUMNS, TWO CURSORS. The left is the stock, the right is the gun in your hand,
+    /// and R (X on a pad) steps the cursor across to the parts shelf and back. Everything on
+    /// the right is about the gun the left is pointing at, so a rack change or a step down
+    /// the list rewrites the right side entirely.
     ///
-    /// This is a screen, laid out the way the rest of the mod lays out screens: his name in the
-    /// house script, the racks along the top so all five are visible at once, the guns as rows
-    /// with their own art, and the rounds for whatever is under the cursor in their own block
-    /// underneath with an amount you choose.
-    ///
-    /// The conversation is still how you START it -- you walk up to a man and he says something.
-    /// This is what he shows you once you have asked.
+    /// THE PICTURES ARE THE GAME'S OWN, found rather than named. Every gun's icon is a
+    /// texture called what weapons.json calls it -- w_pi_pistol, w_me_dagger -- inside one
+    /// of a couple of dozen mpweapons dictionaries that arrived one an update, and nothing
+    /// says which. So each icon is looked for in all of them as they stream in, and the
+    /// dictionary that has it is remembered for the rest of the session. The old code asked
+    /// for a dictionary named after the weapon, which does not exist, which is why the shop
+    /// had been a list of plain names for as long as it had existed.
     /// </summary>
     internal sealed class GunScreen
     {
-        private const float PanelWidthH = 0.62f;
+        private const float PanelWidthH = 0.74f;
         private const float RowHeight = 0.030f;
+        private const float PartRow = 0.028f;
         private const float PadH = 0.024f;
-
         private const int OpenGraceMs = 220;
+        private const int EnterMs = 170;
+        private const float EnterRise = 0.014f;
+        private const float IconW = 0.052f;
+        private const float IconH = 0.026f;
+        private const float BigW = 0.150f;
+        private const float BigH = 0.075f;
+        private const int PartsShown = 6;
 
-        /// <summary>Rounds are bought in lots, so a full load is one decision and not eight.</summary>
+        /// <summary>How many boxes of rounds at a time.</summary>
         private static readonly int[] Lots = { 1, 2, 5, 10 };
 
         private sealed class Rack
         {
             public readonly string Name;
             public readonly Piece[] Stock;
-
-            /// <summary>Blip sprite for the kind, so a rack is told apart before it is read.</summary>
             public readonly int Sprite;
 
             public Rack(string name, Piece[] stock, int sprite)
@@ -64,32 +71,52 @@ namespace Hoodrich.UI
         };
 
         private readonly PlayerState _state;
+        private readonly Curtain _curtain = new Curtain();
+        private readonly Glide _glide = new Glide();
 
         private int _rack;
         private int _row;
         private int _lot;
+        private int _lastRow = -1;
+        private int _pickedAt;
         private int _openedAt;
+        private int _shownAt;
+        private float _tabAt;
+        private float _tabWide;
+        private const float TabRate = 0.28f;
+
+        /// <summary>Which column the cursor is in: the stock, or the parts shelf for the chosen gun.</summary>
+        private bool _onParts;
+        private int _part;
+        private int _lastPart = -1;
+        private int _partTop;
+        private List<Parts.Part> _parts = new List<Parts.Part>();
+        private Piece _partsFor;
+
+        /// <summary>Parts paid for this session, "WEAPON|COMPONENT", so taking one off and putting it back is free.</summary>
+        private readonly HashSet<string> _paid = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public GunScreen(PlayerState state)
         {
             _state = state;
         }
 
-        /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
-        private readonly Curtain _curtain = new Curtain();
-
         public bool IsOpen => _curtain.Showing;
 
-        /// <summary>Set by Main: what he says when money changes hands.</summary>
+        /// <summary>Set by Main: a piece, or rounds for one, just changed hands.</summary>
         public Action<Piece, bool> OnBought;
+
+        public Weapons.GunLocker Locker;
+
+        /// <summary>Set by Main: the registry, for the icon each piece wears.</summary>
+        public WeaponRegistry Guns;
+
+        // ---- open and close ---------------------------------------------------------
 
         public void Open()
         {
             _curtain.Open();
             _shownAt = Game.GameTime;
-
-            // Snapped on open. An underline travelling in from wherever it was last time is
-            // an underline arriving from another screen; same for the row frame.
             _glide.Reset();
             _lastRow = -1;
             _pickedAt = Game.GameTime;
@@ -99,16 +126,17 @@ namespace Hoodrich.UI
             _rack = 0;
             _row = 0;
             _lot = 0;
-
+            _onParts = false;
+            _part = 0;
+            _partTop = 0;
+            _partsFor = null;
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
         public void Close()
         {
-            // The button that got you out of here does not also swing at somebody.
-            if (IsOpen) Core.InputGuard.Swallow();
             if (!IsOpen) return;
-
+            InputGuard.Swallow();
             _curtain.Close();
             Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -124,7 +152,7 @@ namespace Hoodrich.UI
             }
         }
 
-        // ---- input -------------------------------------------------------------
+        // ---- input --------------------------------------------------------------
 
         public void Update()
         {
@@ -132,29 +160,26 @@ namespace Hoodrich.UI
 
             LockControls();
 
-            // On its way out it still draws and still holds the controls, but it has stopped
-            // listening -- otherwise the panel you just closed spends its last tenth of a
-            // second acting on whatever you press next.
             if (!_curtain.Taking) return;
-
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
-            if (Pressed(Control.PhoneCancel)) { Close(); return; }
+            Shelve();
 
-            if (Pressed(Control.PhoneUp)) Move(-1);
-            else if (Pressed(Control.PhoneDown)) Move(1);
-            else if (Pressed(Control.PhoneLeft)) Lot(-1);
-            else if (Pressed(Control.PhoneRight)) Lot(1);
-            // The shoulders, in the direction they point.
-            //
-            // Cover is RB on a pad, and it was the one moving the strip LEFT -- so the right
-            // shoulder went backwards through the racks, which is the sort of thing you never
-            // stop noticing. The frontend pair is named for what it is and maps to the shoulder
-            // buttons on a pad without borrowing a control that means something else, and Space
-            // is kept as the keyboard version because the key line already says so.
+            if (Pressed(Control.PhoneCancel))
+            {
+                if (_onParts) { Across(); return; }
+                Close();
+                return;
+            }
+
+            if (Pressed(Control.PhoneUp)) { if (_onParts) PartMove(-1); else Move(-1); }
+            else if (Pressed(Control.PhoneDown)) { if (_onParts) PartMove(1); else Move(1); }
+            else if (Pressed(Control.PhoneLeft)) { if (_onParts) Across(); else Lot(-1); }
+            else if (Pressed(Control.PhoneRight)) { if (!_onParts) Lot(1); }
             else if (Pressed(Control.FrontendRb) || Pressed(Control.Jump)) Shelf(1);
             else if (Pressed(Control.FrontendLb) || Pressed(Control.Cover)) Shelf(-1);
-            else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) Buy();
+            else if (Pressed(Control.Reload)) Across();
+            else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) { if (_onParts) BuyPart(); else Buy(); }
         }
 
         private static bool Pressed(Control control)
@@ -162,34 +187,32 @@ namespace Hoodrich.UI
             return Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0, (int)control);
         }
 
-        /// <summary>
-        /// Holds the controls the same way every other full screen in the mod does, so reading
-        /// a price cannot also fire a gun or walk you into the road.
-        /// </summary>
         private static void LockControls()
         {
             Function.Call(Hash.DISABLE_ALL_CONTROL_ACTIONS, 0);
 
-            // The ones the screen itself needs back.
             foreach (var control in new[]
                      {
                          Control.PhoneUp, Control.PhoneDown, Control.PhoneLeft, Control.PhoneRight,
-                         // Jump, Cover and Context are DELIBERATELY NOT HERE any more.
-                         //
-                         // Pressed() reads IS_DISABLED_CONTROL_JUST_PRESSED, which answers
-                         // whether or not the control is enabled -- so handing these three back
-                         // to the game bought nothing and cost plenty: the footer says
-                         // "SPACE  RACK", and pressing space changed the rack AND jumped
-                         // Franklin on the spot. Q browsed the shelf and put him into cover.
-                         //
-                         // The look axes stay, because the camera should still move.
-                         Control.PhoneSelect, Control.PhoneCancel,
-                         Control.LookLeftRight, Control.LookUpDown,
-                         Control.FrontendLb, Control.FrontendRb
+                         Control.PhoneSelect, Control.PhoneCancel, Control.FrontendRb, Control.FrontendLb,
+                         Control.LookLeftRight, Control.LookUpDown
                      })
             {
                 Function.Call(Hash.ENABLE_CONTROL_ACTION, 0, (int)control, true);
             }
+        }
+
+        /// <summary>The parts shelf follows the chosen gun; asked again only when the gun changes.</summary>
+        private void Shelve()
+        {
+            var piece = Chosen;
+            if (piece == _partsFor) return;
+
+            _partsFor = piece;
+            _parts = piece == null ? new List<Parts.Part>() : Parts.For(piece.Weapon);
+            _part = 0;
+            _lastPart = -1;
+            _partTop = 0;
         }
 
         private void Move(int step)
@@ -198,9 +221,7 @@ namespace Hoodrich.UI
             if (count == 0) return;
 
             var before = _row;
-
-            _row = (_row + step) % count;
-            if (_row < 0) _row += count;
+            _row = (_row + step + count) % count;
 
             if (_row != before)
             {
@@ -208,25 +229,18 @@ namespace Hoodrich.UI
                 _pickedAt = Game.GameTime;
             }
 
-            // A gun with no magazine has no lots to step through, so the amount is put back to
-            // the first rather than left pointing at an option the block below does not draw.
             _lot = 0;
-
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
         private void Shelf(int step)
         {
-            _rack = (_rack + step) % Racks.Length;
-            if (_rack < 0) _rack += Racks.Length;
-
-            // A new rack is a new list: the plate comes up under its first row with nothing
-            // going down, and the frame glides over from wherever it was.
+            _rack = (_rack + step + Racks.Length) % Racks.Length;
             _row = 0;
             _lastRow = -1;
             _pickedAt = Game.GameTime;
             _lot = 0;
-
+            _onParts = false;
             Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
@@ -235,15 +249,46 @@ namespace Hoodrich.UI
             var piece = Chosen;
             if (piece == null || piece.AmmoBox <= 0) return;
 
-            _lot = (_lot + step) % Lots.Length;
-            if (_lot < 0) _lot += Lots.Length;
-
+            _lot = (_lot + step + Lots.Length) % Lots.Length;
             Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
-        // ---- what things cost --------------------------------------------------
+        /// <summary>Across to the parts shelf and back. The shelf only takes the cursor when there is something on it.</summary>
+        private void Across()
+        {
+            if (!_onParts)
+            {
+                var piece = Chosen;
+                if (piece == null || _parts.Count == 0) { Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET"); return; }
+                if (!Owns(piece))
+                {
+                    Notify.Problem("buy the gun first.");
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    return;
+                }
+            }
 
-        /// <summary>Rounds cost a fifth of what the gun did, rounded to something tidy.</summary>
+            _onParts = !_onParts;
+            _pickedAt = Game.GameTime;
+            Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        private void PartMove(int step)
+        {
+            if (_parts.Count == 0) return;
+
+            _lastPart = _part;
+            _part = (_part + step + _parts.Count) % _parts.Count;
+
+            if (_part < _partTop) _partTop = _part;
+            if (_part >= _partTop + PartsShown) _partTop = _part - PartsShown + 1;
+
+            _pickedAt = Game.GameTime;
+            Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        // ---- money --------------------------------------------------------------
+
         public static int AmmoPrice(Piece piece)
         {
             return Math.Max(40, (int)Math.Round(piece.Price * 0.2f / 10f) * 10);
@@ -255,8 +300,7 @@ namespace Hoodrich.UI
         {
             try
             {
-                return Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON,
-                                          Game.Player.Character.Handle, piece.Hash);
+                return Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, Game.Player.Character.Handle, piece.Hash);
             }
             catch
             {
@@ -268,19 +312,13 @@ namespace Hoodrich.UI
         {
             try
             {
-                return Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON,
-                                           Game.Player.Character.Handle, piece.Hash, false);
+                return Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, Game.Player.Character.Handle, piece.Hash, false);
             }
             catch
             {
                 return false;
             }
         }
-
-        // ---- buying ------------------------------------------------------------
-
-        /// <summary>Set by Main. Without it a gun is only as permanent as the game feels.</summary>
-        public Weapons.GunLocker Locker;
 
         private void Buy()
         {
@@ -292,7 +330,6 @@ namespace Hoodrich.UI
 
             var owned = Owns(piece);
             var rounds = owned && piece.AmmoBox > 0;
-
             var cost = rounds ? AmmoPrice(piece) * LotsNow : piece.Price;
 
             if (Game.Player.Money < cost)
@@ -302,8 +339,6 @@ namespace Hoodrich.UI
                 return;
             }
 
-            // A melee piece you already own is nothing to sell you twice. Rounds are the only
-            // repeat purchase, and a knife has none.
             if (owned && !rounds)
             {
                 Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -317,24 +352,12 @@ namespace Hoodrich.UI
             {
                 if (rounds)
                 {
-                    Function.Call(Hash.ADD_AMMO_TO_PED, player.Handle, piece.Hash,
-                                  piece.AmmoBox * LotsNow);
+                    Function.Call(Hash.ADD_AMMO_TO_PED, player.Handle, piece.Hash, piece.AmmoBox * LotsNow);
                 }
                 else
                 {
-                    Function.Call(Hash.GIVE_WEAPON_TO_PED, player.Handle, piece.Hash,
-                                  piece.StarterAmmo, false, false);
-
-                    // It comes with the big mag in it.
-                    //
-                    // He is not a gun counter with an accessories aisle -- he is a man in a
-                    // yard handing you something that works, and a piece you have to reload
-                    // every six rounds is not something that works. Anything the game has no
-                    // extended magazine for (the Double Action, the sawn-offs, everything
-                    // melee) is a no-op rather than a failure.
-                    fitted = Weapons.ExtendedClips.GiveTo(player, piece.Weapon);
-
-                    // Written down, so it is still his after a load. See GunLocker.
+                    Function.Call(Hash.GIVE_WEAPON_TO_PED, player.Handle, piece.Hash, piece.StarterAmmo, false, false);
+                    fitted = ExtendedClips.GiveTo(player, piece.Weapon);
                     if (Locker != null) Locker.Bought(piece.Weapon);
                 }
 
@@ -345,9 +368,7 @@ namespace Hoodrich.UI
                 Notify.Ticker("~y~-$" + cost.ToString("N0") + "~s~  " +
                               (rounds ? piece.AmmoBox * LotsNow + " rounds, " + piece.Name
                                       : piece.Name + (fitted ? "  ~g~+ extended mag~s~" : "")));
-
-                Log.Info("Bought " + (rounds ? "rounds for " : "") + piece.Weapon +
-                         " off Stretch for $" + cost +
+                Log.Info("Bought " + (rounds ? "rounds for " : "") + piece.Weapon + " off Stretch for $" + cost +
                          (fitted ? " (extended mag fitted)." : "."));
 
                 OnBought?.Invoke(piece, rounds);
@@ -359,26 +380,159 @@ namespace Hoodrich.UI
             }
         }
 
-        // ---- drawing -----------------------------------------------------------
+        /// <summary>
+        /// A part: bought and fitted, or taken off again. Paid for once -- a scope you take off
+        /// to try the other one goes back on for nothing, this session.
+        /// </summary>
+        private void BuyPart()
+        {
+            var piece = Chosen;
+            if (piece == null || _parts.Count == 0) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            var part = _parts[Math.Max(0, Math.Min(_part, _parts.Count - 1))];
+            var key = piece.Weapon + "|" + part.Component;
+
+            try
+            {
+                if (Parts.Fitted(player, piece.Hash, part))
+                {
+                    Parts.Fit(player, piece.Hash, part, false);
+                    Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    Notify.Ticker(part.Name + " off the " + piece.Name + ".");
+                    if (_state != null) _state.Touch();
+                    return;
+                }
+
+                var cost = _paid.Contains(key) ? 0 : part.Price;
+
+                if (Game.Player.Money < cost)
+                {
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    Notify.Problem("you're $" + (cost - Game.Player.Money).ToString("N0") + " short.");
+                    return;
+                }
+
+                Parts.Fit(player, piece.Hash, part, true);
+
+                if (!Parts.Fitted(player, piece.Hash, part))
+                {
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    Notify.Problem("that won't go on this one.");
+                    return;
+                }
+
+                if (cost > 0) Cash.Take(cost);
+                _paid.Add(key);
+                if (_state != null) _state.Touch();
+
+                Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                Notify.Ticker((cost > 0 ? "~y~-$" + cost.ToString("N0") + "~s~  " : "") + part.Name + " on the " + piece.Name + ".");
+                Log.Info("Fitted " + part.Component + " to " + piece.Weapon + (cost > 0 ? " for $" + cost + "." : "."));
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Could not fit " + part.Component + ".", ex);
+                Notify.Problem("that one won't go on.");
+            }
+        }
+
+        // ---- the pictures ----------------------------------------------------------
+
+        /// <summary>The dictionaries the game keeps its gun icons in, one an update. Asked in turn.</summary>
+        private static readonly string[] IconDicts =
+        {
+            "mpweaponscommon", "mpweaponsgang0", "mpweaponsgang1", "mpweaponsgang2", "mpweaponscommon2",
+            "mpweaponsbiker", "mpweaponslowrider", "mpweaponslowrider2", "mpweaponsexecutive",
+            "mpweaponsheist", "mpweaponsheist3", "mpweaponsheist4", "mpweaponsgunrunning",
+            "mpweaponssmuggler", "mpweaponschristmas2017", "mpweaponsapartment", "mpweaponsbusiness",
+            "mpweaponsbusiness2", "mpweaponsxmas2", "mpweaponscasino", "mpweaponssum20", "mpweaponstuner",
+            "mpweaponssecurity", "mpweaponssum2", "mpweaponsxmas3", "mpweaponsluxe", "mpweaponshalloween",
+            "mpweaponsindependence", "mpweaponsimportexport", "mpweaponsstunt", "mpweaponsassault",
+            "mpweaponshipster", "mpweaponsvalentines", "mpweaponsm23_1", "mpweaponsm23_2", "mpweaponsxmas",
+            "mpweaponsag", "mpweaponssum23", "mpweaponsm24_1", "mpweaponsm24_2"
+        };
+
+        /// <summary>Icon to the dictionary it was found in; "" when every dictionary has been asked and none had it.</summary>
+        private static readonly Dictionary<string, string> DictFor = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, int> LookingSince = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private const int LookMostMs = 5000;
+
+        private string IconOf(Piece piece)
+        {
+            if (Guns == null || piece == null) return "";
+            try
+            {
+                var def = Guns.Get(piece.Hash);
+                return def == null ? "" : def.Icon ?? "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        /// <summary>Draws the icon if it has been found, and keeps looking for it if not. True when drawn.</summary>
+        private static bool Art(string icon, float cx, float cy, float w, float h, System.Drawing.Color ink)
+        {
+            if (string.IsNullOrEmpty(icon)) return false;
+
+            string dict;
+            if (DictFor.TryGetValue(icon, out dict))
+            {
+                if (dict.Length == 0) return false;
+                if (!Hud.EnsureTextureDict(dict)) return false;
+                Hud.Sprite(dict, icon, cx, cy, w, h, 0f, ink);
+                return true;
+            }
+
+            int since;
+            if (!LookingSince.TryGetValue(icon, out since))
+            {
+                since = Game.GameTime;
+                LookingSince[icon] = since;
+            }
+
+            foreach (var candidate in IconDicts)
+            {
+                if (!Hud.EnsureTextureDict(candidate)) continue;
+                if (!Hud.HasTexture(candidate, icon)) continue;
+
+                DictFor[icon] = candidate;
+                Log.Info("Gun art: " + icon + " is in " + candidate + ".");
+                Hud.Sprite(candidate, icon, cx, cy, w, h, 0f, ink);
+                return true;
+            }
+
+            if (Game.GameTime - since > LookMostMs)
+            {
+                DictFor[icon] = "";
+                Log.Info("Gun art: nothing has " + icon + "; the name will do.");
+            }
+
+            return false;
+        }
+
+        // ---- drawing --------------------------------------------------------------
 
         public void Draw()
         {
             if (!IsOpen) return;
 
-            var rows = Current.Stock.Length;
-            var height = 0.300f + rows * RowHeight;
+            Shelve();
 
+            var rows = Math.Max(Current.Stock.Length, 8);
+            var height = 0.215f + rows * RowHeight;
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
-
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            // Up and in, the same arrival every other screen in the mod uses.
             var age = Game.GameTime - _shownAt;
             var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
             arrive = 1f - (1f - arrive) * (1f - arrive);
-
             top += EnterRise * (1f - arrive);
 
             Theme.Panel(left, top, panelWidth, height, arrive);
@@ -387,61 +541,41 @@ namespace Hoodrich.UI
             var right = left + panelWidth - pad;
             var y = top + 0.013f;
 
-            // The shop's name in the house script, and what is in your pocket, which is the only
-            // other number that decides anything on this screen.
             Hud.Text("HOOD WEAPONRY", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
-            Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
-                          Palette.Cash, Hud.FontChaletLondon);
+            Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f, Palette.Cash, Hud.FontChaletLondon);
 
             y += 0.044f;
-
             y = Shelves(x, y, panelWidth, pad);
 
-            y = Stock(x, right, y, panelWidth, pad, arrive);
+            // The split: the stock down the left, the chosen gun on the right.
+            var splitX = x + (right - x) * 0.55f;
+            var gap = Hud.ToX(0.014f);
 
-            Rounds(x, right, y, panelWidth, pad);
+            _glide.Begin();
+            StockColumn(x, splitX - gap, y, pad, arrive);
+            ChosenColumn(splitX + gap, right, y, top + height - 0.050f, arrive);
 
             Keys(x, right, top + height - 0.020f);
-
-            // Last, so it rides over the rows it is pointing at.
             _glide.Draw(arrive);
         }
 
-        /// <summary>
-        /// The five racks along the top, all of them visible at once.
-        ///
-        /// The dialogue version made each one a page you had to go into and come back out of,
-        /// so knowing whether he had a shotgun meant a round trip. Five words across the top
-        /// answers that without a single press.
-        /// </summary>
         private float Shelves(float x, float y, float panelWidth, float pad)
         {
             var cx = x;
-
-            // Measured first, so the underline knows where it is going before anything is
-            // drawn. A strip that slides has to know the whole strip.
             var at = new float[Racks.Length];
             var wide = new float[Racks.Length];
 
             for (var i = 0; i < Racks.Length; i++)
             {
-                var label = Racks[i].Name;
-
                 var width = 0.02f;
-                try { width = Hud.MeasureText(label, 0.26f, Hud.FontLabel); }
+                try { width = Hud.MeasureText(Racks[i].Name, 0.26f, Hud.FontLabel); }
                 catch { /* the estimate will do */ }
 
                 at[i] = cx;
                 wide[i] = width;
-
                 cx += width + 0.022f;
             }
 
-            // The underline eases between racks rather than jumping, which is the one thing
-            // that makes five words across the top read as a strip you are moving along
-            // instead of five words that keep changing colour.
-            // Nought means it has never been drawn. Snapped on the first frame rather than
-            // eased, or the underline flies in from the left edge of the screen on open.
             if (_tabWide <= 0f)
             {
                 _tabAt = at[_rack];
@@ -450,25 +584,17 @@ namespace Hoodrich.UI
 
             _tabAt += (at[_rack] - _tabAt) * TabRate;
             _tabWide += (wide[_rack] - _tabWide) * TabRate;
-
             if (Math.Abs(at[_rack] - _tabAt) < 0.0005f) _tabAt = at[_rack];
             if (Math.Abs(wide[_rack] - _tabWide) < 0.0005f) _tabWide = wide[_rack];
 
-            Hud.RectFrom(_tabAt - 0.004f, y - 0.004f, _tabWide + 0.008f, 0.024f,
-                         Palette.Alpha(Palette.Brand, 26));
-
+            Hud.RectFrom(_tabAt - 0.004f, y - 0.004f, _tabWide + 0.008f, 0.024f, Palette.Alpha(Palette.Brand, 26));
             Hud.RectFrom(_tabAt - 0.004f, y + 0.019f, _tabWide + 0.008f, 0.0022f, Palette.BrandDeep);
 
             for (var i = 0; i < Racks.Length; i++)
             {
                 var here = i == _rack;
+                Hud.Text(Racks[i].Name, at[i], y, 0.26f, here ? Palette.Text : Palette.TextDim, Hud.FontLabel, centre: false);
 
-                Hud.Text(Racks[i].Name, at[i], y, 0.26f, here ? Palette.Text : Palette.TextDim,
-                         Hud.FontLabel, centre: false);
-
-                // How much of that rack is already yours, which is the question the strip was
-                // silently not answering: five words that tell you what he stocks and nothing
-                // about where your gaps are.
                 var got = 0;
                 foreach (var piece in Racks[i].Stock)
                 {
@@ -476,83 +602,48 @@ namespace Hoodrich.UI
                 }
 
                 Hud.Text(got + "/" + Racks[i].Stock.Length, at[i], y + 0.021f, 0.20f,
-                         Palette.Alpha(here ? Palette.Cash : Palette.TextDim, 190),
-                         Hud.FontLabel, centre: false);
+                         Palette.Alpha(here ? Palette.Cash : Palette.TextDim, 190), Hud.FontLabel, centre: false);
             }
 
-            // Down from 0.032, because the strip grew a second line under it. The counts sat
-            // at 0.021 to 0.028 and the rule was landing at 0.032 -- which is a hairline drawn
-            // through the descenders of a number, and reads as the number being broken.
             y += 0.038f;
-
             Theme.Rule(x, y, panelWidth - pad * 2f);
             return y + 0.012f;
         }
 
-        private float Stock(float x, float right, float y, float panelWidth, float pad, float arrive)
+        private void StockColumn(float x, float right, float y, float pad, float arrive)
         {
             Hud.Text("WHAT HE'S GOT", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
             y += 0.026f;
 
-            // THE PLATE COMES UP UNDER THE ROW rather than sliding to it: the one under the
-            // new row rises over a sixth of a second while the one under the old row sinks,
-            // and the frame -- see Glide -- travels between them. Same as every other screen.
             var grown = Theme.Grown(_pickedAt);
-            var barWide = panelWidth - pad * 1.3f;
-
-            _glide.Begin();
+            var barWide = (right - x) + pad * 0.7f;
 
             for (var i = 0; i < Current.Stock.Length; i++)
             {
                 var piece = Current.Stock[i];
-
                 var here = i == _row;
                 var owned = Owns(piece);
 
-                var lit = Theme.Lit(i, _row, _lastRow, grown) * arrive;
+                // The cursor dims while it is across on the parts shelf, so one column reads
+                // as live at a time.
+                var lit = Theme.Lit(i, _row, _lastRow, grown) * arrive * (_onParts ? 0.45f : 1f);
 
                 Theme.Plate(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
                 Theme.Sheen(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
-
-                if (here) _glide.Target(x - pad * 0.35f, y - 0.005f, barWide, RowHeight);
+                if (here && !_onParts) _glide.Target(x - pad * 0.35f, y - 0.005f, barWide, RowHeight);
 
                 var ink = Theme.Ink(here ? Palette.Text : Palette.TextDim, lit);
 
-                // THE GAME'S OWN ART FOR THE GUN. Its dictionary is named after it, so the
-                // weapon name is the whole lookup.
-                //
-                // ASKED WITH EnsureTextureDict RATHER THAN HasTexture, and that is the fix.
-                // HasTexture answers by reading GET_TEXTURE_RESOLUTION and calling a zero a
-                // no -- which is fine for a file we shipped and wrong for these: the streamer
-                // does not always report a size for a dictionary it has perfectly well got,
-                // so every gun in the shop failed a test it should have passed and fell back
-                // to a row of plain text. HAS_STREAMED_TEXTURE_DICT_LOADED is the honest
-                // question and EnsureTextureDict is the one that asks it.
-                //
-                // THE SPACE IS RESERVED EITHER WAY. Art streams in a frame or two after the
-                // screen opens, so a layout that only leaves room once it has arrived is a
-                // list whose every name jumps to the right while you are reading it.
+                // The space for the picture is kept whether or not it has arrived yet, so the
+                // names do not jump while it streams in.
+                Art(IconOf(piece), x + Hud.ToX(IconW) * 0.5f, y + 0.012f, Hud.ToX(IconW), IconH, ink);
                 var art = Hud.ToX(IconW) + 0.006f;
-
-                if (Hud.EnsureTextureDict(piece.Weapon))
-                {
-                    Hud.Sprite(piece.Weapon, piece.Weapon, x + Hud.ToX(IconW) * 0.5f, y + 0.012f,
-                               Hud.ToX(IconW), IconH, 0f, ink);
-                }
 
                 Hud.Text(piece.Name, x + art, y, 0.30f, ink, Hud.FontBody, centre: false);
 
-                // What it is for, quietly, because the name alone does not say why you would
-                // take a Double Action over a Pistol.
-                Hud.Text(piece.Note, x + art + Hud.ToX(0.20f), y + 0.003f, 0.24f,
-                         Theme.Ink(Palette.TextDim, lit), Hud.FontLabel, centre: false);
-
                 if (owned)
                 {
-                    var rounds = piece.AmmoBox > 0 ? "  ·  " + Held(piece) + " rounds" : "";
-
-                    Hud.TextRight("OWNED" + rounds, right, y + 0.002f, 0.26f,
-                                  Theme.Ink(Palette.Cash, lit), Hud.FontLabel);
+                    Hud.TextRight("OWNED", right, y + 0.002f, 0.26f, Theme.Ink(Palette.Cash, lit), Hud.FontLabel);
                 }
                 else
                 {
@@ -563,107 +654,150 @@ namespace Hoodrich.UI
 
                 y += RowHeight;
             }
-
-            y += 0.010f;
-            Theme.Rule(x, y, panelWidth - pad * 2f);
-            return y + 0.012f;
         }
 
-        /// <summary>Where the rack underline has got to.</summary>
-        private float _tabAt;
-        private float _tabWide;
-
-        private const float TabRate = 0.28f;
-
-        /// <summary>The row the cursor was on before this one, and when it moved. See Theme.Lit.</summary>
-        private int _lastRow = -1;
-        private int _pickedAt;
-
-        /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
-        private readonly Glide _glide = new Glide();
-
-        /// <summary>The arrival.</summary>
-        private int _shownAt;
-        private const int EnterMs = 170;
-        private const float EnterRise = 0.014f;
-
-        private const float IconW = 0.052f;
-        private const float IconH = 0.026f;
-
-        /// <summary>
-        /// Rounds for whatever is under the cursor, in an amount you choose.
-        ///
-        /// The old version sold one fixed box at a time and you pressed it repeatedly, which is
-        /// the same decision made four times. Lots of one, two, five and ten cover a top-up and
-        /// a full load without turning into a number you have to type.
-        /// </summary>
-        private void Rounds(float x, float right, float y, float panelWidth, float pad)
+        private void ChosenColumn(float x, float right, float y, float floor, float arrive)
         {
             var piece = Chosen;
             if (piece == null) return;
 
+            var owned = Owns(piece);
+            var wide = right - x;
+
+            // A soft plate behind the picture, so a white icon has something to sit on.
+            Hud.RectFrom(x, y, wide, BigH + 0.024f, Palette.Alpha(Palette.PanelRowAlt, 18));
+            Theme.Rim(x, y, wide, BigH + 0.024f, 0.0014f, Palette.Alpha(Theme.RimInk, 40));
+
+            var drawn = Art(IconOf(piece), x + wide * 0.5f, y + 0.012f + BigH * 0.5f, Hud.ToX(BigW), BigH, Palette.Text);
+            if (!drawn)
+            {
+                Hud.Text(Current.Name, x + wide * 0.5f, y + 0.012f + BigH * 0.5f - 0.012f, 0.30f,
+                         Palette.TextDim, Hud.FontLabel);
+            }
+
+            y += BigH + 0.034f;
+
+            Hud.Text(piece.Name, x, y, 0.42f, Palette.Text, Hud.FontBody, centre: false);
+            y += 0.036f;
+
+            foreach (var line in Hud.Wrap(piece.Note, 0.26f, Hud.FontLabel, wide))
+            {
+                Hud.Text(line, x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+                y += 0.020f;
+            }
+
+            y += 0.008f;
+            Theme.Rule(x, y, wide);
+            y += 0.012f;
+
+            y = Rounds(piece, owned, x, right, y);
+
+            y += 0.008f;
+            Theme.Rule(x, y, wide);
+            y += 0.012f;
+
+            PartsShelf(piece, owned, x, right, y, floor, arrive);
+        }
+
+        private float Rounds(Piece piece, bool owned, float x, float right, float y)
+        {
             if (piece.AmmoBox <= 0)
             {
-                Hud.Text("NO ROUNDS FOR THAT ONE", x, y, 0.26f, Palette.TextDim,
-                         Hud.FontLabel, centre: false);
-                return;
+                Hud.Text("NO ROUNDS FOR THAT ONE", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+                return y + 0.024f;
             }
 
-            if (!Owns(piece))
+            if (!owned)
             {
-                Hud.Text("ROUNDS ONCE YOU'VE GOT ONE  ·  COMES WITH " + piece.StarterAmmo,
-                         x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
-                return;
+                Hud.Text("ROUNDS ONCE YOU'VE GOT ONE  ·  COMES WITH " + piece.StarterAmmo, x, y, 0.26f,
+                         Palette.TextDim, Hud.FontLabel, centre: false);
+                return y + 0.024f;
             }
 
-            Hud.Text("ROUNDS FOR THE " + piece.Name.ToUpperInvariant(), x, y, 0.26f,
-                     Palette.TextDim, Hud.FontLabel, centre: false);
-
-            y += 0.026f;
+            Hud.Text("ROUNDS", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+            Hud.TextRight(Held(piece) + " HELD", right, y, 0.24f, Palette.TextDim, Hud.FontLabel);
+            y += 0.024f;
 
             var lots = LotsNow;
             var rounds = piece.AmmoBox * lots;
             var cost = AmmoPrice(piece) * lots;
             var afford = Game.Player.Money >= cost;
+            var ink = _onParts ? Palette.TextDim : Palette.Text;
 
-            Hud.Text("<", x, y, 0.32f, Palette.Text, Hud.FontChaletLondon, centre: false);
-
-            Hud.Text(lots + (lots == 1 ? " box" : " boxes") + "   ·   " + rounds + " rounds",
-                     x + 0.018f, y, 0.32f, Palette.Text, Hud.FontChaletLondon, centre: false);
-
-            Hud.Text(">", x + Hud.ToX(0.30f), y, 0.32f, Palette.Text,
+            Hud.Text("<  " + lots + (lots == 1 ? " box" : " boxes") + "  ·  " + rounds + " rounds  >", x, y, 0.30f, ink,
                      Hud.FontChaletLondon, centre: false);
-
-            Hud.TextRight("$" + cost.ToString("N0"), right, y, 0.32f,
+            Hud.TextRight("$" + cost.ToString("N0"), right, y, 0.30f,
                           afford ? Palette.Cash : Palette.TextDisabled, Hud.FontChaletLondon);
+
+            return y + 0.030f;
         }
 
-        /// <summary>
-        /// What the buttons do, with a picture on each and in the names of the device you are
-        /// holding. Same treatment the two shelf screens have.
-        ///
-        /// AND IT NOW MENTIONS PICKING A GUN, which it did not. Up and down have always moved
-        /// the cursor down the rack and the line said nothing about it -- it named buying,
-        /// rounds, racks and the way out, and left the one control you have to use first
-        /// entirely unwritten.
-        /// </summary>
-        private static void Keys(float x, float right, float y)
+        private void PartsShelf(Piece piece, bool owned, float x, float right, float y, float floor, float arrive)
+        {
+            Hud.Text("WHAT BOLTS ON", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+
+            if (_parts.Count == 0)
+            {
+                Hud.TextRight("NOTHING", right, y, 0.24f, Palette.TextDim, Hud.FontLabel);
+                return;
+            }
+
+            Hud.TextRight(_parts.Count + (_parts.Count == 1 ? " PART" : " PARTS") + (owned ? "" : "  ·  BUY THE GUN FIRST"),
+                          right, y, 0.24f, Palette.TextDim, Hud.FontLabel);
+            y += 0.024f;
+
+            var player = Game.Player.Character;
+            var grown = Theme.Grown(_pickedAt);
+            var wide = right - x;
+            var shown = Math.Min(PartsShown, _parts.Count);
+
+            for (var i = _partTop; i < Math.Min(_parts.Count, _partTop + shown); i++)
+            {
+                if (y + PartRow > floor) break;
+
+                var part = _parts[i];
+                var here = _onParts && i == _part;
+                var fitted = owned && Parts.Fitted(player, piece.Hash, part);
+                var lit = _onParts ? Theme.Lit(i, _part, _lastPart, grown) * arrive : 0f;
+
+                Theme.Plate(x - Hud.ToX(0.006f), y - 0.004f, wide + Hud.ToX(0.012f), PartRow, lit);
+                Theme.Sheen(x - Hud.ToX(0.006f), y - 0.004f, wide + Hud.ToX(0.012f), PartRow, lit);
+                if (here) _glide.Target(x - Hud.ToX(0.006f), y - 0.004f, wide + Hud.ToX(0.012f), PartRow);
+
+                var ink = Theme.Ink(here ? Palette.Text : Palette.TextDim, lit);
+
+                // A tick for what is on it, drawn as a rail so it reads from across the panel.
+                if (fitted) Hud.RectFrom(x - Hud.ToX(0.006f), y - 0.004f, Hud.ToX(0.0026f), PartRow, Palette.Cash);
+
+                Hud.Text(part.Name, x + Hud.ToX(0.004f), y, 0.28f, ink, Hud.FontBody, centre: false);
+
+                var paid = _paid.Contains(piece.Weapon + "|" + part.Component);
+                var tag = fitted ? "FITTED" : paid ? "PAID" : "$" + part.Price.ToString("N0");
+                Hud.TextRight(tag, right, y + 0.002f, 0.26f,
+                              fitted ? Theme.Ink(Palette.Cash, lit) : Theme.Ink(Game.Player.Money >= part.Price || paid ? ink : Palette.TextDisabled, lit),
+                              Hud.FontLabel);
+
+                y += PartRow;
+            }
+
+            if (_parts.Count > shown)
+            {
+                Hud.TextRight((_part + 1) + " / " + _parts.Count, right, y, 0.22f, Palette.TextDim, Hud.FontLabel);
+            }
+        }
+
+        private void Keys(float x, float right, float y)
         {
             var pad = Hud.OnPad;
             var ink = Palette.TextDim;
 
             var hx = Hud.Hint("arrow_updown.png", "PICK", x, y, 0.24f, ink);
-
-            hx = Hud.Hint("arrow_leftright.png", "ROUNDS", hx, y, 0.24f, ink);
-
-            // LB and RB either side of the rack, or space and cover on a keyboard. Named as
-            // the shoulders on a pad because that is what the hands are doing.
+            hx = Hud.Hint("arrow_leftright.png", _onParts ? "BACK" : "ROUNDS", hx, y, 0.24f, ink);
             hx = Hud.Hint("crate.png", (pad ? "LB / RB" : "SPACE") + "  RACK", hx, y, 0.24f, ink);
+            hx = Hud.Hint("key.png", (pad ? "X" : "R") + (_onParts ? "  STOCK" : "  PARTS"), hx, y, 0.24f, ink);
+            Hud.Hint("cash.png", (pad ? "A" : "ENTER") + (_onParts ? "  FIT / TAKE OFF" : "  BUY"), hx, y, 0.24f, ink);
 
-            Hud.Hint("cash.png", (pad ? "A" : "ENTER") + "  BUY", hx, y, 0.24f, ink);
-
-            Hud.TextRight(pad ? "B  OUT" : "BACKSPACE  OUT", right, y, 0.24f, ink,
-                          Hud.FontLabel);
+            Hud.TextRight(pad ? "B  OUT" : "BACKSPACE  OUT", right, y, 0.24f, ink, Hud.FontLabel);
         }
     }
 }

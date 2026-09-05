@@ -1872,7 +1872,7 @@ namespace Hoodrich
                 // The rack is a screen now. The conversation is still how you get to it -- you
                 // walk up to a man and he says something -- but what he shows you once you have
                 // asked is a laid-out stock list rather than five pages of dialogue choices.
-                _gunScreen = new GunScreen(_state);
+                _gunScreen = new GunScreen(_state) { Guns = _weapons };
 
                 // AFTER _gunScreen EXISTS, which is the whole point of it being here.
                 //

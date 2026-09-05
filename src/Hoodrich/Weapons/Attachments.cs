@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Native;
@@ -107,7 +107,7 @@ namespace Hoodrich.Weapons
         };
 
         /// <summary>Every component name worth asking a given weapon about.</summary>
-        private static IEnumerable<string> Candidates(string weapon)
+        internal static IEnumerable<string> Candidates(string weapon)
         {
             for (var i = 0; i < Common.Length; i++) yield return Common[i];
 
