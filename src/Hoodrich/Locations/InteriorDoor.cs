@@ -330,6 +330,18 @@ namespace Hoodrich.Locations
                 // an index in the middle -- and asking for the archetype does nothing at all
                 // while looking exactly like asking for the right thing. Semicolons in the ini
                 // separate them; asking for a name the game does not have costs nothing.
+                // THE MULTIPLAYER MAP, FIRST, and this is the thing four rounds of guessing
+                // missed. These shells are ONLINE content. In a story game they are not merely
+                // unloaded, they are not in the map at all, so REQUEST_IPL has nothing to find
+                // and every coordinate under the sea reads as empty -- which is exactly what
+                // the sweep came back with: thirty-four thousand points, not one interior.
+                //
+                // ON_ENTER_MP swaps the map over to the online one. It is what the interior
+                // loader on this machine was doing all along, under a setting called
+                // "load mp maps on refresh", and it is why the door worked while that mod ran
+                // and stopped the day it did not. Nothing about this mod ever changed.
+                Mp(true);
+
                 foreach (var name in (_spec.Ipl + ";" + _spec.Extra).Split(';'))
                 {
                     var one = name.Trim();
@@ -480,6 +492,11 @@ namespace Hoodrich.Locations
                     player.Heading = BackFacing;
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
+                    // Bounced out because the room was not there: the map goes back too,
+                    // or a failed attempt leaves the whole city on the online variant for
+                    // nothing at all.
+                    Mp(false);
+
                     Wait(400);
                     Fade(true);
 
@@ -528,6 +545,11 @@ namespace Hoodrich.Locations
                     player.Position = Back;
                     player.Heading = BackFacing;
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
+
+                    // Bounced out because the room was not there: the map goes back too,
+                    // or a failed attempt leaves the whole city on the online variant for
+                    // nothing at all.
+                    Mp(false);
 
                     Wait(400);
                     Fade(true);
@@ -711,6 +733,10 @@ namespace Hoodrich.Locations
                     ? BackFacing
                     : _spec.DoorHeading;
 
+                // He is outside again, so the online map has done its job and the city goes
+                // back to the one the story happens in.
+                Mp(false);
+
                 Log.Info("Out of the " + _spec.Name + " to " + Back +
                          (_cameFrom == Vector3.Zero
                               ? " (the ini's door -- nothing remembered the way in)"
@@ -733,6 +759,27 @@ namespace Hoodrich.Locations
             finally
             {
                 _busy = false;
+            }
+        }
+
+        /// <summary>
+        /// The online map on or off.
+        ///
+        /// PUT BACK ON THE WAY OUT. The online map is not only these shells: it changes doors,
+        /// props and whole buildings around the city, and leaving a story game running on it
+        /// because somebody looked in a grow room is not a trade anybody agreed to. It stays on
+        /// while he is inside -- taking it away then would delete the room out from under him.
+        /// </summary>
+        private static void Mp(bool on)
+        {
+            try
+            {
+                Function.Call(on ? Hash.ON_ENTER_MP : Hash.ON_ENTER_SP);
+                Log.Info("Map switched to the " + (on ? "online" : "story") + " one.");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not switch the map: " + ex.Message);
             }
         }
 

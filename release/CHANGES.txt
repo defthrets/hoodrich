@@ -151,6 +151,25 @@ save and come back with the gun.
 
 THE TWO ROOMS
 
+The rooms work again, and the answer was not the coordinate, the IPL name or
+anything in this mod. These shells are ONLINE map content. In a story game they
+are not merely unloaded, they are not in the map at all -- so REQUEST_IPL has
+nothing to find and every coordinate under the sea reads as empty. A sweep of
+thirty-four thousand points down there came back with not one interior, which is
+what finally said it out loud.
+
+The door switches the map to the online one before it asks, and switches it back
+the moment you step outside. That is what the interior mod on this machine had
+been doing all along under a setting called "load mp maps on refresh", and it is
+why the rooms worked while that mod ran and stopped the day it did not.
+
+The IPL names were wrong as well and are now right: an IPL is named for the
+PLACEMENT rather than the room, so bkr_biker_dlc_int_ware02 and
+tr_tuner_methlab_1 -- the names in every Hoodrich.ini ever written -- are the
+archetypes those placements share. A door carries names the ini cannot take
+away, so an existing file is added to rather than overriding the fix.
+
+
 The two doors ask for the right IPLs now. An interior IPL is named for the
 PLACEMENT rather than the room, so bkr_biker_dlc_int_ware02 and
 tr_tuner_methlab_1 -- the names in every Hoodrich.ini ever written -- are
