@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -55,7 +55,7 @@ namespace Hoodrich.UI
             {
                 if (me == null || !me.Exists() || !me.IsAlive) return;
                 if (them == null || !them.Exists() || !them.IsAlive) return;
-                if (me.IsInVehicle() || them.IsInVehicle()) return;
+                if (Boxed(me) || Boxed(them)) return;
                 if (Function.Call<bool>(Hash.IS_CUTSCENE_ACTIVE)) return;
                 if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_IN)) return;
 
@@ -105,7 +105,7 @@ namespace Hoodrich.UI
             try
             {
                 if (_me == null || !_me.Exists() || !_me.IsAlive || _them == null || !_them.Exists()
-                    || _me.IsInVehicle())
+                    || Boxed(_me))
                 {
                     Stop();
                     return;
@@ -139,6 +139,29 @@ namespace Hoodrich.UI
 
             _me = null;
             _them = null;
+        }
+
+        /// <summary>
+        /// A car has a roof between the camera and the face; a bike does not. Lamar delivers
+        /// a job sat on a bicycle with you sat on another, and that is a scene like any
+        /// other -- the shot goes over a shoulder that happens to be on a saddle.
+        /// </summary>
+        private static bool Boxed(Ped who)
+        {
+            try
+            {
+                if (!who.IsInVehicle()) return false;
+
+                var ride = who.CurrentVehicle;
+                if (ride == null || !ride.Exists()) return true;
+
+                var model = ride.Model;
+                return !(model.IsBicycle || model.IsBike || model.IsQuadBike);
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         private static void Place(bool snap)
