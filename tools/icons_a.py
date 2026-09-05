@@ -524,6 +524,23 @@ def mask():
     save(img, "mask.png")
 
 
+def wifi():
+    """
+    Three arcs and a dot, fanning up from the corner. Drawn with real arcs at 512 so the
+    curves survive the downsample -- the rectangle version in the status bar did not.
+    """
+    img, d = canvas()
+
+    cx, cy = 256, 392
+
+    for i, r in enumerate((100, 190, 280)):
+        d.arc([cx - r, cy - r, cx + r, cy + r], 222, 318, fill=W, width=46)
+
+    disc(d, cx, cy, 38)
+
+    save(img, "wifi.png")
+
+
 def balaclava():
     """
     A balaclava: a hood with a face opening and two eyes looking out of it.
@@ -819,7 +836,7 @@ def gang_f():
     save(img, "gang_f.png")
 
 
-ALL = [arrow_right, arrow_left, arrow_updown, arrow_leftright,
+ALL = [wifi, arrow_right, arrow_left, arrow_updown, arrow_leftright,
        reply, repost, heart, like, tick, drop, disc_,
        warning, locked, key, eyes, footfall, rank, people, pin, deal,
        socials, mobile, phone, megaphone, music, tattoo, health, scales, crown, skull, police,

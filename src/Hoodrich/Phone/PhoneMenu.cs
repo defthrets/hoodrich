@@ -740,33 +740,6 @@ namespace Hoodrich.Phone
             return Color.FromArgb(c.A * fade / 255, c.R, c.G, c.B);
         }
 
-        /// <summary>
-        /// THE WALLPAPER: two soft discs of the set's green drifting slowly under the apps, and
-        /// nothing else. A phone has something behind its icons; a flat black home screen reads
-        /// as a menu that happens to be phone-shaped. Faint -- under a tenth of the icons' own
-        /// ink -- so it is a ground rather than a picture, and slow enough that nobody sees it
-        /// move, only that it has.
-        ///
-        /// Drawn in coarse rows: a disc this size is a hundred rectangles at full fineness,
-        /// and a wash does not need a clean edge.
-        /// </summary>
-        private static void Wallpaper(float left, float top, float w, float h, int fade)
-        {
-            var t = Game.GameTime / 1000.0;
-
-            var cx = left + w * 0.5f;
-            var cy = top + h * 0.40f;
-
-            var ax = cx + Hud.ToX(0.030f) * (float)Math.Sin(t / 9.1);
-            var ay = cy + 0.030f * (float)Math.Sin(t / 12.7 + 1.0);
-
-            var bx = cx - Hud.ToX(0.026f) * (float)Math.Sin(t / 11.3 + 2.0);
-            var by = cy + 0.050f + 0.024f * (float)Math.Sin(t / 8.3);
-
-            Hud.Disc(ax, ay, 0.085f, Fade(Color.FromArgb(20, 108, 196, 106), fade), 10);
-            Hud.Disc(bx, by, 0.060f, Fade(Color.FromArgb(26, 66, 124, 68), fade), 10);
-        }
-
         private void Body(float left, float top, float w, float h, int fade, float glass)
         {
             // THE RIM, WITH A LIGHT ON IT. Two rounded rectangles a hair apart: the lighter one
@@ -781,10 +754,10 @@ namespace Hoodrich.Phone
             const float catchLight = 0.0009f;
 
             Hud.RoundRect(left, top, w, h, BodyRound,
-                          Fade(Color.FromArgb(255, 134, 140, 142), fade), sprite: false, steps: 12);
+                          Fade(Color.FromArgb(255, 134, 140, 142), fade), sprite: false, steps: 20);
 
             Hud.RoundRect(left, top + catchLight, w, h - catchLight, BodyRound,
-                          Fade(Color.FromArgb(255, 72, 76, 78), fade), sprite: false, steps: 12);
+                          Fade(Color.FromArgb(255, 72, 76, 78), fade), sprite: false, steps: 20);
 
             var edge = 0.0022f;
             var edgeX = Hud.ToX(edge);
@@ -848,7 +821,7 @@ namespace Hoodrich.Phone
             // Twenty steps is about eighty rectangles and a corner stagger nobody can see on a
             // near-black shape.
             Hud.RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
-                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 12);
+                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 20);
 
             // A catch of light along the top of the glass, so it is glass rather than paint.
             if (glass > 0f)
@@ -988,42 +961,19 @@ namespace Hoodrich.Phone
         }
 
         /// <summary>
-        /// The wifi fan: three arcs and a dot, climbing away from the corner.
+        /// The wifi fan, as an icon.
         ///
-        /// DRAWN RATHER THAN LOADED. At twelve pixels tall a PNG of this is four grey smudges,
-        /// and the whole status bar is already built out of rectangles -- the battery, the
-        /// signal, the rule under it. One more shape made the same way costs nothing and
-        /// matches everything beside it.
-        ///
-        /// Each arc is three rectangles: a flat top and two shoulders dropping away from it.
-        /// That is enough to read as a curve at this size, and a real arc at this size is the
-        /// same three pixels with more arithmetic.
+        /// It was drawn out of rectangles like the battery and the signal, and it looked like
+        /// what it was: three flat bars with notched ends. A battery is rectangles; a signal
+        /// is rectangles; a wifi fan is three ARCS, and arcs come out of the icon tool smooth
+        /// at any size because they are drawn at 512 and downsampled.
         /// </summary>
         private static void Wifi(float rightX, float midY, int fade)
         {
-            var ink = Fade(StatusInk, fade);
+            var size = 0.0135f;
 
-            var unit = Hud.ToX(0.0013f);
-            var step = 0.0024f;
-
-            var cx = rightX - Hud.ToX(0.008f);
-            var foot = midY + 0.0062f;
-
-            // The dot at the bottom, which is the part everybody actually recognises.
-            Hud.RectFrom(cx - unit, foot - 0.0016f, unit * 2f, 0.0016f, ink);
-
-            for (var i = 0; i < 3; i++)
-            {
-                var span = Hud.ToX(0.0030f) + i * Hud.ToX(0.0028f);
-                var y = foot - 0.0026f - i * step;
-
-                // The flat of the arc.
-                Hud.RectFrom(cx - span, y, span * 2f, unit, ink);
-
-                // And the two shoulders, dropping away from it.
-                Hud.RectFrom(cx - span - unit, y + unit * 0.6f, unit, 0.0013f, ink);
-                Hud.RectFrom(cx + span, y + unit * 0.6f, unit, 0.0013f, ink);
-            }
+            Hud.File("wifi.png", rightX - Hud.ToX(size) * 0.5f, midY + 0.0004f, size, 0f,
+                     Fade(StatusInk, fade));
         }
 
         /// <summary>Blends two colours, for the pulse.</summary>
@@ -1466,8 +1416,6 @@ namespace Hoodrich.Phone
                 Rows(left, top, w, h, fade);
                 return;
             }
-
-            Wallpaper(left, top, w, h, fade);
 
             // The cursor landing somewhere is an event, and the tile it lands on says so.
             if (Top.Index != _lastIndex)
