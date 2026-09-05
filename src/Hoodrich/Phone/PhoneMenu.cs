@@ -192,6 +192,15 @@ namespace Hoodrich.Phone
         private static readonly Color Green = Color.FromArgb(255, 108, 196, 106);
         private static readonly Color GreenDim = Color.FromArgb(150, 66, 124, 68);
 
+        /// <summary>
+        /// The ink on the status icons: near-white, a little short of full, and not green.
+        ///
+        /// The wordmark is the one green thing on this strip and it is enough. Three green
+        /// icons beside it made the top of the handset the busiest part of the screen, when a
+        /// status bar is the strip you are supposed to be able to ignore.
+        /// </summary>
+        private static readonly Color StatusInk = Color.FromArgb(215, 236, 240, 236);
+
         /// <summary>One full breath of the wordmark.</summary>
         private const int PulseMs = 2600;
 
@@ -948,23 +957,8 @@ namespace Hoodrich.Phone
             var lift = (float)Math.Sin(turn - Math.PI * 0.5d) * 0.0011f;
             var swell = 1f + 0.03f * breath;
 
-            // SMALLER THAN IT WAS, because the mark it draws is not the mark it was drawn
-            // for. The wordmark went from a condensed block face to Fraktur, which is heavier
-            // per line and busier at every size -- at 0.0150 it stopped being a small mark in
-            // the corner of a status bar and became the loudest thing on the handset, with the
-            // carrier and the wifi it should be sharing that end with nowhere left to go.
-            Hud.Brand(left + pad, mid + lift, 0.0118f * swell,
+            Hud.Brand(left + pad, mid + lift, 0.0150f * swell,
                       Fade(Lerp(GreenDim, Green, breath), fade));
-
-            // ---- WHOSE NETWORK IT IS ----
-            //
-            // Badger, which is the carrier in this city -- it is on the phones in the game's
-            // own interface and on the masts out at the airport. Naming a real one would be
-            // the single most out-of-place string in the mod.
-            var markW = Hud.ToX(0.0118f) * Hud.WordmarkAspect;
-
-            Hud.Text("BADGER", left + pad + markW + Hud.ToX(0.006f), top + 0.0075f, 0.21f,
-                     Fade(GreenDim, fade), Hud.FontLabel, centre: false);
 
             // The game's clock, because a phone that says the wrong time is a prop.
             var hh = Function.Call<int>(Hash.GET_CLOCK_HOURS);
@@ -981,10 +975,14 @@ namespace Hoodrich.Phone
             // Spaced off the widths they actually occupy now. The battery is 0.027 plus its
             // nub, and the four bars come to about 0.023 -- so the old 0.026 step had the
             // signal drawing through the battery's left wall.
-            var signalRight = right - Hud.ToX(0.036f);
+            // QUIET. A status bar is the one strip of a phone that is not supposed to be
+            // looked at: thin grey marks, the same height, tucked in the corner. The big green
+            // battery that was here for a build was the loudest thing on the handset, on a
+            // screen whose every other piece of chrome is a hairline.
+            var signalRight = right - Hud.ToX(0.028f);
 
             Signal(signalRight, mid, fade, Game.GameTime - _openedAt);
-            Wifi(signalRight - Hud.ToX(0.028f), mid, fade);
+            Wifi(signalRight - Hud.ToX(0.023f), mid, fade);
 
             Hud.RectFrom(left, top + StatusH - 0.0014f, w, 0.0014f, Fade(GreenDim, fade));
         }
@@ -1003,10 +1001,10 @@ namespace Hoodrich.Phone
         /// </summary>
         private static void Wifi(float rightX, float midY, int fade)
         {
-            var ink = Fade(Green, fade);
+            var ink = Fade(StatusInk, fade);
 
-            var unit = Hud.ToX(0.0016f);
-            var step = 0.0030f;
+            var unit = Hud.ToX(0.0013f);
+            var step = 0.0024f;
 
             var cx = rightX - Hud.ToX(0.008f);
             var foot = midY + 0.0062f;
@@ -1016,8 +1014,8 @@ namespace Hoodrich.Phone
 
             for (var i = 0; i < 3; i++)
             {
-                var span = Hud.ToX(0.0040f) + i * Hud.ToX(0.0034f);
-                var y = foot - 0.0030f - i * step;
+                var span = Hud.ToX(0.0030f) + i * Hud.ToX(0.0028f);
+                var y = foot - 0.0026f - i * step;
 
                 // The flat of the arc.
                 Hud.RectFrom(cx - span, y, span * 2f, unit, ink);
@@ -1080,17 +1078,17 @@ namespace Hoodrich.Phone
 
             // Same reasoning as the battery: three pixels wide and three tall is a bar
             // nobody can count, let alone watch climb.
-            var wide = Hud.ToX(0.0040f);
-            var gap = Hud.ToX(0.0018f);
-            var bottom = midY + 0.0075f;
+            var wide = Hud.ToX(0.0030f);
+            var gap = Hud.ToX(0.0016f);
+            var bottom = midY + 0.0055f;
 
             for (var i = 0; i < bars; i++)
             {
-                var h = 0.0044f + i * 0.0032f;
+                var h = 0.0032f + i * 0.0026f;
                 var x = rightX - (bars - i) * (wide + gap);
 
                 Hud.RectFrom(x, bottom - h, wide, h,
-                             Fade(i < Math.Min(lit, climb) ? Green : Color.FromArgb(70, 96, 108, 96), fade));
+                             Fade(i < Math.Min(lit, climb) ? StatusInk : Color.FromArgb(60, 200, 205, 200), fade));
             }
         }
 
@@ -1122,8 +1120,8 @@ namespace Hoodrich.Phone
             // an eleven-thousandth-high shell inside it with 1.4-thousandth walls -- about
             // nine pixels by one at the resolution this is actually played at. Every part of
             // it was correct and none of it was visible.
-            var bodyW = Hud.ToX(0.027f);
-            var bodyH = 0.0150f;
+            var bodyW = Hud.ToX(0.021f);
+            var bodyH = 0.0110f;
             var left = rightX - bodyW;
             var top = midY - bodyH * 0.5f;
 
@@ -1132,7 +1130,7 @@ namespace Hoodrich.Phone
             // there -- and every other piece of chrome on this bar is green. Reported as the
             // battery simply not being drawn, which is what a 16x9 pixel grey outline on black
             // amounts to.
-            var ink = low ? Palette.Danger : Green;
+            var ink = low ? Palette.Danger : StatusInk;
 
             // Blinks about twice a second, and only when it is nearly out.
             if (low)
@@ -1141,7 +1139,7 @@ namespace Hoodrich.Phone
                 if (!on) ink = Color.FromArgb(70, ink.R, ink.G, ink.B);
             }
 
-            var line = 0.0022f;
+            var line = 0.0016f;
             var lineX = Hud.ToX(line);
 
             // Shell.
@@ -1151,14 +1149,13 @@ namespace Hoodrich.Phone
             Hud.RectFrom(left + bodyW - lineX, top, lineX, bodyH, Fade(ink, fade));
 
             // The nub on the end.
-            Hud.RectFrom(left + bodyW, midY - 0.0034f, Hud.ToX(0.0032f), 0.0068f, Fade(ink, fade));
+            Hud.RectFrom(left + bodyW, midY - 0.0024f, Hud.ToX(0.0024f), 0.0048f, Fade(ink, fade));
 
-            // And what is left in it. Full ink rather than the shell's, so the charge reads as
-            // a level rather than as more outline.
-            var inset = Hud.ToX(0.0028f);
+            // And what is left in it.
+            var inset = Hud.ToX(0.0024f);
             var room = bodyW - inset * 2f;
 
-            Hud.RectFrom(left + inset, top + 0.0034f, room * charge, bodyH - 0.0068f,
+            Hud.RectFrom(left + inset, top + 0.0026f, room * charge, bodyH - 0.0052f,
                          Fade(ink, fade));
         }
 
