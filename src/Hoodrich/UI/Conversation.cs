@@ -269,6 +269,9 @@ namespace Hoodrich.UI
     {
         /// <summary>Centred: a conversation is a screen you are in, not a corner notification.</summary>
         private static float PanelX => 0.5f - PanelWidth * 0.5f;
+
+        /// <summary>Where the panel's middle sits on the screen, nought at the top and one at the bottom.</summary>
+        private const float PanelCentre = 0.66f;
         private const float PanelWidth = 0.42f;
         private const float LineHeight = 0.030f;
         private const float ChoiceHeight = 0.032f;
@@ -524,6 +527,12 @@ namespace Hoodrich.UI
             // talking before it, so arrowing down a list does not stack voices on top of each
             // other -- every node either replaces the last line or leaves the screen quiet.
             Core.Voice.Say(node.Speaker, node.Line, node.VoiceKey);
+
+            // THE CAMERA. Over his shoulder on the first line of a talk with somebody who is
+            // stood there (a phone call has no Speaker), and the other shoulder on each line
+            // after -- see TalkCam.
+            if (_openedFresh) TalkCam.Start(Game.Player.Character, Speaker);
+            else TalkCam.Cut();
             // The picture, and the width the words have left because of it.
             //
             // The contact texture is the FALLBACK now rather than the answer. CHAR_LAMAR draws
@@ -558,6 +567,8 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            TalkCam.Stop();
+
             // The button that got you out of here does not also swing at somebody.
             // Nothing carries on talking to an empty screen, and nothing carries on
             // mouthing at one either.
@@ -601,6 +612,8 @@ namespace Hoodrich.UI
 
         public void Update()
         {
+            TalkCam.Update();
+
             if (_node == null)
             {
                 // Still holding the controls for a moment after it shuts.
@@ -811,7 +824,11 @@ namespace Hoodrich.UI
 
             var total = 0.075f + bodyHeight + 0.012f + choiceHeight + 0.030f;
             if (!string.IsNullOrEmpty(Title)) total += 0.036f;
-            var top = Math.Max(0.06f, 0.5f - total * 0.5f);
+            // LOWER THAN THE MIDDLE. Centred on the screen it sat across the face of whoever
+            // was talking; centred lower it leaves the top of the picture to them, which is
+            // where the camera has put them (see TalkCam), and the foot of the panel still
+            // clears the bottom edge.
+            var top = Math.Max(0.06f, Math.Min(0.96f - total, PanelCentre - total * 0.5f));
 
             // The entrance. Up and in over about a fifth of a second, eased out so it slows
             // as it lands -- a panel that arrives at constant speed reads as a jump cut.
