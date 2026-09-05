@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using GTA;
@@ -417,7 +417,14 @@ namespace Hoodrich.Locations
             var prop = World.CreateProp(model, item.At, false, false);
             if (prop == null || !prop.Exists()) return null;
 
-            prop.Position = item.At;
+            // NO OFFSET, or everything stands a metre in the air.
+            //
+            // Setting Position on an entity goes through SET_ENTITY_COORDS, which does not put
+            // the entity where you asked -- it applies the game's own offset, and for a ped
+            // that lifts it clear of the ground by about its own base. Menyoo saved these
+            // coordinates with a plain read and restores them with SET_ENTITY_COORDS_NO_OFFSET,
+            // so that is the only call that puts a scene back exactly as it was arranged.
+            prop.PositionNoOffset = item.At;
             Function.Call(Hash.SET_ENTITY_ROTATION, prop.Handle, item.Pitch, item.Roll, item.Yaw, 2, true);
             Function.Call(Hash.SET_ENTITY_COLLISION, prop.Handle, true, true);
 
@@ -435,7 +442,7 @@ namespace Hoodrich.Locations
             var car = World.CreateVehicle(model, item.At, item.Yaw);
             if (car == null || !car.Exists()) return null;
 
-            car.Position = item.At;
+            car.PositionNoOffset = item.At;
             Function.Call(Hash.SET_ENTITY_ROTATION, car.Handle, item.Pitch, item.Roll, item.Yaw, 2, true);
 
             car.IsPersistent = true;
@@ -451,7 +458,7 @@ namespace Hoodrich.Locations
             var ped = World.CreatePed(model, item.At, item.Yaw);
             if (ped == null || !ped.Exists()) return null;
 
-            ped.Position = item.At;
+            ped.PositionNoOffset = item.At;
             ped.Heading = item.Yaw;
             ped.IsPersistent = true;
 
