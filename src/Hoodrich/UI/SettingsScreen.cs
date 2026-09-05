@@ -246,6 +246,23 @@ namespace Hoodrich.UI
         /// </summary>
         public Func<string> StartTakeover;
 
+        /// <summary>Which group of places the door rows are pointed at, and which place in it.</summary>
+        private int _group;
+        private int _place;
+
+        /// <summary>The place row itself, so its list can be rebuilt when the group changes.</summary>
+        private Opt _placeRow;
+
+        /// <summary>The place the two door rows will write to.</summary>
+        private Locations.Place Picked()
+        {
+            var list = Locations.Places.In(_group);
+            if (list.Length == 0) return null;
+
+            var at = _place < 0 ? 0 : _place >= list.Length ? list.Length - 1 : _place;
+            return list[at];
+        }
+
         /// <summary>The spooner scenes, so the rows can reload them. Set by Main.</summary>
         public static Locations.Scenery Scenes;
 
@@ -601,41 +618,90 @@ namespace Hoodrich.UI
             // is what these two rows exist to stop happening again.
             Head("Doors");
 
+            // THE LIST IS NAMES, THE PRESSES ARE NUMBERS. Everywhere in the game with an
+            // inside is in Places.cs, every name of it read out of the interior loader's own
+            // string table rather than typed. What is missing from each one is the two
+            // coordinates, and those come from a player standing on them. Pick the place,
+            // stand at its door, press; stand inside, press again.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Choice,
+                Label = "Part of town",
+                Note = "Which set of places the two rows below are pointed at",
+                Choices = Locations.Places.Groups,
+                GetChoice = () => _group,
+                SetChoice = at =>
+                {
+                    _group = at;
+                    _place = 0;
+
+                    if (_placeRow != null) _placeRow.Choices = Locations.Places.Labels(_group);
+                }
+            });
+
+            _placeRow = new Opt
+            {
+                Kind = OptKind.Choice,
+                Label = "Place",
+                Note = "The one you are standing at. Ones already written down say so",
+                Choices = Locations.Places.Labels(0),
+                GetChoice = () => _place,
+                SetChoice = at => _place = at
+            };
+
+            _rows.Add(_placeRow);
+
             _rows.Add(new Opt
             {
                 Kind = OptKind.Action,
-                Label = "A door goes here",
-                Note = "Writes where you stand into Hoodrich.ini as the outside of a new door",
+                Label = "The door is here",
+                Note = "Writes where you stand as the way in, with the name of what has to load",
                 Do = () =>
                 {
                     var me = Game.Player.Character;
                     if (me == null || !me.Exists()) return;
 
-                    var made = Locations.DoorMaker.Outside(me.Position, me.Heading);
+                    var place = Picked();
+                    if (place == null) return;
 
-                    Notify.Important(made.Length == 0
+                    var ok = Locations.DoorMaker.Outside(place, me.Position, me.Heading);
+
+                    if (_placeRow != null) _placeRow.Choices = Locations.Places.Labels(_group);
+
+                    Notify.Important(ok
+                        ? place.Name + ": door marked. Now go inside and mark where you come out."
+                        : "Could not write to Hoodrich.ini.");
+                }
+            });
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "...and I come out here",
+                Note = "Writes where you stand as the inside. Press Insert after and walk through it",
+                Do = () =>
+                {
+                    var me = Game.Player.Character;
+                    if (me == null || !me.Exists()) return;
+
+                    var place = Picked();
+                    if (place == null) return;
+
+                    var started = Locations.DoorMaker.Started(place);
+                    var ok = Locations.DoorMaker.Inside(place, me.Position, me.Heading);
+
+                    if (_placeRow != null) _placeRow.Choices = Locations.Places.Labels(_group);
+
+                    Notify.Important(!ok
                         ? "Could not write to Hoodrich.ini."
-                        : made + ": outside marked. Now go inside and mark the inside.");
+                        : started
+                            ? place.Name + ": done. Press Insert and the door is there."
+                            : place.Name + ": inside written. Mark its door too if you have not.");
                 }
             });
 
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Action,
-                Label = "...and the inside is here",
-                Note = "Writes where you stand as the inside of the door you just marked. Press Insert after",
-                Do = () =>
-                {
-                    var me = Game.Player.Character;
-                    if (me == null || !me.Exists()) return;
-
-                    var made = Locations.DoorMaker.Inside(me.Position, me.Heading);
-
-                    Notify.Important(made.Length == 0
-                        ? "Mark the outside of a door first."
-                        : made + ": done. Press Insert and the door is there.");
-                }
-            });
+            Readout("Places written down", () => Locations.Places.Tally(),
+                    "Out of everywhere in the game that has an inside");
 
             Head("Finding things");
 

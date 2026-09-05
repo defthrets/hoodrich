@@ -496,7 +496,13 @@ namespace Hoodrich.Locations
                     // old code fired it once and warped on the very next line. If the IPL is
                     // still not active after all this waiting it gets asked again, because a
                     // dropped request looks exactly like a slow one from in here.
-                    iplOn = Function.Call<bool>(Hash.IS_IPL_ACTIVE, _spec.Ipl);
+                    // A ROOM WITH NO IPL IS NOT A ROOM THAT FAILED. Most of the mission
+                    // interiors are in the story map already and simply have no way in; they
+                    // need a door and nothing else. Asking IS_IPL_ACTIVE about an empty name
+                    // answers no forever, and the failure message would then blame a missing
+                    // name for a room that was never waiting on one.
+                    iplOn = _spec.Ipl.Trim().Length == 0 ||
+                            Function.Call<bool>(Hash.IS_IPL_ACTIVE, _spec.Ipl);
 
                     if (!iplOn && waited % 1000 == 0)
                     {

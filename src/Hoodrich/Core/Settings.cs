@@ -657,6 +657,12 @@ namespace Hoodrich.Core
                 var door = ReadDoor(ini, section, section, "", (BlipSprite)40,
                                     0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
 
+                // The rest of what the picker wrote. Extra is the second and later interior
+                // names; a door with more than one has to ask for all of them or the room
+                // arrives with its walls missing.
+                door.Extra = ini.GetString(section, "Extra", "");
+                door.Sprite = (BlipSprite)ini.GetInt(section, "Sprite", 40);
+
                 // A door with nothing on either end of it is a section somebody started and
                 // did not finish. Better ignored than put at the middle of the map.
                 if (Math.Abs(door.DoorX) < 0.01f && Math.Abs(door.DoorY) < 0.01f) continue;

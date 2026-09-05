@@ -149,6 +149,44 @@ fitted one takes it off, and putting it back is free. Fitted parts survive a
 save and come back with the gun.
 
 
+EVERYWHERE ELSE ONLINE
+
+A hundred and twenty-one places with an inside are now listed in the mod: the
+casino and its vault, its car park, its tunnels and the arcade; all ten
+nightclubs; the biker clubhouses and the four lockups; the offices, the cargo
+warehouses, the bunker, the hangar, the facility, the silo; the five auto
+shops, the car meet, the salvage yards; the agencies and the studio; the acid
+lab, the bail offices, the Freakshop; the yachts, the carrier, the submarine.
+Plus two dozen rooms that have been sitting in the story map the whole time
+with no way in -- Bahama Mamas, Tequi-la-la, Cluckin' Bell, the Foundry, the
+morgue, the FIB office.
+
+Every interior name on that list was read out of the string table of the
+interior loader on this machine. Not one was typed from memory. What is NOT on
+the list is a single coordinate, because a coordinate somebody typed has been
+wrong every time this mod has tried it.
+
+So under "Doors": pick the part of town and the place, stand at its door and
+press "The door is here", walk inside and press "...and I come out here". Press
+Insert and you can walk through it, with a blip and a prompt, exactly like the
+two rooms the mod ships. The list marks off what is already done and a readout
+says how many of the hundred and twenty-one are written down.
+
+The rooms already in the story map need nothing but the two presses. The online
+ones switch the map over on the way in, the same as the grow room does.
+
+
+DOORS YOU ADD YOURSELF
+
+Any number of doors now, named in the ini rather than written into the mod. The
+two rooms below are its own; anything else is a section in Hoodrich.ini with its
+name listed under [Doors] More.
+
+Nothing about a door is code. It is two coordinates and a name, and the two
+coordinates can only honestly come from somebody standing on them. Four rounds
+of guessing where a room was is exactly what these rows exist to stop.
+
+
 THE TWO ROOMS
 
 Both entry points are read off the floor of the room they belong to rather
@@ -158,17 +196,19 @@ Both rooms come up at their FINAL stage. A business interior is an empty shell
 until its stock and its equipment are loaded: stash three is a full crop, the
 upgrade and production names are the kit that goes with it, and the dryers are
 the racks along the wall. That is the whole difference between a warehouse and
-a grow. A business interior is an empty shell
-until its stash is loaded, and stage three is the full one -- it is the whole
-difference between a warehouse and a grow. Three of the set are in each room, two women and
-a man, dressed by the game's own shuffle so the pair are not twins. They wander
+a grow.
+
+Three of the set are in each room, two women and a man, dressed by the game's
+own shuffle so the pair are not twins. They wander
 the room on a leash, stop, hang about, talk to each other and get on their
 phones, each on their own clock so they are never doing the same thing at the
 same moment. They had a work animation each at first and it looked like three
 people frozen mid-task, which is what any work loop looks like after ten
-seconds. They go when you go. The game does not staff these; online they are full of
-people because the online script puts them there, and a room with a full crop
-and nobody in it reads as somewhere abandoned mid-harvest.
+seconds. They go when you go.
+
+The game does not staff these rooms. Online they are full of people because the
+online script puts them there, and a room with a full crop and nobody in it
+reads as somewhere abandoned mid-harvest.
 
 
 The rooms work again, and the answer was not the coordinate, the IPL name or

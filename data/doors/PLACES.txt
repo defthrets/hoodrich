@@ -1,0 +1,576 @@
+===============================================================================
+  POSTED UP  --  EVERYWHERE WITH AN INSIDE
+===============================================================================
+
+
+Every place in the game that has an inside worth a door, and what has to load
+for it. The names came out of the string table of the interior loader on this
+machine. Not one of them was typed from memory.
+
+WHAT IS NOT IN HERE IS A SINGLE COORDINATE. A coordinate somebody typed has
+been wrong every time this mod has tried it, and the grow room cost four
+rounds of exactly that. So the mod holds the names and you supply the two
+numbers, by standing on them.
+
+HOW: settings screen, under "Doors". Pick the part of town, pick the place,
+stand at its door and press "The door is here". Walk inside, stand where you
+want to come out, press "...and I come out here". Press Insert. The door is
+there, with a blip and a prompt, the same as the two rooms the mod ships.
+
+A place marked ONLINE does not exist in a story game at all -- the door
+switches the map over on the way in and back on the way out. A place marked
+IN THE MAP is a mission room that has been there the whole time with no way
+in; it needs the two presses and nothing else, so those are the easy ones.
+
+Getting inside to mark the inside is the awkward half. The interior loader
+already sitting in scripts\New folder will teleport you into any of these if
+you put it back where it runs.
+
+
+-------------------------------------------------------------------------------
+  THE CASINO
+-------------------------------------------------------------------------------
+
+  Diamond Casino floor
+      Vinewood Park Drive. The round building with the fountain.
+      ONLINE   [CasinoFloor]
+
+  Casino penthouse
+      Top of the casino. The lift on the east side of the floor.
+      ONLINE   [CasinoPenthouse]
+
+  Casino penthouse garage
+      Under the penthouse.
+      ONLINE   [CasinoGarage]
+
+  Casino car park
+      The ramp on the north side.
+      ONLINE   [CasinoCarPark]
+
+  Casino back offices
+      Behind the floor. Staff only in the game's own words.
+      ONLINE   [CasinoBack]
+
+  Casino vault
+      Under the back offices.
+      ONLINE   [CasinoVault]
+
+  Casino hotel corridor
+      The guest floor above the casino.
+      ONLINE   [CasinoHotel]
+
+  Casino loading bay
+      The service entrance round the back.
+      ONLINE   [CasinoLoading]
+
+  Casino service tunnel
+      The tunnel the heist crew uses.
+      ONLINE   [CasinoTunnel]
+
+  Casino lift shaft
+      The shaft off the tunnel.
+      ONLINE   [CasinoShaft]
+
+  Heist planning room
+      The arcade basement, under the machines.
+      ONLINE   [HeistRoom]
+
+  Arcade
+      Six of them: Paleto, Grapeseed, Davis, Rockford, Vinewood, La Mesa.
+      ONLINE   [Arcade]
+
+
+-------------------------------------------------------------------------------
+  NIGHTCLUBS
+-------------------------------------------------------------------------------
+
+  Nightclub, La Mesa
+      Popular Street, east of the tracks.
+      ONLINE   [ClubLaMesa]
+
+  Nightclub, Mission Row
+      Behind the police station.
+      ONLINE   [ClubMissionRow]
+
+  Nightclub, Strawberry
+      Innocence Boulevard.
+      ONLINE   [ClubStrawberry]
+
+  Nightclub, West Vinewood
+      Eclipse Boulevard.
+      ONLINE   [ClubWestVinewood]
+
+  Nightclub, Cypress Flats
+      Kimble Hill Drive end of the industrial block.
+      ONLINE   [ClubCypressFlats]
+
+  Nightclub, Del Perro
+      Bay City Avenue, near the pier.
+      ONLINE   [ClubDelPerro]
+
+  Nightclub, LSIA
+      The airport service road.
+      ONLINE   [ClubLSIA]
+
+  Nightclub, Elysian Island
+      The docks.
+      ONLINE   [ClubElysian]
+
+  Nightclub, Downtown Vinewood
+      Elgin Avenue.
+      ONLINE   [ClubDowntownVinewood]
+
+  Nightclub, Vespucci Canals
+      Prosperity Street.
+      ONLINE   [ClubVespucci]
+
+  Nightclub garage
+      The shutter beside whichever club you picked.
+      ONLINE   [ClubGarage]
+
+
+-------------------------------------------------------------------------------
+  BIKER
+-------------------------------------------------------------------------------
+
+  Biker clubhouse
+      Twelve of them. The big ones are Paleto, Sandy Shores, La Mesa, Del Perro.
+      ONLINE   [ClubhouseA]
+
+  Biker clubhouse, one floor
+      The smaller pattern of clubhouse.
+      ONLINE   [ClubhouseB]
+
+  Meth lab
+      The lockups out in the county.
+      ONLINE   [MethLab]
+
+  Cocaine lockup
+      Same sort of unit, different town.
+      ONLINE   [CocaineLockup]
+
+  Counterfeit cash factory
+      Same again.
+      ONLINE   [CounterfeitCash]
+
+  Document forgery office
+      The one this mod already uses for the grow. Worth a door of its own anyway.
+      ONLINE   [DocumentForgery]
+
+
+-------------------------------------------------------------------------------
+  OFFICES AND CARGO
+-------------------------------------------------------------------------------
+
+  Maze Bank Tower office
+      The tallest building in the city, Pillbox Hill.
+      ONLINE   [MazeBankTower]
+
+  Arcadius Center office
+      Power Street, downtown.
+      ONLINE   [ArcadiusTower]
+
+  Maze Bank West office
+      Del Perro, on the boulevard.
+      ONLINE   [MazeBankWest]
+
+  Lombank West office
+      Del Perro, the black tower.
+      ONLINE   [LombokTower]
+
+  CEO garage, Arcadius
+      Under the Arcadius tower.
+      ONLINE   [CeoGarageArcadius]
+
+  CEO garage, Maze Bank Tower
+      Under the Maze Bank Tower.
+      ONLINE   [CeoGarageMazeBank]
+
+  CEO garage, Lombank
+      Under Lombank West.
+      ONLINE   [CeoGarageLombok]
+
+  CEO garage, Maze Bank West
+      Under Maze Bank West.
+      ONLINE   [CeoGarageMbWest]
+
+  Small cargo warehouse
+      Roller doors all over the industrial districts.
+      ONLINE   [CargoSmall]
+
+  Medium cargo warehouse
+      Same sort of unit, bigger inside.
+      ONLINE   [CargoMedium]
+
+  Large cargo warehouse
+      The big ones down by the docks.
+      ONLINE   [CargoLarge]
+
+  Vehicle warehouse
+      La Mesa, Cypress Flats, Elysian Island.
+      ONLINE   [VehicleWarehouse]
+
+
+-------------------------------------------------------------------------------
+  GUNS AND THE WAR
+-------------------------------------------------------------------------------
+
+  Bunker
+      Hatches in the ground out in the county. Eleven of them.
+      ONLINE   [Bunker]
+
+  Weapon workshop
+      The far end of the bunker.
+      ONLINE   [WeaponWorkshop]
+
+  Hangar
+      LSIA and Fort Zancudo.
+      ONLINE   [Hangar]
+
+  Doomsday facility
+      Nine hatches, mostly in the hills and the desert.
+      ONLINE   [Facility]
+
+  Doomsday facility, other pattern
+      The second shell the facility can have.
+      ONLINE   [Facility2]
+
+  Missile silo
+      Mount Chiliad, the doors in the rock.
+      ONLINE   [Silo]
+
+  Doomsday lab
+      Off the silo tunnels.
+      ONLINE   [DoomsdayLab]
+
+  Doomsday submarine
+      Under the water off the north coast.
+      ONLINE   [DoomsdaySub]
+
+  IAA facility
+      The one under the Kortz Center.
+      IN THE MAP   [IaaFacility]
+
+  IAA server farm
+      Also under the Kortz Center.
+      IN THE MAP   [ServerFarm]
+
+
+-------------------------------------------------------------------------------
+  CARS
+-------------------------------------------------------------------------------
+
+  Auto shop, Burton
+      Popular Street.
+      ONLINE   [AutoShopBurton]
+
+  Auto shop, La Mesa
+      Palomino Avenue.
+      ONLINE   [AutoShopLaMesa]
+
+  Auto shop, Mission Row
+      Behind the station, near the club.
+      ONLINE   [AutoShopMissionRow]
+
+  Auto shop, Rancho
+      Roy Lowenstein Boulevard. Closest one to the block.
+      ONLINE   [AutoShopRancho]
+
+  Auto shop, Strawberry
+      Davis Avenue.
+      ONLINE   [AutoShopStrawberry]
+
+  LS Car Meet
+      Cypress Flats, the warehouse with the shutter.
+      ONLINE   [CarMeet]
+
+  Salvage yard
+      Five of them. Strawberry, Paleto, Sandy Shores, La Mesa, Murrieta.
+      ONLINE   [SalvageYard]
+
+  Vinewood Car Club mod shop
+      Under the casino.
+      ONLINE   [VinewoodCarClub]
+
+  Maze Bank Arena floor
+      The arena itself, in Little Seoul.
+      ONLINE   [ArenaWar]
+
+  Arena workshop
+      Under the arena.
+      ONLINE   [ArenaWorkshop]
+
+  Arena VIP box
+      Also under the arena.
+      ONLINE   [ArenaVip]
+
+
+-------------------------------------------------------------------------------
+  THE AGENCY
+-------------------------------------------------------------------------------
+
+  Agency, Hawick
+      Hawick Avenue.
+      ONLINE   [AgencyHawick]
+
+  Agency, Rockford Hills
+      Marathon Avenue.
+      ONLINE   [AgencyRockford]
+
+  Agency, Little Seoul
+      Vespucci Boulevard.
+      ONLINE   [AgencyLittleSeoul]
+
+  Agency, Vespucci Canals
+      Bay City Avenue.
+      ONLINE   [AgencyVespucci]
+
+  Record A Studios
+      West Vinewood, the studio lot.
+      ONLINE   [MusicStudio]
+
+  Agency garage
+      Under whichever agency you took.
+      ONLINE   [AgencyGarage]
+
+  The Contract warehouse
+      The one the jewellery job runs out of.
+      ONLINE   [ContractWarehouse]
+
+
+-------------------------------------------------------------------------------
+  THE NEWER JOBS
+-------------------------------------------------------------------------------
+
+  Acid lab
+      The trailer at the Freakshop, Mirror Park.
+      IN THE MAP   [AcidLab]
+
+  Juggalo hideout
+      Up past Paleto, off the Great Ocean Highway.
+      IN THE MAP   [JuggaloHideout]
+
+  Multi storey garage
+      The Drug Wars garage.
+      ONLINE   [MultiStoreyGarage]
+
+  Drug Wars morgue
+      The morgue the Fooliganz job uses.
+      IN THE MAP   [DrugWarsMorgue]
+
+  Freakshop
+      Mirror Park, the yard behind the fence.
+      ONLINE   [Freakshop]
+
+  Dealership basement
+      Under the Premium Deluxe lot.
+      ONLINE   [DealershipBasement]
+
+  Bail office, Davis
+      Davis Avenue.
+      ONLINE   [BailDavis]
+
+  Bail office, Del Perro
+      Del Perro.
+      ONLINE   [BailDelPerro]
+
+  Bail office, Mission Row
+      Opposite the police station.
+      ONLINE   [BailMissionRow]
+
+  Bail office, Vinewood
+      Vinewood Boulevard.
+      ONLINE   [BailVinewood]
+
+  Bail office, Paleto Bay
+      Paleto Boulevard.
+      ONLINE   [BailPaleto]
+
+  Hacker basement
+      The Agents of Sabotage hideout.
+      ONLINE   [HackerBasement]
+
+
+-------------------------------------------------------------------------------
+  ROOMS WITH NO DOOR
+-------------------------------------------------------------------------------
+
+  Bahama Mamas
+      West Vinewood, the club on the corner.
+      IN THE MAP   [BahamaMamas]
+
+  Tequi-la-la
+      Vinewood Boulevard.
+      IN THE MAP   [Tequilala]
+
+  Split Sides comedy club
+      Vinewood, next to the cinema.
+      IN THE MAP   [SplitSides]
+
+  Cluckin' Bell factory
+      Paleto Bay, the big plant on the water.
+      IN THE MAP   [CluckinBell]
+
+  Meat packing factory
+      Cypress Flats.
+      IN THE MAP   [MeatPacking]
+
+  Simeon's showroom
+      Premium Deluxe Motorsport, Pillbox Hill.
+      ONLINE   [Simeon]
+
+  Vangelico jewellers
+      Portola Drive, Rockford Hills.
+      IN THE MAP   [Vangelico]
+
+  Life Invader offices
+      Boulevard Del Perro.
+      IN THE MAP   [LifeInvader]
+
+  FIB office
+      The FIB tower, downtown.
+      IN THE MAP   [FibOffice]
+
+  Dr Friedlander's office
+      Vinewood, the low white building.
+      IN THE MAP   [Friedlander]
+
+  Coroner's office
+      Davis, beside the hospital.
+      IN THE MAP   [Coroner]
+
+  Morgue
+      The old one, under the hospital.
+      IN THE MAP   [Morgue]
+
+
+-------------------------------------------------------------------------------
+  MORE ROOMS WITH NO DOOR
+-------------------------------------------------------------------------------
+
+  The Foundry
+      El Burro Heights, the industrial block.
+      IN THE MAP   [Foundry]
+
+  Omega's garage
+      Sandy Shores.
+      IN THE MAP   [Omega]
+
+  Haines Autos
+      Sandy Shores, the covered cars.
+      IN THE MAP   [HainesAutos]
+
+  Lester's factory
+      Murrieta Heights.
+      IN THE MAP   [LesterFactory]
+
+  Janitor's apartment
+      The one from the FIB job.
+      IN THE MAP   [Janitor]
+
+  Epsilon storage room
+      Rockford Hills.
+      IN THE MAP   [Kiflom]
+
+  Torture room
+      Under the sheriff's building, Sandy Shores.
+      IN THE MAP   [Torture]
+
+  Maze Bank Arena stands
+      Little Seoul.
+      IN THE MAP   [MazeArena]
+
+  Fame or Shame studio
+      The studio lot, West Vinewood.
+      ONLINE   [FameOrShame]
+
+  Online mugshot room
+      Nowhere in particular. The room the game photographs you in.
+      ONLINE   [Mugshot]
+
+  Online winning room
+      The other one of those.
+      ONLINE   [WinningRoom]
+
+  The Kortz Center
+      Pacific Bluffs, on the cliff.
+      IN THE MAP   [KortzCenter]
+
+
+-------------------------------------------------------------------------------
+  BOATS AND THE ISLAND
+-------------------------------------------------------------------------------
+
+  Kosatka submarine
+      Off the coast, wherever you left it.
+      ONLINE   [Kosatka]
+
+  Cayo Perico nightclub
+      The island. Needs the island loaded, which is its own job.
+      ONLINE   [IslandNightclub]
+
+  Yacht
+      Anchored off the coast.
+      ONLINE   [HeistYacht]
+
+  Gunrunning yacht
+      The other yacht.
+      ONLINE   [GunrunYacht]
+
+  Aircraft carrier
+      Out at sea, north west.
+      ONLINE   [Carrier]
+
+  Aircraft carrier hangar
+      Below the flight deck.
+      ONLINE   [CarrierHangar]
+
+  Cargo ship
+      The one moored at the docks.
+      ONLINE   [CargoShip]
+
+  North Yankton
+      The whole town, not a room. Big ask and worth trying once.
+      ONLINE   [NorthYankton]
+
+
+-------------------------------------------------------------------------------
+  HOUSES
+-------------------------------------------------------------------------------
+
+  Richman mansion
+      Richman, the one with the long drive.
+      ONLINE   [RichmanMansion]
+
+  Vinewood residence
+      Vinewood Hills.
+      ONLINE   [VinewoodResidence]
+
+  Tongva Hills estate
+      Out past the vineyard.
+      ONLINE   [TongvaEstate]
+
+  Martin Madrazo's house
+      Vinewood Hills, up the private road.
+      IN THE MAP   [Madrazo]
+
+  Denise's house
+      Strawberry. Next door but one to the block.
+      IN THE MAP   [Denise]
+
+  Lester's house
+      Murrieta Heights.
+      IN THE MAP   [Lester]
+
+  Solomon Richards' office
+      Richards Majestic, the studio lot.
+      IN THE MAP   [Solomon]
+
+  Hotel room
+      The Von Crastenburg, Rockford Hills.
+      IN THE MAP   [HotelRoom]
+
+
+===============================================================================
+  121 places. 91 of them are online map content, 30 are already in the map.
+===============================================================================
