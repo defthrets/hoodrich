@@ -4471,150 +4471,188 @@ namespace Hoodrich.Locations
         private int _nextNoise;
 
         /// <summary>
-        /// Somebody in the crowd throws a flare.
+        /// Flares, thrown into the middle.
         ///
-        /// THROWN, NOT FIRED, and the difference is bigger than it sounds. A flare gun is a
-        /// GUN: the ped raises it, the game treats the report as gunfire, and a ring of sixty
-        /// people who have just heard a shot is a ring of sixty people leaving. A hand flare is
-        /// a thrown object, so it lands, burns, lights the smoke orange, and nobody flinches.
-        /// It is also what people actually throw at these.
+        /// Hand flares rather than anything fired. A ring of people who have just heard a shot
+        /// is a ring of sixty people leaving; a thrown flare lands, burns, lights the smoke
+        /// orange, and nobody flinches. It is also what people actually throw at these.
         ///
         /// ONLY WHILE THERE IS SOMETHING TO LIGHT. A flare goes out because a car is sideways
         /// in front of you, not on a timer -- so this does nothing at all unless somebody is
         /// working the circle, which also means it stops on its own when the police arrive.
         ///
-        /// He is given one flare and it is taken back afterwards, because a man stood in a
-        /// crowd holding one for three hours will eventually be seen holding it.
+        /// VOLLEYS, NOT ONE MAN. It was one thrower every six to eighteen seconds and more
+        /// than half of those went straight up, so the middle of a takeover had one flare in
+        /// it at a time and the crowd looked like it was watching. Now two to four throw
+        /// within a second of each other every few seconds, and four in five go low across
+        /// the middle where the cars are. The high ones stay, fewer, because they are what
+        /// you see from a street away and come to look at.
         ///
-        /// Half go high, arcing over the middle, and half are lobbed low across it. The low
-        /// ones are what actually light the cars; the high ones are what you see from a street
-        /// away and come to look at.
+        /// Each is given one flare and it is taken back afterwards, because a man stood in a
+        /// crowd holding one for three hours will eventually be seen holding it.
         /// </summary>
         private void Flares(int now)
         {
+            // The volley in flight. Each throws on their own moment, so four arms do not go
+            // up on one frame.
+            for (var i = 0; i < _throws.Count; i++)
+            {
+                var t = _throws[i];
+                if (t.Loosed || now < t.ThrowAt) continue;
+
+                t.Loosed = true;
+
+                try
+                {
+                    Throw(t);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Takeover: no flare: " + ex.Message);
+                }
+            }
+
             if (now < _nextFlare || _crowd.Count == 0) return;
             if (Spinning() < 1) return;
 
             _nextFlare = now + FlareMinMs + _rng.Next(FlareMaxMs - FlareMinMs);
 
-            try
+            var many = FlareThrowersMin + _rng.Next(FlareThrowersMax - FlareThrowersMin + 1);
+
+            for (var tries = 0; many > 0 && tries < 14; tries++)
             {
                 var w = _crowd[_rng.Next(_crowd.Count)];
 
-                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive || !w.There) return;
-
-                var h = w.Man.Handle;
-                var flare = Game.GenerateHash("weapon_flare");
-
-                Function.Call(Hash.GIVE_WEAPON_TO_PED, h, flare, 1, false, true);
-                Function.Call(Hash.SET_CURRENT_PED_WEAPON, h, flare, true);
-
-                // Nobody takes him for a threat, and he does not take anybody else for one.
-                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
-                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive || !w.There) continue;
+                if (Occupied(w)) continue;
 
                 Vector3 at;
 
                 if (_rng.Next(100) < FlareUpShare)
                 {
-                    // High over the middle, so it arcs up and comes down through the smoke.
                     at = new Vector3(Circle.X + (float)(_rng.NextDouble() * 8.0 - 4.0),
                                      Circle.Y + (float)(_rng.NextDouble() * 8.0 - 4.0),
                                      Circle.Z + FlareUpHigh);
                 }
                 else
                 {
-                    // Lobbed low across it, which is the one that lights the cars.
-                    at = new Vector3(Circle.X + (float)(_rng.NextDouble() * 6.0 - 3.0),
-                                     Circle.Y + (float)(_rng.NextDouble() * 6.0 - 3.0),
+                    at = new Vector3(Circle.X + (float)(_rng.NextDouble() * 7.0 - 3.5),
+                                     Circle.Y + (float)(_rng.NextDouble() * 7.0 - 3.5),
                                      Circle.Z + 1.0f);
                 }
 
-                // Turned to face it first. A thrown object goes where the ped is pointed as
-                // much as where it is aimed, and a flare lobbed over his own shoulder is a
-                // flare in the crowd behind him.
-                var to = at - w.Man.Position;
+                _throws.Add(new Thrown
+                {
+                    W = w,
+                    At = at,
+                    ThrowAt = now + _rng.Next(FlareStaggerMs),
+                    Back = now + FlareStaggerMs + FlareHoldMs
+                });
 
-                w.Man.Heading =
-                    (float)((Math.Atan2(-to.X, to.Y) * 180.0 / Math.PI + 360.0) % 360.0);
-
-                Function.Call(Hash.TASK_THROW_PROJECTILE, h, at.X, at.Y, at.Z);
-
-                _flareFrom = w;
-                _flareBack = now + FlareHoldMs;
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Takeover: no flare: " + ex.Message);
+                many--;
             }
         }
 
-        /// <summary>And the flare goes off his hands once he has thrown it.</summary>
+        /// <summary>Whether this one already has a flare or a firework on the go.</summary>
+        private bool Occupied(Watcher w)
+        {
+            for (var i = 0; i < _throws.Count; i++)
+            {
+                if (ReferenceEquals(_throws[i].W, w)) return true;
+            }
+
+            for (var i = 0; i < _rockets.Count; i++)
+            {
+                if (ReferenceEquals(_rockets[i].Man, w)) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>One throw: armed, turned to face the middle, and let go.</summary>
+        private void Throw(Thrown t)
+        {
+            var w = t.W;
+            if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) return;
+
+            var h = w.Man.Handle;
+            var flare = Game.GenerateHash("weapon_flare");
+
+            Function.Call(Hash.GIVE_WEAPON_TO_PED, h, flare, 1, false, true);
+            Function.Call(Hash.SET_CURRENT_PED_WEAPON, h, flare, true);
+            Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
+            Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
+
+            var to = t.At - w.Man.Position;
+
+            w.Man.Heading = (float)((Math.Atan2(-to.X, to.Y) * 180.0 / Math.PI + 360.0) % 360.0);
+
+            Function.Call(Hash.TASK_THROW_PROJECTILE, h, t.At.X, t.At.Y, t.At.Z);
+        }
+
+        /// <summary>The flares taken back once thrown.</summary>
         private void Unarm(int now)
         {
-            if (_flareBack == 0 || now < _flareBack) return;
-
-            _flareBack = 0;
-
-            try
+            for (var i = _throws.Count - 1; i >= 0; i--)
             {
-                var w = _flareFrom;
-                _flareFrom = null;
+                var t = _throws[i];
+                if (now < t.Back) continue;
 
-                if (w == null || w.Man == null || !w.Man.Exists()) return;
+                _throws.RemoveAt(i);
 
-                Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, w.Man.Handle, true);
+                try
+                {
+                    var w = t.W;
+                    if (w == null || w.Man == null || !w.Man.Exists()) continue;
 
-                // Back to whatever he was doing before somebody handed him a flare.
-                w.There = false;
-            }
-            catch
-            {
-                // He keeps it. Not the end of the world.
+                    Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, w.Man.Handle, true);
+                    w.There = false;
+                }
+                catch
+                {
+                    // He keeps it, then. It is a flare.
+                }
             }
         }
 
         /// <summary>
-        /// And somebody sets a firework up in the road.
+        /// Fireworks, from a box set down on the ring round the middle.
         ///
-        /// THE SETTING UP IS THE BIT WORTH HAVING. A firework that simply goes off is a
-        /// particle effect; a man crouched over something in the road for five seconds, and
-        /// THEN a firework, is somebody who brought one. So it is three beats -- he walks out
-        /// of the ring to a spot, he crouches over it, it goes off -- and the middle beat is
-        /// the longest.
+        /// Somebody walks out of the crowd to a spot a few car lengths from the circle,
+        /// crouches over a box for a few seconds, and it goes up. Doing it from a box a
+        /// person walked to is what makes it a firework rather than an explosion.
         ///
-        /// Set down outside the circle the cars work and inside the ring people stand on, so
-        /// it is in the open without being in the way of a car that is about to slide.
+        /// MORE OF THEM. It was one every twenty-five to sixty seconds, one man at a time,
+        /// which over a takeover is a handful. Now one every nine to twenty-four seconds,
+        /// two boxes can be on the go at once, and each puts up four bursts spread a little
+        /// rather than three in a column.
         /// </summary>
         private void Firework(int now)
         {
-            // Going off, or being packed away.
-            if (_fireAt != 0)
+            // The boxes being set up, lit when their moment comes.
+            for (var i = _rockets.Count - 1; i >= 0; i--)
             {
-                if (now < _fireAt) return;
+                var r = _rockets[i];
+                if (now < r.At) continue;
 
-                _fireAt = 0;
-                Bang(_fireSpot);
+                _rockets.RemoveAt(i);
 
-                if (_fireMan != null && _fireMan.Man != null && _fireMan.Man.Exists())
+                Bang(r.Spot);
+
+                if (r.Man != null && r.Man.Man != null && r.Man.Man.Exists())
                 {
-                    // Up, out of the way, and back to the ring.
-                    try { Function.Call(Hash.CLEAR_PED_TASKS, _fireMan.Man.Handle); }
-                    catch { }
+                    try { Function.Call(Hash.CLEAR_PED_TASKS, r.Man.Man.Handle); }
+                    catch { /* he is stood up already */ }
 
-                    _fireMan.There = false;
+                    r.Man.There = false;
                 }
 
-                _fireMan = null;
-
-                try { if (_fireProp != null && _fireProp.Exists()) _fireProp.Delete(); }
-                catch { }
-
-                _fireProp = null;
-                return;
+                try { if (r.Prop != null && r.Prop.Exists()) r.Prop.Delete(); }
+                catch { /* it is gone */ }
             }
 
             if (now < _nextFire || _crowd.Count == 0) return;
+            if (_rockets.Count >= FireAtOnce) return;
 
             _nextFire = now + FireMinMs + _rng.Next(FireMaxMs - FireMinMs);
 
@@ -4623,67 +4661,49 @@ namespace Hoodrich.Locations
                 var w = _crowd[_rng.Next(_crowd.Count)];
 
                 if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive || !w.There) return;
+                if (Occupied(w)) return;
 
                 var a = _rng.NextDouble() * Math.PI * 2d;
-                var r = FireRingMin + (float)(_rng.NextDouble() * (FireRingMax - FireRingMin));
+                var dist = FireRingMin + (float)(_rng.NextDouble() * (FireRingMax - FireRingMin));
 
-                _fireSpot = Ground(new Vector3(Circle.X + (float)Math.Cos(a) * r,
-                                               Circle.Y + (float)Math.Sin(a) * r, Circle.Z));
+                var spot = Ground(new Vector3(Circle.X + (float)Math.Cos(a) * dist,
+                                              Circle.Y + (float)Math.Sin(a) * dist, Circle.Z));
 
-                // The box he is crouched over. Cosmetic -- if it will not load he is still a
-                // man crouched over something, and something still goes off.
+                Prop prop = null;
+
                 try
                 {
                     var model = new Model("ind_prop_firework_01");
 
                     if (model.IsValid && model.IsInCdImage && Core.Models.Ready(model))
                     {
-                        _fireProp = World.CreateProp(model, _fireSpot, false, false);
+                        prop = World.CreateProp(model, spot, false, false);
                         model.MarkAsNoLongerNeeded();
                     }
                 }
                 catch
                 {
-                    _fireProp = null;
+                    prop = null;
                 }
 
-                _fireMan = w;
                 w.There = false;
 
                 Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
-
-                // Out to it, then crouched over it. The scenario is the game's own "somebody
-                // bent over inspecting a thing on the ground", which is exactly the shape of a
-                // man setting a firework up.
                 Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, w.Man.Handle,
-                              _fireSpot.X, _fireSpot.Y, _fireSpot.Z, 2.5f, -1, 1f, true, 0f);
-
+                              spot.X, spot.Y, spot.Z, 2.5f, -1, 1f, true, 0f);
                 Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
                               "WORLD_HUMAN_CROUCH_INSPECT", 0, true);
-
                 Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
 
-                _fireAt = now + FireSetUpMs;
+                _rockets.Add(new Rocket { At = now + FireSetUpMs, Spot = spot, Man = w, Prop = prop });
             }
             catch (Exception ex)
             {
                 Log.Debug("Takeover: no firework: " + ex.Message);
-
-                _fireAt = 0;
-                _fireMan = null;
             }
         }
 
-        /// <summary>
-        /// It goes off.
-        ///
-        /// The game's own Independence Day firework effects, which are a named asset that has
-        /// to be requested and then selected before anything will draw. Missing that second
-        /// call is the usual reason a particle effect does nothing and reports no error.
-        ///
-        /// Three of them together, up the height of a house, because one burst at ground level
-        /// is a firework that did not work.
-        /// </summary>
+        /// <summary>A box going off: bursts stacked up over it, spread a little, and the bang.</summary>
         private void Bang(Vector3 at)
         {
             try
@@ -4692,16 +4712,17 @@ namespace Hoodrich.Locations
 
                 if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, FireAsset)) return;
 
-                for (var i = 0; i < 3; i++)
+                for (var i = 0; i < FireBurstsPerBox; i++)
                 {
-                    var up = at + new Vector3(0f, 0f, 6f + i * 5f);
+                    var up = at + new Vector3((float)(_rng.NextDouble() * 5.0 - 2.5),
+                                              (float)(_rng.NextDouble() * 5.0 - 2.5),
+                                              6f + i * 5f);
 
                     Function.Call(Hash.USE_PARTICLE_FX_ASSET, FireAsset);
-
                     Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_AT_COORD,
                                   FireBursts[_rng.Next(FireBursts.Length)],
                                   up.X, up.Y, up.Z, 0f, 0f, 0f,
-                                  1.4f, false, false, false);
+                                  1.3f + (float)_rng.NextDouble() * 0.5f, false, false, false);
                 }
 
                 Function.Call(Hash.PLAY_SOUND_FROM_COORD, -1, "Explosion",
@@ -4722,40 +4743,51 @@ namespace Hoodrich.Locations
             "scr_indep_firework_shotburst"
         };
 
-        /// <summary>How often a flare goes up, and how it is aimed.</summary>
-        /// <summary>
-        /// How often somebody lights one. Halved, because more of them is the look.
-        ///
-        /// Six to eighteen seconds against twelve to thirty-four. On a junction this size
-        /// that is usually two or three burning at once rather than one at a time.
-        /// </summary>
-        private const int FlareMinMs = 6000;
-        private const int FlareMaxMs = 18000;
+        /// <summary>How often a volley goes, how many are in it, how they stagger, and how long they hold the flare.</summary>
+        private const int FlareMinMs = 3500;
+        private const int FlareMaxMs = 9000;
+        private const int FlareThrowersMin = 2;
+        private const int FlareThrowersMax = 4;
+        private const int FlareStaggerMs = 900;
         private const int FlareHoldMs = 3200;
-        private const int FlareUpShare = 55;
+
+        /// <summary>One in five goes high; the rest go low across the middle.</summary>
+        private const int FlareUpShare = 20;
         private const float FlareUpHigh = 70f;
 
-        /// <summary>How often somebody sets one up, how long it takes, and where it goes.</summary>
-        /// <summary>
-        /// And the fireworks, cut to a third. Twenty-five to sixty seconds against seventy
-        /// to a hundred and sixty -- often enough to be part of the night rather than a thing
-        /// that happened once while you were looking the other way.
-        /// </summary>
-        private const int FireMinMs = 25000;
-        private const int FireMaxMs = 60000;
+        /// <summary>How often a box goes out, how long it takes to set, how many at once, and how big a box is.</summary>
+        private const int FireMinMs = 9000;
+        private const int FireMaxMs = 24000;
         private const int FireSetUpMs = 5200;
+        private const int FireAtOnce = 2;
+        private const int FireBurstsPerBox = 4;
         private const float FireRingMin = 12f;
         private const float FireRingMax = 16f;
 
+        /// <summary>One flare on its way: who, where at, when they let go, and when it is taken back.</summary>
+        private sealed class Thrown
+        {
+            public Watcher W;
+            public Vector3 At;
+            public int ThrowAt;
+            public int Back;
+            public bool Loosed;
+        }
+
+        /// <summary>One box being set: where, who is crouched over it, and when it goes.</summary>
+        private sealed class Rocket
+        {
+            public int At;
+            public Vector3 Spot;
+            public Watcher Man;
+            public Prop Prop;
+        }
+
         private int _nextFlare;
-        private int _flareBack;
-        private Watcher _flareFrom;
+        private readonly List<Thrown> _throws = new List<Thrown>();
 
         private int _nextFire;
-        private int _fireAt;
-        private Vector3 _fireSpot;
-        private Watcher _fireMan;
-        private Prop _fireProp;
+        private readonly List<Rocket> _rockets = new List<Rocket>();
 
         // ---- the feed -----------------------------------------------------------
 
@@ -6071,14 +6103,14 @@ namespace Hoodrich.Locations
 
             // And the firework box, which is ours and would otherwise sit in the road for the
             // rest of the session with nobody left who knows what it is.
-            try { if (_fireProp != null && _fireProp.Exists()) _fireProp.Delete(); }
-            catch { }
+            foreach (var r in _rockets)
+            {
+                try { if (r.Prop != null && r.Prop.Exists()) r.Prop.Delete(); }
+                catch { /* it is gone */ }
+            }
 
-            _fireProp = null;
-            _fireMan = null;
-            _fireAt = 0;
-            _flareFrom = null;
-            _flareBack = 0;
+            _rockets.Clear();
+            _throws.Clear();
 
             foreach (var l in _law)
             {
