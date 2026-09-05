@@ -420,14 +420,6 @@ namespace Hoodrich.Core
 
 
         /// <summary>
-        /// And the one for a car stood still with the back wheels lit up.
-        ///
-        /// Here for the same reason as the pair above, and 23 is the community number for it.
-        /// A wrong number here is a car on the mark doing nothing rather than a crash.
-        /// </summary>
-        public int TakeoverBurnAction = 23;
-
-        /// <summary>
         /// How wide the loops the cars drive are, in metres.
         ///
         /// In the ini because it is a number that can only be judged by standing at the
@@ -664,7 +656,6 @@ namespace Hoodrich.Core
             s.TowReturnH = ini.GetFloat("Cars", "TowReturnH", s.TowReturnH);
 
             s.TakeoverEnabled = ini.GetBool("Block", "TakeoverEnabled", s.TakeoverEnabled);
-            s.TakeoverBurnAction = (int)Clamp(ini.GetInt("Block", "TakeoverBurnAction", s.TakeoverBurnAction), 0f, 40f);
             s.TakeoverSpinRadius = Clamp(ini.GetFloat("Block", "TakeoverSpinRadius", s.TakeoverSpinRadius), 2f, 18f);
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 

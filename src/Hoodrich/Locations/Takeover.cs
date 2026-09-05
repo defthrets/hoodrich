@@ -157,6 +157,15 @@ namespace Hoodrich.Locations
         private const float StageArrived = 8f;
 
         /// <summary>
+        /// How far a performer may travel off its place before it is sent back.
+        ///
+        /// Wider than StageArrived, and it has to be: the same car is judged to have ARRIVED
+        /// inside eight metres, so a leash any tighter than that would send a car back to a
+        /// marker it is already considered to be at, for ever.
+        /// </summary>
+        private const float StageLeash = 11f;
+
+        /// <summary>
         /// How long a performer tries to reach its marker before waiting where it is.
         ///
         /// Twenty-five seconds. Long enough that a car merely held up by the crowd gets there
@@ -661,8 +670,6 @@ namespace Hoodrich.Locations
 
             public int Way;
 
-            /// <summary>Whether the show on the marker is a standing burnout (true) or a spinning one.</summary>
-            public bool Standing;
             public int Until;
 
             public bool Circling;
@@ -3077,10 +3084,11 @@ namespace Hoodrich.Locations
                         {
                             Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
-                            // THE SHOW, DECIDED ONCE. Half of them sit on the brakes and light
-                            // the rears; half spin it, one way or the other. Kept up in bursts
-                            // below for as long as the car is on its place.
-                            r.Standing = _rng.Next(2) == 0;
+                            // THE SHOW. Every one of them spins; the only thing decided here
+                            // is which way round. It used to be a coin flip against a standing
+                            // burnout, and with four places that meant two cars sat still --
+                            // and on a bad flip, three. A takeover is the cars going round.
+                            // Kept up in bursts below for as long as the car is on its place.
                             r.Way = _rng.Next(2) == 0 ? 1 : -1;
                             Reckless(r, true);
                             Show(r, now);
@@ -3089,6 +3097,35 @@ namespace Hoodrich.Locations
                         {
                             // He waits where he stopped.
                         }
+                    }
+                    else if (r.Car.Position.DistanceTo(bay.At) > StageLeash)
+                    {
+                        // SLID OFF ITS PLACE. A car going round on reduced grip travels, and
+                        // four of them travelling means the show drifts across the junction
+                        // and ends up somewhere nobody walked.
+                        //
+                        // Sent back the way it came in rather than teleported: AtStage is
+                        // dropped and the clock restarted, which hands it straight back to the
+                        // arrival branch above -- drive to the marker, snap onto it, start the
+                        // show again. The same code that put it there in the first place.
+                        //
+                        // GRIP COMES BACK FOR THE DRIVE. A car asked to route anywhere on
+                        // drift tyres does not so much drive as slither; Show puts both back
+                        // on the moment it lands, so nothing is lost but the sliding.
+                        try
+                        {
+                            Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
+                            Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, false);
+                            Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+                        }
+                        catch
+                        {
+                            // It is being sent back either way.
+                        }
+
+                        r.AtStage = false;
+                        r.Sent = now;
+                        r.NextAction = now;
                     }
                     else if (now >= r.NextAction)
                     {
@@ -4208,29 +4245,14 @@ namespace Hoodrich.Locations
 
                 try
                 {
-                    // THE ONE ON THE MARK STANDS STILL, WHEN THERE IS NO LINE TO DRIVE.
-                    //
-                    // This is the fallback now rather than the behaviour. With a recording on
-                    // disk the middle car drives the shape somebody actually drove -- see Line
-                    // -- and without one it does what it always did: sits on the mark with the
-                    // back wheels going, which is a takeover with somebody in the middle of it
-                    // rather than an empty junction.
-                    //
-                    // It used to be told to hold a burnout AND to drive a donut in the same
-                    // breath, which are two different things to do with the same wheels, and it
-                    // did the donut because a temp action is a driver input and beats a flag.
-                    if (r.Middle)
-                    {
-                        Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
+                    // EVERYBODY SPINS, including anybody ever sent to the middle. Nothing on
+                    // this junction stands still with its back wheels going any more: a
+                    // stationary burnout among cars going round reads as a car that is stuck,
+                    // which is exactly what it was taken for.
+                    Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
 
-                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
-                                      r.Car.Handle, Burn(), BurstMs);
-                    }
-                    else
-                    {
-                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
-                                      r.Car.Handle, Spin(r.Way), BurstMs);
-                    }
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
+                                  r.Car.Handle, Spin(r.Way), BurstMs);
 
                     r.NextAction = now + BurstMs - 400;
                 }
@@ -4260,9 +4282,13 @@ namespace Hoodrich.Locations
         /// pair is a matter of trying two numbers rather than rebuilding anything.
         /// </summary>
         /// <summary>
-        /// The show on a marker: a standing burnout or a spinning one, in a burst that is
-        /// re-issued before it runs out. The standing one is held in place by the burnout
-        /// mode; the spinning one has its grip reduced so it actually goes round.
+        /// The show on a marker: a spinning burnout, in a burst re-issued before it runs out.
+        ///
+        /// BURNOUT MODE OFF, GRIP DOWN. Those two are the whole trick. Burnout mode holds a car
+        /// on the spot with its rears going, which is the opposite of what is wanted here, so
+        /// it is turned off explicitly rather than left to whatever the car was doing on the
+        /// way in. Reduced grip and drift tyres are what let the back come round instead of the
+        /// car simply steering in a tight circle.
         /// </summary>
         private void Show(Runner r, int now)
         {
@@ -4270,18 +4296,10 @@ namespace Hoodrich.Locations
 
             try
             {
-                if (r.Standing)
-                {
-                    Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
-                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Burn(), BurstMs);
-                }
-                else
-                {
-                    Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-                    Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
-                    Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
-                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), BurstMs);
-                }
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
+                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
+                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), BurstMs);
             }
             catch
             {
@@ -4310,6 +4328,13 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_ENTITY_PROOFS, r.Car.Handle, false, false, false, on, false, false, false, false);
                     Function.Call(Hash.SET_VEHICLE_STRONG, r.Car.Handle, on);
                     Function.Call(Hash.SET_VEHICLE_CAN_BE_VISIBLY_DAMAGED, r.Car.Handle, !on);
+
+                    // AND THE TYRES DO NOT POP. Spinning on reduced grip for a whole takeover
+                    // is minutes of wheelspin against kerbs, and a performer that blows a rear
+                    // stops being a performer -- it grinds round on a rim and the show has a
+                    // broken car in the middle of it. Rims stay on too, for the same reason.
+                    Function.Call(Hash.SET_VEHICLE_TYRES_CAN_BURST, r.Car.Handle, !on);
+                    Function.Call(Hash.SET_VEHICLE_WHEELS_CAN_BREAK, r.Car.Handle, !on);
                 }
             }
             catch
@@ -4326,18 +4351,6 @@ namespace Hoodrich.Locations
         private int Spin(int way)
         {
             return way > 0 ? 7 : 8;
-        }
-
-        /// <summary>
-        /// And the one for standing on the spot with the back wheels going.
-        ///
-        /// Same caveat as the donut pair: the temp action list is community numbering and 23 is
-        /// what everybody uses for a burnout. It is in the ini for the same reason -- if this
-        /// build numbers them differently it is a number to change, not a rebuild.
-        /// </summary>
-        private int Burn()
-        {
-            return _cfg == null ? 23 : _cfg.TakeoverBurnAction;
         }
 
         /// <summary>How long one burst of lock lasts, and how far they may wander.</summary>
