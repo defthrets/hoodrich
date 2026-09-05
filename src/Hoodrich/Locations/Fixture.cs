@@ -30,6 +30,10 @@ namespace Hoodrich.Locations
         private Prop _prop;
         private int _lastUpdate;
 
+        /// <summary>Whether the ground has actually been found under it yet. See Ground.</summary>
+        private bool _grounded;
+        private string _placedAs = "";
+
         public Fixture(Vector3 where, float heading, params string[] models)
         {
             _where = where;
@@ -79,6 +83,8 @@ namespace Hoodrich.Locations
                 if (away <= SpawnRange) Place();
                 return;
             }
+
+            if (!_grounded) Ground(true);
 
             if (away > DespawnRange) Clear();
         }
@@ -147,16 +153,16 @@ namespace Hoodrich.Locations
 
                     // Sat on the ground and not to be shoved across the courtyard by anybody
                     // who walks into it. A couch that slides is a couch nobody put there.
-                    Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _prop.Handle);
+                    _placedAs = name;
+                    _grounded = false;
+
+                    // Held still from the first frame, and put on the ground by Ground, which
+                    // is allowed to fail and be asked again.
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, _prop.Handle, true);
+                    Ground(false);
 
-                    // MEASURED AFTER IT IS SETTLED, NOT BEFORE. Both calls above move it --
-                    // one drops it onto the ground and the other pins it there -- and a seat
-                    // worked out from where the prop was asked to go rather than where it
-                    // ended up is a seat hanging in the air above a couch that sank.
-                    if (Seating.IsSeat(name)) Seating.Offer(this, _prop, name);
-
-                    Log.Info("Fixture " + name + " placed at " + _where + ".");
+                    Log.Info("Fixture " + name + " placed at " + _where +
+                             (_grounded ? "." : " -- no ground loaded under it yet; it goes down when there is."));
                     return;
                 }
                 catch
@@ -168,11 +174,52 @@ namespace Hoodrich.Locations
             Log.Debug("No usable model for the fixture at " + _where + ".");
         }
 
+        /// <summary>
+        /// Puts it on the ground, and says whether it managed to.
+        ///
+        /// PLACE_OBJECT_ON_GROUND_PROPERLY finds the ground by asking the collision under the
+        /// prop, and in the second after the map has been switched -- which the grow room
+        /// door does, on the far side of this same yard -- there is none loaded to ask. The
+        /// native answers no and the prop stays exactly where it was asked to be, a metre
+        /// up, frozen, for the rest of the session: a whole yard of furniture floating at
+        /// knee height, which is what happened. So it is asked again every couple of seconds
+        /// until it answers yes, and only then is the furniture offered as somewhere to sit,
+        /// because the seats are measured off where it ends up.
+        /// </summary>
+        private void Ground(bool late)
+        {
+            if (_prop == null || !_prop.Exists()) return;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_COLLISION_LOADED_AROUND_ENTITY, _prop.Handle)) return;
+
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, _prop.Handle, false);
+                var down = Function.Call<bool>(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _prop.Handle);
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, _prop.Handle, true);
+
+                if (!down) return;
+
+                _grounded = true;
+
+                if (Seating.IsSeat(_placedAs)) Seating.Offer(this, _prop, _placedAs);
+
+                if (late) Log.Info("Fixture " + _placedAs + " put on the ground late, at " + _prop.Position + ".");
+            }
+            catch
+            {
+                // Asked again in two seconds.
+            }
+        }
+
+
         private void Clear()
         {
             // Before the prop goes, so nobody is left holding a seat on a couch that is no
             // longer in the world. Cheap, unconditional, and safe on a fixture that never
             // offered any.
+            _grounded = false;
+
             Seating.Withdraw(this);
 
             try

@@ -200,6 +200,21 @@ phone up to film, for a few seconds at a time, never more than two thirds of
 them at once. When the cars stop the last of them wind down within a few
 seconds and go back to standing about.
 
+THE BLOCK IS ON THE ONLINE MAP, and only the block. LD Organics is only on the
+online map -- on the story map that corner is a plain garage -- and so are the
+two rooms. Holding the whole city on the online map turned every other online
+building on as well, which was not wanted; switching only through the doors put
+LD Organics back to a garage the moment you stepped out. So the online map is
+held while you are on the block, Lamar's yard, LD Organics and the two doors,
+and the story map comes back as you leave it. OnlineBlock in the ini and a tick
+under "Doors" turn it off.
+
+THE FURNITURE STOPS FLOATING. A prop is put on the ground by asking the
+collision under it, and in the second after the map has been switched there is
+none loaded to ask -- so the game answered no and left the whole yard a metre
+up, frozen, which is what you saw. A fixture asks again every couple of seconds
+until the ground is there, and only then is it offered as somewhere to sit.
+
 THE MAN ON THE COUCH, AGAIN. The backrest probe could miss: it read a third of
 the way across a deep couch and got the cushion both sides, and on the frame
 the couch is put out the game has not given it collision yet, so it read
@@ -219,23 +234,6 @@ More fireworks. One every nine to twenty-four seconds instead of every
 twenty-five to sixty, two boxes can be on the go at once, and each box puts up
 four bursts spread a little rather than three in a column.
 
-
-THE ONLINE CITY, FROM THE STREET
-
-The city is held on the online map the whole time now, not only while you are
-through a door. The Diamond Casino is the casino from the road, with its doors
-and its glass; the five auto shop fronts, the four agency fronts, the five bail
-offices, the Freakshop and the cargo ship at the docks all stand where the
-online game has them. The doors used to switch the map on the way in and back
-on the way out, so the casino was a building site until the moment you walked
-into it. A tick under "Doors" and OnlineMap in the ini turn it off.
-
-The nightclub fronts are deliberately not in that list. The game has ten club
-exteriors and one set of placements per club deciding which is open, and loading
-all ten at once is ten answers to one question. Each club's own door asks for its
-own when you make it.
-
-The map is checked every fifteen seconds and put back if something reset it.
 
 THE MAN ON THE COUCH faces the party now. The seat helper worked out which way
 a sitter faces by looking past the couch, and the one thing that would have told

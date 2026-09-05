@@ -629,15 +629,15 @@ namespace Hoodrich.UI
             _rows.Add(new Opt
             {
                 Kind = OptKind.Tick,
-                Label = "The online city, all the time",
-                Note = "The casino, the shop fronts and the offices from the street, not only through a door",
+                Label = "The online map round the block",
+                Note = "LD Organics and the two rooms, with the story map everywhere else",
                 Section = "Doors",
-                Key = "OnlineMap",
-                GetBool = () => c.OnlineMap,
+                Key = "OnlineBlock",
+                GetBool = () => c.OnlineBlock,
                 SetBool = v =>
                 {
-                    c.OnlineMap = v;
-                    Locations.OnlineMap.Set(v);
+                    c.OnlineBlock = v;
+                    Locations.HomeMap.Enabled = v;
                 }
             });
 

@@ -906,10 +906,8 @@ namespace Hoodrich
                 // work gets done.
                 if (_cfg.ShowPlaces) _places.Show(_cfg.Doors.ConvertAll(d => d.Section));
 
-                // THE ONLINE CITY, FROM THE STREET. The doors switch the map on their way
-                // in; this switches it once and leaves it, so the casino is the casino before
-                // you get to it. See Locations.OnlineMap.
-                if (_cfg.OnlineMap) OnlineMap.Apply();
+                // THE BLOCK ON THE ONLINE MAP, so LD Organics is LD Organics. See HomeMap.
+                HomeMap.Enabled = _cfg.OnlineBlock;
 
                 // The lab has people on it.
                 _labCrew = new Entourage(_gangs, "families",
@@ -3014,7 +3012,7 @@ namespace Hoodrich
                     _armourerStockA.Update();
                     _armourerStockB.Update();
                     foreach (var door in _doors) door.Update();
-                    OnlineMap.Update();
+                    HomeMap.Update();
                     _traffic.Update();
                     _payback.Update();
                     _rollers.Update();
@@ -4089,7 +4087,7 @@ namespace Hoodrich
                 try { door.RestoreWorld(); } catch { /* teardown */ }
             }
             try { _places.RestoreWorld(); } catch { /* teardown */ }
-            try { OnlineMap.Restore(); } catch { /* teardown */ }
+            try { HomeMap.Restore(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _turf?.RestoreWorld(); } catch { /* teardown */ }

@@ -168,10 +168,10 @@ namespace Hoodrich.Core
         public bool ShowPlaces = true;
 
         /// <summary>
-        /// The online city all the time: the casino, the shop fronts, the offices, from the
-        /// street and not only once you are through a door. See Locations.OnlineMap.
+        /// The online map round the block -- LD Organics, the yard, the two doors -- and
+        /// the story map everywhere else. See Locations.HomeMap.
         /// </summary>
-        public bool OnlineMap = true;
+        public bool OnlineBlock = true;
 
         // ---- economy -----------------------------------------------------------
         public float BulkPurchaseDiscountPercent = 50f;
@@ -670,7 +670,7 @@ namespace Hoodrich.Core
             // somebody standing on them. See the two rows on the settings screen that write
             // them down.
             s.ShowPlaces = ini.GetBool("Doors", "ShowPlaces", s.ShowPlaces);
-            s.OnlineMap = ini.GetBool("Doors", "OnlineMap", s.OnlineMap);
+            s.OnlineBlock = ini.GetBool("Doors", "OnlineBlock", s.OnlineBlock);
 
             foreach (var name in ini.GetString("Doors", "More", "").Split(','))
             {

@@ -1253,10 +1253,10 @@ namespace Hoodrich.Locations
 
         private static void Mp(bool on)
         {
-            // NOT BACK TO THE STORY MAP while the city is being held on the online one. A
-            // door switching the map off on its way out would turn the casino back into a
-            // building site every time you left a room.
-            if (!on && OnlineMap.On) return;
+            // NOT BACK TO THE STORY MAP while the block is being held on the online one. Both
+            // doors are on the block, so a door switching the map off on its way out would
+            // turn LD Organics back into a garage every time you left a room.
+            if (!on && HomeMap.On) return;
 
             try
             {
