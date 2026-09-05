@@ -633,6 +633,24 @@ namespace Hoodrich.UI
             _rows.Add(new Opt
             {
                 Kind = OptKind.Action,
+                Label = "Find the rooms under the map",
+                Note = "Sweeps the buried business shells and writes every interior it finds, and where, to rooms.txt",
+                Do = () =>
+                {
+                    if (Core.Rooms.Running)
+                    {
+                        Notify.Important("Already sweeping.");
+                        return;
+                    }
+
+                    Core.Rooms.Start();
+                    Notify.Important("Sweeping. Back out and it writes rooms.txt in a moment.");
+                }
+            });
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
                 Label = "Ask the art packs what they have",
                 Note = "Asks every pack about every weapon name in the game and writes what exists to gunart-probe.txt",
                 Do = () =>

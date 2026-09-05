@@ -2907,6 +2907,10 @@ namespace Hoodrich
                     // started from the settings screen and run wherever he happens to be.
                     UI.GunArt.Update();
 
+                    // The room sweep, when somebody has asked for one. A branch and nothing
+                    // else the rest of the time.
+                    Core.Rooms.Update();
+
                     // THE SET'S OWN JOIN IN. Anybody placed in a spooner scene whose model is
                     // one of your set's stops being scenery for as long as the war runs, and
                     // goes back to its mark when it is over. Told on the change rather than
