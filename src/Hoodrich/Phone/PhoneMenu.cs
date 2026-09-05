@@ -964,10 +964,13 @@ namespace Hoodrich.Phone
 
             Battery(right, mid, fade);
 
-            var signalRight = right - Hud.ToX(0.026f);
+            // Spaced off the widths they actually occupy now. The battery is 0.027 plus its
+            // nub, and the four bars come to about 0.023 -- so the old 0.026 step had the
+            // signal drawing through the battery's left wall.
+            var signalRight = right - Hud.ToX(0.036f);
 
             Signal(signalRight, mid, fade, Game.GameTime - _openedAt);
-            Wifi(signalRight - Hud.ToX(0.030f), mid, fade);
+            Wifi(signalRight - Hud.ToX(0.028f), mid, fade);
 
             Hud.RectFrom(left, top + StatusH - 0.0014f, w, 0.0014f, Fade(GreenDim, fade));
         }
@@ -1061,13 +1064,15 @@ namespace Hoodrich.Phone
                 // Full bars is a fine thing to be wrong about.
             }
 
-            var wide = Hud.ToX(0.0030f);
-            var gap = Hud.ToX(0.0016f);
-            var bottom = midY + 0.0058f;
+            // Same reasoning as the battery: three pixels wide and three tall is a bar
+            // nobody can count, let alone watch climb.
+            var wide = Hud.ToX(0.0040f);
+            var gap = Hud.ToX(0.0018f);
+            var bottom = midY + 0.0075f;
 
             for (var i = 0; i < bars; i++)
             {
-                var h = 0.0032f + i * 0.0026f;
+                var h = 0.0044f + i * 0.0032f;
                 var x = rightX - (bars - i) * (wide + gap);
 
                 Hud.RectFrom(x, bottom - h, wide, h,
@@ -1099,12 +1104,21 @@ namespace Hoodrich.Phone
 
             var low = charge < 0.2f;
 
-            var bodyW = Hud.ToX(0.019f);
-            var bodyH = 0.011f;
+            // BIG ENOUGH TO BE A BATTERY. The status bar is 0.030 tall and this was drawing
+            // an eleven-thousandth-high shell inside it with 1.4-thousandth walls -- about
+            // nine pixels by one at the resolution this is actually played at. Every part of
+            // it was correct and none of it was visible.
+            var bodyW = Hud.ToX(0.027f);
+            var bodyH = 0.0150f;
             var left = rightX - bodyW;
             var top = midY - bodyH * 0.5f;
 
-            var ink = low ? Palette.Danger : Palette.TextDim;
+            // THE PHONE'S OWN GREEN, NOT THE PANELS' GREY. TextDim is 190 alpha of a
+            // near-grey, which on this handset is a shape you can only find if you know it is
+            // there -- and every other piece of chrome on this bar is green. Reported as the
+            // battery simply not being drawn, which is what a 16x9 pixel grey outline on black
+            // amounts to.
+            var ink = low ? Palette.Danger : Green;
 
             // Blinks about twice a second, and only when it is nearly out.
             if (low)
@@ -1113,7 +1127,7 @@ namespace Hoodrich.Phone
                 if (!on) ink = Color.FromArgb(70, ink.R, ink.G, ink.B);
             }
 
-            var line = 0.0014f;
+            var line = 0.0022f;
             var lineX = Hud.ToX(line);
 
             // Shell.
@@ -1123,12 +1137,14 @@ namespace Hoodrich.Phone
             Hud.RectFrom(left + bodyW - lineX, top, lineX, bodyH, Fade(ink, fade));
 
             // The nub on the end.
-            Hud.RectFrom(left + bodyW, midY - 0.0026f, Hud.ToX(0.0028f), 0.0052f, Fade(ink, fade));
+            Hud.RectFrom(left + bodyW, midY - 0.0034f, Hud.ToX(0.0032f), 0.0068f, Fade(ink, fade));
 
-            // And what is left in it.
-            var inset = Hud.ToX(0.0022f);
+            // And what is left in it. Full ink rather than the shell's, so the charge reads as
+            // a level rather than as more outline.
+            var inset = Hud.ToX(0.0028f);
             var room = bodyW - inset * 2f;
-            Hud.RectFrom(left + inset, top + 0.0026f, room * charge, bodyH - 0.0052f,
+
+            Hud.RectFrom(left + inset, top + 0.0034f, room * charge, bodyH - 0.0068f,
                          Fade(ink, fade));
         }
 

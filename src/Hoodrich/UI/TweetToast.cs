@@ -425,12 +425,39 @@ namespace Hoodrich.UI
             // a header rather than four pieces of text at different sizes.
             var rule = y + Pad + Math.Max(AvatarSize, NameHeight + HandleHeight) + RuleGap;
 
-            // The same rule every panel draws under a heading: the hairline, with a short ember
-            // stroke at its left end.
-            Hud.RectFrom(left + Pad, rule, Width - Pad * 2f, 0.0011f,
+            // ---- THE RULE FILLS ITSELF IN, AND IT IS THE CARD'S CLOCK ----
+            //
+            // It was a hairline with a fixed stub at the left end -- the same heading rule
+            // every panel draws, which is right on a panel you close yourself and odd on a
+            // card that leaves on its own. A short bar sitting a seventh of the way across
+            // reads as something half-finished, because that is exactly what it looks like.
+            //
+            // So it means something now: it runs the width of the card over the toast's life
+            // and it is gone when the card is. Nothing new on screen, no second element to
+            // find -- the mark that was already there stops being decoration and becomes the
+            // one thing a notification always needs, which is how long you have to read it.
+            var ruleW = Width - Pad * 2f;
+
+            Hud.RectFrom(left + Pad, rule, ruleW, 0.0011f,
                          Color.FromArgb((int)(48 * fade), 255, 255, 255));
-            Hud.RectFrom(left + Pad, rule - 0.0003f, (Width - Pad * 2f) * 0.14f, 0.0017f,
-                         Alpha(Palette.BrandDeep, (int)(205 * fade)));
+
+            // HOW MUCH OF ITS LIFE IS LEFT, from the one number the card already carries.
+            // Nothing new stored: ShownAt and LifeMs are what the sweep at the top of this
+            // file uses to retire a card, so the bar and the retirement cannot disagree.
+            var run = 1f - Math.Max(0f, Math.Min(1f, (Game.GameTime - card.ShownAt) / (float)LifeMs));
+
+            if (run > 0.001f)
+            {
+                Hud.RectFrom(left + Pad, rule - 0.0003f, ruleW * run, 0.0017f,
+                             Alpha(Palette.Brand, (int)(215 * fade)));
+
+                // A brighter head on the leading edge, so the eye has something to follow
+                // rather than a bar it has to remember the length of.
+                var head = Math.Min(ruleW * run, Hud.ToX(0.010f));
+
+                Hud.RectFrom(left + Pad + ruleW * run - head, rule - 0.0005f, head, 0.0021f,
+                             Alpha(Theme.RimInk, (int)(235 * fade)));
+            }
 
             line = rule + RuleGap;
 
