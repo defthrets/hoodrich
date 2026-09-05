@@ -586,6 +586,9 @@ namespace Hoodrich.Locations
             public Vector3 Slot;
             public bool There;
 
+            /// <summary>Until when they are cheering or filming the cars, nought when they are not.</summary>
+            public int Hype;
+
             /// <summary>When they were first noticed away from their spot, or nought.</summary>
             public int Away;
 
@@ -940,6 +943,7 @@ namespace Hoodrich.Locations
                         Flares(now);
                         Unarm(now);
                         Firework(now);
+                        Hype(now);
                         break;
 
                     case TakeoverState.Scattering:
@@ -4734,6 +4738,90 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// The crowd cheering and filming while there is something to cheer.
+        ///
+        /// Standing about with a phone out is what the crowd does between things -- see
+        /// Watching. This is what it does when a car is sideways in front of it: turns to
+        /// the middle and either cheers or holds the phone up to film it, for a few seconds
+        /// at a time, one or two more of them every second or so, until the cars stop and
+        /// the last of them wind down. Nobody is told to stop; each one's turn simply ends
+        /// and they go back to what they were doing.
+        ///
+        /// Not everybody at once. A crowd where every arm goes up on one frame is a crowd
+        /// on a cue, and never more than about two thirds of them at a time, because the
+        /// people who are not reacting are what makes the ones who are look like a
+        /// reaction.
+        /// </summary>
+        private void Hype(int now)
+        {
+            var spinning = Spinning() >= 1;
+            var hyped = 0;
+
+            // Turns that are over, and turns that should be because there is nothing left
+            // to cheer. Handed back through There: the walk-up code sees somebody stood on
+            // their own slot, and gives them their own idle again facing the middle.
+            foreach (var w in _crowd)
+            {
+                if (w.Hype == 0) continue;
+
+                if (now < w.Hype && spinning) { hyped++; continue; }
+                if (now < w.Hype && now < w.Hype - HypeWindDownMs) { hyped++; continue; }
+
+                w.Hype = 0;
+                w.There = false;
+            }
+
+            if (!spinning) return;
+            if (now < _nextHype || _crowd.Count == 0) return;
+
+            _nextHype = now + HypeEveryMinMs + _rng.Next(HypeEveryMaxMs - HypeEveryMinMs);
+
+            if (hyped >= (int)(_crowd.Count * HypeShare)) return;
+
+            var many = 1 + _rng.Next(2);
+
+            for (var tries = 0; many > 0 && tries < 10; tries++)
+            {
+                var w = _crowd[_rng.Next(_crowd.Count)];
+
+                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive || !w.There) continue;
+                if (w.Hype != 0 || Occupied(w)) continue;
+
+                try
+                {
+                    var doing = _rng.Next(100) < HypeCheerShare
+                        ? "WORLD_HUMAN_CHEERING"
+                        : "WORLD_HUMAN_MOBILE_FILM_SHOCKING";
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                    Function.Call(Hash.SET_ENTITY_HEADING, w.Man.Handle, Facing(w.Man.Position));
+                    Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle, doing, 0, true);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, w.Man.Handle, true);
+
+                    w.Hype = now + HypeMinMs + _rng.Next(HypeMaxMs - HypeMinMs);
+                    many--;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Takeover: nobody cheered: " + ex.Message);
+                }
+            }
+        }
+
+        /// <summary>How long a turn lasts, how often somebody starts one, and how many can be at it.</summary>
+        private const int HypeMinMs = 6000;
+        private const int HypeMaxMs = 15000;
+        private const int HypeEveryMinMs = 700;
+        private const int HypeEveryMaxMs = 1600;
+        private const int HypeCheerShare = 45;
+        private const float HypeShare = 0.66f;
+
+        /// <summary>Once the cars stop, a turn is cut short to this much of what was left, so the last cheer trails the last car by a moment and not by a quarter of a minute.</summary>
+        private const int HypeWindDownMs = 3000;
+
+        private int _nextHype;
+
         private const string FireAsset = "scr_indep_fireworks";
 
         private static readonly string[] FireBursts =
@@ -6111,6 +6199,7 @@ namespace Hoodrich.Locations
 
             _rockets.Clear();
             _throws.Clear();
+            _nextHype = 0;
 
             foreach (var l in _law)
             {

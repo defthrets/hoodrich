@@ -37,6 +37,13 @@ namespace Hoodrich.Locations
             /// <summary>Whoever put it out, so it can take it away again.</summary>
             public object Owner;
 
+            /// <summary>What the facing was worked out from, kept so it can be worked out again once the couch has collision.</summary>
+            public Vector3 Mid;
+            public Vector3 Front;
+            public float Depth;
+            public Prop Prop;
+            public bool Sure;
+
             /// <summary>Who is on it, or null.</summary>
             public Ped Sitter;
         }
@@ -175,9 +182,20 @@ namespace Hoodrich.Locations
                         ? new Vector3(slide, (min.Y + max.Y) * 0.5f, up)
                         : new Vector3((min.X + max.X) * 0.5f, slide, up));
 
-                    var facing = Facing(at, mid, out_, prop, depth);
+                    bool sure;
+                    var facing = Facing(at, mid, out_, prop, depth, out sure);
 
-                    Seats.Add(new Cushion { At = at, Facing = facing, Owner = owner });
+                    Seats.Add(new Cushion
+                    {
+                        At = at,
+                        Facing = facing,
+                        Owner = owner,
+                        Mid = mid,
+                        Front = out_,
+                        Depth = depth,
+                        Prop = prop,
+                        Sure = sure
+                    });
                     made++;
                 }
 
@@ -247,7 +265,28 @@ namespace Hoodrich.Locations
                 best = Seats[i];
             }
 
-            if (best != null) best.Sitter = who;
+            if (best != null)
+            {
+                best.Sitter = who;
+
+                // MEASURED AGAIN NOW IF IT COULD NOT BE THEN. The couch is put out and its
+                // seats offered on the same frame, before the game has given it collision,
+                // so the probe at that moment reads nothing and falls back to the guess that
+                // sat him backwards. By the time somebody sits, the couch has been there for
+                // seconds.
+                if (!best.Sure && best.Prop != null && best.Prop.Exists())
+                {
+                    bool sure;
+                    var facing = Facing(best.At, best.Mid, best.Front, best.Prop, best.Depth, out sure);
+
+                    if (sure)
+                    {
+                        best.Facing = facing;
+                        best.Sure = true;
+                        Log.Info("Seating: measured the couch again as somebody sat; facing " + (int)facing + ".");
+                    }
+                }
+            }
 
             return best;
         }
@@ -284,26 +323,49 @@ namespace Hoodrich.Locations
         /// model when there is actual evidence -- if both ways are clear, or both blocked, the
         /// prop's own front wins and nothing has been made worse by looking.
         /// </summary>
-        private static float Facing(Vector3 at, Vector3 mid, Vector3 front, Prop prop, float depth)
+        private static float Facing(Vector3 at, Vector3 mid, Vector3 front, Prop prop, float depth,
+                                    out bool sure)
         {
+            sure = false;
+
             var head = Heading(front);
 
             // THE BACKREST SAYS WHICH WAY ROUND. A couch is low at the front and tall at the
             // back, so the couch's own height at the two edges says which is which, and
             // the man faces away from the tall one. This is what the look-ahead below could
             // never see: it casts past the couch on purpose, so the one thing that would
-            // have told it the answer was the one thing it ignored, and a man at Lamar's
-            // sat with his back to the party looking at the wall.
+            // have told it the answer was the one thing it ignored.
+            //
+            // SEVERAL POINTS A SIDE, AND THE TALLEST WINS. One probe a side at a third of
+            // the depth landed on the cushion both sides of a deep couch and read the same
+            // height twice, which is how the first version of this still sat him the wrong
+            // way round. The backrest is at the very edge; the probes go out to it.
+            //
+            // And SURE says whether both sides were actually read. A couch that was made
+            // this frame has no collision to read yet, so Take asks again later.
             try
             {
-                var reach = Math.Max(0.22f, depth * 0.38f);
+                var ahead = Missed;
+                var behind = Missed;
 
-                var ahead = Tall(mid + front * reach, prop);
-                var behind = Tall(mid - front * reach, prop);
-
-                if (ahead > Missed && behind > Missed && Math.Abs(ahead - behind) > 0.10f)
+                foreach (var f in Reaches)
                 {
-                    return ahead > behind ? Heading(front * -1f) : head;
+                    var reach = Math.Max(0.20f, depth * f);
+
+                    ahead = Math.Max(ahead, Tall(mid + front * reach, prop));
+                    behind = Math.Max(behind, Tall(mid - front * reach, prop));
+                }
+
+                if (ahead > Missed && behind > Missed)
+                {
+                    sure = true;
+
+                    if (Math.Abs(ahead - behind) > 0.10f)
+                    {
+                        return ahead > behind ? Heading(front * -1f) : head;
+                    }
+
+                    // The same height both sides is a bench. The look-ahead decides.
                 }
             }
             catch
@@ -335,9 +397,9 @@ namespace Hoodrich.Locations
         /// </summary>
         private static float Tall(Vector3 over, Prop prop)
         {
-            var from = over + new Vector3(0f, 0f, 1.2f);
+            var from = over + new Vector3(0f, 0f, 1.6f);
 
-            var hit = World.Raycast(from, new Vector3(0f, 0f, -1f), 2.6f, IntersectFlags.Objects);
+            var hit = World.Raycast(from, new Vector3(0f, 0f, -1f), 3.2f, IntersectFlags.Objects);
 
             if (!hit.DidHit || hit.HitEntity == null || hit.HitEntity.Handle != prop.Handle) return Missed;
 
@@ -345,6 +407,9 @@ namespace Hoodrich.Locations
         }
 
         private const float Missed = -9999f;
+
+        /// <summary>How far out from the middle of the seat the probes go, as shares of its depth.</summary>
+        private static readonly float[] Reaches = { 0.30f, 0.40f, 0.47f };
 
         private static bool Shut(Vector3 from, Vector3 dir, Prop prop)
         {
