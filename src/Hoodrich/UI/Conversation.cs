@@ -270,8 +270,8 @@ namespace Hoodrich.UI
         /// <summary>Centred: a conversation is a screen you are in, not a corner notification.</summary>
         private static float PanelX => 0.5f - PanelWidth * 0.5f;
 
-        /// <summary>Where the panel's middle sits on the screen, nought at the top and one at the bottom.</summary>
-        private const float PanelCentre = 0.66f;
+        /// <summary>Where the foot of the panel sits, as a fraction of the screen's height.</summary>
+        private const float PanelFoot = 0.95f;
         private const float PanelWidth = 0.42f;
         private const float LineHeight = 0.030f;
         private const float ChoiceHeight = 0.032f;
@@ -824,11 +824,11 @@ namespace Hoodrich.UI
 
             var total = 0.075f + bodyHeight + 0.012f + choiceHeight + 0.030f;
             if (!string.IsNullOrEmpty(Title)) total += 0.036f;
-            // LOWER THAN THE MIDDLE. Centred on the screen it sat across the face of whoever
-            // was talking; centred lower it leaves the top of the picture to them, which is
-            // where the camera has put them (see TalkCam), and the foot of the panel still
-            // clears the bottom edge.
-            var top = Math.Max(0.06f, Math.Min(0.96f - total, PanelCentre - total * 0.5f));
+            // STOOD ON THE BOTTOM OF THE SCREEN. Centred, it sat across the face of whoever
+            // was talking; centred lower, across their chin. Hung from the bottom edge it
+            // leaves the whole top of the picture to them, which is where the camera has put
+            // them (see TalkCam), and only a long list of choices climbs back up into it.
+            var top = Math.Max(0.06f, PanelFoot - total);
 
             // The entrance. Up and in over about a fifth of a second, eased out so it slows
             // as it lands -- a panel that arrives at constant speed reads as a jump cut.
