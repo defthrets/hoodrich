@@ -206,6 +206,19 @@ namespace Hoodrich.Core
 
                 var path = Find(key);
 
+                // A NAMED LINE FALLS BACK TO ITS HASHED NAME. The two greetings on Lamar's
+                // corner asked for lamar_hello and lamar_work, and the recordings of those
+                // exact words were on disk under the hashed names the rest of the pack uses --
+                // so both were silent with their audio sat a folder away. A name is a
+                // convenience for the recorder, not a second pack; when it is not there, the
+                // words themselves are looked up the way every other line is.
+                if (path == null && !string.IsNullOrEmpty(named))
+                {
+                    var hashed = Key(speaker, line);
+                    path = Find(hashed);
+                    if (path != null) key = hashed;
+                }
+
                 if (path == null)
                 {
                     // Named, so the log says what to call the file rather than making somebody
