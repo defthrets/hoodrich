@@ -167,6 +167,12 @@ namespace Hoodrich.Core
         /// </summary>
         public bool ShowPlaces = true;
 
+        /// <summary>
+        /// The online city all the time: the casino, the shop fronts, the offices, from the
+        /// street and not only once you are through a door. See Locations.OnlineMap.
+        /// </summary>
+        public bool OnlineMap = true;
+
         // ---- economy -----------------------------------------------------------
         public float BulkPurchaseDiscountPercent = 50f;
 
@@ -620,11 +626,11 @@ namespace Hoodrich.Core
             // The ini section keeps its old name so an existing Hoodrich.ini with a [CrackDen]
             // block in it still overrides the right door. What it is CALLED on screen comes
             // from the default below, which the ini can override on its own.
-            s.Doors.Add(Worked(Dressed(Named(Also(ReadDoor(ini, "CrackDen", "pill press garage",
+            s.Doors.Add(Worked(Staffed(Dressed(Named(Also(ReadDoor(ini, "CrackDen", "pill press garage",
                                  "tr_tuner_methlab_1",
                                  (BlipSprite)497,
                                  -105.053f, -1408.631f, 29.673f, 226.934f,
-                                 996.959f, -3200.602f, -36.394f, 103.526f),
+                                 996.914f, -3200.434f, -36.394f, 101.076f),
                              1000.000f, -3200.000f, -38.000f,
                              1009.000f, -3196.000f, -38.000f,
                              1064.000f, -3183.000f, -39.000f),
@@ -640,6 +646,20 @@ namespace Hoodrich.Core
                              + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
                              + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo"),
                              MethSets),
+                             // THE GAME'S OWN LAB STAFF, at four stations read off a player
+                             // stood on each: the platform at the cooker, the control panel,
+                             // the floor by the tanks, and the far side by the furnace. The
+                             // models are the ones the online game staffs these rooms with,
+                             // and every clip is in the game's own animation list.
+                             Cooking("mp_m_meth_01", "base_idle_tank_cooker",
+                                     1005.827f, -3200.352f, -38.519f, 178.137f),
+                             Cooking("mp_f_meth_01", "base_idle_tank_clipboard",
+                                     1002.761f, -3199.873f, -38.993f, 121.662f),
+                             Cooking("mp_m_meth_01", "base_idle_tank_ammonia",
+                                     1002.984f, -3194.868f, -38.993f, 358.821f),
+                             Cooking("mp_f_meth_01", "base_idle_tank_sacid",
+                                     1014.616f, -3198.087f, -38.993f, 105.327f)),
+                             // And the set's own three, who wander and talk as before.
                              "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"));
             // ANY NUMBER OF MORE DOORS, named in the ini rather than in here.
             //
@@ -650,6 +670,7 @@ namespace Hoodrich.Core
             // somebody standing on them. See the two rows on the settings screen that write
             // them down.
             s.ShowPlaces = ini.GetBool("Doors", "ShowPlaces", s.ShowPlaces);
+            s.OnlineMap = ini.GetBool("Doors", "OnlineMap", s.OnlineMap);
 
             foreach (var name in ini.GetString("Doors", "More", "").Split(','))
             {
@@ -915,6 +936,25 @@ namespace Hoodrich.Core
             "meth_lab_security_high;" +
             "meth_lab_setup;" +
             "meth_lab_production";
+
+        /// <summary>The people at work in a room, each at their own station. See DoorSpec.Posts.</summary>
+        private static DoorSpec Staffed(DoorSpec door, params Post[] posts)
+        {
+            door.Posts.AddRange(posts);
+            return door;
+        }
+
+        /// <summary>One person at one station in the lab, doing one of the cook's jobs.</summary>
+        private static Post Cooking(string model, string clip, float x, float y, float z, float heading)
+        {
+            return new Post
+            {
+                Model = model,
+                Dict = "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
+                Clip = clip,
+                X = x, Y = y, Z = z, Heading = heading
+            };
+        }
 
         /// <summary>The furniture a door switches on in its room. See DoorSpec.Sets.</summary>
         private static DoorSpec Dressed(DoorSpec door, string sets)

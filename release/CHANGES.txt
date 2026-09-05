@@ -192,6 +192,29 @@ no room for what would come out.
 Nothing about what any of the three DO has changed. Every key does what it did.
 
 
+THE ONLINE CITY, FROM THE STREET
+
+The city is held on the online map the whole time now, not only while you are
+through a door. The Diamond Casino is the casino from the road, with its doors
+and its glass; the five auto shop fronts, the four agency fronts, the five bail
+offices, the Freakshop and the cargo ship at the docks all stand where the
+online game has them. The doors used to switch the map on the way in and back
+on the way out, so the casino was a building site until the moment you walked
+into it. A tick under "Doors" and OnlineMap in the ini turn it off.
+
+The nightclub fronts are deliberately not in that list. The game has ten club
+exteriors and one set of placements per club deciding which is open, and loading
+all ten at once is ten answers to one question. Each club's own door asks for its
+own when you make it.
+
+The map is checked every fifteen seconds and put back if something reset it.
+
+THE MAN ON THE COUCH faces the party now. The seat helper worked out which way
+a sitter faces by looking past the couch, and the one thing that would have told
+it -- the backrest -- was the one thing it was told to ignore. It probes the
+couch's own height at each edge now and sits him facing away from the tall one.
+
+
 A BLIP FOR EVERY ONE OF THEM
 
 A list of a hundred and thirty-five places is a list. Eighty-three of them now
@@ -274,6 +297,18 @@ The first version asked for all of that as map files, which the game answers
 by doing nothing, and both rooms came up as bare shells with three people
 standing in them. What the game accepts and what it turns down is written to
 the log by name.
+
+THE PILL PRESS IS STAFFED. Four of the game's own lab workers -- the same
+people the online game puts in these rooms -- each at a station read off a
+player stood on it: the platform at the cooker, the control panel, the floor
+by the tanks and the far side by the furnace, doing the cook's jobs. The set's
+own three still wander and talk. The door inside is where it was read as well,
+at the security door.
+
+AND EVERY DOOR HAS A RING ON THE FLOOR, at both ends, the way the online game
+marks a way in, drawn from thirty metres. The prompt only ever appeared within
+two paces, and a way in that is invisible until you are stood on it is a way in
+nobody finds twice.
 
 AND A DOOR ONLY ADOPTS SOMEBODY STOOD IN ITS OWN ROOM. The two rooms are
 sixty-seven metres apart under the same patch of ground, and a door used to

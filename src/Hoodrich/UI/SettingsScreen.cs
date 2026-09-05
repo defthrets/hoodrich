@@ -629,6 +629,21 @@ namespace Hoodrich.UI
             _rows.Add(new Opt
             {
                 Kind = OptKind.Tick,
+                Label = "The online city, all the time",
+                Note = "The casino, the shop fronts and the offices from the street, not only through a door",
+                Section = "Doors",
+                Key = "OnlineMap",
+                GetBool = () => c.OnlineMap,
+                SetBool = v =>
+                {
+                    c.OnlineMap = v;
+                    Locations.OnlineMap.Set(v);
+                }
+            });
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Tick,
                 Label = "Show the places on the map",
                 Note = "A blip for everywhere on the list you have not made a door for yet",
                 Section = "Doors",

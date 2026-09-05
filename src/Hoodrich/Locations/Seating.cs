@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -168,7 +168,14 @@ namespace Hoodrich.Locations
 
                     var at = prop.GetOffsetPosition(local);
 
-                    var facing = Facing(at, out_, prop);
+                    // The middle of the seat, for the backrest probe: the seat point is
+                    // already pushed toward the front, and the probe wants to compare the
+                    // two edges either side of the centre.
+                    var mid = prop.GetOffsetPosition(alongX
+                        ? new Vector3(slide, (min.Y + max.Y) * 0.5f, up)
+                        : new Vector3((min.X + max.X) * 0.5f, slide, up));
+
+                    var facing = Facing(at, mid, out_, prop, depth);
 
                     Seats.Add(new Cushion { At = at, Facing = facing, Owner = owner });
                     made++;
@@ -277,9 +284,32 @@ namespace Hoodrich.Locations
         /// model when there is actual evidence -- if both ways are clear, or both blocked, the
         /// prop's own front wins and nothing has been made worse by looking.
         /// </summary>
-        private static float Facing(Vector3 at, Vector3 front, Prop prop)
+        private static float Facing(Vector3 at, Vector3 mid, Vector3 front, Prop prop, float depth)
         {
             var head = Heading(front);
+
+            // THE BACKREST SAYS WHICH WAY ROUND. A couch is low at the front and tall at the
+            // back, so the couch's own height at the two edges says which is which, and
+            // the man faces away from the tall one. This is what the look-ahead below could
+            // never see: it casts past the couch on purpose, so the one thing that would
+            // have told it the answer was the one thing it ignored, and a man at Lamar's
+            // sat with his back to the party looking at the wall.
+            try
+            {
+                var reach = Math.Max(0.22f, depth * 0.38f);
+
+                var ahead = Tall(mid + front * reach, prop);
+                var behind = Tall(mid - front * reach, prop);
+
+                if (ahead > Missed && behind > Missed && Math.Abs(ahead - behind) > 0.10f)
+                {
+                    return ahead > behind ? Heading(front * -1f) : head;
+                }
+            }
+            catch
+            {
+                // The look-ahead, then.
+            }
 
             try
             {
@@ -299,6 +329,23 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>Whether there is something solid within arm's reach that way.</summary>
+        /// <summary>
+        /// How high the couch's own surface is under a point, probed from above; Missed when
+        /// the probe lands on anything that is not the couch, or on nothing.
+        /// </summary>
+        private static float Tall(Vector3 over, Prop prop)
+        {
+            var from = over + new Vector3(0f, 0f, 1.2f);
+
+            var hit = World.Raycast(from, new Vector3(0f, 0f, -1f), 2.6f, IntersectFlags.Objects);
+
+            if (!hit.DidHit || hit.HitEntity == null || hit.HitEntity.Handle != prop.Handle) return Missed;
+
+            return hit.HitPosition.Z;
+        }
+
+        private const float Missed = -9999f;
+
         private static bool Shut(Vector3 from, Vector3 dir, Prop prop)
         {
             var hit = World.Raycast(from, dir, LookAhead,

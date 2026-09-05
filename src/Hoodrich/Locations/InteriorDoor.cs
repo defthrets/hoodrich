@@ -10,6 +10,21 @@ using Control = GTA.Control;
 namespace Hoodrich.Locations
 {
     /// <summary>
+    /// Somebody at work in a room: who, what they are doing, and exactly where.
+    ///
+    /// The coordinates come from a player stood on the spot, the animation from the game's
+    /// own list, and the model from the game's own list of business staff -- the same
+    /// people the online game puts in these rooms.
+    /// </summary>
+    internal sealed class Post
+    {
+        public string Model = "";
+        public string Dict = "";
+        public string Clip = "";
+        public float X, Y, Z, Heading;
+    }
+
+    /// <summary>
     /// One door and the room behind it, read out of the ini.
     ///
     /// Section is carried so the "that room is not there" message can name the exact block of
@@ -76,6 +91,12 @@ namespace Hoodrich.Locations
         /// for as long as you watch. What is in there is people, and people move about.
         /// </summary>
         public readonly List<string> Crew = new List<string>();
+
+        /// <summary>
+        /// The people at work, each at their own station with their own job, on top of the
+        /// crew above who wander. Crew is company; posts are the business running.
+        /// </summary>
+        public readonly List<Post> Posts = new List<Post>();
     }
 
     /// <summary>
@@ -174,6 +195,11 @@ namespace Hoodrich.Locations
         private sealed class Hand
         {
             public Ped Who;
+
+            /// <summary>At a station with a job, rather than wandering. Kept at it. See Work.</summary>
+            public bool Posted;
+            public string Dict;
+            public string Clip;
             public int Until;
             public bool Walking;
         }
@@ -308,6 +334,8 @@ namespace Hoodrich.Locations
 
                 if (WanderedOut(player)) return;
 
+                Ring(Mark, player);
+
                 if (player.Position.DistanceTo(Mark) > ExitRange) return;
 
                 Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to leave the " + _spec.Name + ".");
@@ -319,6 +347,8 @@ namespace Hoodrich.Locations
             // On foot. Driving a car into a warehouse you reached by teleport leaves the car
             // where it was and you inside without it, which reads as a bug even when it is not.
             if (player.IsInVehicle()) return;
+            Ring(Door, player);
+
             if (player.Position.DistanceTo(Door) > DoorRange) return;
 
             Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to go into the " + _spec.Name + ".");
@@ -1005,6 +1035,57 @@ namespace Hoodrich.Locations
                 }
             }
 
+            // ---- and the ones at work ----
+            //
+            // Each on the spot that was measured for them, facing the way the reading said,
+            // doing the job the animation says. They do not mill: a cook stands at the
+            // cooker for as long as you are in the room, which is what a cook does.
+            foreach (var post in _spec.Posts)
+            {
+                if (post == null || string.IsNullOrEmpty(post.Model)) continue;
+
+                try
+                {
+                    var model = new Model(post.Model);
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+
+                    model.Request(2000);
+                    if (!model.IsLoaded) continue;
+
+                    var spot = new Vector3(post.X, post.Y, post.Z);
+                    var worker = World.CreatePed(model, spot);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (worker == null || !worker.Exists()) continue;
+
+                    worker.IsPersistent = true;
+                    worker.BlockPermanentEvents = true;
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, worker.Handle, true);
+                    Function.Call(Hash.SET_PED_CAN_RAGDOLL_FROM_PLAYER_IMPACT, worker.Handle, false);
+                    Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, worker.Handle, false);
+                    Function.Call(Hash.SET_PED_RANDOM_COMPONENT_VARIATION, worker.Handle, 0);
+                    Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, worker.Handle,
+                                  spot.X, spot.Y, spot.Z, false, false, false);
+                    worker.Heading = post.Heading;
+
+                    var hand = new Hand { Who = worker, Posted = true, Dict = post.Dict, Clip = post.Clip };
+                    _staff.Add(hand);
+
+                    Function.Call(Hash.REQUEST_ANIM_DICT, post.Dict);
+
+                    for (var n = 0; n < 40 && !Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, post.Dict); n++)
+                    {
+                        Script.Yield();
+                    }
+
+                    Work(hand);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not post somebody in the " + _spec.Name + ": " + ex.Message);
+                }
+            }
+
             if (_staff.Count > 0) Log.Info(_staff.Count + " working in the " + _spec.Name + ".");
         }
 
@@ -1025,6 +1106,31 @@ namespace Hoodrich.Locations
 
             hand.Walking = true;
             hand.Until = Game.GameTime + Dice.Next(WalkMinMs, WalkMaxMs);
+        }
+
+        /// <summary>At their station, doing their job, unless they already are.</summary>
+        private static void Work(Hand hand)
+        {
+            if (string.IsNullOrEmpty(hand.Dict) || string.IsNullOrEmpty(hand.Clip)) return;
+
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, hand.Who.Handle, hand.Dict, hand.Clip, 3))
+                {
+                    return;
+                }
+
+                Function.Call(Hash.REQUEST_ANIM_DICT, hand.Dict);
+
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, hand.Dict)) return;
+
+                Function.Call(Hash.TASK_PLAY_ANIM, hand.Who.Handle, hand.Dict, hand.Clip,
+                              8f, -8f, -1, 1, 0f, false, false, false);
+            }
+            catch
+            {
+                // Stood at the station is still stood at the station.
+            }
         }
 
         /// <summary>Stopped, doing something with their hands.</summary>
@@ -1068,6 +1174,15 @@ namespace Hoodrich.Locations
                 if (hand.Who == null || !hand.Who.Exists()) { _staff.RemoveAt(i); continue; }
                 if (now < hand.Until) continue;
 
+                // Somebody at a station keeps their job. Looked at every few seconds and
+                // only started again if something knocked them out of it.
+                if (hand.Posted)
+                {
+                    hand.Until = now + 4000;
+                    Work(hand);
+                    continue;
+                }
+
                 if (hand.Walking) Stand(hand);
                 else Walk(hand, hand.Who.Position);
             }
@@ -1108,8 +1223,41 @@ namespace Hoodrich.Locations
         /// because somebody looked in a grow room is not a trade anybody agreed to. It stays on
         /// while he is inside -- taking it away then would delete the room out from under him.
         /// </summary>
+        /// <summary>
+        /// A ring on the floor where a door is, the way the online game marks a way in.
+        ///
+        /// The prompt only appears within two paces, and a way in that is invisible until
+        /// you are stood on it is a way in nobody finds twice. The ring is drawn from thirty
+        /// metres, at the feet rather than at the coordinate, which is where the player's
+        /// middle was when it was read.
+        /// </summary>
+        private static void Ring(Vector3 at, Ped player)
+        {
+            if (player.Position.DistanceTo(at) > RingRange) return;
+
+            try
+            {
+                Function.Call(Hash.DRAW_MARKER, 1, at.X, at.Y, at.Z - 1.0f,
+                              0f, 0f, 0f, 0f, 0f, 0f,
+                              1.1f, 1.1f, 0.35f,
+                              126, 232, 122, 105,
+                              false, false, 2, false, 0, 0, false);
+            }
+            catch
+            {
+                // A door without its ring is still a door.
+            }
+        }
+
+        private const float RingRange = 30f;
+
         private static void Mp(bool on)
         {
+            // NOT BACK TO THE STORY MAP while the city is being held on the online one. A
+            // door switching the map off on its way out would turn the casino back into a
+            // building site every time you left a room.
+            if (!on && OnlineMap.On) return;
+
             try
             {
                 Function.Call(on ? Hash.ON_ENTER_MP : Hash.ON_ENTER_SP);
