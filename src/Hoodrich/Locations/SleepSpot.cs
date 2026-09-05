@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using Control = GTA.Control;
 using GTA;
@@ -169,23 +169,9 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>A quiet marker on the floor by the bed, only close up.</summary>
+        /// <summary>Nothing on the floor by the bed any more: the prompt is the marker.</summary>
         public void Draw()
         {
-            if (DistanceTo() > MarkerRange) return;
-
-            try
-            {
-                World.DrawMarker(MarkerType.Cylinder, Bed - new Vector3(0f, 0f, 0.95f),
-                                 Vector3.Zero, Vector3.Zero,
-                                 new Vector3(0.6f, 0.6f, 0.35f),
-                                 Color.FromArgb(120, 60, 180, 75),
-                                 false, false, false, null, null, false);
-            }
-            catch
-            {
-                // Cosmetic only.
-            }
         }
     }
 }

@@ -175,6 +175,34 @@
       "heading": 11.299,
       "paint": 0,
       "paint2": 0
+    },
+    {
+      "id": "bmx",
+      "model": "bmx",
+      "name": "BMX",
+      "class": "Bike",
+      "note": "Round the back. No plate, no paperwork, no questions.",
+      "price": 200,
+      "x": -32.141,
+      "y": -1674.348,
+      "z": 28.880,
+      "heading": 146.790,
+      "paint": 49,
+      "paint2": 0
+    },
+    {
+      "id": "sanchez",
+      "model": "sanchez",
+      "name": "Sanchez",
+      "class": "Off-road",
+      "note": "The one with the livery. It has been up the hill and back.",
+      "price": 6500,
+      "x": -38.016,
+      "y": -1677.268,
+      "z": 28.964,
+      "heading": 53.960,
+      "paint": 0,
+      "paint2": 0
     }
   ]
 }

@@ -54,6 +54,12 @@ namespace Hoodrich.Locations
 
         private readonly float _capacity;
 
+        /// <summary>Set by Main: whether the three lines on the way in have been said. Once, on the first visit.</summary>
+        public Func<bool> Told;
+
+        /// <summary>Set by Main: they have been said now.</summary>
+        public Action Tell;
+
         public StashHouse(Settings cfg)
         {
             _capacity = Math.Max(1f, cfg.HideoutStashCapacity);
@@ -127,7 +133,7 @@ namespace Hoodrich.Locations
 
             // Told once on the way in, rather than a marker on the floor. It is a house, not a
             // pickup: standing in the right two metres should not be part of using it.
-            if (_inside)
+            if (_inside && !(Told != null && Told()))
             {
                 Notify.Ticker("~g~You're at the spot.~s~ Open your inventory to move work in or out.");
                 Notify.Ticker("~g~Or text a plug from your contacts~s~ and have it brought here.");
@@ -171,6 +177,9 @@ namespace Hoodrich.Locations
 
             Notify.Ticker("~o~Weight has to be cut before it will sell.~s~ " +
                           "The kitchen is in here -- take bulk to it and bag it up.");
+
+            // And that was the first visit. None of the three is said again -- see Told.
+            Tell?.Invoke();
         }
 
         private void EnsureBlip()

@@ -496,7 +496,7 @@ namespace Hoodrich.Locations
             // typed from memory -- the same names the rollers drive, so the cars on the block
             // and the cars at the meet are recognisably one set's cars.
             "sentinel5", "cavalcade3", "fq2", "rebla", "fr36", "dominator3", "dominator9",
-            "gauntlet4", "ruiner4", "vigero2", "veto", "outlaw",
+            "gauntlet4", "ruiner4", "vigero2", "outlaw",
 
             // Imports.
             "zr350", "euros", "remus", "previon", "calico", "futo2", "penumbra2",
@@ -4279,6 +4279,7 @@ namespace Hoodrich.Locations
                 {
                     Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
                     Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
+                    Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
                     Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), BurstMs);
                 }
             }
@@ -4316,11 +4317,15 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// Full lock and the throttle, one way or the other: with the grip reduced that is a
+        /// car going round on the spot. 30 and 31 -- handbrake turns -- were what these
+        /// were, and on a car that is already stopped a handbrake turn is a car that sits
+        /// there, which is why every performer looked like the standing kind.
+        /// </summary>
         private int Spin(int way)
         {
-            if (_cfg == null) return way > 0 ? 30 : 31;
-
-            return way > 0 ? _cfg.TakeoverSpinLeft : _cfg.TakeoverSpinRight;
+            return way > 0 ? 7 : 8;
         }
 
         /// <summary>

@@ -664,7 +664,10 @@ namespace Hoodrich.Economy
         /// <summary>The props the settings screen can fit, each with the ritual it is held in. See Economy.Fit.</summary>
         static Highs()
         {
-            Fit.Wire(new[] { Joint, MethPipe, Pipe, Needle, Bump, Pop });
+            // The package is the plug's, not his: no ritual, left hand, no pose. It is here so
+            // the same six sliders can put it in Gerald's hand properly.
+            Fit.Wire(new[] { Joint, MethPipe, Pipe, Needle, Bump, Pop,
+                             new Ritual.Recipe { Props = new[] { "prop_drug_package" }, Lefty = true } });
         }
 
         private readonly Ritual _ritual = new Ritual();
@@ -1112,18 +1115,36 @@ namespace Hoodrich.Economy
         /// </summary>
         private void Trip(Ped me, int now)
         {
-            if (_live.Count < TripsFrom) return;
-            if (now < _nextTrip) return;
+            // LOADED: a second bar or a second shot, and his legs are not his. He goes over
+            // a lot when he runs and now and then when he walks, whatever else is in him.
+            // Otherwise it is the old rule -- three things at once before he trips at all.
+            var loaded = false;
+            foreach (var one in _live)
+            {
+                if ((one.What.Drug == "xanax" || one.What.Drug == "heroin") && one.Doses >= 2) loaded = true;
+            }
 
+            if (!loaded && _live.Count < TripsFrom) return;
+            if (now < _nextTrip) return;
             _nextTrip = now + TripEveryMs;
 
             try
             {
                 if (me.IsInVehicle()) return;
+
+                if (loaded)
+                {
+                    if (me.Speed < WalkAbove) return;
+                    var running = me.Speed >= TripAbove;
+                    if (_rng.Next(100) >= (running ? LoadedRunTrip : LoadedWalkTrip)) return;
+                    Function.Call(Hash.SET_PED_TO_RAGDOLL, me.Handle, TripDownMs, TripDownMs + 600, 0, true, true, false);
+                    Log.Debug("Went over, loaded, " + (running ? "running." : "walking."));
+                    return;
+                }
+
                 if (me.Speed < TripAbove) return;
 
                 var bars = false;
-
                 foreach (var one in _live)
                 {
                     if (one.What.Drug != "xanax") continue;
@@ -1135,12 +1156,10 @@ namespace Hoodrich.Economy
 
                 Function.Call(Hash.SET_PED_TO_RAGDOLL, me.Handle, TripDownMs, TripDownMs + 600,
                               0, true, true, false);
-
                 Log.Debug("Tripped over on " + _live.Count + (bars ? " with bars in." : "."));
             }
             catch
             {
-                // He stays up, which is the smaller problem.
             }
         }
 
@@ -1156,6 +1175,11 @@ namespace Hoodrich.Economy
         /// <summary>The odds each time it is asked, out of a hundred, and with bars in him.</summary>
         private const int TripChance = 22;
         private const int TripWithBars = 45;
+
+        /// <summary>Loaded on bars or a shot: the odds of going over per look, running and walking, and what counts as walking.</summary>
+        private const int LoadedRunTrip = 60;
+        private const int LoadedWalkTrip = 14;
+        private const float WalkAbove = 0.8f;
 
         /// <summary>How long he is on the floor.</summary>
         private const int TripDownMs = 1400;

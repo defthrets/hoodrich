@@ -271,7 +271,7 @@ namespace Hoodrich.Gangs
             "sentinel5", "sentinel5", "sentinel5",
 
             "cavalcade3", "fq2", "rebla", "fr36", "dominator3", "dominator9",
-            "gauntlet4", "ruiner4", "vigero2", "s95", "veto", "outlaw"
+            "gauntlet4", "ruiner4", "vigero2", "s95", "outlaw"
         };
 
         /// <summary>

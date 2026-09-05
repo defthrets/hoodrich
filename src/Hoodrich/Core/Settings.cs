@@ -406,15 +406,6 @@ namespace Hoodrich.Core
         /// <summary>How far out the ring of watchers stands. 0 uses the measured 19 metres.</summary>
         public float TakeoverRadius = 19f;
 
-        /// <summary>
-        /// The two stunt actions that make a car spin a donut, left and right.
-        ///
-        /// In the ini because the temp action list is not documented by Rockstar -- the
-        /// community numbering is the only source there is, and if 30 and 31 are something
-        /// else on a given build the fix should be two numbers rather than a rebuild.
-        /// </summary>
-        public int TakeoverSpinLeft = 30;
-        public int TakeoverSpinRight = 31;
 
         /// <summary>
         /// And the one for a car stood still with the back wheels lit up.
@@ -657,8 +648,6 @@ namespace Hoodrich.Core
             s.TowReturnH = ini.GetFloat("Cars", "TowReturnH", s.TowReturnH);
 
             s.TakeoverEnabled = ini.GetBool("Block", "TakeoverEnabled", s.TakeoverEnabled);
-            s.TakeoverSpinLeft = (int)Clamp(ini.GetInt("Block", "TakeoverSpinLeft", s.TakeoverSpinLeft), 0f, 40f);
-            s.TakeoverSpinRight = (int)Clamp(ini.GetInt("Block", "TakeoverSpinRight", s.TakeoverSpinRight), 0f, 40f);
             s.TakeoverBurnAction = (int)Clamp(ini.GetInt("Block", "TakeoverBurnAction", s.TakeoverBurnAction), 0f, 40f);
             s.TakeoverSpinRadius = Clamp(ini.GetFloat("Block", "TakeoverSpinRadius", s.TakeoverSpinRadius), 2f, 18f);
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);

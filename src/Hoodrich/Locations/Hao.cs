@@ -285,7 +285,10 @@ namespace Hoodrich.Locations
             //
             // Everything above holds the car against the population manager for as long as this
             // session lasts and not one second longer. See OwnedCars.
-            if (Owned != null && car.Live != null && car.Live.Exists())
+            // A BICYCLE IS NOT KEPT. It has no plate, and the plate is how an owned car is
+            // found again -- a record for one would be a copy stood up on every scan.
+            // Two hundred dollars is a bike you leave where you leave it.
+            if (Owned != null && car.Live != null && car.Live.Exists() && !car.Live.Model.IsBicycle)
             {
                 Owned.Bought(car.Id, car.Name, car.Live);
             }

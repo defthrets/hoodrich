@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using GTA;
@@ -27,12 +27,12 @@ namespace Hoodrich.Economy
         public static readonly string[] Names =
         {
             "p_amb_joint_01", "prop_cs_meth_pipe", "prop_cs_crackpipe",
-            "prop_syringe_01", "prop_meth_bag_01", "prop_cs_pills"
+            "prop_syringe_01", "prop_meth_bag_01", "prop_cs_pills", "prop_drug_package"
         };
 
         public static readonly string[] Labels =
         {
-            "Joint", "Meth pipe", "Crack pipe", "Needle", "Coke bag", "Pills"
+            "Joint", "Meth pipe", "Crack pipe", "Needle", "Coke bag", "Pills", "Package (a plug's)"
         };
 
         /// <summary>The ritual each one is held in, wired by Highs; the try-on borrows its hand and its pose.</summary>

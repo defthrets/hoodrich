@@ -674,6 +674,8 @@ namespace Hoodrich.State
             Owned.Clear();
 
             SeenWelcome = false;
+            SeenHouse = false;
+            SeenKitchen = false;
             SentForYou = false;
 
             _offered.Clear();
@@ -990,6 +992,12 @@ namespace Hoodrich.State
         /// </summary>
         public bool SeenWelcome;
 
+        /// <summary>The house said its three lines on the way in. Once.</summary>
+        public bool SeenHouse;
+
+        /// <summary>The kitchen has been worked at, so its marker has gone.</summary>
+        public bool SeenKitchen;
+
         /// <summary>
         /// Whether the man who runs the set has sent for you yet.
         ///
@@ -1039,6 +1047,8 @@ namespace Hoodrich.State
         {
             return Json.Object()
                 .Set("seenWelcome", SeenWelcome)
+                .Set("seenHouse", SeenHouse)
+                .Set("seenKitchen", SeenKitchen)
                 .Set("sentForYou", SentForYou)
                 .Set("respect", Math.Round(Respect, 2))
                 .Set("notoriety", Math.Round(Notoriety, 2))
@@ -1117,6 +1127,8 @@ namespace Hoodrich.State
                 // and then never again. That is the right way round: somebody who has been
                 // playing already loses nothing by being told, and somebody new needs it.
                 SeenWelcome = doc["seenWelcome"].AsBool(false);
+                SeenHouse = doc["seenHouse"].AsBool(false);
+                SeenKitchen = doc["seenKitchen"].AsBool(false);
                 SentForYou = doc["sentForYou"].AsBool(false);
                 Followers = Math.Max(0, doc["followers"].AsInt(0));
 

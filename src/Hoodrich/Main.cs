@@ -635,6 +635,8 @@ namespace Hoodrich
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
                 _stash = new StashHouse(_cfg);
+                _stash.Told = () => _state.SeenHouse;
+                _stash.Tell = () => { _state.SeenHouse = true; _state.Touch(); };
                 _sleep = new SleepSpot(_state, () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks));
                 _market = new Market(_cfg);
                 _blocks = new BlockDemand(_cfg);
@@ -676,7 +678,8 @@ namespace Hoodrich
                 // Two of yours, on call once you have ridden a job out with them.
                 _homies = new Gangs.Homies(_gangs, _crew, _state);
                 _cook = new CookScreen();
-                _kitchen = new Kitchen(OpenKitchen, () => _cutting.IsBusy);
+                _kitchen = new Kitchen(() => { _state.SeenKitchen = true; OpenKitchen(); }, () => _cutting.IsBusy);
+                _kitchen.Worked = () => _state.SeenKitchen;
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
                 _bust.Post = _postUp;
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);

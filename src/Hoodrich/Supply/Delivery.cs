@@ -2352,6 +2352,10 @@ namespace Hoodrich.Supply
         /// <summary>Called once the trade is done, so he drives off rather than standing there.</summary>
         public void Finish()
         {
+            // Whether or not anything came out of it. A car driving off with its boot up is a
+            // car nobody shut, and he is not that man.
+            ShutTheBoot();
+
             try
             {
                 if (_driver != null && _driver.Exists() && _car != null && _car.Exists())

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using Control = GTA.Control;
 using GTA;
@@ -27,6 +27,9 @@ namespace Hoodrich.Locations
 
         private readonly Action _open;
         private readonly Func<bool> _busy;
+
+        /// <summary>Set by Main: whether the kitchen has been used once. The marker goes with the first use.</summary>
+        public Func<bool> Worked;
 
         public Kitchen(Action open, Func<bool> busy)
         {
@@ -70,6 +73,9 @@ namespace Hoodrich.Locations
         {
             if (DistanceTo() > MarkerRange) return;
             if (_busy != null && _busy()) return;
+
+            // Once you have worked at it, you know where it is.
+            if (Worked != null && Worked()) return;
 
             try
             {

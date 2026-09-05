@@ -67,6 +67,10 @@ namespace Hoodrich.Gangs
             return mine ? MemberRoot(def, gang) : StrangerRoot(def, gang);
         }
 
+        /// <summary>Who has had the business explained this session, so the hub does not repeat it.</summary>
+        private readonly System.Collections.Generic.HashSet<string> _briefed =
+            new System.Collections.Generic.HashSet<string>();
+
         private DialogueNode Node(LeaderDef def, GangDef gang, string line)
         {
             return new DialogueNode(def.Name, line) { SpeakerColour = gang.Colour };
@@ -582,12 +586,16 @@ namespace Hoodrich.Gangs
             // He is not briefing you. He is answering a question he has been asked a hundred
             // times by people who did not last the month, and the answer is short because most
             // of it is things not to do.
-            var node = Node(def, gang,
-                what + ". That's it, that's the whole business, ain't no second page. You get " +
-                "a bag, you go stand somewhere, you bring me back what it's worth. And listen " +
-                "-- " + dont + ", don't be frontin' 'em to your homies, and don't be out " +
-                "there on somebody else corner tryna look like a big man. Dudes done got shot " +
-                "over less than a corner, dawg.");
+            // ONCE. This is the hub the questions come back to, and the speech was playing --
+            // in full, with the audio -- every time you came back from asking one of them. The
+            // first time it is the brief; after that the hub is just the choices.
+            var node = Node(def, gang, _briefed.Add(def.Name)
+                ? what + ". That's it, that's the whole business, ain't no second page. You get " +
+                  "a bag, you go stand somewhere, you bring me back what it's worth. And listen " +
+                  "-- " + dont + ", don't be frontin' 'em to your homies, and don't be out " +
+                  "there on somebody else corner tryna look like a big man. Dudes done got shot " +
+                  "over less than a corner, dawg."
+                : "");
 
             node.Say("How the bread work?", () => TheBread(def, gang),
                      "Ask how you actually make money");
