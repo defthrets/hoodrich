@@ -1,4 +1,4 @@
-OBJECT SPOONER SCENES
+﻿OBJECT SPOONER SCENES
 =====================
 
 Anything you arrange in Menyoo's Object Spooner can be built by the mod every
@@ -15,6 +15,24 @@ HOW
 
 Copy a file in HERE instead when you want it to travel with the mod, and it
 wins over one of the same name in Menyoo's folder.
+
+WHAT SHIPS WITH THE MOD
+-----------------------
+Three scenes are in this folder already, 58 placements between them:
+
+  the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
+                    them holding a rifle, plus the fences at Lamar's.
+  lamar-yard.xml    The grow at Lamar's: plants, drying racks, trimmed bud,
+                    bags and pallets, with speakers, lights and signs.
+  stretch-yard.xml  Eight of the set round Stretch's, four of them doing
+                    something -- on the phone, dealing, talking, cooking --
+                    with stoves, a gun locker and the gunsmith's supplies.
+
+They came out of the spooner and were copied in here, so they no longer need
+Menyoo installed. If you still have the originals in menyooStuff\Spooner under
+their old names, nothing breaks: a placement whose model is already standing
+within a third of a metre is skipped, so each thing is built once either way.
+Deleting the originals is tidier and costs nothing.
 
 WHAT IS KEPT
 ------------
