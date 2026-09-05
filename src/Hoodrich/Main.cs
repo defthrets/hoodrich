@@ -580,6 +580,8 @@ namespace Hoodrich
         private HaoTalk _haoTalk;
         private CarScreen _carScreen;
         private PlateScreen _plateScreen;
+        private ModShopScreen _modShop;
+        private Locations.Garage _garage;
         private DealerTalk _juanTalk;
         private readonly FixerTalk _fixerTalk;
         private readonly MissionRunner _jobs;
@@ -1568,6 +1570,7 @@ namespace Hoodrich
                                    || _settingsScreen.IsOpen
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
                                    || _gunScreen.IsOpen || _carScreen.IsOpen || _plateScreen.IsOpen
+                                   || _modShop.IsOpen
                                    || _graffiti.IsOpen || _ridePick.IsOpen,
                 };
 
@@ -1715,6 +1718,12 @@ namespace Hoodrich
                 // Chamberlain Hills in the same twenty seconds the junction two streets away
                 // was holding sixty vehicles and deleting traffic as fast as the game made it.
                 // They are patrols round a block that is already the busiest place in the city.
+                // The muffler shop keeps quiet while a job is on -- a car being dropped at
+                // Hao's is not a car being pulled in for rims -- and while a war is.
+                _garage.Busy = () => onAJob()
+                                     || (_war != null && _war.IsRunning)
+                                     || (_payback != null && _payback.IsRunning);
+
                 _rollers.Busy = () => onAJob()
                                       || (_war != null && _war.IsRunning)
                                       || (_payback != null && _payback.IsRunning)
@@ -1896,6 +1905,34 @@ namespace Hoodrich
                     Dialogue.Say(_bigj.Name, lines[_rng.Next(lines.Length)]);
                 };
                 _carScreen = new CarScreen(_hao);
+
+                _modShop = new ModShopScreen
+                {
+                    Pay = price =>
+                    {
+                        if (Game.Player.Money < price) return false;
+                        UI.Cash.Take(price);
+                        return true;
+                    }
+                };
+
+                _garage = new Locations.Garage(_modShop)
+                {
+                    Save = () => { try { _ownedCars.SaveNow?.Invoke(); } catch { /* the record still changed */ } },
+                    OwnedOf = car =>
+                    {
+                        try
+                        {
+                            var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
+                            return _state.Owned.Find(o => string.Equals(o.Plate, plate, StringComparison.OrdinalIgnoreCase));
+                        }
+                        catch
+                        {
+                            return null;
+                        }
+                    },
+                    Tuned = () => _social.On(SocialEvent.Tuned)
+                };
 
                 _plateScreen = new PlateScreen
                 {
@@ -2509,6 +2546,20 @@ namespace Hoodrich
                 // The rack owns the screen the same way the kitchen does. Without this the
                 // wheel could be opened on top of it, both would fight over up and down, and
                 // every walk-up prompt in the mod would carry on showing behind it.
+                if (_modShop.IsOpen)
+                {
+                    if (!available) _modShop.Close();
+                    else
+                    {
+                        _garage.Update();
+                        _modShop.Update();
+                        _modShop.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_plateScreen.IsOpen)
                 {
                     if (!available) _plateScreen.Close();
@@ -2846,6 +2897,8 @@ namespace Hoodrich
                     _hao.Update();
                     if (_ownedCars != null) _ownedCars.Update();
                     _hao.UpdatePrompt();
+                    _garage.Mark();
+                    _garage.Update();
 
                     // After OwnedCars, which is what decides a car is still there to be a
                     // wreck at all.
@@ -3902,6 +3955,7 @@ namespace Hoodrich
             try { _spraycan?.Away(); } catch { /* teardown */ }
             try { Core.Mask.RestoreWorld(_cfg); } catch { /* teardown */ }
             try { Locations.RideCam.Sweep(); } catch { /* teardown */ }
+            try { _garage.RestoreWorld(); } catch { /* teardown */ }
             try { _street?.Release(); } catch { /* teardown */ }
 
             // Before the decals come off, or the record is written after the thing it records

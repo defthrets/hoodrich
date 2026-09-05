@@ -560,6 +560,9 @@ namespace Hoodrich.Locations
                     // Stock ride height. Still the right car.
                 }
 
+                // And everything the muffler shop did to it, over the top of that.
+                if (owned.Kit != null) owned.Kit.Apply(car);
+
                 Hold(car);
 
                 Log.Info("Put back owned car " + owned.Id + " at " + owned.Where + ".");

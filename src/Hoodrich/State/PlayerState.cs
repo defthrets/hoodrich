@@ -24,6 +24,9 @@ namespace Hoodrich.State
         /// <summary>Which of the game's plates it wears: 0 is the ordinary blue on white. See PlateScreen.</summary>
         public int PlateStyle;
 
+        /// <summary>Everything the muffler shop did to it, or null for a car that was never in. See Locations.Kit.</summary>
+        public Locations.Kit Kit;
+
         public int Paint = -1;
         public int Paint2 = -1;
 
@@ -923,6 +926,7 @@ namespace Hoodrich.State
                     .Set("model", c.Model)
                     .Set("plate", c.Plate)
                     .Set("plateStyle", c.PlateStyle)
+                    .Set("kit", c.Kit != null ? c.Kit.ToJson() : Json.Null())
                     .Set("paint", c.Paint)
                     .Set("paint2", c.Paint2)
                     .Set("x", Math.Round(c.Where.X, 2))
@@ -1156,6 +1160,7 @@ namespace Hoodrich.State
                         Model = node["model"].AsInt(0),
                         Plate = node["plate"].AsString(""),
                         PlateStyle = node["plateStyle"].AsInt(0),
+                        Kit = Locations.Kit.FromJson(node["kit"]),
                         Paint = node["paint"].AsInt(-1),
                         Paint2 = node["paint2"].AsInt(-1),
                         Where = new Vector3(node["x"].AsFloat(), node["y"].AsFloat(),

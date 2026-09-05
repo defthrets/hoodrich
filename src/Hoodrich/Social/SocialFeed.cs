@@ -128,7 +128,10 @@ namespace Hoodrich.Social
         Masked,
 
         /// <summary>You changed your look out of the police's sight and the man they were after stopped existing.</summary>
-        Slipped
+        Slipped,
+
+        /// <summary>You came out of the muffler shop with something new on the car.</summary>
+        Tuned
     }
 
     /// <summary>
@@ -1427,6 +1430,10 @@ namespace Hoodrich.Social
                     follow = "RideThrough";
                     count = 1 + _rng.Next(2);
                     break;
+                case SocialEvent.Tuned:
+                    follow = "Tuned";
+                    count = 1 + _rng.Next(2);
+                    break;
 
                 case SocialEvent.Shots:
                     // Usually one person mentions it. Sometimes two, and the second one is
@@ -1659,6 +1666,9 @@ namespace Hoodrich.Social
                 // time, because it is a good story and not every story gets told.
                 case SocialEvent.Slipped: return 0.5f;
 
+                // New rims get noticed on the way out of the yard. Not every set.
+                case SocialEvent.Tuned: return 0.4f;
+
                 case SocialEvent.PortRun: return 0.65f;
                 case SocialEvent.PortRunDone: return 1f;
                 case SocialEvent.Busted: return 0.7f;
@@ -1710,6 +1720,7 @@ namespace Hoodrich.Social
 
                 case SocialEvent.Masked: return 0;
                 case SocialEvent.Slipped: return 1 + _rng.Next(3);
+                case SocialEvent.Tuned: return 1 + _rng.Next(2);
 
                 case SocialEvent.PortRun: return 4 + _rng.Next(8);
                 case SocialEvent.PortRunDone: return 30 + _rng.Next(40);
