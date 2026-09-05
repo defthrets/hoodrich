@@ -234,6 +234,7 @@ namespace Hoodrich.Locations
             if (lookNow) _nextLook = now + LookEveryMs;
 
             Rally(now);
+            Given(now);
 
             var range = _cfg == null ? 220f : _cfg.SceneryRange;
 
@@ -619,24 +620,56 @@ namespace Hoodrich.Locations
         // ---- what it is doing ------------------------------------------------------
 
         /// <summary>
-        /// The idles a ped gets when the file did not say.
+        /// What a ped is given when the file did not say: an ANIMATION, not a scenario.
         ///
-        /// STANDING ONES ONLY. A scenario that sits or leans needs a bench or a wall in exactly
-        /// the right place, and a placement is somewhere arbitrary by definition -- the sitting
-        /// ones float and the leaning ones put a shoulder through a lamp post.
+        /// A scenario was the old answer and it is the wrong shape here. A scenario is the
+        /// game's own behaviour -- it fetches a prop, it wants a spot it approves of, and it
+        /// can decide it has finished and hand the ped back to standing. Half the peds in
+        /// these scenes already carry an animation somebody picked in the spooner, so the ones
+        /// that do not should be the same KIND of thing rather than a different system that
+        /// happens to look similar from a distance.
+        ///
+        /// STANDING ONES ONLY, and every pair here is checked against the game's own animation
+        /// list rather than remembered. A dictionary or a clip the game does not have plays
+        /// nothing at all, which looks exactly like a ped that was never given anything.
         /// </summary>
-        private static readonly string[] Idles =
+        private static readonly string[][] MenIdle =
         {
-            "WORLD_HUMAN_HANG_OUT_STREET",
-            "WORLD_HUMAN_SMOKING",
-            "WORLD_HUMAN_STAND_MOBILE",
-            "WORLD_HUMAN_DRINKING",
-            "WORLD_HUMAN_STAND_IMPATIENT",
-            "WORLD_HUMAN_AA_SMOKE"
+            new[] { "amb@world_human_hang_out_street@male_a@idle_a", "idle_a" },
+            new[] { "amb@world_human_hang_out_street@male_a@idle_a", "idle_b" },
+            new[] { "amb@world_human_hang_out_street@male_a@idle_a", "idle_c" },
+            new[] { "amb@world_human_smoking@male@male_a@idle_a", "idle_a" },
+            new[] { "amb@world_human_smoking@male@male_a@idle_a", "idle_c" },
+            new[] { "amb@world_human_drug_dealer_hard@male@idle_a", "idle_a" },
+            new[] { "amb@world_human_drug_dealer_hard@male@idle_a", "idle_c" },
+            new[] { "amb@world_human_stand_impatient@male@no_sign@idle_a", "idle_a" },
+            new[] { "amb@world_human_stand_mobile@male@text@idle_a", "idle_a" },
+            new[] { "amb@world_human_stand_mobile@male@standing@call@idle_a", "idle_a" }
         };
 
-        /// <summary>Somebody holding a rifle stands like somebody holding a rifle.</summary>
-        private const string OnGuard = "WORLD_HUMAN_GUARD_STAND";
+        private static readonly string[][] WomenIdle =
+        {
+            new[] { "amb@world_human_hang_out_street@female_hold_arm@idle_a", "idle_a" },
+            new[] { "amb@world_human_hang_out_street@female_hold_arm@idle_a", "idle_b" },
+            new[] { "amb@world_human_hang_out_street@female_arms_crossed@idle_a", "idle_a" },
+            new[] { "amb@world_human_hang_out_street@female_arm_side@idle_a", "idle_a" },
+            new[] { "amb@world_human_smoking@female@idle_a", "idle_a" },
+            new[] { "amb@world_human_smoking@female@idle_a", "idle_c" },
+            new[] { "amb@world_human_stand_mobile@female@text@idle_a", "idle_a" },
+            new[] { "amb@world_human_stand_mobile@female@standing@call@idle_a", "idle_a" }
+        };
+
+        /// <summary>
+        /// Somebody holding a rifle stands like somebody holding a rifle.
+        ///
+        /// The dealer idle rather than the guard scenario it used to be: it is a man stood on
+        /// a street with his hands where a man's hands go, which is what these are, and it
+        /// does not try to take the weapon off him to hold something else.
+        /// </summary>
+        private static readonly string[] Armed =
+        {
+            "amb@world_human_drug_dealer_hard@male@idle_a", "idle_b"
+        };
 
         private static void Doing(Scene scene, Ped ped, Spooner.Placed item)
         {
@@ -686,17 +719,112 @@ namespace Hoodrich.Locations
 
         private static void Stand(Ped ped, Spooner.Placed item)
         {
-            var scenario = item.Scenario;
-
-            if (string.IsNullOrEmpty(scenario))
+            // A scenario the FILE asked for is still a scenario. Somebody picked it in the
+            // spooner and it is not this code's place to substitute something of its own.
+            if (!string.IsNullOrEmpty(item.Scenario))
             {
-                // SAME PED, SAME IDLE, EVERY TIME. Taken from where it stands rather than from
-                // a dice roll, so a corner you walk past twice is the same corner.
-                scenario = item.Armed ? OnGuard : Idles[Steady(item.At) % Idles.Length];
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle, item.Scenario, 0, true);
+                Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+                return;
             }
 
-            Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle, scenario, 0, true);
-            Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+            // SAME PED, SAME IDLE, EVERY TIME. Taken from where it stands rather than from a
+            // dice roll, so a corner you walk past twice is the same corner.
+            string[] pick;
+
+            if (item.Armed)
+            {
+                pick = Armed;
+            }
+            else
+            {
+                var man = true;
+
+                try { man = Function.Call<bool>(Hash.IS_PED_MALE, ped.Handle); }
+                catch { /* the men's list, which is the longer of the two */ }
+
+                var list = man ? MenIdle : WomenIdle;
+                pick = list[Steady(item.At) % list.Length];
+            }
+
+            Give(ped, pick[0], pick[1]);
+        }
+
+        /// <summary>
+        /// One idle onto one ped, waiting on its dictionary without ending the tick.
+        ///
+        /// When the dictionary never arrives the ped is left standing rather than handed
+        /// something else. A wrong animation is harder to notice than none at all, and none is
+        /// what says the name was wrong.
+        /// </summary>
+        private static void Give(Ped ped, string dict, string clip)
+        {
+            try
+            {
+                Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+
+                if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict))
+                {
+                    Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, dict, clip,
+                                  8f, -8f, -1, 1, 0f, false, false, false);
+                    return;
+                }
+
+                Soon.Add(new Later
+                {
+                    Who = ped,
+                    Dict = dict,
+                    Clip = clip,
+                    GiveUpAt = Game.GameTime + AnimWaitMs
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not give an idle: " + ex.Message);
+            }
+        }
+
+        /// <summary>A ped whose idle is still streaming in.</summary>
+        private sealed class Later
+        {
+            public Ped Who;
+            public string Dict;
+            public string Clip;
+            public int GiveUpAt;
+        }
+
+        private static readonly List<Later> Soon = new List<Later>();
+
+        /// <summary>The idles still waiting on a dictionary, looked at once a tick.</summary>
+        private static void Given(int now)
+        {
+            for (var i = Soon.Count - 1; i >= 0; i--)
+            {
+                var wait = Soon[i];
+
+                try
+                {
+                    if (wait.Who == null || !wait.Who.Exists()) { Soon.RemoveAt(i); continue; }
+
+                    if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, wait.Dict))
+                    {
+                        Function.Call(Hash.TASK_PLAY_ANIM, wait.Who.Handle, wait.Dict, wait.Clip,
+                                      8f, -8f, -1, 1, 0f, false, false, false);
+
+                        Soon.RemoveAt(i);
+                        continue;
+                    }
+
+                    if (now < wait.GiveUpAt) continue;
+
+                    Log.Debug("The idle " + wait.Dict + " / " + wait.Clip + " never loaded.");
+                    Soon.RemoveAt(i);
+                }
+                catch
+                {
+                    Soon.RemoveAt(i);
+                }
+            }
         }
 
         /// <summary>The peds still waiting on a dictionary, looked at once a tick.</summary>

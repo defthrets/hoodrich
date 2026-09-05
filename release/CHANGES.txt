@@ -191,9 +191,15 @@ session. Save the placement in Menyoo and it is in -- menyooStuff\Spooner is
 read alongside the mod's own scenery folder, so there is nothing to copy.
 Position, rotation, frozen, visible and invincible are kept; a ped keeps its
 weapon, outfit, relationship group, health, armour and whatever it was doing.
-A ped saved with nothing to do is given an idle that suits what it is holding
--- armed stands guard, unarmed hangs out, smokes, drinks or is on the phone --
-and the same one every session, picked from where it stands. Scenery peds hold
+A ped saved with nothing to do is given an ANIMATION rather than a scenario --
+armed stands like a man holding something, unarmed hangs out, smokes, texts or
+takes a call, and women get their own set. The same one every session, picked
+from where it stands. A scenario the file itself asked for is still honoured;
+what changed is only what happens when the file said nothing, and a scenario is
+the wrong shape for that -- it fetches a prop, wants a spot it approves of, and
+can decide it has finished. Every pair is checked against the game's own
+animation list, because a name the game does not have plays nothing at all and
+looks exactly like a ped that was never given anything. Scenery peds hold
 their spot rather than wandering off. Scenes are streamed by distance, built
 as you come near and taken out again once you are past.
 
