@@ -934,8 +934,23 @@ namespace Hoodrich.Phone
             var lift = (float)Math.Sin(turn - Math.PI * 0.5d) * 0.0011f;
             var swell = 1f + 0.03f * breath;
 
-            Hud.Brand(left + pad, mid + lift, 0.0150f * swell,
+            // SMALLER THAN IT WAS, because the mark it draws is not the mark it was drawn
+            // for. The wordmark went from a condensed block face to Fraktur, which is heavier
+            // per line and busier at every size -- at 0.0150 it stopped being a small mark in
+            // the corner of a status bar and became the loudest thing on the handset, with the
+            // carrier and the wifi it should be sharing that end with nowhere left to go.
+            Hud.Brand(left + pad, mid + lift, 0.0118f * swell,
                       Fade(Lerp(GreenDim, Green, breath), fade));
+
+            // ---- WHOSE NETWORK IT IS ----
+            //
+            // Badger, which is the carrier in this city -- it is on the phones in the game's
+            // own interface and on the masts out at the airport. Naming a real one would be
+            // the single most out-of-place string in the mod.
+            var markW = Hud.ToX(0.0118f) * Hud.WordmarkAspect;
+
+            Hud.Text("BADGER", left + pad + markW + Hud.ToX(0.006f), top + 0.0075f, 0.21f,
+                     Fade(GreenDim, fade), Hud.FontLabel, centre: false);
 
             // The game's clock, because a phone that says the wrong time is a prop.
             var hh = Function.Call<int>(Hash.GET_CLOCK_HOURS);
@@ -948,9 +963,52 @@ namespace Hoodrich.Phone
             var right = left + w - pad;
 
             Battery(right, mid, fade);
-            Signal(right - Hud.ToX(0.026f), mid, fade, Game.GameTime - _openedAt);
+
+            var signalRight = right - Hud.ToX(0.026f);
+
+            Signal(signalRight, mid, fade, Game.GameTime - _openedAt);
+            Wifi(signalRight - Hud.ToX(0.030f), mid, fade);
 
             Hud.RectFrom(left, top + StatusH - 0.0014f, w, 0.0014f, Fade(GreenDim, fade));
+        }
+
+        /// <summary>
+        /// The wifi fan: three arcs and a dot, climbing away from the corner.
+        ///
+        /// DRAWN RATHER THAN LOADED. At twelve pixels tall a PNG of this is four grey smudges,
+        /// and the whole status bar is already built out of rectangles -- the battery, the
+        /// signal, the rule under it. One more shape made the same way costs nothing and
+        /// matches everything beside it.
+        ///
+        /// Each arc is three rectangles: a flat top and two shoulders dropping away from it.
+        /// That is enough to read as a curve at this size, and a real arc at this size is the
+        /// same three pixels with more arithmetic.
+        /// </summary>
+        private static void Wifi(float rightX, float midY, int fade)
+        {
+            var ink = Fade(Green, fade);
+
+            var unit = Hud.ToX(0.0016f);
+            var step = 0.0030f;
+
+            var cx = rightX - Hud.ToX(0.008f);
+            var foot = midY + 0.0062f;
+
+            // The dot at the bottom, which is the part everybody actually recognises.
+            Hud.RectFrom(cx - unit, foot - 0.0016f, unit * 2f, 0.0016f, ink);
+
+            for (var i = 0; i < 3; i++)
+            {
+                var span = Hud.ToX(0.0040f) + i * Hud.ToX(0.0034f);
+                var y = foot - 0.0030f - i * step;
+
+                // The flat of the arc.
+                Hud.RectFrom(cx - span, y, span * 2f, unit, ink);
+
+                // And the two shoulders, dropping away from it.
+                Hud.RectFrom(cx - span - unit, y + unit * 0.6f, unit, 0.0013f, ink);
+                Hud.RectFrom(cx + span, y + unit * 0.6f, unit, 0.0013f, ink);
+            }
         }
 
         /// <summary>Blends two colours, for the pulse.</summary>
