@@ -2696,13 +2696,6 @@ namespace Hoodrich.Dealing
         private const float HeatWarm = 0.4f;
         private const float HeatWarn = 0.75f;
 
-        /// <summary>Marks along each bar, at the points that mean something: the two colour changes, and where you started.</summary>
-        private static readonly float[] HeatTicks = { HeatWarm, HeatWarn };
-        private static readonly float[] RepTicks = { PlayerState.Neutral };
-
-        /// <summary>The bright edge at the end of the fill.</summary>
-        private const float BarTipW = 0.0022f;
-
         /// <summary>
         /// One status bar: ground, the eased fill, and nothing that moves by itself.
         ///
@@ -2721,7 +2714,7 @@ namespace Hoodrich.Dealing
         /// the fill going somewhere, which is information -- and the wordmark above it still
         /// pulses for a sale or the law, which is one moving thing rather than five.
         /// </summary>
-        private static void Bar(float x, float cy, float w, float h, float eased, Color fill, float[] ticks)
+        private static void Bar(float x, float cy, float w, float h, float eased, Color fill)
         {
             var left = x - w * 0.5f;
             var filled = w * Math.Max(0f, Math.Min(1f, eased));
@@ -2733,20 +2726,9 @@ namespace Hoodrich.Dealing
             {
                 Hud.Rect(left + filled * 0.5f, cy, filled, h, fill);
 
-                // One lighter band across the top of the fill, so it has a surface.
+                // One lighter band across the top of the fill, so it has a surface. The only
+                // thing drawn over the fill, and it runs with the fill rather than across it.
                 Hud.Rect(left + filled * 0.5f, cy - h * 0.26f, filled, h * 0.44f, Color.FromArgb(30, 255, 255, 255));
-
-                // And a bright edge where the fill ends, so you can see where it is.
-                Hud.Rect(left + filled - BarTipW * 0.5f, cy, BarTipW, h,
-                         Palette.Alpha(Mix(fill, Color.White, 0.6f), 230));
-            }
-
-            // The marks, over everything, so they read whatever the fill is doing.
-            if (ticks == null) return;
-
-            foreach (var t in ticks)
-            {
-                Hud.Rect(left + w * t, cy, 0.0012f, h, Color.FromArgb(130, 250, 250, 248));
             }
         }
 
@@ -2943,7 +2925,7 @@ namespace Hoodrich.Dealing
             var heat = _heatBar.To(Math.Min(1f, _cornerHeat / Math.Max(1f, _cfg.PostUpHeatBeforePolice)));
             var colour = heat > HeatWarn ? Palette.Danger : heat > HeatWarm ? Palette.Warn : Palette.Cash;
 
-            Bar(x, y, w, h, heat, colour, HeatTicks);
+            Bar(x, y, w, h, heat, colour);
 
             // The blip itself, drawn inline in the string.
             //
@@ -2999,7 +2981,7 @@ namespace Hoodrich.Dealing
             const float repH = 0.022f;
             var repY = y + h * 0.5f + RepBarGap + repH * 0.5f;
 
-            Bar(x, repY, w, repH, rep, repBar, RepTicks);
+            Bar(x, repY, w, repH, rep, repBar);
 
             // The same treatment as the heat bar above it. radar_community_series is 835.
             BarLabel(RepBlip, "REPUTATION", x, repY);

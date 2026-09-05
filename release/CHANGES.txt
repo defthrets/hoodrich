@@ -175,12 +175,11 @@ a row in the settings to make it look again after a game update.
 
 THE CORNER READOUT
 
-Both bars have marks at the points that mean something -- where heat turns
-amber and where it turns red, and where your reputation started -- a lighter
-band across the fill so it has a surface, and a bright edge where the fill
-ends. Nothing on them moves by itself: the fill eases because that is the
-number going somewhere, and the wordmark above still answers a sale or a
-patrol, which is one moving thing instead of five.
+A bar is a dark edge, a dark ground, the fill, and one lighter band along the
+top of the fill so it has a surface. Nothing crosses it and nothing on it
+moves by itself: the fill eases because that is the number going somewhere,
+and the wordmark above still answers a sale or a patrol, which is one moving
+thing rather than five.
 
 And he says something as the customer walks off. Thanks, or a goodbye, in
 Franklin's own voice.
