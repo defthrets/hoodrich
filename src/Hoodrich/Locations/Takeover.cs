@@ -141,65 +141,16 @@ namespace Hoodrich.Locations
         /// and 23 metres from the mark, which is right on the crowd's own ring -- close enough
         /// that a car sitting there is plainly part of it and not parked up.
         /// </summary>
-        /// <summary>
-        /// The stages moved to the side of the road they are on, once.
-        ///
-        /// KERB SIDE ONLY. The four were walked on the edge of the circle, in the road, which
-        /// read as a car waiting its turn in front of the crowd and drove as a car parked
-        /// across the way in: anything coming through the junction stopped behind them and
-        /// the street jammed. The game knows where the side of a road is, so each one is
-        /// asked for, and a stage it cannot answer for stays where it was walked.
-        /// </summary>
-        private static bool _kerbed;
-
-        private const float StageMoveMost = 14f;
-
-        private static void KerbTheStages()
-        {
-            if (_kerbed) return;
-            _kerbed = true;
-
-            for (var i = 0; i < Stages.Length; i++)
-            {
-                try
-                {
-                    var was = Stages[i].At;
-                    var best = Vector3.Zero;
-                    var bestGap = float.MaxValue;
-
-                    for (var side = 0; side <= 1; side++)
-                    {
-                        var got = new OutputArgument();
-                        if (!Function.Call<bool>(Hash.GET_POSITION_BY_SIDE_OF_ROAD, was.X, was.Y, was.Z, side, got)) continue;
-
-                        var at = got.GetResult<Vector3>();
-                        if (at == Vector3.Zero) continue;
-
-                        var gap = at.DistanceTo(was);
-                        if (gap > StageMoveMost || gap >= bestGap) continue;
-
-                        best = at;
-                        bestGap = gap;
-                    }
-
-                    if (best == Vector3.Zero) continue;
-
-                    Stages[i].At = best;
-                    Log.Info("Takeover: stage " + i + " moved " + bestGap.ToString("0.0") + " m to the kerb.");
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug("Takeover could not kerb a stage: " + ex.Message);
-                }
-            }
-        }
-
         private static readonly Spot[] Stages =
         {
-            new Spot { At = new Vector3(-127.938f, -1720.288f, 29.512f), Face = 161.493f },
-            new Spot { At = new Vector3(-130.728f, -1758.273f, 29.397f), Face = 295.440f },
-            new Spot { At = new Vector3(-114.296f, -1756.466f, 29.226f), Face =  49.889f },
-            new Spot { At = new Vector3(-109.838f, -1736.300f, 29.549f), Face = 111.229f }
+            // FOUR OF THE WALKED KERBS, one a street, since 0.6.0. They used to sit on the
+            // edge of the circle, in the road, which jammed the junction; a car waits its
+            // turn at the kerb now like every other car here, and nothing stands in the road
+            // that is not driving.
+            new Spot { At = new Vector3(-132.886f, -1714.133f, 29.308f), Face = 322.568f },
+            new Spot { At = new Vector3(-141.929f, -1750.508f, 29.466f), Face = 320.431f },
+            new Spot { At = new Vector3(-108.431f, -1728.656f, 29.189f), Face = 104.682f },
+            new Spot { At = new Vector3(-129.291f, -1764.954f, 29.090f), Face = 286.766f }
         };
 
         /// <summary>How close counts as being on a marker.</summary>
@@ -216,39 +167,24 @@ namespace Hoodrich.Locations
 
         private static readonly Spot[] Spots =
         {
-            new Spot { At = new Vector3( -130.816f,  -1712.833f, 29.239f), Face = 140.032f },
-            new Spot { At = new Vector3( -136.611f,  -1718.020f, 29.349f), Face = 114.876f },
-            new Spot { At = new Vector3( -142.715f,  -1716.573f, 29.404f), Face = 237.634f },
-            new Spot { At = new Vector3( -147.696f,  -1712.760f, 29.470f), Face = 228.277f },
-            new Spot { At = new Vector3( -150.679f,  -1723.746f, 29.385f), Face = 233.514f },
-            new Spot { At = new Vector3( -147.009f,  -1729.062f, 29.337f), Face = 359.130f },
-            new Spot { At = new Vector3( -147.731f,  -1733.873f, 29.346f), Face = 160.693f },
-            new Spot { At = new Vector3( -151.134f,  -1737.599f, 29.330f), Face = 320.681f },
-            new Spot { At = new Vector3( -155.979f,  -1743.019f, 29.305f), Face = 318.852f },
-            new Spot { At = new Vector3( -161.329f,  -1749.322f, 29.242f), Face = 320.456f },
-            new Spot { At = new Vector3( -141.608f,  -1749.960f, 29.494f), Face = 319.884f },
-            new Spot { At = new Vector3( -146.894f,  -1756.148f, 29.454f), Face = 319.686f },
-            new Spot { At = new Vector3( -142.829f,  -1758.037f, 29.492f), Face = 257.029f },
-            new Spot { At = new Vector3( -137.656f,  -1755.114f, 29.510f), Face = 297.218f },
-            new Spot { At = new Vector3( -138.892f,  -1767.886f, 29.152f), Face = 303.768f },
-            new Spot { At = new Vector3( -132.734f,  -1765.011f, 29.110f), Face = 293.663f },
-            new Spot { At = new Vector3( -126.161f,  -1763.270f, 29.117f), Face = 280.911f },
-            new Spot { At = new Vector3( -121.339f,  -1762.843f, 29.120f), Face = 263.718f },
-            new Spot { At = new Vector3( -114.727f,  -1764.777f, 29.103f), Face = 251.262f },
-            new Spot { At = new Vector3( -108.847f,  -1768.191f, 29.099f), Face = 234.561f },
-            new Spot { At = new Vector3( -111.359f,  -1751.880f, 29.252f), Face =  55.836f },
-            new Spot { At = new Vector3( -106.148f,  -1754.537f, 29.109f), Face =   6.575f },
-            new Spot { At = new Vector3( -103.599f,  -1744.991f, 29.345f), Face =  93.326f },
-            new Spot { At = new Vector3(  -95.875f,  -1747.208f, 28.870f), Face = 129.775f },
-            new Spot { At = new Vector3(  -89.966f,  -1743.570f, 28.688f), Face = 111.722f },
-            new Spot { At = new Vector3( -107.462f,  -1728.285f, 29.191f), Face = 105.053f },
-            new Spot { At = new Vector3( -100.096f,  -1725.566f, 28.806f), Face = 111.686f },
-            new Spot { At = new Vector3( -110.690f,  -1722.007f, 29.208f), Face = 135.114f },
-            new Spot { At = new Vector3( -107.650f,  -1717.616f, 28.938f), Face = 140.486f },
-            new Spot { At = new Vector3( -116.845f,  -1719.726f, 29.328f), Face = 139.751f },
-            new Spot { At = new Vector3( -113.291f,  -1715.734f, 29.065f), Face = 136.762f },
-            new Spot { At = new Vector3( -117.400f,  -1712.714f, 29.005f), Face = 140.653f },
-            new Spot { At = new Vector3( -121.357f,  -1717.511f, 29.308f), Face = 141.447f }
+            // WALKED AGAIN FOR 0.6.0, screenshot by screenshot, kerb by kerb: the only
+            // places a car may stand at this junction. The first set had a handful on the
+            // corner itself, which read as parked from the pavement and as a roadblock from
+            // a windscreen. Four more of the walk are the stages, above.
+            new Spot { At = new Vector3(-152.228f, -1722.200f, 29.328f), Face = 229.442f },
+            new Spot { At = new Vector3(-157.573f, -1717.774f, 29.531f), Face = 229.866f },
+            new Spot { At = new Vector3(-147.068f, -1711.992f, 29.474f), Face = 235.449f },
+            new Spot { At = new Vector3(-141.470f, -1716.230f, 29.338f), Face = 245.605f },
+            new Spot { At = new Vector3(-128.397f, -1708.204f, 29.000f), Face = 138.998f },
+            new Spot { At = new Vector3(-157.613f, -1744.205f, 29.328f), Face = 322.409f },
+            new Spot { At = new Vector3(-153.508f, -1739.049f, 29.355f), Face = 323.045f },
+            new Spot { At = new Vector3(-139.477f, -1755.944f, 29.451f), Face = 303.891f },
+            new Spot { At = new Vector3(-135.275f, -1767.179f, 29.114f), Face = 298.065f },
+            new Spot { At = new Vector3(-116.476f, -1764.240f, 29.046f), Face = 253.356f },
+            new Spot { At = new Vector3(-107.876f, -1752.781f, 29.072f), Face =  91.146f },
+            new Spot { At = new Vector3(-101.038f, -1726.310f, 28.813f), Face = 111.986f },
+            new Spot { At = new Vector3(-117.682f, -1713.554f, 29.057f), Face = 145.261f },
+            new Spot { At = new Vector3(-115.624f, -1719.251f, 29.220f), Face = 139.591f }
         };
 
         /// <summary>
@@ -1132,7 +1068,6 @@ namespace Hoodrich.Locations
             // reading it at construction would put a file read in the mod's startup for a
             // feature most sessions never reach.
             _line.Load();
-            KerbTheStages();
 
             Theme();
 
