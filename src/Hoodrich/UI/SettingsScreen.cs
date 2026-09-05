@@ -234,6 +234,9 @@ namespace Hoodrich.UI
         /// </summary>
         public Func<string> StartTakeover;
 
+        /// <summary>The spooner scenes, so the rows can reload them. Set by Main.</summary>
+        public static Locations.Scenery Scenes;
+
         private void Head(string title)
         {
             _rows.Add(new Opt { Kind = OptKind.Heading, Label = title });
@@ -476,6 +479,78 @@ namespace Hoodrich.UI
                   v => { c.DrugAnimLength = v; Economy.Ritual.Length = v; },
                   0.5f, 3f, 0.1f, "0.0", "x",
                   note: "Scales every drug animation. The camera follows it");
+
+            // WHAT SOMEBODY BUILT IN THE SPOONER. Menyoo saves a placement file; this builds
+            // it, from the mod's folder and from Menyoo's own, streamed in by distance.
+            Head("Spooner scenes");
+            Tick("Build saved scenes", "Scenery", "Enabled",
+                 () => c.Scenery,
+                 v => { c.Scenery = v; if (Scenes != null && !v) Scenes.Clear(); },
+                 "Object Spooner files are stood up as you come near them");
+            Tick("Read Menyoo's folder", "Scenery", "FromMenyoo",
+                 () => c.SceneryFromMenyoo,
+                 v => c.SceneryFromMenyoo = v,
+                 "menyooStuff\\Spooner as well as the mod's own scenery folder. Save in Menyoo and it is in");
+            Slide("How near to build", "Scenery", "Range",
+                  () => c.SceneryRange,
+                  v => c.SceneryRange = v,
+                  40f, 600f, 10f, "0", " m",
+                  note: "A scene is built once you are this close to it and taken out well past it");
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Read the scene files again",
+                Note = "Takes down what is standing and builds it from the files as they are now",
+                Do = () =>
+                {
+                    if (Scenes == null) return;
+
+                    var n = Scenes.Reload();
+                    Notify.Important(n == 0
+                        ? "No placements found. Save one in Menyoo's Object Spooner first."
+                        : n + " placement(s) read. " + Scenes.Tally() + ".");
+                }
+            });
+
+            // THE ONE THAT CATCHES UNSAVED WORK. An hour in the spooner is one crash from
+            // never having happened; this writes what is stood round him to a scene file that
+            // opens in Menyoo like anything else it saved.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Save everything around me",
+                Note = "Writes the placed peds, cars and props within 80 m to a scene file, and lists them in the log",
+                Do = () =>
+                {
+                    var me = Game.Player.Character;
+                    if (me == null || !me.Exists()) return;
+
+                    var found = Core.Spooner.Around(me.Position, 80f);
+
+                    if (found.Count == 0)
+                    {
+                        Notify.Important("Nothing placed within 80 m.");
+                        return;
+                    }
+
+                    foreach (var one in found)
+                    {
+                        Log.Info("Placed: " + (string.IsNullOrEmpty(one.ModelName)
+                                     ? Core.Names.Say(one.ModelHash)
+                                     : one.ModelName) +
+                                 "  " + one.What +
+                                 "  " + one.At.DistanceTo(me.Position).ToString("0.0") + " m  at " + one.At);
+                    }
+
+                    var name = "capture-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".xml";
+                    var path = System.IO.Path.Combine(Core.Paths.Scenery, name);
+
+                    Notify.Important(Core.Spooner.Write(path, found, "Captured by Hoodrich")
+                        ? found.Count + " placement(s) saved as " + name + "."
+                        : "Could not write the scene file. See the log.");
+                }
+            });
 
             Head("Knowai");
             Tick("Show the place", "Knowai", "Preview",

@@ -1,0 +1,46 @@
+OBJECT SPOONER SCENES
+=====================
+
+Anything you arrange in Menyoo's Object Spooner can be built by the mod every
+session instead of only in the session you placed it.
+
+HOW
+---
+1. Place your peds, cars and props in Menyoo's Object Spooner as usual.
+2. Object Spooner -> Saved Files -> save it under any name.
+   Menyoo writes it to  <game folder>\menyooStuff\Spooner\<name>.xml
+3. That is all. The mod reads that folder as well as this one, so the scene is
+   built from then on -- streamed in when you come near it and taken out again
+   when you are well past.
+
+Copy a file in HERE instead when you want it to travel with the mod, and it
+wins over one of the same name in Menyoo's folder.
+
+WHAT IS KEPT
+------------
+Position and rotation, whether it is frozen, visible and invincible, and for a
+ped: the weapon, the outfit, the relationship group, the health and armour,
+and whatever it was doing -- a scenario or an animation.
+
+A ped saved with NOTHING to do is not left standing there empty-handed. He is
+given an idle that suits what he is holding: a man with a weapon stands guard,
+a man without one hangs out, smokes, drinks or is on his phone -- and the same
+man gets the same idle every session, because it is picked from where he
+stands rather than at random.
+
+Scenery peds hold their spot. They do not startle, wander off or join fights,
+because a scene that has emptied itself five minutes after you first see it is
+not scenery.
+
+SETTINGS  (Hoodrich.ini, [Scenery])
+-----------------------------------
+Enabled     = true    Build saved scenes at all.
+FromMenyoo  = true    Read menyooStuff\Spooner as well as this folder.
+Range       = 220     How near you have to be, in metres.
+
+IF YOU HAVE NOT SAVED YET
+-------------------------
+Whatever you placed this session is still only in memory. Open the mod's
+settings, find "Spooner scenes", and press "Save everything around me" -- it
+writes the placed peds, cars and props within 80 m into this folder as a scene
+file and lists every one of them in Hoodrich.log. The file opens in Menyoo too.

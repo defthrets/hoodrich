@@ -142,7 +142,39 @@ fitted one takes it off, and putting it back is free. Fitted parts survive a
 save and come back with the gun.
 
 
+OBJECT SPOONER SCENES
+
+Anything arranged in Menyoo's Object Spooner is now built by the mod every
+session. Save the placement in Menyoo and it is in -- menyooStuff\Spooner is
+read alongside the mod's own scenery folder, so there is nothing to copy.
+Position, rotation, frozen, visible and invincible are kept; a ped keeps its
+weapon, outfit, relationship group, health, armour and whatever it was doing.
+A ped saved with nothing to do is given an idle that suits what it is holding
+-- armed stands guard, unarmed hangs out, smokes, drinks or is on the phone --
+and the same one every session, picked from where it stands. Scenery peds hold
+their spot rather than wandering off. Scenes are streamed by distance, built
+as you come near and taken out again once you are past.
+
+The settings screen reads the files again on command, and "Save everything
+around me" writes the placed peds, cars and props within eighty metres to a
+scene file that opens in Menyoo -- for the hour of spooner work that has not
+been saved yet.
+
+
 THE CORNER READOUT
+
+Both bars have marks at the points that mean something -- where heat turns
+amber and where it turns red, and where your reputation started -- a lighter
+band across the fill so it has a surface, and a bright edge where the fill
+ends. Nothing on them moves by itself: the fill eases because that is the
+number going somewhere, and the wordmark above still answers a sale or a
+patrol, which is one moving thing instead of five.
+
+And he says something as the customer walks off. Thanks, or a goodbye, in
+Franklin's own voice.
+
+
+THE OLD CORNER READOUT
 
 Same layout, better made. Both bars have a halo in their own colour, a sheen,
 a bright leading edge and a band of light crossing them every couple of

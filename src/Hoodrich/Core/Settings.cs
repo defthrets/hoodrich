@@ -277,6 +277,18 @@ namespace Hoodrich.Core
         /// </summary>
         public bool RidePreview = true;
 
+        /// <summary>
+        /// Whether Object Spooner scenes are built. See Locations.Scenery: files in
+        /// scripts\Hoodrich\scenery and, unless the next one is off, in menyooStuff\Spooner.
+        /// </summary>
+        public bool Scenery = true;
+
+        /// <summary>Whether Menyoo's own Spooner folder is read as well as the mod's.</summary>
+        public bool SceneryFromMenyoo = true;
+
+        /// <summary>How near a scene has to be before it is stood up, in metres.</summary>
+        public float SceneryRange = 220f;
+
         /// <summary>How much longer or shorter every drug-taking animation runs.</summary>
         public float DrugAnimLength = 1f;
 
@@ -589,6 +601,10 @@ namespace Hoodrich.Core
 
             s.DrugCamera = ini.GetBool("Highs", "DrugCamera", s.DrugCamera);
             s.RidePreview = ini.GetBool("Knowai", "Preview", s.RidePreview);
+
+            s.Scenery = ini.GetBool("Scenery", "Enabled", s.Scenery);
+            s.SceneryFromMenyoo = ini.GetBool("Scenery", "FromMenyoo", s.SceneryFromMenyoo);
+            s.SceneryRange = Clamp(ini.GetFloat("Scenery", "Range", s.SceneryRange), 40f, 600f);
 
             // Where each held thing sits in his hand, as set on the settings screen. See Economy.Fit.
             foreach (var prop in Economy.Fit.Names)

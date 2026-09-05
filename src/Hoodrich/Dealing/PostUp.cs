@@ -1124,6 +1124,12 @@ namespace Hoodrich.Dealing
             // The mark answers every sale, which is the only thing on that corner that moves.
             _soldAt = Game.GameTime;
 
+            // AND HE SAYS SOMETHING. Money changed hands, the customer turns and walks, and
+            // the man who just sold it to them said nothing at all -- which is the one moment
+            // on this corner where silence is loud. The game has both of these lines in
+            // Franklin's own banks, so it is his voice saying it and his face moving.
+            Say(player, SoldOff);
+
             if (Crew != null && Crew.IsAffiliated)
             {
                 var standing = Crew.CurrentStanding;
@@ -1902,6 +1908,13 @@ namespace Hoodrich.Dealing
         }
 
         /// <summary>Ambient speech, so a sale is something you hear as well as read.</summary>
+        /// <summary>
+        /// What he says as the customer turns to go. Both are in FRANKLIN_NORMAL's banks --
+        /// checked against the speech list rather than guessed, because a speech name the
+        /// voice does not have plays nothing at all and sounds exactly like it working.
+        /// </summary>
+        private static readonly string[] SoldOff = { "GENERIC_THANKS", "GENERIC_BYE" };
+
         private void Say(Ped ped, string[] lines)
         {
             if (ped == null || !ped.Exists() || lines.Length == 0) return;
@@ -2687,71 +2700,45 @@ namespace Hoodrich.Dealing
         private static readonly float[] HeatTicks = { HeatWarm, HeatWarn };
         private static readonly float[] RepTicks = { PlayerState.Neutral };
 
-        /// <summary>How long the band of light takes to cross a bar, and how wide it is; and the leading edge.</summary>
-        private const int BarSweepMs = 2600;
-        private const float BarSweepW = 0.014f;
+        /// <summary>The bright edge at the end of the fill.</summary>
         private const float BarTipW = 0.0022f;
 
         /// <summary>
-        /// One status bar: ground, the eased fill, and the dressing that makes it read as a
-        /// thing with a surface rather than a coloured rectangle.
+        /// One status bar: ground, the eased fill, and nothing that moves by itself.
         ///
-        /// FOUR THINGS ON TOP OF THE FILL, each there for a reason. A halo in the fill's own
-        /// colour, so the bar has an edge against whatever the street is doing behind it. A
-        /// GHOST from the eased fill to where it is heading, so the sale that just landed is
-        /// on the bar before the bar has caught up with it -- pale when it is climbing, a
-        /// shadow over the tail when it is draining. A sheen across the top half, so the fill
-        /// reads as a surface. And a band of light that crosses the fill every couple of
-        /// seconds: the one thing here that moves when nothing is happening, which is what
-        /// says the corner is live rather than a screenshot.
+        /// THIS USED TO HAVE FOUR MORE THINGS ON IT and every one of them was a mistake. A halo
+        /// in the fill's own colour so the bar had an edge; a soft ground under the whole block
+        /// so the small type held up; a band of light crossing the fill every couple of
+        /// seconds; a pale ghost running ahead of the fill to where it was heading. Each is
+        /// defensible on its own. Together they were two glowing coloured rectangles sat on top
+        /// of each other with the light in them constantly moving -- and on a HUD you look at
+        /// while somebody walks up to buy something, the only thing any of it said was that the
+        /// screen was busy.
         ///
-        /// Ten rectangles a bar at most, which is nothing against the frame's budget.
+        /// So what is left is what a bar is: a dark edge, a dark ground, the fill, one lighter
+        /// band across the top of the fill so it has a surface, a bright edge at the end of it,
+        /// and the marks. Six rectangles, none of them moving. The bar still eases -- that is
+        /// the fill going somewhere, which is information -- and the wordmark above it still
+        /// pulses for a sale or the law, which is one moving thing rather than five.
         /// </summary>
-        private static void Bar(float x, float cy, float w, float h, float eased, float aim, Color fill,
-                                float hot, float[] ticks, int phaseMs)
+        private static void Bar(float x, float cy, float w, float h, float eased, Color fill, float[] ticks)
         {
             var left = x - w * 0.5f;
             var filled = w * Math.Max(0f, Math.Min(1f, eased));
-            var aimed = w * Math.Max(0f, Math.Min(1f, aim));
-
-            // The halo. Brighter when the bar is hot, and a hot bar breathes.
-            Hud.Rect(x, cy, w + 0.012f, h + 0.014f, Palette.Alpha(fill, 22 + (int)(46f * hot)));
 
             Hud.Rect(x, cy, w + 0.004f, h + 0.004f, Color.FromArgb(200, 8, 8, 10));
             Hud.Rect(x, cy, w, h, Color.FromArgb(170, 26, 28, 30));
 
             if (filled > 0f)
             {
-                var body = hot > 0f ? Mix(fill, Color.White, 0.16f * hot) : fill;
-                Hud.Rect(left + filled * 0.5f, cy, filled, h, body);
+                Hud.Rect(left + filled * 0.5f, cy, filled, h, fill);
 
-                // The sheen: the top half, a touch lighter.
-                Hud.Rect(left + filled * 0.5f, cy - h * 0.26f, filled, h * 0.44f, Color.FromArgb(34, 255, 255, 255));
+                // One lighter band across the top of the fill, so it has a surface.
+                Hud.Rect(left + filled * 0.5f, cy - h * 0.26f, filled, h * 0.44f, Color.FromArgb(30, 255, 255, 255));
 
-                // The band of light, clipped to the fill.
-                var p = ((Game.GameTime + phaseMs) % BarSweepMs) / (float)BarSweepMs;
-                var bx = left - BarSweepW * 0.5f + (filled + BarSweepW) * p;
-                var b0 = Math.Max(left, bx - BarSweepW * 0.5f);
-                var b1 = Math.Min(left + filled, bx + BarSweepW * 0.5f);
-                if (b1 > b0) Hud.Rect((b0 + b1) * 0.5f, cy, b1 - b0, h, Color.FromArgb(48, 255, 255, 255));
-            }
-
-            // Where it is heading, over the fill so a drain shows as well as a climb.
-            if (Math.Abs(aimed - filled) > 0.0008f)
-            {
-                var lo = Math.Min(aimed, filled);
-                var hi = Math.Max(aimed, filled);
-                var ghost = aimed > filled
-                    ? Palette.Alpha(Mix(fill, Color.White, 0.55f), 95)
-                    : Color.FromArgb(80, 8, 8, 10);
-
-                Hud.Rect(left + (lo + hi) * 0.5f, cy, hi - lo, h, ghost);
-            }
-
-            // The leading edge, last, so it is on top of the ghost.
-            if (filled > 0f)
-            {
-                Hud.Rect(left + filled - BarTipW * 0.5f, cy, BarTipW, h, Palette.Alpha(Mix(fill, Color.White, 0.6f), 230));
+                // And a bright edge where the fill ends, so you can see where it is.
+                Hud.Rect(left + filled - BarTipW * 0.5f, cy, BarTipW, h,
+                         Palette.Alpha(Mix(fill, Color.White, 0.6f), 230));
             }
 
             // The marks, over everything, so they read whatever the fill is doing.
@@ -2760,27 +2747,6 @@ namespace Hoodrich.Dealing
             foreach (var t in ticks)
             {
                 Hud.Rect(left + w * t, cy, 0.0012f, h, Color.FromArgb(130, 250, 250, 248));
-            }
-        }
-
-        /// <summary>
-        /// A soft dark ground under the whole readout, feathered at the edges by stacking:
-        /// four rectangles each a little smaller than the last, so there is no hard edge for
-        /// it to read as a box. It is there so the small type at the bottom holds up over a
-        /// white wall at noon, which it did not.
-        /// </summary>
-        private static void Backing(float x, float y, float w)
-        {
-            // From above the mark to under the last line.
-            const float above = 0.098f;
-            const float below = 0.132f;
-
-            var cy = y + (below - above) * 0.5f;
-            var h = above + below;
-
-            for (var i = 0; i < 4; i++)
-            {
-                Hud.Rect(x, cy, w + 0.130f - i * 0.030f, h - i * 0.013f, Color.FromArgb(18, 5, 7, 9));
             }
         }
 
@@ -2974,17 +2940,10 @@ namespace Hoodrich.Dealing
             // The COLOUR is taken from the eased value too, so a bar sliding up through the
             // threshold changes colour when it gets there rather than the instant the sale
             // lands, several tenths before the fill catches up with it.
-            var heatAim = Math.Min(1f, _cornerHeat / Math.Max(1f, _cfg.PostUpHeatBeforePolice));
-            var heat = _heatBar.To(heatAim);
+            var heat = _heatBar.To(Math.Min(1f, _cornerHeat / Math.Max(1f, _cfg.PostUpHeatBeforePolice)));
             var colour = heat > HeatWarn ? Palette.Danger : heat > HeatWarm ? Palette.Warn : Palette.Cash;
 
-            // A bar in the red breathes, on the same beat the mark throbs to when the law is
-            // here, so the two alarms are one alarm.
-            var throb = 0.5f + 0.5f * (float)Math.Sin((Game.GameTime % LawPulseMs) / (double)LawPulseMs * Math.PI * 2.0);
-
-            Backing(x, y, w);
-
-            Bar(x, y, w, h, heat, heatAim, colour, heat > HeatWarn ? throb : 0f, HeatTicks, 0);
+            Bar(x, y, w, h, heat, colour, HeatTicks);
 
             // The blip itself, drawn inline in the string.
             //
@@ -3040,9 +2999,7 @@ namespace Hoodrich.Dealing
             const float repH = 0.022f;
             var repY = y + h * 0.5f + RepBarGap + repH * 0.5f;
 
-            // Half a sweep behind the heat bar, so the two bands of light are not a pair of
-            // windscreen wipers.
-            Bar(x, repY, w, repH, rep, _state == null ? 1f : _state.ProductRep, repBar, 0f, RepTicks, BarSweepMs / 2);
+            Bar(x, repY, w, repH, rep, repBar, RepTicks);
 
             // The same treatment as the heat bar above it. radar_community_series is 835.
             BarLabel(RepBlip, "REPUTATION", x, repY);

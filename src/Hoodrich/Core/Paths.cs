@@ -275,6 +275,20 @@ namespace Hoodrich.Core
             }
         }
 
+        /// <summary>
+        /// Object Spooner scenes that ship with the mod. Menyoo's own folder is read as well
+        /// -- see Locations.Scenery -- so this one is for scenes taken into the mod to keep.
+        /// </summary>
+        public static string Scenery
+        {
+            get
+            {
+                var d = Path.Combine(Data, "scenery");
+                EnsureDir(d);
+                return d;
+            }
+        }
+
         private static void EnsureDir(string path)
         {
             try

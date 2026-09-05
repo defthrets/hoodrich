@@ -128,6 +128,9 @@ namespace Hoodrich
         private readonly GraffitiScreen _graffiti;
         private readonly RideScreen _ridePick;
 
+        /// <summary>Object Spooner scenes, stood up as you come near them.</summary>
+        private readonly Scenery _scenes;
+
         /// <summary>The closet at Denise's, and whether he has been dressed from the save yet this session.</summary>
         private readonly WardrobeScreen _wardrobeScreen;
         private readonly Wardrobe _wardrobe;
@@ -805,6 +808,9 @@ namespace Hoodrich
                 _spraycan = new Paint.Spraycan(_paint);
                 _graffiti = new GraffitiScreen(_paint, _marks);
                 _ridePick = new RideScreen();
+
+                _scenes = new Scenery(_cfg);
+                SettingsScreen.Scenes = _scenes;
 
                 _wardrobeScreen = new WardrobeScreen();
                 _wardrobe = new Wardrobe(_wardrobeScreen);
@@ -2875,6 +2881,7 @@ namespace Hoodrich
                     _sleep.Update();
                     _kitchen.Update();
                     _wardrobe.Update();
+                    _scenes.Update();
                     _sleep.RestoreOnLoad();
                     _leaders.Update();
                     _leaders.UpdatePrompt();
@@ -3983,6 +3990,7 @@ namespace Hoodrich
             try { Locations.RideCam.Sweep(); } catch { /* teardown */ }
             try { UI.TalkCam.Stop(); } catch { /* teardown */ }
             try { _garage.RestoreWorld(); } catch { /* teardown */ }
+            try { _scenes?.RestoreWorld(); } catch { /* teardown */ }
             try { _street?.Release(); } catch { /* teardown */ }
 
             // Before the decals come off, or the record is written after the thing it records
