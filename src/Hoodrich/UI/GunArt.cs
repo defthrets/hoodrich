@@ -65,8 +65,8 @@ namespace Hoodrich.UI
         };
 
         /// <summary>How many are asked for at a time, and how long that batch is given to arrive.</summary>
-        private const int Batch = 4;
-        private const int BatchMs = 700;
+        private const int Batch = 8;
+        private const int BatchMs = 600;
 
         /// <summary>The dictionaries this install actually has.</summary>
         private static readonly List<string> Real = new List<string>();
@@ -193,9 +193,12 @@ namespace Hoodrich.UI
                 return true;
             }
 
-            // Nothing is looked for until it is known where there is to look.
-            if (!_done) return false;
-
+            // LOOKED FOR IN WHATEVER IS KNOWN SO FAR, rather than waiting for the sweep.
+            //
+            // This was gated on the sweep finishing, and the sweep takes several seconds --
+            // so for those seconds NOTHING had a picture, including the guns whose pack was
+            // confirmed in the first batch. Waiting for a complete answer before giving any
+            // answer is the wrong trade on a counter somebody is stood at.
             foreach (var name in Spellings(icon))
             {
                 foreach (var candidate in Real)
@@ -218,7 +221,12 @@ namespace Hoodrich.UI
                 }
             }
 
-            // Every real dictionary was asked and none of them had it. Said once, then kept.
+            // Not found yet. While the sweep is still running that is not an answer, only a
+            // not-yet -- writing it down here would remember a guess made before the packs
+            // it needed had been looked at.
+            if (!_done) return false;
+
+            // Every real pack was asked and none of them had it. Said once, then kept.
             Where[icon] = "";
             _dirty = true;
 
