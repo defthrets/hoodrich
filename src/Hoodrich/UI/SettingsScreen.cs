@@ -513,6 +513,12 @@ namespace Hoodrich.UI
                   0.5f, 3f, 0.1f, "0.0", "x",
                   note: "Scales every drug animation. The camera follows it");
 
+            Head("Knowai");
+            Tick("Show the place", "Knowai", "Preview",
+                 () => c.RidePreview,
+                 v => { c.RidePreview = v; RideScreen.Preview = v; },
+                 "Looks at where you're going while you're choosing it, live. Off keeps the street");
+
             Head("Mask");
             Slide("Slot", "Mask", "Slot",
                   () => c.MaskSlot,

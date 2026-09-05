@@ -72,8 +72,8 @@ namespace Hoodrich.Wheel
         /// <summary>Set by Main: opens the feed, and reads the follower count for the wedge.</summary>
         public Action ShowSocials;
 
-        /// <summary>Set by Main: hail one, or say why not. See Locations.Knowai.</summary>
-        public Func<string> HailRide;
+        /// <summary>Set by Main: opens the picker -- the place, the fare, then the car.</summary>
+        public Action ShowRidePicker;
 
         /// <summary>Set by Main: name a stop from the back seat.</summary>
         public Func<Locations.RideStop, string> RideTo;
@@ -1308,19 +1308,14 @@ namespace Hoodrich.Wheel
 
             var state = RideState == null ? Locations.RideState.None : RideState();
 
-            // NOTHING YET: one button, and it is the only thing anybody wants from this app
-            // when they are stood on a pavement. You do not tell a cab where you are going
-            // before it has arrived.
+            // NOTHING YET: one button, and it opens the picker -- the place, the fare, and
+            // then the car. The old row sent a car first and asked where from the back seat,
+            // which is how a street cab works and not how an app does.
             if (state == Locations.RideState.None)
             {
-                page.Add("Request a pickup", ">", () =>
-                {
-                    var no = HailRide == null ? "Not wired up" : HailRide();
-
-                    if (!string.IsNullOrEmpty(no)) UI.Notify.Failure(no);
-                },
-                    detail: "One comes to you. You say where when you're in it",
-                    enabled: HailRide != null,
+                page.Add("Where to?", ">", () => ShowRidePicker?.Invoke(),
+                    detail: "Pick the place and see the fare first. A car comes, and goes the moment you're in",
+                    enabled: ShowRidePicker != null,
                     disabledReason: "Not wired up");
 
                 page.WithIcon(Icons.FromFile("car.png"));
@@ -1390,7 +1385,7 @@ namespace Hoodrich.Wheel
             var going = RideGoing == null ? "" : RideGoing();
 
             page.Add("Cancel the ride", "x", () => CancelRide?.Invoke(),
-                detail: state == Locations.RideState.Riding
+                detail: state == Locations.RideState.Riding || state == Locations.RideState.Stopped
                     ? "You're in it. This gets you out where you are"
                     : "Send it away and ask for another later",
                 value: string.IsNullOrEmpty(going) ? "" : going);
@@ -1411,6 +1406,7 @@ namespace Hoodrich.Wheel
                 case Locations.RideState.Waiting: return "waiting";
                 case Locations.RideState.Picking: return "where to?";
                 case Locations.RideState.Riding: return "riding";
+                case Locations.RideState.Stopped: return "at your stop";
                 case Locations.RideState.Arrived: return "arrived";
                 // NOT A COUNT OF THE DESTINATIONS. It said "10 stops", which described the
                 // menu rather than the app -- and it stopped being true the moment the flow

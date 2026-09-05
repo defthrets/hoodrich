@@ -129,6 +129,7 @@ namespace Hoodrich
         private readonly Paint.Can _can = new Paint.Can();
         private readonly Paint.Bystanders _street = new Paint.Bystanders();
         private readonly GraffitiScreen _graffiti;
+        private readonly RideScreen _ridePick;
 
         /// <summary>The inbox. Its store is static; only the screen is an object.</summary>
         private readonly MessagesScreen _messages = new MessagesScreen();
@@ -788,6 +789,7 @@ namespace Hoodrich
                 _law = new Paint.Law(_paint);
                 _spraycan = new Paint.Spraycan(_paint);
                 _graffiti = new GraffitiScreen(_paint, _marks);
+                _ridePick = new RideScreen();
 
                 // WITHOUT THIS THE TAG RUNS WOULD BE A STEP BACKWARDS. The old mechanic wrote
                 // its marks into save.json and put them back on the wall next session; the
@@ -1558,7 +1560,7 @@ namespace Hoodrich
                                    || _settingsScreen.IsOpen
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
                                    || _gunScreen.IsOpen || _carScreen.IsOpen
-                                   || _graffiti.IsOpen,
+                                   || _graffiti.IsOpen || _ridePick.IsOpen,
                 };
 
                 _social.Toasts = _toasts;
@@ -1997,7 +1999,10 @@ namespace Hoodrich
 
                 // Knowai. The page reads the state to decide whether it is a list of places or
                 // one row saying you already have a car coming, so all four go together.
-                pages.HailRide = () => _ride.Hail();
+                pages.ShowRidePicker = () => _ridePick.Open();
+                _ridePick.Book = stop => _ride.Hail(stop);
+                _ridePick.Quote = stop => _ride.Quote(stop);
+                RideScreen.Preview = _cfg.RidePreview;
                 pages.RideTo = stop => _ride.Go(stop);
 
                 // Sat in the back, and the car wants an answer. The phone comes out on the
@@ -2499,6 +2504,19 @@ namespace Hoodrich
                     }
                 }
 
+                if (_ridePick.IsOpen)
+                {
+                    if (!available) _ridePick.Close();
+                    else
+                    {
+                        _ridePick.Update();
+                        _ridePick.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_graffiti.IsOpen)
                 {
                     if (!available) _graffiti.Close();
@@ -2802,6 +2820,7 @@ namespace Hoodrich
                     _tow.Update(Game.Player.Character);
 
                     _ride.Update(Game.Player.Character);
+                    Locations.RideCam.Update();
 
                     _social.Update();
 
@@ -3850,6 +3869,7 @@ namespace Hoodrich
             // either behind outlives the mod.
             try { _spraycan?.Away(); } catch { /* teardown */ }
             try { Core.Mask.RestoreWorld(_cfg); } catch { /* teardown */ }
+            try { Locations.RideCam.Sweep(); } catch { /* teardown */ }
             try { _street?.Release(); } catch { /* teardown */ }
 
             // Before the decals come off, or the record is written after the thing it records

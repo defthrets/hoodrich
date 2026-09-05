@@ -128,6 +128,11 @@ namespace Hoodrich.Phone
         /// no stagger anybody can see, because there is barely a curve to stagger.
         /// </summary>
         private const float BodyRound = 0.007f;
+
+        /// <summary>The shadow under the body: how far it spreads past the edge, and how far it drops.</summary>
+        private const float ShadowSpread = 0.048f;
+        private const float ShadowDropY = 0.008f;
+        private const float ShadowDropX = 0.003f;
         private const float ScreenRound = 0.005f;
 
         /// <summary>How long a tile takes to pop when the cursor lands on it.</summary>
@@ -602,6 +607,7 @@ namespace Hoodrich.Phone
             // The glass lights up a beat after the body arrives and is dark the whole way out.
             var glass = IsOpen ? Wake() : 0f;
 
+            Shadow(left, top, bodyW, BodyH, fade);
             Body(left, top, bodyW, BodyH, fade, glass);
 
             // On the way out there is nothing on the screen but the screen.
@@ -746,6 +752,25 @@ namespace Hoodrich.Phone
         private static Color Fade(Color c, int fade)
         {
             return Color.FromArgb(c.A * fade / 255, c.R, c.G, c.B);
+        }
+
+        /// <summary>
+        /// A soft shadow under the handset, so it stands off whatever is behind it -- a bright
+        /// street at noon had the dark body sat flat on the picture like a sticker.
+        ///
+        /// ONE SPRITE, NOT RECTANGLES. A blurred shape wants dozens of stacked rectangles to
+        /// fake, and the phone is already the biggest rectangle spender in the mod; a
+        /// pre-blurred file (tools/make_shadow.py) costs nothing from that budget and is
+        /// softer than any stack. It is rendered at the body's own proportions with the same
+        /// margin all round, and drawn here as the body plus that margin, so the fall-off is
+        /// even rather than stretched.
+        /// </summary>
+        private void Shadow(float left, float top, float w, float h, int fade)
+        {
+            Hud.File("phone_shadow.png",
+                     left + w * 0.5f + Hud.ToX(ShadowDropX), top + h * 0.5f + ShadowDropY,
+                     w + Hud.ToX(ShadowSpread) * 2f, h + ShadowSpread * 2f, 0f,
+                     Fade(Color.FromArgb(255, 0, 0, 0), fade));
         }
 
         private void Body(float left, float top, float w, float h, int fade, float glass)

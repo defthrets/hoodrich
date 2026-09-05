@@ -24,6 +24,9 @@ namespace Hoodrich.Locations
         /// <summary>You are in it and it is driving.</summary>
         Riding,
 
+        /// <summary>Pulled in at a marker you dropped on the map mid-ride. Carries on after.</summary>
+        Stopped,
+
         /// <summary>There. Waiting for you to get out.</summary>
         Arrived
     }
@@ -119,6 +122,12 @@ namespace Hoodrich.Locations
 
         /// <summary>Close enough to where you asked for to call it arrived.</summary>
         private const float DropRange = 26f;
+
+        /// <summary>How long it sits at a stop with you still in the back before it carries on itself.</summary>
+        private const int StopIdleMs = 10000;
+
+        /// <summary>How often it looks at the map for a marker while it is driving.</summary>
+        private const int MarkEveryMs = 1000;
 
         /// <summary>How long it will sit at the kerb before it gives up on you.</summary>
         private const int WaitMs = 120000;
@@ -216,6 +225,17 @@ namespace Hoodrich.Locations
         private int _phaseFrom;
         private int _fare;
 
+        /// <summary>A stop on the way: a marker dropped on the map mid-ride. Null when there is none.</summary>
+        private RideStop _stop;
+        private Vector3 _stopAt;
+
+        /// <summary>Whether you got out at the stop, which is what it waits on before carrying on.</summary>
+        private bool _stopLeft;
+
+        /// <summary>The marker as it was last seen, so one already known is not a new stop.</summary>
+        private Vector3 _sawMark;
+        private int _markLookedAt;
+
         /// <summary>Where it was when last looked at, and when that was.</summary>
         private Vector3 _wasAt;
         private int _lookedAt;
@@ -242,14 +262,17 @@ namespace Hoodrich.Locations
         // ---- hailing ------------------------------------------------------------
 
         /// <summary>
-        /// Requests one. Returns a player-facing refusal, or null once it is on its way.
+        /// Requests one, to somewhere. Returns a player-facing refusal, or null once it is on
+        /// its way.
         ///
-        /// NO DESTINATION AT THIS POINT, and that is the shape of the real thing. You do not
-        /// tell a cab where you are going before it has arrived -- you get in, and then it
-        /// asks. Choosing on the phone in the street also meant choosing before you knew
-        /// whether the car was going to turn up at all.
+        /// THE DESTINATION COMES FIRST NOW. It used to be asked from the back seat, which is
+        /// how a street cab works and not how an app does: you found out the fare after a
+        /// two-minute wait for the car, from a list with nothing on it but names. The picker
+        /// (UI.RideScreen) shows the place and the fare before anything is sent, and the car
+        /// pulls away for it the moment you are in. Null still means the old shape -- get in,
+        /// and it asks -- which is also where a booked place it cannot reach falls back to.
         /// </summary>
-        public string Hail()
+        public string Hail(RideStop to)
         {
             if (IsRunning) return "You've already got one coming.";
 
@@ -267,8 +290,11 @@ namespace Hoodrich.Locations
 
             Theme();
 
-            _to = null;
-            Going = "";
+            _to = to;
+            _stop = null;
+            _stopLeft = false;
+            _sawMark = Vector3.Zero;
+            Going = to == null ? "" : to.Name;
             _fare = 0;
 
             Send(player.Position);
@@ -276,23 +302,49 @@ namespace Hoodrich.Locations
 
             Begin(RideState.Coming);
 
-            Notify.Card(Face, "Knowai", "on the way", "A car's been assigned. Sit tight.");
+            Notify.Card(Face, "Knowai", "on the way",
+                        to == null ? "A car's been assigned. Sit tight."
+                                   : "A car's been assigned for " + to.Name + ". Sit tight.");
 
-            Log.Info("Knowai: pickup requested.");
+            Log.Info("Knowai: pickup requested" + (to == null ? "." : " for " + to.Name + "."));
 
             return null;
         }
 
         /// <summary>
-        /// Where to, chosen from the back seat. Returns a refusal or null.
+        /// Where to, chosen from the back seat -- the fallback for a ride booked without a
+        /// place, or to one it could not reach. Returns a refusal or null.
         /// </summary>
         public string Go(RideStop stop)
         {
             if (stop == null) return "Nowhere selected.";
             if (State != RideState.Picking) return "Not in a Knowai.";
 
+            return Depart(stop) ? null : "Knowai doesn't go there.";
+        }
+
+        /// <summary>
+        /// What it would cost from where he is stood, or -1 when it will not go there. For
+        /// the picker, which shows the number before anything is sent.
+        /// </summary>
+        public int Quote(RideStop stop)
+        {
+            if (stop == null) return -1;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return -1;
+
             var drop = OnRoad(stop.At);
-            if (drop == Vector3.Zero) return "Knowai doesn't go there.";
+            if (drop == Vector3.Zero) return -1;
+
+            return Flagfall + (int)(player.Position.DistanceTo(drop) / 100f * PerHundred);
+        }
+
+        /// <summary>Pulls away for a place, with him in the back. False when there is no road to it.</summary>
+        private bool Depart(RideStop stop)
+        {
+            var drop = OnRoad(stop.At);
+            if (drop == Vector3.Zero) return false;
 
             var player = Game.Player.Character;
             var from = player != null && player.Exists() ? player.Position : _car.Position;
@@ -300,6 +352,14 @@ namespace Hoodrich.Locations
             _to = stop;
             _dropAt = drop;
             _fare = Flagfall + (int)(from.DistanceTo(drop) / 100f * PerHundred);
+
+            // A marker already on the map when it pulls away is not a stop -- it is either
+            // the destination itself or something older -- so it is noted as seen. Only one
+            // dropped on the way is (see Detour).
+            var mark = Waypoint();
+            _sawMark = mark == null ? Vector3.Zero : mark.At;
+            _stop = null;
+            _stopLeft = false;
 
             Going = stop.Name;
 
@@ -313,7 +373,7 @@ namespace Hoodrich.Locations
             // thing here you did not already know.
             Notify.Card(Face, "Knowai", stop.Name, "$" + _fare);
 
-            return null;
+            return true;
         }
 
         /// <summary>Called off, from the app or from anything going wrong.</summary>
@@ -322,6 +382,9 @@ namespace Hoodrich.Locations
             if (!string.IsNullOrEmpty(why)) Notify.Failure(why);
 
             Clean();
+            _stop = null;
+            _stopLeft = false;
+            _sawMark = Vector3.Zero;
             State = RideState.None;
             Going = "";
         }
@@ -393,6 +456,7 @@ namespace Hoodrich.Locations
                     case RideState.Coming: Coming(player, now); break;
                     case RideState.Waiting: Waiting(player, now); break;
                     case RideState.Picking: Picking(player, now); break;
+                    case RideState.Stopped: Stopped(player, now); break;
                     case RideState.Riding: Riding(player); break;
                     case RideState.Arrived: Arrived(player); break;
                 }
@@ -487,6 +551,10 @@ namespace Hoodrich.Locations
         {
             if (player.IsInVehicle(_car))
             {
+                // BOOKED AHEAD: it already knows, so it goes. Only a place it cannot reach
+                // by road falls back to asking.
+                if (_to != null && Depart(_to)) return;
+
                 Begin(RideState.Picking);
 
                 try { if (Choose != null) Choose(); }
@@ -605,7 +673,11 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            if (Stuck(Game.GameTime, _dropAt))
+            var now = Game.GameTime;
+
+            Detour(now);
+
+            if (Stuck(now, _stop != null ? _stopAt : _dropAt))
             {
                 Charge?.Invoke(_fare);
 
@@ -613,6 +685,21 @@ namespace Hoodrich.Locations
 
                 Away();
                 Cancel("");
+                return;
+            }
+
+            // THE STOP FIRST, when there is one.
+            if (_stop != null)
+            {
+                if (_car.Position.DistanceTo(_stopAt) > DropRange) return;
+
+                Halt();
+                Begin(RideState.Stopped);
+
+                try { Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _car.Handle, 1); }
+                catch { /* unlocked is the default */ }
+
+                Notify.Card(Face, "Knowai", "your stop", "It'll wait. Get out, or carry on.");
                 return;
             }
 
@@ -632,6 +719,100 @@ namespace Hoodrich.Locations
             {
                 Notify.Card(Face, "Knowai", "paid", "$" + _fare);
             }
+        }
+
+        /// <summary>
+        /// A marker dropped on the map mid-ride is a stop on the way. Looked for once a
+        /// second, and only a marker that is new since the last look counts: the one that
+        /// was already there when the car pulled away was noted in Depart, and the same one
+        /// twice is the same one.
+        /// </summary>
+        private void Detour(int now)
+        {
+            if (_stop != null || now - _markLookedAt < MarkEveryMs) return;
+            _markLookedAt = now;
+
+            var mark = Waypoint();
+
+            if (mark == null)
+            {
+                _sawMark = Vector3.Zero;
+                return;
+            }
+
+            if (_sawMark != Vector3.Zero && mark.At.DistanceTo(_sawMark) < 5f) return;
+            _sawMark = mark.At;
+
+            // Not the destination, and not somewhere the car is already sat.
+            if (mark.At.DistanceTo(_dropAt) < DropRange * 2f) return;
+            if (mark.At.DistanceTo(_car.Position) < DropRange) return;
+
+            _stop = mark;
+            _stopAt = mark.At;
+            _stopLeft = false;
+
+            // The extra goes on the meter: out to the stop and on from it, less the straight
+            // run it would have been.
+            var here = _car.Position;
+            var extra = here.DistanceTo(_stopAt) + _stopAt.DistanceTo(_dropAt) - here.DistanceTo(_dropAt);
+            if (extra > 0f) _fare += (int)(extra / 100f * PerHundred);
+
+            Begin(RideState.Riding);
+            Drive(_stopAt, 22f);
+
+            Notify.Card(Face, "Knowai", "stopping first", "Swinging by your marker on the way. $" + _fare);
+        }
+
+        /// <summary>
+        /// Pulled in at the stop. With you still in the back it waits a moment for a word,
+        /// then carries on itself; once you have got out it waits for you to get back in,
+        /// as long as it would have waited at the kerb in the first place.
+        /// </summary>
+        private void Stopped(Ped player, int now)
+        {
+            if (player.IsInVehicle(_car))
+            {
+                if (_stopLeft)
+                {
+                    Resume();
+                    return;
+                }
+
+                Help.ShowThisFrame("Your stop. Get out, or press ~INPUT_CELLPHONE_RIGHT~ to carry on to " + _to.Name + ".");
+
+                if (Tapped() || now - _phaseFrom > StopIdleMs) Resume();
+
+                return;
+            }
+
+            if (!_stopLeft)
+            {
+                _stopLeft = true;
+                _phaseFrom = now;
+            }
+
+            if (now - _phaseFrom < WaitMs) return;
+
+            Charge?.Invoke(_fare);
+            Notify.Card(Face, "Knowai", "ride ended", "It gave up waiting at your stop. $" + _fare);
+            Away();
+            Cancel("");
+        }
+
+        private void Resume()
+        {
+            _stop = null;
+            _stopLeft = false;
+            _sawMark = Vector3.Zero;
+
+            // The marker has been used, and left on the map it would be found again.
+            try { Function.Call(Hash.SET_WAYPOINT_OFF); }
+            catch { /* it may already be gone */ }
+
+            Begin(RideState.Riding);
+            Drive(_dropAt, 22f);
+
+            Notify.Card(Face, "Knowai", "carrying on", _to.Name + ". $" + _fare);
         }
 
         private void Arrived(Ped player)
@@ -1417,6 +1598,7 @@ namespace Hoodrich.Locations
             _rider = null;
             _blip = null;
             _to = null;
+            _stop = null;
             _leaving = null;
             _goneDriver = null;
 

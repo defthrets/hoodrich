@@ -270,6 +270,13 @@ namespace Hoodrich.Core
         /// </summary>
         public bool DrugCamera = true;
 
+        /// <summary>
+        /// Whether the Knowai picker shows you the place while you are choosing it: a slow
+        /// circle of the destination, live, behind the sheet. He is held where he stands
+        /// until it hands back. Off, the picker sits over the street you are on.
+        /// </summary>
+        public bool RidePreview = true;
+
         /// <summary>How much longer or shorter every drug-taking animation runs.</summary>
         public float DrugAnimLength = 1f;
 
@@ -590,6 +597,7 @@ namespace Hoodrich.Core
             s.BustWantedStars = (int)Clamp(ini.GetInt("Risk", "BustWantedStars", s.BustWantedStars), 1f, 5f);
 
             s.DrugCamera = ini.GetBool("Highs", "DrugCamera", s.DrugCamera);
+            s.RidePreview = ini.GetBool("Knowai", "Preview", s.RidePreview);
             s.DrugAnimLength = Clamp(ini.GetFloat("Highs", "AnimLength", s.DrugAnimLength), 0.5f, 3f);
 
             s.MaskSlot = (int)Clamp(ini.GetInt("Mask", "Slot", s.MaskSlot), 0f, 11f);
