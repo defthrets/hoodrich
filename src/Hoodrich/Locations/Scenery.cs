@@ -291,6 +291,19 @@ namespace Hoodrich.Locations
             {
                 var item = scene.Items[scene.Cursor];
 
+                // ALREADY THERE, FROM ANOTHER FILE. Saving a scene, adding to it and saving
+                // again under a new name is the obvious way to work, and it leaves the same
+                // thing described twice in two files -- both of which get built. Two identical
+                // frozen props on one spot z-fight, which reads as a flickering fence rather
+                // than as a duplicate, so it is caught here rather than left to be noticed.
+                if (Already(item))
+                {
+                    scene.Cursor++;
+                    scene.Waited = 0;
+                    scene.Missed++;
+                    continue;
+                }
+
                 Entity made;
                 var verdict = Put(item, out made);
 
@@ -344,7 +357,34 @@ namespace Hoodrich.Locations
             scene.Built = true;
 
             Log.Info("Built \"" + scene.Name + "\": " + scene.Made + " up" +
-                     (scene.Missed > 0 ? ", " + scene.Missed + " would not load" : "") + ".");
+                     (scene.Missed > 0 ? ", " + scene.Missed + " skipped or would not load" : "") + ".");
+        }
+
+        /// <summary>How close two of the same model have to be to count as the same thing.</summary>
+        private const float SameSpot = 0.3f;
+
+        /// <summary>
+        /// Whether this exact thing is already standing, from any scene.
+        ///
+        /// The same model at the same place, within a third of a metre. Deliberately narrow:
+        /// two of the same fence a metre apart is a fence line somebody built on purpose, and
+        /// only a pair sat inside each other is a duplicate.
+        /// </summary>
+        private bool Already(Spooner.Placed item)
+        {
+            foreach (var scene in _scenes)
+            {
+                foreach (var pair in scene.Was)
+                {
+                    var was = pair.Value;
+                    if (was == null || was.ModelHash != item.ModelHash) continue;
+                    if (was.At.DistanceTo(item.At) > SameSpot) continue;
+
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void Stick(Scene scene, Spooner.Placed item, Entity made)
