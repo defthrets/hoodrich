@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -159,7 +159,25 @@ namespace Hoodrich.Locations
         private Vector3 Mark => _standing == Vector3.Zero ? Inside : _standing;
 
         /// <summary>The way back out: the doorway he used, or the ini's door after a reload.</summary>
-        private Vector3 Back => _cameFrom == Vector3.Zero ? Door : _cameFrom;
+        /// <summary>
+        /// Where leaving puts you: the doorway you came in by, and the ini's door when nothing
+        /// remembered one.
+        ///
+        /// AND THE DOOR WINS WHEN THE TWO DISAGREE. What is remembered is read off the player
+        /// as he steps in, so a reload, a mission that moved him, or a session that ended
+        /// inside the room can leave a coordinate from somewhere else entirely -- and coming
+        /// out of the grow room into the middle of Vinewood is worse than coming out a stride
+        /// from where the ini says the door is. Anything further than the doorway slack is
+        /// treated as a stale reading rather than a way home.
+        /// </summary>
+        private Vector3 Back
+        {
+            get
+            {
+                if (_cameFrom == Vector3.Zero) return Door;
+                return _cameFrom.DistanceTo(Door) > DoorwaySlack ? Door : _cameFrom;
+            }
+        }
 
         private float BackFacing => _cameFrom == Vector3.Zero ? _spec.DoorHeading : _cameFacing;
 
@@ -597,11 +615,17 @@ namespace Hoodrich.Locations
                 Fade(false);
 
                 player.Position = Back;
-                player.Heading = BackFacing;
+                player.Heading = _cameFrom != Vector3.Zero && _cameFrom.DistanceTo(Door) <= DoorwaySlack
+                    ? BackFacing
+                    : _spec.DoorHeading;
 
                 Log.Info("Out of the " + _spec.Name + " to " + Back +
-                         (_cameFrom == Vector3.Zero ? " (the ini's door -- nothing remembered "
-                                                    + "the way in)" : " (the way he came in)"));
+                         (_cameFrom == Vector3.Zero
+                              ? " (the ini's door -- nothing remembered the way in)"
+                              : _cameFrom.DistanceTo(Door) > DoorwaySlack
+                                  ? " (the ini's door -- what was remembered was " +
+                                    (int)_cameFrom.DistanceTo(Door) + "m from it)"
+                                  : " (the way he came in)"));
 
                 _inside = false;
                 _standing = Vector3.Zero;

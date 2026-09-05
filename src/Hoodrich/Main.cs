@@ -886,10 +886,15 @@ namespace Hoodrich
                 // The set's own places, and only once you are in the set. See InteriorDoor.
                 foreach (var spec in _cfg.Doors)
                 {
-                    _doors.Add(new InteriorDoor(spec)
-                    {
-                        Known = () => _crew != null && _crew.IsAffiliated
-                    });
+                    // NO LONGER GATED ON BEING IN THE SET.
+                    //
+                    // Both rooms are behind Lamar's yard and were only offered once you had
+                    // joined, which is a reasonable-sounding rule that in practice meant a
+                    // player stood at the roller door with nothing happening and no way to
+                    // find out why -- the prompt does not appear, so there is nothing to read.
+                    // The rooms are part of the place; the work inside them is where the
+                    // progression belongs.
+                    _doors.Add(new InteriorDoor(spec));
                 }
 
                 // The lab has people on it.

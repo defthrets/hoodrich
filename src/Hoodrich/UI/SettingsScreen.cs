@@ -480,43 +480,6 @@ namespace Hoodrich.UI
                   0.5f, 3f, 0.1f, "0.0", "x",
                   note: "Scales every drug animation. The camera follows it");
 
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Ask the art packs what they have",
-                Note = "Asks every pack about every weapon name in the game and writes what exists to gunart-probe.txt",
-                Do = () =>
-                {
-                    if (GunArtProbe.Running)
-                    {
-                        Notify.Important("Already asking.");
-                        return;
-                    }
-
-                    if (!GunArt.Ready)
-                    {
-                        Notify.Important("Open Stretch's counter first so the packs are found.");
-                        return;
-                    }
-
-                    Notify.Important(GunArtProbe.Start(GunArt.Packs)
-                        ? "Asking. It writes gunart-probe.txt when it is done."
-                        : "No art packs were found on this install.");
-                }
-            });
-
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Find the gun pictures again",
-                Note = "Forgets where the game's gun photographs are and looks again. For after a game update",
-                Do = () =>
-                {
-                    GunArt.Again();
-                    Notify.Important("Open Stretch's counter and it will look again.");
-                }
-            });
-
             // WHAT SOMEBODY BUILT IN THE SPOONER. Menyoo saves a placement file; this builds
             // it, from the mod's folder and from Menyoo's own, streamed in by distance.
             Head("Spooner scenes");
@@ -622,6 +585,44 @@ namespace Hoodrich.UI
             // list has twenty-one thousand names. Stand at the thing, press this, and the log
             // has the hash and the distance of everything within four metres.
             Head("Finding things");
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Ask the art packs what they have",
+                Note = "Asks every pack about every weapon name in the game and writes what exists to gunart-probe.txt",
+                Do = () =>
+                {
+                    if (GunArtProbe.Running)
+                    {
+                        Notify.Important("Already asking.");
+                        return;
+                    }
+
+                    if (!GunArt.Ready)
+                    {
+                        Notify.Important("Open Stretch's counter first so the packs are found.");
+                        return;
+                    }
+
+                    Notify.Important(GunArtProbe.Start(GunArt.Packs)
+                        ? "Asking. It writes gunart-probe.txt when it is done."
+                        : "No art packs were found on this install.");
+                }
+            });
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Find the gun pictures again",
+                Note = "Forgets where the game's gun photographs are and looks again. For after a game update",
+                Do = () =>
+                {
+                    GunArt.Again();
+                    Notify.Important("Open Stretch's counter and it will look again.");
+                }
+            });
+
             _rows.Add(new Opt
             {
                 Kind = OptKind.Danger,

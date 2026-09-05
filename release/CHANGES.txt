@@ -142,6 +142,22 @@ fitted one takes it off, and putting it back is free. Fitted parts survive a
 save and come back with the gun.
 
 
+THE TWO ROOMS
+
+The grow room and the pill press garage are no longer gated on having joined
+the set. They were, and it meant standing at Lamar's roller door with nothing
+happening and no way to find out why -- a prompt that does not appear leaves
+nothing to read. The rooms are part of the place; the work inside them is where
+the progression belongs.
+
+Leaving one always puts you back at that room's own door. Where you came in is
+read off you as you step through, so a reload or a mission that moved you can
+leave a coordinate from somewhere else entirely -- and coming out of the grow
+room into the middle of Vinewood is worse than coming out a stride from the
+door. Anything further from the door than the doorway itself is now treated as
+a stale reading, and you come out at the door facing the way it faces.
+
+
 OBJECT SPOONER SCENES
 
 The set's own people in a scene join in. Anybody you placed whose model belongs
