@@ -537,11 +537,15 @@ namespace Hoodrich.Core
             // metres of each other forty metres under the airport, and which of the five is
             // the weed farm is exactly the sort of thing that cannot be checked from here --
             // so the door tries them in turn and keeps the one the game says has a room in it.
-            s.Doors.Add(Named(Also(ReadDoor(ini, "GrowRoom", "grow room",
+            // THE TWO ROOMS WERE THE WRONG WAY ROUND. The door at Lamar's opened the meth
+            // lab and the one by the house opened the weed farm, which is only findable by
+            // standing in both -- so the coordinates are swapped here rather than the names:
+            // the roller door at Lamar's is the grow room because that is where the grow is.
+            s.Doors.Add(Worked(Named(Also(ReadDoor(ini, "GrowRoom", "grow room",
                                  "bkr_biker_dlc_int_ware02",
                                  BlipSprite.Weed,
                                  -201.384f, -1707.909f, 32.664f, 313.362f,
-                                 1064.000f, -3183.000f, -39.000f, 180f),
+                                 1000.000f, -3200.000f, -38.000f, 180f),
                              1039.000f, -3098.000f, -39.000f,
                              1063.000f, -3195.000f, -39.000f,
                              1093.000f, -3195.000f, -39.000f,
@@ -564,7 +568,24 @@ namespace Hoodrich.Core
                              "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo;"
                              + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo;"
                              + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
-                             + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo"));
+                             + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo;"
+                             // AND THE STOCK. These rooms are shells until their stash is
+                             // loaded; stage three is the full one. It is what makes the
+                             // difference between a warehouse and a grow.
+                             + "weed_stash1;weed_stash2;weed_stash3;"
+                             + "tr_int_placement_tr_interior_2_tuner_methlab_1_milo_;"
+                             + "tr_int_placement_tr_interior_3_tuner_methlab_1_milo_;"
+                             + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
+                             + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_"),
+                             // THE SET'S OWN, AND MOSTLY WOMEN. There is one Families female
+                             // model in the game, so two of the three are her -- given random
+                             // clothing on the way in, or the room has twins in it.
+                             "g_f_y_families_01", "anim@amb@business@weed@weed_inspecting_high_dry@",
+                             "weed_inspecting_high_idle_01_inspector",
+                             "g_f_y_families_01", "anim@amb@business@weed@weed_inspecting_high_dry@",
+                             "weed_inspecting_high_base_clipboard",
+                             "g_m_y_famdnf_01", "anim@amb@business@weed@weed_inspecting_high_dry@",
+                             "weed_inspecting_high_idle_02_inspector"));
 
             // radar_production_crack, 497 -- the razor blade.
             //
@@ -576,11 +597,11 @@ namespace Hoodrich.Core
             // The ini section keeps its old name so an existing Hoodrich.ini with a [CrackDen]
             // block in it still overrides the right door. What it is CALLED on screen comes
             // from the default below, which the ini can override on its own.
-            s.Doors.Add(Named(Also(ReadDoor(ini, "CrackDen", "pill press garage",
+            s.Doors.Add(Worked(Named(Also(ReadDoor(ini, "CrackDen", "pill press garage",
                                  "tr_tuner_methlab_1",
                                  (BlipSprite)497,
                                  -105.053f, -1408.631f, 29.673f, 226.934f,
-                                 997.000f, -3200.000f, -37.000f, 180f),
+                                 1062.130f, -3183.587f, -39.164f, 159.785f),
                              1000.000f, -3200.000f, -38.000f,
                              1009.000f, -3196.000f, -38.000f,
                              1064.000f, -3183.000f, -39.000f),
@@ -590,7 +611,18 @@ namespace Hoodrich.Core
                              "tr_int_placement_tr_interior_2_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_3_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
-                             + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_"));
+                             + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_;"
+                             + "meth_stash1;meth_stash2;meth_stash3;"
+                             + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo;"
+                             + "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo;"
+                             + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
+                             + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo"),
+                             "g_f_y_families_01", "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
+                             "base_idle_tank_cooker",
+                             "g_f_y_families_01", "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
+                             "base_idle_tank_clipboard",
+                             "g_m_y_famdnf_01", "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
+                             "base_idle_tank_ammonia"));
             s.PlaySounds = ini.GetBool("Phone", "PlaySounds",
                                         ini.GetBool("Wheel", "PlaySounds", s.PlaySounds));
 
@@ -765,6 +797,24 @@ namespace Hoodrich.Core
                 InsideZ = ini.GetFloat(section, "InsideZ", iz),
                 InsideHeading = ini.GetFloat(section, "InsideHeading", ih),
             };
+        }
+
+        /// <summary>
+        /// Who works in a room: model, animation dictionary, clip, three at a time.
+        ///
+        /// The game does not staff these. Online they are full of people because the online
+        /// script puts them there, and a room with a full crop and nobody in it reads as a
+        /// place somebody left in a hurry. Every animation here is checked against the game's
+        /// own list; a clip it does not have plays nothing and looks like a broken worker.
+        /// </summary>
+        private static DoorSpec Worked(DoorSpec door, params string[] crew)
+        {
+            for (var i = 0; i + 2 < crew.Length; i += 3)
+            {
+                door.Crew.Add(new[] { crew[i], crew[i + 1], crew[i + 2] });
+            }
+
+            return door;
         }
 
         /// <summary>The IPL names a door asks for whatever the ini says. See DoorSpec.Extra.</summary>

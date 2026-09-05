@@ -151,6 +151,20 @@ save and come back with the gun.
 
 THE TWO ROOMS
 
+They were the wrong way round. The door at Lamar's opened the meth lab and the
+one by the house opened the weed farm, which is the sort of thing only standing
+in both will tell you. The coordinates are swapped rather than the names: the
+roller door at Lamar's is the grow room because that is where the grow is.
+
+Both come stocked and both are worked. A business interior is an empty shell
+until its stash is loaded, and stage three is the full one -- it is the whole
+difference between a warehouse and a grow. Three of the set work each room, two women
+and a man, inspecting the crop in one and watching the cook in the other, and
+they knock off when you leave. The game does not staff these; online they are full of
+people because the online script puts them there, and a room with a full crop
+and nobody in it reads as somewhere abandoned mid-harvest.
+
+
 The rooms work again, and the answer was not the coordinate, the IPL name or
 anything in this mod. These shells are ONLINE map content. In a story game they
 are not merely unloaded, they are not in the map at all -- so REQUEST_IPL has

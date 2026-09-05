@@ -55,6 +55,15 @@ namespace Hoodrich.Locations
         /// number somebody only has to get NEAR.
         /// </summary>
         public readonly List<Vector3> Elsewhere = new List<Vector3>();
+
+        /// <summary>
+        /// Who is working in there. Each entry is a model, an animation dictionary and a clip.
+        ///
+        /// The game does not staff these rooms. Online they are full of people because the
+        /// online script puts them there, and a room with a full crop and nobody in it reads
+        /// as a place that has been abandoned mid-harvest.
+        /// </summary>
+        public readonly List<string[]> Crew = new List<string[]>();
     }
 
     /// <summary>
@@ -148,6 +157,9 @@ namespace Hoodrich.Locations
 
         private Blip _blip;
         private bool _inside;
+
+        /// <summary>The people working in there while he is. Made on the way in, gone on the way out.</summary>
+        private readonly List<Ped> _staff = new List<Ped>();
         private bool _busy;
 
         /// <summary>
@@ -492,6 +504,8 @@ namespace Hoodrich.Locations
                     player.Heading = BackFacing;
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
+                    Sack();
+
                     // Bounced out because the room was not there: the map goes back too,
                     // or a failed attempt leaves the whole city on the online variant for
                     // nothing at all.
@@ -546,6 +560,8 @@ namespace Hoodrich.Locations
                     player.Heading = BackFacing;
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
+                    Sack();
+
                     // Bounced out because the room was not there: the map goes back too,
                     // or a failed attempt leaves the whole city on the online variant for
                     // nothing at all.
@@ -571,6 +587,9 @@ namespace Hoodrich.Locations
 
                 Wait(200);
                 Fade(true);
+
+                // He is in and the room is real: staff it.
+                Hire(to);
 
                 Notify.Ticker("~g~" + Capital(_spec.Name) + ".~s~");
             }
@@ -733,8 +752,9 @@ namespace Hoodrich.Locations
                     ? BackFacing
                     : _spec.DoorHeading;
 
-                // He is outside again, so the online map has done its job and the city goes
-                // back to the one the story happens in.
+                // He is outside again: the crew knock off and the city goes back to the
+                // map the story happens in.
+                Sack();
                 Mp(false);
 
                 Log.Info("Out of the " + _spec.Name + " to " + Back +
@@ -760,6 +780,114 @@ namespace Hoodrich.Locations
             {
                 _busy = false;
             }
+        }
+
+        /// <summary>
+        /// Put somebody to work, around wherever he came in.
+        ///
+        /// AROUND THE ARRIVAL MARK RATHER THAN AT AUTHORED SPOTS. Nobody has walked these
+        /// rooms with a notebook, and a coordinate typed for the inside of a room nobody has
+        /// stood in is the mistake this whole feature has already made twice. The mark is
+        /// known-good floor -- he is standing on it -- so the crew go in a small arc off it
+        /// and the worst case is somebody working a little close to a shelf.
+        /// </summary>
+        private void Hire(Vector3 at)
+        {
+            if (_spec.Crew.Count == 0) return;
+
+            // Far enough not to be stood in his face, near enough to be the same room.
+            var spread = new[]
+            {
+                new Vector3(2.6f, 1.4f, 0f),
+                new Vector3(-2.2f, 2.6f, 0f),
+                new Vector3(0.6f, -2.8f, 0f)
+            };
+
+            for (var i = 0; i < _spec.Crew.Count; i++)
+            {
+                var who = _spec.Crew[i];
+                if (who.Length < 3) continue;
+
+                try
+                {
+                    var model = new Model(who[0]);
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+
+                    model.Request(2000);
+                    if (!model.IsLoaded) continue;
+
+                    var spot = at + spread[i % spread.Length];
+
+                    var worker = World.CreatePed(model, spot);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (worker == null || !worker.Exists()) continue;
+
+                    worker.IsPersistent = true;
+                    worker.BlockPermanentEvents = true;
+
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, worker.Handle, true);
+                    Function.Call(Hash.SET_PED_CAN_RAGDOLL_FROM_PLAYER_IMPACT, worker.Handle, false);
+                    Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, worker.Handle, false);
+
+                    // There is one Families female model in the game and two of the three are
+                    // her, so the game's own clothing shuffle does the work a second model
+                    // would have done. Without it the room has twins in it.
+                    Function.Call(Hash.SET_PED_RANDOM_COMPONENT_VARIATION, worker.Handle, 0);
+
+                    // Facing the middle, so three people are working AT something rather than
+                    // stood in a row facing a wall.
+                    worker.Heading = Toward(spot, at);
+
+                    Function.Call(Hash.REQUEST_ANIM_DICT, who[1]);
+
+                    for (var n = 0; n < 40 && !Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, who[1]); n++)
+                    {
+                        Script.Yield();
+                    }
+
+                    if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, who[1]))
+                    {
+                        Function.Call(Hash.TASK_PLAY_ANIM, worker.Handle, who[1], who[2],
+                                      8f, -8f, -1, 1, 0f, false, false, false);
+                    }
+
+                    _staff.Add(worker);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not put somebody to work in the " + _spec.Name + ": " + ex.Message);
+                }
+            }
+
+            if (_staff.Count > 0) Log.Info(_staff.Count + " working in the " + _spec.Name + ".");
+        }
+
+        /// <summary>Everybody out. Called on every way out of the room, including the failures.</summary>
+        private void Sack()
+        {
+            foreach (var worker in _staff)
+            {
+                try
+                {
+                    if (worker != null && worker.Exists()) worker.Delete();
+                }
+                catch
+                {
+                    // Already gone.
+                }
+            }
+
+            _staff.Clear();
+        }
+
+        /// <summary>The heading from one point to another, in degrees.</summary>
+        private static float Toward(Vector3 from, Vector3 to)
+        {
+            var dx = to.X - from.X;
+            var dy = to.Y - from.Y;
+
+            return (float)(Math.Atan2(dx, dy) * 180.0 / Math.PI);
         }
 
         /// <summary>
