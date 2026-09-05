@@ -753,17 +753,38 @@ namespace Hoodrich.Phone
             // three-pixel stagger on a two-pixel band, which is to say invisible.
             const float catchLight = 0.0009f;
 
+            // SPRITE CORNERS ON THE RIM, AND THIS REVERSES A DECISION WRITTEN ABOVE.
+            //
+            // The note says rects, not the sprite, because a runtime-texture sprite lands on
+            // top of any rectangle drawn after it. That is true and it is why the GLASS below
+            // still uses rectangles. But the rim is the silhouette of the handset against
+            // the world, and a silhouette built from stacked rectangles is jagged at any step
+            // count the budget allows -- twenty steps is a three-pixel stagger on a curve
+            // thirty pixels across. Twelve was worse and was tried. And every one of those
+            // steps is a rectangle: three rim layers at twenty was two hundred and forty of
+            // them, in a frame the game shares with every other mod's HUD, which on this
+            // machine is enough to push the phone's own status icons off the end of the
+            // frame and back on again as the tiles animate. That was the flicker.
+            //
+            // A sprite disc is anti-aliased, smooth at any size, and four of them cost four
+            // sprites. Three layers: twelve sprites, nine rectangles, and a rim that is round.
+            //
+            // The cost is the one the note warned about: the rim's corner discs sit above
+            // rectangles drawn later, and the inner one is near-black over the corners of the
+            // glass. The status bar keeps its icons clear of that circle -- see StatusPadRight
+            // -- and everything else near a corner is either a sprite, which wins, or the same
+            // black as the disc.
             Hud.RoundRect(left, top, w, h, BodyRound,
-                          Fade(Color.FromArgb(255, 134, 140, 142), fade), sprite: false, steps: 20);
+                          Fade(Color.FromArgb(255, 134, 140, 142), fade), sprite: true);
 
             Hud.RoundRect(left, top + catchLight, w, h - catchLight, BodyRound,
-                          Fade(Color.FromArgb(255, 72, 76, 78), fade), sprite: false, steps: 20);
+                          Fade(Color.FromArgb(255, 72, 76, 78), fade), sprite: true);
 
             var edge = 0.0022f;
             var edgeX = Hud.ToX(edge);
 
             Hud.RoundRect(left + edgeX, top + edge, w - edgeX * 2f, h - edge * 2f,
-                          BodyRound - edge, Fade(Color.FromArgb(252, 8, 9, 10), fade), sprite: false);
+                          BodyRound - edge, Fade(Color.FromArgb(252, 8, 9, 10), fade), sprite: true);
 
             // THE KEYS ON THE SIDES. Power on the right, two volume keys on the left, the way
             // every handset anybody has held is laid out. They stand a couple of pixels proud
@@ -821,7 +842,7 @@ namespace Hoodrich.Phone
             // Twenty steps is about eighty rectangles and a corner stagger nobody can see on a
             // near-black shape.
             Hud.RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
-                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 20);
+                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 16);
 
             // A catch of light along the top of the glass, so it is glass rather than paint.
             if (glass > 0f)
@@ -941,7 +962,11 @@ namespace Hoodrich.Phone
                      left + w * 0.5f, top + 0.006f, 0.26f,
                      Fade(Palette.Text, fade), Hud.FontLabel, centre: true);
 
-            var right = left + w - pad;
+            // Clear of the corner disc. See Body: the rim's corners are sprites now and a
+            // sprite sits over rectangles drawn after it, so an icon in the corner's circle
+            // would have a black bite taken out of it. The circle reaches 0.038 in from the
+            // edge; this stops short of it.
+            var right = left + w - Hud.ToX(StatusPadRight);
 
             Battery(right, mid, fade);
 
@@ -957,8 +982,15 @@ namespace Hoodrich.Phone
             Signal(signalRight, mid, fade, Game.GameTime - _openedAt);
             Wifi(signalRight - Hud.ToX(0.023f), mid, fade);
 
-            Hud.RectFrom(left, top + StatusH - 0.0014f, w, 0.0014f, Fade(GreenDim, fade));
+            // Inset from both ends, off the corner discs and, as it happens, better for it.
+            var ruleIn = Hud.ToX(StatusPadRight);
+
+            Hud.RectFrom(left + ruleIn, top + StatusH - 0.0014f, w - ruleIn * 2f, 0.0014f,
+                         Fade(GreenDim, fade));
         }
+
+        /// <summary>How far in from the right edge the status icons end. See Body.</summary>
+        private const float StatusPadRight = 0.031f;
 
         /// <summary>
         /// The wifi fan, as an icon.
