@@ -763,8 +763,8 @@ namespace Hoodrich.Phone
             var bx = cx - Hud.ToX(0.026f) * (float)Math.Sin(t / 11.3 + 2.0);
             var by = cy + 0.050f + 0.024f * (float)Math.Sin(t / 8.3);
 
-            Hud.Disc(ax, ay, 0.085f, Fade(Color.FromArgb(20, 108, 196, 106), fade), 6);
-            Hud.Disc(bx, by, 0.060f, Fade(Color.FromArgb(26, 66, 124, 68), fade), 6);
+            Hud.Disc(ax, ay, 0.085f, Fade(Color.FromArgb(20, 108, 196, 106), fade), 10);
+            Hud.Disc(bx, by, 0.060f, Fade(Color.FromArgb(26, 66, 124, 68), fade), 10);
         }
 
         private void Body(float left, float top, float w, float h, int fade, float glass)
@@ -781,10 +781,10 @@ namespace Hoodrich.Phone
             const float catchLight = 0.0009f;
 
             Hud.RoundRect(left, top, w, h, BodyRound,
-                          Fade(Color.FromArgb(255, 134, 140, 142), fade), sprite: false, steps: 20);
+                          Fade(Color.FromArgb(255, 134, 140, 142), fade), sprite: false, steps: 12);
 
             Hud.RoundRect(left, top + catchLight, w, h - catchLight, BodyRound,
-                          Fade(Color.FromArgb(255, 72, 76, 78), fade), sprite: false, steps: 20);
+                          Fade(Color.FromArgb(255, 72, 76, 78), fade), sprite: false, steps: 12);
 
             var edge = 0.0022f;
             var edgeX = Hud.ToX(edge);
@@ -848,7 +848,7 @@ namespace Hoodrich.Phone
             // Twenty steps is about eighty rectangles and a corner stagger nobody can see on a
             // near-black shape.
             Hud.RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
-                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 20);
+                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 12);
 
             // A catch of light along the top of the glass, so it is glass rather than paint.
             if (glass > 0f)
@@ -1877,10 +1877,10 @@ namespace Hoodrich.Phone
             // The wheel put this in its hub; a grid has no hub, so it goes with the name.
             if (!string.IsNullOrEmpty(item.Value) && item.Value.Length <= 12)
             {
-                Hud.Text(Hud.Fit(item.Value, w * 0.94f, 0.20f, Hud.FontBody),
-                         x + w * 0.5f, badged, 0.20f,
+                Hud.Text(Hud.Fit(item.Value, w * 0.94f, 0.21f, Hud.FontLabel),
+                         x + w * 0.5f, badged, 0.21f,
                          Fade(on ? Green : Palette.TextDim, fade),
-                         Hud.FontBody, centre: true);
+                         Hud.FontLabel, centre: true);
             }
 
             Hud.Text(Hud.Fit(item.Label, w * 0.94f, 0.26f, Hud.FontLabel),
