@@ -393,25 +393,31 @@ if ($Package) {
     # machine's tuned copy and would ship somebody else's difficulty settings as the default.
     Copy-Item (Join-Path $root 'Hoodrich.ini') (Join-Path $scripts 'Hoodrich.ini')
 
-    Copy-Item (Join-Path $root 'data\*.json') $dataOut
-    Copy-Item (Join-Path $root 'data\icons') $dataOut -Recurse
+    # EVERYTHING IN data\, RATHER THAN A LIST OF WHAT IS IN IT.
+    #
+    # This named each part outright -- the json, then icons, then voice -- and every one
+    # of those lines was added after somebody noticed a folder had shipped to nobody. The
+    # voice pack went missing exactly that way, and the comment saying so sat right here
+    # while the scenery folder did the same thing: three scenes, in the repo, in the
+    # deploy, and in no download at all.
+    #
+    # The one machine that cannot notice is this one, where the files are already in place
+    # from having been deployed. So the list is gone. Whatever is in data\ ships, and a
+    # folder added next year needs no line here.
+    Copy-Item (Join-Path $root 'data\*') $dataOut -Recurse -Force
 
-    # The voice pack, which was quietly not shipping.
+    # EXCEPT THE MASTERS. An mp3 would not play if it shipped -- MCI's mpeg driver refuses
+    # to load inside GTA, so an mp3 beside a wav is two failed opens and then the wav
+    # regardless. Cut after the copy rather than filtered during it, because filtering
+    # during the copy is exactly what the list above was.
     #
-    # data\*.json catches the data and icons is named outright, so the folder added
-    # after both of them went to nobody -- every download was a silent mod, and the
-    # one machine that could not notice is this one, where the files are already in
-    # place from being deployed.
-    #
-    # wav ONLY. The mp3 masters are not in the tree and would not play anyway: MCI's
-    # mpeg driver refuses to load inside GTA, so an mp3 beside a wav is two failed
-    # opens and then the wav regardless.
-    $voice = Join-Path $root 'data\voice'
-    if (Test-Path $voice) {
-        $voiceOut = Join-Path $dataOut 'voice'
-        New-Item -ItemType Directory -Force -Path $voiceOut | Out-Null
-        Copy-Item (Join-Path $voice '*.wav') $voiceOut
-    }
+    # Gathered first and only then removed: piping an empty result straight into
+    # Remove-Item hands it a null Path and throws, which is a packaging run that fails
+    # because there was nothing to clean up.
+    $masters = @(Get-ChildItem $dataOut -Recurse -File -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Extension -eq '.mp3' -or $_.Extension -eq '.flac' })
+
+    if ($masters.Count -gt 0) { $masters | Remove-Item -Force -ErrorAction SilentlyContinue }
 
     # WHICH BUILD THIS DATA CAME WITH. Somebody dropping in a new dll and keeping the old
     # data folder -- because their save lives in it -- is the most common half-broken
