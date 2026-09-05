@@ -128,6 +128,11 @@ namespace Hoodrich
         private readonly GraffitiScreen _graffiti;
         private readonly RideScreen _ridePick;
 
+        /// <summary>The closet at Denise's, and whether he has been dressed from the save yet this session.</summary>
+        private readonly WardrobeScreen _wardrobeScreen;
+        private readonly Wardrobe _wardrobe;
+        private bool _dressed;
+
         /// <summary>The inbox. Its store is static; only the screen is an object.</summary>
         private readonly MessagesScreen _messages = new MessagesScreen();
 
@@ -800,6 +805,17 @@ namespace Hoodrich
                 _spraycan = new Paint.Spraycan(_paint);
                 _graffiti = new GraffitiScreen(_paint, _marks);
                 _ridePick = new RideScreen();
+
+                _wardrobeScreen = new WardrobeScreen();
+                _wardrobe = new Wardrobe(_wardrobeScreen);
+                _wardrobeScreen.Done = () =>
+                {
+                    // Written down on the way out, and the block has something to say if it
+                    // is actually a different fit rather than the same one looked at.
+                    var before = string.Join("|", _state.Outfit);
+                    Wardrobe.Remember(_state);
+                    if (before != string.Join("|", _state.Outfit) && _social != null) _social.On(SocialEvent.Dressed);
+                };
 
                 // WITHOUT THIS THE TAG RUNS WOULD BE A STEP BACKWARDS. The old mechanic wrote
                 // its marks into save.json and put them back on the wall next session; the
@@ -1559,7 +1575,7 @@ namespace Hoodrich
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
                                    || _gunScreen.IsOpen || _carScreen.IsOpen || _plateScreen.IsOpen
                                    || _modShop.IsOpen
-                                   || _graffiti.IsOpen || _ridePick.IsOpen,
+                                   || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen,
                 };
 
                 _social.Toasts = _toasts;
@@ -2593,6 +2609,19 @@ namespace Hoodrich
                     }
                 }
 
+                if (_wardrobeScreen.IsOpen)
+                {
+                    if (!available) _wardrobeScreen.Close();
+                    else
+                    {
+                        _wardrobeScreen.Update();
+                        _wardrobeScreen.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_graffiti.IsOpen)
                 {
                     if (!available) _graffiti.Close();
@@ -2811,6 +2840,10 @@ namespace Hoodrich
 
                     Core.Mask.Update(_cfg);
 
+                    // What he settled on at the closet goes back on him once, the first time
+                    // he is stood in the world -- and keeps being asked until he is Franklin.
+                    if (!_dressed) _dressed = Wardrobe.Apply(_state);
+
                     if (_paint.TintTheCan) _can.Match(_graffiti.Colour, _paint.PaintEnabled);
 
                     // Safe unconditionally: a weapon he is not holding spends no ammo, so
@@ -2841,6 +2874,7 @@ namespace Hoodrich
                     _stash.Update();
                     _sleep.Update();
                     _kitchen.Update();
+                    _wardrobe.Update();
                     _sleep.RestoreOnLoad();
                     _leaders.Update();
                     _leaders.UpdatePrompt();

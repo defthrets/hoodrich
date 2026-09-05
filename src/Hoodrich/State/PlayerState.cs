@@ -474,6 +474,13 @@ namespace Hoodrich.State
         public readonly List<string> VoiceHeard = new List<string>();
 
         /// <summary>
+        /// What he settled on at the closet, as "c:slot:drawable:texture" and
+        /// "p:slot:drawable:texture" (see Locations.Wardrobe). Empty until he has used it,
+        /// and empty means the game dresses him.
+        /// </summary>
+        public readonly List<string> Outfit = new List<string>();
+
+        /// <summary>
         /// Cars you have actually paid for, and enough about each to stand it back up.
         ///
         /// CarsBought is only a list of ids, and its whole job is stopping Hao restocking
@@ -671,6 +678,7 @@ namespace Hoodrich.State
             GunsBought.Clear();
             GunParts.Clear();
             VoiceHeard.Clear();
+            Outfit.Clear();
             Owned.Clear();
 
             SeenWelcome = false;
@@ -976,6 +984,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json OutfitJson()
+        {
+            var arr = Json.Array();
+            foreach (var row in Outfit) arr.Add(Json.Str(row));
+            return arr;
+        }
+
         private Json OfferedJson()
         {
             var arr = Json.Array();
@@ -1082,6 +1097,7 @@ namespace Hoodrich.State
                 .Set("gunsBought", GunsJson())
                 .Set("gunParts", GunPartsJson())
                 .Set("voiceHeard", VoiceHeardJson())
+                .Set("outfit", OutfitJson())
                 .Set("triggerIsYours", TriggerIsYours)
                 .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
@@ -1214,6 +1230,14 @@ namespace Hoodrich.State
                 {
                     var id = node.AsString("");
                     if (!string.IsNullOrEmpty(id) && !GunsBought.Contains(id)) GunsBought.Add(id);
+                }
+
+                Outfit.Clear();
+
+                foreach (var node in doc["outfit"].Items)
+                {
+                    var row = node.AsString("");
+                    if (!string.IsNullOrEmpty(row)) Outfit.Add(row);
                 }
 
                 LeadersMet.Clear();

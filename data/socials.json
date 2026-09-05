@@ -4795,6 +4795,16 @@
    "police asking everybody on {hood} if they seen a man in a mask. seen plenty. none of them him",
    "two cruisers and a bird over {hood} and the guy is stood right there with his face out. comedy"
   ],
+  "Dressed": [
+   "somebody on {hood} came out the house in a whole new fit {timeofday}. ok then",
+   "new fit on {hood}. man went in, changed, came straight back out like we wouldn't notice",
+   "saw him on {hood} {timeofday} looking like he got dressed in the dark. {reaction}",
+   "the outfit change on {hood} today was a statement and i don't know what it said",
+   "{source} {hearsay} he's been changing fits three times a day on {hood}. who is he dressing for",
+   "fresh fit on {hood} {timeofday}. shoes clean too. suspicious",
+   "somebody on {hood} out here dressed for weather we are not having",
+   "man on {hood} changed his whole look and kept the same walk. {filler}"
+  ],
   "Masked": [
    "man walking down {hood} in a balaclava in this heat. commitment",
    "somebody on {hood} got the ski mask on {timeofday} and it ain't skiing weather",

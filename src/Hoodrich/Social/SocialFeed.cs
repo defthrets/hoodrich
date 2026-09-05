@@ -130,6 +130,9 @@ namespace Hoodrich.Social
         /// <summary>You changed your look out of the police's sight and the man they were after stopped existing.</summary>
         Slipped,
 
+        /// <summary>You came out of the closet at Denise's in something else.</summary>
+        Dressed,
+
         /// <summary>You came out of the muffler shop with something new on the car.</summary>
         Tuned
     }
@@ -1666,6 +1669,9 @@ namespace Hoodrich.Social
                 // time, because it is a good story and not every story gets told.
                 case SocialEvent.Slipped: return 0.5f;
 
+                // A new fit gets clocked about a third of the time. The block is not a fashion blog.
+                case SocialEvent.Dressed: return 0.35f;
+
                 // New rims get noticed on the way out of the yard. Not every set.
                 case SocialEvent.Tuned: return 0.4f;
 
@@ -1720,6 +1726,7 @@ namespace Hoodrich.Social
 
                 case SocialEvent.Masked: return 0;
                 case SocialEvent.Slipped: return 1 + _rng.Next(3);
+                case SocialEvent.Dressed: return 1 + _rng.Next(2);
                 case SocialEvent.Tuned: return 1 + _rng.Next(2);
 
                 case SocialEvent.PortRun: return 4 + _rng.Next(8);
