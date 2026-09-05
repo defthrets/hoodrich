@@ -76,6 +76,15 @@ namespace Hoodrich.Locations
             public readonly List<Entity> Up = new List<Entity>();
             public readonly Dictionary<int, Entity> ByHandle = new Dictionary<int, Entity>();
 
+            /// <summary>
+            /// The placement each standing thing came from, by its handle in THIS session.
+            ///
+            /// Kept because a ped that stops being scenery has to be able to go back to being
+            /// scenery: the spot, the heading and the scenario it was doing are all in the
+            /// placement, and none of them can be read back off a ped in the middle of a fight.
+            /// </summary>
+            public readonly Dictionary<int, Spooner.Placed> Was = new Dictionary<int, Spooner.Placed>();
+
             /// <summary>Peds still waiting on an animation dictionary.</summary>
             public readonly List<Waiting> Waits = new List<Waiting>();
         }
@@ -224,11 +233,13 @@ namespace Hoodrich.Locations
             var lookNow = now >= _nextLook;
             if (lookNow) _nextLook = now + LookEveryMs;
 
+            Rally(now);
+
             var range = _cfg == null ? 220f : _cfg.SceneryRange;
 
             foreach (var scene in _scenes)
             {
-                if (scene.Waits.Count > 0) Settle(scene, now);
+                if (scene.Waits.Count > 0) Waited(scene, now);
 
                 if (scene.Working)
                 {
@@ -309,13 +320,22 @@ namespace Hoodrich.Locations
 
                 scene.Made++;
                 scene.Up.Add(made);
+                scene.Was[made.Handle] = item;
 
                 if (item.Handle != 0 && !scene.ByHandle.ContainsKey(item.Handle)) scene.ByHandle[item.Handle] = made;
 
                 if (item.Attached) Stick(scene, item, made);
 
                 var ped = made as Ped;
-                if (ped != null) Doing(scene, ped, item);
+
+                if (ped != null)
+                {
+                    Doing(scene, ped, item);
+
+                    // Built while it is already going off: it comes up fighting rather than
+                    // standing there smoking through a gun battle until the next war starts.
+                    if (_fighting && Ours(_ours, item)) Rouse(ped, _ours);
+                }
             }
 
             if (scene.Cursor < scene.Items.Count) return;
@@ -640,7 +660,7 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>The peds still waiting on a dictionary, looked at once a tick.</summary>
-        private static void Settle(Scene scene, int now)
+        private static void Waited(Scene scene, int now)
         {
             for (var i = scene.Waits.Count - 1; i >= 0; i--)
             {
@@ -681,6 +701,172 @@ namespace Hoodrich.Locations
             return n < 0 ? -n : n;
         }
 
+        // ---- when it goes off round here -------------------------------------------
+
+        /// <summary>Whose side the scenery is on while a war is running, and whether one is.</summary>
+        private Gangs.GangDef _ours;
+        private bool _fighting;
+        private int _nextRally;
+
+        /// <summary>How often a defender is told again to go and find somebody.</summary>
+        private const int RallyEveryMs = 5000;
+
+        /// <summary>How far a defender will look for somebody to fight.</summary>
+        private const float LookFor = 80f;
+
+        /// <summary>
+        /// A war starts or ends on the block, and the set's own people stood around on it stop
+        /// being furniture.
+        ///
+        /// ONLY THE SET'S OWN, and only the ones with the set's models -- which is the whole
+        /// test, because a spooner scene is whatever somebody placed and half of it might be
+        /// civilians, rivals or a man with a bicycle. The models come from the gang's own list
+        /// rather than from anything in the file, so a scene full of Ballas standing in
+        /// Chamberlain does not turn out to be on your side the moment it kicks off.
+        ///
+        /// Their blocking comes off, they are put in the set's relationship group so the game
+        /// itself knows who they hate, and they are sent after whoever is hated nearby. When it
+        /// is over they go back to the mark, the heading and the scenario in their placement.
+        /// </summary>
+        public void Defend(Gangs.GangDef ours, bool on)
+        {
+            _ours = ours;
+            _fighting = on && ours != null;
+            _nextRally = 0;
+
+            foreach (var scene in _scenes)
+            {
+                foreach (var e in scene.Up)
+                {
+                    var ped = e as Ped;
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                    Spooner.Placed was;
+                    if (!scene.Was.TryGetValue(ped.Handle, out was)) continue;
+
+                    if (!Ours(ours, was)) continue;
+
+                    if (_fighting) Rouse(ped, ours);
+                    else Settle(ped, was);
+                }
+            }
+
+            if (_fighting) Log.Info("Scenery: the set's own are in it.");
+        }
+
+        /// <summary>Whether this placement is one of the set's own, by its model.</summary>
+        private static bool Ours(Gangs.GangDef ours, Spooner.Placed was)
+        {
+            if (ours == null || was == null) return false;
+
+            foreach (var model in ours.MemberModels)
+            {
+                if (string.IsNullOrEmpty(model)) continue;
+                if (unchecked((uint)was.ModelHash) == Names.Joaat(model)) return true;
+            }
+
+            return false;
+        }
+
+        private static void Rouse(Ped ped, Gangs.GangDef ours)
+        {
+            try
+            {
+                ped.IsPositionFrozen = false;
+                ped.BlockPermanentEvents = false;
+
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 17, false);
+                Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 208, false);
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL_FROM_PLAYER_IMPACT, ped.Handle, true);
+
+                if (ours.GroupHash != 0)
+                {
+                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, ours.GroupHash);
+                }
+
+                // Nobody who has stood on a corner all night is a marksman. Middling ability
+                // and poor accuracy, so they are a nuisance to the other lot rather than a
+                // firing squad -- and so the fight is still yours to win.
+                Function.Call(Hash.SET_PED_ACCURACY, ped.Handle, 25);
+                Function.Call(Hash.SET_PED_COMBAT_ABILITY, ped.Handle, 1);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);  // Will fight rather than flee.
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 5, true);   // Uses cover.
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 2, true);   // Can do drivebys, if in one.
+
+                Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, ped.Handle, LookFor, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("One of the set would not join in: " + ex.Message);
+            }
+        }
+
+        /// <summary>Back to the mark, the heading and whatever it was doing before it kicked off.</summary>
+        private static void Settle(Ped ped, Spooner.Placed was)
+        {
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+
+                ped.PositionNoOffset = was.At;
+                ped.Heading = was.Yaw;
+
+                ped.BlockPermanentEvents = true;
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
+                Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 17, true);
+                Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 208, true);
+
+                if (was.Frozen) ped.IsPositionFrozen = true;
+
+                Stand(ped, was);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("One of the set would not go back to standing: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// While it is going off: anybody who has run out of things to do is sent looking again.
+        ///
+        /// A combat task ENDS when the thing it was about is dead or gone, and a ped whose task
+        /// ended goes back to standing there -- in the middle of a firefight, which reads as
+        /// somebody who has decided it is not their problem. Asked again every few seconds.
+        /// </summary>
+        private void Rally(int now)
+        {
+            if (!_fighting || _ours == null) return;
+            if (now < _nextRally) return;
+
+            _nextRally = now + RallyEveryMs;
+
+            foreach (var scene in _scenes)
+            {
+                foreach (var e in scene.Up)
+                {
+                    var ped = e as Ped;
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                    Spooner.Placed was;
+                    if (!scene.Was.TryGetValue(ped.Handle, out was)) continue;
+                    if (!Ours(_ours, was)) continue;
+
+                    try
+                    {
+                        if (Function.Call<bool>(Hash.IS_PED_IN_COMBAT, ped.Handle, 0)) continue;
+
+                        Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, ped.Handle, LookFor, 0);
+                    }
+                    catch
+                    {
+                        // He stays where he is.
+                    }
+                }
+            }
+        }
+
         // ---- taking it out again ---------------------------------------------------
 
         private static void Drop(Scene scene)
@@ -699,6 +885,7 @@ namespace Hoodrich.Locations
 
             scene.Up.Clear();
             scene.ByHandle.Clear();
+            scene.Was.Clear();
             scene.Waits.Clear();
             scene.Cursor = 0;
             scene.Waited = 0;

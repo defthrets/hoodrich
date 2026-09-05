@@ -131,6 +131,9 @@ namespace Hoodrich
         /// <summary>Object Spooner scenes, stood up as you come near them.</summary>
         private readonly Scenery _scenes;
 
+        /// <summary>Whether the scenery has already been told there is a war on.</summary>
+        private bool _sceneryInIt;
+
         /// <summary>The closet at Denise's, and whether he has been dressed from the save yet this session.</summary>
         private readonly WardrobeScreen _wardrobeScreen;
         private readonly Wardrobe _wardrobe;
@@ -2882,6 +2885,19 @@ namespace Hoodrich
                     _kitchen.Update();
                     _wardrobe.Update();
                     _scenes.Update();
+
+                    // THE SET'S OWN JOIN IN. Anybody placed in a spooner scene whose model is
+                    // one of your set's stops being scenery for as long as the war runs, and
+                    // goes back to its mark when it is over. Told on the change rather than
+                    // every tick: rousing a man who is already fighting restarts his task.
+                    var inIt = _war != null && _war.IsRunning &&
+                               _crew != null && _crew.IsAffiliated;
+
+                    if (inIt != _sceneryInIt)
+                    {
+                        _sceneryInIt = inIt;
+                        _scenes.Defend(_crew == null ? null : _crew.Current, inIt);
+                    }
                     _sleep.RestoreOnLoad();
                     _leaders.Update();
                     _leaders.UpdatePrompt();

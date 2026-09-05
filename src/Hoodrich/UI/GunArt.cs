@@ -61,22 +61,38 @@ namespace Hoodrich.UI
             "mpweaponsbattle", "mpweaponsvinewood", "mpweaponscasino",
             "mpweaponssum20", "mpweaponssum2", "mpweaponssum23", "mpweaponstuner",
             "mpweaponssecurity", "mpweaponsg9ec", "mpweaponsag",
-            "mpweaponsm23_1", "mpweaponsm23_2", "mpweaponsm24_1", "mpweaponsm24_2"
+            "mpweaponsm23_1", "mpweaponsm23_2", "mpweaponsm24_1", "mpweaponsm24_2",
+
+            // The three that turned out to be real on the first install this ran on were
+            // mpweaponscommon, mpweaponsgang0 and mpweaponsgang1 -- so the family is numbered.
+            // The rest of both runs are here because a name the game does not have costs one
+            // request and nothing else.
+            "mpweaponscommon3", "mpweaponsgang4", "mpweaponsgang5", "mpweaponsgang6",
+            "mpweaponsgang7", "mpweaponsgang8", "mpweaponsgang9",
+            "mpweapons0", "mpweapons1", "mpweapons2", "mpweapons3", "mpweapons4",
+            "weaponscommon", "weaponsgang0", "weaponsgang1"
         };
 
-        /// <summary>How many are asked for at a time, and how long that batch is given to arrive.</summary>
-        private const int Batch = 8;
-        private const int BatchMs = 600;
+        /// <summary>
+        /// How many are asked for per tick while the requests go out, and how long the whole
+        /// sweep listens for answers, counted in TICKS rather than milliseconds.
+        ///
+        /// Ticks, because the sweep only runs while the counter is open. A clock in
+        /// milliseconds keeps running while it is shut, so a sweep interrupted by walking away
+        /// would come back finished having never looked at half the list.
+        /// </summary>
+        private const int AskPerTick = 12;
+        private const int SweepTicks = 600;
 
         /// <summary>The dictionaries this install actually has.</summary>
         private static readonly List<string> Real = new List<string>();
 
-        /// <summary>Icon to the dictionary holding it; "" once every real dictionary has been asked and none had it.</summary>
+        /// <summary>Icon to "pack/texture"; "" once every real pack has been asked and none had it.</summary>
         private static readonly Dictionary<string, string> Where =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        private static int _at = -1;
-        private static int _batchUntil;
+        private static int _asked;
+        private static int _ticks;
         private static bool _done;
         private static bool _read;
         private static bool _dirty;
@@ -86,7 +102,7 @@ namespace Hoodrich.UI
 
         public static string Tally()
         {
-            if (!_done) return _at < 0 ? "not looked yet" : "looking, " + _at + " of " + Candidates.Length;
+            if (!_done) return _ticks == 0 ? "not looked yet" : "looking, " + Real.Count + " pack(s) so far";
 
             var named = 0;
             foreach (var pair in Where)
@@ -102,8 +118,15 @@ namespace Hoodrich.UI
         /// <summary>
         /// Called every frame the gun counter is open. Does nothing once the sweep has finished.
         ///
-        /// It runs from the DRAW path rather than from a spawner, so it must never wait: a
-        /// batch is asked for, the frame ends, and the answer is read a few frames later.
+        /// ASK FOR EVERYTHING, THEN KEEP ASKING WHETHER IT ARRIVED. The first version of this
+        /// gave each batch of names a fixed window and wrote off anything that had not streamed
+        /// in by the end of it -- which found three packs, and those three were almost
+        /// certainly the ones already resident. A cold texture dictionary does not answer in
+        /// six hundred milliseconds just because that is how long somebody decided to wait.
+        ///
+        /// So the requests go out over the first few ticks and then every candidate is polled
+        /// every tick for the rest of the sweep. Anything that arrives at any point in those
+        /// ten seconds is found, whether it took one second or nine.
         /// </summary>
         public static void Update()
         {
@@ -112,22 +135,21 @@ namespace Hoodrich.UI
             if (!_read) Recall();
             if (_done) return;
 
-            var now = Game.GameTime;
+            _ticks++;
 
-            if (_at < 0)
+            // The requests, spread over the first few ticks rather than all in one.
+            for (var i = _asked; i < _asked + AskPerTick && i < Candidates.Length; i++)
             {
-                _at = 0;
-                _batchUntil = now + BatchMs;
-                Ask();
-                return;
+                try { Hud.EnsureTextureDict(Candidates[i]); }
+                catch { /* a name the game does not know is simply never loaded */ }
             }
 
-            if (now < _batchUntil) return;
+            if (_asked < Candidates.Length) _asked += AskPerTick;
 
-            // Whatever arrived in that window is real; whatever did not is not on this install.
-            for (var i = _at; i < _at + Batch && i < Candidates.Length; i++)
+            // And the answers, all of them, every tick.
+            foreach (var dict in Candidates)
             {
-                var dict = Candidates[i];
+                if (Real.Contains(dict)) continue;
 
                 try
                 {
@@ -139,33 +161,20 @@ namespace Hoodrich.UI
                 }
 
                 Real.Add(dict);
+                _dirty = true;
+                Log.Info("Gun art: this install has " + dict + ".");
             }
 
-            _at += Batch;
-
-            if (_at < Candidates.Length)
-            {
-                _batchUntil = now + BatchMs;
-                Ask();
-                return;
-            }
+            if (_ticks < SweepTicks || _asked < Candidates.Length) return;
 
             _done = true;
             _dirty = true;
 
             Log.Info("Gun art: " + Real.Count + " of " + Candidates.Length +
-                     " art packs are on this install -- " + string.Join(", ", Real.ToArray()) + ".");
+                     " art packs are on this install -- " +
+                     (Real.Count == 0 ? "none" : string.Join(", ", Real.ToArray())) + ".");
 
             Keep();
-        }
-
-        private static void Ask()
-        {
-            for (var i = _at; i < _at + Batch && i < Candidates.Length; i++)
-            {
-                try { Hud.EnsureTextureDict(Candidates[i]); }
-                catch { /* a name the game does not know is simply never loaded */ }
-            }
         }
 
         // ---- drawing ---------------------------------------------------------------
@@ -312,7 +321,8 @@ namespace Hoodrich.UI
                 if (Real.Count == 0) return;
 
                 _done = true;
-                _at = Candidates.Length;
+                _asked = Candidates.Length;
+                _ticks = SweepTicks;
 
                 Log.Info("Gun art: " + Real.Count + " art pack(s) and " + Where.Count +
                          " gun(s) remembered from last time.");
@@ -352,7 +362,8 @@ namespace Hoodrich.UI
             Real.Clear();
             Where.Clear();
 
-            _at = -1;
+            _asked = 0;
+            _ticks = 0;
             _done = false;
             _read = true;
             _dirty = true;

@@ -144,6 +144,18 @@ save and come back with the gun.
 
 OBJECT SPOONER SCENES
 
+The set's own people in a scene join in. Anybody you placed whose model belongs
+to your set stops being scenery the moment a war starts on the block: blocking
+comes off, they go into the set's relationship group so the game knows who they
+hate, and they go looking for whoever is nearby. Middling ability and poor
+accuracy, so they are a nuisance to the other lot rather than a firing squad --
+the fight is still yours to win. Anybody who runs out of targets is sent
+looking again every few seconds, and when it is over they go back to the mark,
+the heading and the scenario in their placement. Only models on the set's own
+list, so a scene full of rivals standing on your street does not turn out to be
+on your side.
+
+
 Anything arranged in Menyoo's Object Spooner is now built by the mod every
 session. Save the placement in Menyoo and it is in -- menyooStuff\Spooner is
 read alongside the mod's own scenery folder, so there is nothing to copy.
