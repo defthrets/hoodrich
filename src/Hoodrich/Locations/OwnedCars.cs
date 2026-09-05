@@ -453,15 +453,43 @@ namespace Hoodrich.Locations
         {
             try
             {
+                Vehicle found = null;
+
                 foreach (var car in World.GetNearbyVehicles(here, FoundRange))
                 {
                     if (car == null || !car.Exists()) continue;
 
-                    var plate = Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle);
-                    if (!string.Equals(plate, owned.Plate, StringComparison.OrdinalIgnoreCase)) continue;
+                    // TRIMMED. The game pads a plate out to eight characters with spaces, so
+                    // a custom plate shorter than that came back "DAVIS   " against a record
+                    // that said "DAVIS", the car was never found, and a copy was put back on
+                    // every scan -- one on top of the other, on Hao's forecourt.
+                    var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
+                    if (!string.Equals(plate, owned.Plate.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
 
-                    return car;
+                    if (found == null)
+                    {
+                        found = car;
+                        continue;
+                    }
+
+                    // A SECOND CAR ON THE SAME PLATE IS ONE OF THOSE COPIES, and it goes --
+                    // unless he is sat in it, in which case the other one is the copy.
+                    var extra = car;
+                    var me = Game.Player.Character;
+                    if (me != null && me.Exists() && me.IsInVehicle(car))
+                    {
+                        extra = found;
+                        found = car;
+                    }
+
+                    if (extra.Model.Hash == owned.Model)
+                    {
+                        Log.Info("Deleted a copy of owned car " + owned.Id + " that a padded plate put back.");
+                        extra.Delete();
+                    }
                 }
+
+                if (found != null) return found;
             }
             catch
             {
@@ -738,11 +766,11 @@ namespace Hoodrich.Locations
 
             try
             {
-                var plate = Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle);
+                var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
 
                 foreach (var owned in _state.Owned)
                 {
-                    if (!string.Equals(owned.Plate, plate, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!string.Equals(owned.Plate.Trim(), plate, StringComparison.OrdinalIgnoreCase)) continue;
 
                     owned.Where = spot;
                     owned.Heading = heading;

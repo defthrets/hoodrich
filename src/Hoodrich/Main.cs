@@ -3811,12 +3811,12 @@ namespace Hoodrich
 
             try
             {
-                var plate = Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle);
+                var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
                 if (string.IsNullOrEmpty(plate)) return false;
 
                 foreach (var owned in _state.Owned)
                 {
-                    if (string.Equals(owned.Plate, plate, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(owned.Plate.Trim(), plate, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
