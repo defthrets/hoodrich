@@ -21,6 +21,9 @@ namespace Hoodrich.State
         /// <summary>What makes it findable again. Nothing else in the world wears this.</summary>
         public string Plate = "";
 
+        /// <summary>Which of the game's plates it wears: 0 is the ordinary blue on white. See PlateScreen.</summary>
+        public int PlateStyle;
+
         public int Paint = -1;
         public int Paint2 = -1;
 
@@ -919,6 +922,7 @@ namespace Hoodrich.State
                     .Set("name", c.Name)
                     .Set("model", c.Model)
                     .Set("plate", c.Plate)
+                    .Set("plateStyle", c.PlateStyle)
                     .Set("paint", c.Paint)
                     .Set("paint2", c.Paint2)
                     .Set("x", Math.Round(c.Where.X, 2))
@@ -1151,6 +1155,7 @@ namespace Hoodrich.State
                         Name = node["name"].AsString(id),
                         Model = node["model"].AsInt(0),
                         Plate = node["plate"].AsString(""),
+                        PlateStyle = node["plateStyle"].AsInt(0),
                         Paint = node["paint"].AsInt(-1),
                         Paint2 = node["paint2"].AsInt(-1),
                         Where = new Vector3(node["x"].AsFloat(), node["y"].AsFloat(),

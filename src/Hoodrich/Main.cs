@@ -579,6 +579,7 @@ namespace Hoodrich
         private Weapons.GunLocker _locker;
         private HaoTalk _haoTalk;
         private CarScreen _carScreen;
+        private PlateScreen _plateScreen;
         private DealerTalk _juanTalk;
         private readonly FixerTalk _fixerTalk;
         private readonly MissionRunner _jobs;
@@ -1566,7 +1567,7 @@ namespace Hoodrich
                                    _stashScreen.IsOpen || _pocketScreen.IsOpen
                                    || _settingsScreen.IsOpen
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
-                                   || _gunScreen.IsOpen || _carScreen.IsOpen
+                                   || _gunScreen.IsOpen || _carScreen.IsOpen || _plateScreen.IsOpen
                                    || _graffiti.IsOpen || _ridePick.IsOpen,
                 };
 
@@ -1896,12 +1897,23 @@ namespace Hoodrich
                 };
                 _carScreen = new CarScreen(_hao);
 
+                _plateScreen = new PlateScreen
+                {
+                    Save = () => { try { _ownedCars.SaveNow?.Invoke(); } catch { /* the record still changed */ } },
+                    Taken = (own, plate) => _state.Owned.Exists(o => o != own &&
+                                                string.Equals(o.Plate, plate, StringComparison.OrdinalIgnoreCase))
+                };
+
                 _haoTalk = new HaoTalk(_hao, _state);
                 _haoTalk.Showroom = () => _carScreen.Open();
 
                 _carScreen.OnBought = car =>
                 {
                     Dialogue.Say(_hao.Name, "Keys are in it. Don't bring it back.");
+
+                    // And the plate panel, over the car, with the record the sale just wrote.
+                    var owned = _state.Owned.Find(o => string.Equals(o.Id, car.Id, StringComparison.OrdinalIgnoreCase));
+                    if (owned != null && car.Live != null && car.Live.Exists()) _plateScreen.Open(car.Live, owned, car.Name);
                 };
 
                 _hao.Talk = _talk;
@@ -2497,6 +2509,19 @@ namespace Hoodrich
                 // The rack owns the screen the same way the kitchen does. Without this the
                 // wheel could be opened on top of it, both would fight over up and down, and
                 // every walk-up prompt in the mod would carry on showing behind it.
+                if (_plateScreen.IsOpen)
+                {
+                    if (!available) _plateScreen.Close();
+                    else
+                    {
+                        _plateScreen.Update();
+                        _plateScreen.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_carScreen.IsOpen)
                 {
                     // Closed by walking away, the same as every other counter in the mod.

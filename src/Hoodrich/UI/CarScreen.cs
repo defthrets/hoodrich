@@ -181,10 +181,11 @@ namespace Hoodrich.UI
 
             OnBought?.Invoke(car);
 
-            // The list just got shorter under the cursor.
+            // ONE AT A TIME. The plate panel comes up over the car the moment it is yours
+            // (see Main), so the showroom gets out of its way; it is a walk back in for the
+            // next one, which is how buying a car goes.
             if (_row >= Stock.Count) _row = Math.Max(0, Stock.Count - 1);
-
-            if (Stock.Count == 0) Close();
+            Close();
         }
 
         // ---- drawing -----------------------------------------------------------

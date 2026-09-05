@@ -335,7 +335,18 @@ namespace Hoodrich.Locations
 
             foreach (var id in _state.CarsBought)
             {
-                if (!string.Equals(OwnedCars.Plate(id), plate, StringComparison.OrdinalIgnoreCase))
+                // The plate it was sold on, unless you have put your own on it since (see
+                // PlateScreen), in which case the owned record has the one it wears now.
+                var wears = OwnedCars.Plate(id);
+
+                foreach (var owned in _state.Owned)
+                {
+                    if (!string.Equals(owned.Id, id, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!string.IsNullOrEmpty(owned.Plate)) wears = owned.Plate;
+                    break;
+                }
+
+                if (!string.Equals(wears, plate, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 foreach (var lot in _all)

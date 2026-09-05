@@ -539,6 +539,7 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, h);
                 Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h, owned.Plate);
+                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX, h, owned.PlateStyle);
 
                 if (owned.Paint >= 0)
                 {
