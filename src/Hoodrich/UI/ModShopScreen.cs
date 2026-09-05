@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Native;
@@ -46,6 +46,9 @@ namespace Hoodrich.UI
         private const float PanelWidthH = 0.62f;
         private const float RowHeight = 0.034f;
         private const float PadH = 0.024f;
+
+        /// <summary>How far the panel sits off the right edge.</summary>
+        private const float RightMarginH = 0.030f;
         private const int Shown = 11;
         private const int OpenGraceMs = 220;
 
@@ -528,7 +531,11 @@ namespace Hoodrich.UI
             if (!IsOpen) return;
 
             var width = Hud.ToX(PanelWidthH);
-            var left = 0.5f - width * 0.5f;
+
+            // AGAINST THE RIGHT EDGE, not in the middle. This is a menu about the look of a
+            // car, and in the middle of the screen it sat on top of the car -- every respray
+            // and every set of rims changed something you could not see while you chose it.
+            var left = 1f - RightMarginH / Hud.Aspect - width;
             var pad = Hud.ToX(PadH);
             var n = _inside ? _cats[_cat].Count() : _cats.Count;
             var rows = Math.Max(1, Math.Min(Shown, n));

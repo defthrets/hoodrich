@@ -59,6 +59,9 @@ namespace Hoodrich.Locations
         private const int FadeMostMs = 1400;
         private const float CamFov = 45f;
         private const float Around = 6.5f;
+
+        /// <summary>How far to one side the camera looks, which is how far the car moves off centre.</summary>
+        private const float Shoulder = 2.1f;
         private const float Up = 1.7f;
         private const float SpinPerSec = 4f;
         private const int Sprite = 72;
@@ -303,7 +306,16 @@ namespace Hoodrich.Locations
                                   at.Z + Up);
 
             Function.Call(Hash.SET_CAM_COORD, _cam, eye.X, eye.Y, eye.Z);
-            Function.Call(Hash.POINT_CAM_AT_ENTITY, _cam, _car.Handle, 0f, 0f, 0.3f, true);
+
+            // AIMED PAST THE CAR, so the car sits in the empty half of the screen rather than
+            // behind the menu. The camera looks at a point out to its own right; everything it
+            // is actually pointed at therefore lands to the LEFT of centre, which is where the
+            // panel is not. Cheaper and steadier than moving the camera sideways, which would
+            // only re-centre the car from a different angle.
+            var side = new Vector3((float)Math.Cos(rad), -(float)Math.Sin(rad), 0f) * Shoulder;
+
+            Function.Call(Hash.POINT_CAM_AT_COORD, _cam,
+                          at.X + side.X, at.Y + side.Y, at.Z + 0.3f);
         }
 
         /// <summary>While the screen is down: nothing he presses reaches the car.</summary>
