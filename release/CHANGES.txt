@@ -265,10 +265,23 @@ Both entry points are read off the floor of the room they belong to rather
 than guessed at, which is the only way this particular number is ever right.
 
 Both rooms come up at their FINAL stage. A business interior is an empty shell
-until its stock and its equipment are loaded: stash three is a full crop, the
-upgrade and production names are the kit that goes with it, and the dryers are
-the racks along the wall. That is the whole difference between a warehouse and
-a grow.
+with its furniture stored inside it as named entity sets -- the plants, the
+lights, the press, the tables -- and each set is switched on by name once the
+room exists. The grow room gets the upgraded equipment and security, all nine
+stations at stage three under their lights, the chairs and the drying racks;
+the lab gets the upgraded lab, set up and in production, with the security.
+The first version asked for all of that as map files, which the game answers
+by doing nothing, and both rooms came up as bare shells with three people
+standing in them. What the game accepts and what it turns down is written to
+the log by name.
+
+AND A DOOR ONLY ADOPTS SOMEBODY STOOD IN ITS OWN ROOM. The two rooms are
+sixty-seven metres apart under the same patch of ground, and a door used to
+decide you were inside it by distance alone -- so the far end of the pill press
+was within reach of the grow room's mark, the grow room adopted you, put up its
+own leave prompt beside the pill press's, and its way out was Lamar's roller
+door. It asks the game which interior you are stood in now, and only claims you
+if it is its own.
 
 Three of the set are in each room, two women and a man, dressed by the game's
 own shuffle so the pair are not twins. They wander

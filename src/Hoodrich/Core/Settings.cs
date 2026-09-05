@@ -568,7 +568,7 @@ namespace Hoodrich.Core
             // lab and the one by the house opened the weed farm, which is only findable by
             // standing in both -- so the coordinates are swapped here rather than the names:
             // the roller door at Lamar's is the grow room because that is where the grow is.
-            s.Doors.Add(Worked(Named(Also(ReadDoor(ini, "GrowRoom", "grow room",
+            s.Doors.Add(Worked(Dressed(Named(Also(ReadDoor(ini, "GrowRoom", "grow room",
                                  "bkr_biker_dlc_int_ware02",
                                  BlipSprite.Weed,
                                  -201.384f, -1707.909f, 32.664f, 313.362f,
@@ -596,21 +596,15 @@ namespace Hoodrich.Core
                              + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo;"
                              + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
                              + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo;"
-                             // AND THE STOCK. These rooms are shells until their stash is
-                             // loaded; stage three is the full one. It is what makes the
-                             // difference between a warehouse and a grow.
-                             // THE FINAL STAGE. A shell is a shell until its stock and its
-                             // equipment are loaded. Stash three is a full crop; the upgrade
-                             // and production names are the kit that goes with it, and the
-                             // dryers are the racks along the wall. Read out of the interior
-                             // loader on this machine, same as the placements.
-                             + "weed_stash1;weed_stash2;weed_stash3;"
-                             + "equipment_upgrade;production_upgrade;security_high;"
-                             + "dryera_on;dryerb_on;dryerc_on;dryerd_on;"
+                             // THE STOCK IS NOT IN THIS LIST. It was -- stash names, dryer
+                             // names, upgrade names, all asked for as IPLs -- and none of it
+                             // is an IPL. They are entity sets inside the room, switched on
+                             // by Dressed below once the room exists. See InteriorDoor.Dress.
                              + "tr_int_placement_tr_interior_2_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_3_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_"),
+                             WeedSets),
                              // THE SET'S OWN, AND MOSTLY WOMEN. There is one Families female
                              // model in the game, so two of the three are her -- given random
                              // clothing on the way in, or the room has twins in it.
@@ -626,7 +620,7 @@ namespace Hoodrich.Core
             // The ini section keeps its old name so an existing Hoodrich.ini with a [CrackDen]
             // block in it still overrides the right door. What it is CALLED on screen comes
             // from the default below, which the ini can override on its own.
-            s.Doors.Add(Worked(Named(Also(ReadDoor(ini, "CrackDen", "pill press garage",
+            s.Doors.Add(Worked(Dressed(Named(Also(ReadDoor(ini, "CrackDen", "pill press garage",
                                  "tr_tuner_methlab_1",
                                  (BlipSprite)497,
                                  -105.053f, -1408.631f, 29.673f, 226.934f,
@@ -641,13 +635,11 @@ namespace Hoodrich.Core
                              + "tr_int_placement_tr_interior_3_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_;"
-                             + "meth_stash1;meth_stash2;meth_stash3;"
-                             + "meth_lab_setup;meth_lab_upgrade;meth_lab_production;"
-                             + "meth_lab_security_high;table_equipment_upgrade;"
                              + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo;"
                              + "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo;"
                              + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
                              + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo"),
+                             MethSets),
                              "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"));
             // ANY NUMBER OF MORE DOORS, named in the ini rather than in here.
             //
@@ -868,6 +860,66 @@ namespace Hoodrich.Core
         private static DoorSpec Worked(DoorSpec door, params string[] crew)
         {
             door.Crew.AddRange(crew);
+            return door;
+        }
+
+        /// <summary>
+        /// The grow room at its full stage: the upgraded equipment and security, all nine
+        /// stations at stage three under their lights, the chairs, the drying racks.
+        ///
+        /// ENTITY SETS, NOT IPLS -- see InteriorDoor.Dress. The equipment, security and
+        /// light names are literal in Menyoo's own binary on this machine; the plant names
+        /// follow the lights' pattern and each is offered upgrade-then-standard so the first
+        /// the game accepts is the one drawn. What the game turns down is logged by name.
+        /// </summary>
+        private const string WeedSets =
+            "weed_upgrade_equip|weed_standard_equip;" +
+            "weed_security_upgrade|weed_low_security;" +
+            "weed_growtha_stage3_upgrade|weed_growtha_stage3_standard;" +
+            "weed_growthb_stage3_upgrade|weed_growthb_stage3_standard;" +
+            "weed_growthc_stage3_upgrade|weed_growthc_stage3_standard;" +
+            "weed_growthd_stage3_upgrade|weed_growthd_stage3_standard;" +
+            "weed_growthe_stage3_upgrade|weed_growthe_stage3_standard;" +
+            "weed_growthf_stage3_upgrade|weed_growthf_stage3_standard;" +
+            "weed_growthg_stage3_upgrade|weed_growthg_stage3_standard;" +
+            "weed_growthh_stage3_upgrade|weed_growthh_stage3_standard;" +
+            "weed_growthi_stage3_upgrade|weed_growthi_stage3_standard;" +
+            "light_growtha_stage23_upgrade|light_growtha_stage23_standard;" +
+            "light_growthb_stage23_upgrade|light_growthb_stage23_standard;" +
+            "light_growthc_stage23_upgrade|light_growthc_stage23_standard;" +
+            "light_growthd_stage23_upgrade|light_growthd_stage23_standard;" +
+            "light_growthe_stage23_upgrade|light_growthe_stage23_standard;" +
+            "light_growthf_stage23_upgrade|light_growthf_stage23_standard;" +
+            "light_growthg_stage23_upgrade|light_growthg_stage23_standard;" +
+            "light_growthh_stage23_upgrade|light_growthh_stage23_standard;" +
+            "light_growthi_stage23_upgrade|light_growthi_stage23_standard;" +
+            "weed_chairs;" +
+            "weed_drying;" +
+            "weed_hosea;" +
+            "weed_hoseb;" +
+            "weed_hosec;" +
+            "weed_hosed;" +
+            "weed_hosee;" +
+            "weed_hosef;" +
+            "weed_hoseg;" +
+            "weed_hoseh;" +
+            "weed_hosei";
+
+        /// <summary>
+        /// The meth lab at its full stage: the upgraded lab, the security, set up and in
+        /// production. Basic, upgrade and security are literal in Menyoo; setup and production
+        /// are literal in the interior loader.
+        /// </summary>
+        private const string MethSets =
+            "meth_lab_upgrade|meth_lab_basic;" +
+            "meth_lab_security_high;" +
+            "meth_lab_setup;" +
+            "meth_lab_production";
+
+        /// <summary>The furniture a door switches on in its room. See DoorSpec.Sets.</summary>
+        private static DoorSpec Dressed(DoorSpec door, string sets)
+        {
+            door.Sets = sets;
             return door;
         }
 

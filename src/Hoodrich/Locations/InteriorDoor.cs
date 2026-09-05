@@ -34,6 +34,14 @@ namespace Hoodrich.Locations
         /// Asking for a name the game does not have costs nothing, so both are always asked.
         /// </summary>
         public string Extra = "";
+
+        /// <summary>
+        /// The stock and the equipment: interior ENTITY SETS, switched on by name once the
+        /// room is loaded. Groups separated by semicolons; within a group, alternatives
+        /// separated by bars, of which the first the game accepts wins. See Dress.
+        /// </summary>
+        public string Sets = "";
+
         public bool Blip = true;
         public BlipSprite Sprite = BlipSprite.Standard;
 
@@ -434,6 +442,7 @@ namespace Hoodrich.Locations
                 {
                     Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, interior);
                     Function.Call(Hash.SET_INTERIOR_ACTIVE, interior, true);
+                    Dress(interior);
                     Function.Call(Hash.REFRESH_INTERIOR, interior);
 
                     // Where the room ACTUALLY is, asked of the game rather than read off a
@@ -488,6 +497,7 @@ namespace Hoodrich.Locations
                         {
                             Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, interior);
                             Function.Call(Hash.SET_INTERIOR_ACTIVE, interior, true);
+                            Dress(interior);
                         }
                     }
 
@@ -697,9 +707,31 @@ namespace Hoodrich.Locations
 
             if (room == 0) return;
 
+            // THE ROOM HAS TO BE THIS ROOM. The two rooms the mod ships are sixty-seven
+            // metres apart under the same patch of ground, and by distance alone the far end
+            // of one is within reach of the other's mark: walk to the back of the pill press
+            // and the grow room adopted you, put up its own leave prompt beside the pill
+            // press's, and its way out is Lamar's roller door. The game knows which interior
+            // he is stood in; the only question worth asking is whether it is ours.
+            int mine;
+
+            try
+            {
+                mine = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, Inside.X, Inside.Y, Inside.Z);
+            }
+            catch
+            {
+                return;
+            }
+
+            if (mine == 0 || mine != room) return;
+
             _inside = true;
             _standing = player.Position;
             _enteredAt = Game.GameTime;
+
+            // The furniture too, in case whatever put him here did not bring it.
+            Dress(room);
 
             // Deliberately NOT cleared. If a reload happened while he was inside, the doorway
             // he came in by is already gone -- but if this fires for any other reason and we
@@ -777,6 +809,77 @@ namespace Hoodrich.Locations
 
             Leave(player);
             return true;
+        }
+
+        /// <summary>
+        /// The stock and the equipment, switched on.
+        ///
+        /// NOT IPLS. A business interior is a shell with its furniture stored inside it as
+        /// named ENTITY SETS -- the plants, the lights, the press, the tables -- and a set is
+        /// turned on with ACTIVATE_INTERIOR_ENTITY_SET on the interior, not asked for with
+        /// REQUEST_IPL. The first attempt asked for every one of these as an IPL, which is a
+        /// request the game answers by doing nothing, and both rooms came up as bare shells
+        /// with three people standing in them.
+        ///
+        /// Groups of alternatives, because the names came from two mods' string tables and
+        /// the pattern between them. Within a group the first name the game accepts wins and
+        /// the rest are left alone, so a wrong guess costs nothing and two versions of the
+        /// same plant are never both drawn. What took and what did not is logged by name, so
+        /// the list can be corrected against what the game actually has rather than argued
+        /// about.
+        /// </summary>
+        private void Dress(int interior)
+        {
+            if (interior == 0 || string.IsNullOrEmpty(_spec.Sets)) return;
+
+            var on = new List<string>();
+            var off = new List<string>();
+
+            foreach (var group in _spec.Sets.Split(';'))
+            {
+                var took = false;
+
+                foreach (var raw in group.Split('|'))
+                {
+                    if (took) break;
+
+                    var name = raw.Trim();
+                    if (name.Length == 0) continue;
+
+                    try
+                    {
+                        Function.Call(Hash.ACTIVATE_INTERIOR_ENTITY_SET, interior, name);
+
+                        if (Function.Call<bool>(Hash.IS_INTERIOR_ENTITY_SET_ACTIVE, interior, name))
+                        {
+                            on.Add(name);
+                            took = true;
+                        }
+                        else
+                        {
+                            off.Add(name);
+                        }
+                    }
+                    catch
+                    {
+                        off.Add(name);
+                    }
+                }
+            }
+
+            try
+            {
+                Function.Call(Hash.REFRESH_INTERIOR, interior);
+            }
+            catch
+            {
+                // The sets are on either way; the refresh only hurries the props along.
+            }
+
+            Log.Info("Dressed the " + _spec.Name + " (interior " + interior + "): " + on.Count +
+                     " set" + (on.Count == 1 ? "" : "s") + " on" +
+                     (on.Count > 0 ? " -- " + string.Join(", ", on) : "") +
+                     (off.Count > 0 ? "; not in this room: " + string.Join(", ", off) : "") + ".");
         }
 
         /// <summary>
