@@ -2003,7 +2003,10 @@ namespace Hoodrich.Dealing
 
             // The call that put him on you, heard as he starts walking over. Fired here rather
             // than when he arrives, because the radio goes out before the officer does.
-            Voice.Cue("police_dispatch");
+            // A NEW NAME FOR A NEW RECORDING. The game keeps the last clip it played open,
+            // so a recording cannot be swapped under the old name while it is running;
+            // the walkie-talkie went in as dispatch_radio and police_dispatch is gone.
+            Voice.Cue("dispatch_radio");
 
             // Asked for while he is still walking over. A dictionary requested and checked in
             // the same frame has not loaded; the walk is the streaming budget.
