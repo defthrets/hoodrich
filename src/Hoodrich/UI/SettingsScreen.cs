@@ -596,6 +596,47 @@ namespace Hoodrich.UI
             // memorial on a wall: the game does not say what it called them, and the object
             // list has twenty-one thousand names. Stand at the thing, press this, and the log
             // has the hash and the distance of everything within four metres.
+            // A DOOR IS TWO COORDINATES AND A NAME, and the coordinates can only honestly
+            // come from somebody standing on them. Four rounds of guessing where a room was
+            // is what these two rows exist to stop happening again.
+            Head("Doors");
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "A door goes here",
+                Note = "Writes where you stand into Hoodrich.ini as the outside of a new door",
+                Do = () =>
+                {
+                    var me = Game.Player.Character;
+                    if (me == null || !me.Exists()) return;
+
+                    var made = Locations.DoorMaker.Outside(me.Position, me.Heading);
+
+                    Notify.Important(made.Length == 0
+                        ? "Could not write to Hoodrich.ini."
+                        : made + ": outside marked. Now go inside and mark the inside.");
+                }
+            });
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "...and the inside is here",
+                Note = "Writes where you stand as the inside of the door you just marked. Press Insert after",
+                Do = () =>
+                {
+                    var me = Game.Player.Character;
+                    if (me == null || !me.Exists()) return;
+
+                    var made = Locations.DoorMaker.Inside(me.Position, me.Heading);
+
+                    Notify.Important(made.Length == 0
+                        ? "Mark the outside of a door first."
+                        : made + ": done. Press Insert and the door is there.");
+                }
+            });
+
             Head("Finding things");
 
             _rows.Add(new Opt

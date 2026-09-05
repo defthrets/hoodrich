@@ -468,6 +468,25 @@ namespace Hoodrich.Core
             return IniFile.SetValue(Paths.Ini, section, key, value);
         }
 
+        /// <summary>
+        /// One value straight out of the ini on disk, without loading the whole thing.
+        ///
+        /// For the few things that are written back at runtime and have to be read back the
+        /// same way -- the list of doors somebody is in the middle of adding, whose next name
+        /// depends on what is already in the file rather than on what was loaded at startup.
+        /// </summary>
+        public static string Read(string section, string key, string fallback)
+        {
+            try
+            {
+                return IniFile.Load(Paths.Ini).GetString(section, key, fallback);
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
         public static Settings Load()
         {
             var s = new Settings();
@@ -622,6 +641,30 @@ namespace Hoodrich.Core
                              + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
                              + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo"),
                              "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"));
+            // ANY NUMBER OF MORE DOORS, named in the ini rather than in here.
+            //
+            // The two above are the mod's own. Everything else -- the casino, a club, a
+            // shop, whatever somebody wants a way into -- is a section in Hoodrich.ini and
+            // its name listed under [Doors] More. Nothing about a door is code: it is two
+            // coordinates and a name, and the two coordinates can only honestly come from
+            // somebody standing on them. See the two rows on the settings screen that write
+            // them down.
+            foreach (var name in ini.GetString("Doors", "More", "").Split(','))
+            {
+                var section = name.Trim();
+                if (section.Length == 0) continue;
+
+                var door = ReadDoor(ini, section, section, "", (BlipSprite)40,
+                                    0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
+
+                // A door with nothing on either end of it is a section somebody started and
+                // did not finish. Better ignored than put at the middle of the map.
+                if (Math.Abs(door.DoorX) < 0.01f && Math.Abs(door.DoorY) < 0.01f) continue;
+                if (Math.Abs(door.InsideX) < 0.01f && Math.Abs(door.InsideY) < 0.01f) continue;
+
+                s.Doors.Add(door);
+            }
+
             s.PlaySounds = ini.GetBool("Phone", "PlaySounds",
                                         ini.GetBool("Wheel", "PlaySounds", s.PlaySounds));
 
