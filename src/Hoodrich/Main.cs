@@ -2544,7 +2544,14 @@ namespace Hoodrich
                 // every walk-up prompt in the mod would carry on showing behind it.
                 if (_modShop.IsOpen)
                 {
-                    if (!available) _modShop.Close();
+                    // NOT CLOSED FOR A FADE. The muffler shop opens its menu behind the black
+                    // and fades in on it, and "screen not faded in" is one of the things that
+                    // makes the game unplayable -- so the menu was being closed on the frame
+                    // it opened, and the garage, finding it closed, put the car straight back
+                    // out. A fade is the shop's own doing; anything else still closes it.
+                    var fading = !Function.Call<bool>(Hash.IS_SCREEN_FADED_IN);
+
+                    if (!available && !fading) _modShop.Close();
                     else
                     {
                         _modShop.Update();
