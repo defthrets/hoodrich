@@ -548,14 +548,23 @@ namespace Hoodrich.Core
                              1137.000f, -3197.000f, -39.000f,
                              1165.000f, -3196.000f, -39.000f,
                              997.000f, -3200.000f, -37.000f),
-                             // THE NAME THAT ACTUALLY LOADS IT. An interior IPL is named for
-                             // the PLACEMENT rather than the room: the archetype is called
-                             // bkr_biker_dlc_int_ware02 and asking for that does nothing at
-                             // all while looking exactly like asking for the right thing.
-                             // Read off the interior loader on this machine, whose own list
-                             // runs interior_0 to interior_5 across the two clubhouses and the
-                             // warehouses -- so ware02 is index 3.
-                             "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo"));
+                             // THE NAMES THAT ACTUALLY LOAD IT, read out of the interior loader
+                             // sat in this game's scripts folder rather than guessed. An IPL is
+                             // named for the PLACEMENT, not the room: the archetype is called
+                             // bkr_biker_dlc_int_ware02 and asking for that does nothing while
+                             // looking exactly like asking for the right thing.
+                             //
+                             // ALL FOUR WAREHOUSES, not one. That loader's own list runs
+                             // interior_0 to interior_5 across the two clubhouses and the
+                             // warehouses and is MISSING index 3 -- the one this room needs.
+                             // So index 3 is still a guess, and the other three are here so
+                             // that a guess being wrong means landing in the wrong warehouse
+                             // rather than in nothing at all. They are empty shells buried
+                             // under the sea; loading four costs a few megabytes and no frames.
+                             "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo;"
+                             + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo;"
+                             + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
+                             + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo"));
 
             // radar_production_crack, 497 -- the razor blade.
             //
@@ -575,8 +584,13 @@ namespace Hoodrich.Core
                              1000.000f, -3200.000f, -38.000f,
                              1009.000f, -3196.000f, -38.000f,
                              1064.000f, -3183.000f, -39.000f),
-                             "tr_tuner_meth_lab;"
-                             + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo"));
+                             // The tuner meth lab has FOUR placements rather than one, and
+                             // tr_tuner_methlab_1 -- which is what the ini has always asked
+                             // for -- is the archetype they all share. Same lesson twice.
+                             "tr_int_placement_tr_interior_2_tuner_methlab_1_milo_;"
+                             + "tr_int_placement_tr_interior_3_tuner_methlab_1_milo_;"
+                             + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
+                             + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_"));
             s.PlaySounds = ini.GetBool("Phone", "PlaySounds",
                                         ini.GetBool("Wheel", "PlaySounds", s.PlaySounds));
 
