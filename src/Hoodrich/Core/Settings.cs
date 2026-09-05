@@ -159,6 +159,14 @@ namespace Hoodrich.Core
         /// </summary>
         public readonly List<DoorSpec> Doors = new List<DoorSpec>();
 
+        /// <summary>
+        /// Map blips for the places you have not turned into doors yet.
+        ///
+        /// On, because a list of a hundred and thirty-five places is not much use as a list.
+        /// Off for anybody who wants their map back.
+        /// </summary>
+        public bool ShowPlaces = true;
+
         // ---- economy -----------------------------------------------------------
         public float BulkPurchaseDiscountPercent = 50f;
 
@@ -649,6 +657,8 @@ namespace Hoodrich.Core
             // coordinates and a name, and the two coordinates can only honestly come from
             // somebody standing on them. See the two rows on the settings screen that write
             // them down.
+            s.ShowPlaces = ini.GetBool("Doors", "ShowPlaces", s.ShowPlaces);
+
             foreach (var name in ini.GetString("Doors", "More", "").Split(','))
             {
                 var section = name.Trim();

@@ -563,6 +563,9 @@ namespace Hoodrich
         private readonly Fixture _armourerStockB;
         private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
 
+        /// <summary>Map blips for everywhere on the list that is not a door yet.</summary>
+        private readonly PlaceBlips _places = new PlaceBlips();
+
         /// <summary>Franklin's and Denise's front doors, held open. See HouseDoors.</summary>
         private readonly HouseDoors _houseDoors = new HouseDoors();
         private readonly BlockLife _block;
@@ -897,6 +900,11 @@ namespace Hoodrich
                     // progression belongs.
                     _doors.Add(new InteriorDoor(spec));
                 }
+
+                // AND EVERYWHERE ELSE, greyed. The doors above are the places somebody has
+                // stood in; these are the ones still to visit, so the map thins out as the
+                // work gets done.
+                if (_cfg.ShowPlaces) _places.Show(_cfg.Doors.ConvertAll(d => d.Section));
 
                 // The lab has people on it.
                 _labCrew = new Entourage(_gangs, "families",
@@ -4074,6 +4082,7 @@ namespace Hoodrich
             {
                 try { door.RestoreWorld(); } catch { /* teardown */ }
             }
+            try { _places.RestoreWorld(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _turf?.RestoreWorld(); } catch { /* teardown */ }

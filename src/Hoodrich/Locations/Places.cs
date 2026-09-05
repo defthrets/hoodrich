@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Hoodrich.Core;
 
 namespace Hoodrich.Locations
@@ -29,6 +29,17 @@ namespace Hoodrich.Locations
 
         /// <summary>Where to go looking. Written into the file so it can be read outside the game.</summary>
         public string Where = "";
+
+        /// <summary>
+        /// Online map content whose interior name is NOT in the string table.
+        ///
+        /// Normally a place with no Ipl is a mission room already in the story map, and the
+        /// two presses are all it needs. A handful are neither: they are online rooms whose
+        /// placement name the interior loader does not carry, so we know where they are and
+        /// not what to ask for. Saying "already in the map" about those would be a lie that
+        /// costs somebody a drive.
+        /// </summary>
+        public bool Unnamed;
     }
 
     /// <summary>
@@ -60,7 +71,8 @@ namespace Hoodrich.Locations
             "Rooms with no door",
             "More rooms with no door",
             "Boats and the island",
-            "Houses"
+            "Houses",
+            "Odds and ends"
         };
 
         // ------------------------------------------------------------------ the casino
@@ -166,9 +178,17 @@ namespace Hoodrich.Locations
             P("CounterfeitCash", "Counterfeit cash factory",
               "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo", 267,
               "Same again."),
-            P("DocumentForgery", "Document forgery office",
+            // WARE02 IS THE WEED FARM, not the forgery office. The string table settles it:
+            // ware01 is followed by the meth sets, ware03 by the cocaine, ware04 by the
+            // counterfeit cash, and ware02 by the dryers and the weed stashes. It is the room
+            // this mod already opens at Lamar's, which is the other half of the proof.
+            //
+            // The forgery office is a fifth business and its placement name is not in the
+            // string table at all, so it is not on this list. A name nobody can check is how
+            // the grow room went wrong four times.
+            P("WeedFarm", "Weed farm",
               "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo", 267,
-              "The one this mod already uses for the grow. Worth a door of its own anyway.")
+              "Grapeseed, the barn off the highway.")
         };
 
         // ------------------------------------------------------------------ offices and cargo
@@ -479,14 +499,64 @@ namespace Hoodrich.Locations
               "The Von Crastenburg, Rockford Hills.")
         };
 
-        private static readonly Place[][] All =
+        // ------------------------------------------------------------------ odds and ends
+        //
+        // Places the interior loader's marker table had that our own list did not. Every one
+        // of them has a coordinate, which is more than most of the list can say.
+
+        private static readonly Place[] Odds =
         {
-            Casino, Clubs, Biker, Offices, War, Cars, Agency, Newer, Story, Story2, Water, Houses
+            P("HumaneLabs", "Humane Labs", "", 40,
+              "Out east past the Alamo Sea, on the water."),
+            P("MerryweatherFacility", "Merryweather facility", "", 40,
+              "Elysian Island.", true),
+            P("McKenzieHangar", "McKenzie Field hangar office", "", 40,
+              "The airstrip at Grapeseed."),
+            P("OneilFarm", "O'Neil farm", "", 40,
+              "Grapeseed, the farmhouse."),
+            P("RogersScrapyard", "Roger's scrapyard", "", 40,
+              "Cypress Flats."),
+            P("WreckedHospital", "Wrecked hospital", "", 61,
+              "Pillbox Hill. The one from the first heist."),
+            P("MansionArtStudio", "Mansion art studio", "", 267,
+              "Richman, beside the mansion."),
+            P("KortzLoading", "Kortz Center loading bay", "", 40,
+              "The back of the Kortz Center."),
+            P("KortzSewer", "Kortz Center sewer access", "", 40,
+              "Below the Kortz Center."),
+            P("ChopWarehouseA", "Chop shop warehouse A", "", 267,
+              "Down by the docks.", true),
+            P("ChopWarehouseB", "Chop shop warehouse B", "", 267,
+              "Also down by the docks.", true),
+            P("ChopCounterfeit", "Counterfeit cash factory, Strawberry", "", 267,
+              "Strawberry, a street from the block.", true),
+            P("HackerGarage", "Hacker basement garage",
+              "m24_2_int_placement_interior_int_hacker_garage_milo_", 357,
+              "Beside the hacker basement."),
+            P("MoneyFrontCarWash", "Money front car wash",
+              "reh_int_placement_sum2_interior_0_dlc_int_03_sum2_milo_;" +
+              "reh_int_placement_sum2_interior_1_dlc_int_04_sum2_milo_", 72,
+              "Strawberry Avenue, the one by the block.")
         };
 
-        private static Place P(string key, string name, string ipl, int sprite, string where)
+        private static readonly Place[][] All =
         {
-            return new Place { Key = key, Name = name, Ipl = ipl, Sprite = sprite, Where = where };
+            Casino, Clubs, Biker, Offices, War, Cars, Agency, Newer, Story, Story2, Water,
+            Houses, Odds
+        };
+
+        private static Place P(string key, string name, string ipl, int sprite, string where,
+                               bool unnamed = false)
+        {
+            return new Place
+            {
+                Key = key,
+                Name = name,
+                Ipl = ipl,
+                Sprite = sprite,
+                Where = where,
+                Unnamed = unnamed
+            };
         }
 
         /// <summary>Everything in one group, or the first group for a number out of range.</summary>
@@ -529,19 +599,25 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>Everywhere, for the blips and for counting.</summary>
+        public static IEnumerable<Place> Every()
+        {
+            foreach (var group in All)
+            {
+                foreach (var place in group) yield return place;
+            }
+        }
+
         /// <summary>How many are finished, out of how many there are. For the readout.</summary>
         public static string Tally()
         {
             var done = 0;
             var all = 0;
 
-            foreach (var group in All)
+            foreach (var place in Every())
             {
-                foreach (var place in group)
-                {
-                    all++;
-                    if (Done(place)) done++;
-                }
+                all++;
+                if (Done(place)) done++;
             }
 
             return done + " of " + all;
