@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -92,7 +92,7 @@ namespace Hoodrich.Locations
                 if (_blip == null || !_blip.Exists()) return;
 
                 Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, Sprite);
-                _blip.Color = BlipColor.White;
+                _blip.Color = BlipColor.Green;
                 _blip.Scale = 0.85f;
                 _blip.Name = "Mufflers";
                 _blip.IsShortRange = true;

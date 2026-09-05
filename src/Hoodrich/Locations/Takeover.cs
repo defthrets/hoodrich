@@ -3082,6 +3082,7 @@ namespace Hoodrich.Locations
                             // below for as long as the car is on its place.
                             r.Standing = _rng.Next(2) == 0;
                             r.Way = _rng.Next(2) == 0 ? 1 : -1;
+                            Reckless(r, true);
                             Show(r, now);
                         }
                         catch
@@ -4027,6 +4028,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
                 Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
                 Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, false);
+                Reckless(r, false);
 
                 // HE GOES BACK TO HIS SPOT, not off the map. The gap he left has been held for
                 // him the whole time, so this is a car rejoining a line rather than one leaving
@@ -4283,6 +4285,34 @@ namespace Hoodrich.Locations
             catch
             {
                 r.NextAction = now + BurstMs;
+            }
+        }
+
+        /// <summary>
+        /// A performer, performing, does not stop for anybody. The driver's reactions are
+        /// blocked -- a ped clipped, a car nudged, a gunshot -- and the car is made
+        /// collision-proof and strong, so it takes the knocks without losing its show. Only
+        /// the performers, and only while they perform: taken off again the moment one leaves.
+        /// </summary>
+        private static void Reckless(Runner r, bool on)
+        {
+            try
+            {
+                if (r.Driver != null && r.Driver.Exists())
+                {
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, r.Driver.Handle, on);
+                    Function.Call(Hash.SET_PED_CAN_RAGDOLL_FROM_PLAYER_IMPACT, r.Driver.Handle, !on);
+                }
+
+                if (r.Car != null && r.Car.Exists())
+                {
+                    Function.Call(Hash.SET_ENTITY_PROOFS, r.Car.Handle, false, false, false, on, false, false, false, false);
+                    Function.Call(Hash.SET_VEHICLE_STRONG, r.Car.Handle, on);
+                    Function.Call(Hash.SET_VEHICLE_CAN_BE_VISIBLY_DAMAGED, r.Car.Handle, !on);
+                }
+            }
+            catch
+            {
             }
         }
 
