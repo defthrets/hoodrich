@@ -11,21 +11,28 @@ namespace Hoodrich.Locations
     /// <summary>
     /// The muffler shop on the corner of Hao's yard: a low-end Los Santos Customs.
     ///
-    /// Drive up to the roller door and it asks; say yes and the car is driven in for you
-    /// while a camera watches from the side, the screen goes down, and it comes back up on
-    /// the car in the bay with the shop's menu over it (see ModShopScreen). Everything the
-    /// menu does goes onto the car as you look at it, because the car is the preview. Drive
-    /// out and, if it is one of yours, the whole kit is read off it and kept with the owned
-    /// record, so it is stood up with its rims on (see Kit, OwnedCars).
+    /// Drive up to the roller door and it asks; say yes and the screen goes down, and it
+    /// comes back up on the car in the bay with the shop's menu over it (see ModShopScreen)
+    /// and a camera walking slowly round. Everything the menu does goes onto the car as you
+    /// look at it, because the car is the preview. Drive out and, if it is one of yours, the
+    /// whole kit is read off it and kept with the owned record, so it is stood up with its
+    /// rims on (see Kit, OwnedCars).
     ///
-    /// NO INTERIOR. The building is a shell with a door that does not open, so the car
-    /// never goes through it: it pulls up to it, the screen goes black, and the shop is the
-    /// forecourt with a camera that has moved. The fade is what says "inside", the way the
-    /// game's own shops say it.
+    /// NO INTERIOR. The building is a shell with a door that does not open, so the car never
+    /// goes through it: the screen goes black on the forecourt and comes back on the bay.
+    /// The fade is what says "inside", the way the game's own shops say it.
+    ///
+    /// TICKED OUTSIDE THE STAND-DOWN. The mod stands down while the screen is faded or the
+    /// player has no control, which is exactly the state this thing lives in for a second at
+    /// each end -- the first cut of it took the player's control away, the mod stood down,
+    /// and the shop sat in its camera for two minutes until he got out. So Main ticks this
+    /// every frame regardless, and only the asking waits for a playable game. Nothing here
+    /// touches player control; the controls are simply disabled a frame at a time while the
+    /// screen is down.
     /// </summary>
     internal sealed class Garage
     {
-        private enum Stage { None, Arriving, Fading, Inside, Leaving }
+        private enum Stage { None, Fading, Inside, Leaving }
 
         /// <summary>Set by Main: off while something louder is happening -- a job with a car to drop here, a war.</summary>
         public Func<bool> Busy;
@@ -45,12 +52,11 @@ namespace Hoodrich.Locations
         private static readonly Vector3 Bay = new Vector3(-21.752f, -1677.030f, 28.818f);
         private const float BayHeading = 301.826f;
 
-        /// <summary>How close a driven car has to be to ask, and to count as arrived.</summary>
+        /// <summary>How close a driven car has to be to ask.</summary>
         private const float AskRange = 11f;
-        private const float ArrivedRange = 2.4f;
 
-        private const int ArriveMostMs = 8000;
         private const int FadeMs = 450;
+        private const int FadeMostMs = 1400;
         private const float CamFov = 45f;
         private const float Around = 6.5f;
         private const float Up = 1.7f;
@@ -97,19 +103,19 @@ namespace Hoodrich.Locations
             }
         }
 
-        // ---- per tick -----------------------------------------------------------
+        // ---- per tick, every tick -------------------------------------------------
 
-        public void Update()
+        /// <summary>Every frame. Only the asking needs a playable game; the rest runs while the screen is down.</summary>
+        public void Update(bool playable)
         {
             var now = Game.GameTime;
 
             switch (_stage)
             {
-                case Stage.None: Asking(); break;
-                case Stage.Arriving: Arriving(now); break;
-                case Stage.Fading: Fading(); break;
+                case Stage.None: if (playable) Asking(); break;
+                case Stage.Fading: Fading(now); break;
                 case Stage.Inside: Inside(now); break;
-                case Stage.Leaving: Leaving(); break;
+                case Stage.Leaving: Leaving(now); break;
             }
         }
 
@@ -149,61 +155,24 @@ namespace Hoodrich.Locations
 
             try
             {
-                Function.Call(Hash.SET_PLAYER_CONTROL, Game.Player.Handle, false, 0);
-
-                // Driven in for you. The style is the ordinary one and the speed a crawl; it
-                // is a forecourt, not a chase.
-                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, me.Handle, car.Handle,
-                              Bay.X, Bay.Y, Bay.Z, 5f, 0, car.Model.Hash, 786603, 1.0f, true);
-
-                // The camera stands off to the side of the bay and watches the car come in.
-                var rad = BayHeading * (float)Math.PI / 180f;
-                var right = new Vector3((float)Math.Cos(rad), (float)Math.Sin(rad), 0f);
-                var eye = Bay + right * 8f + new Vector3(0f, 0f, 2.2f);
-
-                _cam = Function.Call<int>(Hash.CREATE_CAM, "DEFAULT_SCRIPTED_CAMERA", true);
-                if (_cam != 0)
-                {
-                    Function.Call(Hash.SET_CAM_FOV, _cam, CamFov);
-                    Function.Call(Hash.SET_CAM_COORD, _cam, eye.X, eye.Y, eye.Z);
-                    Function.Call(Hash.POINT_CAM_AT_ENTITY, _cam, car.Handle, 0f, 0f, 0.3f, true);
-                    Function.Call(Hash.SET_CAM_ACTIVE, _cam, true);
-                    Function.Call(Hash.RENDER_SCRIPT_CAMS, true, true, 600, true, false);
-                }
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, me.Handle, car.Handle, 1, 1200);
+                Function.Call(Hash.DO_SCREEN_FADE_OUT, FadeMs);
             }
             catch (Exception ex)
             {
                 Log.Debug("The muffler shop could not take the car: " + ex.Message);
             }
 
-            _stage = Stage.Arriving;
+            _stage = Stage.Fading;
             Log.Info("Muffler shop: pulling in.");
         }
 
-        private void Arriving(int now)
+        private void Fading(int now)
         {
+            Still();
+
             if (!Sane()) { Abort(); return; }
-
-            var there = _car.Position.DistanceTo(Bay) < ArrivedRange;
-            if (!there && now - _since < ArriveMostMs) return;
-
-            try
-            {
-                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, Game.Player.Character.Handle, _car.Handle, 1, 1500);
-                Function.Call(Hash.DO_SCREEN_FADE_OUT, FadeMs);
-            }
-            catch
-            {
-            }
-
-            _since = now;
-            _stage = Stage.Fading;
-        }
-
-        private void Fading()
-        {
-            if (!Sane()) { Abort(); return; }
-            if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_OUT) && Game.GameTime - _since < FadeMs + 800) return;
+            if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_OUT) && now - _since < FadeMostMs) return;
 
             try
             {
@@ -217,9 +186,17 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_ENGINE_ON, h, false, true, true);
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, h, true);
 
-                _spin = 40f;
-                _lastTick = Game.GameTime;
-                Place();
+                // The camera that walks round it, up before the screen comes back.
+                _cam = Function.Call<int>(Hash.CREATE_CAM, "DEFAULT_SCRIPTED_CAMERA", true);
+                if (_cam != 0)
+                {
+                    Function.Call(Hash.SET_CAM_FOV, _cam, CamFov);
+                    _spin = 40f;
+                    _lastTick = now;
+                    Place();
+                    Function.Call(Hash.SET_CAM_ACTIVE, _cam, true);
+                    Function.Call(Hash.RENDER_SCRIPT_CAMS, true, false, 0, true, false);
+                }
 
                 _shop.Open(_car, _owned != null ? _owned.Name : "");
 
@@ -259,9 +236,11 @@ namespace Hoodrich.Locations
             _stage = Stage.Leaving;
         }
 
-        private void Leaving()
+        private void Leaving(int now)
         {
-            if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_OUT) && Game.GameTime - _since < FadeMs + 800) return;
+            Still();
+
+            if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_OUT) && now - _since < FadeMostMs) return;
 
             try
             {
@@ -327,6 +306,13 @@ namespace Hoodrich.Locations
             Function.Call(Hash.POINT_CAM_AT_ENTITY, _cam, _car.Handle, 0f, 0f, 0.3f, true);
         }
 
+        /// <summary>While the screen is down: nothing he presses reaches the car.</summary>
+        private static void Still()
+        {
+            try { Function.Call(Hash.DISABLE_ALL_CONTROL_ACTIONS, 0); }
+            catch { }
+        }
+
         // ---- letting go ------------------------------------------------------------
 
         private bool Sane()
@@ -369,12 +355,10 @@ namespace Hoodrich.Locations
             {
                 if (_cam != 0)
                 {
-                    Function.Call(Hash.RENDER_SCRIPT_CAMS, false, true, 600, true, false);
+                    Function.Call(Hash.RENDER_SCRIPT_CAMS, false, false, 0, true, false);
                     Function.Call(Hash.SET_CAM_ACTIVE, _cam, false);
                     Function.Call(Hash.DESTROY_CAM, _cam, false);
                 }
-
-                Function.Call(Hash.SET_PLAYER_CONTROL, Game.Player.Handle, true, 0);
 
                 if (Function.Call<bool>(Hash.IS_SCREEN_FADED_OUT) || Function.Call<bool>(Hash.IS_SCREEN_FADING_OUT))
                 {

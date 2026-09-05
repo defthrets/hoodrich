@@ -154,7 +154,7 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>How close counts as being on a marker.</summary>
-        private const float StageArrived = 6f;
+        private const float StageArrived = 8f;
 
         /// <summary>
         /// How long a performer tries to reach its marker before waiting where it is.

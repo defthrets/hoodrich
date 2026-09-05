@@ -2477,6 +2477,11 @@ namespace Hoodrich
 
                 var available = IsPlayable();
 
+                // EVERY FRAME, PLAYABLE OR NOT. The muffler shop lives behind a fade at each
+                // end, and a fade is one of the things that stands the mod down -- ticked from
+                // inside the gate it never came back from its own black screen.
+                _garage.Update(available);
+
                 WatchForPillbox();
                 WatchForGunfire();
 
@@ -2551,7 +2556,6 @@ namespace Hoodrich
                     if (!available) _modShop.Close();
                     else
                     {
-                        _garage.Update();
                         _modShop.Update();
                         _modShop.Draw();
                         SlowTick();
@@ -2898,7 +2902,6 @@ namespace Hoodrich
                     if (_ownedCars != null) _ownedCars.Update();
                     _hao.UpdatePrompt();
                     _garage.Mark();
-                    _garage.Update();
 
                     // After OwnedCars, which is what decides a car is still there to be a
                     // wreck at all.
