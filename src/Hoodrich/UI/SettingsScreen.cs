@@ -33,6 +33,18 @@ namespace Hoodrich.UI
         /// <summary>Something to read, not something to change. The ini owns it.</summary>
         Readout,
 
+        /// <summary>
+        /// Something that only looks: a tool that reads the world and writes a file or a log
+        /// line, and changes nothing. Pressed, not held.
+        ///
+        /// THESE USED TO BE DANGER ROWS and it cost two goes at using one. The hold is there so
+        /// that starting the mod over cannot be walked into, which is right -- but a row that
+        /// writes a list of prop names to a text file has nothing to protect anybody from, and
+        /// making it feel like it does means somebody presses it, sees nothing happen, and
+        /// concludes the feature is broken. Which is what happened, twice.
+        /// </summary>
+        Action,
+
         /// <summary>Something that cannot be undone, so it is held rather than pressed.</summary>
         Danger
     }
@@ -588,7 +600,7 @@ namespace Hoodrich.UI
 
             _rows.Add(new Opt
             {
-                Kind = OptKind.Danger,
+                Kind = OptKind.Action,
                 Label = "Ask the art packs what they have",
                 Note = "Asks every pack about every weapon name in the game and writes what exists to gunart-probe.txt",
                 Do = () =>
@@ -613,7 +625,7 @@ namespace Hoodrich.UI
 
             _rows.Add(new Opt
             {
-                Kind = OptKind.Danger,
+                Kind = OptKind.Action,
                 Label = "Find the gun pictures again",
                 Note = "Forgets where the game's gun photographs are and looks again. For after a game update",
                 Do = () =>
@@ -625,7 +637,7 @@ namespace Hoodrich.UI
 
             _rows.Add(new Opt
             {
-                Kind = OptKind.Danger,
+                Kind = OptKind.Action,
                 Label = "Name the props around me",
                 Note = "Writes the model of every prop within four metres to Hoodrich.log, with how far off it is",
                 Do = () =>
@@ -945,6 +957,16 @@ namespace Hoodrich.UI
 
             _holdingSince = 0;
             _holdSpent = false;
+
+            if (row.Kind == OptKind.Action && Pressed(Control.PhoneSelect))
+            {
+                try { row.Do?.Invoke(); }
+                catch (Exception ex) { Log.Debug("Settings action failed: " + ex.Message); }
+
+                Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                Changed?.Invoke();
+                return;
+            }
 
             if (row.Kind == OptKind.Binding && Pressed(Control.PhoneSelect))
             {
@@ -1398,6 +1420,11 @@ namespace Hoodrich.UI
                 case OptKind.Readout:
                     Hud.TextRight(row.GetText == null ? "" : row.GetText(), right, y, 0.28f,
                                   Theme.Ink(Palette.TextDisabled, lit), Hud.FontBody);
+                    break;
+
+                case OptKind.Action:
+                    Hud.TextRight(Hud.OnPad ? "A" : "ENTER", right, y, 0.26f,
+                                  Theme.Ink(picked ? Palette.Text : Palette.TextDim, lit), Hud.FontBody);
                     break;
 
                 case OptKind.Danger:
