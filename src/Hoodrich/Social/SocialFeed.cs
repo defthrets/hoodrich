@@ -125,7 +125,10 @@ namespace Hoodrich.Social
         HomiesOut,
 
         /// <summary>You pulled a balaclava on in the street.</summary>
-        Masked
+        Masked,
+
+        /// <summary>You changed your look out of the police's sight and the man they were after stopped existing.</summary>
+        Slipped
     }
 
     /// <summary>
@@ -1652,6 +1655,10 @@ namespace Hoodrich.Social
                 // A man in a balaclava is noticed, not reported. Main also spaces these out.
                 case SocialEvent.Masked: return 0.25f;
 
+                // The block sees the police doing laps for a man who is not there. Half the
+                // time, because it is a good story and not every story gets told.
+                case SocialEvent.Slipped: return 0.5f;
+
                 case SocialEvent.PortRun: return 0.65f;
                 case SocialEvent.PortRunDone: return 1f;
                 case SocialEvent.Busted: return 0.7f;
@@ -1702,6 +1709,7 @@ namespace Hoodrich.Social
                 case SocialEvent.HomiesOut: return 1 + _rng.Next(4);
 
                 case SocialEvent.Masked: return 0;
+                case SocialEvent.Slipped: return 1 + _rng.Next(3);
 
                 case SocialEvent.PortRun: return 4 + _rng.Next(8);
                 case SocialEvent.PortRunDone: return 30 + _rng.Next(40);

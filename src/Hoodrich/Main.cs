@@ -201,7 +201,14 @@ namespace Hoodrich
             }
 
             Draw.PlaySound(was ? "BACK" : "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-            Notify.Important(was ? "Mask off." : "~g~Masked up.");
+
+            // With a search on, the line is what the change did to it -- see Mask.Changed.
+            bool lost;
+            var word = Core.Mask.Changed(out lost);
+
+            Notify.Important(word ?? (was ? "Mask off." : "~g~Masked up."));
+
+            if (lost) _social.On(SocialEvent.Slipped);
 
             if (!was && Game.GameTime > _maskPostAt)
             {

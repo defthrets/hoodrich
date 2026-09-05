@@ -463,8 +463,140 @@ namespace Hoodrich.Core
         }
 
         /// <summary>Keeps Wearing honest against whatever else touches him. Cheap, on a clock.</summary>
+        // ---- what the police have on him ----------------------------------------
+        //
+        // THE MASK IS AN IDENTIFIER, OR THE LACK OF ONE. The police are looking for whoever
+        // they last had eyes on: a man in a balaclava, or a bare face. Change that while they
+        // are not looking -- stars grey, round a corner, in a doorway -- and the man they are
+        // looking for no longer exists, the same way a different car or a bush loses them.
+        // Change it in front of them and they have simply watched you do it. Nothing here
+        // touches the wanted level itself: the search carries on and runs out the way a
+        // search always does; they just cannot spot him while it does.
+
+        private static int _wanted;
+
+        /// <summary>How he looked the last time they had eyes on him: -1 never, 0 bare, 1 masked.</summary>
+        private static int _seen = -1;
+
+        /// <summary>He changed his look out of their sight; they are ignoring him until the search runs out.</summary>
+        private static bool _incognito;
+
+        private static bool _wokeIgnore;
+
+        /// <summary>Every tick: what they know now.</summary>
+        private static void Police()
+        {
+            try
+            {
+                var player = Game.Player;
+                if (player == null) return;
+
+                // Whatever a crash left set is put back, once.
+                if (!_wokeIgnore)
+                {
+                    _wokeIgnore = true;
+                    Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, player.Handle, false);
+                }
+
+                var wanted = player.WantedLevel;
+
+                if (wanted == 0)
+                {
+                    if (_wanted > 0) Forget(player);
+                    _wanted = 0;
+                    return;
+                }
+
+                // A new crime seen while they were meant to be ignoring him: they have him again.
+                if (_incognito && wanted > _wanted)
+                {
+                    Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, player.Handle, false);
+                    _incognito = false;
+                    UI.Notify.Important("~r~They've got you again.");
+                }
+
+                // While they can see him, they know what he looks like now.
+                if (!Function.Call<bool>(Hash.ARE_PLAYER_STARS_GREYED_OUT, player.Handle))
+                {
+                    _seen = _on ? 1 : 0;
+                }
+
+                _wanted = wanted;
+            }
+            catch
+            {
+            }
+        }
+
+        private static void Forget(Player player)
+        {
+            if (_incognito)
+            {
+                try { Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, player.Handle, false); }
+                catch { }
+            }
+
+            _incognito = false;
+            _seen = -1;
+        }
+
+        /// <summary>
+        /// After the mask went on or came off: what that did to the search, as a line for the
+        /// screen, or null when there is no search or nothing changed. Lost is true when it
+        /// worked -- they are after a man who no longer exists.
+        /// </summary>
+        public static string Changed(out bool lost)
+        {
+            lost = false;
+
+            try
+            {
+                var player = Game.Player;
+                if (player == null || player.WantedLevel == 0) return null;
+
+                var look = _on ? 1 : 0;
+
+                // In front of them, it is just a man taking a mask off.
+                if (!Function.Call<bool>(Hash.ARE_PLAYER_STARS_GREYED_OUT, player.Handle))
+                {
+                    _seen = look;
+                    return _on ? "~r~Too late for that. They can see you." : "~r~They watched you take it off.";
+                }
+
+                // They never had a look at him -- a report, not a sighting -- so there is nothing to shed.
+                if (_seen == -1) return null;
+
+                // Back to the look they are after, while they were ignoring him: that is the man again.
+                if (look == _seen)
+                {
+                    if (!_incognito) return null;
+
+                    Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, player.Handle, false);
+                    _incognito = false;
+                    return "~r~That's the face they're after.";
+                }
+
+                if (!_incognito)
+                {
+                    Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, player.Handle, true);
+                    _incognito = true;
+                }
+
+                lost = true;
+                Log.Info("Mask: the police are after a " + (_seen == 1 ? "masked man" : "bare face") + ". Not him.");
+
+                return _on ? "~g~They're after a bare face. That's not you." : "~g~They're after a man in a mask. That's not you.";
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public static void Update(Settings cfg)
         {
+            Police();
+
             var now = Game.GameTime;
             if (now < _nextLook) return;
             _nextLook = now + LookEveryMs;
@@ -504,6 +636,7 @@ namespace Hoodrich.Core
         /// <summary>For a teardown. Off if it is on; quiet if it is not.</summary>
         public static void RestoreWorld(Settings cfg)
         {
+            try { if (Game.Player != null) Forget(Game.Player); } catch { }
             if (_on) Off(cfg);
         }
 
