@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
@@ -1109,7 +1109,7 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Warm.Panel(left, top, panelWidth, height, arrive);
+            Theme.Panel(left, top, panelWidth, height, arrive);
 
             var x = left + pad;
             var right = left + panelWidth - pad;
@@ -1125,7 +1125,7 @@ namespace Hoodrich.UI
 
             y += 0.034f;
 
-            Warm.Rule(x, y, right - x, arrive);
+            Theme.Rule(x, y, right - x, arrive);
             y += 0.008f;
 
             var listTop = y;
@@ -1133,18 +1133,18 @@ namespace Hoodrich.UI
             // THE PLATE COMES UP UNDER THE ROW rather than sliding to it: the one under the
             // new row rises over a sixth of a second while the one under the old row sinks,
             // and the frame -- see Glide -- travels between them. Same as every other screen.
-            var grown = Warm.Grown(_pickedAt);
+            var grown = Theme.Grown(_pickedAt);
 
             _glide.Begin();
 
             for (var i = _top; i < _top + shown && i < _rows.Count; i++)
             {
-                var lit = Warm.Lit(i, _selected, _lastSelected, grown) * arrive;
+                var lit = Theme.Lit(i, _selected, _lastSelected, grown) * arrive;
 
                 var plateY = y - 0.003f;
 
-                Warm.Plate(x - 0.006f, plateY, right - x + 0.012f, RowHeight, lit);
-                Warm.Sheen(x - 0.006f, plateY, right - x + 0.012f, RowHeight, lit);
+                Theme.Plate(x - 0.006f, plateY, right - x + 0.012f, RowHeight, lit);
+                Theme.Sheen(x - 0.006f, plateY, right - x + 0.012f, RowHeight, lit);
 
                 if (i == _selected) _glide.Target(x - 0.006f, plateY, right - x + 0.012f, RowHeight);
 
@@ -1163,7 +1163,7 @@ namespace Hoodrich.UI
 
                 Hud.RectFrom(right + 0.004f, listTop, 0.0018f, trackH,
                              Color.FromArgb(50, 255, 255, 255));
-                Hud.RectFrom(right + 0.004f, thumbY, 0.0018f, barH, Palette.Gold);
+                Hud.RectFrom(right + 0.004f, thumbY, 0.0018f, barH, Palette.Brand);
             }
 
             var note = Current == null ? "" : Current.Note;
@@ -1180,7 +1180,7 @@ namespace Hoodrich.UI
                 : "UP / DOWN  PICK     LEFT / RIGHT  CHANGE     ENTER  TOGGLE     SPRINT  x10     BACKSPACE  DONE";
 
             Hud.Text(hint, x, top + height - 0.019f, 0.24f,
-                     _listening >= 0 ? Palette.Gold : Palette.TextDim, Hud.FontLabel,
+                     _listening >= 0 ? Palette.Brand : Palette.TextDim, Hud.FontLabel,
                      centre: false);
 
             // Last, so it rides over the rows it is pointing at.
@@ -1204,20 +1204,20 @@ namespace Hoodrich.UI
 
                 if (!string.IsNullOrEmpty(art) &&
                     Hud.File(art, x + Hud.ToX(HeadIcon) * 0.5f, y + 0.011f, HeadIcon, 0f,
-                             Palette.Alpha(Palette.Gold, 230)))
+                             Palette.Alpha(Palette.Brand, 230)))
                 {
                     tx = x + Hud.ToX(HeadIcon) + 0.006f;
                 }
 
                 Hud.Text(row.Label.ToUpperInvariant(), tx, y + 0.004f, 0.26f,
-                         Palette.Alpha(Palette.Gold, 230), Hud.FontLabel, centre: false);
+                         Palette.Alpha(Palette.Brand, 230), Hud.FontLabel, centre: false);
 
-                Warm.Rule(x, y + RowHeight - 0.007f, right - x);
+                Theme.Rule(x, y + RowHeight - 0.007f, right - x);
                 return;
             }
 
             var live = row.Selectable;
-            var tint = Warm.Ink(!live ? Palette.TextDisabled : picked ? Palette.Text : Palette.TextDim, lit);
+            var tint = Theme.Ink(!live ? Palette.TextDisabled : picked ? Palette.Text : Palette.TextDim, lit);
 
             // No chevron. The plate and the frame say which row this is, and a mark that
             // appears in front of the words shifts them sideways every time the cursor moves.
@@ -1242,7 +1242,7 @@ namespace Hoodrich.UI
 
                     Hud.TextRight((picked ? "< " : "  ") + text.ToUpperInvariant() +
                                   (picked ? " >" : "  "),
-                                  right, y, 0.28f, Warm.Ink(picked ? Palette.Text : Palette.TextDim, lit),
+                                  right, y, 0.28f, Theme.Ink(picked ? Palette.Text : Palette.TextDim, lit),
                                   Hud.FontBody);
                     break;
                 }
@@ -1254,7 +1254,7 @@ namespace Hoodrich.UI
 
                     Hud.TextRight(listening ? "PRESS A KEY" : key.ToString().ToUpperInvariant(),
                                   right, y, 0.28f,
-                                  Warm.Ink(listening ? Palette.Gold
+                                  Theme.Ink(listening ? Palette.Brand
                                                      : picked ? Palette.Text : Palette.TextDim, lit),
                                   Hud.FontBody);
                     break;
@@ -1262,7 +1262,7 @@ namespace Hoodrich.UI
 
                 case OptKind.Readout:
                     Hud.TextRight(row.GetText == null ? "" : row.GetText(), right, y, 0.28f,
-                                  Warm.Ink(Palette.TextDisabled, lit), Hud.FontBody);
+                                  Theme.Ink(Palette.TextDisabled, lit), Hud.FontBody);
                     break;
 
                 case OptKind.Danger:
@@ -1285,15 +1285,15 @@ namespace Hoodrich.UI
             var bx = right - w;
             var by = y + 0.0015f;
 
-            var edge = Warm.Ink(on ? Palette.Cash : picked ? Palette.Text : Palette.TextDim, lit);
+            var edge = Theme.Ink(on ? Palette.Cash : picked ? Palette.Text : Palette.TextDim, lit);
 
             if (on)
             {
                 // Green box on the dark; on the plate the box goes dark and the tick goes gold,
                 // which is the only pairing that reads on both grounds.
-                Hud.RectFrom(bx, by, w, size, Warm.Ink(Palette.Alpha(Palette.Cash, 210), lit));
+                Hud.RectFrom(bx, by, w, size, Theme.Ink(Palette.Alpha(Palette.Cash, 210), lit));
                 Hud.File("tick.png", bx + w * 0.5f, by + size * 0.5f, size * 0.78f, 0f,
-                         Warm.Lerp(Color.FromArgb(255, 12, 13, 15), Palette.Gold, lit));
+                         Theme.Lerp(Color.FromArgb(255, 12, 13, 15), Palette.Brand, lit));
             }
             else
             {
@@ -1313,7 +1313,7 @@ namespace Hoodrich.UI
             var text = row.Prefix + value.ToString(row.Format, CultureInfo.InvariantCulture) +
                        row.Suffix;
 
-            Hud.TextRight(text, right, y, 0.28f, Warm.Ink(picked ? Palette.Text : Palette.TextDim, lit),
+            Hud.TextRight(text, right, y, 0.28f, Theme.Ink(picked ? Palette.Text : Palette.TextDim, lit),
                           Hud.FontBody);
 
             var numberW = Hud.MeasureText(text, 0.28f, Hud.FontBody);
@@ -1328,16 +1328,16 @@ namespace Hoodrich.UI
             if (f > 1f) f = 1f;
 
             Hud.RectFrom(trackX, trackY, trackW, 0.0030f,
-                         Warm.Lerp(Color.FromArgb(60, 255, 255, 255), Color.FromArgb(70, 20, 18, 14), lit));
+                         Theme.Lerp(Color.FromArgb(60, 255, 255, 255), Color.FromArgb(70, 20, 18, 14), lit));
             Hud.RectFrom(trackX, trackY, trackW * f, 0.0030f,
-                         Warm.Ink(picked ? Palette.Gold : Palette.Alpha(Palette.Gold, 150), lit));
+                         Theme.Ink(picked ? Palette.Brand : Palette.Alpha(Palette.Brand, 150), lit));
 
             // The knob, kept fully on the track at both ends rather than hanging off it.
             var knobW = Hud.ToX(0.004f);
             var knobX = trackX + (trackW - knobW) * f;
 
             Hud.RectFrom(knobX, trackY - 0.0035f, knobW, 0.0100f,
-                         Warm.Ink(picked ? Palette.Text : Palette.TextDim, lit));
+                         Theme.Ink(picked ? Palette.Text : Palette.TextDim, lit));
         }
 
         /// <summary>Something irreversible, and how far through holding it you are.</summary>
@@ -1350,12 +1350,12 @@ namespace Hoodrich.UI
             var barX = right - barW;
 
             Hud.RectFrom(barX, y + 0.0090f, barW, 0.0055f,
-                         Warm.Lerp(Color.FromArgb(55, 255, 255, 255), Color.FromArgb(70, 20, 18, 14), lit));
+                         Theme.Lerp(Color.FromArgb(55, 255, 255, 255), Color.FromArgb(70, 20, 18, 14), lit));
 
             if (f > 0f) Hud.RectFrom(barX, y + 0.0090f, barW * f, 0.0055f, Palette.Danger);
 
             Hud.TextRight(holding ? "HOLD..." : "HOLD ENTER", barX - 0.008f, y, 0.26f,
-                          Warm.Ink(picked ? Palette.Danger : Palette.TextDim, lit), Hud.FontBody);
+                          Theme.Ink(picked ? Palette.Danger : Palette.TextDim, lit), Hud.FontBody);
         }
     }
 }

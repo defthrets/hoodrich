@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -381,7 +381,7 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Warm.Panel(left, top, panelWidth, height, arrive);
+            Theme.Panel(left, top, panelWidth, height, arrive);
 
             var x = left + pad;
             var right = left + panelWidth - pad;
@@ -389,7 +389,7 @@ namespace Hoodrich.UI
 
             // The shop's name in the house script, and what is in your pocket, which is the only
             // other number that decides anything on this screen.
-            Hud.Text("HOOD WEAPONRY", x, y - 0.004f, 0.74f, Palette.Gold, Hud.FontCursive, centre: false);
+            Hud.Text("HOOD WEAPONRY", x, y - 0.004f, 0.74f, Palette.Brand, Hud.FontCursive, centre: false);
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash, Hud.FontChaletLondon);
 
@@ -455,15 +455,15 @@ namespace Hoodrich.UI
             if (Math.Abs(wide[_rack] - _tabWide) < 0.0005f) _tabWide = wide[_rack];
 
             Hud.RectFrom(_tabAt - 0.004f, y - 0.004f, _tabWide + 0.008f, 0.024f,
-                         Palette.Alpha(Palette.Gold, 26));
+                         Palette.Alpha(Palette.Brand, 26));
 
-            Hud.RectFrom(_tabAt - 0.004f, y + 0.019f, _tabWide + 0.008f, 0.0022f, Palette.Ember);
+            Hud.RectFrom(_tabAt - 0.004f, y + 0.019f, _tabWide + 0.008f, 0.0022f, Palette.BrandDeep);
 
             for (var i = 0; i < Racks.Length; i++)
             {
                 var here = i == _rack;
 
-                Hud.Text(Racks[i].Name, at[i], y, 0.26f, here ? Palette.Gold : Palette.TextDim,
+                Hud.Text(Racks[i].Name, at[i], y, 0.26f, here ? Palette.Brand : Palette.TextDim,
                          Hud.FontLabel, centre: false);
 
                 // How much of that rack is already yours, which is the question the strip was
@@ -485,7 +485,7 @@ namespace Hoodrich.UI
             // through the descenders of a number, and reads as the number being broken.
             y += 0.038f;
 
-            Warm.Rule(x, y, panelWidth - pad * 2f);
+            Theme.Rule(x, y, panelWidth - pad * 2f);
             return y + 0.012f;
         }
 
@@ -497,7 +497,7 @@ namespace Hoodrich.UI
             // THE PLATE COMES UP UNDER THE ROW rather than sliding to it: the one under the
             // new row rises over a sixth of a second while the one under the old row sinks,
             // and the frame -- see Glide -- travels between them. Same as every other screen.
-            var grown = Warm.Grown(_pickedAt);
+            var grown = Theme.Grown(_pickedAt);
             var barWide = panelWidth - pad * 1.3f;
 
             _glide.Begin();
@@ -509,14 +509,14 @@ namespace Hoodrich.UI
                 var here = i == _row;
                 var owned = Owns(piece);
 
-                var lit = Warm.Lit(i, _row, _lastRow, grown) * arrive;
+                var lit = Theme.Lit(i, _row, _lastRow, grown) * arrive;
 
-                Warm.Plate(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
-                Warm.Sheen(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
+                Theme.Plate(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
+                Theme.Sheen(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
 
                 if (here) _glide.Target(x - pad * 0.35f, y - 0.005f, barWide, RowHeight);
 
-                var ink = Warm.Ink(here ? Palette.Text : Palette.TextDim, lit);
+                var ink = Theme.Ink(here ? Palette.Text : Palette.TextDim, lit);
 
                 // THE GAME'S OWN ART FOR THE GUN. Its dictionary is named after it, so the
                 // weapon name is the whole lookup.
@@ -545,19 +545,19 @@ namespace Hoodrich.UI
                 // What it is for, quietly, because the name alone does not say why you would
                 // take a Double Action over a Pistol.
                 Hud.Text(piece.Note, x + art + Hud.ToX(0.20f), y + 0.003f, 0.24f,
-                         Warm.Ink(Palette.TextDim, lit), Hud.FontLabel, centre: false);
+                         Theme.Ink(Palette.TextDim, lit), Hud.FontLabel, centre: false);
 
                 if (owned)
                 {
                     var rounds = piece.AmmoBox > 0 ? "  ·  " + Held(piece) + " rounds" : "";
 
                     Hud.TextRight("OWNED" + rounds, right, y + 0.002f, 0.26f,
-                                  Warm.Ink(Palette.Cash, lit), Hud.FontLabel);
+                                  Theme.Ink(Palette.Cash, lit), Hud.FontLabel);
                 }
                 else
                 {
                     Hud.TextRight("$" + piece.Price.ToString("N0"), right, y, 0.30f,
-                                  Warm.Ink(Game.Player.Money >= piece.Price ? Palette.Text : Palette.TextDisabled, lit),
+                                  Theme.Ink(Game.Player.Money >= piece.Price ? Palette.Text : Palette.TextDisabled, lit),
                                   Hud.FontChaletLondon);
                 }
 
@@ -565,7 +565,7 @@ namespace Hoodrich.UI
             }
 
             y += 0.010f;
-            Warm.Rule(x, y, panelWidth - pad * 2f);
+            Theme.Rule(x, y, panelWidth - pad * 2f);
             return y + 0.012f;
         }
 
@@ -575,7 +575,7 @@ namespace Hoodrich.UI
 
         private const float TabRate = 0.28f;
 
-        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        /// <summary>The row the cursor was on before this one, and when it moved. See Theme.Lit.</summary>
         private int _lastRow = -1;
         private int _pickedAt;
 
@@ -626,12 +626,12 @@ namespace Hoodrich.UI
             var cost = AmmoPrice(piece) * lots;
             var afford = Game.Player.Money >= cost;
 
-            Hud.Text("<", x, y, 0.32f, Palette.Gold, Hud.FontChaletLondon, centre: false);
+            Hud.Text("<", x, y, 0.32f, Palette.Brand, Hud.FontChaletLondon, centre: false);
 
             Hud.Text(lots + (lots == 1 ? " box" : " boxes") + "   ·   " + rounds + " rounds",
                      x + 0.018f, y, 0.32f, Palette.Text, Hud.FontChaletLondon, centre: false);
 
-            Hud.Text(">", x + Hud.ToX(0.30f), y, 0.32f, Palette.Gold,
+            Hud.Text(">", x + Hud.ToX(0.30f), y, 0.32f, Palette.Brand,
                      Hud.FontChaletLondon, centre: false);
 
             Hud.TextRight("$" + cost.ToString("N0"), right, y, 0.32f,

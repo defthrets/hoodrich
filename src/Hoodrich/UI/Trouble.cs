@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -104,10 +104,10 @@ namespace Hoodrich.UI
 
                 // The same rounded panel as everything else, with the red kept for the rule
                 // under the headline rather than a bar along the top.
-                Warm.Panel(left, top, PanelW, h);
+                Theme.Panel(left, top, PanelW, h);
 
                 Hoodrich.UI.Draw.RectFrom(left + Pad, top + Pad + TitleH - 0.008f, PanelW - Pad * 2f,
-                                          0.0012f, Warm.Hairline);
+                                          0.0012f, Theme.Hairline);
                 Hoodrich.UI.Draw.RectFrom(left + Pad, top + Pad + TitleH - 0.0084f, (PanelW - Pad * 2f) * 0.14f,
                                           0.0020f, Palette.Alpha(Palette.Danger, 215));
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -496,7 +496,7 @@ namespace Hoodrich.UI
         /// <summary>When the screen went up, for its entrance.</summary>
         private int _shownAt;
 
-        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        /// <summary>The row the cursor was on before this one, and when it moved. See Theme.Lit.</summary>
         private int _lastSelected = -1;
         private int _pickedAt;
 
@@ -528,7 +528,7 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Warm.Panel(left, top, panelWidth, height, arrive);
+            Theme.Panel(left, top, panelWidth, height, arrive);
 
             var x = left + pad;
             var right = left + panelWidth - pad;
@@ -540,21 +540,21 @@ namespace Hoodrich.UI
             // the panel TOP rather than to the title, because measuring it off the title put
             // it half a centimetre above the panel and outside its own ground.
             Hud.BrandCentre(left + panelWidth * 0.5f, top + 0.025f, 0.024f,
-                            Palette.Alpha(Palette.Gold, 225));
+                            Palette.Alpha(Palette.Brand, 225));
 
             // The house script, the same face every other screen in the mod is titled in --
             // and in the case it is written in rather than shouted. A cursive face set in block
             // capitals is two decisions fighting each other: handwriting is the informal one
             // and capitals are the formal one, and a room in somebody's house is the informal
             // thing.
-            Hud.Text("The Kitchen", x, y - 0.004f, 0.74f, Palette.Gold, Hud.FontCursive, centre: false);
+            Hud.Text("The Kitchen", x, y - 0.004f, 0.74f, Palette.Brand, Hud.FontCursive, centre: false);
 
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash, Hud.FontChaletLondon);
 
             y += 0.044f;
 
-            Warm.Rule(x, y, panelWidth - pad * 2f, arrive);
+            Theme.Rule(x, y, panelWidth - pad * 2f, arrive);
             y += 0.012f;
 
             Hud.Text("WHAT YOU'RE WORKING", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
@@ -563,7 +563,7 @@ namespace Hoodrich.UI
             // THE PLATE COMES UP UNDER THE ROW rather than sliding to it: the one under the
             // new row rises over a sixth of a second while the one under the old row sinks,
             // and the frame -- see Glide -- travels between them. Same as every other screen.
-            var grown = Warm.Grown(_pickedAt);
+            var grown = Theme.Grown(_pickedAt);
             var barWide = panelWidth - pad * 1.3f;
 
             _glide.Begin();
@@ -573,10 +573,10 @@ namespace Hoodrich.UI
                 var row = _rows[i];
 
                 var picked = i == _selected;
-                var lit = Warm.Lit(i, _selected, _lastSelected, grown) * arrive;
+                var lit = Theme.Lit(i, _selected, _lastSelected, grown) * arrive;
 
-                Warm.Plate(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
-                Warm.Sheen(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
+                Theme.Plate(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
+                Theme.Sheen(x - pad * 0.35f, y - 0.005f, barWide, RowHeight, lit);
 
                 if (picked) _glide.Target(x - pad * 0.35f, y - 0.005f, barWide, RowHeight);
 
@@ -593,7 +593,7 @@ namespace Hoodrich.UI
                 var art = Icons.ForDrug(row.Source.Id);
                 var ax = x + Hud.ToX(ArtSize) * 0.5f;
 
-                var ink = Warm.Ink(picked ? Palette.Text : Palette.TextDim, lit);
+                var ink = Theme.Ink(picked ? Palette.Text : Palette.TextDim, lit);
 
                 var drew = art.HasFile &&
                            Hud.File(art.File, ax, y + RowHeight * 0.32f, ArtSize, 0f, ink);
@@ -641,7 +641,7 @@ namespace Hoodrich.UI
             var risk = Pricing.BadCutChance(purity);
             var fits = _stash.FreeSpace >= yield - batch - 0.001f;
 
-            Warm.Rule(x, y - 0.006f, panelWidth - pad * 2f, arrive);
+            Theme.Rule(x, y - 0.006f, panelWidth - pad * 2f, arrive);
 
             // Every cut on screen at once, with the one you are on lit up. They were always
             // all available -- left and right has stepped through them since the day it was
@@ -688,7 +688,7 @@ namespace Hoodrich.UI
                 // visibly the same kind of thing.
                 if (on && !tooStrong)
                 {
-                    Warm.Plate(cx - 0.004f, y - 0.002f, width, 0.026f, 1f);
+                    Theme.Plate(cx - 0.004f, y - 0.002f, width, 0.026f, 1f);
                 }
 
                 var ink = tooStrong
@@ -752,10 +752,10 @@ namespace Hoodrich.UI
                     if (outArt.HasFile && room > wide + Hud.ToX(ArtSize) + 0.006f)
                     {
                         Hud.File(outArt.File, wx - Hud.ToX(ArtSize) * 0.65f, y + 0.010f,
-                                 ArtSize, 0f, Palette.Gold);
+                                 ArtSize, 0f, Palette.Brand);
                     }
 
-                    Hud.Text(fitted, wx, y + 0.001f, 0.28f, Palette.Gold, Hud.FontLabel,
+                    Hud.Text(fitted, wx, y + 0.001f, 0.28f, Palette.Brand, Hud.FontLabel,
                              centre: false);
                 }
             }

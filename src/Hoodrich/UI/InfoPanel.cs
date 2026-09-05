@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -553,13 +553,13 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            Warm.Panel(x, top, PanelWidth, height, arrive);
+            Theme.Panel(x, top, PanelWidth, height, arrive);
 
             // The mark sits above the screen's own title: the mod saying who is talking,
             // then the screen saying what about.
-            Hud.BrandCentre(0.5f, top + 0.024f, BrandHeight, Palette.Alpha(Palette.Gold, (int)(225f * arrive)));
+            Hud.BrandCentre(0.5f, top + 0.024f, BrandHeight, Palette.Alpha(Palette.Brand, (int)(225f * arrive)));
 
-            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.041f, 0.74f, Palette.Gold,
+            Hud.Text(_title.ToUpperInvariant(), x + Pad, top + 0.041f, 0.74f, Palette.Brand,
                      Hud.FontCursive, centre: false);
 
             if (!string.IsNullOrEmpty(_subtitle))
@@ -613,7 +613,7 @@ namespace Hoodrich.UI
                 y += it.Cells * RowHeight;
             }
 
-            Warm.Rule(x + Pad, top + height - 0.026f, PanelWidth - Pad * 2f, arrive);
+            Theme.Rule(x + Pad, top + height - 0.026f, PanelWidth - Pad * 2f, arrive);
 
             var maxScroll = MaxScroll();
 
@@ -633,7 +633,7 @@ namespace Hoodrich.UI
                 Hud.RectFrom(x + PanelWidth - 0.0034f, trackTop, 0.0014f, trackH, TrackBg);
 
                 Hud.RectFrom(x + PanelWidth - 0.0034f, trackTop + (trackH - thumbH) * posF,
-                             0.0014f, thumbH, Palette.Alpha(Palette.Gold, 170));
+                             0.0014f, thumbH, Palette.Alpha(Palette.Brand, 170));
             }
         }
 
@@ -642,7 +642,7 @@ namespace Hoodrich.UI
             // Full width, and ABOVE the words, which is what a divider is. The old one ran from
             // the end of the title to the right edge, which is a line that starts wherever the
             // heading happened to stop.
-            if (!first) Warm.Rule(x + Pad, y - 0.008f, PanelWidth - Pad * 2f);
+            if (!first) Theme.Rule(x + Pad, y - 0.008f, PanelWidth - Pad * 2f);
 
             // Dim, not accent. Headings were the brightest text on the panel, labelling the
             // least important thing on it.
@@ -779,7 +779,7 @@ namespace Hoodrich.UI
                 {
                     if (i == row.PipAt)
                     {
-                        Hud.Disc(px, cy, 0.0062f, Palette.Gold);
+                        Hud.Disc(px, cy, 0.0062f, Palette.Brand);
                         Hud.Disc(px, cy, 0.0036f, Color.FromArgb(255, 12, 13, 15));
                     }
                     else if (i < row.PipsOn) Hud.Disc(px, cy, 0.0046f, row.Colour);

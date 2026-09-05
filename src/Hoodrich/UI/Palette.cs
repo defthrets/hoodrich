@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 
 namespace Hoodrich.UI
@@ -8,7 +8,7 @@ namespace Hoodrich.UI
     ///
     /// The panels are near-black, rounded, and lit in GOLD and EMBER: the wash under a wordmark,
     /// the stroke on a rule, the plate under whatever is chosen, the frame that glides between
-    /// things. See UI.Warm for all of that -- the screens take it from there rather than
+    /// things. See UI.Theme for all of that -- the screens take it from there rather than
     /// each having an opinion. Colour beyond that is spent only where it carries meaning --
     /// money green, warning amber, danger red -- exactly as the game's HUD does.
     ///
@@ -59,14 +59,22 @@ namespace Hoodrich.UI
         public static readonly Color Danger = Color.FromArgb(255, 214, 69, 58);
 
         /// <summary>
-        /// The two warm colours the pocket screen is built on, from the day it stopped being
-        /// white on black. Gold is the light end and ember the hot end: a chosen tile runs
-        /// from one to the other top to bottom, the rules carry a stroke of ember, and the
-        /// frame that glides between tiles is a brighter gold still. Neither MEANS anything
-        /// the way amber and red do above -- they are what that screen is made of.
+        /// The two colours every screen in this mod is built on. Brand is the light end and
+        /// deep is the dark one: a chosen row runs from one to the other across its width, the
+        /// rules carry a stroke of the deep, and headings are the light. Neither MEANS anything
+        /// the way warn and danger do above -- they are what these screens are made of.
+        ///
+        /// GREEN, AND THEY WERE GOLD AND EMBER. The names went with the colour: a constant
+        /// called Gold holding a green is a lie that survives every rename after it, and there
+        /// are sixty-eight call sites that would have carried it.
+        ///
+        /// The pair is chosen to be a gradient rather than two greens. Same hue family, a long
+        /// way apart in value, so anything drawn from one to the other has somewhere to travel
+        /// -- and far enough from Cash above that money is still its own colour on a screen
+        /// that is now green all over.
         /// </summary>
-        public static readonly Color Gold = Color.FromArgb(255, 250, 196, 64);
-        public static readonly Color Ember = Color.FromArgb(255, 238, 112, 30);
+        public static readonly Color Brand = Color.FromArgb(255, 126, 232, 122);
+        public static readonly Color BrandDeep = Color.FromArgb(255, 26, 138, 74);
 
         /// <summary>
         /// The verified blue, and the only blue in the whole palette.

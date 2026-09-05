@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using GTA;
 using Hud = Hoodrich.UI.Draw;
@@ -28,13 +28,13 @@ namespace Hoodrich.UI
     /// EVERYTHING HERE IS STATELESS except Glide, which is a class because a cursor has a
     /// position, and each screen owns one.
     /// </summary>
-    internal static class Warm
+    internal static class Theme
     {
         /// <summary>The ground of every panel.</summary>
         public static readonly Color Body = Color.FromArgb(255, 12, 13, 15);
 
         /// <summary>Ink on a lit plate: near-black, the way the vanilla menus punch text out of a highlight.</summary>
-        public static readonly Color Dark = Color.FromArgb(255, 20, 18, 14);
+        public static readonly Color Dark = Color.FromArgb(255, 10, 20, 13);
 
         /// <summary>The grey rule every panel has always drawn under its headings.</summary>
         public static readonly Color Hairline = Color.FromArgb(44, 200, 205, 200);
@@ -90,7 +90,7 @@ namespace Hoodrich.UI
 
                 Hud.RectFrom(left + (inCorner ? inset : 0f), bandTop,
                              width - (inCorner ? inset * 2f : 0f), bandH,
-                             Palette.Alpha(Palette.Ember, a));
+                             Palette.Alpha(Palette.BrandDeep, a));
             }
         }
 
@@ -104,7 +104,7 @@ namespace Hoodrich.UI
             Hud.RectFrom(x, y, width, 0.0012f, Palette.Alpha(Hairline, (int)(Hairline.A * arrive)));
 
             Hud.RectFrom(x, y - 0.0004f, width * 0.14f, 0.0020f,
-                         Palette.Alpha(Palette.Ember, (int)(215f * arrive)));
+                         Palette.Alpha(Palette.BrandDeep, (int)(215f * arrive)));
         }
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace Hoodrich.UI
 
             for (var i = 0; i < bands; i++)
             {
-                var c = Lerp(Palette.Gold, Palette.Ember, (i + 0.5f) / bands);
+                var c = Lerp(Palette.Brand, Palette.BrandDeep, (i + 0.5f) / bands);
 
                 Hud.RectFrom(x, y + i * bandH, w, bandH, Palette.Alpha(c, (int)(235f * strength)));
             }
@@ -251,7 +251,7 @@ namespace Hoodrich.UI
         }
 
         /// <summary>The rim of the cursor frame: a brighter gold than the plate's top, so it reads on it.</summary>
-        public static readonly Color RimGold = Lerp(Palette.Gold, Color.White, 0.45f);
+        public static readonly Color RimInk = Lerp(Palette.Brand, Color.White, 0.45f);
     }
 
     /// <summary>
@@ -274,8 +274,8 @@ namespace Hoodrich.UI
         public const float Chase = 0.26f;
 
         /// <summary>The rim and the glow. Gold and ember by default; the phone sets its own green.</summary>
-        public Color RimInk = Warm.RimGold;
-        public Color GlowInk = Palette.Ember;
+        public Color RimInk = Theme.RimInk;
+        public Color GlowInk = Palette.BrandDeep;
 
         private float _x, _y, _w, _h;
         private bool _on;
@@ -358,10 +358,10 @@ namespace Hoodrich.UI
 
             var gX = Hud.ToX(Glow);
 
-            Warm.Rim(_x - gX, _y - Glow, _w + gX * 2f, _h + Glow * 2f, Glow,
+            Theme.Rim(_x - gX, _y - Glow, _w + gX * 2f, _h + Glow * 2f, Glow,
                      Palette.Alpha(GlowInk, (int)((30f + 40f * pulse) * arrive)));
 
-            Warm.Rim(_x, _y, _w, _h, Rule,
+            Theme.Rim(_x, _y, _w, _h, Rule,
                      Palette.Alpha(RimInk, (int)((205f + 50f * pulse) * arrive)));
         }
     }

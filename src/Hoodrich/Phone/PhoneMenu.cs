@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -867,7 +867,7 @@ namespace Hoodrich.Phone
                 var ph = ((Game.GameTime + k * 700) % 1400) / 1400f;
                 var g = 0.008f + 0.030f * ph;
 
-                Warm.Rim(mid - picW * 0.5f - Hud.ToX(g), picY - g, picW + Hud.ToX(g) * 2f, picH + g * 2f,
+                Theme.Rim(mid - picW * 0.5f - Hud.ToX(g), picY - g, picW + Hud.ToX(g) * 2f, picH + g * 2f,
                          0.0016f, Fade(Color.FromArgb((int)(150 * (1f - ph)), 108, 196, 106), fade));
             }
 
@@ -1776,7 +1776,7 @@ namespace Hoodrich.Phone
                 var spread = Math.Max(0f, Math.Min(1f, (Game.GameTime - _pressAt) / (float)PressMs));
                 var grow = 0.014f * spread;
 
-                Warm.Rim(x - Hud.ToX(grow), y - grow, w + Hud.ToX(grow) * 2f, h + grow * 2f, 0.0016f,
+                Theme.Rim(x - Hud.ToX(grow), y - grow, w + Hud.ToX(grow) * 2f, h + grow * 2f, 0.0016f,
                          Fade(Color.FromArgb((int)(170 * (1f - spread)), 108, 196, 106), fade));
             }
 

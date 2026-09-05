@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -278,7 +278,7 @@ namespace Hoodrich.UI
             // A thin lift along the top edge, and the author's colour down the left. The colour
             // belongs on the edge on a card this small -- anywhere else and a purple card and a
             // green card stop reading as the same object.
-            Hud.RectFrom(left, y, Width, 0.0012f, Alpha(Palette.Gold, (int)(44 * fade)));
+            Hud.RectFrom(left, y, Width, 0.0012f, Alpha(Palette.Brand, (int)(44 * fade)));
             Hud.RectFrom(left, y, 0.0024f, card.Height, Alpha(card.Tint, solid));
 
             var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;
@@ -430,7 +430,7 @@ namespace Hoodrich.UI
             Hud.RectFrom(left + Pad, rule, Width - Pad * 2f, 0.0011f,
                          Color.FromArgb((int)(48 * fade), 255, 255, 255));
             Hud.RectFrom(left + Pad, rule - 0.0003f, (Width - Pad * 2f) * 0.14f, 0.0017f,
-                         Alpha(Palette.Ember, (int)(205 * fade)));
+                         Alpha(Palette.BrandDeep, (int)(205 * fade)));
 
             line = rule + RuleGap;
 

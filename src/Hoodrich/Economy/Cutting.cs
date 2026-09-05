@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using GTA;
 using GTA.Math;
@@ -442,7 +442,7 @@ namespace Hoodrich.Economy
             // Grow from the left edge rather than the centre, in the same gold-to-ember the
             // chosen thing on every panel is lit with.
             var filled = w * fraction;
-            UI.Warm.Plate(cx - w * 0.5f, cy - h * 0.5f, filled, h, 1f);
+            UI.Theme.Plate(cx - w * 0.5f, cy - h * 0.5f, filled, h, 1f);
         }
     }
 }

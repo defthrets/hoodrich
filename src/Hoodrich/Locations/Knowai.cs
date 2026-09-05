@@ -71,7 +71,7 @@ namespace Hoodrich.Locations
         ///
         /// Behind it, the contact photos it used to use -- because the headshot is made on
         /// demand and takes a few frames, so the first card of a session may go out before it
-        /// exists. See Warm.
+        /// exists. See Theme.
         /// </summary>
         private const string FaceKey = "knowai";
 
@@ -101,7 +101,7 @@ namespace Hoodrich.Locations
         /// card goes out -- so by the time there is something to say, there is something to
         /// say it with.
         /// </summary>
-        private static void Warm()
+        private static void Theme()
         {
             try { Headshots.WantAs(FaceKey, Heads); }
             catch { /* the contact photo is behind it */ }
@@ -265,7 +265,7 @@ namespace Hoodrich.Locations
 
             if (!Make(start)) return "Nothing free near you.";
 
-            Warm();
+            Theme();
 
             _to = null;
             Going = "";

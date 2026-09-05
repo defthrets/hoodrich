@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -340,7 +340,7 @@ namespace Hoodrich.UI
         private float _fillYou;
         private float _fillHome;
 
-        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        /// <summary>The row the cursor was on before this one, and when it moved. See Theme.Lit.</summary>
         private int _lastSelected = -1;
         private int _pickedAt;
 
@@ -369,7 +369,7 @@ namespace Hoodrich.UI
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Warm.Panel(left, top, panelWidth, height);
+            Theme.Panel(left, top, panelWidth, height);
 
             var colWidth = (panelWidth - pad * 2f - columnGap) * 0.5f;
             var leftCol = left + pad;
@@ -379,12 +379,12 @@ namespace Hoodrich.UI
 
             // The letterhead, the same one every other screen in the mod carries, and one line
             // under it saying what you are looking at.
-            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Gold, 230));
+            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Brand, 230));
 
             Hud.Text(Blurb, middle, top + 0.052f, 0.29f,
                      Palette.Alpha(Palette.TextDim, 170), Hud.FontChaletLondon);
 
-            Warm.Rule(leftCol, top + 0.078f, lineWidth);
+            Theme.Rule(leftCol, top + 0.078f, lineWidth);
 
             var y = top + 0.088f;
 
@@ -401,7 +401,7 @@ namespace Hoodrich.UI
 
             y = top + HeadHeight - 0.008f;
 
-            Warm.Rule(leftCol, y, lineWidth);
+            Theme.Rule(leftCol, y, lineWidth);
 
             y = top + HeadHeight;
 
@@ -411,7 +411,7 @@ namespace Hoodrich.UI
                          Palette.TextDim, Hud.FontBody, centre: false);
             }
 
-            var grown = Warm.Grown(_pickedAt);
+            var grown = Theme.Grown(_pickedAt);
 
             _glide.Begin();
 
@@ -423,7 +423,7 @@ namespace Hoodrich.UI
 
             var footY = top + height - FootHeight + 0.008f;
 
-            Warm.Rule(leftCol, footY, lineWidth);
+            Theme.Rule(leftCol, footY, lineWidth);
 
             // THE ARROWS SAY THE DIRECTION AND THE WORDS SAY THE ERRAND, which is the
             // rearrangement that makes this line readable at a glance. It used to name the KEY
@@ -459,18 +459,18 @@ namespace Hoodrich.UI
 
             // The plate comes up under the row the cursor lands on and goes down under the one
             // it left, and the frame travels between them. Same as every other screen.
-            var lit = Warm.Lit(i, _selected, _lastSelected, grown);
+            var lit = Theme.Lit(i, _selected, _lastSelected, grown);
 
             var wash = leftCol - pad * 0.35f;
             var wide = colWidth * 2f + columnGap + pad * 0.7f;
 
-            Warm.Plate(wash, y - 0.004f, wide, RowHeight, lit);
-            Warm.Sheen(wash, y - 0.004f, wide, RowHeight, lit);
+            Theme.Plate(wash, y - 0.004f, wide, RowHeight, lit);
+            Theme.Sheen(wash, y - 0.004f, wide, RowHeight, lit);
 
             if (picked) _glide.Target(wash, y - 0.004f, wide, RowHeight);
 
             var label = row.Label;
-            var tint = Warm.Ink(picked ? Palette.Text : Palette.TextDim, lit);
+            var tint = Theme.Ink(picked ? Palette.Text : Palette.TextDim, lit);
 
             // The product's own art, the way the kitchen and the wheel show it. Hud.File places
             // by its CENTRE and Hud.Text by its TOP edge, so the art drops half a row to sit
@@ -520,11 +520,11 @@ namespace Hoodrich.UI
             var flashing = _movedRow == i && Game.GameTime - _movedAt < MovedFlashMs;
 
             Hud.TextRight(Amount(row.Drug, row.OnYou, row.Bagged), leftCol + colWidth, y, 0.30f,
-                          Warm.Ink(Side(row.OnYou, picked, flashing && !_movedHome), lit),
+                          Theme.Ink(Side(row.OnYou, picked, flashing && !_movedHome), lit),
                           Hud.FontBody);
 
             Hud.TextRight(Amount(row.Drug, row.AtHome, row.Bagged), rightCol + colWidth, y, 0.30f,
-                          Warm.Ink(Side(row.AtHome, picked, flashing && _movedHome), lit),
+                          Theme.Ink(Side(row.AtHome, picked, flashing && _movedHome), lit),
                           Hud.FontBody);
         }
 
@@ -562,7 +562,7 @@ namespace Hoodrich.UI
             var tx = x;
 
             if (Hud.File(icon, x + Hud.ToX(HeadIcon) * 0.5f, y + 0.008f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Gold, 225)))
+                         Palette.Alpha(Palette.Brand, 225)))
             {
                 tx = x + Hud.ToX(HeadIcon) + 0.006f;
             }
@@ -578,7 +578,7 @@ namespace Hoodrich.UI
 
             // Gold while there is room, ember once it is getting full, red when it is. Yellow
             // into orange into red is the one order of those three that reads as filling up.
-            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.Ember : Palette.Gold;
+            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.BrandDeep : Palette.Brand;
 
             Hud.TextRight((stash == null ? 0f : stash.Total).ToString("0") + " / " +
                           (stash == null ? 0f : stash.Capacity).ToString("0") + "g",

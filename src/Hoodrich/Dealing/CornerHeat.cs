@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -76,7 +76,7 @@ namespace Hoodrich.Dealing
         }
 
         /// <summary>Whether somewhere is already warm enough to be worth mentioning.</summary>
-        public bool IsWarm(Vector3 where)
+        public bool IsTheme(Vector3 where)
         {
             return At(where) > 1f;
         }

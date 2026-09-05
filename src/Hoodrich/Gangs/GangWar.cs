@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -3360,11 +3360,11 @@ namespace Hoodrich.Gangs
 
             // The rounded black every panel is, with their colour down the rail. No bar along
             // the top and no corner ticks: the border is gone everywhere.
-            UI.Warm.Card(left, top, WarWidth, WarHeight, back, ink, WarRail);
+            UI.Theme.Card(left, top, WarWidth, WarHeight, back, ink, WarRail);
 
             if (flash > 0f)
             {
-                Hud.RoundRect(left, top, WarWidth, WarHeight, UI.Warm.CardRound,
+                Hud.RoundRect(left, top, WarWidth, WarHeight, UI.Theme.CardRound,
                               System.Drawing.Color.FromArgb((int)(70 * flash * eased),
                                                             theirs.R, theirs.G, theirs.B),
                               sprite: false, steps: 12);

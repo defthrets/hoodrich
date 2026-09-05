@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -35,7 +35,7 @@ namespace Hoodrich.UI
 
         private int _row;
         private int _openedAt;
-        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        /// <summary>The row the cursor was on before this one, and when it moved. See Theme.Lit.</summary>
         private int _lastRow = -1;
         private int _pickedAt;
 
@@ -203,7 +203,7 @@ namespace Hoodrich.UI
             var height = 0.250f + rows * RowHeight;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Warm.Panel(left, top, width, height);
+            Theme.Panel(left, top, width, height);
 
             var x = left + pad;
             var right = left + width - pad;
@@ -211,7 +211,7 @@ namespace Hoodrich.UI
             var y = top + 0.020f;
 
             // ---- his name over the door ----
-            Hud.Text("HAO'S", x, y - 0.004f, 0.74f, Palette.Gold, Hud.FontCursive, centre: false);
+            Hud.Text("HAO'S", x, y - 0.004f, 0.74f, Palette.Brand, Hud.FontCursive, centre: false);
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
                           Palette.Cash);
 
@@ -223,7 +223,7 @@ namespace Hoodrich.UI
                           right, y, 0.24f, Palette.TextDim);
 
             y += 0.026f;
-            Warm.Rule(x, y, right - x);
+            Theme.Rule(x, y, right - x);
             y += 0.010f;
 
             if (stock.Count == 0)
@@ -239,7 +239,7 @@ namespace Hoodrich.UI
             // THE PLATE COMES UP UNDER THE ROW rather than sliding to it: the one under the
             // new row rises over a sixth of a second while the one under the old row sinks,
             // and the frame -- see Glide -- travels between them. Same as every other screen.
-            var grown = Warm.Grown(_pickedAt);
+            var grown = Theme.Grown(_pickedAt);
             var barWide = (right - x) + pad * 0.7f;
 
             _glide.Begin();
@@ -251,28 +251,28 @@ namespace Hoodrich.UI
                 var here = i == _row;
                 var afford = Game.Player.Money >= car.Price;
 
-                var lit = Warm.Lit(i, _row, _lastRow, grown);
+                var lit = Theme.Lit(i, _row, _lastRow, grown);
 
-                Warm.Plate(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
-                Warm.Sheen(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
+                Theme.Plate(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
+                Theme.Sheen(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
 
                 if (here) _glide.Target(x - pad * 0.35f, y - 0.004f, barWide, RowHeight);
 
-                var ink = Warm.Ink(here ? Palette.Text : Palette.TextDim, lit);
+                var ink = Theme.Ink(here ? Palette.Text : Palette.TextDim, lit);
 
                 Hud.Text(car.Name, x, y, 0.32f, ink, Hud.FontBody, centre: false);
 
                 Hud.Text(car.Class, x + Hud.ToX(0.175f), y + 0.003f, 0.24f,
-                         Warm.Ink(Palette.TextDim, lit), Hud.FontBody, centre: false);
+                         Theme.Ink(Palette.TextDim, lit), Hud.FontBody, centre: false);
 
                 Hud.TextRight("$" + car.Price.ToString("N0"), right, y + 0.002f, 0.28f,
-                              Warm.Ink(afford ? Palette.Cash : Palette.Danger, lit));
+                              Theme.Ink(afford ? Palette.Cash : Palette.Danger, lit));
 
                 y += RowHeight;
             }
 
             y += 0.010f;
-            Warm.Rule(x, y, right - x);
+            Theme.Rule(x, y, right - x);
             y += 0.012f;
 
             // ---- what he says about the one you are on ----

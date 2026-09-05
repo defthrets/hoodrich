@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using GTA;
 using GTA.Native;
@@ -109,7 +109,7 @@ namespace Hoodrich.UI
         private int _pick = 3;
         private Row _row = Row.Swatches;
 
-        /// <summary>The row the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        /// <summary>The row the cursor was on before this one, and when it moved. See Theme.Lit.</summary>
         private int _lastRow = -1;
         private int _rowAt;
 
@@ -329,11 +329,11 @@ namespace Hoodrich.UI
             var height = 0.340f + SwatchH + ButtonH * 4f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Warm.Panel(left, top, width, height);
+            Theme.Panel(left, top, width, height);
 
             _glide.Begin();
 
-            var grown = Warm.Grown(_rowAt);
+            var grown = Theme.Grown(_rowAt);
 
             var x = left + pad;
             var right = left + width - pad;
@@ -400,7 +400,7 @@ namespace Hoodrich.UI
             if ((frame == null || !Hud.File(frame, mx, my, logoW, LogoH, spin, Palette.Text)) &&
                 !Hud.File("graffiti.png", mx, my, logoW, LogoH, spin, Palette.Text))
             {
-                Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Gold,
+                Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Brand,
                          Hud.FontCursive, centre: false);
             }
 
@@ -498,7 +498,7 @@ namespace Hoodrich.UI
         /// <summary>How lit a button row is: coming up under the cursor, going down where it just was.</summary>
         private float Lit(Row row, float grown)
         {
-            return Warm.Lit((int)row, (int)_row, _lastRow, grown);
+            return Theme.Lit((int)row, (int)_row, _lastRow, grown);
         }
 
         /// <summary>
@@ -558,7 +558,7 @@ namespace Hoodrich.UI
                 if (on)
                 {
                     Hud.RectFrom(left, top, wide, side,
-                                 Palette.Alpha(Palette.Gold, 46 * lit / 255));
+                                 Palette.Alpha(Palette.Brand, 46 * lit / 255));
                 }
 
                 var chip = on ? Legible(Colour) : Palette.TextDim;
@@ -597,20 +597,20 @@ namespace Hoodrich.UI
             }
             else
             {
-                Warm.Plate(bx, y, bw, ButtonH, lit);
-                Warm.Sheen(bx, y, bw, ButtonH, lit);
+                Theme.Plate(bx, y, bw, ButtonH, lit);
+                Theme.Sheen(bx, y, bw, ButtonH, lit);
             }
 
             if (active) _glide.Target(bx, y, bw, ButtonH);
 
             var dark = warn ? 0f : lit;
 
-            var ink = Warm.Ink(warn ? Palette.Danger : active ? Palette.Text : Palette.TextDim, dark);
+            var ink = Theme.Ink(warn ? Palette.Danger : active ? Palette.Text : Palette.TextDim, dark);
 
             Hud.Text(label, x, y + 0.010f, 0.30f, ink, Hud.FontBody, centre: false);
 
             Hud.TextRight(hint, right, y + 0.011f, 0.24f,
-                          Warm.Ink(warn ? Palette.Danger : active ? Legible(Colour) : Palette.TextDim, dark),
+                          Theme.Ink(warn ? Palette.Danger : active ? Legible(Colour) : Palette.TextDim, dark),
                           Hud.FontLabel);
         }
 

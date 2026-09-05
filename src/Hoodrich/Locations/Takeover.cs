@@ -1075,7 +1075,7 @@ namespace Hoodrich.Locations
             // feature most sessions never reach.
             _line.Load();
 
-            Warm();
+            Theme();
 
             Cars();
 
@@ -2089,7 +2089,7 @@ namespace Hoodrich.Locations
         /// already resident answers true and costs nothing, and anything missing is being
         /// fetched by the time the first spawner wants it.
         /// </summary>
-        private void Warm()
+        private void Theme()
         {
             try
             {

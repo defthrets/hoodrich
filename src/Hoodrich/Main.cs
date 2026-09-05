@@ -3315,7 +3315,7 @@ namespace Hoodrich
             // Contact pictures pulled in early, so the first text of a session has a face on it
             // rather than losing the race with its own texture request. Stops asking once they
             // are in.
-            UI.Faces.Warm();
+            UI.Faces.Theme();
 
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {

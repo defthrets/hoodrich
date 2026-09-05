@@ -44,7 +44,7 @@ namespace Hoodrich.UI
 
         private static readonly HashSet<string> Resident = new HashSet<string>();
 
-        /// <summary>When the pictures are next checked over. See Warm.</summary>
+        /// <summary>When the pictures are next checked over. See Theme.</summary>
         private static int _nextCheck;
 
         /// <summary>How often. Cheap enough that it may as well be often.</summary>
@@ -94,7 +94,7 @@ namespace Hoodrich.UI
         /// Called off a slow tick and stops asking once everything is in, so it is a handful of
         /// requests early in a session and then nothing.
         /// </summary>
-        public static void Warm()
+        public static void Theme()
         {
             // RE-CHECKED FOR EVER, RATHER THAN ONCE. This used to latch: the moment every
             // picture had loaded it set a flag and never looked again.

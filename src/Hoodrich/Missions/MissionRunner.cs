@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -3416,7 +3416,7 @@ namespace Hoodrich.Missions
             // The rounded black every panel is, with a rail down the left. The rail is the one
             // thing that changes colour, so the card reads as the same object throughout a job
             // while still saying which part of it you are in.
-            Warm.Card(left, CardTop, CardWidth, CardHeight, CardBack, ink, CardRail);
+            Theme.Card(left, CardTop, CardWidth, CardHeight, CardBack, ink, CardRail);
 
             // The icon, in its own well so it reads as a badge rather than as a stray glyph.
             var iconLeft = left + CardRail + CardPad;
@@ -3561,7 +3561,7 @@ namespace Hoodrich.Missions
 
                     case BikePhase.Home: return Palette.Cash;
 
-                    default: return Palette.Gold;
+                    default: return Palette.Brand;
                 }
             }
 
@@ -3574,7 +3574,7 @@ namespace Hoodrich.Missions
                 case MissionState.Deliver: return Palette.Cash;
                 case MissionState.Dump:
                 case MissionState.Torch: return Palette.Warn;
-                default: return Palette.Gold;
+                default: return Palette.Brand;
             }
         }
 

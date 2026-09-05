@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -573,26 +573,26 @@ namespace Hoodrich.UI
             // that stripe and a second light walking the whole perimeter -- four things
             // happening at the border of a screen whose content is the point. All of it has
             // gone. An accent with no alpha is Panel's way of being told there is no stripe.
-            Warm.Panel(left, top, panelWidth, height, arrive);
+            Theme.Panel(left, top, panelWidth, height, arrive);
 
             var x = left + pad;
             var right = left + panelWidth - pad;
             var wide = right - x;
             var middle = left + panelWidth * 0.5f;
 
-            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Gold, (int)(230f * arrive)));
+            Hud.BrandCentre(middle, top + 0.024f, 0.022f, Palette.Alpha(Palette.Brand, (int)(230f * arrive)));
 
             Hud.Text(Blurb, middle, top + 0.052f, 0.29f,
                      Palette.Alpha(Palette.TextDim, 170), Hud.FontChaletLondon);
 
-            Warm.Rule(x, top + 0.078f, wide, arrive);
+            Theme.Rule(x, top + 0.078f, wide, arrive);
 
             var y = top + 0.088f;
 
             var ix = x;
 
             if (Hud.File("stash.png", x + Hud.ToX(HeadIcon) * 0.5f, y + 0.007f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Gold, 225)))
+                         Palette.Alpha(Palette.Brand, 225)))
             {
                 ix = x + Hud.ToX(HeadIcon) + 0.006f;
             }
@@ -606,7 +606,7 @@ namespace Hoodrich.UI
 
             Carrying(x, wide, y);
 
-            Warm.Rule(x, top + HeadHeight - 0.008f, wide, arrive);
+            Theme.Rule(x, top + HeadHeight - 0.008f, wide, arrive);
 
             y = top + HeadHeight;
 
@@ -644,7 +644,7 @@ namespace Hoodrich.UI
 
             var footY = top + height - FootHeight + 0.008f;
 
-            Warm.Rule(x, footY, wide, arrive);
+            Theme.Rule(x, footY, wide, arrive);
 
             Keys(x, right, footY + 0.008f);
 
@@ -722,7 +722,7 @@ namespace Hoodrich.UI
         /// </summary>
         private void FoodBand(float x, float width, float y, float arrive)
         {
-            Warm.Rule(x, y, width, arrive);
+            Theme.Rule(x, y, width, arrive);
 
             y += 0.012f;
 
@@ -738,7 +738,7 @@ namespace Hoodrich.UI
 
             if (!string.IsNullOrEmpty(mark) &&
                 Hud.File(mark, x + Hud.ToX(0.014f) * 0.5f, y + 0.007f, 0.014f, 0f,
-                         Palette.Alpha(Palette.Gold, (int)(230f * arrive))))
+                         Palette.Alpha(Palette.Brand, (int)(230f * arrive))))
             {
                 tx = x + Hud.ToX(0.014f) + 0.005f;
             }
@@ -756,7 +756,7 @@ namespace Hoodrich.UI
             var full = slots > 0 && carried >= slots;
 
             Hud.TextRight(carried + " / " + slots, x + width, y, 0.24f,
-                          full ? Palette.Ember : Palette.TextDim, Hud.FontLabel);
+                          full ? Palette.BrandDeep : Palette.TextDim, Hud.FontLabel);
 
             var tileY = y + FoodHead;
 
@@ -770,7 +770,7 @@ namespace Hoodrich.UI
             // the same trick the shop shelf uses on its row pictures.
             var age = Game.GameTime - _shownAt;
 
-            var grown = Warm.Grown(_pickedAt);
+            var grown = Theme.Grown(_pickedAt);
 
             for (var i = 0; i < _food.Count; i++)
             {
@@ -793,7 +793,7 @@ namespace Hoodrich.UI
 
                 var at = _rows.Count + i;
                 var picked = _selected == at;
-                var lit = Warm.Lit(at, _selected, _lastSelected, grown);
+                var lit = Theme.Lit(at, _selected, _lastSelected, grown);
 
                 // The dark tile with its hairline, always; the warm plate comes up over it as
                 // the cursor arrives and goes back down where the cursor just was. Two things
@@ -803,9 +803,9 @@ namespace Hoodrich.UI
                 Hud.RectFrom(tx2, tileTop, tile, 0.0012f,
                              Color.FromArgb((int)(70f * (1f - lit) * show), 255, 255, 255));
 
-                Warm.Plate(tx2, tileTop, tile, FoodTile, lit * show);
+                Theme.Plate(tx2, tileTop, tile, FoodTile, lit * show);
 
-                Warm.Sheen(tx2, tileTop, tile, FoodTile, lit * show);
+                Theme.Sheen(tx2, tileTop, tile, FoodTile, lit * show);
 
                 if (picked) _glide.Target(tx2, tileTop, tile, FoodTile);
 
@@ -820,7 +820,7 @@ namespace Hoodrich.UI
                     // The item's own colour on the dark tile, near-black once the plate is
                     // under it, and every shade between while the plate is on its way. The art
                     // is white and CustomSprite multiplies, so one file does all of it.
-                    var ink = Warm.Lerp(Palette.Alpha(Core.Larder.TintOf(id), (int)(238f * show)),
+                    var ink = Theme.Lerp(Palette.Alpha(Core.Larder.TintOf(id), (int)(238f * show)),
                                    Color.FromArgb((int)(255f * show), 20, 18, 14), lit);
 
                     Hud.File(art, tx2 + tile * 0.5f, tileTop + FoodTile * 0.46f,
@@ -842,7 +842,7 @@ namespace Hoodrich.UI
 
                     Hud.TextRight(many.ToString(), tx2 + tile - 0.0015f,
                                   tileTop + FoodTile - 0.0125f, 0.23f,
-                                  Palette.Alpha(Palette.Gold, (int)(255f * show)), Hud.FontLabel);
+                                  Palette.Alpha(Palette.Brand, (int)(255f * show)), Hud.FontLabel);
                 }
             }
 
@@ -859,7 +859,7 @@ namespace Hoodrich.UI
 
                 if (at >= 0 && at < _food.Count)
                 {
-                    Warm.Caption(Core.Larder.NameOf(_food[at]), x, capY, grown);
+                    Theme.Caption(Core.Larder.NameOf(_food[at]), x, capY, grown);
                     return;
                 }
             }
@@ -880,7 +880,7 @@ namespace Hoodrich.UI
             var tx = x;
 
             if (Hud.File("people.png", x + Hud.ToX(HeadIcon) * 0.5f, y + 0.008f, HeadIcon, 0f,
-                         Palette.Alpha(Palette.Gold, 225)))
+                         Palette.Alpha(Palette.Brand, 225)))
             {
                 tx = x + Hud.ToX(HeadIcon) + 0.006f;
             }
@@ -888,7 +888,7 @@ namespace Hoodrich.UI
             Hud.Text("ON YOU", tx, y, 0.28f, Palette.Text, Hud.FontLabel, centre: false);
 
             var full = Full();
-            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.Ember : Palette.Gold;
+            var tint = full > 0.9f ? Palette.Danger : full > 0.7f ? Palette.BrandDeep : Palette.Brand;
 
             Hud.TextRight(_pockets.Total.ToString("0") + " / " + _pockets.Capacity.ToString("0") + "g",
                           x + width, y, 0.28f, full > 0.7f ? tint : Palette.TextDim, Hud.FontBody);
@@ -947,7 +947,7 @@ namespace Hoodrich.UI
             var across = Across();
 
             var age = Game.GameTime - _shownAt;
-            var grown = Warm.Grown(_pickedAt);
+            var grown = Theme.Grown(_pickedAt);
 
             var lines = (_rows.Count + across - 1) / across;
 
@@ -974,7 +974,7 @@ namespace Hoodrich.UI
                 var ty = y + line * (Cell + CellGap) + EnterRise * 0.5f * (1f - land);
 
                 var picked = i == _selected;
-                var lit = Warm.Lit(i, _selected, _lastSelected, grown);
+                var lit = Theme.Lit(i, _selected, _lastSelected, grown);
 
                 var flashing = _droppedRow == i && Game.GameTime - _droppedAt < DropFlashMs;
 
@@ -984,7 +984,7 @@ namespace Hoodrich.UI
                 Hud.RectFrom(tx, ty, tile, 0.0012f,
                              Color.FromArgb((int)(70f * (1f - lit) * show), 255, 255, 255));
 
-                Warm.Plate(tx, ty, tile, Cell, lit * show);
+                Theme.Plate(tx, ty, tile, Cell, lit * show);
 
                 // The tile that just had something taken off it flashes gold and fades, over
                 // whatever else it is doing: a whole square lighting up, which used to be a
@@ -994,13 +994,13 @@ namespace Hoodrich.UI
                     var left = 1f - (Game.GameTime - _droppedAt) / (float)DropFlashMs;
 
                     Hud.RectFrom(tx, ty, tile, Cell,
-                                 Palette.Alpha(Palette.Gold, (int)(200f * left * show)));
+                                 Palette.Alpha(Palette.Brand, (int)(200f * left * show)));
                 }
 
                 // How dark the ink on this tile should be: fully, over a plate or a flash.
                 var dark = flashing ? 1f : lit;
 
-                Warm.Sheen(tx, ty, tile, Cell, lit * show);
+                Theme.Sheen(tx, ty, tile, Cell, lit * show);
 
                 if (picked) _glide.Target(tx, ty, tile, Cell);
 
@@ -1011,7 +1011,7 @@ namespace Hoodrich.UI
                 {
                     var swell = picked ? 1f + PickGrow * grown : 1f;
 
-                    var ink = Warm.Lerp(Palette.Alpha(Palette.Text, (int)(225f * show)),
+                    var ink = Theme.Lerp(Palette.Alpha(Palette.Text, (int)(225f * show)),
                                    Color.FromArgb((int)(255f * show), 20, 18, 14), dark);
 
                     Hud.File(art.File, tx + tile * 0.5f, ty + Cell * 0.40f,
@@ -1031,8 +1031,8 @@ namespace Hoodrich.UI
 
                 Hud.Text(Hud.Fit(amount, tile - 0.004f, 0.22f, Hud.FontLabel),
                          tx + tile * 0.5f, ty + Cell - ChipHeight - 0.0005f, 0.22f,
-                         Warm.Lerp(Palette.Alpha(Palette.Text, (int)(255f * show)),
-                              Palette.Alpha(Palette.Gold, (int)(255f * show)), lit),
+                         Theme.Lerp(Palette.Alpha(Palette.Text, (int)(255f * show)),
+                              Palette.Alpha(Palette.Brand, (int)(255f * show)), lit),
                          Hud.FontLabel);
 
                 // ---- how cut ----
@@ -1040,7 +1040,7 @@ namespace Hoodrich.UI
                 {
                     Hud.File(Stash.Mark(row.Purity), tx + tile - Hud.ToX(0.008f),
                              ty + 0.008f, 0.010f, 0f,
-                             Warm.Lerp(Palette.Alpha(Palette.TextDim, (int)(210f * show)),
+                             Theme.Lerp(Palette.Alpha(Palette.TextDim, (int)(210f * show)),
                                   Color.FromArgb((int)(220f * show), 20, 18, 14), dark));
                 }
             }
@@ -1053,7 +1053,7 @@ namespace Hoodrich.UI
             // eye is already going. The weight is on the tile; this is the word.
             if (!OnFood && _selected >= 0 && _selected < _rows.Count)
             {
-                Warm.Caption(_rows[_selected].Label, x, capY, grown);
+                Theme.Caption(_rows[_selected].Label, x, capY, grown);
             }
             else
             {

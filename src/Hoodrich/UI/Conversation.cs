@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -381,7 +381,7 @@ namespace Hoodrich.UI
         /// </summary>
         private static string FaceFor(string speaker) => Faces.For(speaker);
 
-        /// <summary>The choice the cursor was on before this one, and when it moved. See Warm.Lit.</summary>
+        /// <summary>The choice the cursor was on before this one, and when it moved. See Theme.Lit.</summary>
         private int _lastSelected = -1;
         private int _pickedAt;
 
@@ -825,17 +825,17 @@ namespace Hoodrich.UI
             // The same panel as every other screen: rounded black, the ember wash, and no bar
             // along the top. The speaker's colour stays on his name and beside his picture,
             // which is where it says who is talking.
-            Warm.Panel(PanelX, top, PanelWidth, total, arrive);
+            Theme.Panel(PanelX, top, PanelWidth, total, arrive);
 
             // Same idea as the info panels: the mod first, quietly, then who is speaking.
-            Hud.BrandCentre(0.5f, top + 0.024f, 0.022f, Palette.Alpha(Palette.Gold, (int)(225f * arrive)));
+            Hud.BrandCentre(0.5f, top + 0.024f, 0.022f, Palette.Alpha(Palette.Brand, (int)(225f * arrive)));
 
             var y = top + 0.039f;
 
             if (!string.IsNullOrEmpty(Title))
             {
                 Hud.Text(Title.ToUpperInvariant(), PanelX + 0.014f, y - 0.004f, 0.62f,
-                         Palette.Gold, Hud.FontCursive, centre: false);
+                         Palette.Brand, Hud.FontCursive, centre: false);
                 y += 0.036f;
             }
 
@@ -888,7 +888,7 @@ namespace Hoodrich.UI
             // THE PLATE COMES UP UNDER THE CHOICE rather than sliding to it: the one under the
             // new line rises over a sixth of a second while the one under the old line sinks,
             // and the frame -- see Glide -- travels between them. Same as every other screen.
-            var grown = Warm.Grown(_pickedAt);
+            var grown = Theme.Grown(_pickedAt);
 
             _glide.Begin();
 
@@ -901,16 +901,16 @@ namespace Hoodrich.UI
                 // selected. Those are the same thing when nothing is moving and different for
                 // the sixth of a second the plate is rising -- and getting it wrong is visible:
                 // dark ink on a dark panel until the plate catches up.
-                var under = Warm.Lit(i, _selected, _lastSelected, grown) * arrive;
+                var under = Theme.Lit(i, _selected, _lastSelected, grown) * arrive;
 
-                Warm.Plate(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight, under);
-                Warm.Sheen(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight, under);
+                Theme.Plate(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight, under);
+                Theme.Sheen(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight, under);
 
                 if (picked) _glide.Target(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight);
 
                 var colour = !choice.Enabled
-                    ? Warm.Ink(Palette.TextDisabled, under)
-                    : Warm.Ink(picked ? Palette.Text : Palette.TextDim, under);
+                    ? Theme.Ink(Palette.TextDisabled, under)
+                    : Theme.Ink(picked ? Palette.Text : Palette.TextDim, under);
 
                 // The one the game is waiting on, breathing.
                 //
@@ -931,7 +931,7 @@ namespace Hoodrich.UI
                     var strength = (1f - under) * arrive;
 
                     Hud.RectFrom(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight,
-                                 Palette.Alpha(Palette.Gold,
+                                 Palette.Alpha(Palette.Brand,
                                                (int)((MovesOnFloor + MovesOnSwing * swell)
                                                      * strength)));
 
@@ -939,7 +939,7 @@ namespace Hoodrich.UI
                     // in the corner of a panel this wide. The wash alone is a shade; the edge
                     // is a mark.
                     Hud.RectFrom(PanelX, y - 0.0015f, 0.0026f, ChoiceHeight,
-                                 Palette.Alpha(Palette.Gold,
+                                 Palette.Alpha(Palette.Brand,
                                                (int)((90f + 130f * swell) * strength)));
                 }
 
@@ -1000,7 +1000,7 @@ namespace Hoodrich.UI
                 if (!string.IsNullOrEmpty(note))
                 {
                     Hud.TextRight(note, PanelX + PanelWidth - 0.014f, y, 0.30f,
-                                      Warm.Ink(!choice.Enabled ? Palette.Danger : Palette.TextDim, under),
+                                      Theme.Ink(!choice.Enabled ? Palette.Danger : Palette.TextDim, under),
                                       Hud.FontBody);
                 }
 

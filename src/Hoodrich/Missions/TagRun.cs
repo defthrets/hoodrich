@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Control = GTA.Control;
@@ -792,7 +792,7 @@ namespace Hoodrich.Missions
             //
             // The rounded black every panel is, with your set's colour down the rail. No bar
             // along the top and no corner ticks: the border is gone everywhere.
-            UI.Warm.Card(left, top, SprayCardWidth, SprayCardHeight, Tint(SprayBack, eased), ink,
+            UI.Theme.Card(left, top, SprayCardWidth, SprayCardHeight, Tint(SprayBack, eased), ink,
                          SprayCardRail);
 
             // ---- the can ----
