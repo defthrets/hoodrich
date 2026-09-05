@@ -545,7 +545,7 @@ namespace Hoodrich.Core
                                  "bkr_biker_dlc_int_ware02",
                                  BlipSprite.Weed,
                                  -201.384f, -1707.909f, 32.664f, 313.362f,
-                                 1000.000f, -3200.000f, -38.000f, 180f),
+                                 1062.130f, -3183.587f, -39.164f, 159.785f),
                              1039.000f, -3098.000f, -39.000f,
                              1063.000f, -3195.000f, -39.000f,
                              1093.000f, -3195.000f, -39.000f,
@@ -572,7 +572,14 @@ namespace Hoodrich.Core
                              // AND THE STOCK. These rooms are shells until their stash is
                              // loaded; stage three is the full one. It is what makes the
                              // difference between a warehouse and a grow.
+                             // THE FINAL STAGE. A shell is a shell until its stock and its
+                             // equipment are loaded. Stash three is a full crop; the upgrade
+                             // and production names are the kit that goes with it, and the
+                             // dryers are the racks along the wall. Read out of the interior
+                             // loader on this machine, same as the placements.
                              + "weed_stash1;weed_stash2;weed_stash3;"
+                             + "equipment_upgrade;production_upgrade;security_high;"
+                             + "dryera_on;dryerb_on;dryerc_on;dryerd_on;"
                              + "tr_int_placement_tr_interior_2_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_3_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
@@ -580,12 +587,7 @@ namespace Hoodrich.Core
                              // THE SET'S OWN, AND MOSTLY WOMEN. There is one Families female
                              // model in the game, so two of the three are her -- given random
                              // clothing on the way in, or the room has twins in it.
-                             "g_f_y_families_01", "anim@amb@business@weed@weed_inspecting_high_dry@",
-                             "weed_inspecting_high_idle_01_inspector",
-                             "g_f_y_families_01", "anim@amb@business@weed@weed_inspecting_high_dry@",
-                             "weed_inspecting_high_base_clipboard",
-                             "g_m_y_famdnf_01", "anim@amb@business@weed@weed_inspecting_high_dry@",
-                             "weed_inspecting_high_idle_02_inspector"));
+                             "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"));
 
             // radar_production_crack, 497 -- the razor blade.
             //
@@ -601,7 +603,7 @@ namespace Hoodrich.Core
                                  "tr_tuner_methlab_1",
                                  (BlipSprite)497,
                                  -105.053f, -1408.631f, 29.673f, 226.934f,
-                                 1062.130f, -3183.587f, -39.164f, 159.785f),
+                                 996.959f, -3200.602f, -36.394f, 103.526f),
                              1000.000f, -3200.000f, -38.000f,
                              1009.000f, -3196.000f, -38.000f,
                              1064.000f, -3183.000f, -39.000f),
@@ -613,16 +615,13 @@ namespace Hoodrich.Core
                              + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_;"
                              + "meth_stash1;meth_stash2;meth_stash3;"
+                             + "meth_lab_setup;meth_lab_upgrade;meth_lab_production;"
+                             + "meth_lab_security_high;table_equipment_upgrade;"
                              + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo;"
                              + "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo;"
                              + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
                              + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo"),
-                             "g_f_y_families_01", "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
-                             "base_idle_tank_cooker",
-                             "g_f_y_families_01", "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
-                             "base_idle_tank_clipboard",
-                             "g_m_y_famdnf_01", "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
-                             "base_idle_tank_ammonia"));
+                             "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"));
             s.PlaySounds = ini.GetBool("Phone", "PlaySounds",
                                         ini.GetBool("Wheel", "PlaySounds", s.PlaySounds));
 
@@ -809,11 +808,7 @@ namespace Hoodrich.Core
         /// </summary>
         private static DoorSpec Worked(DoorSpec door, params string[] crew)
         {
-            for (var i = 0; i + 2 < crew.Length; i += 3)
-            {
-                door.Crew.Add(new[] { crew[i], crew[i + 1], crew[i + 2] });
-            }
-
+            door.Crew.AddRange(crew);
             return door;
         }
 

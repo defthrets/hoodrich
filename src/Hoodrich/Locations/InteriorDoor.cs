@@ -57,13 +57,17 @@ namespace Hoodrich.Locations
         public readonly List<Vector3> Elsewhere = new List<Vector3>();
 
         /// <summary>
-        /// Who is working in there. Each entry is a model, an animation dictionary and a clip.
+        /// Who is in there, by model.
         ///
         /// The game does not staff these rooms. Online they are full of people because the
         /// online script puts them there, and a room with a full crop and nobody in it reads
         /// as a place that has been abandoned mid-harvest.
+        ///
+        /// NO JOBS ATTACHED. They had one animation each and it looked like three people
+        /// frozen mid-task, which is what a work animation on a loop is -- the same gesture
+        /// for as long as you watch. What is in there is people, and people move about.
         /// </summary>
-        public readonly List<string[]> Crew = new List<string[]>();
+        public readonly List<string> Crew = new List<string>();
     }
 
     /// <summary>
@@ -158,8 +162,44 @@ namespace Hoodrich.Locations
         private Blip _blip;
         private bool _inside;
 
-        /// <summary>The people working in there while he is. Made on the way in, gone on the way out.</summary>
-        private readonly List<Ped> _staff = new List<Ped>();
+        /// <summary>One of the crew, and when they will next change their mind.</summary>
+        private sealed class Hand
+        {
+            public Ped Who;
+            public int Until;
+            public bool Walking;
+        }
+
+        /// <summary>The people in there while he is. Made on the way in, gone on the way out.</summary>
+        private readonly List<Hand> _staff = new List<Hand>();
+
+        /// <summary>How far they will wander from where they started.</summary>
+        private const float Leash = 7f;
+
+        /// <summary>How long a spell of walking lasts, and how long a spell of standing.</summary>
+        private const int WalkMinMs = 9000;
+        private const int WalkMaxMs = 20000;
+        private const int StandMinMs = 8000;
+        private const int StandMaxMs = 18000;
+
+        /// <summary>
+        /// Standing about: hanging out, on a phone, and two of them talking.
+        ///
+        /// Every pair checked against the game's own animation list. The chat one is the same
+        /// clip the spooner scenes use for a group talking, which is what a back room full of
+        /// people who are not currently carrying anything actually looks like.
+        /// </summary>
+        private static readonly string[][] Standing =
+        {
+            new[] { "anim@heists@narcotics@funding@gang_chat", "gang_chatting_combined" },
+            new[] { "amb@world_human_hang_out_street@female_hold_arm@idle_a", "idle_a" },
+            new[] { "amb@world_human_hang_out_street@female_arms_crossed@idle_a", "idle_a" },
+            new[] { "amb@world_human_stand_mobile@female@text@idle_a", "idle_a" },
+            new[] { "amb@world_human_hang_out_street@male_a@idle_a", "idle_b" },
+            new[] { "amb@world_human_stand_mobile@male@standing@call@idle_a", "idle_a" }
+        };
+
+        private static readonly Random Dice = new Random();
         private bool _busy;
 
         /// <summary>
@@ -256,6 +296,8 @@ namespace Hoodrich.Locations
 
             if (_inside)
             {
+                Mill(Game.GameTime);
+
                 if (WanderedOut(player)) return;
 
                 if (player.Position.DistanceTo(Mark) > ExitRange) return;
@@ -806,11 +848,11 @@ namespace Hoodrich.Locations
             for (var i = 0; i < _spec.Crew.Count; i++)
             {
                 var who = _spec.Crew[i];
-                if (who.Length < 3) continue;
+                if (string.IsNullOrEmpty(who)) continue;
 
                 try
                 {
-                    var model = new Model(who[0]);
+                    var model = new Model(who);
                     if (!model.IsValid || !model.IsInCdImage) continue;
 
                     model.Request(2000);
@@ -839,20 +881,14 @@ namespace Hoodrich.Locations
                     // stood in a row facing a wall.
                     worker.Heading = Toward(spot, at);
 
-                    Function.Call(Hash.REQUEST_ANIM_DICT, who[1]);
+                    var hand = new Hand { Who = worker };
+                    _staff.Add(hand);
 
-                    for (var n = 0; n < 40 && !Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, who[1]); n++)
-                    {
-                        Script.Yield();
-                    }
-
-                    if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, who[1]))
-                    {
-                        Function.Call(Hash.TASK_PLAY_ANIM, worker.Handle, who[1], who[2],
-                                      8f, -8f, -1, 1, 0f, false, false, false);
-                    }
-
-                    _staff.Add(worker);
+                    // Half of them set off, half of them stand. Otherwise three people arrive
+                    // and all three start walking on the same frame, which is a shift change
+                    // rather than a room somebody has been in for an hour.
+                    if (Dice.Next(2) == 0) Walk(hand, at);
+                    else Stand(hand);
                 }
                 catch (Exception ex)
                 {
@@ -863,14 +899,79 @@ namespace Hoodrich.Locations
             if (_staff.Count > 0) Log.Info(_staff.Count + " working in the " + _spec.Name + ".");
         }
 
+        /// <summary>Off round the room, on a leash so nobody wanders into the map.</summary>
+        private static void Walk(Hand hand, Vector3 around)
+        {
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, hand.Who.Handle);
+                Function.Call(Hash.TASK_WANDER_IN_AREA, hand.Who.Handle,
+                              around.X, around.Y, around.Z, Leash, 3f, 8f);
+                Function.Call(Hash.SET_PED_KEEP_TASK, hand.Who.Handle, true);
+            }
+            catch
+            {
+                // He stays where he is, which is the other half of what this does anyway.
+            }
+
+            hand.Walking = true;
+            hand.Until = Game.GameTime + Dice.Next(WalkMinMs, WalkMaxMs);
+        }
+
+        /// <summary>Stopped, doing something with their hands.</summary>
+        private static void Stand(Hand hand)
+        {
+            var pick = Standing[Dice.Next(Standing.Length)];
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, hand.Who.Handle);
+                Function.Call(Hash.REQUEST_ANIM_DICT, pick[0]);
+
+                if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pick[0]))
+                {
+                    Function.Call(Hash.TASK_PLAY_ANIM, hand.Who.Handle, pick[0], pick[1],
+                                  8f, -8f, -1, 1, 0f, false, false, false);
+                }
+            }
+            catch
+            {
+                // Standing there is still standing there.
+            }
+
+            hand.Walking = false;
+            hand.Until = Game.GameTime + Dice.Next(StandMinMs, StandMaxMs);
+        }
+
+        /// <summary>
+        /// Each of them changes their mind now and then, on their own clock.
+        ///
+        /// Separate timers on purpose. One timer for all three is three people who stop and
+        /// start together, which is choreography -- and choreography is the thing that says
+        /// these are not people.
+        /// </summary>
+        private void Mill(int now)
+        {
+            for (var i = _staff.Count - 1; i >= 0; i--)
+            {
+                var hand = _staff[i];
+
+                if (hand.Who == null || !hand.Who.Exists()) { _staff.RemoveAt(i); continue; }
+                if (now < hand.Until) continue;
+
+                if (hand.Walking) Stand(hand);
+                else Walk(hand, hand.Who.Position);
+            }
+        }
+
         /// <summary>Everybody out. Called on every way out of the room, including the failures.</summary>
         private void Sack()
         {
-            foreach (var worker in _staff)
+            foreach (var hand in _staff)
             {
                 try
                 {
-                    if (worker != null && worker.Exists()) worker.Delete();
+                    if (hand.Who != null && hand.Who.Exists()) hand.Who.Delete();
                 }
                 catch
                 {
