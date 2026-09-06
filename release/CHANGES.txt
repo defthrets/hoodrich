@@ -250,6 +250,39 @@ something and turns to another, and that one answers him a couple of seconds
 later, loud enough to hear from the end of the road. The phones and bottles on
 the corners moved to that hand with them.
 
+THE CROWD BUYS FROM YOU. Post up and serve at a takeover or at a party and the
+people already there are customers like anybody else -- they always passed the
+corner's own test, and then the thing holding them to their spot walked them
+straight back before they could reach you, every time. Whoever is mid-deal is
+left alone, and when it is done the same pass that was dragging him back walks
+him to his mark and starts him on what he was doing.
+
+THE SHOW HAPPENS ON THE MARKS. A performer was called arrived eight metres from
+its walked mark and leashed at eleven, which is a car going round near the
+junction rather than on the place walked for it. Five and eight now, and it
+gets forty seconds to drive there instead of twenty-five. Nothing is placed:
+it drives the whole way and is left where it stops, as before.
+
+SPECTATORS PARK ON A WALKED KERB OR THEY GO HOME. The parking task was allowed
+to run out and whatever it had managed became the space -- a lane, a junction,
+the wrong side of the road -- and the log said so every time and left it there.
+A car that finishes somewhere else is offered another free kerb and leaves if
+there is not one. Nothing is moved to make it work.
+
+NOTHING AT A TAKEOVER WEARS A LIVERY. It was being taken off before the
+bodywork went on, and on the models that keep a livery in a mod slot rather
+than the old one, fitting a body part hands it back. It comes off last now.
+
+THE POLICE RADIO IS QUIETER. The call that goes out when an officer decides to
+come and look at you was playing at the volume of a man stood in front of you
+talking, and it is a walkie-talkie in somebody else's hand thirty metres away.
+Four tenths of the voice volume now, under [Voice] in Hoodrich.ini and on the
+settings screen.
+
+A BUTTON PER JUNCTION on the settings screen, in place of the one that only
+ever meant Carson. Each starts a takeover where it says and says so, and the
+one you start by hand stays where you started it.
+
 THE TAKEOVER CAN HAPPEN AT MORE THAN ONE JUNCTION. Every mark it used -- the
 middle, the circle, the corners, the stages, the kerbs -- was a constant, which
 was right while there was one crossroads and is the whole file the moment there

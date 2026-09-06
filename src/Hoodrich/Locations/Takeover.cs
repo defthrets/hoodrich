@@ -139,17 +139,26 @@ namespace Hoodrich.Locations
         /// </summary>
         private Spot[] Stages => _here.Stages;
 
-        /// <summary>How close counts as being on a marker.</summary>
-        private const float StageArrived = 8f;
+        /// <summary>
+        /// How close counts as being on a marker.
+        ///
+        /// FIVE, DOWN FROM EIGHT. Eight metres is most of a car length either side of a
+        /// walked mark, and with two of them spinning that is a show happening near the
+        /// junction rather than on the places that were walked for it. Nothing is placed to
+        /// achieve it -- the car still drives the whole way under its own power and is left
+        /// where it stops -- it is simply not called arrived until it is actually there.
+        /// </summary>
+        private const float StageArrived = 5f;
 
         /// <summary>
         /// How far a performer may travel off its place before it is sent back.
         ///
-        /// Wider than StageArrived, and it has to be: the same car is judged to have ARRIVED
-        /// inside eight metres, so a leash any tighter than that would send a car back to a
-        /// marker it is already considered to be at, for ever.
+        /// Wider than StageArrived, and it has to be: a car judged to have arrived inside
+        /// five metres and leashed at anything under that would be sent back to a marker it
+        /// is already considered to be at, for ever. Eight leaves three metres of drift,
+        /// which is a donut wandering rather than a donut moving house.
         /// </summary>
-        private const float StageLeash = 11f;
+        private const float StageLeash = 8f;
 
         /// <summary>
         /// How long a performer tries to reach its marker before waiting where it is.
@@ -158,7 +167,7 @@ namespace Hoodrich.Locations
         /// properly, short enough that one which cannot is available for its turn rather than
         /// grinding at a kerb for the whole night while the middle stands empty.
         /// </summary>
-        private const int StageGiveUpMs = 25000;
+        private const int StageGiveUpMs = 40000;
 
         private Spot[] Spots => _here.Spots;
 
@@ -1522,6 +1531,12 @@ namespace Hoodrich.Locations
                 // Somebody getting out of a car's way, on a driver, or in the middle, is left to it.
                 if (w.Dodge > now || w.Angry > now || w.Rush != 0 || w.Wreck != 0) continue;
 
+                // AND SO IS SOMEBODY BUYING SOMETHING OFF YOU. He walked out of the ring on
+                // purpose; dragging him back to his spot mid-deal is what stopped anybody at a
+                // takeover ever getting to you. He rejoins on the next pass after the deal,
+                // which is this same code doing what it always does. See Dealing.Serving.
+                if (Dealing.Serving.Is(w.Man)) continue;
+
                 if (!w.There)
                 {
                     if (w.Man.Position.DistanceTo(w.Slot) > ArrivedRange) continue;
@@ -2882,6 +2897,30 @@ namespace Hoodrich.Locations
 
             if (!(still && gap <= ParkedWithin) && now - p.ParkedAt < ParkTaskMs) return;
 
+            // ON A WALKED SPOT OR NOT AT ALL.
+            //
+            // The parking task was allowed to run out and whatever it had managed became the
+            // space. That is a car parked in a traffic lane, across a junction, or on the
+            // wrong side of the road -- and the line below said so, every time, and then left
+            // it there anyway. A log line describing a thing you have decided to accept is
+            // not a diagnostic, it is an apology.
+            //
+            // The walked spots are the only places a spectator may stand. A car that finished
+            // its manoeuvre somewhere else is offered another free kerb, exactly as the
+            // give-up path does; if there is not one it goes home rather than becoming
+            // permanent scenery in a lane. Nothing is moved to make this work.
+            if (gap > ParkedWithin)
+            {
+                if (Respot(p, now)) return;
+
+                Loose(p.Car, p.Driver);
+                p.Gone = true;
+
+                Log.Info("Takeover: a car finished parking " + gap.ToString("0") +
+                         " m off its spot with no free kerb to move to, and left.");
+                return;
+            }
+
             p.There = true;
 
             try
@@ -2898,11 +2937,6 @@ namespace Hoodrich.Locations
 
             p.OutAt = now + SitAMomentMs;
             Blast(p);
-
-            if (gap > ParkedWithin)
-            {
-                Log.Info("Takeover: a car parked " + gap.ToString("0") + " m off its spot and was left there.");
-            }
         }
 
         private const float ParkFromRange = 16f;
@@ -7137,16 +7171,9 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, h, Wheels[_rng.Next(Wheels.Length)]);
                 Fit(h, 23, true);
 
-                // NO SPOILER AND NO LIVERY. Both were in here and both are the wrong kind of
-                // decoration for this: a livery is a paint scheme somebody ordered from a
-                // catalogue, and a big wing is a track car. These are street cars that get
-                // thrown sideways at a junction on a Tuesday -- the money goes into the paint,
-                // the rims and the noise, not into looking like a race entry.
-                //
-                // Taken OFF rather than simply not put on, because a few models ship with one
-                // fitted by default and skipping the call would leave those wearing it.
-                Function.Call(Hash.SET_VEHICLE_LIVERY, h, -1);
-                Function.Call(Hash.SET_VEHICLE_MOD, h, 48, -1, false);
+                // NO SPOILER. A big wing is a track car; these are street cars thrown
+                // sideways at a junction on a Tuesday. Taken off rather than not put on,
+                // because a few models ship with one fitted by default.
                 Function.Call(Hash.SET_VEHICLE_MOD, h, 0, -1, false);
 
                 // And the rest of the bodywork, from what this model owns.
@@ -7203,6 +7230,19 @@ namespace Hoodrich.Locations
                 }
 
                 Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h, Plates[_rng.Next(Plates.Length)]);
+
+                // AND NO LIVERY, LAST OF ALL.
+                //
+                // A livery is a paint scheme somebody ordered from a catalogue, which is not
+                // what any of these are. It was being cleared before the bodywork went on,
+                // and on the models that carry a livery in a mod slot rather than the old
+                // livery slot, fitting a body part re-reads the kit and can hand one back --
+                // so the cars this was written for were the ones still wearing them.
+                //
+                // Both spellings, because the older models keep liveries in their own slot and
+                // the newer ones keep them as mod 48, and a car has one or the other.
+                Function.Call(Hash.SET_VEHICLE_LIVERY, h, -1);
+                Function.Call(Hash.SET_VEHICLE_MOD, h, 48, -1, false);
             }
             catch (Exception ex)
             {

@@ -4,6 +4,7 @@ using GTA;
 using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
+using Hoodrich.Dealing;
 using Hoodrich.Locations;
 using Hoodrich.Social;
 
@@ -1454,6 +1455,12 @@ namespace Hoodrich.Gangs
                 }
 
                 if (i >= _marks.Count) continue;
+
+                // OFF BUYING SOMETHING. Left alone until the deal is done, then picked up by
+                // this same pass and walked back to his mark and his scenario. See
+                // Dealing.Serving -- without it a party is a room full of people who set off
+                // towards you and get turned round before they arrive.
+                if (Dealing.Serving.Is(ped)) continue;
 
                 var mark = MarkAt(i);
                 var away = ped.Position.DistanceTo(mark);

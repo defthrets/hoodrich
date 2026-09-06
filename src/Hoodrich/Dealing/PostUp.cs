@@ -503,6 +503,10 @@ namespace Hoodrich.Dealing
             ReleaseRivals();
 
             // Left on the ground rather than binned. This is the whole mechanic.
+            // Nobody is mid-deal once the corner is shut. A handle left behind is somebody
+            // his own system has stopped looking after, and handles get reused.
+            Serving.Clear();
+
             _ground.Remember(_anchor, _cornerHeat);
 
             State = PostState.Idle;
@@ -804,6 +808,11 @@ namespace Hoodrich.Dealing
 
             _customer = pick;
             _served[pick.Handle] = Game.GameTime;
+
+            // AND EVERYBODY ELSE LETS GO OF HIM. He may be one of the ring at a takeover or
+            // one of the people at a party, and both of those are held to a mark by a pass
+            // that would otherwise walk him back the moment he set off. See Serving.
+            Serving.Start(pick);
             State = PostState.Approaching;
             _approachStartedAt = Game.GameTime;
 
@@ -2769,6 +2778,10 @@ namespace Hoodrich.Dealing
 
         private void ReleaseCustomer()
         {
+            // First, whatever owns him has him back -- and its own settle pass is what walks
+            // him to his mark and starts him on what he was doing before you called him over.
+            Serving.Done(_customer);
+
             if (_customer != null && _customer.Exists())
             {
                 try
