@@ -73,15 +73,11 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>
-        /// Something in his hand, held the way a hand holds it.
-        ///
-        /// PH_R_Hand at zero offset. Every fiddled-in offset in this codebase has turned out to
-        /// be somebody having used the wrong bone, so the fix is the bone and never the offset.
-        ///
-        /// THIS COMMENT WAS TRUE AND THE CODE WAS NOT. It said PH_R_Hand and the constant below
-        /// it said 28422, which is IK_R_Hand -- so every bottle in the mod hung off the wrist,
-        /// unrotated, while the file explained at length that it did not. Worth remembering the
-        /// next time a comment is used as evidence that something works.
+        /// Something in his hand, held the way a hand holds it: on the hand's prop bone, at
+        /// zero offset. Every fiddled-in offset in this codebase has turned out to be somebody
+        /// having used the wrong bone, so the fix is the bone and never the offset -- and the
+        /// bone has been got wrong in this file in both directions by reading bone tables, so
+        /// the constants below say what was actually seen.
         /// </summary>
         public static Prop Hand(Ped who, string propName, bool left = false)
         {
@@ -233,22 +229,25 @@ namespace Hoodrich.Gangs
         };
 
         /// <summary>
-        /// The bone a held prop hangs off.
+        /// The bone a held prop hangs off: PH_R_Hand, 28422, the right hand's prop-holder.
         ///
-        /// PH_R_Hand, not IK_R_Hand. This was 28422 -- the IK_R_Hand bone -- which is the
-        /// TARGET the animation system aims the hand at, not the hand's grip. A bottle
-        /// attached there with no offset sits at the wrist, unrotated, pointing along the
-        /// world axes rather than along the fist, which is why they were carrying beer at an
-        /// angle nobody has ever held a beer at.
-        ///
-        /// 60309 is PH_R_Hand -- the prop-holder bone, which exists for exactly this and is
-        /// already positioned and rotated in the grip. Attached to it at zero offset the
-        /// bottle sits where the game's own scenarios put one, with no magic numbers to tune
-        /// per prop.
+        /// It is the bone the game's own scenario props -- the beer, the cigarette, the phone
+        /// -- are authored to sit on at zero offset, and the hand the drinking, smoking and
+        /// texting clips use. It was 60309 for a while on the strength of a bone table, and
+        /// 60309 is PH_L_Hand, the same bone on the OTHER hand: a beer put there was in the
+        /// left hand of a man whose clip drinks with his right, mirrored, which is why the
+        /// walkers were carrying theirs at an angle nobody has ever held a beer at. A can put
+        /// there for the tagger came out in the wrong hand too, which is how this was found.
         /// </summary>
-        private const int RightHand = 60309;
+        private const int RightHand = 28422;
 
-        /// <summary>PH_L_Hand, the left hand's prop-holder bone, for a thing an animation holds on that side.</summary>
+        /// <summary>
+        /// What a caller asking for the left hand gets: 58868, the root of the right hand's
+        /// middle finger. The tagger's can was moved here to get it into the hand his clip
+        /// sprays with, it looked right on screen, and a thing that looks right on screen is
+        /// not moved to satisfy a table. PH_L_Hand itself is 60309, for a clip that really
+        /// does hold something on that side.
+        /// </summary>
         private const int LeftHand = 58868;
     }
 }

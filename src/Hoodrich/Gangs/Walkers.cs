@@ -13,6 +13,12 @@ namespace Hoodrich.Gangs
     {
         public Ped Man;
         public Prop Holding;
+
+        /// <summary>True when what he is holding is a cigarette rather than a beer.</summary>
+        public bool Smoking;
+
+        public bool HasBeer => Holding != null && Holding.Exists() && !Smoking;
+        public bool HasSmoke => Holding != null && Holding.Exists() && Smoking;
     }
 
     /// <summary>Three or four of them, going the same way.</summary>
@@ -30,8 +36,15 @@ namespace Hoodrich.Gangs
         public int Nudges;
         public int BornAt;
 
-        /// <summary>When one of them next says something.</summary>
+        /// <summary>When one of them next says something, and who answers him, with what, when.</summary>
         public int NextWord;
+        public Ped Replier;
+        public string Reply;
+        public int ReplyAt;
+
+        /// <summary>A stop on the way: until when, and when the next one may be.</summary>
+        public int PausedUntil;
+        public int NextPause;
     }
 
     /// <summary>
@@ -91,25 +104,52 @@ namespace Hoodrich.Gangs
         private const float Pace = 1.0f;
 
         /// <summary>
-        /// How often one of them says something, and how loud.
+        /// How often one of them says something, how loud, and who answers.
         ///
         /// FORCE_SHOUTED because the whole point is that you hear them before you see them.
         /// The lines are the game's own ambient speech, so they come out in the voice the model
         /// already has -- a line a given voice has not got simply does not play, which is the
         /// right failure and needs no list of who can say what.
+        ///
+        /// THEY TALK TO EACH OTHER RATHER THAN AT THE STREET. One line every so often from one
+        /// man was four men shouting at nothing. A line is a pair now: one of them says the
+        /// first half and turns to another, and a couple of seconds later that one answers with
+        /// the second -- statement and response, an insult and what you say back to one, how's
+        /// it going and the answer. The pairs are the game's own conversation contexts, which
+        /// is what its own peds use when two of them stop to talk.
         /// </summary>
-        private const int WordMinMs = 7000;
-        private const int WordMaxMs = 22000;
+        private const int WordMinMs = 5000;
+        private const int WordMaxMs = 14000;
+        private const int ReplyMinMs = 1500;
+        private const int ReplyMaxMs = 2600;
 
-        private static readonly string[] Words =
+        private static readonly string[][] Exchanges =
         {
-            "GENERIC_HI", "GENERIC_HOWS_IT_GOING", "CHAT_STATE", "GENERIC_INSULT_HIGH",
-            "GENERIC_CURSE_MED", "LAUGH", "GENERIC_WHATEVER", "SHOUT"
+            new[] { "CHAT_STATE", "CHAT_RESP" },
+            new[] { "CHAT_STATE", "CHAT_RESP" },
+            new[] { "CHAT_STATE", "GENERIC_WHATEVER" },
+            new[] { "GENERIC_HOWS_IT_GOING", "CHAT_RESP" },
+            new[] { "GENERIC_INSULT_HIGH", "GENERIC_FUCK_YOU" },
+            new[] { "GENERIC_INSULT_MED", "GENERIC_WHATEVER" },
+            new[] { "GENERIC_CURSE_HIGH", "GENERIC_SHOCKED_MED" },
+            new[] { "GENERIC_CURSE_MED", "CHAT_RESP" }
         };
 
-        /// <summary>What one of them might be holding. Most of them hold nothing.</summary>
-        private static readonly string[] Bottles =
-            { "prop_beer_bottle", "prop_beer_am", "prop_cs_beer_bot_40oz" };
+        /// <summary>
+        /// What one of them might be holding. Some of them hold nothing.
+        ///
+        /// THE GAME'S OWN BEER AND THE GAME'S OWN CIGARETTE, because they are the props its
+        /// drinking and smoking scenarios put in a hand, so their origins are the grip: on the
+        /// right hand's prop bone at zero offset they sit where the clips expect them, and the
+        /// drinking and smoking clips below were made around exactly these. The other bottles
+        /// were pretty and were not made for a hand, which is why they sat in one at an angle.
+        /// </summary>
+        private const string Bottle = "prop_amb_beer_bottle";
+        private const string Cigarette = "prop_amb_ciggy_01";
+
+        /// <summary>Out of a hundred: the ones with a beer, and then the ones with a smoke.</summary>
+        private const int BeerPct = 40;
+        private const int SmokePct = 30;
 
         /// <summary>
         /// Standing about, once they have stopped somewhere -- for the ones with empty hands.
@@ -127,6 +167,12 @@ namespace Hoodrich.Gangs
             "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_STAND_IMPATIENT"
         };
 
+        /// <summary>For a man with something in his hand whose clips will not load: nothing that brings a prop.</summary>
+        private static readonly string[] Idle =
+        {
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_STAND_IMPATIENT"
+        };
+
         /// <summary>
         /// And the ones with a bottle actually drink out of it.
         ///
@@ -142,6 +188,37 @@ namespace Hoodrich.Gangs
             new[] { "amb@world_human_drinking@beer@male@idle_a", "idle_c" },
             new[] { "amb@world_human_drinking@beer@male@base", "base" }
         };
+
+        /// <summary>
+        /// And the ones with a cigarette smoke it, for the same reason: the smoking scenario
+        /// brings its own, and a man with one of ours in his hand would light a second.
+        /// </summary>
+        private static readonly string[][] Smokes =
+        {
+            new[] { "amb@world_human_smoking@male@male_a@idle_a", "idle_a" },
+            new[] { "amb@world_human_smoking@male@male_a@idle_a", "idle_b" },
+            new[] { "amb@world_human_smoking@male@male_a@idle_a", "idle_c" },
+            new[] { "amb@world_human_smoking@male@male_b@idle_a", "idle_a" },
+            new[] { "amb@world_human_smoking@male@male_b@idle_a", "idle_b" },
+            new[] { "amb@world_human_smoking@male@male_b@idle_a", "idle_c" },
+            new[] { "amb@world_human_smoking@male@male_a@base", "base" }
+        };
+
+        /// <summary>
+        /// A stop on the way, for a drink or a drag.
+        ///
+        /// THEY WALKED THE WHOLE WAY WITH THE BEER AND ONLY DRANK IT WHEN THEY GOT THERE. A
+        /// crew going somewhere stops for a moment now and again: the ones with a beer take a
+        /// drink, the ones with a cigarette take a drag, the rest stand about with them,
+        /// somebody says something, and they set off again the way they were going. Not in the
+        /// first few seconds after being pointed somewhere, so a stop is a stop and not a
+        /// stutter.
+        /// </summary>
+        private const int PauseMinMs = 6500;
+        private const int PauseMaxMs = 11000;
+        private const int PauseGapMinMs = 20000;
+        private const int PauseGapMaxMs = 50000;
+        private const int PauseNotBeforeMs = 5000;
 
         /// <summary>The walk of a man four beers in.</summary>
         private const string DrunkWalk = "move_m@drunk@moderatedrunk";
@@ -233,12 +310,28 @@ namespace Hoodrich.Gangs
 
             Talk(crew, now);
 
+            if (crew.PausedUntil != 0)
+            {
+                if (now < crew.PausedUntil) return false;
+
+                crew.PausedUntil = 0;
+                Resume(crew, now);
+                return false;
+            }
+
             var here = crew.Lead.Position;
 
             if (crew.Target != Vector3.Zero && here.DistanceTo(crew.Target) < ArrivedRange)
             {
                 crew.Nudges = 0;
                 Aim(crew, now);
+                return false;
+            }
+
+            if (crew.Target != Vector3.Zero && crew.NextPause != 0 && now >= crew.NextPause &&
+                now - crew.LookedAt >= PauseNotBeforeMs)
+            {
+                Pause(crew, now);
                 return false;
             }
 
@@ -265,11 +358,34 @@ namespace Hoodrich.Gangs
         /// <returns>False if none of the clips would load, so the caller can fall back.</returns>
         private bool Sip(Ped man)
         {
-            var pick = _rng.Next(Drinks.Length);
+            return Play(man, Drinks);
+        }
 
-            for (var i = 0; i < Drinks.Length; i++)
+        /// <summary>And a smoking idle on the man with the cigarette, keeping it.</summary>
+        private bool Puff(Ped man)
+        {
+            return Play(man, Smokes);
+        }
+
+        /// <summary>What he does with his hands, by what is in them; the rest stand about.</summary>
+        private void Occupy(Walker w)
+        {
+            if (w.HasBeer && Sip(w.Man)) return;
+            if (w.HasSmoke && Puff(w.Man)) return;
+
+            var list = w.Holding != null && w.Holding.Exists() ? Idle : Standing;
+
+            Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
+                          list[_rng.Next(list.Length)], 0, true);
+        }
+
+        private bool Play(Ped man, string[][] clips)
+        {
+            var pick = _rng.Next(clips.Length);
+
+            for (var i = 0; i < clips.Length; i++)
             {
-                var pair = Drinks[(pick + i) % Drinks.Length];
+                var pair = clips[(pick + i) % clips.Length];
 
                 try
                 {
@@ -505,12 +621,9 @@ namespace Hoodrich.Gangs
                     {
                         Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
 
-                        // A man with a drink drinks it. Everybody else stands about.
-                        if (w.Holding == null || !w.Holding.Exists() || !Sip(w.Man))
-                        {
-                            Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
-                                          Standing[_rng.Next(Standing.Length)], 0, true);
-                        }
+                        // A man with a drink drinks it, a man with a smoke smokes it.
+                        // Everybody else stands about.
+                        Occupy(w);
                     }
                     catch
                     {
@@ -591,9 +704,77 @@ namespace Hoodrich.Gangs
             }
         }
 
-        /// <summary>One of them says something, loudly, now and again.</summary>
+        /// <summary>
+        /// They stop where they are for a moment: a drink, a drag, a word, and on.
+        /// </summary>
+        private void Pause(Crew crew, int now)
+        {
+            foreach (var w in crew.Men)
+            {
+                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                    Occupy(w);
+                }
+                catch
+                {
+                    // He stands there either way.
+                }
+            }
+
+            crew.PausedUntil = now + _rng.Next(PauseMinMs, PauseMaxMs);
+
+            // Somebody says something while they are stood there, sooner than he would have.
+            if (crew.NextWord > now + 2500) crew.NextWord = now + 1200 + _rng.Next(1300);
+        }
+
+        /// <summary>And carry on the way they were going.</summary>
+        private void Resume(Crew crew, int now)
+        {
+            crew.NextPause = now + _rng.Next(PauseGapMinMs, PauseGapMaxMs);
+
+            // The stop does not count as being stuck.
+            crew.LookedAt = now;
+            crew.WasAt = crew.Lead.Position;
+
+            if (crew.Target == Vector3.Zero)
+            {
+                Aim(crew, now);
+                return;
+            }
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, crew.Lead.Handle);
+
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, crew.Lead.Handle,
+                              crew.Target.X, crew.Target.Y, crew.Target.Z, Pace, -1, 2f, true, 0f);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, crew.Lead.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not get a crew going again: " + ex.Message);
+            }
+
+            Gather(crew);
+        }
+
+        /// <summary>One of them says something to another, loudly, and gets an answer.</summary>
         private void Talk(Crew crew, int now)
         {
+            if (crew.ReplyAt != 0 && now >= crew.ReplyAt)
+            {
+                crew.ReplyAt = 0;
+
+                var him = crew.Replier;
+                crew.Replier = null;
+
+                if (him != null && him.Exists() && him.IsAlive) Say(him, crew.Reply);
+            }
+
             if (now < crew.NextWord) return;
 
             crew.NextWord = now + _rng.Next(WordMinMs, WordMaxMs);
@@ -607,12 +788,32 @@ namespace Hoodrich.Gangs
 
             if (live.Count == 0) return;
 
+            var pair = Exchanges[_rng.Next(Exchanges.Length)];
             var who = live[_rng.Next(live.Count)];
 
+            Say(who, pair[0]);
+
+            if (live.Count < 2) return;
+
+            // Somebody else answers him in a couple of seconds, and the two of them look at
+            // each other while they are at it, which is most of what talking looks like.
+            Ped other;
+            do { other = live[_rng.Next(live.Count)]; } while (other.Handle == who.Handle);
+
+            GangPeds.Notice(who, other, 3500);
+            GangPeds.Notice(other, who, 4000);
+
+            crew.Replier = other;
+            crew.Reply = pair[1];
+            crew.ReplyAt = now + _rng.Next(ReplyMinMs, ReplyMaxMs);
+        }
+
+        private static void Say(Ped who, string line)
+        {
             try
             {
-                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, who.Handle,
-                              Words[_rng.Next(Words.Length)], "SPEECH_PARAMS_FORCE_SHOUTED");
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, who.Handle, line,
+                              "SPEECH_PARAMS_FORCE_SHOUTED");
             }
             catch
             {
@@ -630,7 +831,12 @@ namespace Hoodrich.Gangs
             var at = Somewhere(player);
             if (at == Vector3.Zero) return;
 
-            var crew = new Crew { BornAt = Game.GameTime, NextWord = Game.GameTime + 3000 };
+            var crew = new Crew
+            {
+                BornAt = Game.GameTime,
+                NextWord = Game.GameTime + 3000,
+                NextPause = Game.GameTime + _rng.Next(PauseGapMinMs, PauseGapMaxMs)
+            };
 
             var want = _rng.Next(CrewMin, CrewMax + 1);
 
@@ -647,11 +853,18 @@ namespace Hoodrich.Gangs
 
                 var w = new Walker { Man = man };
 
-                // Most of them hold nothing. A group where everybody has a bottle is a group
+                // Some of them hold nothing. A group where everybody has a bottle is a group
                 // at a party, and this is four men on a pavement.
-                if (_rng.Next(100) < 45)
+                var roll = _rng.Next(100);
+
+                if (roll >= BeerPct && roll < BeerPct + SmokePct)
                 {
-                    w.Holding = GangPeds.Hand(man, Bottles[_rng.Next(Bottles.Length)]);
+                    w.Holding = GangPeds.Hand(man, Cigarette);
+                    w.Smoking = w.Holding != null;
+                }
+                else if (roll < BeerPct)
+                {
+                    w.Holding = GangPeds.Hand(man, Bottle);
 
                     // AND HE WALKS LIKE HE HAS HAD A FEW. The bottle was doing all the work of
                     // saying he had been drinking, which is a prop rather than a performance --
