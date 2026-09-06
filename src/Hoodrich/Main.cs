@@ -1291,12 +1291,14 @@ namespace Hoodrich
                     .Stand(new Vector3(-34.941f, -1387.629f, 30.292f), 295.955f,
                            "WORLD_HUMAN_SMOKING_POT", Fam(1), armed: false)
                     // ON THE LEDGE, not the stairs. The walked spot, facing as walked, PINNED
-                    // at the top of the wall less the height the seated clip sits a man above
-                    // his mark: the wall's top is a metre under the walked readout, and the
-                    // clip's seat is about forty-five centimetres over the mark. Every plain
-                    // mark is snapped to the ground, so lowering this one did nothing until
-                    // it was pinned.
-                    .Stand(new Vector3(-34.521f, -1385.362f, 28.840f), 346.825f,
+                    // so it keeps the height it is given -- every plain mark is snapped to the
+                    // ground, which is why lowering this one did nothing until it was pinned.
+                    //
+                    // The height is the LEDGE TOP less what the seated clip lifts a man above
+                    // his mark. The ledge reads 30.292 stood on, the clip sits him about
+                    // forty-five centimetres up, and the first pinned guess went a metre too
+                    // far and buried him in the concrete.
+                    .Stand(new Vector3(-34.521f, -1385.362f, 29.840f), 346.825f,
                            "WORLD_HUMAN_STAND_IMPATIENT", Fam(2), armed: false,
                            anim: SeatedBeer, held: "prop_amb_beer_bottle", pinned: true)
 
