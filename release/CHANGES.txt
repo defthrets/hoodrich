@@ -212,6 +212,25 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
+THE GUARDS CARRY A MIX. Every man stood on guard round the map -- the yards,
+the corners, the ones out of the spooner -- carried the same compact rifle. He
+carries one of six now: a compact rifle, a machine pistol, a Carbine Mk II, an
+SMG, a pistol or an assault rifle, decided by where he stands, so the same man
+on the same corner has the same gun every session and the block is a mix.
+
+THE WAR PANEL STOPS FLASHING. Two things. Its gate was a circle with no give,
+so stood on the line of it -- the pavement, where you tend to be -- a step
+either way took the panel off and put it back on, entrance and all, several
+times a minute; it stays up now until you are well outside and have been for a
+moment. And the flare that marked a carload arriving watched a count that
+drops once per man, so two carloads landing together restarted it eight times
+in a second. The flare is gone; the bar being pushed back is the signal.
+
+THE FEED CALMS DOWN DURING A WAR. Two cards at once rather than three, each
+living nine seconds rather than six and a half, and the war called every ten
+to twenty seconds rather than every six -- a column you can read rather than
+one that never stops moving.
+
 THE SETTINGS FILE IS CLEANED UP. The stash-raid keys sat under [Supply] in the
 file, were written under [Risk] by the settings screen, and were read from
 [Hideouts] by the code -- so the file's values were dead and a toggle in the

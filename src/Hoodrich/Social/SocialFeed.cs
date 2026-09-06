@@ -746,8 +746,8 @@ namespace Hoodrich.Social
         private const int WarLapseMs = 3000;
 
         /// <summary>Faster than the argument afterwards. This is people reacting, not debating.</summary>
-        private const int WarGapMinMs = 6500;
-        private const int WarGapMaxMs = 15000;
+        private const int WarGapMinMs = 10000;
+        private const int WarGapMaxMs = 20000;
 
         /// <summary>
         /// The player's own account, built once from what the feed already knows about him.
