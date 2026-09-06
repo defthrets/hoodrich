@@ -1295,12 +1295,15 @@ namespace Hoodrich
                            "WORLD_HUMAN_LEANING", Fam(0), armed: false)
                     .Stand(new Vector3(-34.941f, -1387.629f, 30.292f), 295.955f,
                            "WORLD_HUMAN_SMOKING_POT", Fam(1), armed: false)
-                    // ON THE LEDGE, not the stairs: the walked spot, a metre and thirty down,
-                    // because the seated clip stands its man up from his mark before it sits
-                    // him, and thirty alone left him in the air.
-                    .Stand(new Vector3(-34.521f, -1385.362f, 28.992f), 346.825f,
+                    // ON THE LEDGE, not the stairs. The walked spot, facing as walked, PINNED
+                    // at the top of the wall less the height the seated clip sits a man above
+                    // his mark: the wall's top is a metre under the walked readout, and the
+                    // clip's seat is about forty-five centimetres over the mark. Every plain
+                    // mark is snapped to the ground, so lowering this one did nothing until
+                    // it was pinned.
+                    .Stand(new Vector3(-34.521f, -1385.362f, 28.840f), 346.825f,
                            "WORLD_HUMAN_STAND_IMPATIENT", Fam(2), armed: false,
-                           anim: SeatedBeer, held: "prop_amb_beer_bottle")
+                           anim: SeatedBeer, held: "prop_amb_beer_bottle", pinned: true)
 
                     // AND ONE TAGGING THE WALL round the corner, on the game's own spraying
                     // loop. The can -- the player's own, no lid -- is in his LEFT hand, which

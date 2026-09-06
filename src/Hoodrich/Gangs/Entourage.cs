@@ -376,9 +376,10 @@ namespace Hoodrich.Gangs
                                string[] anim = null, string weapon = null, bool nights = false,
                                float wander = 0f, bool party = false, bool sit = false,
                                bool onSpot = false, string held = null, bool leftHand = false,
-                               bool spray = false, bool seatNear = false)
+                               bool spray = false, bool seatNear = false, bool pinned = false)
         {
             _sits.Add(sit);
+            _pinned.Add(pinned);
             _onSpot.Add(onSpot);
             _seatNear.Add(seatNear);
             _holding.Add(held);
@@ -486,7 +487,7 @@ namespace Hoodrich.Gangs
         {
             if (index >= _marks.Count) return _spot;
 
-            return index < _onProp.Count && _onProp[index]
+            return (index < _onProp.Count && _onProp[index]) || Pinned(index)
                        ? _marks[index]
                        : Ground(_marks[index]);
         }
@@ -1051,6 +1052,9 @@ namespace Hoodrich.Gangs
                 {
                     ped.Heading = facing;
 
+                    // Exactly where he was put, held there, before the clip starts on him.
+                    if (Pinned(index)) Pin(ped, at, facing);
+
                     var from = index >= 0 && index < _animPick.Count ? _animPick[index] : 0;
                     var picked = PlayAnim(ped, anim, from);
 
@@ -1156,6 +1160,26 @@ namespace Hoodrich.Gangs
             return index < _sits.Count && _sits[index];
         }
 
+        /// <summary>Whether station i keeps its exact height and is frozen on it.</summary>
+        private bool Pinned(int index)
+        {
+            return index < _pinned.Count && _pinned[index];
+        }
+
+        /// <summary>Puts him exactly on the mark and holds him there.</summary>
+        private static void Pin(Ped ped, Vector3 at, float facing)
+        {
+            Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, ped.Handle, at.X, at.Y, at.Z, false, false, false);
+            Function.Call(Hash.SET_ENTITY_HEADING, ped.Handle, facing);
+            Function.Call(Hash.FREEZE_ENTITY_POSITION, ped.Handle, true);
+        }
+
+        private static void Unpin(Ped ped)
+        {
+            try { Function.Call(Hash.FREEZE_ENTITY_POSITION, ped.Handle, false); }
+            catch { /* he was never held */ }
+        }
+
         private bool OnSpot(int index)
         {
             return index < _onSpot.Count && _onSpot[index];
@@ -1181,6 +1205,19 @@ namespace Hoodrich.Gangs
 
         /// <summary>Which stations would take a seat if one were going.</summary>
         private readonly List<bool> _sits = new List<bool>();
+
+        /// <summary>
+        /// Stations that keep EXACTLY the height they were given and are frozen there.
+        ///
+        /// EVERY MARK IS SNAPPED TO THE GROUND, which is right for a man standing on it and
+        /// wrong for a man sat on a wall: the seated clip sits him about half a metre above
+        /// his mark, so a mark on top of the wall is a man sat on an invisible chair on top
+        /// of the wall, and a mark half a metre down -- the fix -- is snapped straight back
+        /// up. Three metres of trying to lower him did nothing, which is how this was found.
+        /// A pinned mark is not snapped, and the man is frozen on it so the wall he is
+        /// half inside cannot push him out. Unfrozen the moment he has to fight.
+        /// </summary>
+        private readonly List<bool> _pinned = new List<bool>();
 
         /// <summary>
         /// Stands whose scenario is started AT the mark rather than in place. For the seat
@@ -1510,6 +1547,9 @@ namespace Hoodrich.Gangs
                     // nothing had happened. A sphere on his own station is what was missing.
                     if (ped.IsInCombat || ped.IsRagdoll)
                     {
+                        // A held man let go, or he fights from inside the wall.
+                        if (Pinned(i)) Unpin(ped);
+
                         Hold(ped, MarkAt(i));
                         continue;
                     }
@@ -1588,6 +1628,7 @@ namespace Hoodrich.Gangs
                 try
                 {
                     if (ped == null || !ped.Exists()) continue;
+                    Unpin(ped);
                     ped.MarkAsNoLongerNeeded();
                     ped.Delete();
                 }
