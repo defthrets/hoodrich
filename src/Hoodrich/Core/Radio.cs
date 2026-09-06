@@ -37,6 +37,21 @@ namespace Hoodrich.Core
 
         private static string _found;
 
+        /// <summary>West Coast Classics, which is what a lowrider is for.</summary>
+        private static readonly string[] WestCoastWanted = { "RADIO_09_HIPHOP_OLD", "RADIO_09_HIPHOP_OLD_RADIO" };
+        private static string _westCoast;
+
+        public static string WestCoast
+        {
+            get
+            {
+                if (_westCoast != null) return _westCoast;
+
+                _westCoast = Find(WestCoastWanted);
+                return _westCoast;
+            }
+        }
+
         /// <summary>The station the block is on.</summary>
         public static string Blonded
         {
@@ -44,12 +59,12 @@ namespace Hoodrich.Core
             {
                 if (_found != null) return _found;
 
-                _found = Find();
+                _found = Find(Wanted);
                 return _found;
             }
         }
 
-        private static string Find()
+        private static string Find(string[] wanted)
         {
             try
             {
@@ -68,7 +83,7 @@ namespace Hoodrich.Core
                     if (!string.IsNullOrEmpty(name)) have.Add(name);
                 }
 
-                foreach (var want in Wanted)
+                foreach (var want in wanted)
                 {
                     foreach (var name in have)
                     {
@@ -90,7 +105,7 @@ namespace Hoodrich.Core
             // Nothing matched. The last of the wanted list is the old default and is safe to
             // ask for even if the enumeration failed -- at worst it does nothing, which is
             // exactly where this started.
-            return Wanted[Wanted.Length - 1];
+            return wanted[wanted.Length - 1];
         }
     }
 }

@@ -53,6 +53,7 @@ namespace Hoodrich.Social
         /// something that was done to him while he was somewhere else.
         /// </summary>
         HouseRaided,
+        Cruise,
 
         /// <summary>
         /// The port changed hands. Nobody on that feed knows why, and that is the post.
@@ -1456,6 +1457,12 @@ namespace Hoodrich.Social
                     // The one thing the whole city has an opinion about, and it arrives fast.
                     follow = _rng.NextDouble() < 0.55 ? "CopKilled" : "OrgEvent";
                     count = BurstMax;
+                    break;
+
+                case SocialEvent.Cruise:
+                    // The block hears them before it sees them. Neighbours, mostly.
+                    follow = _rng.NextDouble() < 0.8 ? "Cruise" : "Ambient";
+                    count = 1 + _rng.Next(2);
                     break;
 
                 case SocialEvent.Takeover:

@@ -372,6 +372,9 @@ namespace Hoodrich.Core
         /// <summary>Whether the set drives its own blocks while you are stood on them.</summary>
         public bool RollersEnabled = true;
 
+        /// <summary>The lowriders, out once a night on the Families' blocks. See Gangs.Cruise.</summary>
+        public bool CruiseEnabled = true;
+
         /// <summary>Carloads out at once. Two is a neighbourhood; six is a convoy.</summary>
         public int RollerCars = 2;
 
@@ -793,6 +796,7 @@ namespace Hoodrich.Core
             s.RollersEnabled = ini.GetBool("Block", "RollersEnabled", s.RollersEnabled);
             s.RollerCars = (int)Clamp(ini.GetInt("Block", "RollerCars", s.RollerCars), 0f, 6f);
             s.RollerBikes = (int)Clamp(ini.GetInt("Block", "RollerBikes", s.RollerBikes), 0f, 6f);
+            s.CruiseEnabled = ini.GetBool("Block", "CruiseEnabled", s.CruiseEnabled);
             s.TowFee = (int)Clamp(ini.GetInt("Cars", "TowFee", s.TowFee), 0f, 100000f);
             s.TowYardHours = Clamp(ini.GetFloat("Cars", "TowYardHours", s.TowYardHours), 0f, 336f);
 

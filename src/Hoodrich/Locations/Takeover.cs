@@ -3110,8 +3110,13 @@ namespace Hoodrich.Locations
                     // is a car floating, which is not what a hydraulic does.
                     var s = 0.5 + 0.5 * Math.Sin(p.Hop);
 
-                    Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR,
-                                  p.Car.Handle, (float)(s * s));
+                    // PER WHEEL. The native wants (vehicle, wheel, factor) and was being given
+                    // (vehicle, factor) -- a wheel index made of a float's bits, and no hop.
+                    for (var wheel = 0; wheel < 4; wheel++)
+                    {
+                        Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR,
+                                      p.Car.Handle, wheel, (float)(s * s));
+                    }
                 }
                 catch
                 {
@@ -6067,7 +6072,10 @@ namespace Hoodrich.Locations
 
                 try
                 {
-                    Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR, p.Car.Handle, 0f);
+                    for (var wheel = 0; wheel < 4; wheel++)
+                    {
+                        Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR, p.Car.Handle, wheel, 0f);
+                    }
 
                     if (p.Driver == null || !p.Driver.Exists()) continue;
 

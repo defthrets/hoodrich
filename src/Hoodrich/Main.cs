@@ -570,6 +570,9 @@ namespace Hoodrich
         /// <summary>Groups of the set on foot in the back streets. See Gangs.Walkers.</summary>
         private readonly Walkers _walkers;
 
+        /// <summary>The lowriders, out once a night. See Gangs.Cruise.</summary>
+        private readonly Cruise _cruise;
+
         /// <summary>The junction, once a night. See Locations.Takeover.</summary>
         private Takeover _takeover;
 
@@ -1542,6 +1545,7 @@ namespace Hoodrich
                 // whether he was or not.
                 _rollers = new Rollers(_cfg, _gangs, "families", _turf);
                 _walkers = new Walkers(_cfg, _gangs, "families", _turf);
+                _cruise = new Cruise(_cfg, _gangs, "families");
 
                 _takeover = new Takeover(_cfg)
                 {
@@ -1671,6 +1675,7 @@ namespace Hoodrich
 
                 _jobs.Social = _social;
                 _war.Social = _social;
+                _cruise.Social = _social;
                 // ONE ANSWER, asked in four places.
                 //
                 // Every one of these lists used to name _jobs on its own, and _jobs is Lamar's
@@ -1737,6 +1742,9 @@ namespace Hoodrich
                                       || (_payback != null && _payback.IsRunning)
                                       || (_takeover != null
                                           && _takeover.State != Locations.TakeoverState.None);
+
+                // The lowriders stay in for the same reasons the rollers do.
+                _cruise.Busy = _rollers.Busy;
 
                 // The law staying out of a raid, a job and a bust is now told to Precinct 88
                 // rather than to a patrol system of our own -- same rule, one layer out. See
@@ -3000,6 +3008,7 @@ namespace Hoodrich
                     _payback.Update();
                     _rollers.Update();
                     _walkers.Update();
+                    _cruise.Update();
                     if (_takeover != null) _takeover.Update();
                     _war.Update();
 
@@ -4073,6 +4082,7 @@ namespace Hoodrich
             try { _turf?.RestoreWorld(); } catch { /* teardown */ }
             try { _rollers?.RestoreWorld(); } catch { /* teardown */ }
             try { _walkers?.RestoreWorld(); } catch { /* teardown */ }
+            try { _cruise?.RestoreWorld(); } catch { /* teardown */ }
             try { _takeover?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaderCrew?.RestoreWorld(); } catch { /* teardown */ }

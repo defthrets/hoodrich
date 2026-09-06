@@ -212,6 +212,18 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
+THE LOWRIDERS COME OUT AT NIGHT. Some time after ten -- the time is drawn
+fresh each night -- three of them come round the Families' blocks in a line:
+various makes, green on green with the neon on and the pearl over it, lowrider
+wheels, hydraulics fitted, a few mods each, every seat full of the set, men and
+women, West Coast Classics up loud. They drive slow and follow the one in
+front, and now and then one hits the switch -- front up, back down, for a few
+seconds. They are out for a while and then drive off. Only built while you are
+on or near the turf to see them; off with CruiseEnabled in [Block].
+
+THE KERB CARS AT THE TAKEOVER HOP. The hydraulics call was handing the native a
+factor where it wanted a wheel, so nothing moved. Per wheel now.
+
 THE GUARDS CARRY A MIX. Every man stood on guard round the map -- the yards,
 the corners, the ones out of the spooner -- carried the same compact rifle. He
 carries one of six now: a compact rifle, a machine pistol, a Carbine Mk II, an
