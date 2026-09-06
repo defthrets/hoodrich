@@ -57,16 +57,6 @@ namespace Hoodrich.Locations
         /// </summary>
         public string Sets = "";
 
-        /// <summary>
-        /// Names the room MIGHT have, for the one station the letters are built from. Each
-        /// is switched on alone and measured on the first visit -- see Discover -- and the
-        /// ones that put something on the floor go into Found, in the ini, for good.
-        /// </summary>
-        public string Probe = "";
-
-        /// <summary>What Discover found, read back from the ini. Switched on with Sets, for every station.</summary>
-        public string Found = "";
-
         public bool Blip = true;
         public BlipSprite Sprite = BlipSprite.Standard;
 
@@ -641,15 +631,6 @@ namespace Hoodrich.Locations
                 // And once more now it has all settled. See the note above the first pass.
                 if (interior != 0) Dress(interior);
 
-                // The first time, with the player stood in it and the collision loaded, the
-                // room is asked which of the guessed names it really has, and dressed again
-                // with the answer.
-                if (interior != 0 && string.IsNullOrEmpty(_spec.Found) && !string.IsNullOrEmpty(_spec.Probe))
-                {
-                    Discover(interior, player);
-                    Dress(interior);
-                }
-
                 // Written every time, not only on failure. This is the one thing in the mod
                 // that cannot be worked out from the outside: "I fell through the floor" is the
                 // same sentence whether the IPL never loaded, the interior is not at that
@@ -944,7 +925,7 @@ namespace Hoodrich.Locations
 
             var on = new List<string>();
 
-            foreach (var raw in (_spec.Sets + ";" + Spread(_spec.Found)).Replace('|', ';').Split(';'))
+            foreach (var raw in _spec.Sets.Replace('|', ';').Split(';'))
             {
                 var name = raw.Trim();
                 if (name.Length == 0) continue;
@@ -972,183 +953,6 @@ namespace Hoodrich.Locations
             Log.Info("Dressed the " + _spec.Name + " (interior " + interior + "): " + on.Count +
                      " set" + (on.Count == 1 ? "" : "s") + " switched on -- " + string.Join(", ", on) + ".");
         }
-
-        /// <summary>
-        /// One station's names, made into every station's.
-        ///
-        /// The probe works on station A only, because nine times the candidates is nine
-        /// times the wait. Anything it finds with an A after the station word is spread
-        /// across A to I here.
-        /// </summary>
-        private static string Spread(string found)
-        {
-            if (string.IsNullOrEmpty(found)) return "";
-
-            var all = new List<string>();
-
-            foreach (var raw in found.Split(';'))
-            {
-                var name = raw.Trim();
-                if (name.Length == 0) continue;
-
-                var spread = false;
-
-                foreach (var word in Stations)
-                {
-                    if (!name.Contains(word)) continue;
-
-                    foreach (var letter in "abcdefghi")
-                    {
-                        all.Add(name.Replace(word, word.Substring(0, word.Length - 1) + letter));
-                    }
-
-                    spread = true;
-                    break;
-                }
-
-                if (!spread) all.Add(name);
-            }
-
-            return string.Join(";", all);
-        }
-
-        /// <summary>The words a station letter follows, with the A on.</summary>
-        private static readonly string[] Stations = { "growtha", "planta", "tablea", "hosea" };
-
-        /// <summary>
-        /// Finds out which of the guessed names this room actually has.
-        ///
-        /// THE GAME WILL NOT SAY. IS_INTERIOR_ENTITY_SET_ACTIVE answers yes for any name that
-        /// has been activated, and there is no native that lists a room's sets. Three rounds
-        /// of guessing plant names from memory and from other mods' string tables put lamps
-        /// and fans and drying racks in the grow room and never a table or a plant. So the
-        /// room is asked the only way it can be: each candidate is switched on alone and the
-        /// floor is measured -- a grid of rays down onto it, counting where something now
-        /// stands higher than a hose -- and switched off again. A name that put a table on
-        /// the floor is real. The winners are written to the ini so this runs once.
-        ///
-        /// Runs with the player inside and the collision loaded, behind the fade, and takes
-        /// a few seconds the first time.
-        /// </summary>
-        private void Discover(int interior, Ped player)
-        {
-            if (interior == 0 || string.IsNullOrEmpty(_spec.Probe)) return;
-            if (!string.IsNullOrEmpty(_spec.Found)) return;
-            if (_probed) return;
-
-            _probed = true;
-
-            var names = new List<string>();
-
-            foreach (var raw in _spec.Probe.Split(';'))
-            {
-                var name = raw.Trim();
-                if (name.Length > 0) names.Add(name);
-            }
-
-            if (names.Count == 0) return;
-
-            var floor = player.Position.Z - 1.0f;
-            var centre = player.Position;
-
-            try
-            {
-                // Everything being tested goes off first, or a name already on from Sets
-                // would be in the baseline and measure as nothing.
-                foreach (var name in names) Function.Call(Hash.DEACTIVATE_INTERIOR_ENTITY_SET, interior, name);
-                Function.Call(Hash.REFRESH_INTERIOR, interior);
-                Wait(ProbeSettleMs);
-
-                var baseline = OnTheFloor(centre, floor, player);
-                var found = new List<string>();
-
-                Log.Info("Probing the " + _spec.Name + ": " + names.Count + " names, " + baseline +
-                         " things already standing on the floor.");
-
-                foreach (var name in names)
-                {
-                    Function.Call(Hash.ACTIVATE_INTERIOR_ENTITY_SET, interior, name);
-                    Function.Call(Hash.REFRESH_INTERIOR, interior);
-                    Wait(ProbeSettleMs);
-
-                    var now = OnTheFloor(centre, floor, player);
-
-                    Function.Call(Hash.DEACTIVATE_INTERIOR_ENTITY_SET, interior, name);
-                    Function.Call(Hash.REFRESH_INTERIOR, interior);
-                    Wait(ProbeSettleMs);
-
-                    var after = OnTheFloor(centre, floor, player);
-
-                    var gained = now - baseline;
-
-                    Log.Info("  " + name + ": " + (gained >= ProbeGain ? "REAL, put " + gained + " on the floor" : "nothing (" + gained + ")"));
-
-                    if (gained >= ProbeGain) found.Add(name);
-
-                    // If switching it off did not take the geometry away, the floor has moved
-                    // and the next name is measured against where it is now.
-                    if (after != baseline) baseline = after;
-                }
-
-                var kept = string.Join(";", found);
-
-                Settings.Put(_spec.Section, "Found", kept);
-                _spec.Found = kept;
-
-                Log.Info("Probed the " + _spec.Name + ": " + found.Count + " real name" +
-                         (found.Count == 1 ? "" : "s") + (found.Count > 0 ? " -- " + kept : "") +
-                         ". Written to [" + _spec.Section + "] Found.");
-            }
-            catch (Exception ex)
-            {
-                Log.Warn("Could not probe the " + _spec.Name + ": " + ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// How many points of a grid over the floor have something standing on them: a ray
-        /// straight down at each, counting the ones that stop well above the floor. Tables
-        /// and plants count; hoses and pallets do not.
-        /// </summary>
-        private static int OnTheFloor(Vector3 centre, float floor, Ped player)
-        {
-            var count = 0;
-
-            for (var dx = -ProbeReach; dx <= ProbeReach; dx += ProbeStep)
-            {
-                for (var dy = -ProbeReach; dy <= ProbeReach; dy += ProbeStep)
-                {
-                    var from = new Vector3(centre.X + dx, centre.Y + dy, floor + ProbeFrom);
-
-                    try
-                    {
-                        var hit = World.Raycast(from, new Vector3(0f, 0f, -1f), ProbeFrom + 0.5f,
-                                                IntersectFlags.Map | IntersectFlags.Objects, player);
-
-                        if (hit.DidHit && hit.HitPosition.Z > floor + ProbeAbove &&
-                            hit.HitPosition.Z < floor + ProbeFrom - 0.2f)
-                        {
-                            count++;
-                        }
-                    }
-                    catch
-                    {
-                        // One ray.
-                    }
-                }
-            }
-
-            return count;
-        }
-
-        private const float ProbeReach = 20f;
-        private const float ProbeStep = 1.5f;
-        private const float ProbeFrom = 3.0f;
-        private const float ProbeAbove = 0.35f;
-        private const int ProbeGain = 2;
-        private const int ProbeSettleMs = 90;
-
-        private bool _probed;
 
         /// <summary>
         /// Out, to the doorway he came in by.

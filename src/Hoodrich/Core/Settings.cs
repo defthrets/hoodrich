@@ -509,24 +509,16 @@ namespace Hoodrich.Core
             if (s.SaveIntervalSeconds > 0 && s.SaveIntervalSeconds < 10) s.SaveIntervalSeconds = 10;
             s.PauseDuringMission = ini.GetBool("General", "PauseDuringMission", s.PauseDuringMission);
 
-            // [Phone] first, then the old [Wheel] key as a fallback, so an existing
-            // Hoodrich.ini keeps working rather than silently reverting to defaults.
-            s.VanillaPhoneSeconds =
-                (int)Clamp(ini.GetInt("Phone", "VanillaPhoneSeconds", s.VanillaPhoneSeconds), 1f, 30f);
-
-            s.PhoneKey = ini.GetKey("Phone", "Key", ini.GetKey("Wheel", "Key", s.PhoneKey));
+            // The phone's own keys. There is no wheel any more and no old ini to read one from.
+            s.PhoneKey = ini.GetKey("Phone", "Key", s.PhoneKey);
             s.RescueKey = ini.GetKey("General", "RescueKey", s.RescueKey);
-            s.PhoneModifier = ini.GetKey("Phone", "Modifier",
-                                         ini.GetKey("Wheel", "Modifier", s.PhoneModifier));
+            s.PhoneModifier = ini.GetKey("Phone", "Modifier", s.PhoneModifier);
 
-            s.WheelTimeScale = Clamp(ini.GetFloat("Phone", "TimeScale",
-                                     ini.GetFloat("Wheel", "TimeScale", s.WheelTimeScale)), 0.05f, 1f);
-            s.BlurBackground = ini.GetBool("Phone", "BlurBackground",
-                                           ini.GetBool("Wheel", "BlurBackground", s.BlurBackground));
-            s.TimecycleModifier = ini.GetString("Phone", "TimecycleModifier",
-                                                ini.GetString("Wheel", "TimecycleModifier", s.TimecycleModifier));
+            s.WheelTimeScale = Clamp(ini.GetFloat("Phone", "TimeScale", s.WheelTimeScale), 0.05f, 1f);
+            s.BlurBackground = ini.GetBool("Phone", "BlurBackground", s.BlurBackground);
+            s.TimecycleModifier = ini.GetString("Phone", "TimecycleModifier", s.TimecycleModifier);
             s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
-            s.BlipsInBars = ini.GetBool("Wheel", "BlipsInBars", s.BlipsInBars);
+            s.BlipsInBars = ini.GetBool("PostUp", "BlipsInBars", s.BlipsInBars);
             s.ShowDealHud = ini.GetBool("PostUp", "ShowDealHud", s.ShowDealHud);
 
             s.BagX = ini.GetFloat("Dealing", "BagX", s.BagX);
@@ -686,8 +678,7 @@ namespace Hoodrich.Core
                 s.Doors.Add(door);
             }
 
-            s.PlaySounds = ini.GetBool("Phone", "PlaySounds",
-                                        ini.GetBool("Wheel", "PlaySounds", s.PlaySounds));
+            s.PlaySounds = ini.GetBool("Phone", "PlaySounds", s.PlaySounds);
 
             s.VoiceEnabled = ini.GetBool("Voice", "Enabled", s.VoiceEnabled);
             s.VoiceVolume = Clamp(ini.GetFloat("Voice", "Volume", s.VoiceVolume), 0f, 1f);
@@ -847,7 +838,6 @@ namespace Hoodrich.Core
                 Section = section,
                 Name = ini.GetString(section, "Name", name),
                 Ipl = ini.GetString(section, "Ipl", ipl),
-                Found = ini.GetString(section, "Found", ""),
                 Blip = ini.GetBool(section, "Blip", true),
                 Sprite = sprite,
 
@@ -884,10 +874,10 @@ namespace Hoodrich.Core
         ///
         /// ENTITY SETS, NOT IPLS -- see InteriorDoor.Dress. The equipment, security and
         /// light names are literal in Menyoo's own binary on this machine. THE STATION
-        /// NAMES WERE ANSWERED BY THE ROOM: InteriorDoor.Discover switched twenty-seven
-        /// guesses on one at a time and measured the floor, and weed_growtha_stage2 and
-        /// weed_growtha_upgrade were the two that put anything on it. Nothing else here is
-        /// a guess.
+        /// NAMES WERE ANSWERED BY THE ROOM: a raycast probe, since taken out of the mod,
+        /// switched twenty-seven guesses on one at a time and measured the floor, and
+        /// weed_growtha_stage2 and weed_growtha_upgrade were the two that put anything on
+        /// it. Nothing else here is a guess.
         /// </summary>
         private const string WeedSets =
             "weed_upgrade_equip;" +
@@ -966,31 +956,6 @@ namespace Hoodrich.Core
             door.Sets = sets;
             return door;
         }
-
-        /// <summary>
-        /// The names a room might have for its stations, to be tried one at a time on the
-        /// first visit. See InteriorDoor.Discover. Station A only; what sticks is spread.
-        /// </summary>
-        private static DoorSpec Guessed(DoorSpec door, string probe)
-        {
-            door.Probe = probe;
-            return door;
-        }
-
-        /// <summary>
-        /// Every way the grow room's stations might be named. Nothing here is claimed; the
-        /// room is asked. The three rounds of names that were claimed are in here too, so
-        /// the answer covers them.
-        /// </summary>
-        private const string WeedGuesses =
-            "weed_growtha_stage1_standard;weed_growtha_stage2_standard;weed_growtha_stage3_standard;" +
-            "weed_growtha_stage1_upgrade;weed_growtha_stage2_upgrade;weed_growtha_stage3_upgrade;" +
-            "weed_growtha_stage1;weed_growtha_stage2;weed_growtha_stage3;" +
-            "weed_growtha_standard;weed_growtha_upgrade;weed_growtha;" +
-            "weed_planta_stage3;weed_planta_stage3_standard;weed_planta_stage3_upgrade;weed_planta;" +
-            "weed_tablea;weed_tables;weed_table;weed_set_up;weed_production;" +
-            "weed_stash1;weed_stash2;weed_stash3;" +
-            "light_growtha_stage1_standard;light_growtha_stage23_standard;light_growtha_stage1_upgrade";
 
         /// <summary>The IPL names a door asks for whatever the ini says. See DoorSpec.Extra.</summary>
         private static DoorSpec Named(DoorSpec door, string extra)

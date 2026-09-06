@@ -212,6 +212,18 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
+THE SETTINGS FILE IS CLEANED UP. The stash-raid keys sat under [Supply] in the
+file, were written under [Risk] by the settings screen, and were read from
+[Hideouts] by the code -- so the file's values were dead and a toggle in the
+screen never stuck. They are under [Hideouts] all three ways now. BlipsInBars is
+a [PostUp] setting rather than the last survivor of a [Wheel] section that has
+not existed for versions; the fallbacks that still read a pre-release [Wheel]
+are gone with it. [Scenery] is in the file. The [GrowRoom] and [CrackDen]
+sections, which had drifted from where the doors actually are, are gone -- the
+two rooms are built in, and a section by either name still overrides them. The
+empty [Police] section and the [TurfWars] eulogy are gone. And the room probe,
+a development tool that wrote into your ini, is out of the mod.
+
 HAO'S IS DRESSED. Fifteen placements from the spooner: work lights and wall
 lights round the shop, a pit sign, parking signs on the forecourt, a lamp, and
 three of them stood by the door, the mechanic among them.

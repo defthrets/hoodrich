@@ -391,7 +391,7 @@ namespace Hoodrich.UI
                  "Clicks and confirmations");
             Tick("Blur behind it", "Phone", "BlurBackground",
                  () => c.BlurBackground, v => c.BlurBackground = v);
-            Tick("Blips in the bars", "Wheel", "BlipsInBars",
+            Tick("Blips in the bars", "PostUp", "BlipsInBars",
                  () => c.BlipsInBars, v => c.BlipsInBars = v,
                  "Map art at the ends of the reputation and heat bars");
             Slide("Real phone hold", "Phone", "VanillaPhoneSeconds",
@@ -959,16 +959,16 @@ namespace Hoodrich.UI
                   () => c.DeadDropDespawnMinutes, v => c.DeadDropDespawnMinutes = v,
                   0f, 60f, 1f, "0", "m", note: "0 leaves it there forever");
 
-            Tick("The house gets turned over", "Risk", "StashRaidsEnabled",
+            Tick("The house gets turned over", "Hideouts", "StashRaidsEnabled",
                  () => c.StashRaidsEnabled, v => c.StashRaidsEnabled = v,
                  "Hold enough, get loud enough, and somebody comes while you are out");
-            Slide("Chance of a raid", "Risk", "StashRaidChancePercent",
+            Slide("Chance of a raid", "Hideouts", "StashRaidChancePercent",
                   () => c.StashRaidChancePercent, v => c.StashRaidChancePercent = v,
                   0f, 100f, 5f, "0", "%");
-            Slide("They take", "Risk", "StashRaidTakePercent",
+            Slide("They take", "Hideouts", "StashRaidTakePercent",
                   () => c.StashRaidTakePercent, v => c.StashRaidTakePercent = v,
                   0f, 100f, 5f, "0", "%");
-            Slide("You are warned", "Risk", "StashRaidWarningMinutes",
+            Slide("You are warned", "Hideouts", "StashRaidWarningMinutes",
                   () => c.StashRaidWarningMinutes, v => c.StashRaidWarningMinutes = v,
                   0f, 15f, 0.5f, "0.0", "m", note: "Be at the house when they come and it is off");
 
