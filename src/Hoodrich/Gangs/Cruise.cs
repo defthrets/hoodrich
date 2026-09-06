@@ -481,6 +481,15 @@ namespace Hoodrich.Gangs
                 // Deaf to the street, so a backfire does not empty the car at the lights.
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
 
+                // AND THEY STAY IN IT. Combat attribute 3 is "can leave the vehicle" and it
+                // is off, so nobody gets out for a fight; the flee attributes are cleared,
+                // so nobody gets out to run; and the driver keeps his task through whatever
+                // happens round him. A donk with its doors open at the lights and four of
+                // the set stood in the road is not a cruise.
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 3, false);
+                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
+                Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+
                 Helmets.Off(ped);
 
                 low.Crew.Add(ped);

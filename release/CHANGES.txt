@@ -225,8 +225,9 @@ various makes, green on green with the neon on and the pearl over it, lowrider
 wheels, hydraulics fitted, a few mods each, every seat full of the set, men and
 women, West Coast Classics up loud. They drive slow and follow the one in
 front, and now and then one hits the switch -- front up, back down, for a few
-seconds. They are out for a while and then drive off. Only built while you are
-on or near the turf to see them; off with CruiseEnabled in [Block].
+seconds. Nobody gets out of one -- not for a fight, not to run. They are out
+for a while and then drive off. Only built while you are on or near the turf to
+see them; off with CruiseEnabled in [Block].
 
 THE KERB CARS AT THE TAKEOVER HOP. The hydraulics call was handing the native a
 factor where it wanted a wheel, so nothing moved. Per wheel now.
