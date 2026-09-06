@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Three scenes are in this folder already, 58 placements between them:
+Four scenes are in this folder already, 72 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -27,6 +27,10 @@ Three scenes are in this folder already, 58 placements between them:
   stretch-yard.xml  Eight of the set round Stretch's, four of them doing
                     something -- on the phone, dealing, talking, cooking --
                     with stoves, a gun locker and the gunsmith's supplies.
+  geralds.xml       The stash at the foot of Gerald's stairs -- a case, a
+                    package, the bags -- with a stove, a seat and a card pile
+                    round the corner, four wrecks along the street and three
+                    cameras on the walls.
 
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under
