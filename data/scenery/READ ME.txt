@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Four scenes are in this folder already, 86 placements between them:
+Four scenes are in this folder already, 93 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -26,7 +26,8 @@ Four scenes are in this folder already, 86 placements between them:
                     bags and pallets, with speakers, lights and signs; a bar
                     in the corner with two fridges, neon and a couple of lines
                     laid out; a bong on the table, and a body behind the
-                    plants.
+                    plants. Arena walls and wrecked army trucks along the
+                    street side, and a mural on the wall.
   stretch-yard.xml  Eight of the set round Stretch's, four of them doing
                     something -- on the phone, dealing, talking, cooking --
                     with stoves, a gun locker and the gunsmith's supplies.

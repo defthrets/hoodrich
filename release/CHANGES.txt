@@ -212,6 +212,10 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
+THE STREET SIDE OF LAMAR'S. Seven more placements from the spooner: arena
+walls, two wrecked army trucks, a car wreck and wreckage along the street, and
+a mural on the wall.
+
 THE SIGN ON LAMAR'S WALL IS DOWN. "Trespassers will be shot" is off the fence.
 
 A SHIPPED SCENE NAMES THE SAVES IT CAME FROM. A scene taken into the mod is
