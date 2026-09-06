@@ -41,5 +41,21 @@ namespace Hoodrich.Core
         {
             return Function.Call<uint>(Hash.GET_HASH_KEY, GuardAt(at));
         }
+
+        /// <summary>
+        /// What a man who is not on guard has on him: a pistol, mostly, sometimes a machine
+        /// pistol. Holstered -- the point is that it is there when something starts, not
+        /// that it is seen.
+        /// </summary>
+        public static readonly string[] Sidearms = { "WEAPON_PISTOL", "WEAPON_PISTOL", "WEAPON_MACHINEPISTOL" };
+
+        public static string SidearmAt(Vector3 at)
+        {
+            var x = (int)Math.Round(at.X * 2f);
+            var y = (int)Math.Round(at.Y * 2f);
+            var seed = unchecked(x * 19349663 ^ y * 73856093);
+
+            return Sidearms[Math.Abs(seed % Sidearms.Length)];
+        }
     }
 }

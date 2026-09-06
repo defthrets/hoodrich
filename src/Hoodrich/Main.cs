@@ -539,6 +539,12 @@ namespace Hoodrich
         /// Led by the base-game strip club clips rather than the nightclub ones -- they are in
         /// every install, and on this model they are the right dance anyway.
         /// </summary>
+        /// <summary>On the phone, reading: the game's texting pose, with a phone prop in the hand so there is exactly one.</summary>
+        private static readonly string[] OnThePhone =
+        {
+            "cellphone@", "cellphone_text_read_base"
+        };
+
         /// <summary>
         /// Tagging: the game's own graffiti loop from the poster-tagging update, the ped's
         /// half of it -- the can's half is a prop in his hand. See the lot behind Innocence.
@@ -1314,7 +1320,10 @@ namespace Hoodrich
                 _bholesCrew = new Entourage(_gangs, "families",
                                             new Vector3(113.500f, -1484.000f, 29.256f), 19.091f, "the B/Holes lot")
                     .Stand(new Vector3(111.212f, -1484.462f, 29.256f), 19.091f,
-                           "WORLD_HUMAN_SMOKING", Fam(0), armed: false);
+                           "WORLD_HUMAN_SMOKING", Fam(0), armed: false)
+                    .Stand(new Vector3(112.364f, -1482.769f, 29.256f), 73.549f,
+                           "WORLD_HUMAN_STAND_MOBILE", Fam(1), armed: false,
+                           anim: OnThePhone, held: "prop_npc_phone_02");
 
                 _shopsCrew = new Entourage(_gangs, "families",
                                            new Vector3(89.500f, -1409.500f, 29.421f), 320.344f, "the shops")

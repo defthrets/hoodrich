@@ -938,6 +938,25 @@ namespace Hoodrich.Gangs
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
                     Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
 
+                    // AND HE STANDS HIS GROUND. Whatever he is doing, he is one of the set:
+                    // he does not run from a fight in front of him, and he fights armed men
+                    // with whatever he has. The scenarios and the reactions are unchanged.
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 0, true);
+
+                    if (!armed)
+                    {
+                        // NOT IN HIS HANDS, BUT ON HIM. A man on a wall with a beer is still
+                        // one of the set: a pistol holstered, drawn when something starts, and
+                        // the beer and the pose exactly as they were until then.
+                        var piece = string.IsNullOrEmpty(carrying) ? Arms.SidearmAt(mark) : carrying;
+
+                        Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
+                                      Function.Call<uint>(Hash.GET_HASH_KEY, piece), 120, false, false);
+                        Function.Call(Hash.SET_PED_DROPS_WEAPONS_WHEN_DEAD, ped.Handle, false);
+                    }
+
                     if (armed)
                     {
                         // One of the guard guns, by where he stands, unless the station said
