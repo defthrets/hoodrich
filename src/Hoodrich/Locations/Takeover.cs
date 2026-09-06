@@ -49,8 +49,14 @@ namespace Hoodrich.Locations
     {
         // ---- where and when -----------------------------------------------------
 
+        /// <summary>The junction being used tonight. Never null -- see Junctions and Plan.</summary>
+        private Junction _here = Junctions[0];
+
+        /// <summary>Whose turn it was last. Minus one so the first takeover of a session is the first junction.</summary>
+        private int _turn = -1;
+
         /// <summary>The junction, read off the screen while stood in the middle of it.</summary>
-        private static readonly Vector3 Middle = new Vector3(-126.840f, -1737.201f, 30.135f);
+        private Vector3 Middle => _here.Middle;
 
         /// <summary>
         /// The mark the cars actually work around, read off the ground in game.
@@ -65,8 +71,7 @@ namespace Hoodrich.Locations
         /// the crowd ring, the cordon and the police approach along with it -- and the ring is
         /// the part that already works.
         /// </summary>
-        private static readonly Vector3 Circle =
-            new Vector3(-129.151f, -1735.830f, 29.531f);
+        private Vector3 Circle => _here.Circle;
 
         /// <summary>
         /// The pavement corners people actually stand on, read off the ground in game.
@@ -80,23 +85,14 @@ namespace Hoodrich.Locations
         /// The cars are deliberately NOT moved onto these. They still park on the ring, which
         /// is where they block the roads in, and the roads in are the thing they are for.
         /// </summary>
-        private static readonly Vector3[] Corners =
-        {
-            new Vector3(-137.831f, -1715.518f, 30.033f),
-            new Vector3(-120.845f, -1721.802f, 30.028f),
-            new Vector3(-111.836f, -1727.592f, 29.907f),
-            new Vector3(-108.003f, -1748.946f, 29.955f),
-            new Vector3(-123.605f, -1766.196f, 29.796f),
-            new Vector3(-136.306f, -1750.899f, 30.233f),
-            new Vector3(-149.461f, -1729.984f, 30.026f)
-        };
+        private Vector3[] Corners => _here.Corners;
 
         /// <summary>How many of them stand on a corner, and how far a corner spreads.</summary>
         private const int OnCorners = 80;
         private const float CornerSpread = 4.5f;
 
-        /// <summary>How far out the ring stands. Measured on the ground: 19.1 metres.</summary>
-        private const float RingAt = 19f;
+        /// <summary>How far out the ring stands. Measured on the ground at each junction.</summary>
+        private float RingAt => _here.Ring;
 
         /// <summary>One place a car waits its turn, and which way it points while it waits.</summary>
         private sealed class Spot
@@ -141,17 +137,7 @@ namespace Hoodrich.Locations
         /// and 23 metres from the mark, which is right on the crowd's own ring -- close enough
         /// that a car sitting there is plainly part of it and not parked up.
         /// </summary>
-        private static readonly Spot[] Stages =
-        {
-            // THE FOUR PLACES THE PERFORMERS PERFORM ON, walked and written down, in the
-            // junction. A car drives to one, is set on it, and does its thing there until
-            // the police come: a standing burnout or a spinning one, decided on arrival.
-            // Four places is four cars at once, and no more.
-            new Spot { At = new Vector3(-134.609f, -1730.354f, 29.474f), Face = 309.695f },
-            new Spot { At = new Vector3(-121.989f, -1735.803f, 29.498f), Face = 194.406f },
-            new Spot { At = new Vector3(-121.690f, -1748.387f, 29.531f), Face = 127.029f },
-            new Spot { At = new Vector3(-130.422f, -1738.134f, 29.471f), Face =  29.370f }
-        };
+        private Spot[] Stages => _here.Stages;
 
         /// <summary>How close counts as being on a marker.</summary>
         private const float StageArrived = 8f;
@@ -174,26 +160,176 @@ namespace Hoodrich.Locations
         /// </summary>
         private const int StageGiveUpMs = 25000;
 
-        private static readonly Spot[] Spots =
+        private Spot[] Spots => _here.Spots;
+
+        /// <summary>
+        /// A junction a takeover can happen at.
+        ///
+        /// IT USED TO BE ONE CROSSROADS AND EVERY MARK WAS A CONSTANT. That was right while
+        /// there was one, and the moment there are two it is the whole file: fifty-eight reads
+        /// of Middle, twenty-one of Circle, and every one of them meaning "the one junction".
+        /// So the marks moved into this and the names stayed exactly as they were -- the code
+        /// that works still says Middle and Stages and Spots, and what those mean is now the
+        /// junction being used tonight rather than the only junction there is.
+        ///
+        /// Everything in here was WALKED. Nothing is computed from anything else, for the
+        /// reason the kerb headings have always given: a heading worked out from a coordinate
+        /// is a car arranged, and a heading read off the ground is a car parked.
+        /// </summary>
+        private sealed class Junction
         {
-            // WALKED AGAIN FOR 0.6.0, screenshot by screenshot, kerb by kerb: the only
-            // places a car may stand at this junction. The first set had a handful on the
-            // corner itself, which read as parked from the pavement and as a roadblock from
-            // a windscreen. Four more of the walk are the stages, above.
-            new Spot { At = new Vector3(-152.228f, -1722.200f, 29.328f), Face = 229.442f },
-            new Spot { At = new Vector3(-157.573f, -1717.774f, 29.531f), Face = 229.866f },
-            new Spot { At = new Vector3(-147.068f, -1711.992f, 29.474f), Face = 235.449f },
-            new Spot { At = new Vector3(-141.470f, -1716.230f, 29.338f), Face = 245.605f },
-            new Spot { At = new Vector3(-128.397f, -1708.204f, 29.000f), Face = 138.998f },
-            new Spot { At = new Vector3(-157.613f, -1744.205f, 29.328f), Face = 322.409f },
-            new Spot { At = new Vector3(-153.508f, -1739.049f, 29.355f), Face = 323.045f },
-            new Spot { At = new Vector3(-139.477f, -1755.944f, 29.451f), Face = 303.891f },
-            new Spot { At = new Vector3(-135.275f, -1767.179f, 29.114f), Face = 298.065f },
-            new Spot { At = new Vector3(-116.476f, -1764.240f, 29.046f), Face = 253.356f },
-            new Spot { At = new Vector3(-107.876f, -1752.781f, 29.072f), Face =  91.146f },
-            new Spot { At = new Vector3(-101.038f, -1726.310f, 28.813f), Face = 111.986f },
-            new Spot { At = new Vector3(-117.682f, -1713.554f, 29.057f), Face = 145.261f },
-            new Spot { At = new Vector3(-115.624f, -1719.251f, 29.220f), Face = 139.591f }
+            /// <summary>What it is called in the log and on the feed.</summary>
+            public string Name = "";
+
+            /// <summary>The centre of the event: the crowd ring, the cordon, the police.</summary>
+            public Vector3 Middle;
+
+            /// <summary>The patch of road the tyre marks are on, which is not always the same spot.</summary>
+            public Vector3 Circle;
+
+            /// <summary>Where a crowd rushing in ends up.</summary>
+            public Vector3 Rush;
+
+            /// <summary>How far out the ring of people stands here.</summary>
+            public float Ring = 19f;
+
+            /// <summary>The pavement corners people actually stand on.</summary>
+            public Vector3[] Corners = new Vector3[0];
+
+            /// <summary>The places the performers perform on. One car each, no more.</summary>
+            public Spot[] Stages = new Spot[0];
+
+            /// <summary>The kerbs the crowd's cars park on. One car per spot, so this is how many turn up.</summary>
+            public Spot[] Spots = new Spot[0];
+
+            /// <summary>A junction with nowhere to park is one that has been walked but not finished.</summary>
+            public bool Ready => Spots.Length > 0 && Stages.Length > 0 && Corners.Length > 0;
+        }
+
+        private static readonly Junction[] Junctions =
+        {
+            new Junction
+            {
+                Name = "Carson",
+
+                Middle = new Vector3(-126.840f, -1737.201f, 30.135f),
+
+                // THREE METRES FROM THE MIDDLE, AND THE THREE METRES MATTER. The middle is
+                // the centre of the event; this is the centre of the CIRCLE, which on this
+                // junction is not the same spot as the geometric middle of the crossroads.
+                Circle = new Vector3(-129.151f, -1735.830f, 29.531f),
+
+                Rush = new Vector3(-128.603f, -1738.153f, 30.137f),
+                Ring = 19f,
+
+                // Seven, and they are not evenly spaced because the junction is not -- they
+                // sit between thirteen and twenty-seven metres out at bearings of roughly 20,
+                // 65, 148, 192, 246, 305 and 335 degrees from the circle, which is every side
+                // of it. That unevenness is the point: it is the shape of the actual
+                // crossroads rather than the shape of a circle drawn around it.
+                Corners = new[]
+                {
+                    new Vector3(-137.831f, -1715.518f, 30.033f),
+                    new Vector3(-120.845f, -1721.802f, 30.028f),
+                    new Vector3(-111.836f, -1727.592f, 29.907f),
+                    new Vector3(-108.003f, -1748.946f, 29.955f),
+                    new Vector3(-123.605f, -1766.196f, 29.796f),
+                    new Vector3(-136.306f, -1750.899f, 30.233f),
+                    new Vector3(-149.461f, -1729.984f, 30.026f)
+                },
+
+                // THE FOUR PLACES THE PERFORMERS PERFORM ON, walked and written down. A car
+                // drives to one, is set on it, and does its thing there until the police come:
+                // a standing burnout or a spinning one, decided on arrival.
+                Stages = new[]
+                {
+                    new Spot { At = new Vector3(-134.609f, -1730.354f, 29.474f), Face = 309.695f },
+                    new Spot { At = new Vector3(-121.989f, -1735.803f, 29.498f), Face = 194.406f },
+                    new Spot { At = new Vector3(-121.690f, -1748.387f, 29.531f), Face = 127.029f },
+                    new Spot { At = new Vector3(-130.422f, -1738.134f, 29.471f), Face =  29.370f }
+                },
+
+                // WALKED AGAIN FOR 0.6.0, screenshot by screenshot, kerb by kerb: the only
+                // places a car may stand at this junction. The first set had a handful on the
+                // corner itself, which read as parked from the pavement and as a roadblock
+                // from a windscreen.
+                Spots = new[]
+                {
+                    new Spot { At = new Vector3(-152.228f, -1722.200f, 29.328f), Face = 229.442f },
+                    new Spot { At = new Vector3(-157.573f, -1717.774f, 29.531f), Face = 229.866f },
+                    new Spot { At = new Vector3(-147.068f, -1711.992f, 29.474f), Face = 235.449f },
+                    new Spot { At = new Vector3(-141.470f, -1716.230f, 29.338f), Face = 245.605f },
+                    new Spot { At = new Vector3(-128.397f, -1708.204f, 29.000f), Face = 138.998f },
+                    new Spot { At = new Vector3(-157.613f, -1744.205f, 29.328f), Face = 322.409f },
+                    new Spot { At = new Vector3(-153.508f, -1739.049f, 29.355f), Face = 323.045f },
+                    new Spot { At = new Vector3(-139.477f, -1755.944f, 29.451f), Face = 303.891f },
+                    new Spot { At = new Vector3(-135.275f, -1767.179f, 29.114f), Face = 298.065f },
+                    new Spot { At = new Vector3(-116.476f, -1764.240f, 29.046f), Face = 253.356f },
+                    new Spot { At = new Vector3(-107.876f, -1752.781f, 29.072f), Face =  91.146f },
+                    new Spot { At = new Vector3(-101.038f, -1726.310f, 28.813f), Face = 111.986f },
+                    new Spot { At = new Vector3(-117.682f, -1713.554f, 29.057f), Face = 145.261f },
+                    new Spot { At = new Vector3(-115.624f, -1719.251f, 29.220f), Face = 139.591f }
+                }
+            },
+
+            new Junction
+            {
+                Name = "Davis",
+
+                // THE SECOND JUNCTION, walked the same way as the first. Two performers on
+                // this one rather than four -- it is a wider crossroads with more road in the
+                // middle of it and two cars working that much space read as a takeover, where
+                // four read as a car park.
+                //
+                // The middle and the circle are the same spot here, which they were not on
+                // Carson: the two marks sit either side of the centre and the patch of road
+                // between them is both the middle of the junction and where the tyre marks
+                // go. Its height is the pavement's; the circle's is the road's.
+                Middle = new Vector3(61.823f, -1504.024f, 29.270f),
+                Circle = new Vector3(61.823f, -1504.024f, 28.668f),
+                Rush = new Vector3(61.823f, -1504.024f, 29.270f),
+
+                // Five, between fourteen and twenty-two metres out at bearings of roughly
+                // 111, 177, 235, 294 and 352 from the circle -- every side of it again.
+                Ring = 17f,
+
+                Corners = new[]
+                {
+                    new Vector3(56.913f, -1491.023f, 29.239f),
+                    new Vector3(41.134f, -1502.947f, 29.272f),
+                    new Vector3(53.950f, -1515.248f, 29.390f),
+                    new Vector3(68.574f, -1519.440f, 29.117f),
+                    new Vector3(83.993f, -1507.033f, 29.293f)
+                },
+
+                Stages = new[]
+                {
+                    new Spot { At = new Vector3(68.282f, -1508.017f, 28.667f), Face = 245.159f },
+                    new Spot { At = new Vector3(55.365f, -1500.030f, 28.669f), Face = 226.818f }
+                },
+
+                // FOURTEEN KERBS, walked one at a time and pointing the way they were walked.
+                // They sit between 13.6 and 32.2 metres out, all the way round: down both
+                // sides of the four streets that feed the crossroads rather than tight against
+                // it, which is where a car actually stops when it has come to watch.
+                Spots = new[]
+                {
+                    new Spot { At = new Vector3(75.612f, -1522.826f, 28.522f), Face =  50.290f },
+                    new Spot { At = new Vector3(62.959f, -1522.862f, 28.495f), Face = 319.713f },
+                    new Spot { At = new Vector3(58.468f, -1528.215f, 28.494f), Face = 320.122f },
+                    new Spot { At = new Vector3(54.197f, -1517.653f, 28.673f), Face = 316.971f },
+                    new Spot { At = new Vector3(48.614f, -1516.245f, 28.671f), Face = 114.899f },
+                    new Spot { At = new Vector3(39.048f, -1510.165f, 28.515f), Face = 147.094f },
+                    new Spot { At = new Vector3(38.957f, -1492.803f, 28.553f), Face = 218.368f },
+                    new Spot { At = new Vector3(44.853f, -1488.899f, 28.497f), Face =  51.709f },
+                    new Spot { At = new Vector3(50.752f, -1488.642f, 28.478f), Face =  48.829f },
+                    new Spot { At = new Vector3(62.414f, -1484.630f, 28.536f), Face = 173.108f },
+                    new Spot { At = new Vector3(67.492f, -1491.680f, 28.630f), Face = 144.475f },
+                    new Spot { At = new Vector3(84.608f, -1498.469f, 28.526f), Face = 336.745f },
+                    new Spot { At = new Vector3(84.308f, -1512.855f, 28.564f), Face =  20.286f },
+                    new Spot { At = new Vector3(89.233f, -1521.002f, 28.581f), Face =  43.308f }
+                }
+            }
         };
 
         /// <summary>
@@ -1061,10 +1197,31 @@ namespace Hoodrich.Locations
 
             _nightsSince = 0;
 
+            // AND WHICH JUNCTION: THE OTHER ONE FROM LAST TIME, decided with the night and
+            // not before.
+            //
+            // TURNS, NOT A ROLL. A coin can come up the same three takeovers running, and
+            // three in a row on one crossroads is a takeover that reads as being in one place
+            // -- which is the whole thing having a second one is for. So it steps to the next
+            // junction and wraps, and with two that is a swap every time.
+            //
+            // Only the ones walked all the way -- corners, stages and kerbs -- are in the
+            // rotation, so a junction half written down is not used rather than used badly.
+            var ready = new List<Junction>();
+            foreach (var j in Junctions) { if (j.Ready) ready.Add(j); }
+
+            if (ready.Count > 0)
+            {
+                _turn = (_turn + 1) % ready.Count;
+                _here = ready[_turn];
+            }
+
             var span = (24 - FromHour) + ToHour;
             _startsAt = (FromHour + _rng.Next(span)) % 24;
 
-            Log.Info("Takeover: tonight's is at " + _startsAt + ":00. One night in " + every + ".");
+            Log.Info("Takeover: tonight's is on " + _here.Name + " at " + _startsAt +
+                     ":00. One night in " + every + ". " + ready.Count + " of " +
+                     Junctions.Length + " junction(s) walked.");
         }
 
         private bool Tonight()
@@ -5807,7 +5964,7 @@ namespace Hoodrich.Locations
         private int _nextRush;
 
         /// <summary>Where Michael stood in the road, and how loose the knot round it is.</summary>
-        private static readonly Vector3 RushSpot = new Vector3(-128.603f, -1738.153f, 30.137f);
+        private Vector3 RushSpot => _here.Rush;
         private const double RushKnotMin = 0.8;
         private const double RushKnotMax = 2.6;
 
@@ -7369,7 +7526,7 @@ namespace Hoodrich.Locations
             }
         }
 
-        private static Vector3 Toward(Vector3 from, Vector3 spot)
+        private Vector3 Toward(Vector3 from, Vector3 spot)
         {
             // A TARGET INSIDE THE ZONE HAS NOTHING TO ROUTE AROUND. The staging marks sit on
             // the edge of the circle on purpose, and one of them is inside the no-go radius --
@@ -7397,7 +7554,7 @@ namespace Hoodrich.Locations
         /// and its spot happens to pass near the mark -- the bit of that line it will actually
         /// drive is what matters, and clamping t to 0..1 is the difference.
         /// </summary>
-        private static bool Crosses(Vector3 from, Vector3 to)
+        private bool Crosses(Vector3 from, Vector3 to)
         {
             var dx = to.X - from.X;
             var dy = to.Y - from.Y;
@@ -7428,7 +7585,7 @@ namespace Hoodrich.Locations
         /// <summary>How far past a kerb the go-round waypoint sits, up its own street.</summary>
         private const float SwingOut = 20f;
 
-        private static float Facing(Vector3 from)
+        private float Facing(Vector3 from)
         {
             // Turned to face the CIRCLE rather than the middle of the junction, because the
             // circle is where the cars are and looking at the cars is the entire reason
