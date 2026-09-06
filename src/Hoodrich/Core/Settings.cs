@@ -85,6 +85,17 @@ namespace Hoodrich.Core
         public float VoiceVolume = 0.9f;
 
         /// <summary>
+        /// How loud the police radio is against the rest of the recorded audio.
+        ///
+        /// A FRACTION OF THE VOICES RATHER THAN ITS OWN NUMBER, so turning the voices down
+        /// takes the radio with them. It is a walkie-talkie thirty metres away being held by
+        /// somebody else, and it was coming out at the volume of a man stood in front of you
+        /// explaining his business -- which is the one piece of this audio that should be
+        /// under everything rather than over it.
+        /// </summary>
+        public float PoliceRadioLoudness = 0.4f;
+
+        /// <summary>
         /// Whether an already-heard line speaks again. See Voice.Repeat -- on is for recording.
         /// </summary>
         public bool VoiceRepeat;
@@ -695,6 +706,7 @@ namespace Hoodrich.Core
 
             s.VoiceEnabled = ini.GetBool("Voice", "Enabled", s.VoiceEnabled);
             s.VoiceVolume = Clamp(ini.GetFloat("Voice", "Volume", s.VoiceVolume), 0f, 1f);
+            s.PoliceRadioLoudness = Clamp(ini.GetFloat("Voice", "PoliceRadioLoudness", s.PoliceRadioLoudness), 0f, 1f);
             s.VoiceRepeat = ini.GetBool("Voice", "RepeatLines", s.VoiceRepeat);
 
             s.BulkPurchaseDiscountPercent =

@@ -42,6 +42,14 @@ namespace Hoodrich.Core
         public static float Volume = 0.9f;
 
         /// <summary>
+        /// How loud the police radio is against that. Set by Main from the settings.
+        ///
+        /// It lives here rather than at the call site because the call site is a police
+        /// investigation deciding to happen, and a number about audio has no business in it.
+        /// </summary>
+        public static float RadioScale = 0.4f;
+
+        /// <summary>
         /// Whether a line you have already heard plays again.
         ///
         /// Off, because a recording is a performance rather than a sound effect: the first time
@@ -293,7 +301,7 @@ namespace Hoodrich.Core
         /// Shares the one channel with dialogue, which is right: you are not stood in a
         /// conversation while a patrol car is deciding about you.
         /// </summary>
-        public static bool Cue(string key)
+        public static bool Cue(string key, float scale = 1f)
         {
             Hush();
 
@@ -309,8 +317,10 @@ namespace Hoodrich.Core
                     return false;
                 }
 
-                Log.Info("Voice: cue " + Path.GetFileName(path));
-                return Start(path);
+                Log.Info("Voice: cue " + Path.GetFileName(path) +
+                         (scale >= 0.999f ? "" : " at " + scale.ToString("0.00", CultureInfo.InvariantCulture) + " of the volume"));
+
+                return Start(path, scale);
             }
             catch (Exception ex)
             {
@@ -357,7 +367,7 @@ namespace Hoodrich.Core
             }
         }
 
-        private static bool Start(string path)
+        private static bool Start(string path, float scale = 1f)
         {
             Prime();
 
@@ -399,7 +409,10 @@ namespace Hoodrich.Core
 
             _alias = alias;
 
-            var vol = (int)Math.Round(Clamp(Volume, 0f, 1f) * 1000f);
+            // The scale is the caller's, and it is applied to the setting rather than
+            // replacing it: a radio at four tenths means four tenths of however loud this
+            // player has the voices, not four tenths of the maximum.
+            var vol = (int)Math.Round(Clamp(Volume, 0f, 1f) * Clamp(scale, 0f, 1f) * 1000f);
             mciSendString("setaudio " + alias + " volume to " +
                           vol.ToString(CultureInfo.InvariantCulture), null, 0, IntPtr.Zero);
 

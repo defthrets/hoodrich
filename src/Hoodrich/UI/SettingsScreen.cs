@@ -244,7 +244,10 @@ namespace Hoodrich.UI
         /// other one here is: this screen draws rows and reads settings, and giving it the
         /// event runner would make it a thing that can also start events.
         /// </summary>
-        public Func<string> StartTakeover;
+        public Func<int, string> StartTakeover;
+
+        /// <summary>What the junctions are called, in the order StartTakeover takes them. Set by Main.</summary>
+        public Func<string[]> TakeoverPlaces;
 
         /// <summary>Which group of places the door rows are pointed at, and which place in it.</summary>
         private int _group;
@@ -412,6 +415,10 @@ namespace Hoodrich.UI
             Slide("How loud", "Voice", "VoiceVolume",
                   () => c.VoiceVolume, v => c.VoiceVolume = v, 0f, 1f, 0.05f, "0.00",
                   note: "Against the game's own dialogue, not against the music");
+            Slide("Police radio", "Voice", "PoliceRadioLoudness",
+                  () => c.PoliceRadioLoudness, v => c.PoliceRadioLoudness = v, 0f, 1f, 0.05f, "0.00",
+                  note: "The call that goes out when an officer comes to look at you, as a " +
+                        "fraction of the above");
 
             Head("Lamar's list");
             Slide("He rests between jobs", "Jobs", "LamarRestMinutes",
@@ -457,20 +464,35 @@ namespace Hoodrich.UI
             // HELD RATHER THAN PRESSED, and not because it is destructive. It is thirty-five
             // cars, thirty-five drivers and sixty-odd people arriving at once -- not something
             // to walk into while scrolling past it looking for something else.
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Start one now",
-                Note = "Hold to start a takeover without waiting for the clock. You have to be " +
-                       "near the junction on Carson for it to have anywhere to happen",
-                Enabled = () => StartTakeover != null,
-                Do = () =>
-                {
-                    var said = StartTakeover == null ? null : StartTakeover();
+            // ONE ROW PER JUNCTION, because there is more than one now and a single button
+            // would have to guess which crossroads somebody meant. Built from the list rather
+            // than typed out, so a third junction is a third button and nothing here changes.
+            var places = TakeoverPlaces == null ? new string[0] : TakeoverPlaces();
 
-                    if (!string.IsNullOrEmpty(said)) Notify.Important(said);
-                }
-            });
+            for (var i = 0; i < places.Length; i++)
+            {
+                // Copied out of the loop. A lambda closes over the VARIABLE, not its value, so
+                // every button would otherwise start one at whichever junction the loop
+                // finished on -- which is the last one, every time, silently.
+                var which = i;
+                var name = places[i];
+
+                _rows.Add(new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Start one on " + name,
+                    Note = "Hold to start a takeover on " + name + " without waiting for the " +
+                           "clock. You have to be near that junction for it to have anywhere " +
+                           "to happen",
+                    Enabled = () => StartTakeover != null,
+                    Do = () =>
+                    {
+                        var said = StartTakeover == null ? null : StartTakeover(which);
+
+                        if (!string.IsNullOrEmpty(said)) Notify.Important(said);
+                    }
+                });
+            }
 
             Head("Socials");
             Tick("Feed on the right", "Socials", "TweetsOnTheRight",

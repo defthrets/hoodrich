@@ -1006,7 +1006,7 @@ namespace Hoodrich.Locations
         /// do something about, so each one says which it was -- a button that silently does
         /// nothing is indistinguishable from a button that is broken.
         /// </summary>
-        public string Force()
+        public string Force(int which)
         {
             if (!Enabled) return "Takeovers are switched off. Turn them on above.";
 
@@ -1018,19 +1018,49 @@ namespace Hoodrich.Locations
 
             if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
 
+            // THE JUNCTION ASKED FOR, before the distance is measured against it -- otherwise
+            // the check is against whichever one the rotation happened to leave loaded and a
+            // man stood in the middle of Davis is told he is two hundred metres from Carson.
+            // It also holds: what is started by hand stays where it was started, and the
+            // rotation carries on from it next time.
+            if (which < 0 || which >= Junctions.Length) return "No such junction.";
+
+            if (!Junctions[which].Ready)
+            {
+                return Junctions[which].Name + " has not been walked all the way yet.";
+            }
+
+            _here = Junctions[which];
+
             var near = player.Position.DistanceTo(Middle);
 
             if (near > NearEnough)
             {
-                return "Too far from the junction -- you are " + (int)near +
+                return "Too far from " + _here.Name + " -- you are " + (int)near +
                        "m away and it starts within " + (int)NearEnough + "m.";
             }
 
             _forced = true;
 
-            Log.Info("Takeover: started by hand.");
+            Log.Info("Takeover: started by hand on " + _here.Name + ".");
 
-            return "Starting one now.";
+            return "Starting one on " + _here.Name + " now.";
+        }
+
+        /// <summary>
+        /// What the junctions are called, in the order Force takes them.
+        ///
+        /// For the settings screen, which draws one button per junction rather than one
+        /// button that guesses: there is no sensible way to work out which crossroads
+        /// somebody meant, so it asks.
+        /// </summary>
+        public static string[] Places()
+        {
+            var names = new string[Junctions.Length];
+
+            for (var i = 0; i < Junctions.Length; i++) names[i] = Junctions[i].Name;
+
+            return names;
         }
 
         /// <summary>Somebody asked for one. Cleared the moment it begins. See Force.</summary>

@@ -676,8 +676,8 @@ namespace Hoodrich
                 // of its own -- see the Changed handler below, which pushes them again.
                 Core.Voice.Enabled = _cfg.VoiceEnabled;
                 Core.Voice.Volume = _cfg.VoiceVolume;
+                Core.Voice.RadioScale = _cfg.PoliceRadioLoudness;
                 Core.Voice.Repeat = _cfg.VoiceRepeat;
-                    Social.Inbox.Chime = _cfg.PlaySounds;
                 Social.Inbox.Chime = _cfg.PlaySounds;
 
                 Preflight.Step = "loading drugs.json";
@@ -2454,6 +2454,7 @@ namespace Hoodrich
 
                     Core.Voice.Enabled = _cfg.VoiceEnabled;
                     Core.Voice.Volume = _cfg.VoiceVolume;
+                    Core.Voice.RadioScale = _cfg.PoliceRadioLoudness;
                     Core.Voice.Repeat = _cfg.VoiceRepeat;
                     Social.Inbox.Chime = _cfg.PlaySounds;
                 };
@@ -2464,7 +2465,11 @@ namespace Hoodrich
 
                 // And the settings screen can start a takeover, which is the one thing on it
                 // that does something rather than setting something.
-                if (_takeover != null) _settingsScreen.StartTakeover = () => _takeover.Force();
+                if (_takeover != null)
+                {
+                    _settingsScreen.StartTakeover = which => _takeover.Force(which);
+                    _settingsScreen.TakeoverPlaces = Takeover.Places;
+                }
 
                 // And it can be started and stopped from the same screen.
 
