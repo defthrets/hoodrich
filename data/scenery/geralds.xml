@@ -13,9 +13,9 @@
 	<TimecycleModifier strength="1"></TimecycleModifier>
 	<StartTaskSequencesOnLoad>true</StartTaskSequencesOnLoad>
 	<ReferenceCoords>
-		<X>-162.843903</X>
-		<Y>-1633.80725</Y>
-		<Z>32.652916</Z>
+		<X>-161.631546</X>
+		<Y>-1638.81702</Y>
+		<Z>33.7271881</Z>
 	</ReferenceCoords>
 	<Placement>
 		<ModelHash>0x07f70a9c</ModelHash>
@@ -490,6 +490,40 @@
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
 			<Yaw>53.0051765</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xdebeafc0</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>m24_2_prop_m42_weedboxpile_01a</HashName>
+		<InitialHandle>340270</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-160.508926</X>
+			<Y>-1638.70764</Y>
+			<Z>33.0363617</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>49.4897003</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>

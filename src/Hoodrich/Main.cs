@@ -311,7 +311,6 @@ namespace Hoodrich
         private readonly Fixture _partyCouch;
         /// <summary>The dog in the yard, and yours once you have petted him.</summary>
         private readonly Trigger _partyDog;
-        private readonly Fixture _leaderBox;
 
         /// <summary>
         /// Props we put somewhere and leave.
@@ -1399,17 +1398,12 @@ namespace Hoodrich
                                           "ba_prop_battle_speaker_01a",
                                           "prop_boombox_01", "prop_ld_ferris_wheel");
 
-                // Weight sitting by Stretch's door, which is the whole reason anybody goes to
-                // that door. Fallbacks behind it: the Bikers bag and then a plain crate, so an
-                // install without the newer DLC gets something rather than nothing.
-                // Turned off square with the wall. At 2.4 degrees the stack sat parallel to it
-                // and the corner of the top box went through the render; twenty-odd degrees is
-                // enough to clear it and reads as boxes somebody put down rather than boxes
-                // somebody aligned.
-                _leaderBox = new Fixture(new Vector3(-162.562f, -1637.442f, 34.029f), 24.500f,
-                                          "m24_2_prop_m42_weedboxpile_01a",
-                                          "bkr_prop_weed_bigbag_01a",
-                                          "prop_boxpile_07d");
+                // THE BOXES BY GERALD'S STAIRS ARE NOT PLACED FROM HERE ANY MORE. They were a
+                // fixture with fallbacks, and a fixture is the one thing Menyoo cannot save
+                // the position of: Michael moved the stack in the spooner and the move never
+                // reached a file. The stack is a placement in data\scenery\geralds.xml now,
+                // with the rest of what he put round it, and moves the way everything in a
+                // scene moves -- in the spooner, then saved.
 
                 // Plants growing in the yard behind the lab, in a row down the wall where
                 // Michael marked them. An array rather than three fields: they are one thing
@@ -3025,7 +3019,6 @@ namespace Hoodrich
                     foreach (var corner in _corners) corner.Update();
                     _partyCouch.Update();
                     _partyDog?.Update();
-                    _leaderBox.Update();
                     foreach (var prop in _scenery) prop.Update();
                     _decks.Update();
                     _partyDecks.Update();
@@ -4103,7 +4096,6 @@ namespace Hoodrich
             }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyDog?.RestoreWorld(); } catch { /* teardown */ }
-            try { _leaderBox?.RestoreWorld(); } catch { /* teardown */ }
 
             try { _decks?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyDecks?.RestoreWorld(); } catch { /* teardown */ }

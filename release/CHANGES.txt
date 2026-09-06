@@ -204,6 +204,11 @@ phone up to film, for a few seconds at a time, never more than two thirds of
 them at once. When the cars stop the last of them wind down within a few
 seconds and go back to standing about.
 
+GERALD'S BOXES ARE WHERE YOU PUT THEM. The stack by his stairs was the mod's
+own fixture, which is the one thing Menyoo cannot save the position of, so a
+move in the spooner never reached a file. It is a placement in the scene now,
+with the stash, the camp, the wrecks and the cameras round it.
+
 THE PLANTS ARE IN. The room answered: weed_growtha_stage2 and
 weed_growtha_upgrade were the two names of twenty-seven that put anything on
 the floor, and they are in the list for every station now. The probe stays in
