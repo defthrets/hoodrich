@@ -314,6 +314,9 @@ namespace Hoodrich
 
         /// <summary>The one on the B/Holes lot on Innocence, by the car with the stereo up.</summary>
         private readonly Entourage _bholesCrew;
+
+        /// <summary>The two outside the shops in Strawberry, by the car with the stereo up.</summary>
+        private readonly Entourage _strawCrew;
         private readonly Fixture _partyBarrel;
 
         /// <summary>The worklight by the skip. See Fixture.Beam.</summary>
@@ -1193,6 +1196,14 @@ namespace Hoodrich
                 System.Func<bool> courtOff = () => !Core.Nights.On("the meet on the court", 55);
                 System.Func<bool> washOff = () => !Core.Nights.On("the meet at the wash", 45);
 
+                // AND THE CORNERS. The people and the cars on the lots and outside the shops
+                // are there most days, not every day: each corner rolls its own name, so
+                // some days the lot is empty and the Checkout is not, and the other way.
+                System.Func<bool> lotOff = () => !Core.Nights.On("the lot behind Innocence", 60);
+                System.Func<bool> shopsOff = () => !Core.Nights.On("the Checkout on Innocence", 60);
+                System.Func<bool> bholesOff = () => !Core.Nights.On("the B/Holes lot", 60);
+                System.Func<bool> strawOff = () => !Core.Nights.On("the shops in Strawberry", 60);
+
                 _meetOne.OffTonight = courtOff;
                 _meetTwo.OffTonight = courtOff;
                 _meet.OffTonight = courtOff;
@@ -1293,6 +1304,8 @@ namespace Hoodrich
 
                 _lotDecks = new Boombox(new Vector3(-33.876f, -1385.712f, 30.292f), 286.704f,
                                         "prop_boombox_01", "ba_prop_battle_speaker_01a");
+                _lotDecks.Playing = () => !lotOff();
+                _lotCrew.OffTonight = lotOff;
 
                 // ---- outside the Checkout on Innocence -------------------------------
                 //
@@ -1303,7 +1316,11 @@ namespace Hoodrich
                                         MetallicDarkGreen, "emperor")
                 {
                     Mods = new System.Collections.Generic.Dictionary<int, int> { { 15, -1 } },
-                    Tint = 5
+                    Tint = 5,
+                    QuietFrom = 0,
+                    QuietTo = 0,
+                    GoneWhenQuiet = true,
+                    OffTonight = shopsOff
                 });
 
                 // And one of the set's on the lot by the B/Holes sign on Innocence, at the
@@ -1313,7 +1330,11 @@ namespace Hoodrich
                 {
                     Running = true,
                     Lights = true,
-                    Radio = "RADIO_09_HIPHOP_OLD"
+                    Radio = "RADIO_09_HIPHOP_OLD",
+                    QuietFrom = 0,
+                    QuietTo = 0,
+                    GoneWhenQuiet = true,
+                    OffTonight = bholesOff
                 });
 
                 // And one of the set on a cigarette by the wall next to it.
@@ -1324,6 +1345,32 @@ namespace Hoodrich
                     .Stand(new Vector3(112.364f, -1482.769f, 29.256f), 73.549f,
                            "WORLD_HUMAN_STAND_MOBILE", Fam(1), armed: false,
                            anim: OnThePhone, held: "prop_npc_phone_02");
+                _bholesCrew.OffTonight = bholesOff;
+                _shopsCrew.OffTonight = shopsOff;
+
+                // ---- the shops in Strawberry ---------------------------------------
+                //
+                // One on a beer, one on a cigarette, and a car of the set's with the
+                // stereo up, at the walked spots.
+                _cars.Add(new ParkedCar(new Vector3(48.994f, -1582.824f, 28.962f), 228.761f,
+                                        MetallicDarkGreen, "buccaneer2", "chino2", "voodoo")
+                {
+                    Running = true,
+                    Lights = true,
+                    Radio = "RADIO_03_HIPHOP_NEW",
+                    QuietFrom = 0,
+                    QuietTo = 0,
+                    GoneWhenQuiet = true,
+                    OffTonight = strawOff
+                });
+
+                _strawCrew = new Entourage(_gangs, "families",
+                                           new Vector3(53.000f, -1588.000f, 29.598f), 33.249f, "the shops in Strawberry")
+                    .Stand(new Vector3(53.970f, -1587.329f, 29.598f), 33.249f,
+                           "WORLD_HUMAN_DRINKING", Fam(2), armed: false)
+                    .Stand(new Vector3(52.543f, -1588.782f, 29.598f), 358.324f,
+                           "WORLD_HUMAN_SMOKING", Fam(0), armed: false);
+                _strawCrew.OffTonight = strawOff;
 
                 _shopsCrew = new Entourage(_gangs, "families",
                                            new Vector3(89.500f, -1409.500f, 29.421f), 320.344f, "the shops")
@@ -1351,7 +1398,11 @@ namespace Hoodrich
                     Mods = new System.Collections.Generic.Dictionary<int, int> { { 15, -1 } },
                     Tint = 2,
                     Pearl = MetallicDarkGreen,
-                    Neon = System.Drawing.Color.FromArgb(60, 200, 80)
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
+                    QuietFrom = 0,
+                    QuietTo = 0,
+                    GoneWhenQuiet = true,
+                    OffTonight = lotOff
                 });
 
                 // The lot behind the lab, of an evening.
@@ -3235,6 +3286,7 @@ namespace Hoodrich
                     _lotDecks.Update();
                     _shopsCrew.Update();
                     _bholesCrew.Update();
+                    _strawCrew.Update();
                     _partyBarrel.Update();
                     _partyLight?.Update();
 
@@ -4315,6 +4367,7 @@ namespace Hoodrich
             try { _lotDecks?.RestoreWorld(); } catch { /* teardown */ }
             try { _shopsCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _bholesCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _strawCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyLight?.RestoreWorld(); } catch { /* teardown */ }
 
