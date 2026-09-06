@@ -183,6 +183,16 @@ namespace Hoodrich.Locations
         public bool Lowered;
 
         /// <summary>
+        /// Hydraulics on it: the switch, the pump and the rams.
+        ///
+        /// Separate from Built because it is not a shop upgrade, it is the whole point of a
+        /// particular kind of car -- and Built walks the ordinary slots, which on a Benny's
+        /// body are not where the hydraulics live. The strongest set the car offers, because
+        /// half a set of hydraulics is not a thing anybody has ever fitted.
+        /// </summary>
+        public bool Hydraulics;
+
+        /// <summary>
         /// Whether the headlights are on.
         ///
         /// Electrics, like the radio and the underglow, so it needs the engine and it needs
@@ -311,6 +321,13 @@ namespace Hoodrich.Locations
             // set and its radio enabled and loud sixty times a minute and was forced to actually
             // play it never.
             ForceRadio();
+
+            // AND THE DOORS, EVERY FRAME, WHICH IS WHY THE BOOT WAS SHUT. Swing was written,
+            // commented and never called: the boot was opened on the frame the van was made
+            // and the game closed it a second later with nothing holding it. The holding call
+            // is a per-frame one -- see Swing -- so it belongs here beside the radio rather
+            // than behind the throttle.
+            Swing();
 
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
@@ -478,6 +495,16 @@ namespace Hoodrich.Locations
 
                 if (Built && !Stock) BuildIt();
 
+                if (Hydraulics && !Stock)
+                {
+                    try
+                    {
+                        var sets = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, 38);
+                        if (sets > 0) Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 38, sets - 1, false);
+                    }
+                    catch { /* a body with nowhere to put them */ }
+                }
+
                 Wanted();
                 Asked();
 
@@ -629,8 +656,17 @@ namespace Hoodrich.Locations
             // 11 engine, 12 brakes, 13 transmission, 15 suspension, 16 armour -- and then the
             // body: 0 spoiler through 10 roof, which is what makes it read as somebody's build
             // rather than a stock van with a fast engine nobody can see.
+            //
+            // AND THE BENNY'S SLOTS, which is where the rest of the shop is on the bodies that
+            // have them: 25 plate, 27 trim, 28 ornaments, 30 dials, 33 wheel, 34 shifter,
+            // 35 plaques, 38 hydraulics, 39 block, 40 filter, 41 struts, 42 arch cover,
+            // 43 aerial, 44 trim, 45 tank, 46 glass. A car that has none of them reads none of
+            // them and nothing happens, so the list costs a few dead lookups on an ordinary
+            // saloon and gives a lowrider the interior it is supposed to have.
             foreach (var kind in new[] { 11, 12, 13, 15, 16,
-                                         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })
+                                         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+                                         25, 27, 28, 30, 33, 34, 35, 38,
+                                         39, 40, 41, 42, 43, 44, 45, 46 })
             {
                 try
                 {

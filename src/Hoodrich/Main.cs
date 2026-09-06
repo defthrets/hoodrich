@@ -1025,6 +1025,13 @@ namespace Hoodrich
                                         "minivan2", "voodoo", "buccaneer2")
                 {
                     Built = true,
+
+                    // A LOWRIDER, not a van with an engine in it: the whole shop, the switch
+                    // and the rams, and dropped on its springs. It is the thing the yard is
+                    // built round, so it is the one car here that has had everything done.
+                    Hydraulics = true,
+                    Lowered = true,
+
                     BootOpen = true,
 
                     // AND THE BACK DOORS. 2 and 3 are the rear pair -- a van with its boot up
