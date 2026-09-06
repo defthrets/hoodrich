@@ -1069,8 +1069,8 @@ namespace Hoodrich
                 // West Coast Classics, like everything else with a speaker in it.
                 //
                 // One station across the whole mod now, asked for by name after hearing it
-                // several ways: the van, this, the Journey, the two on the court, the boombox
-                // and the cars the set drives round the block. The yard sounds like one place
+                // several ways: the van, this, the two on the court, the boombox and the cars
+                // the set drives round the block. The yard sounds like one place
                 // with one radio on rather than four things that each happened to be tuned
                 // somewhere.
                 //
@@ -1090,27 +1090,11 @@ namespace Hoodrich
                     QuietTo = 6
                 });
 
-                // The Journey at the top of the yard, with its own music going.
-                //
-                // Left the colour it came in. Everything else in this lot is the set's green
-                // because everything else in this lot belongs to the set; a camper somebody has
-                // been living in for fifteen years is scenery, and painting it would say "the
-                // mod put this here" out loud. Its paint index is below zero, which the parked
-                // car reads as no instruction rather than as a colour.
-                //
-                // Same station as the other van, which is what was asked for and is also right
-                // -- these two are thirty metres apart at opposite ends of one yard, and one
-                // yard with one thing playing is a party rather than two speakers.
-                _cars.Add(new ParkedCar(new Vector3(-192.162f, -1738.344f, 32.146f), 321.334f,
-                                        LeaveThePaint,
-                                        "journey", "camper", "rvcamper")
-                {
-                    Running = true,
-                    Radio = "RADIO_09_HIPHOP_OLD",
-
-                    QuietFrom = 2,
-                    QuietTo = 6
-                });
+                // THE JOURNEY AT THE TOP OF THE YARD IS GONE. A camper somebody had been
+                // living in for fifteen years was the right idea in the wrong spot: the camp
+                // that came in with the Lamar scene -- the shelters, the mattress, the stove
+                // and the man among them -- is stood on the same ground and says it better,
+                // and a van parked through the middle of it said the mod put both there.
 
                 // ---- the meet on the court, after dark -----------------------------
                 //
