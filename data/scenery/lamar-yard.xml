@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="ISO-8859-1"?>
 <SpoonerPlacements>
-	<Note />
+	<Note>absorbs: newnew, newlamar</Note>
 	<AudioFile volume="400" />
 	<ClearDatabase>false</ClearDatabase>
 	<ClearWorld>0</ClearWorld>
@@ -970,40 +970,6 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x1c64f828</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>xm_prop_x17dlc_rep_sign_01a</HashName>
-		<InitialHandle>355433</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>true</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-216.111908</X>
-			<Y>-1723.39539</Y>
-			<Z>32.5257835</Z>
-			<Pitch>0.0166595504</Pitch>
-			<Roll>-0.000486317615</Roll>
-			<Yaw>46.8423843</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
 		<ModelHash>0x50a3bfd2</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
@@ -1068,40 +1034,6 @@
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
 			<Yaw>125.019943</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x2a461cf4</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>prop_scafold_03a</HashName>
-		<InitialHandle>127573</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-189.755997</X>
-			<Y>-1725.83533</Y>
-			<Z>31.665</Z>
-			<Pitch>5.32716342e-07</Pitch>
-			<Roll>5.05572473e-07</Roll>
-			<Yaw>-78.8240738</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>

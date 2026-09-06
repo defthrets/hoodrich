@@ -212,10 +212,18 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
-THE SCAFFOLDING AT LAMAR'S IS SOLID. The one placed was a destruction root,
-the collapsible scaffold out of a mission, and a root has no collision of its
-own; the log said so by name. It is a standard scaffold tower now, on the
-same spot.
+THE SIGN ON LAMAR'S WALL IS DOWN. "Trespassers will be shot" is off the fence.
+
+A SHIPPED SCENE NAMES THE SAVES IT CAME FROM. A scene taken into the mod is
+built out of two or three spooner saves, merged and edited, and the saves it
+came from were still being read from Menyoo's folder -- putting back the sign
+that had just been taken down. A shipped file's Note now says "absorbs: ..."
+and those saves are skipped. Nothing to delete on your side.
+
+THE SCAFFOLDING AT LAMAR'S IS GONE, BOTH OF THEM. The first was a destruction
+root, the collapsible scaffold out of a mission, which has no collision of its
+own; the tower put in its place was a guess at size. The next one is being
+placed in the spooner.
 
 LAMAR'S YARD HAS A BAR. Fifteen more placements from the spooner: two fridges
 under neon in the corner with a couple of lines laid out, a bong on the

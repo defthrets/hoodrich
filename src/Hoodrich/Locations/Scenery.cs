@@ -114,6 +114,41 @@ namespace Hoodrich.Locations
         // ---- reading the folder ----------------------------------------------------
 
         /// <summary>
+        /// The spooner saves a scene file says it was made from: the names after "absorbs:"
+        /// in its Note, without their extension. Nothing, for a file with no such note.
+        /// </summary>
+        private static List<string> Absorbed(string path)
+        {
+            var names = new List<string>();
+
+            try
+            {
+                var text = File.ReadAllText(path);
+                var open = text.IndexOf("<Note>", StringComparison.OrdinalIgnoreCase);
+                if (open < 0) return names;
+
+                var close = text.IndexOf("</Note>", open, StringComparison.OrdinalIgnoreCase);
+                if (close < 0) return names;
+
+                var note = text.Substring(open + 6, close - open - 6).Trim();
+                if (!note.StartsWith("absorbs:", StringComparison.OrdinalIgnoreCase)) return names;
+
+                foreach (var raw in note.Substring(8).Split(',', ';'))
+                {
+                    var name = raw.Trim();
+                    if (name.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)) name = name.Substring(0, name.Length - 4);
+                    if (name.Length > 0) names.Add(name);
+                }
+            }
+            catch
+            {
+                // A file that cannot be read absorbs nothing.
+            }
+
+            return names;
+        }
+
+        /// <summary>
         /// Every scene file, from the mod's own folder and from Menyoo's.
         ///
         /// A file in the mod's scenery folder wins over one of the same name in Menyoo's, so a
@@ -139,6 +174,24 @@ namespace Hoodrich.Locations
                 Log.Debug("Could not look in the scenery folder: " + ex.Message);
             }
 
+            // WHAT THE SHIPPED FILES HAVE ABSORBED. A scene taken into the mod is usually
+            // built out of two or three spooner saves, merged and then edited -- a sign
+            // taken off a wall, a model swapped for one with collision -- and the saves it
+            // came from are still in Menyoo's folder, still read, and still put the sign
+            // back. Not by the same-name rule, because the names differ, and not by the
+            // same-spot rule, because the thing was taken out. So a shipped file names the
+            // saves it was made from in its Note -- "absorbs: newnew, newlamar" -- and
+            // those are skipped from then on.
+            var absorbed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var path in files)
+            {
+                foreach (var name in Absorbed(path))
+                {
+                    if (!absorbed.ContainsKey(name)) absorbed[name] = Path.GetFileName(path);
+                }
+            }
+
             if (_cfg == null || _cfg.SceneryFromMenyoo)
             {
                 try
@@ -148,7 +201,19 @@ namespace Hoodrich.Locations
 
                     if (Directory.Exists(theirs))
                     {
-                        files.AddRange(Directory.GetFiles(theirs, "*.xml", SearchOption.AllDirectories));
+                        foreach (var path in Directory.GetFiles(theirs, "*.xml", SearchOption.AllDirectories))
+                        {
+                            string by;
+
+                            if (absorbed.TryGetValue(Path.GetFileNameWithoutExtension(path), out by))
+                            {
+                                Log.Info("Scenery: " + Path.GetFileName(path) + " in the spooner folder is skipped -- " +
+                                         by + " absorbed it.");
+                                continue;
+                            }
+
+                            files.Add(path);
+                        }
                     }
                 }
                 catch (Exception ex)
