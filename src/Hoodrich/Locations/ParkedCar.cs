@@ -215,6 +215,9 @@ namespace Hoodrich.Locations
         public int QuietFrom = -1;
         public int QuietTo = -1;
 
+        /// <summary>Set by the owner: whether this is off for the whole of tonight. See Core.Nights.</summary>
+        public System.Func<bool> OffTonight;
+
         /// <summary>
         /// Whether the quiet hours take the car away entirely rather than just switching it off.
         ///
@@ -228,6 +231,9 @@ namespace Hoodrich.Locations
         {
             get
             {
+                // Not tonight, whatever the hour. See Core.Nights.
+                if (OffTonight != null && OffTonight()) return true;
+
                 if (QuietFrom < 0 || QuietTo < 0 || QuietFrom == QuietTo) return false;
 
                 try

@@ -301,6 +301,9 @@ namespace Hoodrich
         private readonly Gangs.Homies _homies;
         private readonly ParkedCar _meetOne;
         private readonly ParkedCar _meetTwo;
+
+        /// <summary>The set at the meet at the wash on Innocence, the nights it is on.</summary>
+        private readonly Entourage _washCrew;
         private readonly Fixture _partyBarrel;
 
         /// <summary>The worklight by the skip. See Fixture.Beam.</summary>
@@ -1146,6 +1149,86 @@ namespace Hoodrich
                 _meet.QuietFrom = 6;
                 _meet.QuietTo = 20;
 
+                // NOT EVERY NIGHT. A meet that is there every single night is furniture.
+                // The court rolls a little over half its nights and the wash a little under,
+                // each on its own name, so some nights it is one, some the other, some both
+                // and some neither. See Core.Nights.
+                System.Func<bool> courtOff = () => !Core.Nights.On("the meet on the court", 55);
+                System.Func<bool> washOff = () => !Core.Nights.On("the meet at the wash", 45);
+
+                _meetOne.OffTonight = courtOff;
+                _meetTwo.OffTonight = courtOff;
+                _meet.OffTonight = courtOff;
+
+                // ---- the meet at the wash on Innocence, some nights ----------------------
+                //
+                // Laid out from the one point that was walked -- the middle of the lane,
+                // facing down it -- with a car either side of that one and the set stood
+                // in front of and behind the three. Move any of them by sending a readout
+                // from where it should stand.
+                _cars.Add(new ParkedCar(new Vector3(153.485f, -1510.290f, 28.640f), 220.867f,
+                                        MetallicDarkGreen, "fr36", "elegy2", "sultan")
+                {
+                    Built = true,
+                    Running = true,
+                    Lights = true,
+                    Radio = "RADIO_03_HIPHOP_NEW",
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
+                    QuietFrom = 6,
+                    QuietTo = 21,
+                    GoneWhenQuiet = true,
+                    OffTonight = washOff
+                });
+                _cars.Add(new ParkedCar(new Vector3(149.326f, -1513.889f, 28.640f), 220.867f,
+                                        MetallicDarkGreen, "hermes", "tornado", "buccaneer2")
+                {
+                    Built = true,
+                    Running = true,
+                    Lights = true,
+                    Radio = "RADIO_03_HIPHOP_NEW",
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
+                    QuietFrom = 6,
+                    QuietTo = 21,
+                    GoneWhenQuiet = true,
+                    OffTonight = washOff
+                });
+                _cars.Add(new ParkedCar(new Vector3(157.644f, -1506.691f, 28.640f), 220.867f,
+                                        MetallicDarkGreen, "gauntlet4", "gauntlet", "dominator")
+                {
+                    Stock = true,
+                    Running = true,
+                    Lights = true,
+                    Radio = "RADIO_03_HIPHOP_NEW",
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
+                    QuietFrom = 6,
+                    QuietTo = 21,
+                    GoneWhenQuiet = true,
+                    OffTonight = washOff
+                });
+
+                _washCrew = new Entourage(_gangs, "families",
+                                          new Vector3(154.270f, -1511.197f, 28.640f), 40.867f, "the meet at the wash")
+                    .Stand(new Vector3(156.018f, -1511.536f, 28.640f), 40.867f,
+                           "WORLD_HUMAN_STAND_MOBILE", Fam(0), armed: false)
+                    .Stand(new Vector3(154.354f, -1512.976f, 28.640f), 40.867f,
+                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false)
+                    .Stand(new Vector3(151.859f, -1515.135f, 28.640f), 40.867f,
+                           "WORLD_HUMAN_DRINKING", Women, armed: false)
+                    .Stand(new Vector3(150.195f, -1516.575f, 28.640f), 40.867f,
+                           "WORLD_HUMAN_STAND_IMPATIENT", Fam(2), armed: false)
+                    .Stand(new Vector3(158.514f, -1509.377f, 28.640f), 40.867f,
+                           "WORLD_HUMAN_SMOKING_POT", Fam(0), armed: false)
+                    .Stand(new Vector3(160.177f, -1507.938f, 28.640f), 40.867f,
+                           "WORLD_HUMAN_LEANING", Fam(1), armed: false)
+                    .Stand(new Vector3(152.485f, -1507.453f, 28.640f), 220.867f,
+                           "WORLD_HUMAN_PARTYING", Women, armed: false, anim: DancingAlt)
+                    .Stand(new Vector3(150.821f, -1508.892f, 28.640f), 220.867f,
+                           "WORLD_HUMAN_STAND_MOBILE", Fam(2), armed: false);
+
+                _washCrew.QuietFrom = 6;
+                _washCrew.QuietTo = 21;
+                _washCrew.OffTonight = washOff;
+
                 // The shop's van, up on the road above the lot.
                 _cars.Add(new ParkedCar(new Vector3(-214.160f, -1739.805f, 31.709f), 52.137f,
                                         ShopGreen,
@@ -1618,6 +1701,11 @@ namespace Hoodrich
                                     new Vector3(leader.SpotX, leader.SpotY, leader.SpotZ),
                                     leader.Heading, leader.Name)
                         .Stand(new Vector3(-161.084f, -1635.432f, 34.029f), 70.469f, "WORLD_HUMAN_GUARD_STAND")
+
+                        // THE LOOKOUT, at the window upstairs with the binoculars, and a gun
+                        // for the day somebody comes up the stairs. Armed like the rest of the
+                        // yard, so he answers an attack the way they do.
+                        .Stand(new Vector3(-162.397f, -1636.123f, 37.246f), 55.688f, "WORLD_HUMAN_BINOCULARS")
 
                         // Two of theirs round the side, not doing anything in particular.
                         .Stand(new Vector3(-162.494f, -1630.635f, 33.639f), 85.456f,
@@ -3022,6 +3110,7 @@ namespace Hoodrich
                     foreach (var car in _cars) car.Update();
                     _party.Update();
                     _meet.Update();
+                    _washCrew.Update();
                     _partyBarrel.Update();
                     _partyLight?.Update();
 
@@ -4097,6 +4186,7 @@ namespace Hoodrich
             }
             try { _party?.RestoreWorld(); } catch { /* teardown */ }
             try { _meet?.RestoreWorld(); } catch { /* teardown */ }
+            try { _washCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyLight?.RestoreWorld(); } catch { /* teardown */ }
 
