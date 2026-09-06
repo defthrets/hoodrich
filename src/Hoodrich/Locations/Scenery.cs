@@ -87,11 +87,16 @@ namespace Hoodrich.Locations
 
             /// <summary>Peds still waiting on an animation dictionary.</summary>
             public readonly List<Waiting> Waits = new List<Waiting>();
+
+            /// <summary>The props that have been looked at for a body. See Solid.</summary>
+            public readonly HashSet<int> Solid = new HashSet<int>();
         }
 
         private readonly List<Scene> _scenes = new List<Scene>();
         private bool _read;
         private int _nextLook;
+        private int _nextSolid;
+        private const int SolidEveryMs = 700;
 
         /// <summary>How often the ranges are checked, and how many placements go up per tick while building.</summary>
         private const int LookEveryMs = 700;
@@ -235,6 +240,7 @@ namespace Hoodrich.Locations
 
             Rally(now);
             Given(now);
+            Solid(now);
 
             var range = _cfg == null ? 220f : _cfg.SceneryRange;
 
@@ -297,7 +303,7 @@ namespace Hoodrich.Locations
                 // thing described twice in two files -- both of which get built. Two identical
                 // frozen props on one spot z-fight, which reads as a flickering fence rather
                 // than as a duplicate, so it is caught here rather than left to be noticed.
-                if (Already(item))
+                if (Already(scene, item))
                 {
                     scene.Cursor++;
                     scene.Waited = 0;
@@ -364,17 +370,102 @@ namespace Hoodrich.Locations
         /// <summary>How close two of the same model have to be to count as the same thing.</summary>
         private const float SameSpot = 0.3f;
 
+        // ==================================================================
+        // Solid
+        // ==================================================================
+
         /// <summary>
-        /// Whether this exact thing is already standing, from any scene.
+        /// Whether every prop standing actually has a body -- something a man walks into
+        /// rather than through.
+        ///
+        /// A prop is stood up the moment its scene comes into range, up to two hundred
+        /// metres out, with collision switched on; but a prop made before the game has
+        /// streamed anything round it can come up with no physics at all, and one frozen
+        /// in that state stays a picture of a fridge for the rest of the night. So each
+        /// prop is looked at once the ground round it has loaded, and one without a body
+        /// is given one: collision on again, physics woken, put back exactly where it was
+        /// saved and frozen again. One that still has none is a model with no collision to
+        /// give -- a neon sign, a line of powder -- and is written down by name so that is
+        /// known rather than guessed. Nothing that already has a body is touched.
+        /// </summary>
+        private void Solid(int now)
+        {
+            if (now < _nextSolid) return;
+            _nextSolid = now + SolidEveryMs;
+
+            foreach (var scene in _scenes)
+            {
+                if (!scene.Built && !scene.Working) continue;
+
+                foreach (var made in scene.Up)
+                {
+                    if (made == null || !(made is Prop)) continue;
+                    if (scene.Solid.Contains(made.Handle)) continue;
+
+                    try
+                    {
+                        if (!made.Exists())
+                        {
+                            scene.Solid.Add(made.Handle);
+                            continue;
+                        }
+
+                        if (!Function.Call<bool>(Hash.HAS_COLLISION_LOADED_AROUND_ENTITY, made.Handle)) continue;
+
+                        scene.Solid.Add(made.Handle);
+
+                        if (Function.Call<bool>(Hash.DOES_ENTITY_HAVE_PHYSICS, made.Handle)) continue;
+
+                        Spooner.Placed item;
+                        scene.Was.TryGetValue(made.Handle, out item);
+
+                        Function.Call(Hash.SET_ENTITY_COLLISION, made.Handle, true, true);
+                        Function.Call(Hash.ACTIVATE_PHYSICS, made.Handle);
+
+                        if (item != null)
+                        {
+                            Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, made.Handle,
+                                          item.At.X, item.At.Y, item.At.Z, false, false, false);
+                            Function.Call(Hash.SET_ENTITY_ROTATION, made.Handle,
+                                          item.Pitch, item.Roll, item.Yaw, 2, true);
+
+                            if (item.Frozen || !item.Gravity)
+                            {
+                                Function.Call(Hash.FREEZE_ENTITY_POSITION, made.Handle, true);
+                                Function.Call(Hash.SET_ENTITY_DYNAMIC, made.Handle, false);
+                            }
+                        }
+
+                        var given = Function.Call<bool>(Hash.DOES_ENTITY_HAVE_PHYSICS, made.Handle);
+                        var name = item == null ? Names.Say(made.Model.Hash) : Say(item);
+
+                        Log.Info("Scenery: " + name + " in " + scene.Name + " had no body; " +
+                                 (given ? "it has one now." : "the model has no collision to give it."));
+                    }
+                    catch
+                    {
+                        scene.Solid.Add(made.Handle);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether this exact thing is already standing, from ANOTHER scene.
         ///
         /// The same model at the same place, within a third of a metre. Deliberately narrow:
         /// two of the same fence a metre apart is a fence line somebody built on purpose, and
-        /// only a pair sat inside each other is a duplicate.
+        /// only a pair sat inside each other is a duplicate. A scene's own placements are
+        /// never held against each other: two lines of powder four centimetres apart on a
+        /// fridge were laid out that way on purpose, and the second was being skipped as a
+        /// copy of the first.
         /// </summary>
-        private bool Already(Spooner.Placed item)
+        private bool Already(Scene mine, Spooner.Placed item)
         {
             foreach (var scene in _scenes)
             {
+                if (ReferenceEquals(scene, mine)) continue;
+
                 foreach (var pair in scene.Was)
                 {
                     var was = pair.Value;
@@ -475,6 +566,10 @@ namespace Hoodrich.Locations
 
         private static Entity Thing(Spooner.Placed item, Model model)
         {
+            // Its collision asked for by name as well as its model, so a prop stood up two
+            // hundred metres out has a body to be given. Cheap, and no-op where it is loaded.
+            try { Function.Call(Hash.REQUEST_COLLISION_FOR_MODEL, model.Hash); } catch { }
+
             var prop = World.CreateProp(model, item.At, false, false);
             if (prop == null || !prop.Exists()) return null;
 
@@ -1054,6 +1149,7 @@ namespace Hoodrich.Locations
             scene.Up.Clear();
             scene.ByHandle.Clear();
             scene.Was.Clear();
+            scene.Solid.Clear();
             scene.Waits.Clear();
             scene.Cursor = 0;
             scene.Waited = 0;

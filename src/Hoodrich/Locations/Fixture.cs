@@ -210,6 +210,9 @@ namespace Hoodrich.Locations
                 var down = Function.Call<bool>(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _prop.Handle);
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, _prop.Handle, true);
 
+                // Solid, said again now the ground is here to be solid against.
+                Function.Call(Hash.SET_ENTITY_COLLISION, _prop.Handle, true, true);
+
                 if (!down) return;
 
                 // THE SECOND PASS. A bag on a table is put down onto whatever is under it at

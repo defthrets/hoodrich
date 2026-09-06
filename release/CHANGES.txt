@@ -204,6 +204,14 @@ phone up to film, for a few seconds at a time, never more than two thirds of
 them at once. When the cars stop the last of them wind down within a few
 seconds and go back to standing about.
 
+EVERYTHING IN A SCENE IS SOLID, OR SAYS WHY NOT. A prop is stood up the moment
+its scene comes into range, up to two hundred metres out, and one made before
+the game has streamed anything round it can come up with no body at all --
+a picture of a fridge you walk through. Every prop is looked at once the
+ground round it has loaded, and one without a body is given one. A model that
+has no collision to give is named in the log. A scene's own placements are no
+longer taken for duplicates of each other, so both lines on the bar get laid.
+
 LAMAR'S YARD HAS A BAR. Fifteen more placements from the spooner: two fridges
 under neon in the corner with a couple of lines laid out, a bong on the
 table, scaffolding up the side, and a body behind the plants.
