@@ -212,6 +212,11 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
+AN FR36 ON THE LOT BEHIND INNOCENCE. One of the set's: the green, competition
+suspension, dark smoke on the glass, the street kit all round -- the bumpers
+and skirts picked by name, so it is the Street kit on this car and not
+whatever happens to be last in the list.
+
 A LOOKOUT AT GERALD'S WINDOW. One of the set upstairs at the window with the
 binoculars, armed like the rest of the yard, so he answers an attack the way
 they do.

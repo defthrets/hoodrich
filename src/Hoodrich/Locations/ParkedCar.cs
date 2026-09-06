@@ -145,6 +145,19 @@ namespace Hoodrich.Locations
         public bool Stock;
 
         /// <summary>
+        /// Mods asked for by what they are called: slot to a word, and the slot gets the
+        /// first option whose name has the word in it. The index of "Street Front Bumper"
+        /// is different on every car; the word is not.
+        /// </summary>
+        public System.Collections.Generic.Dictionary<int, string> Wants;
+
+        /// <summary>Mods asked for by index: slot to index, or -1 for the last one the car has.</summary>
+        public System.Collections.Generic.Dictionary<int, int> Mods;
+
+        /// <summary>The glass, if it is not to be whatever the build gives it: 1 black, 2 dark smoke, 3 light smoke.</summary>
+        public int Tint = -1;
+
+        /// <summary>
         /// Dropped on its springs, and nothing else.
         ///
         /// Separate from both of the others on purpose. Built is the whole shop and Stock is
@@ -443,6 +456,9 @@ namespace Hoodrich.Locations
 
                 if (Built && !Stock) BuildIt();
 
+                Wanted();
+                Asked();
+
                 // Five is the interior, six is the dash. Both, because a green interior with a
                 // black dashboard is half a job you can see from the door.
                 if (Interior.HasValue)
@@ -489,6 +505,87 @@ namespace Hoodrich.Locations
         /// silently does nothing on the rest, which is the sort of thing that looks like the
         /// mod not working.
         /// </summary>
+        /// <summary>The mods asked for by name. See Wants.</summary>
+        private void Wanted()
+        {
+            if (Wants == null) return;
+
+            foreach (var pair in Wants)
+            {
+                try
+                {
+                    var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, pair.Key);
+                    if (many <= 0) continue;
+
+                    var pick = many - 1;
+
+                    for (var i = 0; i < many; i++)
+                    {
+                        if (ModName(pair.Key, i).IndexOf(pair.Value, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+
+                        pick = i;
+                        break;
+                    }
+
+                    Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, pair.Key, pick, false);
+                }
+                catch
+                {
+                    // A slot this car has not got.
+                }
+            }
+        }
+
+        /// <summary>The mods asked for by index, and the glass. See Mods and Tint.</summary>
+        private void Asked()
+        {
+            if (Mods != null)
+            {
+                foreach (var pair in Mods)
+                {
+                    try
+                    {
+                        var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, pair.Key);
+                        if (many <= 0) continue;
+
+                        var index = pair.Value < 0 || pair.Value >= many ? many - 1 : pair.Value;
+                        Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, pair.Key, index, false);
+                    }
+                    catch
+                    {
+                        // A slot this car has not got.
+                    }
+                }
+            }
+
+            if (Tint >= 0)
+            {
+                try { Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, Tint); }
+                catch { /* the glass stays as it was */ }
+            }
+        }
+
+        /// <summary>What a mod option is called, the way the shop reads it, or nothing.</summary>
+        private string ModName(int slot, int index)
+        {
+            try
+            {
+                var label = Function.Call<string>(Hash.GET_MOD_TEXT_LABEL, _car.Handle, slot, index);
+
+                if (!string.IsNullOrEmpty(label) && Function.Call<bool>(Hash.DOES_TEXT_LABEL_EXIST, label))
+                {
+                    var text = Function.Call<string>(Hash.GET_FILENAME_FOR_AUDIO_CONVERSATION, label);
+                    if (!string.IsNullOrEmpty(text) && text != "NULL") return text;
+                }
+            }
+            catch
+            {
+                // Nameless, then.
+            }
+
+            return "";
+        }
+
         private void BuildIt()
         {
             // 11 engine, 12 brakes, 13 transmission, 15 suspension, 16 armour -- and then the

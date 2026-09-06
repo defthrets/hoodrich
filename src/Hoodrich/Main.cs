@@ -1234,6 +1234,21 @@ namespace Hoodrich
                                         ShopGreen,
                                         "youga2", "youga", "surfer", "burrito3"));
 
+                // ONE OF THE SET'S, ON THE LOT BEHIND INNOCENCE. An FR36 in the set's green:
+                // competition suspension, dark smoke on the glass, the street kit all round
+                // -- the bumpers and the skirts picked by name, because the index of "Street
+                // Front Bumper" is different on every car and the word is not.
+                _cars.Add(new ParkedCar(new Vector3(-27.291f, -1387.621f, 28.852f), 358.691f,
+                                        MetallicDarkGreen, "fr36")
+                {
+                    Wants = new System.Collections.Generic.Dictionary<int, string>
+                    {
+                        { 1, "Street" }, { 2, "Street" }, { 3, "Street" }
+                    },
+                    Mods = new System.Collections.Generic.Dictionary<int, int> { { 15, -1 } },
+                    Tint = 2
+                });
+
                 // The lot behind the lab, of an evening.
                 //
                 // Everybody is placed on a ring around the fire and turned to face it, worked
