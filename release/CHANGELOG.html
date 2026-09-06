@@ -2,10 +2,13 @@
 
 Two fixes off the first day of reports.
 
-<ul>
-<li><b>The phone stopped working at the safe house, and so did the kitchen.</b> The game's own house scripts raise the mission flag and do not always clear it, and this mod stands down while that flag is up — right on a story mission, wrong in your own kitchen. The flag no longer stands it down inside the house. Every other reason still does. On 0.6.0, <b>PauseDuringMission=false</b> in the ini works around it.</li>
-<li><b>The feed can be turned off on screen.</b> The old setting only chose which side of the screen a post landed on; this one means neither, and nothing chimes either. The timeline still fills, so it is all there to read in the phone. <b>FeedOnScreen</b> under [Socials], a tick on the settings screen, or <b>NumPad *</b> to toggle it where you stand — which writes the answer back to the ini. <b>FeedKey=None</b> takes the key away.</li>
-</ul>
+<b>The phone stopped working once you got to the safe house</b>, and so did the kitchen: you could not call Tao Cheng and the counter would not answer. Walking into Franklin's runs the game's own house scripts — the bed, the wardrobe, the television — and any of them can raise the mission flag and then leave it raised while you potter about indoors. This mod stands down while that flag is up, which is the right thing to do on a story mission and the wrong thing to do in your own kitchen. From where you are standing it looks like the mod simply died, with nothing on screen to say why. The flag no longer stands it down inside the house. Every other reason still does — the controls being taken off you, a cutscene, a faded screen, the pause menu — and those are the ones that are actually true when a mission is running. If you are staying on 0.6.0, <b>PauseDuringMission=false</b> in the ini works around it.
+
+<b>The social feed can be turned off on screen</b>, which it could not be before. The old setting only ever chose which side of the screen a post landed on; this one means neither. Nothing is drawn, nothing goes into the game's own notification stack, and so nothing chimes at you either. The timeline still fills in the background, so every post is there to read in the phone whenever you want it — it just stops narrating itself while you play.
+
+There are three ways to work it. <b>FeedOnScreen</b> under <b>[Socials]</b> in Hoodrich.ini, a tick on the mod's own settings screen, and a key — <b>NumPad *</b> by default — that toggles it where you stand and writes the answer back to the ini, so it survives a restart. Set <b>FeedKey=None</b> if you would rather have the key back.
+
+Nothing else changed. If you are on 0.6.0 and neither of those has bothered you, there is no reason to hurry.
 
 
 <b>0.6.0</b> — 6 September 2026
