@@ -204,6 +204,28 @@ phone up to film, for a few seconds at a time, never more than two thirds of
 them at once. When the cars stop the last of them wind down within a few
 seconds and go back to standing about.
 
+THE KITCHEN COUNTER ANSWERS ONLY AT THE COUNTER. At nearly two metres it
+claimed the key from most of Denise's kitchen, the fridge and the beer
+included. A pace now, and the ring on the floor is the size of it.
+
+EVERYBODY IN BOTH ROOMS WORKS. The set's own three wandered, and a room this
+full of equipment is a room to walk into things in. They inspect the crop in
+the grow room and watch the cook in the pill press now, at their spots, the way
+the lab staff do at their stations.
+
+THE PLACE BLIPS ARE OFF THE MAP. Eighty-three grey markers made the legend a
+scroll, and the list in data\doors\PLACES.txt is where the places are.
+
+THE ROOM FINDS ITS OWN PLANTS. Three rounds of station names guessed from
+memory and from other mods put lamps and fans and drying racks in the grow
+room and never a table or a plant, and the game will not say which names it
+has. So on the first visit, behind the fade, the room is asked the only way it
+can be: each candidate name is switched on alone, the floor is measured with a
+grid of rays for anything now standing higher than a hose, and it is switched
+off again. The names that put something on the floor are written to the ini
+under Found and switched on for every station from then on. The log lists
+every name and what it did. The grow room's door inside is at the blue door.
+
 THE PLANTS. The game accepts any set name you give it and says it is active,
 so nine invented plant names all "took" and drew nothing while the lights and
 the drying racks came up around them. The plants are the standard stage-three
@@ -258,35 +280,6 @@ THE MAN ON THE COUCH faces the party now. The seat helper worked out which way
 a sitter faces by looking past the couch, and the one thing that would have told
 it -- the backrest -- was the one thing it was told to ignore. It probes the
 couch's own height at each edge now and sits him facing away from the tall one.
-
-
-A BLIP FOR EVERY ONE OF THEM
-
-A list of a hundred and thirty-five places is a list. Eighty-three of them now
-have a grey blip on the map at roughly where they are, map only and not the
-minimap, so the list is a set of directions instead. A blip goes as soon as you
-turn that place into a door, because the door puts its own there -- so the map
-thins out as the work gets done. Turn the lot off with the tick under "Doors".
-
-Those coordinates were not typed either. They came out of the marker table of
-the same interior loader, by finding the instruction that pushes each marker's
-name and reading the three numbers pushed immediately before it. Reading the
-numbers AFTER the name, which is the obvious way round, pairs every marker with
-the next one's coordinate: it looked right on the casino by luck and put
-Cluckin' Bell five kilometres out to sea. Nine of them were then checked against
-places whose whereabouts are not in dispute and every one landed within sixteen
-metres.
-
-Fourteen more places came out of that table than were on the list -- Humane
-Labs, the Kortz Center loading bay and sewer, O'Neil farm, Roger's scrapyard,
-the wrecked hospital, the Chop Shop warehouses and the rest.
-
-And ware02 is the WEED FARM, not the document forgery office. The string table
-settles it: ware01 is followed by the meth sets, ware03 by the cocaine, ware04
-by the counterfeit cash and ware02 by the dryers. It is the room this mod
-already opens at Lamar's. The forgery office is a fifth business whose
-placement name is not in that table at all, so it is off the list rather than
-guessed at.
 
 
 EVERYWHERE ELSE ONLINE

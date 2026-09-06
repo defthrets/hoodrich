@@ -23,7 +23,10 @@ namespace Hoodrich.Locations
         private static readonly Vector3 Counter = new Vector3(-11.415f, -1428.046f, 31.101f);
 
         private const float MarkerRange = 20f;
-        private const float UseRange = 1.8f;
+        // A PACE, NOT A ROOM. At 1.8m the counter claimed the key from most of Denise's
+        // kitchen, the fridge and the beer included, and two things answering one key is one
+        // thing that never works. Stand at the counter to work the counter.
+        private const float UseRange = 1.0f;
 
         private readonly Action _open;
         private readonly Func<bool> _busy;
@@ -81,7 +84,7 @@ namespace Hoodrich.Locations
             {
                 World.DrawMarker(MarkerType.Cylinder, Counter - new Vector3(0f, 0f, 0.95f),
                                  Vector3.Zero, Vector3.Zero,
-                                 new Vector3(0.5f, 0.5f, 0.3f),
+                                 new Vector3(0.35f, 0.35f, 0.25f),
                                  Color.FromArgb(120, 126, 190, 79),
                                  false, false, false, null, null, false);
             }

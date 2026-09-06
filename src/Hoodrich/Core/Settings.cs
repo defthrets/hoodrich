@@ -159,14 +159,6 @@ namespace Hoodrich.Core
         /// </summary>
         public readonly List<DoorSpec> Doors = new List<DoorSpec>();
 
-        /// <summary>
-        /// Map blips for the places you have not turned into doors yet.
-        ///
-        /// On, because a list of a hundred and thirty-five places is not much use as a list.
-        /// Off for anybody who wants their map back.
-        /// </summary>
-        public bool ShowPlaces = true;
-
         // ---- economy -----------------------------------------------------------
         public float BulkPurchaseDiscountPercent = 50f;
 
@@ -568,11 +560,11 @@ namespace Hoodrich.Core
             // lab and the one by the house opened the weed farm, which is only findable by
             // standing in both -- so the coordinates are swapped here rather than the names:
             // the roller door at Lamar's is the grow room because that is where the grow is.
-            s.Doors.Add(Worked(Dressed(Named(Also(ReadDoor(ini, "GrowRoom", "grow room",
+            s.Doors.Add(Working(Worked(Guessed(Dressed(Named(Also(ReadDoor(ini, "GrowRoom", "grow room",
                                  "bkr_biker_dlc_int_ware02",
                                  BlipSprite.Weed,
                                  -201.384f, -1707.909f, 32.664f, 313.362f,
-                                 1062.130f, -3183.587f, -39.164f, 159.785f),
+                                 1065.853f, -3183.463f, -39.164f, 249.058f),
                              1039.000f, -3098.000f, -39.000f,
                              1063.000f, -3195.000f, -39.000f,
                              1093.000f, -3195.000f, -39.000f,
@@ -605,10 +597,16 @@ namespace Hoodrich.Core
                              + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_"),
                              WeedSets),
+                             WeedGuesses),
                              // THE SET'S OWN, AND MOSTLY WOMEN. There is one Families female
                              // model in the game, so two of the three are her -- given random
                              // clothing on the way in, or the room has twins in it.
-                             "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"));
+                             "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"),
+                             // Inspecting the crop, every clip on the game's own list.
+                             "anim@amb@business@weed@weed_inspecting_high_dry@",
+                             "weed_inspecting_high_idle_01_inspector",
+                             "weed_inspecting_high_idle_02_clipboard",
+                             "weed_inspecting_high_idle_04_pen"));
 
             // radar_production_crack, 497 -- the razor blade.
             //
@@ -620,7 +618,7 @@ namespace Hoodrich.Core
             // The ini section keeps its old name so an existing Hoodrich.ini with a [CrackDen]
             // block in it still overrides the right door. What it is CALLED on screen comes
             // from the default below, which the ini can override on its own.
-            s.Doors.Add(Worked(Staffed(Dressed(Named(Also(ReadDoor(ini, "CrackDen", "pill press garage",
+            s.Doors.Add(Working(Worked(Staffed(Dressed(Named(Also(ReadDoor(ini, "CrackDen", "pill press garage",
                                  "tr_tuner_methlab_1",
                                  (BlipSprite)497,
                                  -105.053f, -1408.631f, 29.673f, 226.934f,
@@ -653,8 +651,11 @@ namespace Hoodrich.Core
                                      1002.984f, -3194.868f, -38.993f, 358.821f),
                              Cooking("mp_f_meth_01", "base_idle_tank_sacid",
                                      1014.616f, -3198.087f, -38.993f, 105.327f)),
-                             // And the set's own three, who wander and talk as before.
-                             "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"));
+                             // And the set's own three, at work as well.
+                             "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"),
+                             "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
+                             "base_idle_tank_clipboard", "base_idle_tank_pencil",
+                             "base_idle_tank_clipboard"));
             // ANY NUMBER OF MORE DOORS, named in the ini rather than in here.
             //
             // The two above are the mod's own. Everything else -- the casino, a club, a
@@ -663,7 +664,6 @@ namespace Hoodrich.Core
             // coordinates and a name, and the two coordinates can only honestly come from
             // somebody standing on them. See the two rows on the settings screen that write
             // them down.
-            s.ShowPlaces = ini.GetBool("Doors", "ShowPlaces", s.ShowPlaces);
 
             foreach (var name in ini.GetString("Doors", "More", "").Split(','))
             {
@@ -848,6 +848,7 @@ namespace Hoodrich.Core
                 Section = section,
                 Name = ini.GetString(section, "Name", name),
                 Ipl = ini.GetString(section, "Ipl", ipl),
+                Found = ini.GetString(section, "Found", ""),
                 Blip = ini.GetBool(section, "Blip", true),
                 Sprite = sprite,
 
@@ -890,15 +891,6 @@ namespace Hoodrich.Core
         private const string WeedSets =
             "weed_upgrade_equip;" +
             "weed_security_upgrade;" +
-            "weed_growtha_stage3_standard;" +
-            "weed_growthb_stage3_standard;" +
-            "weed_growthc_stage3_standard;" +
-            "weed_growthd_stage3_standard;" +
-            "weed_growthe_stage3_standard;" +
-            "weed_growthf_stage3_standard;" +
-            "weed_growthg_stage3_standard;" +
-            "weed_growthh_stage3_standard;" +
-            "weed_growthi_stage3_standard;" +
             "light_growtha_stage23_upgrade;" +
             "light_growthb_stage23_upgrade;" +
             "light_growthc_stage23_upgrade;" +
@@ -909,16 +901,7 @@ namespace Hoodrich.Core
             "light_growthh_stage23_upgrade;" +
             "light_growthi_stage23_upgrade;" +
             "weed_chairs;" +
-            "weed_drying;" +
-            "weed_hosea;" +
-            "weed_hoseb;" +
-            "weed_hosec;" +
-            "weed_hosed;" +
-            "weed_hosee;" +
-            "weed_hosef;" +
-            "weed_hoseg;" +
-            "weed_hoseh;" +
-            "weed_hosei";
+            "weed_drying";
 
         /// <summary>
         /// The meth lab at its full stage: the upgraded lab, the security, set up and in
@@ -950,12 +933,45 @@ namespace Hoodrich.Core
             };
         }
 
+        /// <summary>The crew's jobs: one dictionary, a clip each in turn. See DoorSpec.CrewDict.</summary>
+        private static DoorSpec Working(DoorSpec door, string dict, params string[] clips)
+        {
+            door.CrewDict = dict;
+            door.CrewClips.AddRange(clips);
+            return door;
+        }
+
         /// <summary>The furniture a door switches on in its room. See DoorSpec.Sets.</summary>
         private static DoorSpec Dressed(DoorSpec door, string sets)
         {
             door.Sets = sets;
             return door;
         }
+
+        /// <summary>
+        /// The names a room might have for its stations, to be tried one at a time on the
+        /// first visit. See InteriorDoor.Discover. Station A only; what sticks is spread.
+        /// </summary>
+        private static DoorSpec Guessed(DoorSpec door, string probe)
+        {
+            door.Probe = probe;
+            return door;
+        }
+
+        /// <summary>
+        /// Every way the grow room's stations might be named. Nothing here is claimed; the
+        /// room is asked. The three rounds of names that were claimed are in here too, so
+        /// the answer covers them.
+        /// </summary>
+        private const string WeedGuesses =
+            "weed_growtha_stage1_standard;weed_growtha_stage2_standard;weed_growtha_stage3_standard;" +
+            "weed_growtha_stage1_upgrade;weed_growtha_stage2_upgrade;weed_growtha_stage3_upgrade;" +
+            "weed_growtha_stage1;weed_growtha_stage2;weed_growtha_stage3;" +
+            "weed_growtha_standard;weed_growtha_upgrade;weed_growtha;" +
+            "weed_planta_stage3;weed_planta_stage3_standard;weed_planta_stage3_upgrade;weed_planta;" +
+            "weed_tablea;weed_tables;weed_table;weed_set_up;weed_production;" +
+            "weed_stash1;weed_stash2;weed_stash3;" +
+            "light_growtha_stage1_standard;light_growtha_stage23_standard;light_growtha_stage1_upgrade";
 
         /// <summary>The IPL names a door asks for whatever the ini says. See DoorSpec.Extra.</summary>
         private static DoorSpec Named(DoorSpec door, string extra)

@@ -246,9 +246,6 @@ namespace Hoodrich.UI
         /// </summary>
         public Func<string> StartTakeover;
 
-        /// <summary>Main redraws the place blips when this fires.</summary>
-        public Action PlacesChanged;
-
         /// <summary>Which group of places the door rows are pointed at, and which place in it.</summary>
         private int _group;
         private int _place;
@@ -626,21 +623,6 @@ namespace Hoodrich.UI
             // string table rather than typed. What is missing from each one is the two
             // coordinates, and those come from a player standing on them. Pick the place,
             // stand at its door, press; stand inside, press again.
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Tick,
-                Label = "Show the places on the map",
-                Note = "A blip for everywhere on the list you have not made a door for yet",
-                Section = "Doors",
-                Key = "ShowPlaces",
-                GetBool = () => c.ShowPlaces,
-                SetBool = v =>
-                {
-                    c.ShowPlaces = v;
-                    PlacesChanged?.Invoke();
-                }
-            });
-
             _rows.Add(new Opt
             {
                 Kind = OptKind.Choice,

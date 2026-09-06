@@ -22,11 +22,6 @@ switches the map over on the way in and back on the way out. A place marked
 IN THE MAP is a mission room that has been there the whole time with no way
 in; it needs the two presses and nothing else, so those are the easy ones.
 
-A place marked + BLIP has a grey marker on your map at roughly where it is,
-map only, not the minimap. It disappears once you have made it a door. Those
-coordinates came out of the same interior loader's marker table, and nine of
-them were checked against places whose whereabouts are not in dispute.
-
 Getting inside to mark the inside is the awkward half. The interior loader
 already sitting in scripts\New folder will teleport you into any of these if
 you put it back where it runs.
@@ -38,7 +33,7 @@ you put it back where it runs.
 
   Diamond Casino floor
       Vinewood Park Drive. The round building with the fountain.
-      ONLINE + BLIP   [CasinoFloor]
+      ONLINE   [CasinoFloor]
 
   Casino penthouse
       Top of the casino. The lift on the east side of the floor.
@@ -50,7 +45,7 @@ you put it back where it runs.
 
   Casino car park
       The ramp on the north side.
-      ONLINE + BLIP   [CasinoCarPark]
+      ONLINE   [CasinoCarPark]
 
   Casino back offices
       Behind the floor. Staff only in the game's own words.
@@ -82,7 +77,7 @@ you put it back where it runs.
 
   Arcade
       Six of them: Paleto, Grapeseed, Davis, Rockford, Vinewood, La Mesa.
-      ONLINE + BLIP   [Arcade]
+      ONLINE   [Arcade]
 
 
 -------------------------------------------------------------------------------
@@ -99,7 +94,7 @@ you put it back where it runs.
 
   Nightclub, Strawberry
       Innocence Boulevard.
-      ONLINE + BLIP   [ClubStrawberry]
+      ONLINE   [ClubStrawberry]
 
   Nightclub, West Vinewood
       Eclipse Boulevard.
@@ -148,19 +143,19 @@ you put it back where it runs.
 
   Meth lab
       The lockups out in the county.
-      ONLINE + BLIP   [MethLab]
+      ONLINE   [MethLab]
 
   Cocaine lockup
       Same sort of unit, different town.
-      ONLINE + BLIP   [CocaineLockup]
+      ONLINE   [CocaineLockup]
 
   Counterfeit cash factory
       Same again.
-      ONLINE + BLIP   [CounterfeitCash]
+      ONLINE   [CounterfeitCash]
 
   Weed farm
       Grapeseed, the barn off the highway.
-      ONLINE + BLIP   [WeedFarm]
+      ONLINE   [WeedFarm]
 
 
 -------------------------------------------------------------------------------
@@ -169,19 +164,19 @@ you put it back where it runs.
 
   Maze Bank Tower office
       The tallest building in the city, Pillbox Hill.
-      ONLINE + BLIP   [MazeBankTower]
+      ONLINE   [MazeBankTower]
 
   Arcadius Center office
       Power Street, downtown.
-      ONLINE + BLIP   [ArcadiusTower]
+      ONLINE   [ArcadiusTower]
 
   Maze Bank West office
       Del Perro, on the boulevard.
-      ONLINE + BLIP   [MazeBankWest]
+      ONLINE   [MazeBankWest]
 
   Lombank West office
       Del Perro, the black tower.
-      ONLINE + BLIP   [LombokTower]
+      ONLINE   [LombokTower]
 
   CEO garage, Arcadius
       Under the Arcadius tower.
@@ -201,19 +196,19 @@ you put it back where it runs.
 
   Small cargo warehouse
       Roller doors all over the industrial districts.
-      ONLINE + BLIP   [CargoSmall]
+      ONLINE   [CargoSmall]
 
   Medium cargo warehouse
       Same sort of unit, bigger inside.
-      ONLINE + BLIP   [CargoMedium]
+      ONLINE   [CargoMedium]
 
   Large cargo warehouse
       The big ones down by the docks.
-      ONLINE + BLIP   [CargoLarge]
+      ONLINE   [CargoLarge]
 
   Vehicle warehouse
       La Mesa, Cypress Flats, Elysian Island.
-      ONLINE + BLIP   [VehicleWarehouse]
+      ONLINE   [VehicleWarehouse]
 
 
 -------------------------------------------------------------------------------
@@ -222,7 +217,7 @@ you put it back where it runs.
 
   Bunker
       Hatches in the ground out in the county. Eleven of them.
-      ONLINE + BLIP   [Bunker]
+      ONLINE   [Bunker]
 
   Weapon workshop
       The far end of the bunker.
@@ -230,11 +225,11 @@ you put it back where it runs.
 
   Hangar
       LSIA and Fort Zancudo.
-      ONLINE + BLIP   [Hangar]
+      ONLINE   [Hangar]
 
   Doomsday facility
       Nine hatches, mostly in the hills and the desert.
-      ONLINE + BLIP   [Facility]
+      ONLINE   [Facility]
 
   Doomsday facility, other pattern
       The second shell the facility can have.
@@ -242,7 +237,7 @@ you put it back where it runs.
 
   Missile silo
       Mount Chiliad, the doors in the rock.
-      ONLINE + BLIP   [Silo]
+      ONLINE   [Silo]
 
   Doomsday lab
       Off the silo tunnels.
@@ -250,15 +245,15 @@ you put it back where it runs.
 
   Doomsday submarine
       Under the water off the north coast.
-      ONLINE + BLIP   [DoomsdaySub]
+      ONLINE   [DoomsdaySub]
 
   IAA facility
       The one under the Kortz Center.
-      IN THE MAP + BLIP   [IaaFacility]
+      IN THE MAP   [IaaFacility]
 
   IAA server farm
       Also under the Kortz Center.
-      IN THE MAP + BLIP   [ServerFarm]
+      IN THE MAP   [ServerFarm]
 
 
 -------------------------------------------------------------------------------
@@ -275,7 +270,7 @@ you put it back where it runs.
 
   Auto shop, Mission Row
       Behind the station, near the club.
-      ONLINE + BLIP   [AutoShopMissionRow]
+      ONLINE   [AutoShopMissionRow]
 
   Auto shop, Rancho
       Roy Lowenstein Boulevard. Closest one to the block.
@@ -287,27 +282,27 @@ you put it back where it runs.
 
   LS Car Meet
       Cypress Flats, the warehouse with the shutter.
-      ONLINE + BLIP   [CarMeet]
+      ONLINE   [CarMeet]
 
   Salvage yard
       Five of them. Strawberry, Paleto, Sandy Shores, La Mesa, Murrieta.
-      ONLINE + BLIP   [SalvageYard]
+      ONLINE   [SalvageYard]
 
   Vinewood Car Club mod shop
       Under the casino.
-      ONLINE + BLIP   [VinewoodCarClub]
+      ONLINE   [VinewoodCarClub]
 
   Maze Bank Arena floor
       The arena itself, in Little Seoul.
-      ONLINE + BLIP   [ArenaWar]
+      ONLINE   [ArenaWar]
 
   Arena workshop
       Under the arena.
-      ONLINE + BLIP   [ArenaWorkshop]
+      ONLINE   [ArenaWorkshop]
 
   Arena VIP box
       Also under the arena.
-      ONLINE + BLIP   [ArenaVip]
+      ONLINE   [ArenaVip]
 
 
 -------------------------------------------------------------------------------
@@ -316,7 +311,7 @@ you put it back where it runs.
 
   Agency, Hawick
       Hawick Avenue.
-      ONLINE + BLIP   [AgencyHawick]
+      ONLINE   [AgencyHawick]
 
   Agency, Rockford Hills
       Marathon Avenue.
@@ -332,11 +327,11 @@ you put it back where it runs.
 
   Record A Studios
       West Vinewood, the studio lot.
-      ONLINE + BLIP   [MusicStudio]
+      ONLINE   [MusicStudio]
 
   Agency garage
       Under whichever agency you took.
-      ONLINE + BLIP   [AgencyGarage]
+      ONLINE   [AgencyGarage]
 
   The Contract warehouse
       The one the jewellery job runs out of.
@@ -353,23 +348,23 @@ you put it back where it runs.
 
   Juggalo hideout
       Up past Paleto, off the Great Ocean Highway.
-      IN THE MAP + BLIP   [JuggaloHideout]
+      IN THE MAP   [JuggaloHideout]
 
   Multi storey garage
       The Drug Wars garage.
-      ONLINE + BLIP   [MultiStoreyGarage]
+      ONLINE   [MultiStoreyGarage]
 
   Drug Wars morgue
       The morgue the Fooliganz job uses.
-      IN THE MAP + BLIP   [DrugWarsMorgue]
+      IN THE MAP   [DrugWarsMorgue]
 
   Freakshop
       Mirror Park, the yard behind the fence.
-      ONLINE + BLIP   [Freakshop]
+      ONLINE   [Freakshop]
 
   Dealership basement
       Under the Premium Deluxe lot.
-      ONLINE + BLIP   [DealershipBasement]
+      ONLINE   [DealershipBasement]
 
   Bail office, Davis
       Davis Avenue.
@@ -381,7 +376,7 @@ you put it back where it runs.
 
   Bail office, Mission Row
       Opposite the police station.
-      ONLINE + BLIP   [BailMissionRow]
+      ONLINE   [BailMissionRow]
 
   Bail office, Vinewood
       Vinewood Boulevard.
@@ -393,7 +388,7 @@ you put it back where it runs.
 
   Hacker basement
       The Agents of Sabotage hideout.
-      ONLINE + BLIP   [HackerBasement]
+      ONLINE   [HackerBasement]
 
 
 -------------------------------------------------------------------------------
@@ -402,43 +397,43 @@ you put it back where it runs.
 
   Bahama Mamas
       West Vinewood, the club on the corner.
-      IN THE MAP + BLIP   [BahamaMamas]
+      IN THE MAP   [BahamaMamas]
 
   Tequi-la-la
       Vinewood Boulevard.
-      IN THE MAP + BLIP   [Tequilala]
+      IN THE MAP   [Tequilala]
 
   Split Sides comedy club
       Vinewood, next to the cinema.
-      IN THE MAP + BLIP   [SplitSides]
+      IN THE MAP   [SplitSides]
 
   Cluckin' Bell factory
       Paleto Bay, the big plant on the water.
-      IN THE MAP + BLIP   [CluckinBell]
+      IN THE MAP   [CluckinBell]
 
   Meat packing factory
       Cypress Flats.
-      IN THE MAP + BLIP   [MeatPacking]
+      IN THE MAP   [MeatPacking]
 
   Simeon's showroom
       Premium Deluxe Motorsport, Pillbox Hill.
-      ONLINE + BLIP   [Simeon]
+      ONLINE   [Simeon]
 
   Vangelico jewellers
       Portola Drive, Rockford Hills.
-      IN THE MAP + BLIP   [Vangelico]
+      IN THE MAP   [Vangelico]
 
   Life Invader offices
       Boulevard Del Perro.
-      IN THE MAP + BLIP   [LifeInvader]
+      IN THE MAP   [LifeInvader]
 
   FIB office
       The FIB tower, downtown.
-      IN THE MAP + BLIP   [FibOffice]
+      IN THE MAP   [FibOffice]
 
   Dr Friedlander's office
       Vinewood, the low white building.
-      IN THE MAP + BLIP   [Friedlander]
+      IN THE MAP   [Friedlander]
 
   Coroner's office
       Davis, beside the hospital.
@@ -446,7 +441,7 @@ you put it back where it runs.
 
   Morgue
       The old one, under the hospital.
-      IN THE MAP + BLIP   [Morgue]
+      IN THE MAP   [Morgue]
 
 
 -------------------------------------------------------------------------------
@@ -455,31 +450,31 @@ you put it back where it runs.
 
   The Foundry
       El Burro Heights, the industrial block.
-      IN THE MAP + BLIP   [Foundry]
+      IN THE MAP   [Foundry]
 
   Omega's garage
       Sandy Shores.
-      IN THE MAP + BLIP   [Omega]
+      IN THE MAP   [Omega]
 
   Haines Autos
       Sandy Shores, the covered cars.
-      IN THE MAP + BLIP   [HainesAutos]
+      IN THE MAP   [HainesAutos]
 
   Lester's factory
       Murrieta Heights.
-      IN THE MAP + BLIP   [LesterFactory]
+      IN THE MAP   [LesterFactory]
 
   Janitor's apartment
       The one from the FIB job.
-      IN THE MAP + BLIP   [Janitor]
+      IN THE MAP   [Janitor]
 
   Epsilon storage room
       Rockford Hills.
-      IN THE MAP + BLIP   [Kiflom]
+      IN THE MAP   [Kiflom]
 
   Torture room
       Under the sheriff's building, Sandy Shores.
-      IN THE MAP + BLIP   [Torture]
+      IN THE MAP   [Torture]
 
   Maze Bank Arena stands
       Little Seoul.
@@ -499,7 +494,7 @@ you put it back where it runs.
 
   The Kortz Center
       Pacific Bluffs, on the cliff.
-      IN THE MAP + BLIP   [KortzCenter]
+      IN THE MAP   [KortzCenter]
 
 
 -------------------------------------------------------------------------------
@@ -520,7 +515,7 @@ you put it back where it runs.
 
   Gunrunning yacht
       The other yacht.
-      ONLINE + BLIP   [GunrunYacht]
+      ONLINE   [GunrunYacht]
 
   Aircraft carrier
       Out at sea, north west.
@@ -532,7 +527,7 @@ you put it back where it runs.
 
   Cargo ship
       The one moored at the docks.
-      ONLINE + BLIP   [CargoShip]
+      ONLINE   [CargoShip]
 
   North Yankton
       The whole town, not a room. Big ask and worth trying once.
@@ -545,35 +540,35 @@ you put it back where it runs.
 
   Richman mansion
       Richman, the one with the long drive.
-      ONLINE + BLIP   [RichmanMansion]
+      ONLINE   [RichmanMansion]
 
   Vinewood residence
       Vinewood Hills.
-      ONLINE + BLIP   [VinewoodResidence]
+      ONLINE   [VinewoodResidence]
 
   Tongva Hills estate
       Out past the vineyard.
-      ONLINE + BLIP   [TongvaEstate]
+      ONLINE   [TongvaEstate]
 
   Martin Madrazo's house
       Vinewood Hills, up the private road.
-      IN THE MAP + BLIP   [Madrazo]
+      IN THE MAP   [Madrazo]
 
   Denise's house
       Strawberry. Next door but one to the block.
-      IN THE MAP + BLIP   [Denise]
+      IN THE MAP   [Denise]
 
   Lester's house
       Murrieta Heights.
-      IN THE MAP + BLIP   [Lester]
+      IN THE MAP   [Lester]
 
   Solomon Richards' office
       Richards Majestic, the studio lot.
-      IN THE MAP + BLIP   [Solomon]
+      IN THE MAP   [Solomon]
 
   Hotel room
       The Von Crastenburg, Rockford Hills.
-      IN THE MAP + BLIP   [HotelRoom]
+      IN THE MAP   [HotelRoom]
 
 
 -------------------------------------------------------------------------------
@@ -582,62 +577,61 @@ you put it back where it runs.
 
   Humane Labs
       Out east past the Alamo Sea, on the water.
-      IN THE MAP + BLIP   [HumaneLabs]
+      IN THE MAP   [HumaneLabs]
 
   Merryweather facility
       Elysian Island.
-      ONLINE, NAME UNKNOWN + BLIP   [MerryweatherFacility]
+      ONLINE, NAME UNKNOWN   [MerryweatherFacility]
 
   McKenzie Field hangar office
       The airstrip at Grapeseed.
-      IN THE MAP + BLIP   [McKenzieHangar]
+      IN THE MAP   [McKenzieHangar]
 
   O'Neil farm
       Grapeseed, the farmhouse.
-      IN THE MAP + BLIP   [OneilFarm]
+      IN THE MAP   [OneilFarm]
 
   Roger's scrapyard
       Cypress Flats.
-      IN THE MAP + BLIP   [RogersScrapyard]
+      IN THE MAP   [RogersScrapyard]
 
   Wrecked hospital
       Pillbox Hill. The one from the first heist.
-      IN THE MAP + BLIP   [WreckedHospital]
+      IN THE MAP   [WreckedHospital]
 
   Mansion art studio
       Richman, beside the mansion.
-      IN THE MAP + BLIP   [MansionArtStudio]
+      IN THE MAP   [MansionArtStudio]
 
   Kortz Center loading bay
       The back of the Kortz Center.
-      IN THE MAP + BLIP   [KortzLoading]
+      IN THE MAP   [KortzLoading]
 
   Kortz Center sewer access
       Below the Kortz Center.
-      IN THE MAP + BLIP   [KortzSewer]
+      IN THE MAP   [KortzSewer]
 
   Chop shop warehouse A
       Down by the docks.
-      ONLINE, NAME UNKNOWN + BLIP   [ChopWarehouseA]
+      ONLINE, NAME UNKNOWN   [ChopWarehouseA]
 
   Chop shop warehouse B
       Also down by the docks.
-      ONLINE, NAME UNKNOWN + BLIP   [ChopWarehouseB]
+      ONLINE, NAME UNKNOWN   [ChopWarehouseB]
 
   Counterfeit cash factory, Strawberry
       Strawberry, a street from the block.
-      ONLINE, NAME UNKNOWN + BLIP   [ChopCounterfeit]
+      ONLINE, NAME UNKNOWN   [ChopCounterfeit]
 
   Hacker basement garage
       Beside the hacker basement.
-      ONLINE + BLIP   [HackerGarage]
+      ONLINE   [HackerGarage]
 
   Money front car wash
       Strawberry Avenue, the one by the block.
-      ONLINE + BLIP   [MoneyFrontCarWash]
+      ONLINE   [MoneyFrontCarWash]
 
 
 ===============================================================================
   135 places. 97 are online map content, 38 are already in the story map.
-  83 of them have a blip on your map.
 ===============================================================================
