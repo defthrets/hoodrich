@@ -4554,8 +4554,19 @@ namespace Hoodrich.Locations
                 });
 
                 many--;
+                _volleyed++;
+            }
+
+            if (_volleyed > 0 && _volleyed != _volleyLogged)
+            {
+                _volleyLogged = _volleyed;
+                Log.Info("Takeover: " + _volleyed + " flares thrown so far this takeover.");
             }
         }
+
+        /// <summary>How many flares this takeover has had thrown, for the log.</summary>
+        private int _volleyed;
+        private int _volleyLogged;
 
         /// <summary>Whether this one already has a flare or a firework on the go.</summary>
         private bool Occupied(Watcher w)
@@ -4581,6 +4592,14 @@ namespace Hoodrich.Locations
 
             var h = w.Man.Handle;
             var flare = Game.GenerateHash("weapon_flare");
+
+            // OUT OF WHATEVER THEY WERE DOING FIRST. A throw handed to somebody stood in a
+            // scenario -- cheering, filming, drinking -- is a throw the game quietly drops,
+            // and since the crowd started cheering that was most of them. They go back to
+            // their idle through Unarm afterwards, and a cheer cut short by a flare is
+            // exactly what a cheer at one of these looks like.
+            w.Hype = 0;
+            Function.Call(Hash.CLEAR_PED_TASKS, h);
 
             Function.Call(Hash.GIVE_WEAPON_TO_PED, h, flare, 1, false, true);
             Function.Call(Hash.SET_CURRENT_PED_WEAPON, h, flare, true);
@@ -6200,6 +6219,8 @@ namespace Hoodrich.Locations
             _rockets.Clear();
             _throws.Clear();
             _nextHype = 0;
+            _volleyed = 0;
+            _volleyLogged = 0;
 
             foreach (var l in _law)
             {
