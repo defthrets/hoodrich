@@ -212,6 +212,11 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
+THE SCAFFOLDING AT LAMAR'S IS SOLID. The one placed was a destruction root,
+the collapsible scaffold out of a mission, and a root has no collision of its
+own; the log said so by name. It is a standard scaffold tower now, on the
+same spot.
+
 LAMAR'S YARD HAS A BAR. Fifteen more placements from the spooner: two fridges
 under neon in the corner with a couple of lines laid out, a bong on the
 table, scaffolding up the side, and a body behind the plants.

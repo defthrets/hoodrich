@@ -1072,11 +1072,11 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x1076d97b</ModelHash>
+		<ModelHash>0x2a461cf4</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>des_scaffolding_root</HashName>
+		<HashName>prop_scafold_03a</HashName>
 		<InitialHandle>127573</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
@@ -1098,7 +1098,7 @@
 		<PositionRotation>
 			<X>-189.755997</X>
 			<Y>-1725.83533</Y>
-			<Z>29.8568211</Z>
+			<Z>31.665</Z>
 			<Pitch>5.32716342e-07</Pitch>
 			<Roll>5.05572473e-07</Roll>
 			<Yaw>-78.8240738</Yaw>
