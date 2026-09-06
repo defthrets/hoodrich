@@ -1013,16 +1013,20 @@ namespace Hoodrich
                     .Stand(new Vector3(-186.874f, -1700.152f, 32.920f), 308.772f,
                            "WORLD_HUMAN_GUARD_STAND", Fam(0), armed: false);
 
-                // The sound van, next to the decks. A Minivan Custom rather than the Voodoo
-                // that used to sit here: a saloon parked by a set of decks is a car, and a
-                // built van with its boot up is where the music is coming from.
+                // The sound van, next to the decks. A MOONBEAM CUSTOM: the Minivan Custom
+                // that used to sit here is a Benny's body and it is still a people carrier
+                // with a kit on it, and dropping it only made a low people carrier. The
+                // Moonbeam is the lowrider van -- the shape the whole thing is named after --
+                // and it keeps every part of why a van is here rather than a saloon: a boot
+                // that opens on a load space, two back doors that open with it, and room for
+                // the music to be coming from somewhere rather than from a boot lid.
                 //
                 // Paint 49 is metallic dark green -- the set's colour with flake in it rather
                 // than the flat poster green an RGB triple gives you -- and the underglow is
                 // the same green, so the van reads as theirs after dark as well.
                 _cars.Add(new ParkedCar(new Vector3(-196.745f, -1718.838f, 32.664f), 319.530f,
                                         MetallicDarkGreen,
-                                        "minivan2", "voodoo", "buccaneer2")
+                                        "moonbeam2", "moonbeam", "minivan2", "voodoo2")
                 {
                     Built = true,
 
