@@ -510,6 +510,9 @@ namespace Hoodrich.Core
             s.PauseDuringMission = ini.GetBool("General", "PauseDuringMission", s.PauseDuringMission);
 
             // The phone's own keys. There is no wheel any more and no old ini to read one from.
+            s.VanillaPhoneSeconds =
+                (int)Clamp(ini.GetInt("Phone", "VanillaPhoneSeconds", s.VanillaPhoneSeconds), 1f, 30f);
+
             s.PhoneKey = ini.GetKey("Phone", "Key", s.PhoneKey);
             s.RescueKey = ini.GetKey("General", "RescueKey", s.RescueKey);
             s.PhoneModifier = ini.GetKey("Phone", "Modifier", s.PhoneModifier);
