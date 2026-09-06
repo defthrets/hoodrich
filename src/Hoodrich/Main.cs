@@ -1404,7 +1404,7 @@ namespace Hoodrich
                 // ON THE TABLE with the money and the bag, on the spot read off a player
                 // stood on it, rather than on the concrete behind the couch where it sat
                 // like something somebody had put down and forgotten.
-                _partyDecks = new Boombox(new Vector3(-203.764f, -1727.046f, 33.396f), 182.149f,
+                _partyDecks = new Boombox(new Vector3(-203.764f, -1727.046f, 33.396f), 2.149f,
                                           "ba_prop_battle_speaker_01a",
                                           "prop_boombox_01", "prop_ld_ferris_wheel");
 

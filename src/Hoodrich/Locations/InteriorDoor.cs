@@ -875,53 +875,34 @@ namespace Hoodrich.Locations
         /// NOT IPLS. A business interior is a shell with its furniture stored inside it as
         /// named ENTITY SETS -- the plants, the lights, the press, the tables -- and a set is
         /// turned on with ACTIVATE_INTERIOR_ENTITY_SET on the interior, not asked for with
-        /// REQUEST_IPL. The first attempt asked for every one of these as an IPL, which is a
-        /// request the game answers by doing nothing, and both rooms came up as bare shells
-        /// with three people standing in them.
+        /// REQUEST_IPL.
         ///
-        /// Groups of alternatives, because the names came from two mods' string tables and
-        /// the pattern between them. Within a group the first name the game accepts wins and
-        /// the rest are left alone, so a wrong guess costs nothing and two versions of the
-        /// same plant are never both drawn. What took and what did not is logged by name, so
-        /// the list can be corrected against what the game actually has rather than argued
-        /// about.
+        /// THE GAME DOES NOT SAY WHICH NAMES IT HAS. IS_INTERIOR_ENTITY_SET_ACTIVE answers
+        /// yes for any name that has been activated, whether or not the room has a set by
+        /// that name: nine invented plant names all "took" and drew nothing. So there is no
+        /// checking a name from in here, no trying alternatives, and no claiming in the log
+        /// that anything was verified. Every name in the list is switched on and the list is
+        /// written down, and the only test is standing in the room.
         /// </summary>
         private void Dress(int interior)
         {
             if (interior == 0 || string.IsNullOrEmpty(_spec.Sets)) return;
 
             var on = new List<string>();
-            var off = new List<string>();
 
-            foreach (var group in _spec.Sets.Split(';'))
+            foreach (var raw in _spec.Sets.Replace('|', ';').Split(';'))
             {
-                var took = false;
+                var name = raw.Trim();
+                if (name.Length == 0) continue;
 
-                foreach (var raw in group.Split('|'))
+                try
                 {
-                    if (took) break;
-
-                    var name = raw.Trim();
-                    if (name.Length == 0) continue;
-
-                    try
-                    {
-                        Function.Call(Hash.ACTIVATE_INTERIOR_ENTITY_SET, interior, name);
-
-                        if (Function.Call<bool>(Hash.IS_INTERIOR_ENTITY_SET_ACTIVE, interior, name))
-                        {
-                            on.Add(name);
-                            took = true;
-                        }
-                        else
-                        {
-                            off.Add(name);
-                        }
-                    }
-                    catch
-                    {
-                        off.Add(name);
-                    }
+                    Function.Call(Hash.ACTIVATE_INTERIOR_ENTITY_SET, interior, name);
+                    on.Add(name);
+                }
+                catch
+                {
+                    // The next one, then.
                 }
             }
 
@@ -935,9 +916,7 @@ namespace Hoodrich.Locations
             }
 
             Log.Info("Dressed the " + _spec.Name + " (interior " + interior + "): " + on.Count +
-                     " set" + (on.Count == 1 ? "" : "s") + " on" +
-                     (on.Count > 0 ? " -- " + string.Join(", ", on) : "") +
-                     (off.Count > 0 ? "; not in this room: " + string.Join(", ", off) : "") + ".");
+                     " set" + (on.Count == 1 ? "" : "s") + " switched on -- " + string.Join(", ", on) + ".");
         }
 
         /// <summary>

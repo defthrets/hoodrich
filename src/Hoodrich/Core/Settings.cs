@@ -882,31 +882,32 @@ namespace Hoodrich.Core
         /// stations at stage three under their lights, the chairs, the drying racks.
         ///
         /// ENTITY SETS, NOT IPLS -- see InteriorDoor.Dress. The equipment, security and
-        /// light names are literal in Menyoo's own binary on this machine; the plant names
-        /// follow the lights' pattern and each is offered upgrade-then-standard so the first
-        /// the game accepts is the one drawn. What the game turns down is logged by name.
+        /// light names are literal in Menyoo's own binary on this machine. The plants are
+        /// the STANDARD stage-three set at each station: the upgrade is a fact about the
+        /// lamps and the tables, not about the plants, and a plant name with "upgrade" on
+        /// the end was accepted by the game and drew nothing -- the game accepts any name.
         /// </summary>
         private const string WeedSets =
-            "weed_upgrade_equip|weed_standard_equip;" +
-            "weed_security_upgrade|weed_low_security;" +
-            "weed_growtha_stage3_upgrade|weed_growtha_stage3_standard;" +
-            "weed_growthb_stage3_upgrade|weed_growthb_stage3_standard;" +
-            "weed_growthc_stage3_upgrade|weed_growthc_stage3_standard;" +
-            "weed_growthd_stage3_upgrade|weed_growthd_stage3_standard;" +
-            "weed_growthe_stage3_upgrade|weed_growthe_stage3_standard;" +
-            "weed_growthf_stage3_upgrade|weed_growthf_stage3_standard;" +
-            "weed_growthg_stage3_upgrade|weed_growthg_stage3_standard;" +
-            "weed_growthh_stage3_upgrade|weed_growthh_stage3_standard;" +
-            "weed_growthi_stage3_upgrade|weed_growthi_stage3_standard;" +
-            "light_growtha_stage23_upgrade|light_growtha_stage23_standard;" +
-            "light_growthb_stage23_upgrade|light_growthb_stage23_standard;" +
-            "light_growthc_stage23_upgrade|light_growthc_stage23_standard;" +
-            "light_growthd_stage23_upgrade|light_growthd_stage23_standard;" +
-            "light_growthe_stage23_upgrade|light_growthe_stage23_standard;" +
-            "light_growthf_stage23_upgrade|light_growthf_stage23_standard;" +
-            "light_growthg_stage23_upgrade|light_growthg_stage23_standard;" +
-            "light_growthh_stage23_upgrade|light_growthh_stage23_standard;" +
-            "light_growthi_stage23_upgrade|light_growthi_stage23_standard;" +
+            "weed_upgrade_equip;" +
+            "weed_security_upgrade;" +
+            "weed_growtha_stage3_standard;" +
+            "weed_growthb_stage3_standard;" +
+            "weed_growthc_stage3_standard;" +
+            "weed_growthd_stage3_standard;" +
+            "weed_growthe_stage3_standard;" +
+            "weed_growthf_stage3_standard;" +
+            "weed_growthg_stage3_standard;" +
+            "weed_growthh_stage3_standard;" +
+            "weed_growthi_stage3_standard;" +
+            "light_growtha_stage23_upgrade;" +
+            "light_growthb_stage23_upgrade;" +
+            "light_growthc_stage23_upgrade;" +
+            "light_growthd_stage23_upgrade;" +
+            "light_growthe_stage23_upgrade;" +
+            "light_growthf_stage23_upgrade;" +
+            "light_growthg_stage23_upgrade;" +
+            "light_growthh_stage23_upgrade;" +
+            "light_growthi_stage23_upgrade;" +
             "weed_chairs;" +
             "weed_drying;" +
             "weed_hosea;" +
@@ -925,7 +926,7 @@ namespace Hoodrich.Core
         /// are literal in the interior loader.
         /// </summary>
         private const string MethSets =
-            "meth_lab_upgrade|meth_lab_basic;" +
+            "meth_lab_upgrade;" +
             "meth_lab_security_high;" +
             "meth_lab_setup;" +
             "meth_lab_production";

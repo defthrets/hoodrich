@@ -159,6 +159,20 @@ namespace Hoodrich.Locations
 
                 if (out_.LengthSquared() < 0.01f) return;
 
+                // A COUCH'S FRONT IS ITS MINUS-Y. The party couch stands with its heading
+                // pointing at the table, and its backrest is the side that faces the table,
+                // so whoever sat on it facing the model's own forward sat looking at the
+                // wall -- three times, through two rounds of probing that read the same
+                // height both sides of a box-shaped collision and fell back to that same
+                // forward. The probe stays for couches whose collision has a shape; this is
+                // the answer for the ones whose collision does not.
+                var couch = model.ToLowerInvariant();
+
+                if (couch.Contains("couch") || couch.Contains("sofa"))
+                {
+                    out_ = out_ * -1f;
+                }
+
                 var made = 0;
 
                 for (var i = 0; i < seats; i++)
@@ -355,6 +369,10 @@ namespace Hoodrich.Locations
                     ahead = Math.Max(ahead, Tall(mid + front * reach, prop));
                     behind = Math.Max(behind, Tall(mid - front * reach, prop));
                 }
+
+                Log.Info("Seating: probed the " + prop.Model.Hash + " at " + at + ": ahead " +
+                         (ahead > Missed ? ahead.ToString("0.00") : "missed") + ", behind " +
+                         (behind > Missed ? behind.ToString("0.00") : "missed") + ".");
 
                 if (ahead > Missed && behind > Missed)
                 {
