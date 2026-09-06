@@ -82,7 +82,7 @@ namespace Hoodrich.UI
         /// the correct impression rather than a fault. See Loud.
         /// </summary>
         private const int Quietly = 1;
-        private const int WhenLoud = 3;
+        private const int WhenLoud = 2;
 
         /// <summary>And two when there is genuinely a queue. See Room.</summary>
         private const int WhenBusy = 2;
@@ -118,6 +118,14 @@ namespace Hoodrich.UI
         /// makes the feed feel quick.
         /// </summary>
         private const int LifeMs = 6600;
+
+        /// <summary>
+        /// During a war. The feed produces faster then, and three cards each living six
+        /// seconds with a fade at either end was a column that never stopped moving --
+        /// which, next to a panel that was flashing, read as the whole side of the screen
+        /// flickering. Fewer at once, and each stays long enough to be read twice.
+        /// </summary>
+        private const int LoudLifeMs = 9000;
         private const int FadeInMs = 220;
         private const int FadeOutMs = 520;
 
@@ -153,6 +161,9 @@ namespace Hoodrich.UI
             public List<string> Lines = new List<string>();
             public Color Tint;
             public int ShownAt;
+
+            /// <summary>How long this one lives. Longer during a war, so the stack stops churning.</summary>
+            public int Life;
             public float Height;
         }
 
@@ -195,6 +206,7 @@ namespace Hoodrich.UI
                     Pic = post.By.Pic ?? "",
                     Tint = post.By.Tint,
                     ShownAt = Game.GameTime,
+                    Life = Loud != null && Loud() ? LoudLifeMs : LifeMs,
                 };
 
                 // The body runs the full width of the card, under the header rather than
@@ -227,7 +239,7 @@ namespace Hoodrich.UI
 
             for (var i = _live.Count - 1; i >= 0; i--)
             {
-                if (now - _live[i].ShownAt < LifeMs) continue;
+                if (now - _live[i].ShownAt < _live[i].Life) continue;
                 _live.RemoveAt(i);
             }
 
@@ -262,7 +274,7 @@ namespace Hoodrich.UI
             // still reading.
             var fade = 1f;
             if (age < FadeInMs) fade = age / (float)FadeInMs;
-            else if (age > LifeMs - FadeOutMs) fade = (LifeMs - age) / (float)FadeOutMs;
+            else if (age > card.Life - FadeOutMs) fade = (card.Life - age) / (float)FadeOutMs;
 
             if (fade <= 0.02f) return;
             if (fade > 1f) fade = 1f;
@@ -444,7 +456,7 @@ namespace Hoodrich.UI
             // HOW MUCH OF ITS LIFE IS LEFT, from the one number the card already carries.
             // Nothing new stored: ShownAt and LifeMs are what the sweep at the top of this
             // file uses to retire a card, so the bar and the retirement cannot disagree.
-            var run = 1f - Math.Max(0f, Math.Min(1f, (Game.GameTime - card.ShownAt) / (float)LifeMs));
+            var run = 1f - Math.Max(0f, Math.Min(1f, (Game.GameTime - card.ShownAt) / (float)card.Life));
 
             if (run > 0.001f)
             {

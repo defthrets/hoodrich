@@ -3145,7 +3145,7 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>Whether the player is stood inside the circle the map is drawing.</summary>
-        private bool InIt()
+        private bool InIt(float give = 0f)
         {
             try
             {
@@ -3153,7 +3153,7 @@ namespace Hoodrich.Gangs
 
                 if (player == null || !player.Exists()) return false;
 
-                return player.Position.DistanceTo(_target.Where) <= DefendRange;
+                return player.Position.DistanceTo(_target.Where) <= DefendRange + give;
             }
             catch
             {
@@ -3259,16 +3259,19 @@ namespace Hoodrich.Gangs
         private const float WarBarRate = 0.10f;
         private const int WarSweepMs = 1400;
 
-        /// <summary>How long the card flares when a fresh carload turns up.</summary>
-        private const int WarFlashMs = 900;
+        /// <summary>
+        /// How far past the line the panel stays up, and how long you can be outside it
+        /// before it goes. See the gate in the draw.
+        /// </summary>
+        private const float WarStayMargin = 12f;
+        private const int WarLeaveGraceMs = 2500;
 
         private static readonly System.Drawing.Color WarBack =
             System.Drawing.Color.FromArgb(236, 10, 11, 13);
 
         private int _warShownAt;
+        private int _warOutSince;
         private float _warBar;
-        private int _warSeenReserve = -1;
-        private int _warFlashAt;
 
         /// <summary>
         /// Who is on the block, and how it is going. Still no clock.
@@ -3288,8 +3291,8 @@ namespace Hoodrich.Gangs
             if (!IsRunning || _target == null)
             {
                 _warShownAt = 0;
+                _warOutSince = 0;
                 _warBar = 0f;
-                _warSeenReserve = -1;
                 return;
             }
 
@@ -3307,17 +3310,32 @@ namespace Hoodrich.Gangs
             //
             // Reset on the way out rather than merely hidden, so walking back in plays the
             // entrance again instead of snapping the panel on mid-animation.
-            if (!InIt())
+            //
+            // WITH SOME GIVE. The test is a circle, and stood on the line of it -- which is
+            // where a man watching his street from the pavement tends to be -- a step either
+            // way took the panel off and put it straight back on, entrance and all, several
+            // times a minute. So once it is up it stays up until you are well outside the
+            // line and have been for a moment: a stretch past it, and a couple of seconds
+            // over that. Turning up is still the plain test; only the panel lingers.
+            var tick = Game.GameTime;
+
+            if (!InIt(_warShownAt != 0 ? WarStayMargin : 0f))
             {
-                _warShownAt = 0;
-                return;
+                if (_warShownAt != 0 && _warOutSince == 0) _warOutSince = tick;
+
+                if (_warShownAt == 0 || tick - _warOutSince >= WarLeaveGraceMs)
+                {
+                    _warShownAt = 0;
+                    _warOutSince = 0;
+                    return;
+                }
+            }
+            else
+            {
+                _warOutSince = 0;
             }
 
-            if (_warShownAt == 0)
-            {
-                _warShownAt = Game.GameTime;
-                _warSeenReserve = _reserve;
-            }
+            if (_warShownAt == 0) _warShownAt = tick;
 
             // Rises in and fades up, eased out. Slower than the other panels on purpose: this
             // one is an interruption, and something that shoves itself onto the screen at the
@@ -3335,25 +3353,11 @@ namespace Hoodrich.Gangs
             // before you have read a word of it.
             var theirs = _attacker == null ? Palette.Danger : _attacker.Colour;
 
-            // And a flare when the reserve drops, which is a car arriving. The bar going
-            // backwards is easy to miss when you are being shot at.
-            if (_reserve < _warSeenReserve)
-            {
-                _warFlashAt = Game.GameTime;
-                _warSeenReserve = _reserve;
-            }
-            else if (_reserve > _warSeenReserve)
-            {
-                _warSeenReserve = _reserve;
-            }
-
-            var flash = 0f;
-            var sinceFlash = Game.GameTime - _warFlashAt;
-
-            if (_warFlashAt != 0 && sinceFlash < WarFlashMs)
-            {
-                flash = 1f - sinceFlash / (float)WarFlashMs;
-            }
+            // NO FLARE when a carload turns up. There was one -- a wash over the card in
+            // their colour -- and the reserve it watched drops once per MAN rather than once
+            // per car, so two carloads landing together restarted it eight times in a
+            // second: a strobe over the thing you are trying to read while being shot at.
+            // The bar being pushed back is the signal. It is eased, and it is enough.
 
             var ink = Wash(theirs, eased);
             var back = Wash(WarBack, eased);
@@ -3361,14 +3365,6 @@ namespace Hoodrich.Gangs
             // The rounded black every panel is, with their colour down the rail. No bar along
             // the top and no corner ticks: the border is gone everywhere.
             UI.Theme.Card(left, top, WarWidth, WarHeight, back, ink, WarRail);
-
-            if (flash > 0f)
-            {
-                Hud.RoundRect(left, top, WarWidth, WarHeight, UI.Theme.CardRound,
-                              System.Drawing.Color.FromArgb((int)(70 * flash * eased),
-                                                            theirs.R, theirs.G, theirs.B),
-                              sprite: false, steps: 12);
-            }
 
             // ---- their colours, as a badge ----
             var iconLeft = left + WarRail + WarPad;
@@ -3462,7 +3458,7 @@ namespace Hoodrich.Gangs
             if (coming > 0)
             {
                 Hud.TextRight(coming + " more coming", right - WarPad, top + 0.086f, 0.25f,
-                              flash > 0f ? Wash(Palette.Text, eased) : ink, Hud.FontLabel);
+                              ink, Hud.FontLabel);
             }
             else
             {
