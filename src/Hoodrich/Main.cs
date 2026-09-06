@@ -1295,7 +1295,9 @@ namespace Hoodrich
                            "WORLD_HUMAN_LEANING", Fam(0), armed: false)
                     .Stand(new Vector3(-34.941f, -1387.629f, 30.292f), 295.955f,
                            "WORLD_HUMAN_SMOKING_POT", Fam(1), armed: false)
-                    .Stand(new Vector3(-38.919f, -1385.488f, 29.810f), 3.714f,
+                    // ON THE LEDGE, not the stairs: the walked spot, thirty centimetres down,
+                    // so the seat of the clip lands on the top of the wall.
+                    .Stand(new Vector3(-34.521f, -1385.362f, 29.992f), 346.825f,
                            "WORLD_HUMAN_STAND_IMPATIENT", Fam(2), armed: false,
                            anim: SeatedBeer, held: "prop_amb_beer_bottle")
 
