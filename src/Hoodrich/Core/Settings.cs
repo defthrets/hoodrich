@@ -448,6 +448,13 @@ namespace Hoodrich.Core
         /// <summary>How many of those groups are out at once. Each is three or four men.</summary>
         public int WalkerCrews = 2;
 
+        /// <summary>
+        /// What Franklin's own bike is, in place of the Bagger the game gives him, and which
+        /// of its liveries it wears. Blank, or "bagger", leaves the game's own.
+        /// </summary>
+        public string FranklinsBike = "sanchez";
+        public int FranklinsBikeLivery = 0;
+
         /// <summary>Whether riders pull the front wheel up on the straights.</summary>
         public bool RollerWheelies = true;
 
@@ -813,6 +820,9 @@ namespace Hoodrich.Core
 
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
             s.WalkerCrews = (int)Clamp(ini.GetInt("Block", "WalkerCrews", s.WalkerCrews), 0f, 5f);
+
+            s.FranklinsBike = (ini.GetString("Cars", "FranklinsBike", s.FranklinsBike) ?? "").Trim();
+            s.FranklinsBikeLivery = (int)Clamp(ini.GetInt("Cars", "FranklinsBikeLivery", s.FranklinsBikeLivery), 0f, 30f);
 
             // Never read until now. It was declared, documented and written into the ini, and
             // nothing ever loaded it -- so the number in the file did nothing at all.

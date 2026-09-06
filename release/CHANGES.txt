@@ -250,6 +250,13 @@ something and turns to another, and that one answers him a couple of seconds
 later, loud enough to hear from the end of the road. The phones and bottles on
 the corners moved to that hand with them.
 
+FRANKLIN'S BIKE IS A SANCHEZ. The Bagger the game parks outside his house is
+swapped, as it appears, for a Sanchez on its first livery -- same plate, same
+paint -- and he is put back on it if he was sat on it. The game puts the
+Bagger back now and then and it is swapped again. Hoodrich.ini, [Cars],
+FranklinsBike names another bike or leaves the Bagger; FranklinsBikeLivery
+picks the livery.
+
 NO RAID IN THE FIRST TEN MINUTES. The roll for an unprovoked raid started the
 moment the mod loaded, and with the Vagos already at beef that was one game
 start in four opening on Stretch shouting that they were outside. Nothing

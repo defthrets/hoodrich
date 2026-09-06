@@ -616,6 +616,9 @@ namespace Hoodrich
         /// <summary>Groups of the set on foot in the back streets. See Gangs.Walkers.</summary>
         private readonly Walkers _walkers;
 
+        /// <summary>Franklin's own bike, swapped for the one in the ini as the game's appears.</summary>
+        private readonly HisBike _hisBike;
+
         /// <summary>The lowriders, out once a night. See Gangs.Cruise.</summary>
         private readonly Cruise _cruise;
 
@@ -1842,6 +1845,7 @@ namespace Hoodrich
                 // whether he was or not.
                 _rollers = new Rollers(_cfg, _gangs, "families", _turf);
                 _walkers = new Walkers(_cfg, _gangs, "families", _turf);
+                _hisBike = new HisBike(_cfg);
                 _cruise = new Cruise(_cfg, _gangs, "families");
 
                 _takeover = new Takeover(_cfg)
@@ -3318,6 +3322,7 @@ namespace Hoodrich
                     _payback.Update();
                     _rollers.Update();
                     _walkers.Update();
+                    _hisBike.Update();
                     _cruise.Update();
                     if (_takeover != null) _takeover.Update();
                     _war.Update();
@@ -4399,6 +4404,7 @@ namespace Hoodrich
             try { _turf?.RestoreWorld(); } catch { /* teardown */ }
             try { _rollers?.RestoreWorld(); } catch { /* teardown */ }
             try { _walkers?.RestoreWorld(); } catch { /* teardown */ }
+            try { _hisBike?.RestoreWorld(); } catch { /* teardown */ }
             try { _cruise?.RestoreWorld(); } catch { /* teardown */ }
             try { _takeover?.RestoreWorld(); } catch { /* teardown */ }
             try { _lamarCrew?.RestoreWorld(); } catch { /* teardown */ }
