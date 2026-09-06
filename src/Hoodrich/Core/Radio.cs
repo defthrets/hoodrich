@@ -41,6 +41,21 @@ namespace Hoodrich.Core
         private static readonly string[] WestCoastWanted = { "RADIO_09_HIPHOP_OLD", "RADIO_09_HIPHOP_OLD_RADIO" };
         private static string _westCoast;
 
+        /// <summary>Radio Los Santos, for the donks.</summary>
+        private static readonly string[] LosSantosWanted = { "RADIO_03_HIPHOP_NEW", "RADIO_03_HIPHOP_NEW_RADIO" };
+        private static string _losSantos;
+
+        public static string LosSantos
+        {
+            get
+            {
+                if (_losSantos != null) return _losSantos;
+
+                _losSantos = Find(LosSantosWanted);
+                return _losSantos;
+            }
+        }
+
         public static string WestCoast
         {
             get

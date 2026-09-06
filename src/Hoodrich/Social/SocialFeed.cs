@@ -54,6 +54,7 @@ namespace Hoodrich.Social
         /// </summary>
         HouseRaided,
         Cruise,
+        Donks,
 
         /// <summary>
         /// The port changed hands. Nobody on that feed knows why, and that is the post.
@@ -1462,6 +1463,11 @@ namespace Hoodrich.Social
                 case SocialEvent.Cruise:
                     // The block hears them before it sees them. Neighbours, mostly.
                     follow = _rng.NextDouble() < 0.8 ? "Cruise" : "Ambient";
+                    count = 1 + _rng.Next(2);
+                    break;
+
+                case SocialEvent.Donks:
+                    follow = _rng.NextDouble() < 0.8 ? "Donks" : "Ambient";
                     count = 1 + _rng.Next(2);
                     break;
 

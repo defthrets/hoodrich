@@ -19,9 +19,21 @@ namespace Hoodrich.Gangs
     /// Nothing is asked of you and there is no blip. The night's time is picked once, when
     /// the clock comes round, and the cars are only actually built while you are on or near
     /// the turf to see them; a night you were elsewhere is a night it happened without you.
+    ///
+    /// ONE NIGHT THE LOWRIDERS, THE NEXT THE DONKS. Same three in a line, same set in them,
+    /// same radio up; the donks are the Faction Custom Donk and the Benny's bodies on
+    /// Benny's rims, riding up on the hydraulics rather than dropped, each its own green,
+    /// and the switch drops the front rather than raising it. Which crew is out is the
+    /// night's parity, so they alternate whatever the calendar does at the end of a month.
     /// </summary>
     internal sealed class Cruise
     {
+        private enum Look
+        {
+            Lowriders,
+            Donks
+        }
+
         private sealed class Low
         {
             public Vehicle Car;
@@ -57,6 +69,7 @@ namespace Hoodrich.Gangs
         private int _farSince;
         private int _nextSwitch;
         private int _nextTune;
+        private Look _look;
 
         private const int TickMs = 700;
 
@@ -106,8 +119,22 @@ namespace Hoodrich.Gangs
         /// <summary>The makes. Every name here is one the Rollers already checked against its hash.</summary>
         private static readonly string[] Lowriders =
         {
-            "voodoo", "buccaneer2", "chino2", "faction2", "sabregt2", "virgo2", "primo2", "faction3"
+            "voodoo", "buccaneer2", "chino2", "faction2", "sabregt2", "virgo2", "primo2"
         };
+
+        /// <summary>The donk itself first, then the Benny's bodies that go up on big rims.</summary>
+        private static readonly string[] Donks =
+        {
+            "faction3", "chino2", "buccaneer2", "voodoo", "sabregt2", "virgo2", "faction2"
+        };
+
+        /// <summary>
+        /// The greens, for the donks: every one of the three a different one, so they read as
+        /// three cars somebody owns rather than a fleet. Racing, bright, gasoline, lime,
+        /// hunter, dark -- the game's own names for them.
+        /// </summary>
+        private static readonly int[] Greens = { 50, 53, 54, 55, 139, 49 };
+        private static readonly int[] Pearls = { 53, 55, 50 };
 
         private const string Female = "g_f_y_families_01";
 
@@ -164,7 +191,8 @@ namespace Hoodrich.Gangs
             {
                 _plannedNight = night;
                 _startAt = EarliestMin + _rng.Next(StartSpanMin + 1);
-                Log.Info("Lowriders: out tonight at " + Clock(_startAt) + ".");
+                _look = (night & 1) == 0 ? Look.Lowriders : Look.Donks;
+                Log.Info("Cruise: the " + Word() + " are out tonight at " + Clock(_startAt) + ".");
             }
 
             if (_doneNight == night || late < _startAt) return;
@@ -172,7 +200,7 @@ namespace Hoodrich.Gangs
             if (late > WindowEndMin)
             {
                 _doneNight = night;
-                Log.Info("Lowriders: nobody on the block to see them tonight.");
+                Log.Info("Cruise: nobody on the block to see the " + Word() + " tonight.");
                 return;
             }
 
@@ -197,7 +225,7 @@ namespace Hoodrich.Gangs
             var rad = heading * (float)Math.PI / 180f;
             var forward = new Vector3(-(float)Math.Sin(rad), (float)Math.Cos(rad), 0f);
 
-            var makes = new List<string>(Lowriders);
+            var makes = new List<string>(_look == Look.Donks ? Donks : Lowriders);
             var names = new List<string>();
             var heads = 0;
 
@@ -209,7 +237,7 @@ namespace Hoodrich.Gangs
 
                 var low = new Low { Car = car };
 
-                Dress(car, gang);
+                Dress(car, gang, i);
                 heads += Fill(low, gang);
 
                 if (low.Driver == null)
@@ -224,7 +252,7 @@ namespace Hoodrich.Gangs
 
             if (_out.Count == 0)
             {
-                Log.Info("Lowriders: could not put one on the road tonight.");
+                Log.Info("Cruise: could not put one of the " + Word() + " on the road tonight.");
                 return false;
             }
 
@@ -235,10 +263,10 @@ namespace Hoodrich.Gangs
 
             foreach (var low in _out) Drive(low, now, true);
 
-            Log.Info("Lowriders: " + _out.Count + " out on the block at " + Clock(Now()) + " -- " +
+            Log.Info("Cruise: " + _out.Count + " " + Word() + " out on the block at " + Clock(Now()) + " -- " +
                      string.Join(", ", names.ToArray()) + ", " + heads + " of the set in them.");
 
-            try { if (Social != null) Social.On(SocialEvent.Cruise); }
+            try { if (Social != null) Social.On(_look == Look.Donks ? SocialEvent.Donks : SocialEvent.Cruise); }
             catch { /* the block heard them either way */ }
 
             return true;
@@ -310,7 +338,7 @@ namespace Hoodrich.Gangs
                 }
                 catch (Exception ex)
                 {
-                    Log.Debug("Lowriders: could not make a " + name + ": " + ex.Message);
+                    Log.Debug("Cruise: could not make a " + name + ": " + ex.Message);
                 }
             }
 
@@ -318,30 +346,38 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>
-        /// Green on green, the set's own colour with the pearl over it, lowrider wheels, the
-        /// hydraulics fitted, a few mods, the neon on and green, and the radio up.
+        /// Green on green, the hydraulics fitted, a few mods, the neon on and green, and the
+        /// radio up. The lowriders are the set's own colour with the pearl over it, on
+        /// lowrider wheels, dropped; the donks are each a green of their own, on Benny's
+        /// rims, up.
         /// </summary>
-        private void Dress(Vehicle car, GangDef gang)
+        private void Dress(Vehicle car, GangDef gang, int index)
         {
             try
             {
+                var donk = _look == Look.Donks;
+
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, car.Handle, 0);
                 Function.Call(Hash.SET_VEHICLE_LIVERY, car.Handle, -1);
 
-                var paint = gang != null && gang.Paint >= 0 ? gang.Paint : DarkGreen;
-                var pearl = _cfg == null ? DefaultPearl : _cfg.RollerPearl;
+                var paint = donk ? Greens[index % Greens.Length]
+                          : gang != null && gang.Paint >= 0 ? gang.Paint : DarkGreen;
+                var pearl = donk ? Pearls[index % Pearls.Length]
+                          : _cfg == null ? DefaultPearl : _cfg.RollerPearl;
 
                 Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, paint, paint);
                 Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, pearl, 0);
                 Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, car.Handle, 2);
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, car.Handle, 0f);
 
-                // Lowrider wheels: the type first, then any set of them.
-                Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, car.Handle, 2);
+                // The wheels: the type first, then any set of them. 2 is the lowrider rack, 8
+                // is Benny's Original, which is where the big chrome lives.
+                Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, car.Handle, donk ? 8 : 2);
                 Mod(car, 23, 100);
 
                 // Modified, not every slot: a car with everything on it is a menu, not a car.
-                foreach (var type in new[] { 0, 1, 2, 3, 4, 6, 7, 10 }) Mod(car, type, 65);
+                // The donks get more of them; that is what a donk is.
+                foreach (var type in new[] { 0, 1, 2, 3, 4, 6, 7, 10 }) Mod(car, type, donk ? 80 : 65);
 
                 // THE HYDRAULICS, which is what the switch works. The last set is the strongest.
                 var hyd = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, car.Handle, 38);
@@ -354,12 +390,12 @@ namespace Hoodrich.Gangs
 
                 Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, car.Handle, 0, 255, 90);
 
-                Up(car, false);
+                Stance(car, false);
                 Tune(car);
             }
             catch (Exception ex)
             {
-                Log.Debug("Lowriders: could not dress one: " + ex.Message);
+                Log.Debug("Cruise: could not dress one: " + ex.Message);
             }
         }
 
@@ -380,14 +416,15 @@ namespace Hoodrich.Gangs
             }
         }
 
-        /// <summary>West Coast Classics, loud, and kept that way.</summary>
-        private static void Tune(Vehicle car)
+        /// <summary>West Coast Classics for the lowriders, Radio Los Santos for the donks; loud, and kept that way.</summary>
+        private void Tune(Vehicle car)
         {
             try
             {
                 Function.Call(Hash.SET_VEHICLE_ENGINE_ON, car.Handle, true, true, false);
                 Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, car.Handle, true);
-                Function.Call(Hash.SET_VEH_RADIO_STATION, car.Handle, Radio.WestCoast);
+                Function.Call(Hash.SET_VEH_RADIO_STATION, car.Handle,
+                              _look == Look.Donks ? Radio.LosSantos : Radio.WestCoast);
                 Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, car.Handle, true);
             }
             catch
@@ -451,7 +488,7 @@ namespace Hoodrich.Gangs
             }
             catch (Exception ex)
             {
-                Log.Debug("Lowriders: could not fill a seat: " + ex.Message);
+                Log.Debug("Cruise: could not fill a seat: " + ex.Message);
                 return null;
             }
         }
@@ -474,7 +511,7 @@ namespace Hoodrich.Gangs
 
             if (_out.Count == 0)
             {
-                Log.Info("Lowriders: none of them left on the road.");
+                Log.Info("Cruise: none of the " + Word() + " left on the road.");
                 return;
             }
 
@@ -625,7 +662,7 @@ namespace Hoodrich.Gangs
                 if (low.SwitchUntil != 0 && now >= low.SwitchUntil)
                 {
                     low.SwitchUntil = 0;
-                    Up(low.Car, false);
+                    Stance(low.Car, false);
                 }
             }
 
@@ -637,20 +674,28 @@ namespace Hoodrich.Gangs
             if (pick.SwitchUntil != 0) return;
 
             pick.SwitchUntil = now + HoldMinMs + _rng.Next(HoldMaxMs - HoldMinMs);
-            Up(pick.Car, true);
+            Stance(pick.Car, true);
         }
 
-        /// <summary>Front wheels up or down; the back stays down either way.</summary>
-        private static void Up(Vehicle car, bool up)
+        /// <summary>
+        /// Where the car sits. A lowrider rides dropped and puts the front up on the switch;
+        /// a donk rides up and drops the front on it. Wheels 0 and 1 are the front; 2 to 5
+        /// cover the back on anything with four wheels or six.
+        /// </summary>
+        private void Stance(Vehicle car, bool switched)
         {
             if (car == null || !car.Exists()) return;
+
+            var donk = _look == Look.Donks;
+            var front = donk ? (switched ? 0f : 1f) : (switched ? 1f : 0f);
+            var rear = donk ? 1f : 0f;
 
             try
             {
                 for (var wheel = 0; wheel < 6; wheel++)
                 {
                     Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR, car.Handle, wheel,
-                                  up && wheel < 2 ? 1f : 0f);
+                                  wheel < 2 ? front : rear);
                 }
             }
             catch
@@ -670,7 +715,12 @@ namespace Hoodrich.Gangs
             }
 
             _out.Clear();
-            Log.Info("Lowriders: gone home -- " + why + ".");
+            Log.Info("Cruise: the " + Word() + " gone home -- " + why + ".");
+        }
+
+        private string Word()
+        {
+            return _look == Look.Donks ? "donks" : "lowriders";
         }
 
         /// <summary>Handed back to the game, driving away rather than parked where they were.</summary>

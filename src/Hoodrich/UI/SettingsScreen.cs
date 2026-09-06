@@ -428,7 +428,7 @@ namespace Hoodrich.UI
                   () => c.RollerBikes, v => c.RollerBikes = (int)v, 0f, 6f, 1f, "0");
             Tick("The lowriders come out", "Block", "CruiseEnabled",
                  () => c.CruiseEnabled, v => c.CruiseEnabled = v,
-                 "Three of them, slow, in a line, some time after ten every night");
+                 "Lowriders one night, donks the next: three in a line, slow, after ten");
             Tick("Riders pull wheelies", "Block", "RollerWheelies",
                  () => c.RollerWheelies, v => c.RollerWheelies = v,
                  "On the straights, when they have the room for it");
