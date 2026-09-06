@@ -1475,6 +1475,17 @@ namespace Hoodrich.Locations
 
                     var driver = car.Driver;
 
+                    // A CAR LEFT IN THE CIRCLE with nobody alive at the wheel -- the driver
+                    // pulled out of it by the crowd, or dead -- is in the way of the show and
+                    // nobody is coming back for it. The same window as a driven one, then it
+                    // goes.
+                    if ((driver == null || !driver.Exists() || !driver.IsAlive)
+                        && !Ours(car) && !Law(car) && car.Position.DistanceTo(Middle) < EatAt)
+                    {
+                        Eat(car, null);
+                        continue;
+                    }
+
                     if (driver == null || !driver.Exists() || !driver.IsAlive) continue;
                     if (driver.IsPlayer) continue;
 
@@ -1505,21 +1516,14 @@ namespace Hoodrich.Locations
                     // them away would stop the drifters reaching the circle at all.
                     var in_ = car.Position.DistanceTo(Middle);
 
-                    // GOT THROUGH. It is not going to be persuaded now.
+                    // GOT THROUGH. It is not going to be persuaded now -- but it is not eaten
+                    // on the spot either. THE CROWD GETS ITS TURN FIRST: Crowding puts the
+                    // nearest few on the driver the moment a stranger's car is inside the
+                    // ring, and a car deleted on the tick it crossed the line was a beating
+                    // nobody saw -- the log had the two lines a second apart. See Eat.
                     if (in_ < EatAt)
                     {
-                        try
-                        {
-                            driver.Delete();
-                            car.Delete();
-
-                            Log.Info("Takeover: something drove into it. Removed.");
-                        }
-                        catch
-                        {
-                            // It will be tried again next tick.
-                        }
-
+                        Eat(car, driver);
                         continue;
                     }
 
@@ -1771,6 +1775,57 @@ namespace Hoodrich.Locations
 
             return false;
         }
+
+        /// <summary>
+        /// A stranger's car inside the ring goes -- after the crowd has had its turn on it.
+        /// The first sight of it starts a clock; for the length of the crowd's temper and a
+        /// moment more it is left alone, and whatever is still in the circle after that --
+        /// the car and its driver, or the car on its own -- is removed.
+        /// </summary>
+        private void Eat(Vehicle car, Ped driver)
+        {
+            var now = Game.GameTime;
+            int since;
+
+            if (!_letIn.TryGetValue(car.Handle, out since))
+            {
+                _letIn[car.Handle] = now;
+                return;
+            }
+
+            if (now - since < LetInMs) return;
+
+            try
+            {
+                if (driver != null && driver.Exists()) driver.Delete();
+                car.Delete();
+
+                Log.Info("Takeover: something drove into it. Removed, after the crowd had its say.");
+            }
+            catch
+            {
+                // Next tick.
+            }
+
+            _letIn.Remove(car.Handle);
+        }
+
+        /// <summary>Whether a car is one of the law's, which Calm has no business eating.</summary>
+        private bool Law(Vehicle car)
+        {
+            foreach (var l in _law)
+            {
+                if (l.Car != null && l.Car.Exists() && l.Car.Handle == car.Handle) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>When each stranger's car was first seen inside the ring.</summary>
+        private readonly Dictionary<int, int> _letIn = new Dictionary<int, int>();
+
+        /// <summary>How long a stranger's car is left to the crowd before it is removed.</summary>
+        private const int LetInMs = AngryMs + 3000;
 
         private bool Ours(Ped who)
         {
@@ -3523,8 +3578,16 @@ namespace Hoodrich.Locations
 
             foreach (var r in _running)
             {
-                if (r.Leaving || !r.Circling) continue;
+                if (r.Leaving) continue;
                 if (r.Car == null || !r.Car.Exists()) continue;
+
+                // A PERFORMER AT ITS MARK IS SPINNING. Circling is the old arrival flag, set
+                // only for a car that drove into the pit with no marker of its own, and no
+                // car has done that since the markers went in -- so this counted nought all
+                // night with four cars going round, and the flares, the cheering and the
+                // filming all wait on this count. The log said it exactly: "0 on the circle"
+                // with forty-odd handy to throw.
+                if (!r.Circling && !(r.Stage >= 0 && r.AtStage)) continue;
 
                 n++;
             }
@@ -6691,6 +6754,7 @@ namespace Hoodrich.Locations
             _volleyLogged = 0;
             _nobodyAt = 0;
             _angryAt.Clear();
+            _letIn.Clear();
             _tuned = 0;
 
             foreach (var l in _law)
