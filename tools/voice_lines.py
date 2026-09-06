@@ -158,6 +158,17 @@ def from_data(root):
             for line in d.get(field) or []:
                 add(d.get("name", ""), line)
 
+        # And the shop line, which the source builds with the money on you and the room at the
+        # house stapled to the end, so it names itself rather than hashing: <slug>_shop when
+        # the stock is whole, <slug>_shopcut when it has been stepped on. The recording leaves
+        # the arithmetic out; the screen is already showing it. See DealerTalk.Node.
+        for tag, text in (("shop", "Ain't got time to stand here. What you taking? Nothing here's been touched."),
+                          ("shopcut", "Ain't got time to stand here. What you taking? It's all stepped on already.")):
+            name = slug(d.get("name", "")) + "_" + tag
+            if name not in seen:
+                seen.add(name)
+                rows.append((name + ".mp3", d.get("name", ""), text))
+
     # Lamar owns the mission list outright.
     doc = load("missions.json")
     for m in (doc or {}).get("missions", []):
