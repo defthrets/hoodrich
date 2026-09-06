@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Native;
@@ -272,9 +272,18 @@ namespace Hoodrich.Gangs
         /// </summary>
         public const float BeefAt = -30f;
 
-        /// <summary>Whether this lot want you dead.</summary>
+        /// <summary>
+        /// Whether this lot want you dead.
+        ///
+        /// NEVER HIS OWN SET. Their number can still fall -- shooting up your own block has
+        /// a cost on the feed and at the counter -- but it never crosses into beef, because
+        /// beef is the rule every other system reads to decide who goes for Franklin, and
+        /// there is no state of this mod in which that is the Families.
+        /// </summary>
         public bool Beefing(string gangId)
         {
+            if (string.Equals(gangId, HomeSet, StringComparison.OrdinalIgnoreCase)) return false;
+
             var s = StandingFor(gangId);
             return s != null && s.Rep <= BeefAt;
         }

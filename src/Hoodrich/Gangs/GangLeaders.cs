@@ -764,6 +764,20 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.CLEAR_PED_TASKS, h);
                 Function.Call(Hash.SET_CURRENT_PED_WEAPON, h, Function.Call<uint>(Hash.GET_HASH_KEY, Sidearm), true);
 
+                // HIS OWN SET'S LEADERS NEVER TURN ON HIM. Gerald clipped by Franklin's car,
+                // or caught by a round meant for somebody else, takes it: the pistol goes
+                // away again and he goes back to his spot, the way the block's own people do.
+                var ours = _liveDef != null &&
+                           string.Equals(_liveDef.GangId, "families", StringComparison.OrdinalIgnoreCase);
+
+                if (you && ours)
+                {
+                    _defendUntil = 0;
+                    Function.Call(Hash.SET_CURRENT_PED_WEAPON, h, Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_UNARMED"), true);
+                    Log.Info("Leader " + _liveDef.Name + " took one from you and let it go.");
+                    return false;
+                }
+
                 if (you)
                 {
                     Function.Call(Hash.TASK_COMBAT_PED, h, player.Handle, 0, 16);

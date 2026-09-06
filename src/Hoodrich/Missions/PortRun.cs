@@ -50,10 +50,12 @@ namespace Hoodrich.Missions
         // ---- his van -----------------------------------------------------------
 
         /// <summary>
-        /// Where it is parked. Up the street from him, nose south, against the kerb.
+        /// Where it is parked. Up the street from him, against the kerb, nose north: it sat
+        /// nose south for a long time, which on that side of the road is facing the traffic,
+        /// and it was the truck outside Gerald's that was asked to be spun round.
         /// </summary>
         private static readonly Vector3 VanSpot = new Vector3(-178.840f, -1634.584f, 33.290f);
-        private const float VanHeading = 181.403f;
+        private const float VanHeading = 1.403f;
 
         /// <summary>
         /// A pickup, which ends the argument about branding rather than continuing it.

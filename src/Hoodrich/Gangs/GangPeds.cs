@@ -148,6 +148,10 @@ namespace Hoodrich.Gangs
 
             try
             {
+                // His own set near Franklin has all speech blocked, to stop the game's
+                // wrong-neighbourhood lines; a greeting lifts it for the one line, the way
+                // the block's own chatter does, or it comes out as a quiet nod every time.
+                Function.Call(Hash.BLOCK_ALL_SPEECH_FROM_PED, man.Handle, false, false);
                 Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, man.Handle,
                               Greetings[rng.Next(Greetings.Length)], "SPEECH_PARAMS_FORCE");
             }

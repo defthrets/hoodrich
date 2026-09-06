@@ -812,6 +812,10 @@ namespace Hoodrich.Gangs
         {
             try
             {
+                // Lifted for the line: within forty metres of Franklin his own set has all
+                // speech blocked, to stop the game's wrong-neighbourhood lines, and that was
+                // swallowing these too -- four men on his own street, saying nothing.
+                Function.Call(Hash.BLOCK_ALL_SPEECH_FROM_PED, who.Handle, false, false);
                 Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, who.Handle, line,
                               "SPEECH_PARAMS_FORCE_SHOUTED");
             }

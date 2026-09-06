@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="ISO-8859-1"?>
 <SpoonerPlacements>
-	<Note />
+	<Note>sometimes 60: 463969, 504650</Note>
 	<AudioFile volume="400" />
 	<ClearDatabase>false</ClearDatabase>
 	<ClearWorld>0</ClearWorld>

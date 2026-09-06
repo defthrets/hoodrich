@@ -214,11 +214,18 @@ namespace Hoodrich.UI
             // so for those seconds NOTHING had a picture, including the guns whose pack was
             // confirmed in the first batch. Waiting for a complete answer before giving any
             // answer is the wrong trade on a counter somebody is stood at.
+            // A PACK THAT HAS NOT STREAMED IN YET HAS NOT ANSWERED. The first frame the
+            // counter opens -- or any frame after a pack has been handed back for sitting
+            // idle -- the packs are asked for and are not here yet, and a "not here yet" was
+            // being counted as a "not in there". With the sweep already done that became a
+            // permanent no, written to disk: which is how every pistol lost its picture.
+            var pending = false;
+
             foreach (var name in Spellings(icon))
             {
                 foreach (var candidate in Real)
                 {
-                    if (!Hud.EnsureTextureDict(candidate)) continue;
+                    if (!Hud.EnsureTextureDict(candidate)) { pending = true; continue; }
                     if (!Hud.HasTexture(candidate, name)) continue;
 
                     // The dictionary AND the name that worked, because the name that worked is
@@ -236,10 +243,10 @@ namespace Hoodrich.UI
                 }
             }
 
-            // Not found yet. While the sweep is still running that is not an answer, only a
-            // not-yet -- writing it down here would remember a guess made before the packs
-            // it needed had been looked at.
-            if (!_done) return false;
+            // Not found yet. While the sweep is still running, or while a pack is still on
+            // its way in, that is not an answer, only a not-yet -- writing it down here would
+            // remember a guess made before the packs it needed had been looked at.
+            if (!_done || pending) return false;
 
             // Every real pack was asked and none of them had it. Said once, then kept.
             Where[icon] = "";
@@ -320,6 +327,12 @@ namespace Hoodrich.UI
 
                     var cut = row.IndexOf('|');
                     if (cut < 0) continue;
+
+                    // A "no" is not carried over. Every no on disk today was decided on a
+                    // frame when the packs were not resident, and a wrong no is a gun that
+                    // never gets its picture back. Asked again once a session, which is
+                    // instant when the packs are here and silent when they are not.
+                    if (cut == row.Length - 1) continue;
 
                     Where[row.Substring(0, cut)] = row.Substring(cut + 1);
                 }

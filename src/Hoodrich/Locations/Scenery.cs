@@ -76,6 +76,9 @@ namespace Hoodrich.Locations
             public readonly List<Entity> Up = new List<Entity>();
             public readonly Dictionary<int, Entity> ByHandle = new Dictionary<int, Entity>();
 
+            /// <summary>The placements not built today, by their saved handle.</summary>
+            public readonly HashSet<int> Skip = new HashSet<int>();
+
             /// <summary>
             /// The placement each standing thing came from, by its handle in THIS session.
             ///
@@ -121,31 +124,77 @@ namespace Hoodrich.Locations
         {
             var names = new List<string>();
 
-            try
+            foreach (var line in Clauses(path))
             {
-                var text = File.ReadAllText(path);
-                var open = text.IndexOf("<Note>", StringComparison.OrdinalIgnoreCase);
-                if (open < 0) return names;
+                if (!line.StartsWith("absorbs:", StringComparison.OrdinalIgnoreCase)) continue;
 
-                var close = text.IndexOf("</Note>", open, StringComparison.OrdinalIgnoreCase);
-                if (close < 0) return names;
-
-                var note = text.Substring(open + 6, close - open - 6).Trim();
-                if (!note.StartsWith("absorbs:", StringComparison.OrdinalIgnoreCase)) return names;
-
-                foreach (var raw in note.Substring(8).Split(',', ';'))
+                foreach (var raw in line.Substring(8).Split(',', ';'))
                 {
                     var name = raw.Trim();
                     if (name.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)) name = name.Substring(0, name.Length - 4);
                     if (name.Length > 0) names.Add(name);
                 }
             }
-            catch
-            {
-                // A file that cannot be read absorbs nothing.
-            }
 
             return names;
+        }
+
+        /// <summary>
+        /// The placements a scene file says are only there some days: "sometimes 60: 463969,
+        /// 504650" in its Note is those two saved handles, six days in ten. The roll is one
+        /// per file per day, so the two go missing together, and the same all day.
+        /// </summary>
+        private static HashSet<int> Sometimes(string path, out int chance)
+        {
+            var handles = new HashSet<int>();
+            chance = 100;
+
+            foreach (var line in Clauses(path))
+            {
+                if (!line.StartsWith("sometimes", StringComparison.OrdinalIgnoreCase)) continue;
+
+                var colon = line.IndexOf(':');
+                if (colon < 0) continue;
+
+                int pct;
+                if (int.TryParse(line.Substring(9, colon - 9).Trim(), out pct)) chance = Math.Max(0, Math.Min(100, pct));
+
+                foreach (var raw in line.Substring(colon + 1).Split(',', ';'))
+                {
+                    int handle;
+                    if (int.TryParse(raw.Trim(), out handle)) handles.Add(handle);
+                }
+            }
+
+            return handles;
+        }
+
+        /// <summary>The lines of a scene file's Note, trimmed. Nothing, for a file without one.</summary>
+        private static List<string> Clauses(string path)
+        {
+            var lines = new List<string>();
+
+            try
+            {
+                var text = File.ReadAllText(path);
+                var open = text.IndexOf("<Note>", StringComparison.OrdinalIgnoreCase);
+                if (open < 0) return lines;
+
+                var close = text.IndexOf("</Note>", open, StringComparison.OrdinalIgnoreCase);
+                if (close < 0) return lines;
+
+                foreach (var raw in text.Substring(open + 6, close - open - 6).Split('\n', '|'))
+                {
+                    var line = raw.Trim();
+                    if (line.Length > 0) lines.Add(line);
+                }
+            }
+            catch
+            {
+                // A file that cannot be read says nothing.
+            }
+
+            return lines;
         }
 
         /// <summary>
@@ -345,6 +394,26 @@ namespace Hoodrich.Locations
             scene.Missed = 0;
             scene.Waited = 0;
 
+            // WHO IS NOT HERE TODAY. Rolled when the scene goes up, once per file per day,
+            // so it is the same answer every time you come back on the same day.
+            scene.Skip.Clear();
+
+            try
+            {
+                int chance;
+                var some = Sometimes(scene.Path, out chance);
+
+                if (some.Count > 0 && !Core.Nights.On("the sometimes at " + scene.Name, chance))
+                {
+                    foreach (var handle in some) scene.Skip.Add(handle);
+                    Log.Info("Scenery: " + some.Count + " of \"" + scene.Name + "\" not here today.");
+                }
+            }
+            catch
+            {
+                // Everybody turns up.
+            }
+
             foreach (var item in scene.Items)
             {
                 if (string.IsNullOrEmpty(item.AnimDict)) continue;
@@ -362,6 +431,14 @@ namespace Hoodrich.Locations
             while (scene.Cursor < scene.Items.Count && did < PerTick)
             {
                 var item = scene.Items[scene.Cursor];
+
+                // Not today.
+                if (scene.Skip.Count > 0 && scene.Skip.Contains(item.Handle))
+                {
+                    scene.Cursor++;
+                    scene.Waited = 0;
+                    continue;
+                }
 
                 // ALREADY THERE, FROM ANOTHER FILE. Saving a scene, adding to it and saving
                 // again under a new name is the obvious way to work, and it leaves the same

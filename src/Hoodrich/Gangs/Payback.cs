@@ -163,6 +163,14 @@ namespace Hoodrich.Gangs
             var gang = _gangs == null ? null : _gangs.Get(gangId);
             if (gang == null) return;
 
+            // Not his own set. Franklin naming the Families on the feed is a family
+            // argument, and a family argument does not send a car round.
+            if (string.Equals(gang.Id, "families", StringComparison.OrdinalIgnoreCase))
+            {
+                Log.Info("Payback: the Families do not come for their own.");
+                return;
+            }
+
             _who = gang;
 
             var when = Game.GameTime + SoonestMs + _rng.Next(LatestMs - SoonestMs);
