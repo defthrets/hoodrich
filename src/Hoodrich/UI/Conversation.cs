@@ -108,6 +108,13 @@ namespace Hoodrich.UI
         /// Empty means the usual thing, and the usual thing is what nearly everything uses.
         /// </summary>
         public string VoiceKey = "";
+
+        /// <summary>
+        /// The recording the screen plays on its way out, whichever way out is taken: an
+        /// option that ends it, or backing out of it. A cue name -- see Voice.Cue -- so it
+        /// plays every time rather than once. Set on the nodes of a man who has a goodbye.
+        /// </summary>
+        public string Farewell = "";
         public Color SpeakerColour = Palette.Text;
 
         /// <summary>
@@ -523,6 +530,10 @@ namespace Hoodrich.UI
             _glide.Reset();
             _openedAt = Game.GameTime;
 
+            // A fresh conversation starts with no goodbye; a node that has one sets it.
+            if (_openedFresh) _farewell = null;
+            if (!string.IsNullOrEmpty(node.Farewell)) _farewell = node.Farewell;
+
             // And say it out loud, if somebody recorded this one. Say() stops whatever was
             // talking before it, so arrowing down a list does not stack voices on top of each
             // other -- every node either replaces the last line or leaves the screen quiet.
@@ -575,6 +586,17 @@ namespace Hoodrich.UI
             Core.Voice.Hush();
             Core.Lips.Rest();
 
+            // HIS GOODBYE, OUT LOUD. On every way out -- an option that ends the talk, or
+            // backing out of it -- the man says his recorded farewell. Cued rather than said,
+            // because a goodbye that only plays the first time is a man who has stopped
+            // talking to you.
+            if (!string.IsNullOrEmpty(_farewell))
+            {
+                var bye = _farewell;
+                _farewell = null;
+                Core.Voice.Cue(bye);
+            }
+
             if (IsOpen)
             {
                 Core.InputGuard.Swallow();
@@ -600,6 +622,9 @@ namespace Hoodrich.UI
 
         /// <summary>True until the opening line has been said, so pages do not re-greet you.</summary>
         private bool _openedFresh = true;
+
+        /// <summary>The goodbye the open conversation will play when it closes, if any.</summary>
+        private string _farewell;
 
         private static int FirstEnabled(DialogueNode node)
         {

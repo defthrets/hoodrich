@@ -1354,12 +1354,18 @@ namespace Hoodrich.Supply
 
             if (words == null || words.Length == 0) return;
 
-            var who = _def == null || string.IsNullOrEmpty(_def.Name) ? "" : _def.Name.ToUpperInvariant();
-
+            // NO CAPTION. The line goes to its recording if there is one and nowhere if there
+            // is not: a yellow caption over the delivery was the one piece of this that read
+            // as a mod, and the man is stood right there making his own noise. Cued, so a
+            // recorded line plays every time it comes up, and a line with no recording is
+            // logged under its name at Debug, which is how the to-record list finds it.
             try
             {
-                GTA.UI.Screen.ShowSubtitle(
-                    (who.Length == 0 ? "" : "~y~" + who + ":~s~ ") + Fresh(words), 3200);
+                var line = Fresh(words);
+                var who = _def == null ? "" : _def.Name;
+                var key = Voice.Key(who, line);
+
+                if (!Voice.Cue(key)) Log.Debug("Voice: nothing for " + key + " -- " + line);
             }
             catch
             {

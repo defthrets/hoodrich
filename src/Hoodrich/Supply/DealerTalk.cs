@@ -157,8 +157,14 @@ namespace Hoodrich.Supply
             (Def == null ? 0.75f : Def.PriceNow) *
             (Def == null ? 1f : ColdCall.Multiplier(Def.Id));
 
+        /// <summary>
+        /// The recording of his goodbye, which the screen plays on every way out of it: his
+        /// farewell from dealers.json, under the name the rest of his pack uses.
+        /// </summary>
+        private string Bye => Def == null || string.IsNullOrEmpty(Def.Farewell) ? "" : Voice.Key(Name, Def.Farewell);
+
         private DialogueNode Node(string line) =>
-            new DialogueNode(Name, line) { SpeakerColour = Palette.Cash };
+            new DialogueNode(Name, line) { SpeakerColour = Palette.Cash, Farewell = Bye };
 
         public DialogueNode Root()
         {
