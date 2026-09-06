@@ -217,7 +217,7 @@ namespace Hoodrich.Gangs
         }
 
         /// <summary>
-        /// A rifle, and the willingness to use it.
+        /// One of the guard guns, and the willingness to use it.
         ///
         /// HOLSTERED, NOT IN HIS HANDS. GIVE_WEAPON_TO_PED with equipNow set would have three
         /// men standing on a residential corner holding rifles at all times, which is a
@@ -230,8 +230,7 @@ namespace Hoodrich.Gangs
         {
             var h = man.Handle;
 
-            Function.Call(Hash.GIVE_WEAPON_TO_PED, h,
-                          Game.GenerateHash("WEAPON_COMPACTRIFLE"), 120, false, false);
+            Function.Call(Hash.GIVE_WEAPON_TO_PED, h, Arms.GuardHashAt(man.Position), 120, false, false);
 
             Function.Call(Hash.SET_PED_ACCURACY, h, 30);
             Function.Call(Hash.SET_PED_COMBAT_ABILITY, h, 2);

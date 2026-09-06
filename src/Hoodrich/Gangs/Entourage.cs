@@ -47,13 +47,6 @@ namespace Hoodrich.Gangs
 
         private const int PedTypeCiv = 4;
 
-        /// <summary>
-        /// Held rather than slung, which is the point.
-        ///
-        /// A rifle on a man's back is a man who owns a rifle. A rifle in his hands is a man
-        /// standing guard, and that is the difference between decoration and a warning.
-        /// </summary>
-        private const string Weapon = "WEAPON_COMPACTRIFLE";
 
         /// <summary>
         /// Idles that keep a weapon in hand. A scenario that puts the gun away defeats the
@@ -839,7 +832,9 @@ namespace Hoodrich.Gangs
 
                     if (armed)
                     {
-                        var gun = string.IsNullOrEmpty(carrying) ? Weapon : carrying;
+                        // One of the guard guns, by where he stands, unless the station said
+                        // what he carries. See Arms.
+                        var gun = string.IsNullOrEmpty(carrying) ? Arms.GuardAt(mark) : carrying;
 
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
                                       Function.Call<uint>(Hash.GET_HASH_KEY, gun), 120, true, true);

@@ -749,7 +749,7 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// The weapon out of the file.
+        /// The weapon, for anybody saved with one.
         ///
         /// Given rather than only equipped, so it is still there if anything ever wakes them,
         /// and put away in the holster when they have something else to do with their hands --
@@ -763,13 +763,18 @@ namespace Hoodrich.Locations
 
             try
             {
-                Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle, item.WeaponHash, 250, false, true);
+                // NOT THE GUN IN THE FILE. Saved with a rifle, every one of them, because a
+                // rifle is what you reach for in the spooner; what he actually carries is one
+                // of the guard guns, by where he stands, so a block of ten is a mix. See Arms.
+                var gun = Arms.GuardHashAt(item.At);
+
+                Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle, gun, 250, false, true);
 
                 var busy = !string.IsNullOrEmpty(item.Scenario) ||
                            (!string.IsNullOrEmpty(item.AnimDict) && !string.IsNullOrEmpty(item.AnimClip));
 
                 Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle,
-                              busy ? Spooner.Placed.Unarmed : item.WeaponHash, true);
+                              busy ? Spooner.Placed.Unarmed : gun, true);
             }
             catch (Exception ex)
             {
