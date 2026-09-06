@@ -200,14 +200,22 @@ phone up to film, for a few seconds at a time, never more than two thirds of
 them at once. When the cars stop the last of them wind down within a few
 seconds and go back to standing about.
 
-THE BLOCK IS ON THE ONLINE MAP, and only the block. LD Organics is only on the
-online map -- on the story map that corner is a plain garage -- and so are the
-two rooms. Holding the whole city on the online map turned every other online
-building on as well, which was not wanted; switching only through the doors put
-LD Organics back to a garage the moment you stepped out. So the online map is
-held while you are on the block, Lamar's yard, LD Organics and the two doors,
-and the story map comes back as you leave it. OnlineBlock in the ini and a tick
-under "Doors" turn it off.
+THE ROOMS ARE DRESSED BEFORE YOU ARE STOOD IN THEM. The plants would not show:
+every plant set was accepted and active, and the trays were empty. A set
+switched on with you already inside is a refresh the room does not always
+honour for everything; one that is on before the room is built round you is
+part of the room. So the room is given up to two seconds to exist, dressed,
+and only then are you put in it -- and dressed again once everything has
+settled.
+
+THE RADIO AT LAMAR'S IS ON THE TABLE with the money and the bag, rather than
+on the concrete behind the couch.
+
+THE BAG ON THE TABLE FOLLOWS THE TABLE DOWN. Everything in the yard is put on
+the ground in one tick, and the bag was put down onto the table before the
+table was put down itself, so the table dropped half a metre and the bag stayed
+in the air. Everything gets a second pass a few seconds after its first, by
+which time whatever it is stood on has settled.
 
 THE FURNITURE STOPS FLOATING. A prop is put on the ground by asking the
 collision under it, and in the second after the map has been switched there is

@@ -34,6 +34,11 @@ namespace Hoodrich.Locations
         private bool _grounded;
         private string _placedAs = "";
 
+        /// <summary>The second pass, a few seconds after the first, for anything stood on something else. See Ground.</summary>
+        private int _settleAt;
+        private bool _settled;
+        private const int SettleMs = 3000;
+
         public Fixture(Vector3 where, float heading, params string[] models)
         {
             _where = where;
@@ -85,6 +90,11 @@ namespace Hoodrich.Locations
             }
 
             if (!_grounded) Ground(true);
+            else if (!_settled && now >= _settleAt)
+            {
+                _settled = true;
+                Ground(true);
+            }
 
             if (away > DespawnRange) Clear();
         }
@@ -194,13 +204,36 @@ namespace Hoodrich.Locations
             {
                 if (!Function.Call<bool>(Hash.HAS_COLLISION_LOADED_AROUND_ENTITY, _prop.Handle)) return;
 
+                var was = _prop.Position;
+
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, _prop.Handle, false);
                 var down = Function.Call<bool>(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _prop.Handle);
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, _prop.Handle, true);
 
                 if (!down) return;
 
+                // THE SECOND PASS. A bag on a table is put down onto whatever is under it at
+                // the time, and if the table has not been put down yet itself the bag lands
+                // on a table that is about to drop half a metre -- the same tick put the bag
+                // down before the table and left the bag in the air. So everything gets a
+                // second pass a few seconds after its first, by which time whatever it is
+                // stood on has settled. The seats are only offered again if it moved, or a
+                // couch nobody has touched would have everybody on it re-seated.
+                if (_grounded)
+                {
+                    var moved = was.DistanceTo(_prop.Position);
+                    if (moved < 0.03f) return;
+
+                    if (Seating.IsSeat(_placedAs)) Seating.Offer(this, _prop, _placedAs);
+
+                    Log.Info("Fixture " + _placedAs + " settled " + (int)(moved * 100f) +
+                             "cm once what was under it had, at " + _prop.Position + ".");
+                    return;
+                }
+
                 _grounded = true;
+                _settled = false;
+                _settleAt = Game.GameTime + SettleMs;
 
                 if (Seating.IsSeat(_placedAs)) Seating.Offer(this, _prop, _placedAs);
 
@@ -219,6 +252,7 @@ namespace Hoodrich.Locations
             // longer in the world. Cheap, unconditional, and safe on a fixture that never
             // offered any.
             _grounded = false;
+            _settled = false;
 
             Seating.Withdraw(this);
 

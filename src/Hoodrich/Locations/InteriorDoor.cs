@@ -178,6 +178,9 @@ namespace Hoodrich.Locations
         /// <summary>Long enough after the warp for the room to have decided he is in it.</summary>
         private const int SettleGraceMs = 2500;
 
+        /// <summary>How long a room is given to exist before he is put in it undressed.</summary>
+        private const int EarlyDressMs = 2000;
+
         /// <summary>
         /// How far the nothing around one of these shells reaches.
         ///
@@ -448,6 +451,28 @@ namespace Hoodrich.Locations
 
                 var to = Somewhere();
 
+                // DRESSED BEFORE HE IS STOOD IN IT. Sets switched on with the player already
+                // inside came up with the lights and the hoses but not the plants: the log
+                // showed every plant set accepted and active, and the trays empty. A set that
+                // is on before the room is built round him is part of the room; one switched
+                // on afterwards is a refresh the room does not always honour for everything.
+                // So the room is given up to two seconds to exist, dressed, and only then is
+                // he put in it -- and dressed again once everything has settled, for whatever
+                // the first pass was too early for.
+                var early = 0;
+
+                for (var held = 0; held < EarlyDressMs && early == 0; held += 100)
+                {
+                    early = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, to.X, to.Y, to.Z);
+                    if (early == 0) Wait(100);
+                }
+
+                if (early != 0)
+                {
+                    Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, early);
+                    Dress(early);
+                }
+
                 // Asked for BEFORE the warp, so the streamer has the whole fade to work in
                 // rather than being told about the room only once somebody is standing in it.
                 Function.Call(Hash.REQUEST_COLLISION_AT_COORD, to.X, to.Y, to.Z);
@@ -567,6 +592,9 @@ namespace Hoodrich.Locations
                 }
 
                 Function.Call(Hash.NEW_LOAD_SCENE_STOP);
+
+                // And once more now it has all settled. See the note above the first pass.
+                if (interior != 0) Dress(interior);
 
                 // Written every time, not only on failure. This is the one thing in the mod
                 // that cannot be worked out from the outside: "I fell through the floor" is the
@@ -1253,11 +1281,6 @@ namespace Hoodrich.Locations
 
         private static void Mp(bool on)
         {
-            // NOT BACK TO THE STORY MAP while the block is being held on the online one. Both
-            // doors are on the block, so a door switching the map off on its way out would
-            // turn LD Organics back into a garage every time you left a room.
-            if (!on && HomeMap.On) return;
-
             try
             {
                 Function.Call(on ? Hash.ON_ENTER_MP : Hash.ON_ENTER_SP);

@@ -629,21 +629,6 @@ namespace Hoodrich.UI
             _rows.Add(new Opt
             {
                 Kind = OptKind.Tick,
-                Label = "The online map round the block",
-                Note = "LD Organics and the two rooms, with the story map everywhere else",
-                Section = "Doors",
-                Key = "OnlineBlock",
-                GetBool = () => c.OnlineBlock,
-                SetBool = v =>
-                {
-                    c.OnlineBlock = v;
-                    Locations.HomeMap.Enabled = v;
-                }
-            });
-
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Tick,
                 Label = "Show the places on the map",
                 Note = "A blip for everywhere on the list you have not made a door for yet",
                 Section = "Doors",

@@ -905,10 +905,6 @@ namespace Hoodrich
                 // stood in; these are the ones still to visit, so the map thins out as the
                 // work gets done.
                 if (_cfg.ShowPlaces) _places.Show(_cfg.Doors.ConvertAll(d => d.Section));
-
-                // THE BLOCK ON THE ONLINE MAP, so LD Organics is LD Organics. See HomeMap.
-                HomeMap.Enabled = _cfg.OnlineBlock;
-
                 // The lab has people on it.
                 _labCrew = new Entourage(_gangs, "families",
                                          new Vector3(-201.384f, -1707.909f, 32.664f),
@@ -1405,7 +1401,10 @@ namespace Hoodrich
                 // One was never going to be a party. The decks are by the shutters and the
                 // couch is thirty feet away with nothing playing at it, so half the yard was
                 // people standing in silence next to somebody else's music.
-                _partyDecks = new Boombox(new Vector3(-202.900f, -1729.900f, 32.664f), 20f,
+                // ON THE TABLE with the money and the bag, on the spot read off a player
+                // stood on it, rather than on the concrete behind the couch where it sat
+                // like something somebody had put down and forgotten.
+                _partyDecks = new Boombox(new Vector3(-203.764f, -1727.046f, 33.396f), 182.149f,
                                           "ba_prop_battle_speaker_01a",
                                           "prop_boombox_01", "prop_ld_ferris_wheel");
 
@@ -3012,7 +3011,6 @@ namespace Hoodrich
                     _armourerStockA.Update();
                     _armourerStockB.Update();
                     foreach (var door in _doors) door.Update();
-                    HomeMap.Update();
                     _traffic.Update();
                     _payback.Update();
                     _rollers.Update();
@@ -4087,7 +4085,6 @@ namespace Hoodrich
                 try { door.RestoreWorld(); } catch { /* teardown */ }
             }
             try { _places.RestoreWorld(); } catch { /* teardown */ }
-            try { HomeMap.Restore(); } catch { /* teardown */ }
             try { _war?.RestoreWorld(); } catch { /* teardown */ }
             try { _payback?.RestoreWorld(); } catch { /* teardown */ }
             try { _turf?.RestoreWorld(); } catch { /* teardown */ }
