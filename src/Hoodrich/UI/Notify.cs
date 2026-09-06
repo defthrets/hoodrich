@@ -19,16 +19,64 @@ namespace Hoodrich.UI
 
         public static void Ticker(string message)
         {
-            if (string.IsNullOrEmpty(message)) return;
+            if (string.IsNullOrEmpty(message) || Repeat(message)) return;
             GTA.UI.Notification.PostTicker(message, false, true);
         }
 
         /// <summary>A message the player should not miss (blinks in the feed).</summary>
         public static void Important(string message)
         {
-            if (string.IsNullOrEmpty(message)) return;
-            GTA.UI.Notification.PostTicker(message, true, true);
+            if (string.IsNullOrEmpty(message) || Repeat(message)) return;
+
+            // NO BLINK. The second argument to the game's ticker is "blink", and it was on
+            // for everything important -- ninety-odd call sites -- which is a notification
+            // that flashes black and white for a second every time it arrives. Important is
+            // said with the words and the colour now, not with a strobe.
+            GTA.UI.Notification.PostTicker(message, false, true);
         }
+
+        /// <summary>
+        /// Whether this exact thing was posted within the last couple of seconds.
+        ///
+        /// A message put on the feed twice in quick succession -- two systems announcing
+        /// the same event, or a caller in a loop without a guard -- is two identical items
+        /// shoving each other, which reads as the notification flickering. The second is
+        /// dropped, and said so in the log by name, once, so the caller can be found.
+        /// </summary>
+        private static bool Repeat(string key)
+        {
+            var now = GTA.Game.GameTime;
+            int last;
+
+            if (_recent.TryGetValue(key, out last) && now - last < RepeatMs)
+            {
+                if (!_named.Contains(key))
+                {
+                    _named.Add(key);
+                    Core.Log.Info("Notify: dropped a repeat within " + RepeatMs + " ms of \"" +
+                                  (key.Length > 70 ? key.Substring(0, 70) + "..." : key) + "\".");
+                }
+
+                return true;
+            }
+
+            _recent[key] = now;
+
+            if (_recent.Count > 64)
+            {
+                var stale = new System.Collections.Generic.List<string>();
+                foreach (var pair in _recent) if (now - pair.Value > RepeatMs) stale.Add(pair.Key);
+                foreach (var k in stale) _recent.Remove(k);
+            }
+
+            return false;
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<string, int> _recent =
+            new System.Collections.Generic.Dictionary<string, int>();
+        private static readonly System.Collections.Generic.HashSet<string> _named =
+            new System.Collections.Generic.HashSet<string>();
+        private const int RepeatMs = 2000;
 
         /// <summary>Something went wrong, phrased for the player rather than the log.</summary>
         public static void Problem(string message)
@@ -62,6 +110,7 @@ namespace Hoodrich.UI
                                 bool urgent = false)
         {
             if (string.IsNullOrEmpty(body)) return;
+            if (Repeat((sender ?? "") + "|" + body)) return;
 
             // A caller that named nobody in particular gets whoever the sender turns out to be.
             if (string.IsNullOrEmpty(portrait) || portrait == Faces.Nobody)
@@ -99,9 +148,10 @@ namespace Hoodrich.UI
                     Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, part);
                 }
 
+                // The third argument is the blink, whatever the header calls it. Never.
                 Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_MESSAGETEXT,
                               portrait, portrait,
-                              urgent, MessageIcon, sender ?? "", subject ?? "");
+                              false, MessageIcon, sender ?? "", subject ?? "");
             }
             catch (System.Exception ex)
             {
@@ -125,6 +175,7 @@ namespace Hoodrich.UI
         public static void Card(string portrait, string from, string subject, string body)
         {
             if (string.IsNullOrEmpty(body)) return;
+            if (Repeat((from ?? "") + "|" + body)) return;
 
             portrait = Faces.Ready(portrait);
 

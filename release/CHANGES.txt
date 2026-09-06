@@ -212,6 +212,13 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
+THE NOTIFICATIONS STOP FLASHING. The game's feed has a blink flag on a posted
+item, and it was on for everything the mod called important -- ninety-odd of
+them -- so a notification arrived flashing black and white for a second.
+Nothing blinks now; important is said with the words and the colour. And a
+message posted twice within two seconds shows once, with the repeat named in
+the log so the caller can be found.
+
 THE SET TURNS UP TO THE TAKEOVER ON DIRT BIKES. Once the crowd is forming, two
 to four of them come in on Sanchezes and Street Blazers, green, pull up a few
 metres behind the ring facing the middle and stay in the saddle, watching over
