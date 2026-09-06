@@ -212,6 +212,10 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
+HAO'S IS DRESSED. Fifteen placements from the spooner: work lights and wall
+lights round the shop, a pit sign, parking signs on the forecourt, a lamp, and
+three of them stood by the door, the mechanic among them.
+
 THE POLICE COME INTO THE JUNCTION. They stopped thirty-five metres out and sat
 with the lights going. Now, the moment everybody is running, every unit is sent
 on to ten metres from the middle on a style that steers round cars, people and
