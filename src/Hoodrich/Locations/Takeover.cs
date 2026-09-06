@@ -5381,10 +5381,10 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>How often a volley goes, how many are in it, how they stagger, and how long they hold the flare.</summary>
-        private const int FlareMinMs = 3500;
-        private const int FlareMaxMs = 9000;
-        private const int FlareThrowersMin = 2;
-        private const int FlareThrowersMax = 4;
+        private const int FlareMinMs = 14000;
+        private const int FlareMaxMs = 30000;
+        private const int FlareThrowersMin = 1;
+        private const int FlareThrowersMax = 2;
         private const int FlareStaggerMs = 900;
         private const int FlareHoldMs = 3200;
 
