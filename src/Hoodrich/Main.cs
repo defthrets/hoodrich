@@ -1294,11 +1294,12 @@ namespace Hoodrich
                     // so it keeps the height it is given -- every plain mark is snapped to the
                     // ground, which is why lowering this one did nothing until it was pinned.
                     //
-                    // The height is the LEDGE TOP less what the seated clip lifts a man above
-                    // his mark. The ledge reads 30.292 stood on, the clip sits him about
-                    // forty-five centimetres up, and the first pinned guess went a metre too
-                    // far and buried him in the concrete.
-                    .Stand(new Vector3(-34.521f, -1385.362f, 29.840f), 346.825f,
+                    // The height was walked down to. The ledge reads 30.292 stood on; the
+                    // first pinned guess sat a metre and a half under that and buried him in
+                    // the concrete, and a metre under it left him hovering. 29.340 is where
+                    // he sits ON it, which makes the clip's seat about a metre over its mark
+                    // rather than the forty-five centimetres it was reckoned at.
+                    .Stand(new Vector3(-34.521f, -1385.362f, 29.340f), 346.825f,
                            "WORLD_HUMAN_STAND_IMPATIENT", Fam(2), armed: false,
                            anim: SeatedBeer, held: "prop_amb_beer_bottle", pinned: true)
 
