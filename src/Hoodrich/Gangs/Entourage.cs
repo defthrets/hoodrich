@@ -374,10 +374,11 @@ namespace Hoodrich.Gangs
                                string[] models = null, bool armed = true, bool onProp = false,
                                string[] anim = null, string weapon = null, bool nights = false,
                                float wander = 0f, bool party = false, bool sit = false,
-                               bool onSpot = false)
+                               bool onSpot = false, string held = null)
         {
             _sits.Add(sit);
             _onSpot.Add(onSpot);
+            _holding.Add(held);
             _allNight.Add(nights);
             _stations.Add(where);
             _facings.Add(facing);
@@ -500,6 +501,8 @@ namespace Hoodrich.Gangs
         private bool ArmedAt(int index) => index >= _armed.Count || _armed[index];
 
         private string WeaponAt(int index) => index < _weapons.Count ? _weapons[index] : null;
+
+        private string HeldAt(int index) => index < _holding.Count ? _holding[index] : null;
 
         public void Update()
         {
@@ -643,7 +646,7 @@ namespace Hoodrich.Gangs
                 var from = arriving ? ArrivalSpot(i) : MarkAt(i);
 
                 var ped = SpawnMember(gang, from, Facing(i), ModelsFor(i, gang), ArmedAt(i),
-                                      WeaponAt(i));
+                                      WeaponAt(i), HeldAt(i));
 
                 _crew.Add(ped);
                 if (ped == null) continue;
@@ -776,7 +779,7 @@ namespace Hoodrich.Gangs
         }
 
         private Ped SpawnMember(GangDef gang, Vector3 mark, float facing, string[] models, bool armed,
-                                string carrying)
+                                string carrying, string held = null)
         {
             // Started at a different place in the list for each of them, and wrapped.
             //
@@ -852,6 +855,12 @@ namespace Hoodrich.Gangs
                                       Function.Call<uint>(Hash.GET_HASH_KEY, gun), true);
 
                         Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
+                    }
+
+                    if (!string.IsNullOrEmpty(held))
+                    {
+                        var prop = GangPeds.Hand(ped, held);
+                        if (prop != null) _handProps.Add(prop);
                     }
 
                     return ped;
@@ -1034,6 +1043,13 @@ namespace Hoodrich.Gangs
         /// hand, and no chair anywhere.
         /// </summary>
         private readonly List<bool> _onSpot = new List<bool>();
+
+        /// <summary>
+        /// A prop in the hand, by model, for a stand whose animation wants one -- a spray
+        /// can for a man tagging. Attached on the prop-holder bone, and deleted with him.
+        /// </summary>
+        private readonly List<string> _holding = new List<string>();
+        private readonly List<Prop> _handProps = new List<Prop>();
 
         /// <summary>Which seat scenario is being tried, and how many passes it has had.</summary>
         private int _seatPick;
@@ -1394,6 +1410,14 @@ namespace Hoodrich.Gangs
             }
 
             _crew.Clear();
+
+            foreach (var prop in _handProps)
+            {
+                try { if (prop != null && prop.Exists()) prop.Delete(); }
+                catch { /* teardown */ }
+            }
+
+            _handProps.Clear();
         }
 
         public void RestoreWorld() => Despawn();

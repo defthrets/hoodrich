@@ -533,6 +533,17 @@ namespace Hoodrich
         /// Led by the base-game strip club clips rather than the nightclub ones -- they are in
         /// every install, and on this model they are the right dance anyway.
         /// </summary>
+        /// <summary>
+        /// Tagging: the game's own graffiti loop from the poster-tagging update, the ped's
+        /// half of it -- the can's half is a prop in his hand. See the lot behind Innocence.
+        /// </summary>
+        private static readonly string[] Tagging =
+        {
+            "anim@scripted@freemode@postertag@graffiti_spray@male@", "spray_can_male",
+            "anim@scripted@freemode@postertag@graffiti_spray@male@", "spray_can_var_01_male",
+            "anim@scripted@freemode@postertag@graffiti_spray@male@", "spray_can_var_02_male"
+        };
+
         private static readonly string[] DancingAlt =
         {
             "mini@strip_club@idles@stripper", "stripper_idle_01",
@@ -1246,7 +1257,13 @@ namespace Hoodrich
                     .Stand(new Vector3(-34.941f, -1387.629f, 30.292f), 295.955f,
                            "WORLD_HUMAN_SMOKING_POT", Fam(1), armed: false)
                     .Stand(new Vector3(-38.919f, -1385.488f, 29.810f), 3.714f,
-                           "PROP_HUMAN_SEAT_CHAIR_DRINK_BEER", Fam(2), armed: false, onSpot: true);
+                           "PROP_HUMAN_SEAT_CHAIR_DRINK_BEER", Fam(2), armed: false, onSpot: true)
+
+                    // AND ONE TAGGING THE WALL round the corner, on the game's own spraying
+                    // loop with a can in his hand. Facing the wall, as the readout was.
+                    .Stand(new Vector3(-20.123f, -1397.681f, 29.365f), 97.157f,
+                           "WORLD_HUMAN_STAND_IMPATIENT", Fam(0), armed: false,
+                           anim: Tagging, held: "ng_proc_spraycan01a");
 
                 _lotDecks = new Boombox(new Vector3(-33.876f, -1385.712f, 30.292f), 286.704f,
                                         "prop_boombox_01", "ba_prop_battle_speaker_01a");
