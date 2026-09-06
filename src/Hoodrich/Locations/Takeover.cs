@@ -750,6 +750,11 @@ namespace Hoodrich.Locations
         {
             public Vehicle Car;
             public Ped Cop;
+
+            /// <summary>How far in it has got, when that leg began, and where it is heading.</summary>
+            public int Stage;
+            public int Sent;
+            public Vector3 Stop;
         }
 
         private readonly List<Law> _law = new List<Law>();
@@ -762,16 +767,24 @@ namespace Hoodrich.Locations
         private const float LawSeen = 70f;
 
         /// <summary>
-        /// How far out they stop, and how fast they come.
+        /// How far out they stop first, how fast they come, and how far in they go after.
         ///
-        /// Thirty-five metres is the outside of the ring: close enough that the lights are all
-        /// over the junction and everybody can see them, far enough that they are not driving
-        /// through the parked cars to get there. Fourteen metres a second is fifty rather than
-        /// seventy -- fast enough to read as a response, slow enough that the avoidance in the
-        /// driving style has room to work.
+        /// TWO LEGS. Thirty metres is the outside of the ring: close enough that the lights
+        /// are all over the junction, far enough that they are not driving through the
+        /// parked cars to get there. Fourteen metres a second is fifty rather than seventy
+        /// -- fast enough to read as a response, slow enough that the avoidance in the
+        /// driving style has room to work. And once everybody is running, each unit creeps
+        /// on to ten metres from the middle at a walking-pace seven, on the style that
+        /// stops before people and cars, and the officer gets out. See Raid.
         /// </summary>
-        private const float LawHold = 35f;
+        private const float LawHold = 30f;
         private const float LawSpeed = 14f;
+        private const float LawClose = 10f;
+        private const float LawCreep = 7f;
+
+        /// <summary>Near enough to a stop to count as there, and the most a leg is given.</summary>
+        private const float LawThere = 6f;
+        private const int LawLegMs = 20000;
 
         public Func<bool> Busy;
 
@@ -976,6 +989,7 @@ namespace Hoodrich.Locations
                         }
 
                         Bail(now);
+                        Raid(now);
 
                         if (near > LetGo || now > _lastDrive) Pack();
                         break;
@@ -5735,7 +5749,7 @@ namespace Hoodrich.Locations
 
                     Function.Call(Hash.SET_PED_KEEP_TASK, cop.Handle, true);
 
-                    _law.Add(new Law { Car = car, Cop = cop });
+                    _law.Add(new Law { Car = car, Cop = cop, Sent = now, Stop = stop });
                 }
                 catch (Exception ex)
                 {
@@ -5765,6 +5779,113 @@ namespace Hoodrich.Locations
         /// they were the one cast member nobody warmed. See Blues for what that cost.
         /// </summary>
         private static readonly string[] Sirens = { "police3", "police", "police2" };
+
+        /// <summary>
+        /// Each unit, the rest of the way in.
+        ///
+        /// They used to stop at the edge and sit there with the lights going, which broke
+        /// the takeover up from thirty-five metres away. A raid comes into the junction. So
+        /// once a unit has reached its first stop -- and once the crowd is running, because
+        /// the running is what clears the road ahead of it -- it is sent on to ten metres
+        /// from the middle at a creep, on the style that stops before people and cars. There,
+        /// or stopped short by something it will not drive through, it brakes and the officer
+        /// gets out and stands by the car. Each leg has a limit, so a unit that cannot get
+        /// there does whatever it can from wherever it is.
+        /// </summary>
+        private void Raid(int now)
+        {
+            foreach (var l in _law)
+            {
+                if (l.Car == null || !l.Car.Exists()) continue;
+                if (l.Cop == null || !l.Cop.Exists() || !l.Cop.IsAlive) continue;
+
+                try
+                {
+                    var gap = l.Car.Position.DistanceTo(l.Stop);
+
+                    if (l.Stage == 0)
+                    {
+                        if (gap > LawThere && now - l.Sent < LawLegMs) continue;
+                        if (!_scattered) continue;
+
+                        var back = l.Car.Position - Middle;
+                        var len = back.Length();
+
+                        if (len <= LawClose + 1f)
+                        {
+                            // Already close enough. Straight to the brake.
+                            l.Stage = 1;
+                            l.Sent = now - LawLegMs;
+                            continue;
+                        }
+
+                        l.Stop = Middle + back * (LawClose / len);
+
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, l.Cop.Handle, l.Car.Handle,
+                                      l.Stop.X, l.Stop.Y, l.Stop.Z, LawCreep, 0,
+                                      l.Car.Model.Hash, CareStyle, 3f, true);
+                        Function.Call(Hash.SET_PED_KEEP_TASK, l.Cop.Handle, true);
+
+                        l.Stage = 1;
+                        l.Sent = now;
+                        continue;
+                    }
+
+                    if (l.Stage == 1)
+                    {
+                        // Creeping in. Done when there, when it has been stood still a while
+                        // behind something, or when the leg has had its time.
+                        var still = Function.Call<bool>(Hash.IS_VEHICLE_STOPPED, l.Car.Handle);
+
+                        if (gap > LawThere && !(still && now - l.Sent > 5000) && now - l.Sent < LawLegMs) continue;
+
+                        // Temp action 1 is the brake.
+                        Function.Call(Hash.CLEAR_PED_TASKS, l.Cop.Handle);
+                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, l.Cop.Handle, l.Car.Handle, 1, 2000);
+
+                        l.Stage = 2;
+                        l.Sent = now;
+                        continue;
+                    }
+
+                    if (l.Stage == 2)
+                    {
+                        if (now - l.Sent < 2200) continue;
+
+                        Function.Call(Hash.TASK_LEAVE_VEHICLE, l.Cop.Handle, l.Car.Handle, 0);
+
+                        l.Stage = 3;
+                        l.Sent = now;
+                        continue;
+                    }
+
+                    if (l.Stage == 3)
+                    {
+                        if (now - l.Sent < 3500) continue;
+
+                        // Still in it after that long is a door that will not open; he stays put.
+                        if (Function.Call<bool>(Hash.IS_PED_IN_ANY_VEHICLE, l.Cop.Handle, false))
+                        {
+                            if (now - l.Sent < 9000) continue;
+
+                            l.Stage = 4;
+                            continue;
+                        }
+
+                        Function.Call(Hash.SET_ENTITY_HEADING, l.Cop.Handle, Facing(l.Cop.Position));
+                        Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, l.Cop.Handle,
+                                      "WORLD_HUMAN_COP_IDLES", 0, true);
+
+                        l.Stage = 4;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Takeover: a unit lost its way in: " + ex.Message);
+                    l.Stage = 4;
+                }
+            }
+        }
 
         /// <summary>Whether any of them is close enough to be worth running from.</summary>
         private bool Closing()
