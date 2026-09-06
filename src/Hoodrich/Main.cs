@@ -537,6 +537,16 @@ namespace Hoodrich
         /// Tagging: the game's own graffiti loop from the poster-tagging update, the ped's
         /// half of it -- the can's half is a prop in his hand. See the lot behind Innocence.
         /// </summary>
+        /// <summary>
+        /// Sat with a beer, without a chair: the seated-drinking animation itself rather
+        /// than its scenario. The scenario wants the chair prop and, given none, plays
+        /// nothing -- a man in a T-pose stood in the steps. The animation just sits him.
+        /// </summary>
+        private static readonly string[] SeatedBeer =
+        {
+            "amb@prop_human_seat_chair_drink@male@generic@base", "base"
+        };
+
         private static readonly string[] Tagging =
         {
             "anim@scripted@freemode@postertag@graffiti_spray@male@", "spray_can_male",
@@ -1247,9 +1257,9 @@ namespace Hoodrich
                 // ---- the lot behind Innocence, by the FR36 ----------------------------
                 //
                 // Three of the set and a box, every hour of the day. The one on the steps
-                // is the chair-and-beer scenario started AT a point on the lower step, which
-                // sits him on the landing with his feet on the steps, bottle in hand, and no
-                // chair. Every heading here is the readout's own.
+                // is the seated-drinking animation played at a point on the lower step, which
+                // sits him on the landing with his feet on the steps, a bottle in his hand,
+                // and no chair. Every heading here is the readout's own.
                 _lotCrew = new Entourage(_gangs, "families",
                                          new Vector3(-34.500f, -1387.000f, 30.292f), 3.704f, "the lot")
                     .Stand(new Vector3(-33.668f, -1388.287f, 30.292f), 3.704f,
@@ -1257,7 +1267,8 @@ namespace Hoodrich
                     .Stand(new Vector3(-34.941f, -1387.629f, 30.292f), 295.955f,
                            "WORLD_HUMAN_SMOKING_POT", Fam(1), armed: false)
                     .Stand(new Vector3(-38.919f, -1385.488f, 29.810f), 3.714f,
-                           "PROP_HUMAN_SEAT_CHAIR_DRINK_BEER", Fam(2), armed: false, onSpot: true)
+                           "WORLD_HUMAN_STAND_IMPATIENT", Fam(2), armed: false,
+                           anim: SeatedBeer, held: "prop_amb_beer_bottle")
 
                     // AND ONE TAGGING THE WALL round the corner, on the game's own spraying
                     // loop with a can in his hand. Facing the wall, as the readout was.
