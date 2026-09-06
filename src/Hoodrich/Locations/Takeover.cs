@@ -755,6 +755,10 @@ namespace Hoodrich.Locations
             public int Stage;
             public int Sent;
             public Vector3 Stop;
+
+            /// <summary>When the order was last given again, and since when it has been stood still.</summary>
+            public int Poked;
+            public int Still;
         }
 
         private readonly List<Law> _law = new List<Law>();
@@ -780,11 +784,23 @@ namespace Hoodrich.Locations
         private const float LawHold = 30f;
         private const float LawSpeed = 14f;
         private const float LawClose = 10f;
-        private const float LawCreep = 7f;
+        private const float LawCreep = 9f;
 
         /// <summary>Near enough to a stop to count as there, and the most a leg is given.</summary>
         private const float LawThere = 6f;
-        private const int LawLegMs = 20000;
+        private const int LawLegMs = 25000;
+
+        /// <summary>How long stood still counts as stuck, and how often the order is given again.</summary>
+        private const int LawStuckMs = 8000;
+        private const int LawPokeMs = 4000;
+
+        /// <summary>
+        /// The style for the way in: steer round cars moving and parked, round people, round
+        /// objects, and stop only for a person straight in front. NOT the care style: that
+        /// stops for cars as well, and the way into a junction that thirty cars are leaving
+        /// is a car in front every second, so the unit sat at the edge until it gave up.
+        /// </summary>
+        private const int RaidStyle = 2 | 4 | 8 | 16 | 32;
 
         public Func<bool> Busy;
 
@@ -5785,63 +5801,83 @@ namespace Hoodrich.Locations
         ///
         /// They used to stop at the edge and sit there with the lights going, which broke
         /// the takeover up from thirty-five metres away. A raid comes into the junction. So
-        /// once a unit has reached its first stop -- and once the crowd is running, because
-        /// the running is what clears the road ahead of it -- it is sent on to ten metres
-        /// from the middle at a creep, on the style that stops before people and cars. There,
-        /// or stopped short by something it will not drive through, it brakes and the officer
-        /// gets out and stands by the car. Each leg has a limit, so a unit that cannot get
-        /// there does whatever it can from wherever it is.
+        /// the moment the crowd is running -- the running is what clears the road ahead --
+        /// every unit is sent on to ten metres from the middle, on a style that steers round
+        /// cars, people and objects and stops only for a person straight in front of it. The
+        /// order is given again every few seconds, because a drive task dropped by a swerve
+        /// is a car sat in the road. There, or stood still behind something for long enough,
+        /// or out of time, it brakes and the officer gets out and stands by the car. Every
+        /// step is in the log with the distance from the middle, so "far away" is a number.
         /// </summary>
         private void Raid(int now)
         {
+            var n = 0;
+
             foreach (var l in _law)
             {
+                n++;
+
                 if (l.Car == null || !l.Car.Exists()) continue;
                 if (l.Cop == null || !l.Cop.Exists() || !l.Cop.IsAlive) continue;
 
                 try
                 {
-                    var gap = l.Car.Position.DistanceTo(l.Stop);
+                    var from = l.Car.Position.DistanceTo(Middle);
 
                     if (l.Stage == 0)
                     {
-                        if (gap > LawThere && now - l.Sent < LawLegMs) continue;
+                        // Sent on the moment everybody is running. Not before: a squad car
+                        // driven into a standing crowd on a style that stops for people is a
+                        // squad car parked in a crowd.
                         if (!_scattered) continue;
 
                         var back = l.Car.Position - Middle;
                         var len = back.Length();
 
-                        if (len <= LawClose + 1f)
-                        {
-                            // Already close enough. Straight to the brake.
-                            l.Stage = 1;
-                            l.Sent = now - LawLegMs;
-                            continue;
-                        }
-
-                        l.Stop = Middle + back * (LawClose / len);
-
-                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, l.Cop.Handle, l.Car.Handle,
-                                      l.Stop.X, l.Stop.Y, l.Stop.Z, LawCreep, 0,
-                                      l.Car.Model.Hash, CareStyle, 3f, true);
-                        Function.Call(Hash.SET_PED_KEEP_TASK, l.Cop.Handle, true);
-
+                        l.Stop = len <= LawClose + 1f ? l.Car.Position : Middle + back * (LawClose / len);
                         l.Stage = 1;
                         l.Sent = now;
-                        continue;
+                        l.Poked = 0;
+                        l.Still = 0;
+
+                        Log.Info("Takeover: unit " + n + " sent into the junction from " + from.ToString("0") + " m out.");
                     }
 
                     if (l.Stage == 1)
                     {
-                        // Creeping in. Done when there, when it has been stood still a while
-                        // behind something, or when the leg has had its time.
+                        var gap = l.Car.Position.DistanceTo(l.Stop);
                         var still = Function.Call<bool>(Hash.IS_VEHICLE_STOPPED, l.Car.Handle);
 
-                        if (gap > LawThere && !(still && now - l.Sent > 5000) && now - l.Sent < LawLegMs) continue;
+                        if (!still) l.Still = 0;
+                        else if (l.Still == 0) l.Still = now;
+
+                        var there = gap <= LawThere;
+                        var stuck = l.Still != 0 && now - l.Still > LawStuckMs;
+                        var late = now - l.Sent >= LawLegMs;
+
+                        if (!there && !stuck && !late)
+                        {
+                            // The order, given again every few seconds. Quick until it is near
+                            // the junction, a creep from there.
+                            if (now - l.Poked >= LawPokeMs)
+                            {
+                                l.Poked = now;
+
+                                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, l.Cop.Handle, l.Car.Handle,
+                                              l.Stop.X, l.Stop.Y, l.Stop.Z, from > 40f ? LawSpeed : LawCreep, 0,
+                                              l.Car.Model.Hash, RaidStyle, 3f, true);
+                                Function.Call(Hash.SET_PED_KEEP_TASK, l.Cop.Handle, true);
+                            }
+
+                            continue;
+                        }
 
                         // Temp action 1 is the brake.
                         Function.Call(Hash.CLEAR_PED_TASKS, l.Cop.Handle);
                         Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, l.Cop.Handle, l.Car.Handle, 1, 2000);
+
+                        Log.Info("Takeover: unit " + n + " stops " + from.ToString("0") + " m from the middle -- " +
+                                 (there ? "there." : stuck ? "stood behind something." : "out of time."));
 
                         l.Stage = 2;
                         l.Sent = now;
@@ -7039,6 +7075,26 @@ namespace Hoodrich.Locations
             _letIn.Clear();
             _nextRush = 0;
             _tuned = 0;
+
+            // Where they ended up, for the log, before they are handed back.
+            if (_law.Count > 0)
+            {
+                var ended = new List<string>();
+
+                foreach (var l in _law)
+                {
+                    try
+                    {
+                        if (l.Car != null && l.Car.Exists()) ended.Add(l.Car.Position.DistanceTo(Middle).ToString("0") + " m");
+                    }
+                    catch
+                    {
+                        // Gone.
+                    }
+                }
+
+                if (ended.Count > 0) Log.Info("Takeover: the units ended " + string.Join(", ", ended.ToArray()) + " from the middle.");
+            }
 
             foreach (var l in _law)
             {

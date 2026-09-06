@@ -213,10 +213,12 @@ has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
 THE POLICE COME INTO THE JUNCTION. They stopped thirty-five metres out and sat
-with the lights going. Now they pull up at the edge, and once everybody is
-running each unit creeps on to ten metres from the middle -- on the style that
-stops before people and cars, so nobody is run down -- brakes, and the officer
-gets out and stands by the car.
+with the lights going. Now, the moment everybody is running, every unit is sent
+on to ten metres from the middle on a style that steers round cars, people and
+objects and stops only for a person straight in front -- the care style that
+stops for cars too left them sat at the edge behind the cars leaving. The
+order is given again every few seconds. There, they brake and the officer gets
+out and stands by the car. Every step is in the log with its distance.
 
 THE CROWD RUNS INTO THE MIDDLE. Now and then, while the cars are going round,
 four to seven of them sprint into the junction, cheer and film from among the
