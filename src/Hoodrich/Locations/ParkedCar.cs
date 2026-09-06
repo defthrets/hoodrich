@@ -158,6 +158,13 @@ namespace Hoodrich.Locations
         public int Tint = -1;
 
         /// <summary>
+        /// The pearl over the paint, if it is not to be whatever the game gave the model.
+        /// The paint index itself here is a car with no pearl to speak of: a sheen of its
+        /// own colour, which is plain metallic.
+        /// </summary>
+        public int Pearl = -1;
+
+        /// <summary>
         /// Dropped on its springs, and nothing else.
         ///
         /// Separate from both of the others on purpose. Built is the whole shop and Stock is
@@ -562,6 +569,22 @@ namespace Hoodrich.Locations
             {
                 try { Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _car.Handle, Tint); }
                 catch { /* the glass stays as it was */ }
+            }
+
+            if (Pearl >= 0)
+            {
+                try
+                {
+                    // The wheel colour kept as it is; only the pearl changes.
+                    var pearl = new OutputArgument();
+                    var wheels = new OutputArgument();
+                    Function.Call(Hash.GET_VEHICLE_EXTRA_COLOURS, _car.Handle, pearl, wheels);
+                    Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, _car.Handle, Pearl, wheels.GetResult<int>());
+                }
+                catch
+                {
+                    // The pearl stays as it was.
+                }
             }
         }
 

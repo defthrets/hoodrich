@@ -374,11 +374,14 @@ namespace Hoodrich.Gangs
                                string[] models = null, bool armed = true, bool onProp = false,
                                string[] anim = null, string weapon = null, bool nights = false,
                                float wander = 0f, bool party = false, bool sit = false,
-                               bool onSpot = false, string held = null)
+                               bool onSpot = false, string held = null, bool leftHand = false,
+                               bool spray = false)
         {
             _sits.Add(sit);
             _onSpot.Add(onSpot);
             _holding.Add(held);
+            _lefts.Add(leftHand);
+            _sprays.Add(spray);
             _allNight.Add(nights);
             _stations.Add(where);
             _facings.Add(facing);
@@ -504,11 +507,103 @@ namespace Hoodrich.Gangs
 
         private string HeldAt(int index) => index < _holding.Count ? _holding[index] : null;
 
+        private bool LeftAt(int index) => index < _lefts.Count && _lefts[index];
+
+        private bool SprayAt(int index) => index < _sprays.Count && _sprays[index];
+
+        /// <summary>Whatever the stand holds, into the right hand -- or the left, if that is the hand the clip uses.</summary>
+        private void Hold(int index, Ped ped)
+        {
+            var name = HeldAt(index);
+            if (string.IsNullOrEmpty(name) || ped == null || !ped.Exists()) return;
+
+            var prop = GangPeds.Hand(ped, name, LeftAt(index));
+            if (prop != null) _hands[index] = prop;
+        }
+
+        /// <summary>The paint, on and off. See _sprays.</summary>
+        private void Sprays(int now)
+        {
+            for (var i = 0; i < _sprays.Count; i++)
+            {
+                if (!_sprays[i]) continue;
+
+                var ped = i < _crew.Count ? _crew[i] : null;
+                Prop can;
+                _hands.TryGetValue(i, out can);
+
+                var alive = ped != null && ped.Exists() && ped.IsAlive && can != null && can.Exists();
+
+                int fx;
+                _fx.TryGetValue(i, out fx);
+
+                if (!alive)
+                {
+                    if (fx != 0) Douse(i);
+                    continue;
+                }
+
+                int at;
+                _fxAt.TryGetValue(i, out at);
+                if (now < at) continue;
+
+                try
+                {
+                    if (fx != 0)
+                    {
+                        Douse(i);
+                        _fxAt[i] = now + SprayOffMinMs + _mouth.Next(SprayOffMaxMs - SprayOffMinMs);
+                        continue;
+                    }
+
+                    Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PaintAsset);
+
+                    if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, PaintAsset))
+                    {
+                        _fxAt[i] = now + 300;
+                        continue;
+                    }
+
+                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PaintAsset);
+
+                    var started = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY, PaintFx, can.Handle,
+                                                     SprayJetSide, SprayJetOut, SprayJetUp, -90f, 0f, 0f,
+                                                     1f, false, false, false);
+
+                    if (started != 0)
+                    {
+                        // Black. The plume takes a colour, and this is the one the wall is getting.
+                        Function.Call(Hash.SET_PARTICLE_FX_LOOPED_COLOUR, started, 0.03f, 0.03f, 0.03f, false);
+                        _fx[i] = started;
+                    }
+
+                    _fxAt[i] = now + SprayOnMinMs + _mouth.Next(SprayOnMaxMs - SprayOnMinMs);
+                }
+                catch
+                {
+                    _fxAt[i] = now + 1000;
+                }
+            }
+        }
+
+        private void Douse(int index)
+        {
+            int fx;
+            if (!_fx.TryGetValue(index, out fx) || fx == 0) return;
+
+            try { Function.Call(Hash.STOP_PARTICLE_FX_LOOPED, fx, false); }
+            catch { /* it stops with the can */ }
+
+            _fx.Remove(index);
+        }
+
         public void Update()
         {
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;
+
+            Sprays(now);
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
@@ -646,10 +741,12 @@ namespace Hoodrich.Gangs
                 var from = arriving ? ArrivalSpot(i) : MarkAt(i);
 
                 var ped = SpawnMember(gang, from, Facing(i), ModelsFor(i, gang), ArmedAt(i),
-                                      WeaponAt(i), HeldAt(i));
+                                      WeaponAt(i));
 
                 _crew.Add(ped);
                 if (ped == null) continue;
+
+                Hold(i, ped);
 
                 if (arriving)
                 {
@@ -779,7 +876,7 @@ namespace Hoodrich.Gangs
         }
 
         private Ped SpawnMember(GangDef gang, Vector3 mark, float facing, string[] models, bool armed,
-                                string carrying, string held = null)
+                                string carrying)
         {
             // Started at a different place in the list for each of them, and wrapped.
             //
@@ -855,12 +952,6 @@ namespace Hoodrich.Gangs
                                       Function.Call<uint>(Hash.GET_HASH_KEY, gun), true);
 
                         Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
-                    }
-
-                    if (!string.IsNullOrEmpty(held))
-                    {
-                        var prop = GangPeds.Hand(ped, held);
-                        if (prop != null) _handProps.Add(prop);
                     }
 
                     return ped;
@@ -1049,7 +1140,28 @@ namespace Hoodrich.Gangs
         /// can for a man tagging. Attached on the prop-holder bone, and deleted with him.
         /// </summary>
         private readonly List<string> _holding = new List<string>();
-        private readonly List<Prop> _handProps = new List<Prop>();
+        private readonly List<bool> _lefts = new List<bool>();
+        private readonly Dictionary<int, Prop> _hands = new Dictionary<int, Prop>();
+
+        /// <summary>
+        /// Stands whose held thing is a spray can with paint coming out of it: the player's
+        /// own plume, on the nozzle where the player's can has it, black, and pulsed --
+        /// a couple of seconds on, a moment off -- because a can that never stops is a
+        /// fire extinguisher.
+        /// </summary>
+        private readonly List<bool> _sprays = new List<bool>();
+        private readonly Dictionary<int, int> _fx = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> _fxAt = new Dictionary<int, int>();
+
+        private const string PaintAsset = "scr_playerlamgraff";
+        private const string PaintFx = "scr_lamgraff_paint_spray";
+        private const float SprayJetSide = 0.000f;
+        private const float SprayJetOut = 0.000f;
+        private const float SprayJetUp = 0.090f;
+        private const int SprayOnMinMs = 1400;
+        private const int SprayOnMaxMs = 3200;
+        private const int SprayOffMinMs = 900;
+        private const int SprayOffMaxMs = 2600;
 
         /// <summary>Which seat scenario is being tried, and how many passes it has had.</summary>
         private int _seatPick;
@@ -1411,13 +1523,16 @@ namespace Hoodrich.Gangs
 
             _crew.Clear();
 
-            foreach (var prop in _handProps)
+            foreach (var index in new List<int>(_fx.Keys)) Douse(index);
+            _fxAt.Clear();
+
+            foreach (var prop in _hands.Values)
             {
                 try { if (prop != null && prop.Exists()) prop.Delete(); }
                 catch { /* teardown */ }
             }
 
-            _handProps.Clear();
+            _hands.Clear();
         }
 
         public void RestoreWorld() => Despawn();

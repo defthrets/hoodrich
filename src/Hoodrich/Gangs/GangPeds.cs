@@ -83,7 +83,7 @@ namespace Hoodrich.Gangs
         /// unrotated, while the file explained at length that it did not. Worth remembering the
         /// next time a comment is used as evidence that something works.
         /// </summary>
-        public static Prop Hand(Ped who, string propName)
+        public static Prop Hand(Ped who, string propName, bool left = false)
         {
             if (who == null || !who.Exists() || string.IsNullOrEmpty(propName)) return null;
 
@@ -97,7 +97,7 @@ namespace Hoodrich.Gangs
 
                 if (prop == null || !prop.Exists()) return null;
 
-                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, who.Handle, RightHand);
+                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, who.Handle, left ? LeftHand : RightHand);
 
                 Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, prop.Handle, who.Handle, bone,
                               0f, 0f, 0f, 0f, 0f, 0f, true, true, false, true, 1, true);
@@ -247,5 +247,8 @@ namespace Hoodrich.Gangs
         /// per prop.
         /// </summary>
         private const int RightHand = 60309;
+
+        /// <summary>PH_L_Hand, the left hand's prop-holder bone, for a thing an animation holds on that side.</summary>
+        private const int LeftHand = 58868;
     }
 }

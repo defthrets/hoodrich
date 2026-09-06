@@ -308,6 +308,12 @@ namespace Hoodrich
         /// <summary>The three on the lot behind Innocence, by the FR36, and their box.</summary>
         private readonly Entourage _lotCrew;
         private readonly Boombox _lotDecks;
+
+        /// <summary>The one outside the Checkout on Innocence, by the Emperor.</summary>
+        private readonly Entourage _shopsCrew;
+
+        /// <summary>The one on the B/Holes lot on Innocence, by the car with the stereo up.</summary>
+        private readonly Entourage _bholesCrew;
         private readonly Fixture _partyBarrel;
 
         /// <summary>The worklight by the skip. See Fixture.Beam.</summary>
@@ -1271,13 +1277,51 @@ namespace Hoodrich
                            anim: SeatedBeer, held: "prop_amb_beer_bottle")
 
                     // AND ONE TAGGING THE WALL round the corner, on the game's own spraying
-                    // loop with a can in his hand. Facing the wall, as the readout was.
-                    .Stand(new Vector3(-20.123f, -1397.681f, 29.365f), 97.157f,
+                    // loop. The can -- the player's own, no lid -- is in his LEFT hand, which
+                    // is the hand that clip sprays with, with the player's paint plume on the
+                    // nozzle in black, pulsed on and off. Twenty centimetres closer to the wall
+                    // than the readout, facing it as the readout did.
+                    .Stand(new Vector3(-20.321f, -1397.706f, 29.365f), 97.157f,
                            "WORLD_HUMAN_STAND_IMPATIENT", Fam(0), armed: false,
-                           anim: Tagging, held: "ng_proc_spraycan01a");
+                           anim: Tagging, held: "prop_cs_spray_can", leftHand: true, spray: true);
 
                 _lotDecks = new Boombox(new Vector3(-33.876f, -1385.712f, 30.292f), 286.704f,
                                         "prop_boombox_01", "ba_prop_battle_speaker_01a");
+
+                // ---- outside the Checkout on Innocence -------------------------------
+                //
+                // An Emperor in the set's green on Benny's rims: competition suspension,
+                // limo glass, no neon. And one of the set on the wall by it, back to the
+                // wall the way the readout faced.
+                _cars.Add(new ParkedCar(new Vector3(91.267f, -1407.684f, 28.729f), 50.098f,
+                                        MetallicDarkGreen, "emperor")
+                {
+                    Mods = new System.Collections.Generic.Dictionary<int, int> { { 15, -1 } },
+                    Tint = 5
+                });
+
+                // And one of the set's on the lot by the B/Holes sign on Innocence, at the
+                // walked spot: green, on Benny's rims, nothing else asked for.
+                _cars.Add(new ParkedCar(new Vector3(116.091f, -1483.824f, 28.645f), 321.514f,
+                                        MetallicDarkGreen, "sabregt2", "tornado", "voodoo")
+                {
+                    Running = true,
+                    Lights = true,
+                    Radio = "RADIO_09_HIPHOP_OLD"
+                });
+
+                // And one of the set on a cigarette by the wall next to it.
+                _bholesCrew = new Entourage(_gangs, "families",
+                                            new Vector3(113.500f, -1484.000f, 29.256f), 19.091f, "the B/Holes lot")
+                    .Stand(new Vector3(111.212f, -1484.462f, 29.256f), 19.091f,
+                           "WORLD_HUMAN_SMOKING", Fam(0), armed: false);
+
+                _shopsCrew = new Entourage(_gangs, "families",
+                                           new Vector3(89.500f, -1409.500f, 29.421f), 320.344f, "the shops")
+                    .Stand(new Vector3(88.583f, -1410.593f, 29.421f), 320.344f,
+                           "WORLD_HUMAN_LEANING", Fam(1), armed: false)
+                    .Stand(new Vector3(87.784f, -1409.120f, 29.422f), 259.219f,
+                           "WORLD_HUMAN_DRINKING", Fam(2), armed: false);
 
                 // The shop's van, up on the road above the lot.
                 _cars.Add(new ParkedCar(new Vector3(-214.160f, -1739.805f, 31.709f), 52.137f,
@@ -1297,6 +1341,7 @@ namespace Hoodrich
                     },
                     Mods = new System.Collections.Generic.Dictionary<int, int> { { 15, -1 } },
                     Tint = 2,
+                    Pearl = MetallicDarkGreen,
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80)
                 });
 
@@ -3179,6 +3224,8 @@ namespace Hoodrich
                     _washCrew.Update();
                     _lotCrew.Update();
                     _lotDecks.Update();
+                    _shopsCrew.Update();
+                    _bholesCrew.Update();
                     _partyBarrel.Update();
                     _partyLight?.Update();
 
@@ -4257,6 +4304,8 @@ namespace Hoodrich
             try { _washCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _lotCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _lotDecks?.RestoreWorld(); } catch { /* teardown */ }
+            try { _shopsCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _bholesCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyLight?.RestoreWorld(); } catch { /* teardown */ }
 
