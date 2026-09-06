@@ -212,6 +212,11 @@ ground round it has loaded, and one without a body is given one. A model that
 has no collision to give is named in the log. A scene's own placements are no
 longer taken for duplicates of each other, so both lines on the bar get laid.
 
+THE CROWD RUNS INTO THE MIDDLE. Now and then, while the cars are going round,
+four to seven of them sprint into the junction, cheer and film from among the
+cars for half a minute -- getting out of the way of whatever comes at them --
+and run back out. The next lot go a minute or two later.
+
 FEWER FLARES. A volley every fourteen to thirty seconds, one or two arms up in each, rather than every few seconds with four: a flare is a thing that happens now and then, not the weather.
 
 THE FLARES, AT LAST. The count of cars on the circle -- which the flares, the

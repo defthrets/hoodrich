@@ -593,6 +593,12 @@ namespace Hoodrich.Locations
             public int Dodge;
             public int Angry;
 
+            /// <summary>Until when they are in the middle, their spot there, and how far in they have got.</summary>
+            public int Rush;
+            public Vector3 RushAt;
+            public int RushStage;
+            public int RushMove;
+
             /// <summary>When they were first noticed away from their spot, or nought.</summary>
             public int Away;
 
@@ -953,6 +959,7 @@ namespace Hoodrich.Locations
                         Hype(now);
                         Blasting(now);
                         Crowding(now);
+                        Rushes(now);
                         break;
 
                     case TakeoverState.Scattering:
@@ -1283,8 +1290,8 @@ namespace Hoodrich.Locations
             {
                 if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
 
-                // Somebody getting out of a car's way, or on a driver, is left to it.
-                if (w.Dodge > now || w.Angry > now) continue;
+                // Somebody getting out of a car's way, on a driver, or in the middle, is left to it.
+                if (w.Dodge > now || w.Angry > now || w.Rush != 0) continue;
 
                 if (!w.There)
                 {
@@ -4947,7 +4954,7 @@ namespace Hoodrich.Locations
         {
             if (w == null || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) return false;
             if (Occupied(w)) return false;
-            if (w.Dodge != 0 || w.Angry != 0) return false;
+            if (w.Dodge != 0 || w.Angry != 0 || w.Rush != 0) return false;
             if (w.Man.Position.DistanceTo(w.Slot) > HandyRange) return false;
 
             try
@@ -4997,6 +5004,12 @@ namespace Hoodrich.Locations
         /// </summary>
         private static void Home(Watcher w)
         {
+            Home(w, false);
+        }
+
+        /// <summary>Home, at a run: the way a group comes back out of the middle.</summary>
+        private static void Home(Watcher w, bool run)
+        {
             if (w == null || w.Man == null || !w.Man.Exists()) return;
 
             w.There = false;
@@ -5006,7 +5019,7 @@ namespace Hoodrich.Locations
             {
                 Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
                 Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, w.Man.Handle,
-                              w.Slot.X, w.Slot.Y, w.Slot.Z, 1.0f, -1, 1.0f, true, 0f);
+                              w.Slot.X, w.Slot.Y, w.Slot.Z, run ? 3.0f : 1.0f, -1, 1.0f, true, 0f);
                 Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
             }
             catch
@@ -5014,6 +5027,144 @@ namespace Hoodrich.Locations
                 // The loop will notice.
             }
         }
+
+        // ==================================================================
+        // The middle
+        // ==================================================================
+
+        /// <summary>
+        /// Now and then, while the cars are going round, a handful of the crowd run into the
+        /// middle of it.
+        ///
+        /// Four to seven of them, from wherever they are stood, at a sprint, to a spot each
+        /// in a loose knot where Michael stood in the road. They cheer and film from among
+        /// the cars for half a minute, and the same dodge that keeps the ring out of a car's
+        /// way keeps them out of it -- only somebody knocked out of the middle goes back
+        /// into the middle rather than home. Then they run back out, and the next group
+        /// goes in a minute or two later.
+        /// </summary>
+        private void Rushes(int now)
+        {
+            // ---- the group in the middle ----
+            foreach (var w in _crowd)
+            {
+                if (w.Rush == 0) continue;
+
+                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive)
+                {
+                    w.Rush = 0;
+                    continue;
+                }
+
+                if (now >= w.Rush)
+                {
+                    // Half a minute is enough. Out, at a run, and home.
+                    w.Rush = 0;
+                    w.RushStage = 0;
+                    Home(w, true);
+                    continue;
+                }
+
+                // Getting out of a car's way, or on a driver: left to it.
+                if (w.Dodge != 0 || w.Angry != 0) continue;
+
+                var at = w.Man.Position;
+
+                if (w.RushStage == 0)
+                {
+                    // On the way in. There when they are there, or when the run has had long
+                    // enough -- a man stopped a stride short by a passing car is in the middle
+                    // as far as anybody watching is concerned.
+                    if (at.DistanceTo(w.RushAt) > 1.6f && now < w.RushMove) continue;
+
+                    w.RushStage = 1;
+
+                    try
+                    {
+                        Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                        Function.Call(Hash.SET_ENTITY_HEADING, w.Man.Handle, Facing(at));
+                        Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
+                                      _rng.Next(100) < 60 ? "WORLD_HUMAN_CHEERING" : "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
+                                      0, true);
+                    }
+                    catch
+                    {
+                        // Stood there is stood there.
+                    }
+
+                    continue;
+                }
+
+                // There, and knocked well off it -- a car, a shove. Back to the spot.
+                if (at.DistanceTo(w.RushAt) > 2.5f)
+                {
+                    w.RushStage = 0;
+                    Dash(w, now);
+                }
+            }
+
+            // ---- the next group ----
+            if (now < _nextRush || _crowd.Count == 0) return;
+            if (Spinning() < 1) return;
+
+            _nextRush = now + RushHoldMs + RushMinMs + _rng.Next(RushMaxMs - RushMinMs);
+
+            var many = RushMin + _rng.Next(RushMax - RushMin + 1);
+            var sent = 0;
+
+            for (var tries = 0; sent < many && tries < 40; tries++)
+            {
+                var w = _crowd[_rng.Next(_crowd.Count)];
+                if (!Handy(w) || w.Hype != 0) continue;
+
+                var a = _rng.NextDouble() * Math.PI * 2d;
+                var d = RushKnotMin + _rng.NextDouble() * (RushKnotMax - RushKnotMin);
+
+                w.RushAt = RushSpot + new Vector3((float)(Math.Cos(a) * d), (float)(Math.Sin(a) * d), 0f);
+                w.Rush = now + RushHoldMs + _rng.Next(4000);
+                w.RushStage = 0;
+                w.Hype = 0;
+
+                Dash(w, now);
+                sent++;
+            }
+
+            if (sent > 0) Log.Info("Takeover: " + sent + " of the crowd have run into the middle.");
+        }
+
+        /// <summary>A sprint to their spot in the middle, by the nav mesh so it goes round what it can.</summary>
+        private static void Dash(Watcher w, int now)
+        {
+            w.RushMove = now + RushRunMs;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, w.Man.Handle,
+                              w.RushAt.X, w.RushAt.Y, w.RushAt.Z, 3.0f, RushRunMs, 0.5f, true, 0f);
+                Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
+            }
+            catch
+            {
+                // They will be counted as there when the run has had its time.
+            }
+        }
+
+        private int _nextRush;
+
+        /// <summary>Where Michael stood in the road, and how loose the knot round it is.</summary>
+        private static readonly Vector3 RushSpot = new Vector3(-128.603f, -1738.153f, 30.137f);
+        private const double RushKnotMin = 0.8;
+        private const double RushKnotMax = 2.6;
+
+        private const int RushMin = 4;
+        private const int RushMax = 7;
+        private const int RushHoldMs = 30000;
+        private const int RushRunMs = 7000;
+
+        /// <summary>The gap between one group running out and the next running in.</summary>
+        private const int RushMinMs = 45000;
+        private const int RushMaxMs = 100000;
 
         // ==================================================================
         // The tyres
@@ -5273,7 +5424,17 @@ namespace Hoodrich.Locations
                 if (w.Dodge != 0 && now >= w.Dodge)
                 {
                     w.Dodge = 0;
-                    Home(w);
+
+                    // Somebody in the middle goes back to their spot in the middle, not home.
+                    if (w.Rush != 0)
+                    {
+                        w.RushStage = 0;
+                        Dash(w, now);
+                    }
+                    else
+                    {
+                        Home(w);
+                    }
                 }
 
                 if (w.Angry != 0 && now >= w.Angry)
@@ -6755,6 +6916,7 @@ namespace Hoodrich.Locations
             _nobodyAt = 0;
             _angryAt.Clear();
             _letIn.Clear();
+            _nextRush = 0;
             _tuned = 0;
 
             foreach (var l in _law)
