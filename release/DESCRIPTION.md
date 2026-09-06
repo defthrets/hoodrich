@@ -66,9 +66,25 @@ from Stretch with extended mags on everything, and a shelf of what bolts to each
 Bodyguards who lock the doors once you are rolling. Turf war, dead drops, a stash house,
 graffiti.
 
-**A street takeover** on Carson once a night: a ring of cars on walked kerbs, a crowd from the
-neighbourhood, and four cars burning out and spinning on their own places in the junction
-until the blue lights arrive. It happens whether you go or not.
+**Recorded dialogue** where somebody has recorded it. Gerald, Lamar, Hao, Tao and Stretch
+speak their own lines over the conversation screen, and the ones nobody has recorded are read
+rather than heard -- the mod names every missing file in its log, so the list writes itself.
+
+**A street takeover**, one night in three, at one of two junctions that take turns. A ring of
+cars on kerbs that were walked one at a time, a crowd out of the neighbourhood stood on the
+pavement corners, and cars burning out and spinning on their own walked places in the middle
+until the blue lights arrive. Three of them turn up to every one, so there are faces you know
+in the field. Nothing is placed: every car drives itself there. It happens whether you go or
+not, and if you post up at it the crowd buys from you.
+
+**A block that is lived on when nothing is happening.** Groups of the set walk the back
+streets with a beer or a cigarette, stop for a drink and a drag, and talk loudly enough that
+you hear them before you see them. Their own cars roll the roads. Lowriders one night and
+donks the next cruise the blocks in a line of three with the hydraulics working and the music
+up. Corners have people on them -- a wall, a beer, a phone, a boombox, somebody tagging the
+wall with the game's own spray loop -- and each corner rolls its own day, so some days one is
+empty and another is not. A bike meet at Leroy's two nights in five. Every one of them posts
+about itself on the feed once a night when its people come out.
 
 **You can take your own product**, and each of the seven does something different — weed
 slows the world, coke makes you fast and bright, meth is a high you can feel, and heroin is

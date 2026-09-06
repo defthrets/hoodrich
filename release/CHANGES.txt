@@ -4,10 +4,10 @@
 
 
 -------------------------------------------------------------------------------
-  0.6.0  (5 September 2026)
+  0.6.0  (6 September 2026)
 -------------------------------------------------------------------------------
 
-Two hundred and forty-eight changes since 0.5.1, and more of them than usual
+Three hundred and fifty-eight changes since 0.5.1, and more of them than usual
 are things the mod could not do at all before.
 
 
