@@ -364,6 +364,7 @@ namespace Hoodrich.Locations
 
             if (_car != null)
             {
+                Drop();
                 Keep();
                 return;
             }
@@ -500,9 +501,20 @@ namespace Hoodrich.Locations
                     try
                     {
                         var sets = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, 38);
-                        if (sets > 0) Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 38, sets - 1, false);
+
+                        if (sets > 0)
+                        {
+                            Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 38, sets - 1, false);
+                            Log.Info("Parked: hydraulics fitted to the " + _car.DisplayName + ".");
+                        }
+                        else
+                        {
+                            Log.Info("Parked: the " + _car.DisplayName + " has nowhere to put hydraulics.");
+                        }
                     }
                     catch { /* a body with nowhere to put them */ }
+
+                    Drop();
                 }
 
                 Wanted();
@@ -718,6 +730,38 @@ namespace Hoodrich.Locations
             catch
             {
                 // Next frame.
+            }
+        }
+
+        /// <summary>
+        /// A car on hydraulics, sat all the way down.
+        ///
+        /// FITTING THEM IS NOT DROPPING IT, which is why the van came back looking exactly as
+        /// it had. The suspension slot is what sets ride height on an ordinary car; put a set
+        /// of rams on a Benny's body and that slot stops deciding anything, and the car sits
+        /// wherever the rams are -- which out of the shop is the middle. The raise factor is
+        /// the only thing that moves them, nought being all the way down.
+        ///
+        /// Said again on the throttle as well as on the build, because this is a car that sits
+        /// on a street for a whole night and the game is entitled to settle its suspension
+        /// back at any point in it.
+        /// </summary>
+        private void Drop()
+        {
+            if (!Hydraulics || Stock || _car == null || !_car.Exists()) return;
+
+            try
+            {
+                // Nought on all six: two front, and the rest covers the back of anything with
+                // four wheels or six.
+                for (var wheel = 0; wheel < 6; wheel++)
+                {
+                    Function.Call(Hash.SET_HYDRAULIC_SUSPENSION_RAISE_FACTOR, _car.Handle, wheel, 0f);
+                }
+            }
+            catch
+            {
+                // It sits where it sits.
             }
         }
 
