@@ -1860,13 +1860,9 @@ namespace Hoodrich.Missions
             }
             catch { /* his voice has not got that one */ }
 
-            if (words == null || words.Length == 0) return;
-
-            try
-            {
-                GTA.UI.Screen.ShowSubtitle("~g~HOMIE:~s~ " + words[_rng.Next(words.Length)], 3000);
-            }
-            catch { /* the noise is the half that matters */ }
+            // NO SUBTITLE. The line was written on the screen under the shout, and a shout is
+            // the whole of what a homie in the back of a car says: the words were a caption
+            // on an event that had already happened. The speech list above is what is heard.
         }
 
         private int _nextChat;

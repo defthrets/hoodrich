@@ -589,6 +589,10 @@ namespace Hoodrich.Locations
             /// <summary>Until when they are cheering or filming the cars, nought when they are not.</summary>
             public int Hype;
 
+            /// <summary>Until when they are getting out of a car's way, and until when they are on a driver.</summary>
+            public int Dodge;
+            public int Angry;
+
             /// <summary>When they were first noticed away from their spot, or nought.</summary>
             public int Away;
 
@@ -631,6 +635,9 @@ namespace Hoodrich.Locations
 
             /// <summary>When the driver may get out. Set on arrival, so he sits a beat first.</summary>
             public int OutAt;
+
+            /// <summary>The station this car is playing, so it can be put back on when the game turns it off.</summary>
+            public string Station;
 
             /// <summary>He is out of the car and stood with the rest of them.</summary>
             public bool Outside;
@@ -944,6 +951,8 @@ namespace Hoodrich.Locations
                         Unarm(now);
                         Firework(now);
                         Hype(now);
+                        Blasting(now);
+                        Crowding(now);
                         break;
 
                     case TakeoverState.Scattering:
@@ -1273,6 +1282,9 @@ namespace Hoodrich.Locations
             foreach (var w in _crowd)
             {
                 if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+
+                // Somebody getting out of a car's way, or on a driver, is left to it.
+                if (w.Dodge > now || w.Angry > now) continue;
 
                 if (!w.There)
                 {
@@ -2343,6 +2355,7 @@ namespace Hoodrich.Locations
                 // AND THEN HE GETS OUT, after a moment. Not on the frame he arrives: a man who
                 // opens the door before the car has settled looks like a man ejected from it.
                 p.OutAt = now + SitAMomentMs;
+                Blast(p);
             }
         }
 
@@ -2451,6 +2464,7 @@ namespace Hoodrich.Locations
                     p.There = true;
 
                     p.OutAt = now + SitAMomentMs;
+                    Blast(p);
                     return;
                 }
 
@@ -3160,7 +3174,7 @@ namespace Hoodrich.Locations
                             // state is a car that understeers off in the direction it was
                             // already going. Braking for a moment first is what a person does
                             // -- gather it up, then turn round and come back.
-                            Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
+                            Slick(r.Car, false);
                             Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, false);
                             Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
@@ -3246,7 +3260,7 @@ namespace Hoodrich.Locations
                         // ones off the tuning menu, and reduced grip is the blunt instrument
                         // behind them for a build that has not got the first.
                         Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
-                        Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
+                        Slick(r.Car, true);
                     }
                     catch
                     {
@@ -4117,7 +4131,7 @@ namespace Hoodrich.Locations
             try
             {
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
+                Slick(r.Car, false);
                 Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, false);
                 Reckless(r, false);
 
@@ -4235,7 +4249,7 @@ namespace Hoodrich.Locations
                         // Re-asserted rather than assumed, because a car that grips up halfway
                         // through has visibly stopped drifting, and putting the smoke back
                         // afterwards would not hide that it had gone.
-                        Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
+                        Slick(r.Car, true);
                         Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
 
                         Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
@@ -4351,7 +4365,7 @@ namespace Hoodrich.Locations
             try
             {
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, true);
+                Slick(r.Car, true);
                 Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
                 Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), BurstMs);
             }
@@ -4517,18 +4531,25 @@ namespace Hoodrich.Locations
             }
 
             if (now < _nextFlare || _crowd.Count == 0) return;
-            if (Spinning() < 1) return;
+
+            var spinning = Spinning();
+
+            if (spinning < 1)
+            {
+                Stuck("no car on the circle", spinning);
+                return;
+            }
 
             _nextFlare = now + FlareMinMs + _rng.Next(FlareMaxMs - FlareMinMs);
 
             var many = FlareThrowersMin + _rng.Next(FlareThrowersMax - FlareThrowersMin + 1);
+            var added = 0;
 
             for (var tries = 0; many > 0 && tries < 14; tries++)
             {
                 var w = _crowd[_rng.Next(_crowd.Count)];
 
-                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive || !w.There) continue;
-                if (Occupied(w)) continue;
+                if (!Handy(w)) continue;
 
                 Vector3 at;
 
@@ -4555,7 +4576,12 @@ namespace Hoodrich.Locations
 
                 many--;
                 _volleyed++;
+                added++;
             }
+
+            // Said out loud when a volley found nobody, because that is the difference
+            // between flares that are thrown and dropped and flares that are never thrown.
+            if (added == 0) Stuck("nobody handy to throw", spinning);
 
             if (_volleyed > 0 && _volleyed != _volleyLogged)
             {
@@ -4629,7 +4655,7 @@ namespace Hoodrich.Locations
                     if (w == null || w.Man == null || !w.Man.Exists()) continue;
 
                     Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, w.Man.Handle, true);
-                    w.There = false;
+                    Home(w);
                 }
                 catch
                 {
@@ -4683,8 +4709,7 @@ namespace Hoodrich.Locations
             {
                 var w = _crowd[_rng.Next(_crowd.Count)];
 
-                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive || !w.There) return;
-                if (Occupied(w)) return;
+                if (!Handy(w)) return;
 
                 var a = _rng.NextDouble() * Math.PI * 2d;
                 var dist = FireRingMin + (float)(_rng.NextDouble() * (FireRingMax - FireRingMin));
@@ -4788,7 +4813,7 @@ namespace Hoodrich.Locations
                 if (now < w.Hype && now < w.Hype - HypeWindDownMs) { hyped++; continue; }
 
                 w.Hype = 0;
-                w.There = false;
+                Home(w);
             }
 
             if (!spinning) return;
@@ -4804,8 +4829,7 @@ namespace Hoodrich.Locations
             {
                 var w = _crowd[_rng.Next(_crowd.Count)];
 
-                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive || !w.There) continue;
-                if (w.Hype != 0 || Occupied(w)) continue;
+                if (!Handy(w) || w.Hype != 0) continue;
 
                 try
                 {
@@ -4840,6 +4864,449 @@ namespace Hoodrich.Locations
         private const int HypeWindDownMs = 3000;
 
         private int _nextHype;
+
+        // ==================================================================
+        // Who can be given something to do
+        // ==================================================================
+
+        /// <summary>
+        /// Whether this one can be handed a flare, a firework or a cheer: alive, stood
+        /// somewhere near their own spot, not already busy with one of those, and not on
+        /// the ground or in a fight.
+        ///
+        /// BY WHERE THEY ARE, NOT BY THE FLAG. There was set on arriving at the slot and
+        /// cleared by a cheer ending, and only set again by arriving within a pace of the
+        /// slot -- and a cheer moves people a pace. So after a few cheers most of the crowd
+        /// was flagged as elsewhere while stood exactly where they had been, and a volley
+        /// of flares found nobody to throw, fourteen picks running.
+        /// </summary>
+        private bool Handy(Watcher w)
+        {
+            if (w == null || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) return false;
+            if (Occupied(w)) return false;
+            if (w.Dodge != 0 || w.Angry != 0) return false;
+            if (w.Man.Position.DistanceTo(w.Slot) > HandyRange) return false;
+
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_PED_RAGDOLL, w.Man.Handle)) return false;
+                if (Function.Call<bool>(Hash.IS_PED_IN_COMBAT, w.Man.Handle, 0)) return false;
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private const float HandyRange = 6f;
+        private int _nobodyAt;
+
+        /// <summary>
+        /// Why there was no volley, in the log, at most once every twenty seconds. The
+        /// difference between flares that are thrown and dropped and flares that are never
+        /// thrown is a line in the log, and there was no line at all.
+        /// </summary>
+        private void Stuck(string why, int spinning)
+        {
+            var now = Game.GameTime;
+            if (now - _nobodyAt < 20000) return;
+            _nobodyAt = now;
+
+            var handy = 0;
+            var there = 0;
+
+            foreach (var w in _crowd)
+            {
+                if (Handy(w)) handy++;
+                if (w.There) there++;
+            }
+
+            Log.Info("Takeover: no flare volley -- " + why + ": " + _crowd.Count + " in the crowd, " +
+                     there + " at their spots, " + handy + " handy, " + spinning + " on the circle.");
+        }
+
+        /// <summary>
+        /// Sends somebody back to their own spot the way the crowd loop does for anybody
+        /// knocked off it: a walk to the slot, and the loop gives them their idle again when
+        /// they arrive. Used for everything that ends -- a throw, a cheer, a dodge, a fight.
+        /// </summary>
+        private static void Home(Watcher w)
+        {
+            if (w == null || w.Man == null || !w.Man.Exists()) return;
+
+            w.There = false;
+            w.Away = 0;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, w.Man.Handle,
+                              w.Slot.X, w.Slot.Y, w.Slot.Z, 1.0f, -1, 1.0f, true, 0f);
+                Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
+            }
+            catch
+            {
+                // The loop will notice.
+            }
+        }
+
+        // ==================================================================
+        // The tyres
+        // ==================================================================
+
+        /// <summary>
+        /// A little slippery, not a lot.
+        ///
+        /// SET_VEHICLE_REDUCE_GRIP is ice: it is what made the cars drift, and it is what
+        /// sent them off the circle every third lap. It is a switch with no half setting,
+        /// so the half setting is the car's own handling: the tyres are given a fraction of
+        /// their grip while the car is working the circle, and it all back when it stops.
+        ///
+        /// HANDLING IS THE MODEL'S, NOT THE CAR'S: every car of that model in the game --
+        /// the traffic, the player's -- shares it. So the original is written down once per
+        /// model, each car on the circle is counted against it, and the model gets its grip
+        /// back when the last of its cars has finished, and again, whatever was counted,
+        /// when the takeover packs up. Nothing is left slippery for the rest of the night.
+        /// </summary>
+        private void Slick(Vehicle car, bool on)
+        {
+            if (car == null || !car.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, car.Handle, false);
+
+                var key = car.Model.Hash;
+
+                if (on)
+                {
+                    if (!_slick.Add(car.Handle)) return;
+
+                    var h = car.HandlingData;
+                    if (h == null || !h.IsValid) return;
+
+                    Grip g;
+
+                    if (!_grip.TryGetValue(key, out g))
+                    {
+                        g = new Grip { Max = h.TractionCurveMax, Min = h.TractionCurveMin };
+                        _grip[key] = g;
+                    }
+
+                    g.Count++;
+
+                    h.TractionCurveMax = g.Max * SlickTraction;
+                    h.TractionCurveMin = g.Min * SlickTraction;
+                }
+                else
+                {
+                    if (!_slick.Remove(car.Handle)) return;
+
+                    Grip g;
+                    if (!_grip.TryGetValue(key, out g)) return;
+
+                    g.Count--;
+
+                    if (g.Count <= 0)
+                    {
+                        var h = car.HandlingData;
+
+                        if (h != null && h.IsValid)
+                        {
+                            h.TractionCurveMax = g.Max;
+                            h.TractionCurveMin = g.Min;
+                        }
+
+                        _grip.Remove(key);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // The old switch, if the handling cannot be reached on this build.
+                Log.Debug("Takeover: could not touch the handling: " + ex.Message);
+                try { Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, car.Handle, on); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// Every model its grip back, whatever was counted, for the end of the night. By
+        /// model rather than by car, because by the time the takeover packs up the cars
+        /// may already be gone and the handling would stay as they left it.
+        /// </summary>
+        private void Regrip()
+        {
+            foreach (var pair in _grip)
+            {
+                try
+                {
+                    var h = HandlingData.GetByVehicleModel(new Model(pair.Key));
+                    if (h == null || !h.IsValid) continue;
+
+                    h.TractionCurveMax = pair.Value.Max;
+                    h.TractionCurveMin = pair.Value.Min;
+                }
+                catch
+                {
+                    // Not on this build.
+                }
+            }
+
+            _grip.Clear();
+            _slick.Clear();
+        }
+
+        private sealed class Grip
+        {
+            public float Max;
+            public float Min;
+            public int Count;
+        }
+
+        private readonly Dictionary<int, Grip> _grip = new Dictionary<int, Grip>();
+        private readonly HashSet<int> _slick = new HashSet<int>();
+
+        /// <summary>What share of its grip a car keeps on the circle. Nought is ice; one is a road car.</summary>
+        private const float SlickTraction = 0.6f;
+
+        // ==================================================================
+        // The kerb
+        // ==================================================================
+
+        /// <summary>
+        /// The stations the parked cars play, taken in turn so neighbours differ. Every
+        /// name is one the game has had since it came out or since the update that added
+        /// the station.
+        /// </summary>
+        private static readonly string[] Stations =
+        {
+            "RADIO_03_HIPHOP_NEW",
+            "RADIO_09_HIPHOP_OLD",
+            "RADIO_20_THELAB",
+            "RADIO_08_MEXICAN",
+            "RADIO_14_DANCE_02",
+            "RADIO_12_REGGAE",
+            "RADIO_17_FUNK",
+            "RADIO_15_MOTOWN"
+        };
+
+        private int _tuned;
+        private int _blastedAt;
+
+        /// <summary>A car that has parked turns its music up, on a station of its own.</summary>
+        private void Blast(Parkee p)
+        {
+            if (p == null || p.Car == null || !p.Car.Exists()) return;
+
+            p.Station = Stations[_tuned++ % Stations.Length];
+
+            Tune(p);
+        }
+
+        /// <summary>
+        /// Every few seconds, every parked car is put back on its station with the engine
+        /// on. The driver getting out turns the engine and the radio off, and a car with no
+        /// engine has no radio, so both are held on for as long as it is on the kerb.
+        /// </summary>
+        private void Blasting(int now)
+        {
+            if (now - _blastedAt < 5000) return;
+            _blastedAt = now;
+
+            foreach (var p in _parked)
+            {
+                if (p == null || p.Car == null || !p.Car.Exists()) continue;
+                if (string.IsNullOrEmpty(p.Station)) continue;
+
+                Tune(p);
+            }
+        }
+
+        private static void Tune(Parkee p)
+        {
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_ENGINE_ON, p.Car.Handle, true, true, false);
+                Function.Call(Hash.SET_VEHICLE_KEEP_ENGINE_ON_WHEN_ABANDONED, p.Car.Handle, true);
+                Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, p.Car.Handle, true);
+                Function.Call(Hash.SET_VEH_RADIO_STATION, p.Car.Handle, p.Station);
+                Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, p.Car.Handle, true);
+            }
+            catch
+            {
+                // Quiet, then.
+            }
+        }
+
+        // ==================================================================
+        // The crowd and the cars
+        // ==================================================================
+
+        /// <summary>
+        /// Two things the crowd does about cars.
+        ///
+        /// A CAR THAT IS NOT OURS IN THE CIRCLE gets the nearest few of the crowd on it:
+        /// out of their idle, onto the driver, unarmed, for a while, and then home. Not the
+        /// police, who are their own problem, and not the player.
+        ///
+        /// A CAR THAT IS OURS coming at somebody gets them out of its way: whoever is in
+        /// front of a running car, or where it is about to be, steps sharply sideways off
+        /// its line and walks back afterwards. The crowd used to stand there and be hit,
+        /// because a crowd told to ignore everything ignores that too.
+        /// </summary>
+        private void Crowding(int now)
+        {
+            if (now - _crowdedAt < 250) return;
+            _crowdedAt = now;
+
+            // ---- out of the way ----
+            foreach (var r in _running)
+            {
+                if (r.Car == null || !r.Car.Exists()) continue;
+
+                var v = r.Car.Velocity;
+                var speed = v.Length();
+                if (speed < 4f) continue;
+
+                var ahead = r.Car.Position + v * 0.6f;
+
+                foreach (var w in _crowd)
+                {
+                    if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+                    if (w.Dodge != 0 || w.Angry != 0) continue;
+
+                    var at = w.Man.Position;
+
+                    if (at.DistanceTo(ahead) > DodgeRange && at.DistanceTo(r.Car.Position) > DodgeRange) continue;
+
+                    // Sideways off the car's line, to whichever side they are already on.
+                    var dir = Vector3.Normalize(new Vector3(v.X, v.Y, 0f));
+                    var side = new Vector3(-dir.Y, dir.X, 0f);
+
+                    if (Vector3.Dot(at - r.Car.Position, side) < 0f) side = side * -1f;
+
+                    var to = at + side * DodgeStep;
+
+                    try
+                    {
+                        Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                        Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, w.Man.Handle,
+                                      to.X, to.Y, to.Z, 3.0f, DodgeMs, w.Man.Heading, 0.5f);
+                    }
+                    catch
+                    {
+                        // Then they are hit, as they were.
+                    }
+
+                    w.Dodge = now + DodgeMs;
+                    w.Hype = 0;
+                }
+            }
+
+            foreach (var w in _crowd)
+            {
+                if (w.Dodge != 0 && now >= w.Dodge)
+                {
+                    w.Dodge = 0;
+                    Home(w);
+                }
+
+                if (w.Angry != 0 && now >= w.Angry)
+                {
+                    w.Angry = 0;
+                    Home(w);
+                }
+            }
+
+            // ---- a car that is not ours ----
+            Vehicle[] near;
+
+            try
+            {
+                near = World.GetNearbyVehicles(Middle, Ring + 4f);
+            }
+            catch
+            {
+                return;
+            }
+
+            foreach (var car in near)
+            {
+                if (car == null || !car.Exists() || Ours(car)) continue;
+                if (car.Position.DistanceTo(Middle) > Ring) continue;
+
+                var driver = car.Driver;
+                if (driver == null || !driver.Exists() || !driver.IsAlive) continue;
+                if (driver.Handle == Game.Player.Character.Handle) continue;
+
+                int kind;
+                try { kind = Function.Call<int>(Hash.GET_PED_TYPE, driver.Handle); }
+                catch { continue; }
+
+                // Cops, SWAT and the army are their own problem.
+                if (kind == 6 || kind == 27 || kind == 29) continue;
+
+                int last;
+                if (_angryAt.TryGetValue(car.Handle, out last) && now - last < AngryAgainMs) continue;
+                _angryAt[car.Handle] = now;
+
+                // The nearest few.
+                var picked = new List<Watcher>();
+
+                foreach (var w in _crowd)
+                {
+                    if (!Handy(w)) continue;
+                    if (w.Man.Position.DistanceTo(car.Position) > AngryReach) continue;
+
+                    picked.Add(w);
+                }
+
+                picked.Sort((x, y) => x.Man.Position.DistanceTo(car.Position)
+                                       .CompareTo(y.Man.Position.DistanceTo(car.Position)));
+
+                var sent = 0;
+
+                foreach (var w in picked)
+                {
+                    if (sent >= AngryMany) break;
+
+                    try
+                    {
+                        Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                        Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, w.Man.Handle, 5, true);
+                        Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, w.Man.Handle, 46, true);
+                        Function.Call(Hash.TASK_COMBAT_PED, w.Man.Handle, driver.Handle, 0, 16);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    w.Angry = now + AngryMs;
+                    w.Hype = 0;
+                    sent++;
+                }
+
+                if (sent > 0)
+                {
+                    Log.Info("Takeover: a car came into the circle; " + sent + " of the crowd are on the driver.");
+                }
+            }
+        }
+
+        private int _crowdedAt;
+        private readonly Dictionary<int, int> _angryAt = new Dictionary<int, int>();
+
+        private const float DodgeRange = 3.2f;
+        private const float DodgeStep = 3.0f;
+        private const int DodgeMs = 1500;
+
+        private const float AngryReach = 30f;
+        private const int AngryMany = 4;
+        private const int AngryMs = 12000;
+        private const int AngryAgainMs = 25000;
 
         private const string FireAsset = "scr_indep_fireworks";
 
@@ -5952,7 +6419,7 @@ namespace Hoodrich.Locations
                 if (r.Car != null && r.Car.Exists())
                 {
                     Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-                    Function.Call(Hash.SET_VEHICLE_REDUCE_GRIP, r.Car.Handle, false);
+                    Slick(r.Car, false);
                 }
 
                 Loose(r.Car, r.Driver);
@@ -6170,6 +6637,7 @@ namespace Hoodrich.Locations
         private void Pack()
         {
             Roads(true);
+            Regrip();
 
             foreach (var r in _running) Out(r);
             _running.Clear();
@@ -6221,6 +6689,9 @@ namespace Hoodrich.Locations
             _nextHype = 0;
             _volleyed = 0;
             _volleyLogged = 0;
+            _nobodyAt = 0;
+            _angryAt.Clear();
+            _tuned = 0;
 
             foreach (var l in _law)
             {
@@ -6257,6 +6728,8 @@ namespace Hoodrich.Locations
 
         public void RestoreWorld()
         {
+            Regrip();
+
             try
             {
                 foreach (var w in _crowd) { if (w.Man != null && w.Man.Exists()) w.Man.Delete(); }

@@ -219,7 +219,7 @@ namespace Hoodrich.Core
         public float ColdCallChancePercent = 35f;
 
         /// <summary>How long you have got to get there.</summary>
-        public float ColdCallMinutes = 8f;
+        public float ColdCallMinutes = 10f;
 
         /// <summary>Whether the feed ever tells you somewhere is busy.</summary>
         public bool BlockTipsEnabled = true;
@@ -560,7 +560,7 @@ namespace Hoodrich.Core
             // lab and the one by the house opened the weed farm, which is only findable by
             // standing in both -- so the coordinates are swapped here rather than the names:
             // the roller door at Lamar's is the grow room because that is where the grow is.
-            s.Doors.Add(Working(Worked(Guessed(Dressed(Named(Also(ReadDoor(ini, "GrowRoom", "grow room",
+            s.Doors.Add(Working(Worked(Dressed(Named(Also(ReadDoor(ini, "GrowRoom", "grow room",
                                  "bkr_biker_dlc_int_ware02",
                                  BlipSprite.Weed,
                                  -201.384f, -1707.909f, 32.664f, 313.362f,
@@ -597,7 +597,6 @@ namespace Hoodrich.Core
                              + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
                              + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_"),
                              WeedSets),
-                             WeedGuesses),
                              // THE SET'S OWN, AND MOSTLY WOMEN. There is one Families female
                              // model in the game, so two of the three are her -- given random
                              // clothing on the way in, or the room has twins in it.
@@ -879,18 +878,38 @@ namespace Hoodrich.Core
         }
 
         /// <summary>
-        /// The grow room at its full stage: the upgraded equipment and security, all nine
-        /// stations at stage three under their lights, the chairs, the drying racks.
+        /// The grow room at its full stage: the upgraded equipment and security, the nine
+        /// stations with their plants and their upgraded tables under their lights, the
+        /// chairs, the drying racks.
         ///
         /// ENTITY SETS, NOT IPLS -- see InteriorDoor.Dress. The equipment, security and
-        /// light names are literal in Menyoo's own binary on this machine. The plants are
-        /// the STANDARD stage-three set at each station: the upgrade is a fact about the
-        /// lamps and the tables, not about the plants, and a plant name with "upgrade" on
-        /// the end was accepted by the game and drew nothing -- the game accepts any name.
+        /// light names are literal in Menyoo's own binary on this machine. THE STATION
+        /// NAMES WERE ANSWERED BY THE ROOM: InteriorDoor.Discover switched twenty-seven
+        /// guesses on one at a time and measured the floor, and weed_growtha_stage2 and
+        /// weed_growtha_upgrade were the two that put anything on it. Nothing else here is
+        /// a guess.
         /// </summary>
         private const string WeedSets =
             "weed_upgrade_equip;" +
             "weed_security_upgrade;" +
+            "weed_growtha_stage2;" +
+            "weed_growthb_stage2;" +
+            "weed_growthc_stage2;" +
+            "weed_growthd_stage2;" +
+            "weed_growthe_stage2;" +
+            "weed_growthf_stage2;" +
+            "weed_growthg_stage2;" +
+            "weed_growthh_stage2;" +
+            "weed_growthi_stage2;" +
+            "weed_growtha_upgrade;" +
+            "weed_growthb_upgrade;" +
+            "weed_growthc_upgrade;" +
+            "weed_growthd_upgrade;" +
+            "weed_growthe_upgrade;" +
+            "weed_growthf_upgrade;" +
+            "weed_growthg_upgrade;" +
+            "weed_growthh_upgrade;" +
+            "weed_growthi_upgrade;" +
             "light_growtha_stage23_upgrade;" +
             "light_growthb_stage23_upgrade;" +
             "light_growthc_stage23_upgrade;" +

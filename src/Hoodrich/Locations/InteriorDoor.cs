@@ -221,6 +221,14 @@ namespace Hoodrich.Locations
             public bool Posted;
             public string Dict;
             public string Clip;
+
+            /// <summary>Their own spot and the way they face at it, for the ones with a job.</summary>
+            public Vector3 Post;
+            public float Facing;
+
+            /// <summary>What they are up to: wandering near the post, on the way back to it, or at it working.</summary>
+            public int Stage;
+            public int Check;
             public int Until;
             public bool Walking;
         }
@@ -230,6 +238,19 @@ namespace Hoodrich.Locations
 
         /// <summary>How far they will wander from where they started.</summary>
         private const float Leash = 7f;
+
+        /// <summary>
+        /// The working day: a couple of seconds' wander on arriving, then spells at the job
+        /// broken by short wanders near it, so a room full of people is never a room of
+        /// statues and never a room of people walking into the tanks.
+        /// </summary>
+        private const float PostLeash = 2.5f;
+        private const int FirstRoamMs = 2000;
+        private const int RoamMinMs = 4000;
+        private const int RoamMaxMs = 9000;
+        private const int WorkMinMs = 25000;
+        private const int WorkMaxMs = 50000;
+        private const int ReturnMs = 7000;
 
         /// <summary>How long a spell of walking lasts, and how long a spell of standing.</summary>
         private const int WalkMinMs = 9000;
@@ -467,8 +488,6 @@ namespace Hoodrich.Locations
                     Log.Info("Asked for ipl '" + one + "' for the " + _spec.Name + ".");
                 }
 
-                var to = Somewhere();
-
                 // DRESSED BEFORE HE IS STOOD IN IT. Sets switched on with the player already
                 // inside came up with the lights and the hoses but not the plants: the log
                 // showed every plant set accepted and active, and the trays empty. A set that
@@ -481,9 +500,17 @@ namespace Hoodrich.Locations
 
                 for (var held = 0; held < EarlyDressMs && early == 0; held += 100)
                 {
-                    early = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, to.X, to.Y, to.Z);
+                    early = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, Inside.X, Inside.Y, Inside.Z);
                     if (early == 0) Wait(100);
                 }
+
+                // ONLY NOW is the landing chosen. Somewhere asks the game which of the door's
+                // coordinates has a room at it, and asked before the room had loaded it found
+                // one in the lockup next door instead and put him -- and his ring, and his
+                // way out -- through the wrong door.
+                var to = Somewhere();
+
+                if (early == 0) early = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, to.X, to.Y, to.Z);
 
                 if (early != 0)
                 {
@@ -1243,6 +1270,8 @@ namespace Hoodrich.Locations
                         hand.Posted = true;
                         hand.Dict = _spec.CrewDict;
                         hand.Clip = _spec.CrewClips[i % _spec.CrewClips.Count];
+                        hand.Post = spot;
+                        hand.Facing = worker.Heading;
 
                         Function.Call(Hash.REQUEST_ANIM_DICT, hand.Dict);
 
@@ -1251,7 +1280,7 @@ namespace Hoodrich.Locations
                             Script.Yield();
                         }
 
-                        Work(hand);
+                        Roam(hand, FirstRoamMs);
                     }
                     else if (Dice.Next(2) == 0) Walk(hand, at);
                     else Stand(hand);
@@ -1295,7 +1324,11 @@ namespace Hoodrich.Locations
                                   spot.X, spot.Y, spot.Z, false, false, false);
                     worker.Heading = post.Heading;
 
-                    var hand = new Hand { Who = worker, Posted = true, Dict = post.Dict, Clip = post.Clip };
+                    var hand = new Hand
+                    {
+                        Who = worker, Posted = true, Dict = post.Dict, Clip = post.Clip,
+                        Post = spot, Facing = post.Heading
+                    };
                     _staff.Add(hand);
 
                     Function.Call(Hash.REQUEST_ANIM_DICT, post.Dict);
@@ -1305,7 +1338,7 @@ namespace Hoodrich.Locations
                         Script.Yield();
                     }
 
-                    Work(hand);
+                    Roam(hand, FirstRoamMs);
                 }
                 catch (Exception ex)
                 {
@@ -1333,6 +1366,101 @@ namespace Hoodrich.Locations
 
             hand.Walking = true;
             hand.Until = Game.GameTime + Dice.Next(WalkMinMs, WalkMaxMs);
+        }
+
+        /// <summary>A spell of wandering near the post, a couple of metres, no further.</summary>
+        private static void Roam(Hand hand, int ms)
+        {
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, hand.Who.Handle);
+                Function.Call(Hash.TASK_WANDER_IN_AREA, hand.Who.Handle,
+                              hand.Post.X, hand.Post.Y, hand.Post.Z, PostLeash, 1f, 1f);
+                Function.Call(Hash.SET_PED_KEEP_TASK, hand.Who.Handle, true);
+            }
+            catch
+            {
+                // Standing near it is near enough.
+            }
+
+            hand.Stage = 0;
+            hand.Until = Game.GameTime + ms;
+        }
+
+        /// <summary>
+        /// The working day, one step at a time: wandering ends with a walk back to the post,
+        /// the walk back ends with the job, and the job -- kept up every few seconds in case
+        /// something knocked it off -- ends with another wander. Each on their own clock.
+        /// </summary>
+        private void Shift(Hand hand, int now)
+        {
+            var ped = hand.Who;
+
+            if (hand.Stage == 2)
+            {
+                if (now < hand.Until)
+                {
+                    if (now >= hand.Check)
+                    {
+                        hand.Check = now + 3000;
+                        Work(hand);
+                    }
+
+                    return;
+                }
+
+                Roam(hand, Dice.Next(RoamMinMs, RoamMaxMs));
+                return;
+            }
+
+            if (hand.Stage == 1)
+            {
+                var back = ped.Position.DistanceTo(hand.Post) < 0.5f;
+
+                if (!back && now < hand.Until) return;
+
+                // Stood on the spot, facing the work. If the walk did not get them all the
+                // way there, the last step is taken for them: a worker a stride from the
+                // cooker is a worker cooking the air.
+                try
+                {
+                    if (!back)
+                    {
+                        Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, ped.Handle,
+                                      hand.Post.X, hand.Post.Y, hand.Post.Z, false, false, false);
+                    }
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                    ped.Heading = hand.Facing;
+                }
+                catch
+                {
+                    // Wherever they are, then.
+                }
+
+                hand.Stage = 2;
+                hand.Until = now + Dice.Next(WorkMinMs, WorkMaxMs);
+                hand.Check = 0;
+                Work(hand);
+                return;
+            }
+
+            // Wandering, and the wander is over: back to the post.
+            if (now < hand.Until) return;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, ped.Handle,
+                              hand.Post.X, hand.Post.Y, hand.Post.Z, 1.0f, ReturnMs, hand.Facing, 0.25f);
+            }
+            catch
+            {
+                // The next stage puts them there.
+            }
+
+            hand.Stage = 1;
+            hand.Until = now + ReturnMs;
         }
 
         /// <summary>At their station, doing their job, unless they already are.</summary>
@@ -1399,16 +1527,15 @@ namespace Hoodrich.Locations
                 var hand = _staff[i];
 
                 if (hand.Who == null || !hand.Who.Exists()) { _staff.RemoveAt(i); continue; }
-                if (now < hand.Until) continue;
 
-                // Somebody at a station keeps their job. Looked at every few seconds and
-                // only started again if something knocked them out of it.
+                // Somebody with a job has a day: see Shift.
                 if (hand.Posted)
                 {
-                    hand.Until = now + 4000;
-                    Work(hand);
+                    Shift(hand, now);
                     continue;
                 }
+
+                if (now < hand.Until) continue;
 
                 if (hand.Walking) Stand(hand);
                 else Walk(hand, hand.Who.Position);
