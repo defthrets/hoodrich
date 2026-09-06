@@ -45,7 +45,14 @@ namespace Hoodrich.UI
         /// </summary>
         private static readonly string[] Candidates =
         {
-            "mpweaponscommon", "mpweaponscommon2", "mpweapons",
+            // THE FOUR THE GAME ACTUALLY SHIPS, found by searching every archive on the
+            // install for "mpweapons": common, gang0, gang1 and unusedfornow, each with a
+            // _small twin of thumbnails. Nothing per DLC exists -- the online guns were
+            // never given a photograph -- so everything below these four is a name that
+            // costs one sweep entry and finds nothing.
+            "mpweaponscommon", "mpweaponsgang0", "mpweaponsgang1", "mpweaponsunusedfornow",
+
+            "mpweaponscommon2", "mpweapons",
             "mpweaponsgang0", "mpweaponsgang1", "mpweaponsgang2", "mpweaponsgang3",
             "mpweaponsbeach", "mpweaponsvalentines", "mpweaponsvalentines2",
             "mpweaponsbusiness", "mpweaponsbusiness2", "mpweaponshipster",
@@ -339,6 +346,17 @@ namespace Hoodrich.UI
 
                 if (Real.Count == 0) return;
 
+                // A LONGER LIST IS A NEW SWEEP. The packs remembered are kept -- they are
+                // real, and they are found on the first tick -- but a name added to the list
+                // since the file was written has never been asked for, and the only way to
+                // ask is to run the sweep again. Once; then the file says how long the list
+                // was when it was written.
+                if (doc["candidates"].AsInt(0) != Candidates.Length)
+                {
+                    Log.Info("Gun art: the list of packs to look for has changed; looking again.");
+                    return;
+                }
+
                 _done = true;
                 _asked = Candidates.Length;
                 _ticks = SweepTicks;
@@ -365,7 +383,8 @@ namespace Hoodrich.UI
                 var guns = Json.Array();
                 foreach (var pair in Where) guns.Add(Json.Str(pair.Key + "|" + pair.Value));
 
-                var doc = Json.Object().Set("packs", packs).Set("guns", guns);
+                var doc = Json.Object().Set("packs", packs).Set("guns", guns)
+                              .Set("candidates", Candidates.Length);
 
                 JsonFile.Write(File, doc);
             }

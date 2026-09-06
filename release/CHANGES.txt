@@ -260,8 +260,10 @@ STRETCH'S COUNTER SHOWS ITS PISTOLS AGAIN. A pack that had not streamed in yet
 was being counted as a pack that did not have the gun, and with the search
 already done that was written down as a permanent no -- which is how every
 pistol lost its picture. A not-yet is a not-yet now, and a no on disk is asked
-again each session. The online guns' pictures live in packs the game does not
-name, and are still to find.
+again each session. A fourth pack the game ships, mpweaponsunusedfornow, is
+looked in now as well. The online guns have no photograph anywhere in the
+game's files -- every archive on the install was searched -- so they keep
+their names.
 
 GERALD'S TRUCK ON THE STREET faces north now, the way that side of the road
 goes.
