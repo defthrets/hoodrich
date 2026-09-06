@@ -317,6 +317,9 @@ namespace Hoodrich
 
         /// <summary>The two outside the shops in Strawberry, by the car with the stereo up.</summary>
         private readonly Entourage _strawCrew;
+
+        /// <summary>The three stood at the bike meet at Leroy's, the nights it is on.</summary>
+        private readonly Entourage _leroyCrew;
         private readonly Fixture _partyBarrel;
 
         /// <summary>The worklight by the skip. See Fixture.Beam.</summary>
@@ -1346,7 +1349,6 @@ namespace Hoodrich
                            "WORLD_HUMAN_STAND_MOBILE", Fam(1), armed: false,
                            anim: OnThePhone, held: "prop_npc_phone_02");
                 _bholesCrew.OffTonight = bholesOff;
-                _shopsCrew.OffTonight = shopsOff;
 
                 // ---- the shops in Strawberry ---------------------------------------
                 //
@@ -1369,8 +1371,48 @@ namespace Hoodrich
                     .Stand(new Vector3(53.970f, -1587.329f, 29.598f), 33.249f,
                            "WORLD_HUMAN_DRINKING", Fam(2), armed: false)
                     .Stand(new Vector3(52.543f, -1588.782f, 29.598f), 358.324f,
-                           "WORLD_HUMAN_SMOKING", Fam(0), armed: false);
+                           "WORLD_HUMAN_SMOKING", Fam(0), armed: false)
+
+                    // AND A COUPLE, on whatever there is to sit on. The game is asked for the
+                    // nearest seat scenario to each mark -- a bench, a ledge, the steps -- and
+                    // they take it, and talk, the way the rest of the set do.
+                    .Stand(new Vector3(55.800f, -1586.200f, 29.598f), 33.249f,
+                           "WORLD_HUMAN_STAND_IMPATIENT", Fam(1), armed: false, seatNear: true)
+                    .Stand(new Vector3(56.900f, -1585.400f, 29.598f), 33.249f,
+                           "WORLD_HUMAN_STAND_IMPATIENT", Women, armed: false, seatNear: true);
                 _strawCrew.OffTonight = strawOff;
+
+                // ---- the bike meet at Leroy's, some nights -----------------------------
+                //
+                // Three bikes in a fan round the walked spot, two of them with their riders
+                // still sat on them, three more of the set stood in front talking. Evenings
+                // and nights, two nights in five.
+                System.Func<bool> leroyOff = () => !Core.Nights.On("the bike meet at Leroy's", 40);
+                var famDef = _gangs.Get("families");
+                var famGroup = famDef == null ? 0 : famDef.GroupHash;
+
+                _cars.Add(new ParkedCar(new Vector3(44.815f, -1445.985f, 28.814f), 348.147f, MetallicDarkGreen, "sanchez", "sanchez2")
+                {
+                    Sitter = Fam(0), SitterGroup = famGroup,
+                    QuietFrom = 6, QuietTo = 19, GoneWhenQuiet = true, OffTonight = leroyOff
+                });
+                _cars.Add(new ParkedCar(new Vector3(46.968f, -1446.437f, 28.814f), 334.147f, MetallicDarkGreen, "blazer")
+                {
+                    QuietFrom = 6, QuietTo = 19, GoneWhenQuiet = true, OffTonight = leroyOff
+                });
+                _cars.Add(new ParkedCar(new Vector3(42.662f, -1445.533f, 28.814f), 2.147f, MetallicDarkGreen, "sanchez2", "sanchez")
+                {
+                    Sitter = Fam(2), SitterGroup = famGroup,
+                    QuietFrom = 6, QuietTo = 19, GoneWhenQuiet = true, OffTonight = leroyOff
+                });
+
+                _leroyCrew = new Entourage(_gangs, "families", new Vector3(45.431f, -1443.049f, 28.814f), 168.147f, "the bike meet at Leroy's")
+                    .Stand(new Vector3(46.915f, -1443.769f, 28.814f), 168.147f, "WORLD_HUMAN_STAND_MOBILE", Fam(1), armed: false)
+                    .Stand(new Vector3(43.783f, -1443.112f, 28.814f), 168.147f, "WORLD_HUMAN_SMOKING", Fam(2), armed: false)
+                    .Stand(new Vector3(45.678f, -1441.875f, 28.814f), 168.147f, "WORLD_HUMAN_DRINKING", Fam(0), armed: false);
+                _leroyCrew.QuietFrom = 6;
+                _leroyCrew.QuietTo = 19;
+                _leroyCrew.OffTonight = leroyOff;
 
                 _shopsCrew = new Entourage(_gangs, "families",
                                            new Vector3(89.500f, -1409.500f, 29.421f), 320.344f, "the shops")
@@ -1378,6 +1420,7 @@ namespace Hoodrich
                            "WORLD_HUMAN_LEANING", Fam(1), armed: false)
                     .Stand(new Vector3(87.784f, -1409.120f, 29.422f), 259.219f,
                            "WORLD_HUMAN_DRINKING", Fam(2), armed: false);
+                _shopsCrew.OffTonight = shopsOff;
 
                 // The shop's van, up on the road above the lot.
                 _cars.Add(new ParkedCar(new Vector3(-214.160f, -1739.805f, 31.709f), 52.137f,
@@ -1935,6 +1978,14 @@ namespace Hoodrich
                 _jobs.Social = _social;
                 _war.Social = _social;
                 _cruise.Social = _social;
+
+                // The corners announce themselves on the feed when their people come out.
+                foreach (var corner in new[] { _meet, _washCrew, _lotCrew, _shopsCrew, _bholesCrew, _strawCrew, _leroyCrew })
+                {
+                    if (corner == null) continue;
+                    corner.Social = _social;
+                    corner.Posts = true;
+                }
                 // ONE ANSWER, asked in four places.
                 //
                 // Every one of these lists used to name _jobs on its own, and _jobs is Lamar's
@@ -3287,6 +3338,7 @@ namespace Hoodrich
                     _shopsCrew.Update();
                     _bholesCrew.Update();
                     _strawCrew.Update();
+                    _leroyCrew.Update();
                     _partyBarrel.Update();
                     _partyLight?.Update();
 
@@ -4368,6 +4420,7 @@ namespace Hoodrich
             try { _shopsCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _bholesCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _strawCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _leroyCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyLight?.RestoreWorld(); } catch { /* teardown */ }
 

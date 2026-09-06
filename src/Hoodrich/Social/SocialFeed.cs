@@ -55,6 +55,7 @@ namespace Hoodrich.Social
         HouseRaided,
         Cruise,
         Donks,
+        Hangout,
 
         /// <summary>
         /// The port changed hands. Nobody on that feed knows why, and that is the post.
@@ -1468,6 +1469,13 @@ namespace Hoodrich.Social
 
                 case SocialEvent.Donks:
                     follow = _rng.NextDouble() < 0.8 ? "Donks" : "Ambient";
+                    count = 1 + _rng.Next(2);
+                    break;
+
+                case SocialEvent.Hangout:
+                    // A corner announcing itself, or a neighbour complaining about it. The
+                    // subject is the corner's name.
+                    follow = "Hangout";
                     count = 1 + _rng.Next(2);
                     break;
 

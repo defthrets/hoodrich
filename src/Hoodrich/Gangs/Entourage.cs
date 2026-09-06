@@ -5,6 +5,7 @@ using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.Locations;
+using Hoodrich.Social;
 
 namespace Hoodrich.Gangs
 {
@@ -375,10 +376,11 @@ namespace Hoodrich.Gangs
                                string[] anim = null, string weapon = null, bool nights = false,
                                float wander = 0f, bool party = false, bool sit = false,
                                bool onSpot = false, string held = null, bool leftHand = false,
-                               bool spray = false)
+                               bool spray = false, bool seatNear = false)
         {
             _sits.Add(sit);
             _onSpot.Add(onSpot);
+            _seatNear.Add(seatNear);
             _holding.Add(held);
             _lefts.Add(leftHand);
             _sprays.Add(spray);
@@ -760,6 +762,8 @@ namespace Hoodrich.Gangs
             // Spent. The next spawn is people being here, not people turning up.
             _arriveOnFoot = false;
 
+            Announce();
+
             var up = Standing();
             if (up > 0) Log.Info(up + " of " + gang.Name + " stood with " + _who + ".");
         }
@@ -1029,6 +1033,20 @@ namespace Hoodrich.Gangs
 
                 // An animated station tries its clips first and only falls back to the scenario
                 // if none of them are in this install.
+                // THE NEAREST SEAT. The game's own scenario points on the furniture round
+                // the mark -- a bench, a ledge, the steps -- and the man walks to it and uses
+                // it. Left alone while he is on one; asked again only if he is not.
+                if (SeatNear(index))
+                {
+                    if (!Function.Call<bool>(Hash.IS_PED_USING_ANY_SCENARIO, ped.Handle))
+                    {
+                        Function.Call(Hash.TASK_USE_NEAREST_SCENARIO_TO_COORD, ped.Handle,
+                                      at.X, at.Y, at.Z, SeatNearRange, -1);
+                    }
+
+                    return;
+                }
+
                 if (anim != null)
                 {
                     ped.Heading = facing;
@@ -1143,6 +1161,24 @@ namespace Hoodrich.Gangs
             return index < _onSpot.Count && _onSpot[index];
         }
 
+        private bool SeatNear(int index)
+        {
+            return index < _seatNear.Count && _seatNear[index];
+        }
+
+        /// <summary>The corner says it is out, once a night, on the night it comes out.</summary>
+        private void Announce()
+        {
+            if (!Posts || Social == null || _crew.Count == 0) return;
+
+            var night = Nights.Key();
+            if (night == _postedNight) return;
+            _postedNight = night;
+
+            try { Social.On(SocialEvent.Hangout, _who); }
+            catch { /* the block will notice anyway */ }
+        }
+
         /// <summary>Which stations would take a seat if one were going.</summary>
         private readonly List<bool> _sits = new List<bool>();
 
@@ -1153,6 +1189,22 @@ namespace Hoodrich.Gangs
         /// hand, and no chair anywhere.
         /// </summary>
         private readonly List<bool> _onSpot = new List<bool>();
+
+        /// <summary>
+        /// Stands that use whatever is round them: the map's own benches, ledges and steps
+        /// carry seat scenarios, and the game is asked for the nearest one to the mark.
+        /// Two of these next to each other take two seats on the same bench.
+        /// </summary>
+        private readonly List<bool> _seatNear = new List<bool>();
+
+        /// <summary>
+        /// Set by Main: the feed, and whether this lot say anything on it. A corner that
+        /// posts announces itself once a night when its people come out -- the set saying
+        /// they are posted up, or somebody else saying they wish they were not.
+        /// </summary>
+        public SocialFeed Social;
+        public bool Posts;
+        private int _postedNight = -1;
 
         /// <summary>
         /// A prop in the hand, by model, for a stand whose animation wants one -- a spray
@@ -1171,6 +1223,8 @@ namespace Hoodrich.Gangs
         private readonly List<bool> _sprays = new List<bool>();
         private readonly Dictionary<int, int> _fx = new Dictionary<int, int>();
         private readonly Dictionary<int, int> _fxAt = new Dictionary<int, int>();
+
+        private const float SeatNearRange = 15f;
 
         private const string PaintAsset = "scr_playerlamgraff";
         private const string PaintFx = "scr_lamgraff_paint_spray";

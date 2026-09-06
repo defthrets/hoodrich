@@ -158,6 +158,15 @@ namespace Hoodrich.Locations
         public int Tint = -1;
 
         /// <summary>
+        /// Somebody sat on it: models tried in order, the first that loads put in the seat,
+        /// and left there -- deaf to the street, not to be dragged out, gone with the car.
+        /// For a bike at a meet with its rider still on it.
+        /// </summary>
+        public string[] Sitter;
+        public int SitterGroup;
+        private Ped _rider;
+
+        /// <summary>
         /// The pearl over the paint, if it is not to be whatever the game gave the model.
         /// The paint index itself here is a car with no pearl to speak of: a sheen of its
         /// own colour, which is plain metallic.
@@ -310,7 +319,11 @@ namespace Hoodrich.Locations
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
-            if (_car != null && !_car.Exists()) _car = null;
+            if (_car != null && !_car.Exists())
+            {
+                _car = null;
+                Unseat();
+            }
 
             // Once it is out there it is left alone. Not put back on its mark, not re-parked --
             // if somebody has taken it for a drive then it is a car that got taken, which is a
@@ -328,6 +341,7 @@ namespace Hoodrich.Locations
                     _car = null;
                 }
 
+                Unseat();
                 return;
             }
 
@@ -370,6 +384,7 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _car.Handle, 1);
 
                     Paint();
+                    Seat();
 
                     Log.Info("Parked a " + name + " at " + _where + ".");
                     return;
@@ -757,6 +772,60 @@ namespace Hoodrich.Locations
             catch { /* teardown */ }
 
             _car = null;
+            Unseat();
+        }
+
+        private void Seat()
+        {
+            if (Sitter == null || Sitter.Length == 0 || _car == null || !_car.Exists()) return;
+
+            try
+            {
+                foreach (var name in Sitter)
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1000)) continue;
+
+                    var handle = Function.Call<int>(Hash.CREATE_PED_INSIDE_VEHICLE, _car.Handle, 4, model.Hash, -1, false, false);
+                    model.MarkAsNoLongerNeeded();
+                    if (handle == 0) continue;
+
+                    var ped = Entity.FromHandle(handle) as Ped;
+                    if (ped == null || !ped.Exists()) continue;
+
+                    ped.IsPersistent = true;
+
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
+                    if (SitterGroup != 0) Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, SitterGroup);
+                    Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, ped.Handle, false);
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
+                    Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 3, false);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
+
+                    Helmets.Off(ped);
+
+                    _rider = ped;
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not sit anybody on it: " + ex.Message);
+            }
+        }
+
+        private void Unseat()
+        {
+            try
+            {
+                if (_rider != null && _rider.Exists()) _rider.Delete();
+            }
+            catch
+            {
+                // Gone already.
+            }
+
+            _rider = null;
         }
     }
 }
