@@ -311,6 +311,18 @@ namespace Hoodrich.Gangs
 
         private int _lastUpdate;
         private int _nextRoll;
+
+        /// <summary>
+        /// Nothing unprovoked in the first ten minutes after the mod loads.
+        ///
+        /// The roll clock started at zero, so the first tick after loading was a roll -- and
+        /// with the Vagos seeded at beef the odds on a roll are about one in four, which is
+        /// one restart in four opening on Stretch shouting that they are outside. A raid is
+        /// something that happens to a session, not something a session opens with. Ten
+        /// minutes from load, whether that is the game starting or the scripts reloading.
+        /// A war you start yourself, three bodies on their block, is not held back by this.
+        /// </summary>
+        private const int StartGraceMs = 600000;
         private int _startedAt;
         private int _nextWave;
         private int _kills;
@@ -350,6 +362,9 @@ namespace Hoodrich.Gangs
             _gangs = gangs;
             _crew = crew;
             _state = state;
+
+            try { _nextRoll = Game.GameTime + StartGraceMs; }
+            catch { /* the first roll is then simply the first tick, as before */ }
         }
 
         /// <summary>Set by Main. Null-checked, so the feed is never load-bearing.</summary>
