@@ -989,6 +989,7 @@ namespace Hoodrich.Locations
                         Blasting(now);
                         Crowding(now);
                         Rushes(now);
+                        Riders(now);
                         break;
 
                     case TakeoverState.Scattering:
@@ -1006,6 +1007,7 @@ namespace Hoodrich.Locations
 
                         Bail(now);
                         Raid(now);
+                        RidersOff(now);
 
                         if (near > LetGo || now > _lastDrive) Pack();
                         break;
@@ -1808,6 +1810,11 @@ namespace Hoodrich.Locations
                 if (g.Car != null && g.Car.Exists() && g.Car.Handle == car.Handle) return true;
             }
 
+            foreach (var r in _riders)
+            {
+                if (r.Bike != null && r.Bike.Exists() && r.Bike.Handle == car.Handle) return true;
+            }
+
             if (_heli != null && _heli.Exists() && _heli.Handle == car.Handle) return true;
 
             return false;
@@ -1879,6 +1886,11 @@ namespace Hoodrich.Locations
             foreach (var l in _law)
             {
                 if (l.Cop != null && l.Cop.Exists() && l.Cop.Handle == who.Handle) return true;
+            }
+
+            foreach (var r in _riders)
+            {
+                if (r.Man != null && r.Man.Exists() && r.Man.Handle == who.Handle) return true;
             }
 
             // AND WHOEVER IS DRIVING A CAR OUT. Loose hands the driver back to the game, which
@@ -5064,6 +5076,315 @@ namespace Hoodrich.Locations
         }
 
         // ==================================================================
+        // The riders
+        // ==================================================================
+
+        /// <summary>One of the set on a dirt bike: where he parks, where he stands, how far along he is.</summary>
+        private sealed class Rider
+        {
+            public Vehicle Bike;
+            public Ped Man;
+            public Vector3 Park;
+            public Vector3 Slot;
+            public int Sent;
+
+            /// <summary>0 riding in, 1 stopping, 2 getting off, 3 in the crowd, 4 running for the bike, 5 gone.</summary>
+            public int Stage;
+
+            public Watcher Watch;
+        }
+
+        private readonly List<Rider> _riders = new List<Rider>();
+        private bool _ridersSent;
+        private int _ridersAt;
+
+        /// <summary>Sanchezes and Street Blazers: what the set rides round the back streets.</summary>
+        private static readonly string[] DirtBikes = { "sanchez", "sanchez2", "blazer" };
+
+        private const int RidersMin = 2;
+        private const int RidersMax = 4;
+        private const int RidersAfterMs = 8000;
+        private const float RideIn = 16f;
+        private const float BikeOut = 3.5f;
+        private const float BikeThere = 5f;
+        private const int RideGiveUpMs = 45000;
+        private const int GetOnGiveUpMs = 20000;
+
+        /// <summary>
+        /// A few of the set on dirt bikes, as spectators.
+        ///
+        /// Once the crowd is forming, two to four of them come in on Sanchezes and Street
+        /// Blazers, pull up just outside the ring, get off, and stand with everybody else --
+        /// in the crowd properly, so they cheer, film, throw and run into the middle like
+        /// anyone. The bikes wait where they stopped. When the police come they run for the
+        /// bikes and ride off, which is the one thing a man on a Sanchez has over a man on
+        /// foot.
+        /// </summary>
+        private void Riders(int now)
+        {
+            if (!_ridersSent)
+            {
+                if (_crowd.Count < 6) return;
+
+                if (_ridersAt == 0)
+                {
+                    _ridersAt = now + RidersAfterMs;
+                    return;
+                }
+
+                if (now < _ridersAt) return;
+
+                _ridersSent = true;
+
+                var many = RidersMin + _rng.Next(RidersMax - RidersMin + 1);
+                var sent = 0;
+
+                for (var i = 0; i < many; i++)
+                {
+                    if (SendRider(now)) sent++;
+                }
+
+                if (sent > 0) Log.Info("Takeover: " + sent + " of the set on dirt bikes on the way.");
+            }
+
+            for (var i = _riders.Count - 1; i >= 0; i--)
+            {
+                var r = _riders[i];
+
+                var gone = r.Bike == null || !r.Bike.Exists() || r.Man == null || !r.Man.Exists() || !r.Man.IsAlive;
+
+                if (gone)
+                {
+                    try { Loose(r.Bike, r.Watch == null ? r.Man : null); }
+                    catch { /* gone */ }
+
+                    _riders.RemoveAt(i);
+                    continue;
+                }
+
+                try
+                {
+                    switch (r.Stage)
+                    {
+                        case 0:
+                            // Riding in. There when near the spot, or when it has taken too long.
+                            if (r.Bike.Position.DistanceTo(r.Park) > BikeThere && now - r.Sent < RideGiveUpMs) break;
+
+                            Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Man.Handle, r.Bike.Handle, 1, 1500);
+                            r.Stage = 1;
+                            r.Sent = now;
+                            break;
+
+                        case 1:
+                            if (now - r.Sent < 1600) break;
+
+                            Function.Call(Hash.TASK_LEAVE_VEHICLE, r.Man.Handle, r.Bike.Handle, 0);
+                            r.Stage = 2;
+                            r.Sent = now;
+                            break;
+
+                        case 2:
+                            // Off it, and into the crowd. Somebody who cannot get off in a
+                            // reasonable time watches from the saddle, which is also fine.
+                            var off = !Function.Call<bool>(Hash.IS_PED_IN_VEHICLE, r.Man.Handle, r.Bike.Handle, false);
+                            if (!off && now - r.Sent < 6000) break;
+
+                            if (off)
+                            {
+                                Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, r.Bike.Handle);
+                                Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Bike.Handle, true);
+
+                                // Reacting to the world like the rest of the crowd, and walked
+                                // to his spot the way the rest of the crowd are.
+                                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, r.Man.Handle, false);
+
+                                r.Watch = new Watcher { Man = r.Man, Slot = r.Slot };
+                                _crowd.Add(r.Watch);
+                                Home(r.Watch);
+                            }
+
+                            r.Stage = 3;
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Takeover: a rider lost the plot: " + ex.Message);
+                    r.Stage = 3;
+                }
+            }
+        }
+
+        /// <summary>One rider, sent for: a bike from down the road, a spot on the ring, a stand next to it.</summary>
+        private bool SendRider(int now)
+        {
+            try
+            {
+                var from = OnRoad(ParkFromMin + (float)_rng.NextDouble() * (ParkFromMax - ParkFromMin));
+                if (from == Vector3.Zero) return false;
+
+                Vector3 park, slot;
+                if (!RiderSpot(out park, out slot)) return false;
+
+                var bike = Make(DirtBikes, from, false, false);
+                if (bike == null) return false;
+
+                // Ours, in the set's green.
+                try
+                {
+                    Function.Call(Hash.SET_VEHICLE_MOD_KIT, bike.Handle, 0);
+                    Function.Call(Hash.SET_VEHICLE_COLOURS, bike.Handle, 49, 49);
+                    Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, bike.Handle, 53, 0);
+                }
+                catch
+                {
+                    // Whatever colour it came in.
+                }
+
+                var man = Behind(bike);
+
+                if (man == null)
+                {
+                    bike.Delete();
+                    return false;
+                }
+
+                Helmets.Off(man);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, man.Handle, bike.Handle,
+                              park.X, park.Y, park.Z, RideIn, 0, bike.Model.Hash, CareStyle, 4f, true);
+                Function.Call(Hash.SET_PED_KEEP_TASK, man.Handle, true);
+
+                _riders.Add(new Rider { Bike = bike, Man = man, Park = park, Slot = slot, Sent = now });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover could not send a rider: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Where a bike stops and where its rider stands: a bearing round the ring nobody is
+        /// already stood on, the bike a few metres outside the line, the man on it.
+        /// </summary>
+        private bool RiderSpot(out Vector3 park, out Vector3 slot)
+        {
+            park = Vector3.Zero;
+            slot = Vector3.Zero;
+
+            for (var tries = 0; tries < 12; tries++)
+            {
+                var a = _rng.NextDouble() * Math.PI * 2d;
+                var dir = new Vector3((float)Math.Cos(a), (float)Math.Sin(a), 0f);
+
+                var stand = Middle + dir * Ring;
+                var clear = true;
+
+                foreach (var w in _crowd)
+                {
+                    if (w.Slot.DistanceTo(stand) < 1.3f)
+                    {
+                        clear = false;
+                        break;
+                    }
+                }
+
+                foreach (var r in _riders)
+                {
+                    if (r.Slot.DistanceTo(stand) < 2.5f)
+                    {
+                        clear = false;
+                        break;
+                    }
+                }
+
+                if (!clear) continue;
+
+                slot = stand;
+                park = Middle + dir * (Ring + BikeOut);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The police are here: whoever got off runs for his bike and rides off; whoever
+        /// was still riding in turns round. Given up on after a while -- a man who cannot
+        /// reach his bike runs with everybody else, which he was already doing.
+        /// </summary>
+        private void RidersOff(int now)
+        {
+            for (var i = _riders.Count - 1; i >= 0; i--)
+            {
+                var r = _riders[i];
+
+                if (r.Bike == null || !r.Bike.Exists() || r.Man == null || !r.Man.Exists() || !r.Man.IsAlive)
+                {
+                    _riders.RemoveAt(i);
+                    continue;
+                }
+
+                try
+                {
+                    if (r.Stage <= 2)
+                    {
+                        // Still on it. Round, and away.
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, r.Man.Handle, r.Bike.Handle, LeaveSpeed, CareStyle);
+                        Function.Call(Hash.SET_PED_KEEP_TASK, r.Man.Handle, true);
+                        Loose(r.Bike, r.Man);
+                        _riders.RemoveAt(i);
+                        continue;
+                    }
+
+                    if (r.Stage == 3)
+                    {
+                        if (r.Watch != null) _crowd.Remove(r.Watch);
+
+                        Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Bike.Handle, false);
+                        Function.Call(Hash.CLEAR_PED_TASKS, r.Man.Handle);
+                        Function.Call(Hash.TASK_ENTER_VEHICLE, r.Man.Handle, r.Bike.Handle, GetOnGiveUpMs, -1, 2f, 1, 0);
+                        Function.Call(Hash.SET_PED_KEEP_TASK, r.Man.Handle, true);
+
+                        r.Stage = 4;
+                        r.Sent = now;
+                        continue;
+                    }
+
+                    if (r.Stage == 4)
+                    {
+                        var on = Function.Call<bool>(Hash.IS_PED_IN_VEHICLE, r.Man.Handle, r.Bike.Handle, false);
+
+                        if (on)
+                        {
+                            Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, r.Man.Handle, r.Bike.Handle, LeaveSpeed, CareStyle);
+                            Function.Call(Hash.SET_PED_KEEP_TASK, r.Man.Handle, true);
+                            Loose(r.Bike, r.Man);
+                            _riders.RemoveAt(i);
+                            continue;
+                        }
+
+                        if (now - r.Sent > GetOnGiveUpMs)
+                        {
+                            // On foot with the rest, then. The bike stays where it is.
+                            Function.Call(Hash.TASK_SMART_FLEE_COORD, r.Man.Handle,
+                                          Middle.X, Middle.Y, Middle.Z, 200f, -1, false, false);
+                            Loose(r.Bike, r.Man);
+                            _riders.RemoveAt(i);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Takeover: a rider could not get away: " + ex.Message);
+                    _riders.RemoveAt(i);
+                }
+            }
+        }
+
+        // ==================================================================
         // The middle
         // ==================================================================
 
@@ -7050,6 +7371,18 @@ namespace Hoodrich.Locations
 
             _crowd.Clear();
 
+            // The bikes, and whoever is still on one. A rider who got off is in the crowd
+            // and goes with it.
+            foreach (var r in _riders)
+            {
+                try { Loose(r.Bike, r.Watch == null ? r.Man : null); }
+                catch { /* Already gone. */ }
+            }
+
+            _riders.Clear();
+            _ridersSent = false;
+            _ridersAt = 0;
+
             foreach (var p in _parked)
             {
                 try { Loose(p.Car, p.Driver); }
@@ -7149,6 +7482,12 @@ namespace Hoodrich.Locations
                 {
                     if (p.Driver != null && p.Driver.Exists()) p.Driver.Delete();
                     if (p.Car != null && p.Car.Exists()) p.Car.Delete();
+                }
+
+                foreach (var r in _riders)
+                {
+                    if (r.Man != null && r.Man.Exists()) r.Man.Delete();
+                    if (r.Bike != null && r.Bike.Exists()) r.Bike.Delete();
                 }
 
                 foreach (var r in _running)
