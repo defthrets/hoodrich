@@ -140,6 +140,30 @@ namespace Hoodrich.Locations
         private Spot[] Stages => _here.Stages;
 
         /// <summary>
+        /// Whether a performer has wandered in among the people watching it.
+        ///
+        /// Asked of the ring itself rather than of a radius from the middle, because the ring
+        /// is not a circle -- it is however the pavements at this junction happen to run, and
+        /// on both of them the people stand between fourteen and twenty-seven metres out on
+        /// different sides. A number would be wrong on one side of every junction.
+        /// </summary>
+        private bool AmongThem(Runner r)
+        {
+            if (r == null || r.Car == null || !r.Car.Exists()) return false;
+
+            var at = r.Car.Position;
+
+            foreach (var w in _crowd)
+            {
+                if (w == null || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+
+                if (w.Man.Position.DistanceTo(at) < CrowdNear) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// How close counts as being on a marker.
         ///
         /// FIVE, DOWN FROM EIGHT. Eight metres is most of a car length either side of a
@@ -153,12 +177,30 @@ namespace Hoodrich.Locations
         /// <summary>
         /// How far a performer may travel off its place before it is sent back.
         ///
-        /// Wider than StageArrived, and it has to be: a car judged to have arrived inside
-        /// five metres and leashed at anything under that would be sent back to a marker it
-        /// is already considered to be at, for ever. Eight leaves three metres of drift,
-        /// which is a donut wandering rather than a donut moving house.
+        /// A BACKSTOP RATHER THAN A LEASH, and that is a change of job.
+        ///
+        /// It used to send a car back the moment it had drifted a few metres, which meant a
+        /// performer braked, gathered itself and re-drove its own mark every few seconds --
+        /// so the show was mostly cars stopping. A donut that travels is a donut; the only
+        /// reason to interrupt one is that it has arrived somewhere it should not be, and
+        /// the thing that makes that true is people, not metres. See AmongThem.
+        ///
+        /// So this is now only the case AmongThem cannot see: a car that has slid clean off
+        /// the junction and down a street, where there is nobody to be near. Eighteen metres
+        /// is past the ring on both junctions, so anything that reaches it is out of the
+        /// event entirely. It still has to be wider than StageArrived or a car would be sent
+        /// back to a marker it is already at, for ever.
         /// </summary>
-        private const float StageLeash = 8f;
+        private const float StageLeash = 18f;
+
+        /// <summary>
+        /// How close to one of the people watching counts as being in the crowd.
+        ///
+        /// A car is about two and a half wide and five long and this is measured centre to
+        /// centre, so seven metres is a spinning car close enough to be alarming rather than
+        /// one that has already hit somebody. The point is to gather it up BEFORE.
+        /// </summary>
+        private const float CrowdNear = 7f;
 
         /// <summary>
         /// How long a performer tries to reach its marker before waiting where it is.
@@ -616,6 +658,41 @@ namespace Hoodrich.Locations
         /// The drift* models lead where an install has them and everything after is a car every
         /// install has, so nobody ends up with an empty circle.
         /// </summary>
+        /// <summary>
+        /// One of the cars that turns up to every takeover, whatever else does.
+        ///
+        /// THE FIELD USED TO BE ENTIRELY A DICE ROLL, and a field with no faces in it is a
+        /// field nobody recognises. These three are the regulars: you know whose they are
+        /// before they have stopped, and everything else that arrives is arriving to a scene
+        /// that already has somebody in it.
+        ///
+        /// Each carries its own fallbacks, because a name an install has not got is not worth
+        /// losing a regular over -- the drift variants are the same cars with the kit on.
+        /// </summary>
+        private sealed class Headliner
+        {
+            public string[] Models = new string[0];
+
+            /// <summary>Its paint, or below zero for whatever Dress rolls.</summary>
+            public int Paint = -1;
+        }
+
+        private static readonly Headliner[] Headliners =
+        {
+            // The Vectre in the set's own green, which is the one car at the junction that is
+            // plainly somebody's rather than just a fast car that turned up.
+            new Headliner { Models = new[] { "vectre" }, Paint = SetGreen },
+
+            new Headliner { Models = new[] { "fr36", "driftfr36" } },
+            new Headliner { Models = new[] { "gauntlet4", "driftgauntlet4" } }
+        };
+
+        /// <summary>Metallic dark green: the set's colour with flake in it. See Main.</summary>
+        private const int SetGreen = 49;
+
+        /// <summary>How many of the regulars have turned up to this one. Reset with the takeover.</summary>
+        private int _headed;
+
         private static readonly string[] Drifters =
         {
             "driftdominator10", "driftgauntlet4", "driftchavosv6", "driftfr36", "driftremus",
@@ -1297,6 +1374,9 @@ namespace Hoodrich.Locations
             _topUps = 0;
             _saidTopUp = false;
             _nextTopUp = 0;
+
+            // The regulars turn up to every one of these, so the count starts again with it.
+            _headed = 0;
 
             // THE ROADS STAY ON, AND THAT IS A REVERSAL OF SOMETHING TRIED AND MEASURED.
             //
@@ -3663,11 +3743,15 @@ namespace Hoodrich.Locations
                             // He waits where he stopped.
                         }
                     }
-                    else if (r.Car.Position.DistanceTo(bay.At) > StageLeash)
+                    else if (AmongThem(r) || r.Car.Position.DistanceTo(bay.At) > StageLeash)
                     {
-                        // SLID OFF ITS PLACE. A car going round on reduced grip travels, and
-                        // four of them travelling means the show drifts across the junction
-                        // and ends up somewhere nobody walked.
+                        // IT HAS REACHED THE PEOPLE. A car going round on reduced grip travels,
+                        // and the one thing that has to interrupt it is arriving among the
+                        // crowd -- not a distance. It keeps spinning for as long as there is
+                        // empty road under it, however far that carries it from the mark, and
+                        // gathers itself up when there is somebody in front of it. The
+                        // distance below it is only the case this cannot see: a car that has
+                        // slid clean off the junction, where there is nobody to be near.
                         //
                         // Sent back the way it came in rather than teleported: AtStage is
                         // dropped and the clock restarted, which hands it straight back to the
@@ -4543,7 +4627,7 @@ namespace Hoodrich.Locations
 
                 // NOT A SHOW CAR. It keeps the paint, the rims, the bodywork and the neon;
                 // it loses the coloured tyre smoke and the coloured headlights. See Dress.
-                var car = Make(Drifters, from, true, false);
+                var car = Contender(from);
                 if (car == null) return false;
 
                 var driver = Behind(car);
@@ -4878,7 +4962,7 @@ namespace Hoodrich.Locations
         /// </summary>
         private void Show(Runner r, int now)
         {
-            r.NextAction = now + BurstMs - 400;
+            r.NextAction = now + BurstMs - TopUpLead;
 
             try
             {
@@ -4944,6 +5028,21 @@ namespace Hoodrich.Locations
 
         /// <summary>How long one burst of lock lasts, and how far they may wander.</summary>
         private const int BurstMs = 3200;
+
+        /// <summary>
+        /// How far ahead of a burst ending the next one is asked for.
+        ///
+        /// IT WAS FOUR HUNDRED MILLISECONDS AND THE TICK IS SEVEN HUNDRED, WHICH IS THE
+        /// WHOLE BUG. The top-up only happens on a tick, so a lead shorter than one tick
+        /// cannot be relied on to land before the old action expires -- it arrived up to
+        /// three hundred milliseconds late, every burst, and a car doing donuts stopped dead
+        /// for a third of a second every three seconds all night. It read as the driver
+        /// pausing for breath, which is not a thing anybody does mid-burnout.
+        ///
+        /// A tick and a bit. The overlap costs nothing -- re-issuing a temp action a car is
+        /// already performing simply replaces it -- and it cannot now be late.
+        /// </summary>
+        private const int TopUpLead = TickMs + 300;
 
         /// <summary>How fast they come in, and how long they sit before they start.</summary>
         private const float ComeInSpeed = 11f;
@@ -7037,6 +7136,103 @@ namespace Hoodrich.Locations
         /// The list is read from a random point now, and anything already out there is skipped
         /// on the first pass, so a repeat only happens once the whole list is in use.
         /// </summary>
+        /// <summary>
+        /// A competitor's car: one of the regulars while there are any left, then the field.
+        ///
+        /// Then the two things that are true of every car that competes and of nothing else at
+        /// the junction: competition springs under it, and no livery on it.
+        /// </summary>
+        private Vehicle Contender(Vector3 from)
+        {
+            Vehicle car = null;
+
+            if (_headed < Headliners.Length)
+            {
+                var one = Headliners[_headed];
+                _headed++;
+
+                car = Make(one.Models, from, true, false);
+
+                if (car != null && one.Paint >= 0)
+                {
+                    try { Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, one.Paint, one.Paint); }
+                    catch { /* it keeps whatever Dress gave it */ }
+                }
+            }
+
+            if (car == null) car = Make(Drifters, from, true, false);
+            if (car == null) return null;
+
+            Competing(car);
+
+            return car;
+        }
+
+        /// <summary>
+        /// What is true of a car that competes and of nothing else here.
+        ///
+        /// COMPETITION SPRINGS, ASKED FOR BY NAME. The suspension slot was being set to index
+        /// three, which is Competition on some cars, Race on others and nothing at all on the
+        /// ones with a shorter list -- an index is a guess about a menu that differs per model.
+        /// The shop's own label for the part is the only thing that actually says which is
+        /// which, so it is read, and the lowest the car has is the fallback.
+        ///
+        /// AND NO LIVERY, AFTER EVERYTHING. Dress takes them off already, but this runs after
+        /// the paint has been forced on a regular and after every body part is on -- and on
+        /// the models that keep a livery in a mod slot, fitting a part is what hands one back.
+        /// Both spellings and the roof one, because a car has whichever it has.
+        /// </summary>
+        private void Competing(Vehicle car)
+        {
+            if (car == null || !car.Exists()) return;
+
+            var h = car.Handle;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_MOD_KIT, h, 0);
+
+                var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, h, 15);
+
+                if (many > 0)
+                {
+                    var picked = -1;
+
+                    for (var i = 0; i < many; i++)
+                    {
+                        var label = Function.Call<string>(Hash.GET_MOD_TEXT_LABEL, h, 15, i);
+                        if (string.IsNullOrEmpty(label)) continue;
+                        if (!Function.Call<bool>(Hash.DOES_TEXT_LABEL_EXIST, label)) continue;
+
+                        var text = Function.Call<string>(Hash.GET_FILENAME_FOR_AUDIO_CONVERSATION, label);
+                        if (string.IsNullOrEmpty(text)) continue;
+
+                        if (text.IndexOf("Competition", StringComparison.OrdinalIgnoreCase) < 0) continue;
+
+                        picked = i;
+                        break;
+                    }
+
+                    Function.Call(Hash.SET_VEHICLE_MOD, h, 15, picked >= 0 ? picked : many - 1, false);
+                }
+            }
+            catch
+            {
+                // It rides on whatever it came with.
+            }
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_LIVERY, h, -1);
+                Function.Call(Hash.SET_VEHICLE_LIVERY2, h, -1);
+                Function.Call(Hash.SET_VEHICLE_MOD, h, 48, -1, false);
+            }
+            catch
+            {
+                // Nothing this game has to say about liveries applies to this model.
+            }
+        }
+
         private Vehicle Make(string[] names, Vector3 at, bool dress = true, bool showy = true)
         {
             var start = _rng.Next(names.Length);
