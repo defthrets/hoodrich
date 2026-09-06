@@ -1480,7 +1480,7 @@ namespace Hoodrich.Locations
                     // nobody is coming back for it. The same window as a driven one, then it
                     // goes.
                     if ((driver == null || !driver.Exists() || !driver.IsAlive)
-                        && !Ours(car) && !Law(car) && car.Position.DistanceTo(Middle) < EatAt)
+                        && !Ours(car) && !LawCar(car) && car.Position.DistanceTo(Middle) < EatAt)
                     {
                         Eat(car, null);
                         continue;
@@ -1811,7 +1811,7 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>Whether a car is one of the law's, which Calm has no business eating.</summary>
-        private bool Law(Vehicle car)
+        private bool LawCar(Vehicle car)
         {
             foreach (var l in _law)
             {
