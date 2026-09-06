@@ -708,9 +708,84 @@ namespace Hoodrich.Gangs
                 return;
             }
 
+            if (Defend(now)) return;
+
             ReturnIfStrayed();
             SettleIfHome();
         }
+
+        /// <summary>
+        /// Attacked, he fights back. Somebody puts hands or a round on him and the pistol
+        /// comes out, on whoever did it if it was you and on whoever is hated round him
+        /// otherwise, for a quarter of a minute. Then it goes away and he walks back to his
+        /// spot as if nothing had happened, which for a man who cannot be killed is true.
+        /// Not while he is in a conversation with you.
+        /// </summary>
+        private bool Defend(int now)
+        {
+            if (_livePed == null || !_livePed.Exists() || _held) return false;
+
+            var h = _livePed.Handle;
+
+            if (_defendUntil != 0)
+            {
+                if (now < _defendUntil) return true;
+
+                _defendUntil = 0;
+
+                try
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, h);
+                    Function.Call(Hash.SET_CURRENT_PED_WEAPON, h, Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_UNARMED"), true);
+                    Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, h);
+                }
+                catch
+                {
+                    // Walking back either way.
+                }
+
+                Log.Info("Leader " + (_liveDef == null ? "" : _liveDef.Name) + " put the pistol away and is going back to his spot.");
+                return false;
+            }
+
+            try
+            {
+                var hit = Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ANY_PED, h)
+                          || Function.Call<bool>(Hash.IS_PED_RAGDOLL, h);
+                if (!hit) return false;
+
+                var player = Game.Player.Character;
+                var you = player != null && player.Exists()
+                          && Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY, h, player.Handle);
+
+                _defendUntil = now + DefendMs;
+
+                Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, h);
+                Function.Call(Hash.CLEAR_PED_TASKS, h);
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, h, Function.Call<uint>(Hash.GET_HASH_KEY, Sidearm), true);
+
+                if (you)
+                {
+                    Function.Call(Hash.TASK_COMBAT_PED, h, player.Handle, 0, 16);
+                }
+                else
+                {
+                    Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, h, 40f, 0);
+                }
+
+                Log.Info("Leader " + (_liveDef == null ? "" : _liveDef.Name) + " was attacked" + (you ? " by you" : "") + " and has the pistol out.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Leader could not defend himself: " + ex.Message);
+                return false;
+            }
+        }
+
+        private int _defendUntil;
+        private const int DefendMs = 15000;
+        private const string Sidearm = "WEAPON_PISTOL";
 
         private void Spawn(LeaderDef def)
         {
@@ -742,6 +817,16 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_PED_SUFFERS_CRITICAL_HITS, h, false);
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, h, false);
                 Function.Call(Hash.SET_PED_CAN_RAGDOLL, h, false);
+
+                // A PISTOL, HOLSTERED. Not in his hand -- a man stood outside his own door
+                // with a gun out is a different scene -- but on him, for the day somebody
+                // starts something. See Defend. He does not drop it, and he does not run.
+                Function.Call(Hash.GIVE_WEAPON_TO_PED, h, Function.Call<uint>(Hash.GET_HASH_KEY, Sidearm), 120, false, false);
+                Function.Call(Hash.SET_PED_DROPS_WEAPONS_WHEN_DEAD, h, false);
+                Function.Call(Hash.SET_PED_ACCURACY, h, 60);
+                Function.Call(Hash.SET_PED_COMBAT_ABILITY, h, 2);
+                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
+                Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, h);
 
                 StandAtSpot();
 
@@ -979,6 +1064,7 @@ namespace Hoodrich.Gangs
 
         private void Despawn()
         {
+            _defendUntil = 0;
             if (_livePed != null && _livePed.Exists())
             {
                 try

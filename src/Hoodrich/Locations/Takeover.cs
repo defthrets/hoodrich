@@ -593,6 +593,12 @@ namespace Hoodrich.Locations
             public int Dodge;
             public int Angry;
 
+            /// <summary>The stranger's car they went for; until when they are on the car itself; the next hit; whether from the roof.</summary>
+            public Vehicle Wrecking;
+            public int Wreck;
+            public int NextHit;
+            public bool OnRoof;
+
             /// <summary>Until when they are in the middle, their spot there, and how far in they have got.</summary>
             public int Rush;
             public Vector3 RushAt;
@@ -658,6 +664,10 @@ namespace Hoodrich.Locations
             public int OffAt;
 
             public bool There;
+
+            /// <summary>Whether the game's parking task has the wheel, and since when.</summary>
+            public bool Parking;
+            public int ParkedAt;
 
             /// <summary>How many times he has been handed a different kerb. See Settle.</summary>
             public int Moved;
@@ -1323,7 +1333,7 @@ namespace Hoodrich.Locations
                 if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
 
                 // Somebody getting out of a car's way, on a driver, or in the middle, is left to it.
-                if (w.Dodge > now || w.Angry > now || w.Rush != 0) continue;
+                if (w.Dodge > now || w.Angry > now || w.Rush != 0 || w.Wreck != 0) continue;
 
                 if (!w.There)
                 {
@@ -1828,6 +1838,10 @@ namespace Hoodrich.Locations
         /// </summary>
         private void Eat(Vehicle car, Ped driver)
         {
+            // NOT ONE THE CROWD HAS BEEN ON. A car they went for stays where it ended up,
+            // however wrecked, for the rest of the night: it is part of what happened.
+            if (_beaten.Contains(car.Handle)) return;
+
             var now = Game.GameTime;
             int since;
 
@@ -1852,6 +1866,116 @@ namespace Hoodrich.Locations
             }
 
             _letIn.Remove(car.Handle);
+        }
+
+        // ==================================================================
+        // The car, after the driver
+        // ==================================================================
+
+        /// <summary>The cars the crowd has been on. Never removed by the sweep.</summary>
+        private readonly HashSet<int> _beaten = new HashSet<int>();
+
+        private const int WreckMs = 15000;
+        private const int HitMinMs = 900;
+        private const int HitSpanMs = 700;
+        private const string MeleeDict = "melee@unarmed@streamed_core";
+        private static readonly string[] SideHits = { "vehicle_kick", "vehicle_kick", "heavy_punch_a", "heavy_punch_b", "short_0_punch" };
+        private static readonly string[] RoofHits = { "kick_close_a", "kick_close_b" };
+
+        /// <summary>
+        /// Onto the car. The first one up goes on the roof; the rest work the sides. The
+        /// alarm goes off the moment the first of them lands a foot on it.
+        /// </summary>
+        private void StartWreck(Watcher w, Vehicle car, int now)
+        {
+            w.Wreck = now + WreckMs;
+            w.NextHit = now + 400;
+            w.Wrecking = car;
+
+            try { Function.Call(Hash.REQUEST_ANIM_DICT, MeleeDict); }
+            catch { /* then they shove it about instead */ }
+
+            var roofTaken = false;
+            foreach (var other in _crowd)
+            {
+                if (other != w && other.OnRoof && other.Wrecking != null && other.Wrecking.Exists()
+                    && other.Wrecking.Handle == car.Handle)
+                {
+                    roofTaken = true;
+                    break;
+                }
+            }
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+
+                if (!roofTaken)
+                {
+                    // Up on it. The roof is the model's own top, over its middle.
+                    var lo = new OutputArgument();
+                    var hi = new OutputArgument();
+                    Function.Call(Hash.GET_MODEL_DIMENSIONS, car.Model.Hash, lo, hi);
+
+                    var top = hi.GetResult<Vector3>().Z;
+                    var at = car.Position + new Vector3(0f, 0f, top + 0.05f);
+
+                    Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, w.Man.Handle, at.X, at.Y, at.Z, false, false, false);
+                    Function.Call(Hash.SET_ENTITY_HEADING, w.Man.Handle, car.Heading + 90f);
+                    w.OnRoof = true;
+
+                    try { Function.Call(Hash.START_VEHICLE_ALARM, car.Handle); }
+                    catch { /* a quiet car */ }
+                }
+                else
+                {
+                    Function.Call(Hash.TASK_GO_TO_ENTITY, w.Man.Handle, car.Handle, -1, 1.8f, 2f, 1073741824, 0);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover: could not get onto the car: " + ex.Message);
+            }
+        }
+
+        /// <summary>One hit: a kick or a punch at the car, a dent where it lands, now and then a window.</summary>
+        private void Hit(Watcher w, int now)
+        {
+            if (now < w.NextHit) return;
+            w.NextHit = now + HitMinMs + _rng.Next(HitSpanMs);
+
+            var car = w.Wrecking;
+            if (car == null || !car.Exists() || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) return;
+
+            try
+            {
+                if (!w.OnRoof && w.Man.Position.DistanceTo(car.Position) > 3.2f)
+                {
+                    Function.Call(Hash.TASK_GO_TO_ENTITY, w.Man.Handle, car.Handle, -1, 1.8f, 2f, 1073741824, 0);
+                    return;
+                }
+
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, MeleeDict)) return;
+
+                var clip = w.OnRoof ? RoofHits[_rng.Next(RoofHits.Length)] : SideHits[_rng.Next(SideHits.Length)];
+
+                if (!w.OnRoof) Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, w.Man.Handle, car.Handle, 300);
+
+                Function.Call(Hash.TASK_PLAY_ANIM, w.Man.Handle, MeleeDict, clip, 8f, -8f, 1100, 0, 0f, false, false, false);
+
+                // The dent, where he is stood, and now and then a window with it.
+                var rel = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_GIVEN_WORLD_COORDS, car.Handle,
+                                                 w.Man.Position.X, w.Man.Position.Y, w.Man.Position.Z);
+
+                Function.Call(Hash.SET_VEHICLE_DAMAGE, car.Handle, rel.X * 0.8f, rel.Y * 0.8f, w.OnRoof ? 0.6f : 0.3f,
+                              w.OnRoof ? 90f : 60f, 140f, true);
+
+                if (_rng.Next(100) < 22) Function.Call(Hash.SMASH_VEHICLE_WINDOW, car.Handle, _rng.Next(4));
+            }
+            catch
+            {
+                // Next hit.
+            }
         }
 
         /// <summary>Whether a car is one of the law's, which Calm has no business eating.</summary>
@@ -2374,6 +2498,14 @@ namespace Hoodrich.Locations
                 // of the night was changed. Placing a car is a car appearing where it was not,
                 // and doing it to an empty street is very different from doing it in front of
                 // sixty people.
+                // THE GAME'S OWN PARKING TASK HAS THE WHEEL, and nothing below -- the nudge,
+                // the re-aim, the give-up -- is allowed to take it back. See Park.
+                if (p.Parking)
+                {
+                    Landed(p, now);
+                    continue;
+                }
+
                 // STALLED ON THE WAY IN, so he is asked again. THIS is what was making them
                 // teleport.
                 //
@@ -2433,33 +2565,14 @@ namespace Hoodrich.Locations
                     }
                 }
 
-                if (p.Car.Position.DistanceTo(p.Slot) > CarArrivedRange) continue;
+                // PARKED BY DRIVING, NOT BY BEING PUT THERE. Near enough, the driver is
+                // given the game's own parking task for the walked spot and heading, once,
+                // and Landed above decides when it is parked: stopped on or near the spot,
+                // or out of time, wherever that is. A car set down on its mark by hand was
+                // the thing that read as broken, not the half-metre it was out by.
+                if (p.Car.Position.DistanceTo(p.Slot) > ParkFromRange) continue;
 
-                p.There = true;
-                Snap(p.Car, p.Slot, p.Face);
-
-                try
-                {
-                    if (p.Driver != null && p.Driver.Exists())
-                    {
-                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, p.Driver.Handle,
-                                      p.Car.Handle, 1, 4000);
-                    }
-
-                    // SET ON ITS PLACE, ABOVE (see Snap). This used to let the car stop how
-                    // it stopped, to spare the spin of an instant heading -- and a car that
-                    // stops how it stops is a car a metre into the road, which is the one thing
-                    // the walked places exist to rule out.
-                }
-                catch
-                {
-                    // It stops where it stops, which is the whole idea.
-                }
-
-                // AND THEN HE GETS OUT, after a moment. Not on the frame he arrives: a man who
-                // opens the door before the car has settled looks like a man ejected from it.
-                p.OutAt = now + SitAMomentMs;
-                Blast(p);
+                Park(p, now);
             }
         }
 
@@ -2545,6 +2658,72 @@ namespace Hoodrich.Locations
         /// he could not reach, and Aim turns him to face the circle from where he stands
         /// instead of holding a walked heading that belongs to a different piece of road.
         /// </summary>
+        /// <summary>
+        /// The parking order: the game's own task, for the walked spot and heading. Mode 1
+        /// is nose in, which is how every one of those spots was walked; the radius is how
+        /// far away it will start the manoeuvre from.
+        /// </summary>
+        private void Park(Parkee p, int now)
+        {
+            p.Parking = true;
+            p.ParkedAt = now;
+
+            try
+            {
+                if (p.Driver == null || !p.Driver.Exists()) return;
+
+                Function.Call(Hash.CLEAR_PED_TASKS, p.Driver.Handle);
+                Function.Call(Hash.TASK_VEHICLE_PARK, p.Driver.Handle, p.Car.Handle,
+                              p.Slot.X, p.Slot.Y, p.Slot.Z, p.Face, ParkMode, ParkRadius, true);
+                Function.Call(Hash.SET_PED_KEEP_TASK, p.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Takeover: could not give a parking order: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Parked, when the parking task has it stopped on or near the spot -- or when the
+        /// task has had its time, wherever that leaves it. Then the brake, and the driver
+        /// gets out after a moment, as before.
+        /// </summary>
+        private void Landed(Parkee p, int now)
+        {
+            var gap = p.Car.Position.DistanceTo(p.Slot);
+            var still = p.Car.Speed < 0.4f;
+
+            if (!(still && gap <= ParkedWithin) && now - p.ParkedAt < ParkTaskMs) return;
+
+            p.There = true;
+
+            try
+            {
+                if (p.Driver != null && p.Driver.Exists())
+                {
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, p.Driver.Handle, p.Car.Handle, 1, 4000);
+                }
+            }
+            catch
+            {
+                // It stops where it stops.
+            }
+
+            p.OutAt = now + SitAMomentMs;
+            Blast(p);
+
+            if (gap > ParkedWithin)
+            {
+                Log.Info("Takeover: a car parked " + gap.ToString("0") + " m off its spot and was left there.");
+            }
+        }
+
+        private const float ParkFromRange = 16f;
+        private const float ParkedWithin = 3.5f;
+        private const int ParkTaskMs = 22000;
+        private const int ParkMode = 1;
+        private const float ParkRadius = 20f;
+
         private void Settle(Parkee p, int now)
         {
             try
@@ -2564,7 +2743,7 @@ namespace Hoodrich.Locations
 
                 if (gap <= SettleWithin && !Claimed(p.Car.Position, p))
                 {
-                    Snap(p.Car, p.Slot, p.Face);
+                    // Where it stopped is where it is parked. Not moved.
                     p.There = true;
 
                     p.OutAt = now + SitAMomentMs;
@@ -2679,6 +2858,7 @@ namespace Hoodrich.Locations
 
             p.Slot = other.At;
             p.Face = other.Face;
+            p.Parking = false;
 
             p.Sent = now;
             p.Stuck = 0;
@@ -5001,7 +5181,7 @@ namespace Hoodrich.Locations
         {
             if (w == null || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) return false;
             if (Occupied(w)) return false;
-            if (w.Dodge != 0 || w.Angry != 0 || w.Rush != 0) return false;
+            if (w.Dodge != 0 || w.Angry != 0 || w.Rush != 0 || w.Wreck != 0) return false;
             if (w.Man.Position.DistanceTo(w.Slot) > HandyRange) return false;
 
             try
@@ -5085,9 +5265,10 @@ namespace Hoodrich.Locations
             public Vehicle Bike;
             public Ped Man;
             public Vector3 Park;
+            public Vector3 Outer;
             public int Sent;
 
-            /// <summary>0 riding in, 1 sat there watching.</summary>
+            /// <summary>0 riding to the outer point, 5 the straight run in, 1 sat there watching.</summary>
             public int Stage;
 
             /// <summary>0 sat, 1 filming, 2 lighting the back tyre up; until when; and when the next thing is.</summary>
@@ -5116,8 +5297,18 @@ namespace Hoodrich.Locations
         private const int RidersMax = 4;
         private const int RidersAfterMs = 8000;
         private const float RideIn = 16f;
-        private const float BikeOut = 5f;
-        private const float BikeThere = 5f;
+        /// <summary>
+        /// Where the bike stops -- on the line with the crowd -- and where it comes in
+        /// from: a point further out on the same bearing, so the last leg is a straight run
+        /// inward and he arrives facing the middle without being turned by hand.
+        /// </summary>
+        private const float BikeOut = 1.2f;
+        private const float StageOut = 13f;
+        private const float BikeThere = 2.5f;
+        private const float OuterThere = 6f;
+        private const float RideStraight = 30f;
+        private const float CreepIn = 6f;
+        private const int StraightGiveUpMs = 14000;
         private const int RideGiveUpMs = 45000;
         private const int HoldStillEveryMs = 6000;
 
@@ -5135,8 +5326,8 @@ namespace Hoodrich.Locations
         /// A few of the set on dirt bikes, as spectators.
         ///
         /// Once the crowd is forming, two to four of them come in on Sanchezes and Street
-        /// Blazers, pull up a few metres behind the ring facing the middle, and stay in the
-        /// saddle watching over everybody's heads. They do not get off. Now and then one
+        /// Blazers, pull up on the line with the crowd facing the middle, and stay in the
+        /// saddle watching. They do not get off. Now and then one
         /// puts his phone up and films, and now and then one lights the back tyre up
         /// without going anywhere. When the police come they turn round and ride off, which
         /// is the one thing a man on a Sanchez has over a man on foot.
@@ -5190,13 +5381,33 @@ namespace Hoodrich.Locations
                 {
                     if (r.Stage == 0)
                     {
-                        // Riding in. There when near the spot, or when it has taken too long.
-                        if (r.Bike.Position.DistanceTo(r.Park) > BikeThere && now - r.Sent < RideGiveUpMs) continue;
+                        // Riding in, to the outer point. There when near it, or when it has
+                        // taken too long -- then the straight run in from wherever he is.
+                        if (r.Bike.Position.DistanceTo(r.Outer) > OuterThere && now - r.Sent < RideGiveUpMs) continue;
+
+                        Function.Call(Hash.CLEAR_PED_TASKS, r.Man.Handle);
+                        Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Man.Handle, r.Bike.Handle,
+                                      r.Park.X, r.Park.Y, r.Park.Z, CreepIn, 0, r.Bike.Model.Hash,
+                                      CareStyle, 1.5f, RideStraight);
+                        Function.Call(Hash.SET_PED_KEEP_TASK, r.Man.Handle, true);
+
+                        r.Stage = 5;
+                        r.Sent = now;
+                        continue;
+                    }
+
+                    if (r.Stage == 5)
+                    {
+                        // The straight run in. There when on the spot, or when that has had
+                        // its time.
+                        if (r.Bike.Position.DistanceTo(r.Park) > BikeThere && now - r.Sent < StraightGiveUpMs) continue;
 
                         Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Man.Handle, r.Bike.Handle, 1, 2000);
                         r.Stage = 1;
                         r.Held = now;
                         r.NextDo = now + 5000 + _rng.Next(8000);
+
+                        Log.Info("Takeover: a rider is in, " + r.Bike.Position.DistanceTo(r.Park).ToString("0.0") + " m from his spot.");
                         continue;
                     }
 
@@ -5317,13 +5528,28 @@ namespace Hoodrich.Locations
             try
             {
                 var from = OnRoad(ParkFromMin + (float)_rng.NextDouble() * (ParkFromMax - ParkFromMin));
-                if (from == Vector3.Zero) return false;
 
-                Vector3 park;
-                if (!RiderSpot(out park)) return false;
+                if (from == Vector3.Zero)
+                {
+                    Log.Info("Takeover: no road to send a rider from.");
+                    return false;
+                }
+
+                Vector3 park, outer;
+
+                if (!RiderSpot(out park, out outer))
+                {
+                    Log.Info("Takeover: no gap on the line for a rider.");
+                    return false;
+                }
 
                 var bike = Make(DirtBikes, from, false, false);
-                if (bike == null) return false;
+
+                if (bike == null)
+                {
+                    Log.Info("Takeover: no bike would load for a rider.");
+                    return false;
+                }
 
                 // Ours, in the set's green.
                 try
@@ -5354,10 +5580,10 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, man.Handle, true);
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, man.Handle, bike.Handle,
-                              park.X, park.Y, park.Z, RideIn, 0, bike.Model.Hash, CareStyle, 3f, true);
+                              outer.X, outer.Y, outer.Z, RideIn, 0, bike.Model.Hash, CareStyle, 4f, true);
                 Function.Call(Hash.SET_PED_KEEP_TASK, man.Handle, true);
 
-                _riders.Add(new Rider { Bike = bike, Man = man, Park = park, Sent = now });
+                _riders.Add(new Rider { Bike = bike, Man = man, Park = park, Outer = outer, Sent = now });
                 return true;
             }
             catch (Exception ex)
@@ -5368,26 +5594,40 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// Where a bike stops: a bearing round the ring, a few metres behind the line so the
-        /// crowd is in front of him, clear of the other bikes and of the kerb cars.
+        /// Where a bike stops and where it comes in from: a bearing round the ring with a
+        /// gap in the crowd at it, the bike on the line in that gap, clear of the other
+        /// bikes and of the kerb cars, and the outer point further out on the same line.
         /// </summary>
-        private bool RiderSpot(out Vector3 park)
+        private bool RiderSpot(out Vector3 park, out Vector3 outer)
         {
             park = Vector3.Zero;
+            outer = Vector3.Zero;
 
-            for (var tries = 0; tries < 14; tries++)
+            for (var tries = 0; tries < 24; tries++)
             {
                 var a = _rng.NextDouble() * Math.PI * 2d;
                 var dir = new Vector3((float)Math.Cos(a), (float)Math.Sin(a), 0f);
                 var at = Middle + dir * (Ring + BikeOut);
                 var clear = true;
 
-                foreach (var r in _riders)
+                foreach (var w in _crowd)
                 {
-                    if (r.Park.DistanceTo(at) < 3f)
+                    if (w.Slot.DistanceTo(at) < 1.6f)
                     {
                         clear = false;
                         break;
+                    }
+                }
+
+                if (clear)
+                {
+                    foreach (var r in _riders)
+                    {
+                        if (r.Park.DistanceTo(at) < 3f)
+                        {
+                            clear = false;
+                            break;
+                        }
                     }
                 }
 
@@ -5406,6 +5646,7 @@ namespace Hoodrich.Locations
                 if (!clear) continue;
 
                 park = at;
+                outer = Middle + dir * (Ring + StageOut);
                 return true;
             }
 
@@ -5479,7 +5720,7 @@ namespace Hoodrich.Locations
                 }
 
                 // Getting out of a car's way, or on a driver: left to it.
-                if (w.Dodge != 0 || w.Angry != 0) continue;
+                if (w.Dodge != 0 || w.Angry != 0 || w.Wreck != 0) continue;
 
                 var at = w.Man.Position;
 
@@ -5802,7 +6043,7 @@ namespace Hoodrich.Locations
                 foreach (var w in _crowd)
                 {
                     if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
-                    if (w.Dodge != 0 || w.Angry != 0) continue;
+                    if (w.Dodge != 0 || w.Angry != 0 || w.Wreck != 0) continue;
 
                     var at = w.Man.Position;
 
@@ -5850,10 +6091,49 @@ namespace Hoodrich.Locations
                     }
                 }
 
-                if (w.Angry != 0 && now >= w.Angry)
+                // ON THE DRIVER, and then ON THE CAR. Once the driver is dealt with -- dead,
+                // out of it, gone -- or the temper's time is up, whoever was on him turns on
+                // the car itself, if it is still there and has stopped: fifteen seconds of
+                // kicks and punches from the sides and one of them up on the roof stomping.
+                // A car that drove off is let go.
+                if (w.Angry != 0)
                 {
-                    w.Angry = 0;
-                    Home(w);
+                    var car = w.Wrecking;
+                    var here = car != null && car.Exists();
+                    var driver = here ? car.Driver : null;
+                    var dealt = !here || driver == null || !driver.Exists() || !driver.IsAlive;
+                    var stopped = here && car.Speed < 1f;
+
+                    if ((now >= w.Angry || dealt) && here && stopped)
+                    {
+                        w.Angry = 0;
+                        StartWreck(w, car, now);
+                    }
+                    else if (now >= w.Angry || !here)
+                    {
+                        w.Angry = 0;
+                        w.Wrecking = null;
+                        Home(w);
+                    }
+                }
+
+                if (w.Wreck != 0)
+                {
+                    if (now >= w.Wreck || w.Wrecking == null || !w.Wrecking.Exists())
+                    {
+                        w.Wreck = 0;
+                        w.OnRoof = false;
+                        w.Wrecking = null;
+
+                        try { Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle); }
+                        catch { /* home either way */ }
+
+                        Home(w);
+                    }
+                    else
+                    {
+                        Hit(w, now);
+                    }
                 }
             }
 
@@ -5922,12 +6202,14 @@ namespace Hoodrich.Locations
                     }
 
                     w.Angry = now + AngryMs;
+                    w.Wrecking = car;
                     w.Hype = 0;
                     sent++;
                 }
 
                 if (sent > 0)
                 {
+                    _beaten.Add(car.Handle);
                     Log.Info("Takeover: a car came into the circle; " + sent + " of the crowd are on the driver.");
                 }
             }
@@ -7473,6 +7755,7 @@ namespace Hoodrich.Locations
             _nobodyAt = 0;
             _angryAt.Clear();
             _letIn.Clear();
+            _beaten.Clear();
             _nextRush = 0;
             _tuned = 0;
 

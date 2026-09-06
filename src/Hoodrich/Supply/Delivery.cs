@@ -52,7 +52,12 @@ namespace Hoodrich.Supply
         /// man who does this for a living.
         /// </summary>
         private static readonly Vector3 ParkSpot = new Vector3(-23.045f, -1455.360f, 30.047f);
-        private const float ParkHeading = 101.923f;
+
+        // FACING THE WAY HE CAME. He arrives from the west and leaves to the east, and the
+        // heading he was straightened onto was 101.9 -- which on the game's compass, where
+        // ninety is west, is facing west: a truck spun round on the mark to point back the
+        // way it had just driven in. Turned by a hundred and eighty.
+        private const float ParkHeading = 281.923f;
 
         /// <summary>How far west he is aimed before the final approach.</summary>
         private const float ApproachWest = 55f;
