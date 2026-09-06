@@ -304,6 +304,10 @@ namespace Hoodrich
 
         /// <summary>The set at the meet at the wash on Innocence, the nights it is on.</summary>
         private readonly Entourage _washCrew;
+
+        /// <summary>The three on the lot behind Innocence, by the FR36, and their box.</summary>
+        private readonly Entourage _lotCrew;
+        private readonly Boombox _lotDecks;
         private readonly Fixture _partyBarrel;
 
         /// <summary>The worklight by the skip. See Fixture.Beam.</summary>
@@ -1228,6 +1232,24 @@ namespace Hoodrich
                 _washCrew.QuietFrom = 6;
                 _washCrew.QuietTo = 21;
                 _washCrew.OffTonight = washOff;
+
+                // ---- the lot behind Innocence, by the FR36 ----------------------------
+                //
+                // Three of the set and a box, every hour of the day. The one on the steps
+                // is the chair-and-beer scenario started AT a point on the lower step, which
+                // sits him on the landing with his feet on the steps, bottle in hand, and no
+                // chair. Every heading here is the readout's own.
+                _lotCrew = new Entourage(_gangs, "families",
+                                         new Vector3(-34.500f, -1387.000f, 30.292f), 3.704f, "the lot")
+                    .Stand(new Vector3(-33.668f, -1388.287f, 30.292f), 3.704f,
+                           "WORLD_HUMAN_LEANING", Fam(0), armed: false)
+                    .Stand(new Vector3(-34.941f, -1387.629f, 30.292f), 295.955f,
+                           "WORLD_HUMAN_SMOKING_POT", Fam(1), armed: false)
+                    .Stand(new Vector3(-38.919f, -1385.488f, 29.810f), 3.714f,
+                           "PROP_HUMAN_SEAT_CHAIR_DRINK_BEER", Fam(2), armed: false, onSpot: true);
+
+                _lotDecks = new Boombox(new Vector3(-33.876f, -1385.712f, 30.292f), 286.704f,
+                                        "prop_boombox_01", "ba_prop_battle_speaker_01a");
 
                 // The shop's van, up on the road above the lot.
                 _cars.Add(new ParkedCar(new Vector3(-214.160f, -1739.805f, 31.709f), 52.137f,
@@ -3126,6 +3148,8 @@ namespace Hoodrich
                     _party.Update();
                     _meet.Update();
                     _washCrew.Update();
+                    _lotCrew.Update();
+                    _lotDecks.Update();
                     _partyBarrel.Update();
                     _partyLight?.Update();
 
@@ -4202,6 +4226,8 @@ namespace Hoodrich
             try { _party?.RestoreWorld(); } catch { /* teardown */ }
             try { _meet?.RestoreWorld(); } catch { /* teardown */ }
             try { _washCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _lotCrew?.RestoreWorld(); } catch { /* teardown */ }
+            try { _lotDecks?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyBarrel?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyLight?.RestoreWorld(); } catch { /* teardown */ }
 

@@ -373,9 +373,11 @@ namespace Hoodrich.Gangs
         public Entourage Stand(Vector3 where, float facing, string scenario,
                                string[] models = null, bool armed = true, bool onProp = false,
                                string[] anim = null, string weapon = null, bool nights = false,
-                               float wander = 0f, bool party = false, bool sit = false)
+                               float wander = 0f, bool party = false, bool sit = false,
+                               bool onSpot = false)
         {
             _sits.Add(sit);
+            _onSpot.Add(onSpot);
             _allNight.Add(nights);
             _stations.Add(where);
             _facings.Add(facing);
@@ -963,6 +965,10 @@ namespace Hoodrich.Gangs
                     }
                 }
 
+                // ON THE SPOT. See _onSpot: the scenario is started at the mark, which is how
+                // a seat scenario is made to work without its chair.
+                if (!seated && OnSpot(index)) seated = true;
+
                 if (seated)
                 {
                     Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, ped.Handle, scenario,
@@ -1013,8 +1019,21 @@ namespace Hoodrich.Gangs
             return index < _sits.Count && _sits[index];
         }
 
+        private bool OnSpot(int index)
+        {
+            return index < _onSpot.Count && _onSpot[index];
+        }
+
         /// <summary>Which stations would take a seat if one were going.</summary>
         private readonly List<bool> _sits = new List<bool>();
+
+        /// <summary>
+        /// Stands whose scenario is started AT the mark rather than in place. For the seat
+        /// scenarios that want a chair: started at a point on a step, the chair-and-beer
+        /// one sits a man on the landing with his feet on the steps and a bottle in his
+        /// hand, and no chair anywhere.
+        /// </summary>
+        private readonly List<bool> _onSpot = new List<bool>();
 
         /// <summary>Which seat scenario is being tried, and how many passes it has had.</summary>
         private int _seatPick;
