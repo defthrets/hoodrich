@@ -113,6 +113,27 @@ namespace Hoodrich.Core
         public bool TweetsOnTheRight = true;
 
         /// <summary>
+        /// Whether the feed says anything on screen at all.
+        ///
+        /// OFF IS GENUINELY OFF, and that is the point of it being separate from the setting
+        /// above. TweetsOnTheRight only chooses WHICH side of the screen a post lands on --
+        /// asked for by somebody who wanted neither. With this false nothing is drawn and
+        /// nothing goes into the game's notification stack, so nothing makes a noise either.
+        /// The timeline still fills, so it is all there to read in the phone whenever you want
+        /// it; it simply stops narrating itself at you.
+        /// </summary>
+        public bool FeedOnScreen = true;
+
+        /// <summary>
+        /// A key that turns that on and off where you stand, and writes the answer to the ini.
+        ///
+        /// NumPad * by default, which is one of the few keys this game and the mods people run
+        /// alongside it leave alone. Set it to None and there is no key -- the tick on the
+        /// settings screen does the same job.
+        /// </summary>
+        public Keys FeedKey = Keys.Multiply;
+
+        /// <summary>
         /// Draw the blip art inside the posted-up status bars instead of their names.
         ///
         /// The ~BLIP_~ tag is documented for help messages and "other supported contexts",
@@ -542,6 +563,8 @@ namespace Hoodrich.Core
             s.BlurBackground = ini.GetBool("Phone", "BlurBackground", s.BlurBackground);
             s.TimecycleModifier = ini.GetString("Phone", "TimecycleModifier", s.TimecycleModifier);
             s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
+            s.FeedOnScreen = ini.GetBool("Socials", "FeedOnScreen", s.FeedOnScreen);
+            s.FeedKey = ini.GetKey("Socials", "FeedKey", s.FeedKey);
             s.BlipsInBars = ini.GetBool("PostUp", "BlipsInBars", s.BlipsInBars);
             s.ShowDealHud = ini.GetBool("PostUp", "ShowDealHud", s.ShowDealHud);
 

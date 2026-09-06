@@ -2253,6 +2253,16 @@ namespace Hoodrich.Social
         /// </summary>
         public UI.TweetToast Toasts;
 
+        /// <summary>
+        /// Set by Main: whether the feed is allowed to say anything on screen.
+        ///
+        /// False stops a post reaching EITHER the right-hand stack or the game's own
+        /// notifications, which is the whole of "off" -- a post that draws nothing also makes
+        /// no noise, because the noise belongs to the notification rather than to the feed.
+        /// Everything still goes into the timeline, so nothing is lost, only quiet.
+        /// </summary>
+        public bool Speaks = true;
+
         private void Notify(Post post)
         {
             if (post == null || post.By == null) return;
@@ -2265,6 +2275,11 @@ namespace Hoodrich.Social
             // The right-hand stack, when it is switched on. Everything else the mod says --
             // busts, deliveries, money, warnings -- carries on going out the native way on the
             // left, which is the entire point of splitting them.
+            // TURNED OFF ALTOGETHER. Below both stacks on purpose: the post is already in
+            // the timeline by the time this runs, so switching this off loses nothing except
+            // being told about it.
+            if (!Speaks) return;
+
             if (Toasts != null && Toasts.Enabled)
             {
                 Toasts.Show(post);

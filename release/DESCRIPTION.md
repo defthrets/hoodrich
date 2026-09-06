@@ -110,7 +110,7 @@ things.
 
 **Everything is data.** 10 JSON files you can edit: drugs, prices, gangs, turf, dealers,
 missions, cars, weapons, and every line of the social feed. Break one and the mod says so in
-the log and falls back to its built-in copy rather than failing to load. 70 settings in a
+the log and falls back to its built-in copy rather than failing to load. 101 settings in a
 commented INI; delete any line to go back to its default.
 
 **105 icons, drawn from scratch** for this mod. No Rockstar assets ship with it.

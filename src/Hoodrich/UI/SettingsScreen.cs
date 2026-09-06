@@ -495,6 +495,9 @@ namespace Hoodrich.UI
             }
 
             Head("Socials");
+            Tick("Feed on screen", "Socials", "FeedOnScreen",
+                 () => c.FeedOnScreen, v => c.FeedOnScreen = v,
+                 "Off says nothing on screen and makes no sound. The timeline still fills");
             Tick("Feed on the right", "Socials", "TweetsOnTheRight",
                  () => c.TweetsOnTheRight, v => c.TweetsOnTheRight = v);
             Tick("The feed tips you off", "Socials", "BlockTipsEnabled",

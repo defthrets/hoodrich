@@ -1898,6 +1898,7 @@ namespace Hoodrich
                 };
 
                 _social.Toasts = _toasts;
+                _social.Speaks = _cfg.FeedOnScreen;
 
                 _war = new GangWar(_gangs, _crew, _state)
                     .Defend("Lamar", Fixer.Spot)
@@ -2460,6 +2461,8 @@ namespace Hoodrich
                     Core.Voice.RadioScale = _cfg.PoliceRadioLoudness;
                     Core.Voice.Repeat = _cfg.VoiceRepeat;
                     Social.Inbox.Chime = _cfg.PlaySounds;
+
+                    if (_social != null) _social.Speaks = _cfg.FeedOnScreen;
                 };
                 pages.Followers = () => _social.Followers;
                 pages.WipeSocials = () => _social.Wipe();
@@ -2733,6 +2736,7 @@ namespace Hoodrich
             // holding the switch. Flicking a toggle to see what it does should not cost you a
             // text editor.
             if (!_parked && _cfg != null) Rescue();
+            if (!_parked && _cfg != null) FeedToggle();
 
             if (_parked || _cfg == null || !_cfg.Enabled) return;
 
@@ -3454,6 +3458,7 @@ namespace Hoodrich
 
         private bool _saidHello;
         private bool _rescueDown;
+        private bool _feedKeyDown;
 
         /// <summary>
         /// The way back in.
@@ -3488,6 +3493,43 @@ namespace Hoodrich
                      (kept ? ", and the ini remembers it." : " -- the ini could not be written."));
 
             Notify.Ticker("~g~" + Build.Name + "~s~ back on.");
+        }
+
+        /// <summary>
+        /// The key that shuts the feed up, and lets it speak again.
+        ///
+        /// Edge-detected and written to the ini, so it survives a restart -- somebody who has
+        /// turned the chatter off has decided something about how they want to play, not made
+        /// a note for the next ten minutes. Asked for by a player who wanted the posts and
+        /// their noise gone without losing the timeline, which is exactly what this does: the
+        /// feed still fills, it just stops saying so.
+        /// </summary>
+        private void FeedToggle()
+        {
+            bool down;
+
+            try { down = _cfg.FeedKey != System.Windows.Forms.Keys.None &&
+                         Game.IsKeyPressed(_cfg.FeedKey); }
+            catch { return; }
+
+            var pressed = down && !_feedKeyDown;
+            _feedKeyDown = down;
+
+            if (!pressed) return;
+
+            _cfg.FeedOnScreen = !_cfg.FeedOnScreen;
+
+            if (_social != null) _social.Speaks = _cfg.FeedOnScreen;
+            if (!_cfg.FeedOnScreen && _toasts != null) _toasts.Clear();
+
+            try { IniFile.SetValue(Paths.Ini, "Socials", "FeedOnScreen", _cfg.FeedOnScreen ? "true" : "false"); }
+            catch (Exception ex) { Log.Debug("Could not write the ini: " + ex.Message); }
+
+            Log.Info("The feed is " + (_cfg.FeedOnScreen ? "on screen again." : "off screen."));
+
+            Notify.Ticker(_cfg.FeedOnScreen
+                              ? "~g~Feed on screen.~s~"
+                              : "~y~Feed off screen.~s~  It still fills in the phone.");
         }
 
         /// <summary>
@@ -4269,6 +4311,34 @@ namespace Hoodrich
             }
         }
 
+        /// <summary>
+        /// Whether he is at his own house, where a flagged mission is almost never a mission.
+        ///
+        /// THE SAFE HOUSE SETS THE MISSION FLAG AND DOES NOT ALWAYS CLEAR IT. Walking into
+        /// Franklin's runs the game's own house scripts -- the bed, the wardrobe, the
+        /// television -- and any of them may set the flag and leave it set while you potter
+        /// about indoors. Everything below the availability check then stops, which from where
+        /// the player is standing is the phone dying and the kitchen going deaf the moment
+        /// they get home. It was reported in exactly those words: "once I get to the safe
+        /// house the phone stops working, I can't call Tao Cheng or do anything in the
+        /// kitchen".
+        ///
+        /// Every other reason to stand down still applies in here -- control off, a cutscene,
+        /// a faded screen, the pause menu -- and those are the ones that are true when a story
+        /// mission is genuinely running. This lifts the one signal that is known to lie, in
+        /// the one place it is known to lie in, and nowhere else.
+        ///
+        /// Measured from the stash house's own mark, which is the house: forty metres takes in
+        /// the rooms, the kitchen and the drive, and reaches nothing else.
+        /// </summary>
+        private static bool AtHome(Ped player)
+        {
+            try { return player.Position.DistanceTo(Locations.StashHouse.House) <= HomeRange; }
+            catch { return false; }
+        }
+
+        private const float HomeRange = 40f;
+
         /// <summary>Why the mod cannot run right now, or empty when it can.</summary>
         private string Unplayable()
         {
@@ -4288,7 +4358,8 @@ namespace Hoodrich
             // actually running -- and while it is, everything below the availability check
             // stops, which is most of the mod. Named in the log so the next person to report
             // "it just stopped" hands over the answer with the report.
-            if (_cfg.PauseDuringMission && Function.Call<bool>(Hash.GET_MISSION_FLAG))
+            if (_cfg.PauseDuringMission && Function.Call<bool>(Hash.GET_MISSION_FLAG)
+                && !AtHome(player))
             {
                 return "a story mission is flagged (PauseDuringMission=false in the ini if this is wrong)";
             }

@@ -257,6 +257,19 @@ straight back before they could reach you, every time. Whoever is mid-deal is
 left alone, and when it is done the same pass that was dragging him back walks
 him to his mark and starts him on what he was doing.
 
+THE PHONE STOPS DYING AT THE SAFE HOUSE. Walking into Franklin's runs the
+game's own house scripts, any of which may raise the mission flag and leave it
+raised while you potter about -- and the mod stands down for that flag, so the
+phone went dead and the kitchen went deaf the moment you got home. The flag no
+longer stands it down inside the house. Every other reason still does.
+
+THE FEED CAN BE TURNED OFF ON SCREEN. The old setting only chose which side of
+the screen a post landed on; this one means neither, and nothing chimes either.
+The timeline still fills, so it is all there to read in the phone. NumPad * by
+default toggles it where you stand and writes the answer to the ini, and there
+is a tick for it on the settings screen. FeedOnScreen and FeedKey under
+[Socials].
+
 THREE CARS ARE ALWAYS AT IT. The field was entirely a dice roll, and a field
 with no faces in it is one nobody recognises: the Emperor Vectre in the set's
 green, an FR36 and a Gauntlet Hellfire turn up to every takeover, and
