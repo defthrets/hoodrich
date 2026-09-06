@@ -1296,7 +1296,8 @@ namespace Hoodrich
                         { 1, "Street" }, { 2, "Street" }, { 3, "Street" }
                     },
                     Mods = new System.Collections.Generic.Dictionary<int, int> { { 15, -1 } },
-                    Tint = 2
+                    Tint = 2,
+                    Neon = System.Drawing.Color.FromArgb(60, 200, 80)
                 });
 
                 // The lot behind the lab, of an evening.
