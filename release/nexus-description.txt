@@ -1,0 +1,232 @@
+================================================================================
+  POSTED UP 0.6.1 -- copy for the mod page
+================================================================================
+
+MARKUP: the page allows <b> <i> <u> <a> <ul> <ol> <li> and nothing else. No
+headings, no <br>, no tables -- so headings are bold lines, breaks are real
+newlines, and every list is a <ul> or an <ol>.
+
+Paste from the next divider down.
+
+--------------------------------------------------------------------------------
+
+<b>🌴 POSTED UP</b>
+<i>A drug-dealing and gang mod for GTA V. You pick the corner, not the customer.</i>
+
+You run with the Chamberlain Gangster Families. Get hold of product, take it home and cut it, stand somewhere busy and let the trade come to you — and try to be gone before the police, or somebody else's people, decide you have been there long enough.
+
+Everything runs off a phone that replaces the in-game one. <b>Your weapon wheel is left exactly as it was.</b>
+
+
+<b>🔁 THE LOOP</b>
+
+Gerald fronts you the first two packages for nothing, so you do not need money to start.
+
+Weight bought by the brick will not sell to anybody until it is <b>cut at the sink in Denise's kitchen</b> — how hard you step on it is the only real decision in the mod.
+
+Then you pick <i>a spot, not a customer</i>. A busy pavement sells fast and gets you noticed fast. <b>Heat sticks to the ground, not to you</b>, so a different block is a clean start — and the one you burned is still burned when you come back.
+
+
+<b>📦 WHAT IS IN IT</b>
+
+<ul>
+<li>🚩 <b>Nine gangs</b> — Families, Ballas, Vagos, Aztecas, Marabunta Grande, Lost MC, Triads, Armenian Mob, Kkangpae. Named leaders, their own turf, their own standing with you.</li>
+<li>🤝 <b>Thirteen suppliers to find</b> — eight gang corners, three independents, plus Gerald and Tao at the port. A dealer is a man on a corner until you have stood in front of him.</li>
+<li>📱 <b>Six jobs from Lamar</b> — he rides out with you, keeps up, and does not shut up.</li>
+<li>🚔 <b>A police system that is not a wanted level.</b> Patrols work the blocks whether or not anybody is after you. Searched holding product costs you the product.</li>
+<li>📉 <b>Block saturation</b> — every gram sold makes the next customer there slower to show, and it recovers while you are elsewhere.</li>
+<li>🏚️ <b>Stash house raids</b> — hold too much and somebody comes for it while you are out.</li>
+<li>🐦 <b>A social feed of 174 people</b> with more than 2,700 contextual lines that react to what you actually do.</li>
+<li>💊 <b>Seven products</b>, <b>fourteen vehicles from Hao</b>, guns from Stretch — plus bodyguards, turf war, dead drops, a stash house, and a spray can with thirteen colours.</li>
+<li>🎙️ <b>152 recorded lines</b> — Gerald, Lamar, Tao Cheng, Hao and Stretch say what the screen says.</li>
+</ul>
+
+
+<b>✅ REQUIREMENTS</b>
+
+<ul>
+<li><a href="http://www.dev-c.com/gtav/scripthookv/">Script Hook V</a></li>
+<li><a href="https://github.com/scripthookvdotnet/scripthookvdotnet/releases">ScriptHookVDotNet 3</a> — 3.6 or newer for Enhanced</li>
+<li><b>.NET Framework 4.8</b> — Windows 10 and 11 already have it</li>
+</ul>
+
+Works on <b>both GTA V Legacy and Enhanced, from the same DLL</b>. ⚠️ <b>Single player only</b> — do not take this near GTA Online.
+
+
+<b>💾 INSTALL</b>
+
+<ol>
+<li>❗ <b>Unblock the zip before extracting.</b> Right-click it → Properties → tick Unblock → OK. Windows marks downloaded files and ScriptHookVDotNet silently refuses to load a marked DLL — the mod just is not there, with nothing in any log to explain it. <u>This is the single most common reason it "does not work".</u></li>
+<li>Drag the <i>scripts</i> folder into your GTA V folder — the one with GTA5.exe in it, normally C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V. Say yes to merging.</li>
+</ol>
+
+You should end up with <i>scripts\Hoodrich.dll</i>, <i>scripts\Hoodrich.ini</i> and the <i>scripts\Hoodrich\</i> folder beside them. That is the whole install — <b>no game files are modified</b>.
+
+<b>Upgrading?</b> Drop it over the top; old saves load. But copy <i>scripts\Hoodrich\</i> as well as the DLL.
+
+<b>Uninstall:</b> delete those three things. Nothing else to undo.
+
+
+<b>🏁 GETTING STARTED</b>
+
+Gerald is the only marker on your map. Go and see him at the flats on Grove — he puts the first lot of product in your hand for free. Then open the phone, go to <b>Dealing</b>, and post up somewhere with people on it.
+
+<u>The one thing nobody works out on their own:</u> weight you buy <b>will not sell</b> until it has been cut and bagged at the sink in Denise's kitchen. Anything you are given is already bagged.
+
+<b>Controls.</b> The phone button opens everything. Arrows move, Enter chooses, Backspace goes back. Right on the d-pad talks to people. All 101 settings and every key are in Hoodrich.ini.
+
+
+<b>🤝 WORKS WITH</b>
+
+<ul>
+<li><b>Bare Minimum</b> — hunger and sleep, sharing this mod's clock without fighting it.</li>
+</ul>
+
+
+<b>📋 CHANGELOG — 0.6.1</b> <i>(7 September 2026)</i>
+
+Two fixes off the first day of reports.
+
+<ul>
+<li>🐛 <b>Fixed: the phone stopped working at the safe house</b>, and so did the kitchen. Walking into Franklin's runs the game's own house scripts — the bed, the wardrobe, the television — and any of them may raise the mission flag and leave it raised while you potter about indoors. The mod stands down while that flag is up, which is right on a story mission and wrong in your own kitchen. The flag no longer stands the mod down inside the house; every other reason still does. <i>On 0.6.0 and cannot update? PauseDuringMission=false works around it.</i></li>
+<li>🔕 <b>The feed can be turned off on screen</b>, which it could not be before. Nothing is drawn, nothing goes into the game's notification stack, nothing chimes. The timeline still fills, so it is all there to read in the phone — it just stops narrating itself at you while you play. Three ways to work it: <i>FeedOnScreen</i> in the ini, a tick on the settings screen, and a key (NumPad * by default) that toggles it where you stand and writes the answer back.</li>
+</ul>
+
+
+<b>📋 CHANGELOG — 0.6.0</b> <i>(6 September 2026)</i>
+
+Three hundred and fifty-eight changes since 0.5.1, and more of them than usual are things the mod could not do at all before.
+
+<b>🏎️ THE STREET TAKEOVER</b>
+
+<ul>
+<li>A junction taken over <b>one night in three</b>, some time between nine and four. Cars and people arrive from the surrounding streets, a ring of them parks facing in, and the rest burn out and spin in the middle until the blue lights arrive. It happens whether you go or not.</li>
+<li><b>Two junctions</b> now — on Carson and on Davis — and they take turns, rather than a coin that can land the same way three times running.</li>
+<li>Every mark was walked one at a time: the kerbs the cars park on, the pavement corners the people stand on, and the places in the middle the cars work. <b>Nothing is placed or teleported</b> — every car drives itself in.</li>
+<li>Three cars turn up to every one: an Emperor Vectre in the set's green, an FR36 and a Gauntlet Hellfire. Everything else in the field is random.</li>
+<li>Every car that competes is on competition suspension, asked for by the shop's own name for the part, and none of them wears a livery.</li>
+<li><b>The burnouts do not pause.</b> A performer keeps going for as long as there is empty road under it, and slows, stops and drives back when it has reached the crowd.</li>
+<li>Spectator cars park on a walked kerb or they go home. No more cars settling in a traffic lane for the night.</li>
+<li>The crowd cheers, films it on their phones, drinks, and gets out of the way of a car coming at them. Some of the set turn up on dirt bikes and stay on them.</li>
+<li>🔥 Flares in the middle. A stranger who drives into the circle gets pulled out and his car stamped on for a quarter of a minute.</li>
+<li>The police come <i>into</i> the junction to break it up rather than stopping at the end of the street.</li>
+<li>💰 <b>Post up at one and the crowd buys from you.</b></li>
+<li>A button per junction on the settings screen starts one without waiting for the clock.</li>
+</ul>
+
+<b>🏘️ THE BLOCK, WHEN NOTHING IS HAPPENING</b>
+
+<ul>
+<li>Groups of the set walk the back streets with a beer or a cigarette, stop for a drink or a drag, and <b>talk to each other</b> — one says something and another answers, loud enough to hear from the end of the road.</li>
+<li>🚗 Lowriders one night and donks the next: three in a line, green, hydraulics working, music up, full of the set.</li>
+<li>Corners with people on them — leaning on a wall, on a beer, on a phone, smoking, a boombox playing, somebody tagging the wall on the game's own spray loop. The lot behind Innocence, the Checkout, the B/Holes lot and the shops in Strawberry.</li>
+<li>Each corner rolls its own day, six in ten, so some days one is empty and another is not.</li>
+<li>🏍️ A bike meet at Leroy's two nights in five, and a couple sat talking at the Strawberry shops.</li>
+<li>Every hangout posts about itself on the feed once a night when its people come out.</li>
+<li>Three of the set on each of nine walked corners, and the Families female joins the patrols, the parties and the takeover.</li>
+<li>🔫 Everyone of the set carries. The ones stood about without a gun in their hands have one holstered, drawn when something starts, and none of them runs from a fight in front of them.</li>
+<li>The leaders carry a pistol and are not killed by it going wrong.</li>
+<li>✊ <b>The Families never turn on Franklin.</b> They cannot cross into beef with him, their leaders take a knock without drawing, and naming them on the feed does not send a car round.</li>
+<li>No unprovoked raid in the first ten minutes after the mod loads.</li>
+</ul>
+
+<b>🆕 NEW THINGS TO DO</b>
+
+<ul>
+<li>💊 <b>Taking your own product.</b> Each of the seven does something different, and four of anything ends somewhere you did not plan.</li>
+<li>🗺️ <b>Turf on the map</b>, drawn per gang, with who owns what and how they feel about you.</li>
+<li>🔧 A low-end mod shop on Hao's corner, at under half the price of the one over the river.</li>
+<li>🚕 Driverless cars off the phone, with the place picked first and the fare shown live.</li>
+<li>🔫 Stretch's counter redrawn: the guns laid out with the game's own photographs of them, and a shelf of what bolts to each.</li>
+<li>Franklin's bike is a Sanchez rather than the Bagger, and the model and livery are in the ini.</li>
+<li>🏗️ <b>Object Spooner scenes:</b> save a scene in Menyoo and the mod builds it, with collisions and animations intact.</li>
+<li>🚪 Doors you add yourself, and every door with a ring on the floor.</li>
+</ul>
+
+<b>📍 PLACES</b>
+
+<ul>
+<li><b>Lamar's yard:</b> a bar, a sound van on hydraulics with its boot up and its rear doors open, plants, a camp behind it, and the sign off the wall.</li>
+<li><b>Gerald's:</b> the boxes where you put them, a lookout at the window, and his truck facing the right way.</li>
+<li><b>Hao's</b> is dressed, the pill press is staffed, and the workers have a day.</li>
+<li>The pocket, the stash house and the kitchen, all redrawn.</li>
+<li>The rooms are dressed before you are stood in them, and the furniture stops floating.</li>
+</ul>
+
+<b>🐛 FIXED</b>
+
+<ul>
+<li>The notifications, the war panel and the feed stop flashing.</li>
+<li>Every prop in a scene is solid, or the log says why not.</li>
+<li>Held props sit in the hand rather than off the wrist. Beer, cigarettes, phones and spray cans all moved.</li>
+<li>Stretch's counter shows its pistols again — a pack that had not finished loading was being remembered as a pack without the gun.</li>
+<li>The police radio is quieter, and the dealers' captions are gone in favour of their recordings.</li>
+<li>Kerb cars park by driving rather than by appearing, and the crowd gets out of the way.</li>
+<li>Texts are good for ten minutes, the homies are heard rather than read, and the conversation camera behaves.</li>
+<li>The settings file is cleaned up: <b>101 settings</b>, all of them read by something.</li>
+<li>Dozens of smaller ones. The full list is in CHANGES.txt in the download.</li>
+</ul>
+
+
+<b>📋 CHANGELOG — 0.5.1</b> <i>(save fix)</i>
+
+If your progress has been resetting, update. <b>Nothing was deleted</b> — your old playthrough is in Documents\Hoodrich and this build will find it.
+
+<ul>
+<li>Progress no longer resets between sessions.</li>
+<li>The save is found where it lives, not where the mod can write.</li>
+<li>Warns on screen when the save is not beside the DLL.</li>
+<li>Lamar introduces himself once, not every visit.</li>
+<li>Full package readme was three versions stale.</li>
+</ul>
+
+
+<b>📋 CHANGELOG — 0.5.0</b> <i>(they talk now)</i>
+
+<ul>
+<li>🎙️ 152 recorded lines across five characters, and mouths move while they speak.</li>
+<li>Each line spoken once per save, text after that.</li>
+<li>📞 Incoming phone call from Lamar — answer or decline, no time-slow or blur.</li>
+<li>Product sold by realistic weight, priced per drug.</li>
+<li>🎨 Spray can app — thirteen colours, three cap sizes. Lamar's tag jobs let you paint the wall yourself.</li>
+<li>Sell cars back to Hao from the dialogue.</li>
+<li>Police arrest you for tagging instead of shooting.</li>
+<li>Text messages chime, and police dispatch comes over the radio when a patrol takes interest.</li>
+<li>Weapon attachments survive the stash locker.</li>
+<li>Homies mount up when you do, and the finger gesture works on the first press.</li>
+<li>Resetting the mod clears your inbox.</li>
+</ul>
+
+
+<b>📋 CHANGELOG — 0.4.0</b> <i>(the city has an opinion)</i>
+
+<ul>
+<li>📉 Block saturation — worked corners go quiet and recover.</li>
+<li>🏚️ Stash house raids, with a three-minute warning text.</li>
+<li>Eleven more street plugs to find, and dealers stay unmarked until you meet them.</li>
+<li>Corner product comes pre-cut; weight comes uncut.</li>
+<li>Startup diagnostics name the fault and the fix.</li>
+<li>Fixed: an unreadable save no longer wipes your playthrough.</li>
+<li>Guns from Stretch survive a reload.</li>
+<li>Port run carries 20 kilos, not 250 grams.</li>
+<li>Lamar rides at your shoulder for the whole job.</li>
+</ul>
+
+
+<b>📋 CHANGELOG — 0.3.0</b> <i>(mostly fixes, all of it from playing)</i>
+
+<ul>
+<li>Messages app keeps every text you have been sent, and you can text back from the thread.</li>
+<li>The party runs seven at night till two; guests arrive by car and walk in the gate.</li>
+<li>Drive-bys work — homies stay in the car.</li>
+<li>Graffiti survives closing the game.</li>
+<li>Powder is weighed, pills are counted.</li>
+<li>Dying on the port run ends the port run.</li>
+</ul>
+
+
+<b>📋 CHANGELOG — 0.2.0</b>
+
+<ul>
+<li>First public release.</li>
+</ul>
