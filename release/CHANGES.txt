@@ -1,4 +1,27 @@
-﻿TWO ON THE GATE AT LAMAR'S, ARMED.
+﻿TRIGGER IS A SMALLER DOG, AND THE PETTING FOLLOWS THE BREED.
+
+There is no way to shrink a ped in this game that is safe to ship -- the
+scale native is not one Script Hook V Dot Net exposes, and firing a raw
+hash at the engine is how you lose the process with nothing in any log. So
+he is a smaller dog instead: a pug by default, and settable in the ini.
+
+The reason that was not simply a one-word change is that petting was
+hard-wired to the rottweiler's own animation. A small dog is a different
+skeleton and the big-dog clip does not play on it, so swapping the model
+would have quietly taken away the one thing you do with him. The game
+ships a petting pair for eleven breeds and the pair is read off the animal
+standing in front of you now, so any of them can be Trigger and all of
+them can be petted. The rottweiler keeps Franklin's own clip, which was
+authored for exactly this and is better than the generic one.
+
+TriggerBreed in the ini. Small: a_c_pug, a_c_pug_02, a_c_westy,
+a_c_poodle. Middling: a_c_retriever, a_c_shepherd. Big: a_c_rottweiler,
+a_c_rottweiler_02, a_c_chop, a_c_chop_02, a_c_husky.
+
+His blip is green now rather than the game's yellow.
+
+
+TWO ON THE GATE AT LAMAR'S, ARMED.
 
 The pair by the Asbo and up on the bus were scene placements, standing
 about doing nothing in particular -- which is the most a spooner placement

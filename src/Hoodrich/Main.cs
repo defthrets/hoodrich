@@ -1756,7 +1756,11 @@ namespace Hoodrich
                 {
                     // The yard is only a party once it is your block. Before that he is
                     // somebody else's dog in somebody else's yard.
-                    Known = () => _crew != null && _crew.IsAffiliated
+                    Known = () => _crew != null && _crew.IsAffiliated,
+
+                    // Which dog he is, from the ini. The petting animation follows the breed,
+                    // so this is the whole of the change -- see Trigger.Breeds.
+                    Breed = _cfg.TriggerBreed
                 };
 
                 // Somebody's bag, open, on the table by the couch. Height read off the HUD stood

@@ -485,6 +485,17 @@ namespace Hoodrich.Core
         /// What Franklin's own bike is, in place of the Bagger the game gives him, and which
         /// of its liveries it wears. Blank, or "bagger", leaves the game's own.
         /// </summary>
+        /// <summary>
+        /// Which dog Trigger is.
+        ///
+        /// Any of the eleven the game has a petting animation for -- see Trigger.Breeds. The
+        /// small ones are a_c_pug, a_c_pug_02, a_c_westy and a_c_poodle; a_c_retriever and
+        /// a_c_shepherd are middling; a_c_rottweiler, a_c_rottweiler_02, a_c_chop, a_c_chop_02
+        /// and a_c_husky are the big ones. A name that is not on that list, or one this build
+        /// has not got, falls back to the list in Trigger.
+        /// </summary>
+        public string TriggerBreed = "a_c_pug";
+
         public string FranklinsBike = "sanchez";
         public int FranklinsBikeLivery = 0;
 
@@ -856,6 +867,7 @@ namespace Hoodrich.Core
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
             s.WalkerCrews = (int)Clamp(ini.GetInt("Block", "WalkerCrews", s.WalkerCrews), 0f, 5f);
 
+            s.TriggerBreed = (ini.GetString("Cars", "TriggerBreed", s.TriggerBreed) ?? "").Trim();
             s.FranklinsBike = (ini.GetString("Cars", "FranklinsBike", s.FranklinsBike) ?? "").Trim();
             s.FranklinsBikeLivery = (int)Clamp(ini.GetInt("Cars", "FranklinsBikeLivery", s.FranklinsBikeLivery), 0f, 30f);
 

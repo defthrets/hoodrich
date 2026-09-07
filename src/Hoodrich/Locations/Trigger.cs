@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -72,7 +73,69 @@ namespace Hoodrich.Locations
         /// Trigger looks like on a build that has not got the plain one, rather than what
         /// Trigger IS.
         /// </summary>
-        private static readonly string[] Dogs = { "a_c_rottweiler", "a_c_chop", "a_c_shepherd" };
+        private static readonly string[] Dogs = { "a_c_pug", "a_c_pug_02", "a_c_westy", "a_c_poodle" };
+
+        /// <summary>
+        /// Every dog the game has a PETTING PAIR for, and where that pair lives.
+        ///
+        /// THE ANIMATION IS PER BREED AND ALWAYS WAS. Petting was hard-wired to the
+        /// rottweiler's own dictionary, which is right up until the dog is not a rottweiler:
+        /// a small dog has a different skeleton and the big-dog clip does not play on it, so
+        /// making him smaller by swapping the model would have quietly taken the one thing you
+        /// do with him away.
+        ///
+        /// The game ships a mansion petting pair for seven breeds -- checked against the
+        /// animation list on this machine rather than assumed -- so the breed carries its own
+        /// clips and any of these can be Trigger.
+        ///
+        /// The rottweiler keeps the pair it already had. That one is Franklin's own, authored
+        /// for this exact scene, and it is better than the generic one; there is no reason to
+        /// take it off the dog it was made for.
+        ///
+        /// Four strings each: the model, the dictionary, the man's clip, the dog's clip.
+        /// </summary>
+        private static readonly string[,] Breeds =
+        {
+            { "a_c_pug",          "creatures@pug@amb@mansion@male@",        "petting_player",   "petting" },
+            { "a_c_pug_02",       "creatures@pug@amb@mansion@male@",        "petting_player",   "petting" },
+            { "a_c_westy",        "creatures@westy@amb@mansion@male@",      "petting_player",   "petting" },
+            { "a_c_poodle",       "creatures@poodle@amb@mansion@male@",     "petting_player",   "petting" },
+            { "a_c_retriever",    "creatures@retriever@amb@mansion@male@",  "petting_player",   "petting" },
+            { "a_c_shepherd",     "creatures@shepherd@amb@mansion@male@",   "petting_player",   "petting" },
+            { "a_c_husky",        "creatures@husky@amb@mansion@male@",      "petting_player",   "petting" },
+            { "a_c_rottweiler",   "creatures@rottweiler@tricks@",           "petting_franklin", "petting_chop" },
+            { "a_c_rottweiler_02","creatures@rottweiler@tricks@",           "petting_franklin", "petting_chop" },
+            { "a_c_chop",         "creatures@rottweiler@tricks@",           "petting_franklin", "petting_chop" },
+            { "a_c_chop_02",      "creatures@rottweiler@tricks@",           "petting_franklin", "petting_chop" }
+        };
+
+        /// <summary>Which row of Breeds the dog standing there is, or -1 for one we do not know.</summary>
+        private static int BreedRow(string model)
+        {
+            if (string.IsNullOrEmpty(model)) return -1;
+
+            for (var i = 0; i < Breeds.GetLength(0); i++)
+            {
+                if (string.Equals(Breeds[i, 0], model, StringComparison.OrdinalIgnoreCase)) return i;
+            }
+
+            return -1;
+        }
+
+        /// <summary>The breed asked for in the ini, first, then the list above it as fallbacks.</summary>
+        private static string[] Wanted(string asked)
+        {
+            var order = new List<string>();
+
+            if (!string.IsNullOrEmpty(asked) && BreedRow(asked) >= 0) order.Add(asked);
+
+            foreach (var name in Dogs)
+            {
+                if (!order.Contains(name)) order.Add(name);
+            }
+
+            return order.ToArray();
+        }
 
         /// <summary>
         /// The synchronised pair the story uses for petting a Rottweiler.
@@ -80,9 +143,40 @@ namespace Hoodrich.Locations
         /// Two clips out of one dictionary, authored to line up -- the man's half and the dog's
         /// half. Playing either on its own is somebody miming, so both go or neither does.
         /// </summary>
-        private const string PetDict = "creatures@rottweiler@tricks@";
-        private const string PetMan = "petting_franklin";
-        private const string PetDog = "petting_chop";
+        /// <summary>The pair for whichever dog actually turned up. Set when he is made.</summary>
+        private string _petDict = "creatures@rottweiler@tricks@";
+        private string _petMan = "petting_franklin";
+        private string _petDog = "petting_chop";
+
+        /// <summary>
+        /// Take the petting pair off the dog that is actually standing there.
+        ///
+        /// ASKED OF THE DOG RATHER THAN OF THE SETTING, because he does not always come from
+        /// the setting: Adopt picks up one already in the yard, and a fallback breed is used
+        /// whenever the asked-for model will not load. The animal in front of you is the only
+        /// thing that knows which clips will play on it.
+        /// </summary>
+        private void PetLike(Ped dog)
+        {
+            if (dog == null || !dog.Exists()) return;
+
+            try
+            {
+                for (var i = 0; i < Breeds.GetLength(0); i++)
+                {
+                    if (Function.Call<int>(Hash.GET_HASH_KEY, Breeds[i, 0]) != dog.Model.Hash) continue;
+
+                    _petDict = Breeds[i, 1];
+                    _petMan = Breeds[i, 2];
+                    _petDog = Breeds[i, 3];
+                    return;
+                }
+            }
+            catch
+            {
+                // Whatever it was last set to, which is a rottweiler's.
+            }
+        }
 
         private readonly Vector3 _where;
         private readonly float _radius;
@@ -104,6 +198,9 @@ namespace Hoodrich.Locations
             _radius = radius;
             _state = state;
         }
+
+        /// <summary>Set by Main from the ini. Blank means the first of Dogs that loads.</summary>
+        public string Breed = "";
 
         /// <summary>Set by Main: the yard only exists once the block is yours.</summary>
         public Func<bool> Known;
@@ -1103,6 +1200,8 @@ namespace Hoodrich.Locations
             _petUntil = now + PetMs;
             _petAgainAt = now + PetMs + PetAgainMs;
 
+            PetLike(_dog);
+
             try
             {
                 // Facing each other first. The two clips are authored as a pair and line up
@@ -1117,14 +1216,14 @@ namespace Hoodrich.Locations
                     (float)((Math.Atan2(-toDog.X, toDog.Y) * 180.0 / Math.PI + 360.0) % 360.0);
                 _dog.Heading = (player.Heading + 180f) % 360f;
 
-                Function.Call(Hash.REQUEST_ANIM_DICT, PetDict);
+                Function.Call(Hash.REQUEST_ANIM_DICT, _petDict);
 
-                if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, PetDict))
+                if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, _petDict))
                 {
-                    Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, PetDict, PetMan,
+                    Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, _petDict, _petMan,
                                   4f, -4f, PetMs, 0, 0f, false, false, false);
 
-                    Function.Call(Hash.TASK_PLAY_ANIM, _dog.Handle, PetDict, PetDog,
+                    Function.Call(Hash.TASK_PLAY_ANIM, _dog.Handle, _petDict, _petDog,
                                   4f, -4f, PetMs, 0, 0f, false, false, false);
                 }
             }
@@ -1631,9 +1730,13 @@ namespace Hoodrich.Locations
                 var hash = ped.Model.Hash;
                 var mine = false;
 
-                foreach (var name in Dogs)
+                // EVERY BREED HE COULD EVER BE, not just the ones Make would pick today.
+                // This is static and it is asked about a dog already standing in the yard --
+                // change the breed in the ini and the one left over from the last session is
+                // a stranger, so a second dog gets built beside him.
+                for (var b = 0; b < Breeds.GetLength(0); b++)
                 {
-                    if (hash != Game.GenerateHash(name)) continue;
+                    if (hash != Function.Call<int>(Hash.GET_HASH_KEY, Breeds[b, 0])) continue;
 
                     mine = true;
                     break;
@@ -1862,7 +1965,7 @@ namespace Hoodrich.Locations
         {
             if (Adopt(at)) return;
 
-            foreach (var name in Dogs)
+            foreach (var name in Wanted(Breed))
             {
                 try
                 {
