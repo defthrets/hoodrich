@@ -236,13 +236,22 @@ namespace Hoodrich.Locations
 
             _sized = _dog.Handle;
 
-            if (Scale <= 0f || Math.Abs(Scale - 1f) < 0.01f) return;
+            if (Scale <= 0f || Math.Abs(Scale - 1f) < 0.01f)
+            {
+                Log.Info("Trigger is his own size; nothing is called.");
+                return;
+            }
 
             try
             {
                 Function.Call((Hash)PedScale, _dog.Handle, Scale);
 
-                Log.Info("Trigger stands at " + Scale.ToString("0.00") + " of his own size.");
+                // SAID EVEN THOUGH IT MIGHT HAVE DONE NOTHING. The call cannot report back --
+                // a native that is not there returns nothing rather than complaining -- so
+                // this line means it was made, not that it worked. If he is still full size
+                // with this in the log, the native is the answer and not the wiring.
+                Log.Info("Trigger: asked for " + Scale.ToString("0.00") +
+                         " of his own size on handle " + _dog.Handle + ".");
             }
             catch (Exception ex)
             {
@@ -280,6 +289,11 @@ namespace Hoodrich.Locations
                     Release();
                     return;
                 }
+
+                // ABOVE THE BRANCH, because he is the size he is whoever he belongs to. It sat
+                // inside the owned-dog tick, so a dog still in the yard -- or one sent back to
+                // it -- was never touched, and the setting looked like it did nothing at all.
+                Sized();
 
                 if (Yours) { Mine(player, now); return; }
 
@@ -339,7 +353,6 @@ namespace Hoodrich.Locations
             Nose(player, now);
             Idle(player, now);
             Pace(player);
-            Sized();
             Mark();
         }
 
