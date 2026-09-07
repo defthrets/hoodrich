@@ -1,4 +1,23 @@
-﻿THEY DO NOT START ONE WITH THE POLICE, BUT THEY FINISH ONE.
+﻿THE GROW ROOM AND THE PILL PRESS ARE GONE.
+
+Both doors, both markers, both blips, and the people who worked in them.
+
+They opened DLC interiors buried under the map, two players reported the
+game locking up going in or out, and four rounds of work never settled
+which of three things was wrong: the ipl never streaming, the coordinate
+sitting inside a wall, or the room not being in the build at all. A room
+nobody can prove is there is not worth a lock-up.
+
+The machinery stays and was never the problem. Any door is a section in
+Hoodrich.ini with two coordinates in it, and the settings screen will write
+those down for you while you stand on them. The mod just no longer ships
+one of its own.
+
+Out with them: the seven helpers those two doors needed, the four lists of
+who worked in them, and the ini's note advertising them.
+
+
+THEY DO NOT START ONE WITH THE POLICE, BUT THEY FINISH ONE.
 
 Everybody of ours already left rather than shoot at an officer. That was
 right for a man on a corner deciding not to have a fight and wrong for a

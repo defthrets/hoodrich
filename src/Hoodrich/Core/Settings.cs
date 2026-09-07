@@ -595,117 +595,19 @@ namespace Hoodrich.Core
 
             // One block per door, all read the same way. Adding a third room is a section in
             // the ini and a line here, not another class.
-            // THE IPL IS THE PLACEMENT, NOT THE ARCHETYPE. bkr_biker_dlc_int_ware02 is what
-            // the room is called; what the game will actually load is the placement it sits
-            // in, whose name carries an index. Taken from the interior loader on this machine
-            // rather than guessed: its own list runs interior_0 to interior_5 over the two
-            // clubhouses and the warehouses, so ware02 is index 3. Both names are asked for,
-            // because the archetype costs nothing and the day one of them is wrong the other
-            // may not be.
+            // NO DOORS OF ITS OWN ANY MORE.
             //
-            // The coordinates are the biker warehouse terrace. They all sit within a hundred
-            // metres of each other forty metres under the airport, and which of the five is
-            // the weed farm is exactly the sort of thing that cannot be checked from here --
-            // so the door tries them in turn and keeps the one the game says has a room in it.
-            // THE TWO ROOMS WERE THE WRONG WAY ROUND. The door at Lamar's opened the meth
-            // lab and the one by the house opened the weed farm, which is only findable by
-            // standing in both -- so the coordinates are swapped here rather than the names:
-            // the roller door at Lamar's is the grow room because that is where the grow is.
-            s.Doors.Add(Working(Worked(Dressed(Named(Also(ReadDoor(ini, "GrowRoom", "grow room",
-                                 "bkr_biker_dlc_int_ware02",
-                                 BlipSprite.Weed,
-                                 -201.384f, -1707.909f, 32.664f, 313.362f,
-                                 1065.853f, -3183.463f, -39.164f, 249.058f),
-                             1039.000f, -3098.000f, -39.000f,
-                             1063.000f, -3195.000f, -39.000f,
-                             1093.000f, -3195.000f, -39.000f,
-                             1137.000f, -3197.000f, -39.000f,
-                             1165.000f, -3196.000f, -39.000f,
-                             997.000f, -3200.000f, -37.000f),
-                             // THE NAMES THAT ACTUALLY LOAD IT, read out of the interior loader
-                             // sat in this game's scripts folder rather than guessed. An IPL is
-                             // named for the PLACEMENT, not the room: the archetype is called
-                             // bkr_biker_dlc_int_ware02 and asking for that does nothing while
-                             // looking exactly like asking for the right thing.
-                             //
-                             // ALL FOUR WAREHOUSES, not one. That loader's own list runs
-                             // interior_0 to interior_5 across the two clubhouses and the
-                             // warehouses and is MISSING index 3 -- the one this room needs.
-                             // So index 3 is still a guess, and the other three are here so
-                             // that a guess being wrong means landing in the wrong warehouse
-                             // rather than in nothing at all. They are empty shells buried
-                             // under the sea; loading four costs a few megabytes and no frames.
-                             "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo;"
-                             + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo;"
-                             + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
-                             + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo;"
-                             // THE STOCK IS NOT IN THIS LIST. It was -- stash names, dryer
-                             // names, upgrade names, all asked for as IPLs -- and none of it
-                             // is an IPL. They are entity sets inside the room, switched on
-                             // by Dressed below once the room exists. See InteriorDoor.Dress.
-                             + "tr_int_placement_tr_interior_2_tuner_methlab_1_milo_;"
-                             + "tr_int_placement_tr_interior_3_tuner_methlab_1_milo_;"
-                             + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
-                             + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_"),
-                             WeedSets),
-                             // THE SET'S OWN, AND MOSTLY WOMEN. There is one Families female
-                             // model in the game, so two of the three are her -- given random
-                             // clothing on the way in, or the room has twins in it.
-                             "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"),
-                             // Inspecting the crop, every clip on the game's own list.
-                             "anim@amb@business@weed@weed_inspecting_high_dry@",
-                             "weed_inspecting_high_idle_01_inspector",
-                             "weed_inspecting_high_idle_02_clipboard",
-                             "weed_inspecting_high_idle_04_pen"));
+            // The grow room and the pill press were the two the mod shipped, and both were
+            // removed: they sent people into buried DLC interiors, two players reported the
+            // game locking up going in or out, and four rounds of work never established
+            // which of three things was wrong -- the ipl never streaming, the coordinate
+            // being inside a wall, or the room not being in the build at all. A room nobody
+            // can prove is there is not worth the crash.
+            //
+            // The machinery stays, because it was never the problem: any door anybody wants
+            // is a section in Hoodrich.ini with two coordinates in it, and the settings screen
+            // will write those down for you while you stand on them.
 
-            // radar_production_crack, 497 -- the razor blade.
-            //
-            // 51 was here and has gone to the set's leader, who sells the pills this room
-            // is the better half of that swap as well: the room is where product gets cut and
-            // pressed, and a blade is what that is done with. There is no pill-press sprite in
-            // the game, so the two closest pictures go to the two things they actually match.
-            //
-            // The ini section keeps its old name so an existing Hoodrich.ini with a [CrackDen]
-            // block in it still overrides the right door. What it is CALLED on screen comes
-            // from the default below, which the ini can override on its own.
-            s.Doors.Add(Working(Worked(Staffed(Dressed(Named(Also(ReadDoor(ini, "CrackDen", "pill press garage",
-                                 "tr_tuner_methlab_1",
-                                 (BlipSprite)497,
-                                 -105.053f, -1408.631f, 29.673f, 226.934f,
-                                 996.914f, -3200.434f, -36.394f, 101.076f),
-                             1000.000f, -3200.000f, -38.000f,
-                             1009.000f, -3196.000f, -38.000f,
-                             1064.000f, -3183.000f, -39.000f),
-                             // The tuner meth lab has FOUR placements rather than one, and
-                             // tr_tuner_methlab_1 -- which is what the ini has always asked
-                             // for -- is the archetype they all share. Same lesson twice.
-                             "tr_int_placement_tr_interior_2_tuner_methlab_1_milo_;"
-                             + "tr_int_placement_tr_interior_3_tuner_methlab_1_milo_;"
-                             + "tr_int_placement_tr_interior_4_tuner_methlab_1_milo_;"
-                             + "tr_int_placement_tr_interior_5_tuner_methlab_1_milo_;"
-                             + "bkr_biker_interior_placement_interior_2_biker_dlc_int_ware01_milo;"
-                             + "bkr_biker_interior_placement_interior_3_biker_dlc_int_ware02_milo;"
-                             + "bkr_biker_interior_placement_interior_4_biker_dlc_int_ware03_milo;"
-                             + "bkr_biker_interior_placement_interior_5_biker_dlc_int_ware04_milo"),
-                             MethSets),
-                             // THE GAME'S OWN LAB STAFF, at four stations read off a player
-                             // stood on each: the platform at the cooker, the control panel,
-                             // the floor by the tanks, and the far side by the furnace. The
-                             // models are the ones the online game staffs these rooms with,
-                             // and every clip is in the game's own animation list.
-                             Cooking("mp_m_meth_01", "base_idle_tank_cooker",
-                                     1005.827f, -3200.352f, -38.519f, 178.137f),
-                             Cooking("mp_f_meth_01", "base_idle_tank_clipboard",
-                                     1002.761f, -3199.873f, -38.993f, 121.662f),
-                             Cooking("mp_m_meth_01", "base_idle_tank_ammonia",
-                                     1002.984f, -3194.868f, -38.993f, 358.821f),
-                             Cooking("mp_f_meth_01", "base_idle_tank_sacid",
-                                     1014.616f, -3198.087f, -38.993f, 105.327f)),
-                             // And the set's own three, at work as well.
-                             "g_f_y_families_01", "g_f_y_families_01", "g_m_y_famdnf_01"),
-                             "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
-                             "base_idle_tank_clipboard", "base_idle_tank_pencil",
-                             "base_idle_tank_clipboard"));
             // ANY NUMBER OF MORE DOORS, named in the ini rather than in here.
             //
             // The two above are the mod's own. Everything else -- the casino, a club, a
@@ -916,131 +818,6 @@ namespace Hoodrich.Core
                 InsideZ = ini.GetFloat(section, "InsideZ", iz),
                 InsideHeading = ini.GetFloat(section, "InsideHeading", ih),
             };
-        }
-
-        /// <summary>
-        /// Who works in a room: model, animation dictionary, clip, three at a time.
-        ///
-        /// The game does not staff these. Online they are full of people because the online
-        /// script puts them there, and a room with a full crop and nobody in it reads as a
-        /// place somebody left in a hurry. Every animation here is checked against the game's
-        /// own list; a clip it does not have plays nothing and looks like a broken worker.
-        /// </summary>
-        private static DoorSpec Worked(DoorSpec door, params string[] crew)
-        {
-            door.Crew.AddRange(crew);
-            return door;
-        }
-
-        /// <summary>
-        /// The grow room at its full stage: the upgraded equipment and security, the nine
-        /// stations with their plants and their upgraded tables under their lights, the
-        /// chairs, the drying racks.
-        ///
-        /// ENTITY SETS, NOT IPLS -- see InteriorDoor.Dress. The equipment, security and
-        /// light names are literal in Menyoo's own binary on this machine. THE STATION
-        /// NAMES WERE ANSWERED BY THE ROOM: a raycast probe, since taken out of the mod,
-        /// switched twenty-seven guesses on one at a time and measured the floor, and
-        /// weed_growtha_stage2 and weed_growtha_upgrade were the two that put anything on
-        /// it. Nothing else here is a guess.
-        /// </summary>
-        private const string WeedSets =
-            "weed_upgrade_equip;" +
-            "weed_security_upgrade;" +
-            "weed_growtha_stage2;" +
-            "weed_growthb_stage2;" +
-            "weed_growthc_stage2;" +
-            "weed_growthd_stage2;" +
-            "weed_growthe_stage2;" +
-            "weed_growthf_stage2;" +
-            "weed_growthg_stage2;" +
-            "weed_growthh_stage2;" +
-            "weed_growthi_stage2;" +
-            "weed_growtha_upgrade;" +
-            "weed_growthb_upgrade;" +
-            "weed_growthc_upgrade;" +
-            "weed_growthd_upgrade;" +
-            "weed_growthe_upgrade;" +
-            "weed_growthf_upgrade;" +
-            "weed_growthg_upgrade;" +
-            "weed_growthh_upgrade;" +
-            "weed_growthi_upgrade;" +
-            "light_growtha_stage23_upgrade;" +
-            "light_growthb_stage23_upgrade;" +
-            "light_growthc_stage23_upgrade;" +
-            "light_growthd_stage23_upgrade;" +
-            "light_growthe_stage23_upgrade;" +
-            "light_growthf_stage23_upgrade;" +
-            "light_growthg_stage23_upgrade;" +
-            "light_growthh_stage23_upgrade;" +
-            "light_growthi_stage23_upgrade;" +
-            "weed_chairs;" +
-            "weed_drying";
-
-        /// <summary>
-        /// The meth lab at its full stage: the upgraded lab, the security, set up and in
-        /// production. Basic, upgrade and security are literal in Menyoo; setup and production
-        /// are literal in the interior loader.
-        /// </summary>
-        private const string MethSets =
-            "meth_lab_upgrade;" +
-            "meth_lab_security_high;" +
-            "meth_lab_setup;" +
-            "meth_lab_production";
-
-        /// <summary>The people at work in a room, each at their own station. See DoorSpec.Posts.</summary>
-        private static DoorSpec Staffed(DoorSpec door, params Post[] posts)
-        {
-            door.Posts.AddRange(posts);
-            return door;
-        }
-
-        /// <summary>One person at one station in the lab, doing one of the cook's jobs.</summary>
-        private static Post Cooking(string model, string clip, float x, float y, float z, float heading)
-        {
-            return new Post
-            {
-                Model = model,
-                Dict = "anim@amb@business@meth@meth_monitoring_cooking@cooking@",
-                Clip = clip,
-                X = x, Y = y, Z = z, Heading = heading
-            };
-        }
-
-        /// <summary>The crew's jobs: one dictionary, a clip each in turn. See DoorSpec.CrewDict.</summary>
-        private static DoorSpec Working(DoorSpec door, string dict, params string[] clips)
-        {
-            door.CrewDict = dict;
-            door.CrewClips.AddRange(clips);
-            return door;
-        }
-
-        /// <summary>The furniture a door switches on in its room. See DoorSpec.Sets.</summary>
-        private static DoorSpec Dressed(DoorSpec door, string sets)
-        {
-            door.Sets = sets;
-            return door;
-        }
-
-        /// <summary>The IPL names a door asks for whatever the ini says. See DoorSpec.Extra.</summary>
-        private static DoorSpec Named(DoorSpec door, string extra)
-        {
-            door.Extra = extra;
-            return door;
-        }
-
-        /// <summary>
-        /// The rest of the terrace: the other coordinates a door will try when the one it was
-        /// given has nothing in it. See InteriorDoor.Somewhere.
-        /// </summary>
-        private static DoorSpec Also(DoorSpec door, params float[] xyz)
-        {
-            for (var i = 0; i + 2 < xyz.Length; i += 3)
-            {
-                door.Elsewhere.Add(new Vector3(xyz[i], xyz[i + 1], xyz[i + 2]));
-            }
-
-            return door;
         }
 
         private static float Clamp(float v, float min, float max) => v < min ? min : v > max ? max : v;
