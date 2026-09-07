@@ -57,7 +57,7 @@ One DLL and some JSON. No LemonUI, no NativeUI, no OpenIV, no asset replacement,
 no installer. It will not fight your graphics mods, car packs or map edits, and
 uninstalling is deleting three things.
 
-Everything is editable if you want it to be: 11 JSON files and 102 settings in a
+Everything is editable if you want it to be: 11 JSON files and 103 settings in a
 commented INI.
 
 Legacy and Enhanced from the same DLL. Single player only — do not take this near

@@ -1,4 +1,23 @@
-﻿TRIGGER IS A SMALLER DOG, AND THE PETTING FOLLOWS THE BREED.
+﻿TRIGGER IS A ROTTWEILER AGAIN, AND HE IS SMALLER.
+
+Three quarters of his own size, from TriggerScale in the ini.
+
+Scaling a ped is not something ScriptHookVDotNet offers -- there is no
+ped-scale native in its table, and nothing installed on this machine
+carries one either -- so the game is called directly by hash. That is the
+one thing in this mod that can take the process down rather than raise an
+error, because a hash the game does not know is an access violation and no
+catch reaches it. It is why the size is a setting: if the game ever dies
+the moment he turns up, put TriggerScale back to 1 from outside the game,
+before it starts, and nothing is called at all.
+
+The per-breed petting from the last build stays. He is a rottweiler by
+default and keeps Franklin's own petting animation, but any of the eleven
+breeds the game has a petting pair for can still be set in TriggerBreed,
+and the clips follow whichever dog turns up.
+
+
+TRIGGER IS A SMALLER DOG, AND THE PETTING FOLLOWS THE BREED.
 
 There is no way to shrink a ped in this game that is safe to ship -- the
 scale native is not one Script Hook V Dot Net exposes, and firing a raw

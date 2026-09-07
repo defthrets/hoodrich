@@ -73,7 +73,7 @@ namespace Hoodrich.Locations
         /// Trigger looks like on a build that has not got the plain one, rather than what
         /// Trigger IS.
         /// </summary>
-        private static readonly string[] Dogs = { "a_c_pug", "a_c_pug_02", "a_c_westy", "a_c_poodle" };
+        private static readonly string[] Dogs = { "a_c_rottweiler", "a_c_chop", "a_c_shepherd" };
 
         /// <summary>
         /// Every dog the game has a PETTING PAIR for, and where that pair lives.
@@ -202,6 +202,54 @@ namespace Hoodrich.Locations
         /// <summary>Set by Main from the ini. Blank means the first of Dogs that loads.</summary>
         public string Breed = "";
 
+        /// <summary>Set by Main from the ini. One is his own size. See Settings.TriggerScale.</summary>
+        public float Scale = 1f;
+
+        /// <summary>
+        /// Making a ped smaller, which the game will do and the wrapper will not ask it to.
+        ///
+        /// CALLED BY RAW HASH BECAUSE THERE IS NO OTHER WAY IN. ScriptHookVDotNet's table has
+        /// no ped-scale native in it -- checked, along with every binary installed on this
+        /// machine, none of which carries this hash either -- so there is no name to call and
+        /// no wrapper to go through. The number below is the documented one, the same one
+        /// every ped-scale trainer uses.
+        ///
+        /// The risk is real and worth writing down: a hash the game does not know is not an
+        /// exception, it is an access violation, and the catch below cannot save it. That is
+        /// why the size is a setting rather than a constant -- see Settings.TriggerScale, and
+        /// the note in the ini telling anybody whose game died where to turn it off from
+        /// outside.
+        ///
+        /// Once per dog, and only when a size was actually asked for: at one, nothing is
+        /// called at all, so a player who turns it off is running the code that shipped before
+        /// any of this.
+        /// </summary>
+        private const ulong PedScale = 0x25ACFC650B65C538;
+
+        /// <summary>The dog we have already sized. Handles are reused, so it is checked afresh.</summary>
+        private int _sized;
+
+        private void Sized()
+        {
+            if (_dog == null || !_dog.Exists() || !_dog.IsAlive) return;
+            if (_sized == _dog.Handle) return;
+
+            _sized = _dog.Handle;
+
+            if (Scale <= 0f || Math.Abs(Scale - 1f) < 0.01f) return;
+
+            try
+            {
+                Function.Call((Hash)PedScale, _dog.Handle, Scale);
+
+                Log.Info("Trigger stands at " + Scale.ToString("0.00") + " of his own size.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not resize Trigger: " + ex.Message);
+            }
+        }
+
         /// <summary>Set by Main: the yard only exists once the block is yours.</summary>
         public Func<bool> Known;
 
@@ -291,6 +339,7 @@ namespace Hoodrich.Locations
             Nose(player, now);
             Idle(player, now);
             Pace(player);
+            Sized();
             Mark();
         }
 

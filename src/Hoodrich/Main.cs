@@ -1760,7 +1760,8 @@ namespace Hoodrich
 
                     // Which dog he is, from the ini. The petting animation follows the breed,
                     // so this is the whole of the change -- see Trigger.Breeds.
-                    Breed = _cfg.TriggerBreed
+                    Breed = _cfg.TriggerBreed,
+                    Scale = _cfg.TriggerScale
                 };
 
                 // Somebody's bag, open, on the table by the couch. Height read off the HUD stood
