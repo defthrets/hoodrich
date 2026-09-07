@@ -44,7 +44,7 @@ namespace Hoodrich.UI
         /// app's name was the loudest thing on a screen whose job is choosing a colour.
         /// </summary>
         private const float LogoH = 0.034f;
-        private const float LogoAspect = 4.6174f;
+        private const float LogoAspect = 5.6517f;
         private const float CanH = 0.052f;
         private const float CanAspect = 0.4412f;
 
@@ -383,7 +383,7 @@ namespace Hoodrich.UI
             var my = y + LogoH * 0.5f + bob;
 
             var frame = Spraying();
-            var lit = frame ?? "graffiti.png";
+            var lit = frame ?? "overspray.png";
 
             // ---- the glow, in whatever is loaded ----
             //
@@ -419,9 +419,9 @@ namespace Hoodrich.UI
             // is the word: drawn in the loaded colour too, the header becomes one hue and stops
             // reading as a wordmark at all.
             if ((frame == null || !Hud.File(frame, mx, my, logoW, LogoH, spin, Palette.Text)) &&
-                !Hud.File("graffiti.png", mx, my, logoW, LogoH, spin, Palette.Text))
+                !Hud.File("overspray.png", mx, my, logoW, LogoH, spin, Palette.Text))
             {
-                Hud.Text("GRAFFITI", x, y - 0.004f, 0.74f, Palette.Text,
+                Hud.Text("OVERSPRAY", x, y - 0.004f, 0.74f, Palette.Text,
                          Hud.FontCursive, centre: false);
             }
 
@@ -653,7 +653,7 @@ namespace Hoodrich.UI
         /// a while and it turned an arrival into a tic -- the header redrawing itself while you
         /// are trying to read the row underneath it.
         ///
-        /// The frames are the SAME CANVAS as graffiti.png, uncropped, so handing over to it at
+        /// The frames are the SAME CANVAS as overspray.png, uncropped, so handing over to it at
         /// the end is invisible. Cropped to their own ink each one would be a different shape
         /// drawn into the same box, and the word would slide about and jump on the last step.
         /// </summary>
@@ -661,7 +661,7 @@ namespace Hoodrich.UI
         {
             var i = (Game.GameTime - _openedAt) / SprayFrameMs;
 
-            return i >= 0 && i < SprayFrames ? "graffiti_" + i + ".png" : null;
+            return i >= 0 && i < SprayFrames ? "overspray_" + i + ".png" : null;
         }
 
         /// <summary>

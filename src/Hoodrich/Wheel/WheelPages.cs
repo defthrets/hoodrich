@@ -1100,7 +1100,11 @@ namespace Hoodrich.Wheel
             //
             // The value is how much is up rather than a total that only ever climbs -- the
             // question a tile answers from across the screen is "is there anything there".
-            page.Add("Graffiti", "*", () => ShowGraffiti?.Invoke(),
+            // THE APP IS CALLED OVERSPRAY, after the standalone mod it shares its engine
+            // with. Not a nod -- it is literally the same paint engine, kept in step by
+            // tools/sync-paint.py, so a fix to one is a fix to both. Anybody who has run the
+            // standalone knows exactly what this tile does before they open it.
+            page.Add("Overspray", "*", () => ShowGraffiti?.Invoke(),
                 detail: "Pick a colour, take a can, and go and put your name on something",
                 value: MarksUp == null || MarksUp() == 0 ? "" : MarksUp() + " up",
                 enabled: ShowGraffiti != null,
