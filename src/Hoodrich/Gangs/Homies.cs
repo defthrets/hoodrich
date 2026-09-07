@@ -192,6 +192,52 @@ namespace Hoodrich.Gangs
         private readonly PlayerState _state;
 
         private readonly List<Homie> _men = new List<Homie>();
+
+        /// <summary>When the homies were last talked out of shooting at the police.</summary>
+        private int _lastLawful;
+
+        private const int LawfulIntervalMs = 1000;
+
+        /// <summary>
+        /// They do not shoot at the police, and they do not run either.
+        ///
+        /// THE OTHER HALF OF Affiliation.Lawful. Everybody else of ours scatters when the law
+        /// turns up, which is what people on a corner do. The two riding with you are not on a
+        /// corner -- they are in the car with you and running would be leaving you in it -- so
+        /// theirs is the narrower rule: the shooting stops and the standing still does not.
+        ///
+        /// Only the officer is dropped. A homie mid-fight with a rival keeps that fight, which
+        /// is the whole reason he is there.
+        /// </summary>
+        private void Lawful()
+        {
+            var now = Game.GameTime;
+            if (now - _lastLawful < LawfulIntervalMs) return;
+            _lastLawful = now;
+
+            foreach (var man in _men)
+            {
+                try
+                {
+                    var ped = man == null ? null : man.Ped;
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                    var target = Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0);
+                    if (target == 0) continue;
+
+                    var him = Entity.FromHandle(target) as Ped;
+                    if (him == null || !him.Exists() || !Affiliation.Law(him)) continue;
+
+                    // Out of the fight and back to you. Not fled: the next thing that happens
+                    // to him is whatever you do next, which is the point of a homie.
+                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                }
+                catch
+                {
+                    // Next man.
+                }
+            }
+        }
         private readonly Random _rng = new Random();
 
         private int _next;
@@ -672,6 +718,9 @@ namespace Hoodrich.Gangs
             // failure Payback's own comment calls "a permanent roadblock, which is a bug this
             // mod has already been through once".
             ReleaseCab();
+
+            // And nobody of yours trades shots with a patrol car. See Lawful.
+            Lawful();
 
             if (_men.Count == 0) return;
 
@@ -1168,6 +1217,11 @@ namespace Hoodrich.Gangs
                               Game.GenerateHash(Guns[index % Guns.Length]), 200, false, true);
 
                 Function.Call(Hash.SET_PED_ACCURACY, h, 35);
+
+                // MINDED BY THIS, so the corner rule leaves them alone. Everybody else of ours
+                // runs from the police; the two riding with you do not, because they are with
+                // you. What they also do not do is shoot at them -- see Lawful below.
+                Minded.Mind(ped);
 
                 // 0 can use cover, 1 can use vehicles, 2 can do drive-bys, 5 always fight,
                 // 46 will fight an armed man while empty-handed. The last one matters: without

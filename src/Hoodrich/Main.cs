@@ -1126,6 +1126,8 @@ namespace Hoodrich
 
                     BootOpen = true,
 
+                    Plate = "LOTABASS",
+
                     Running = true,
                     Radio = "RADIO_09_HIPHOP_OLD",
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),

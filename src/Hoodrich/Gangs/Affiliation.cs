@@ -188,6 +188,87 @@ namespace Hoodrich.Gangs
             }
         }
 
+        /// <summary>
+        /// Nobody of ours trades shots with the police.
+        ///
+        /// THEY ARE NOT AN ARMY AND THE POLICE ARE NOT A RIVAL SET. A corner man who lets off
+        /// at a squad car turns a block into a siege, and every one of them is armed now, so
+        /// one patrol rolling past a hangout was the whole night gone. What people on a corner
+        /// actually do when the police come is leave.
+        ///
+        /// So: anybody wearing one of the mod's gang groups who has decided to fight an
+        /// officer is taken out of it and sent away instead. Fleeing rather than merely
+        /// stopping, because a man who stands still through a stop is a man being arrested,
+        /// and the ones this covers are stood on a corner holding something.
+        ///
+        /// NOT THE HOMIES. The two men riding with you do not scatter the moment a siren goes
+        /// past -- they are with you and they stay with you. Homies minds its own for the same
+        /// rule with the other half of it: see Gangs.Minded and Homies.Lawful.
+        ///
+        /// The player is never touched by this. His own trouble is his own.
+        /// </summary>
+        private void Lawful()
+        {
+            if (_gangs == null) return;
+
+            var now = Game.GameTime;
+            if (now - _lastLawful < LawfulIntervalMs) return;
+            _lastLawful = now;
+
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return;
+
+                foreach (var ped in World.GetNearbyPeds(player, LawfulRange))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (ped.Handle == player.Handle) continue;
+                    if (Gangs.Minded.Is(ped)) continue;
+
+                    var group = Function.Call<int>(Hash.GET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle);
+                    if (_gangs.ByGroupHash(group) == null) continue;
+
+                    var target = Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0);
+                    if (target == 0) continue;
+
+                    var him = Entity.FromHandle(target) as Ped;
+                    if (him == null || !him.Exists() || !Law(him)) continue;
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, true);
+                    Function.Call(Hash.TASK_SMART_FLEE_PED, ped.Handle, him.Handle, 120f, -1, false, false);
+                    Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not talk ours out of a shootout with the law: " + ex.Message);
+            }
+        }
+
+        /// <summary>Whether this one is the law. Police, SWAT and the army all count.</summary>
+        internal static bool Law(Ped who)
+        {
+            if (who == null || !who.Exists()) return false;
+
+            try
+            {
+                var kind = Function.Call<int>(Hash.GET_PED_TYPE, who.Handle);
+                return kind == 6 || kind == 27 || kind == 29;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private int _lastLawful;
+
+        /// <summary>How often, and how far out. Cheaper than CalmHome because it matters less quickly.</summary>
+        private const int LawfulIntervalMs = 1200;
+        private const float LawfulRange = 90f;
+
         /// <summary>Often enough to end a fight before it lands, cheap enough to run always.</summary>
         private const int CalmIntervalMs = 900;
 
@@ -586,6 +667,7 @@ namespace Hoodrich.Gangs
             // deciding to fight you; it does nothing once they already have, and fifteen
             // seconds of being shot at by your own set is the whole complaint.
             CalmHome();
+            Lawful();
 
             if (now - _lastReapply >= ReapplyIntervalMs)
             {

@@ -118,7 +118,6 @@
           "Outside. Bring nobody."
         ]
       },
-      "_rides": "Off the water in something that holds a hundred grand of weight. All checked against the dump.",
       "_rides": "NO OVERRIDE ON PURPOSE. He falls through to the default in Delivery.cs, which is the Astron -- see the comment there: the same car every time, so you learn to recognise it coming. He had box trucks for a while, benson being the Post OP one, which contradicted that comment and made the richest man on the list turn up in a work van. His own texts argue against it too: he is not a delivery boy and he wants you to know he came himself.",
       "ridePaint": 111,
       "numberLine": "You got my number off Gerald, so use it off Gerald. Text me when you want weight brought to the house -- and I mean weight. Don't be textin' me about ounces."
@@ -137,7 +136,6 @@
       ],
       "drugs": [
         "weed",
-        "ecstasy",
         "xanax"
       ],
       "zones": [

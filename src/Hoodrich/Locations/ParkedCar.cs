@@ -519,6 +519,7 @@ namespace Hoodrich.Locations
 
                 Wanted();
                 Asked();
+                Sound();
 
                 // Five is the interior, six is the dash. Both, because a green interior with a
                 // black dashboard is half a job you can see from the door.
@@ -594,6 +595,37 @@ namespace Hoodrich.Locations
                 {
                     // A slot this car has not got.
                 }
+            }
+        }
+
+        /// <summary>
+        /// What this body actually has in a slot, said out loud once.
+        ///
+        /// A MOD SLOT THAT DOES NOT EXIST IS SILENT. Asking for the best speakers on a car
+        /// with no speaker slot does nothing at all and looks identical to asking and being
+        /// ignored -- which is a whole evening of guessing about a boot that came out empty.
+        /// The counts are the answer and the game is the only thing that has them.
+        /// </summary>
+        private void Sound()
+        {
+            if (Log.Level > LogLevel.Debug) return;
+
+            try
+            {
+                var say = "";
+
+                foreach (var slot in new[] { 36, 37, 15, 38 })
+                {
+                    var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, slot);
+                    say += "  " + slot + ":" + many;
+                }
+
+                Log.Debug("Parked: " + _car.DisplayName + " mod slots" + say +
+                          "  (36 speakers, 37 boot, 15 springs, 38 hydraulics)");
+            }
+            catch
+            {
+                // Nothing to say about it.
             }
         }
 
