@@ -2025,7 +2025,10 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, 442);
                 Function.Call(Hash.SET_BLIP_SCALE, _blip.Handle, 0.7f);
                 Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, _blip.Handle, true);
-                Function.Call(Hash.SET_BLIP_COLOUR, _blip.Handle, 5);
+                // Two, the same green the shops and the garage use. Five is the game's
+                // yellow, which on a minimap full of yellow route lines is the one colour a
+                // dog should not be.
+                Function.Call(Hash.SET_BLIP_COLOUR, _blip.Handle, 2);
 
                 Function.Call(Hash.BEGIN_TEXT_COMMAND_SET_BLIP_NAME, "STRING");
                 Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, Name);

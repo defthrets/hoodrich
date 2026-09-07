@@ -882,6 +882,48 @@ namespace Hoodrich.Gangs
             return Scenarios[index % Scenarios.Length];
         }
 
+        /// <summary>How close another one of him has to be to count as him already being there.</summary>
+        private const float TakenRange = 1.0f;
+
+        /// <summary>
+        /// Whether somebody is already standing on this mark.
+        ///
+        /// THE SAME CHECK Scenery DOES, AND FOR THE SAME REASON. Two systems in this mod can
+        /// want a man on the same square metre -- a scene file and a station -- and neither of
+        /// them knows about the other. Whichever runs second used to build a second man inside
+        /// the first, and the pair on the wall at Lamar's is what that looks like.
+        ///
+        /// On the model as well as the spot: two DIFFERENT people standing close together is a
+        /// yard with people in it, and only the identical pair reads as a fault.
+        /// </summary>
+        private static bool Taken(Vector3 mark, Model model)
+        {
+            try
+            {
+                var near = World.GetNearbyPeds(mark, TakenRange);
+                if (near == null) return false;
+
+                foreach (var other in near)
+                {
+                    if (other == null || !other.Exists()) continue;
+                    if (other == Game.Player.Character) continue;
+                    if (other.Model.Hash != model.Hash) continue;
+
+                    Log.Info("Entourage: somebody is already stood on " +
+                             mark.X.ToString("0.0") + ", " + mark.Y.ToString("0.0") +
+                             "; not standing a second there.");
+
+                    return true;
+                }
+            }
+            catch
+            {
+                // Cannot ask, so build -- an empty mark is worse than a pair.
+            }
+
+            return false;
+        }
+
         private Ped SpawnMember(GangDef gang, Vector3 mark, float facing, string[] models, bool armed,
                                 string carrying)
         {
@@ -902,6 +944,11 @@ namespace Hoodrich.Gangs
                 {
                     var model = new Model(name);
                     if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+
+                    // Asked once the model is known, because the question is about THIS man
+                    // rather than about the mark: a woman stood where a man is going is two
+                    // people at a party, and two of him is a bug.
+                    if (Taken(mark, model)) return null;
 
                     var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeCiv, model.Hash,
                                                     mark.X, mark.Y, mark.Z, facing, false, false);
