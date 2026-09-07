@@ -1,0 +1,54 @@
+0.6.2 -- 7 September 2026
+
+
+YOU CAN SERVE OUT OF THE CAR WINDOW. Posting up used to have one flat refusal in
+it: get out of the car first. Now you can do it sitting in the driver's seat of a
+stopped car, and the window winds down as you start. Buyers walk to the driver's
+door rather than to the bonnet -- the mark is worked out from the car's own width,
+so they stand at the glass of a van and at the glass of a coupe rather than a metre
+off one of them. He keeps his seat through the handoff, using the game's own
+traffic-stop gesture: the one where a driver passes his licence out to an officer at
+the door. Same movement, different thing in the hand. Driving off packs it up,
+measured in metres rather than in speed, so shuffling forward to let somebody past
+is staying put.
+
+SIX OUTFITS AT THE CLOSET, AND HOW HE CARRIES HIMSELF. The wardrobe at Denise's
+could dress him and remember what he had on, and that was all -- one look, and
+changing it lost the last one. There are six pegs on it now: hang up what you are
+wearing, name it or let it call itself Outfit 3, and put it back on whenever you are
+at the rail. Two more rows next to the body choose how he walks and how he holds a
+gun, including the game's own gangster walk and its gang shooting style, and the
+change lands as you scroll it.
+
+A DOG ON A LEAD. A quarter of the crews walking the back streets bring one with
+them -- a pug, a rottweiler or a shepherd -- and the lead is one of the game's own
+ropes, pinned between the dog's neck and the man's hand so it hangs and swings and
+goes taut on its own.
+
+FIVE MORE OF THE SET'S CARS, AND THEY ARE BLACK OR GREEN AND NOTHING ELSE. A
+Greenwood, an Impaler LX, a Manana Custom, a Tahoma Coupe and a Vamos, every name
+hashed and checked against the hash the game shows rather than typed from memory.
+Every car the set drove used to be the same green, which reads as a fleet rather
+than a set; half are metallic black now, all of them on dark smoke glass, dropped
+springs and a silver pearl, with no other mods on any of them.
+
+NOBODY OF OURS SHOOTS AT THE POLICE. Everyone of the set carries, so one patrol
+rolling past a hangout was the whole night gone. Anybody wearing one of the mod's
+gang groups who picks a fight with an officer is taken out of it and leaves instead,
+which is what people on a corner actually do. The two homies riding with you are the
+exception and only half of it: they stop shooting and they do not run, because
+running would leave you in the car.
+
+THREE THINGS AN AUDIT FOUND THAT HAD NEVER WORKED. The crews on foot could not be
+told to stand down -- the switch was there, its comment said the house script wired
+it, and the house script never did, so they kept turning up through raids and
+takeovers. Lamar's tag job never wrote a tag: the glyph table, the layout and the
+word-picker were all correct and none of them was ever called, so every tag in the
+game has been the random splatter that is meant to be the fallback. And two gangs
+were drawn the wrong colour on the map, both cyan gangs sitting on the blue blip.
+
+SMALLER THINGS. Gerald is off the ecstasy and stops advertising an uncut lot nobody
+can buy. Nothing at a takeover fits a wheelie bar any more, and a boot held open has
+speakers in it. The Asbo on the pad at Lamar's, on competition springs. The car by
+the decks is a Buccaneer Custom. Franklin's driving is back to vanilla -- the window
+only comes down when he is serving.
