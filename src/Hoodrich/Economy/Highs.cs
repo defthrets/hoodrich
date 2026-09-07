@@ -1072,7 +1072,7 @@ namespace Hoodrich.Economy
 
                     if (went) Recombine();
 
-                    Hold(me, _clipset, _shake, _sunny);
+                    Hold(me, Lurching(now) ? _clipset : "", _shake, _sunny);
 
                     Trip(me, now);
                     return;
@@ -1124,7 +1124,23 @@ namespace Hoodrich.Economy
                 if ((one.What.Drug == "xanax" || one.What.Drug == "heroin") && one.Doses >= 2) loaded = true;
             }
 
-            if (!loaded && _live.Count < TripsFrom) return;
+            // ONE BAR IS ENOUGH TO GO OVER. The old rule was three things at once before his
+            // legs were a problem at all, so a single xanax -- which puts him on the game's own
+            // very-drunk walk and wobbles the camera -- never once put him on the floor. A man
+            // walking like that who never falls is a man wearing an animation.
+            //
+            // Rare, though. It is asked every two and a half seconds and the odds below work
+            // out at about one fall a minute while he is moving, which is often enough to be
+            // his legs and seldom enough not to be a mechanic.
+            var bars = false;
+            foreach (var one in _live)
+            {
+                if (one.What.Drug != "xanax") continue;
+                bars = true;
+                break;
+            }
+
+            if (!loaded && !bars && _live.Count < TripsFrom) return;
             if (now < _nextTrip) return;
             _nextTrip = now + TripEveryMs;
 
@@ -1142,17 +1158,19 @@ namespace Hoodrich.Economy
                     return;
                 }
 
-                if (me.Speed < TripAbove) return;
+                // ON BARS HE CAN GO OVER WALKING. Everything else needs him running: a man
+                // strolling on a joint who face-plants is a bug, and a man on the very-drunk
+                // walk who does exactly that is the point of the very-drunk walk.
+                if (me.Speed < (bars ? WalkAbove : TripAbove)) return;
 
-                var bars = false;
-                foreach (var one in _live)
+                if (bars)
                 {
-                    if (one.What.Drug != "xanax") continue;
-                    bars = true;
-                    break;
+                    if (_rng.Next(100) >= (me.Speed >= TripAbove ? BarsRunTrip : BarsWalkTrip)) return;
                 }
-
-                if (_rng.Next(100) >= (bars ? TripWithBars : TripChance)) return;
+                else if (_rng.Next(100) >= TripChance)
+                {
+                    return;
+                }
 
                 Function.Call(Hash.SET_PED_TO_RAGDOLL, me.Handle, TripDownMs, TripDownMs + 600,
                               0, true, true, false);
@@ -1172,9 +1190,18 @@ namespace Hoodrich.Economy
         private const int TripEveryMs = 2500;
         private const float TripAbove = 2.6f;
 
-        /// <summary>The odds each time it is asked, out of a hundred, and with bars in him.</summary>
+        /// <summary>The odds each time it is asked, out of a hundred, on anything but bars.</summary>
         private const int TripChance = 22;
-        private const int TripWithBars = 45;
+
+        /// <summary>
+        /// ONE BAR, running and walking. Asked every two and a half seconds, so twenty-four
+        /// looks in a minute of moving: seven per cent running is about one fall a minute, and
+        /// three walking is about one every two. Rare enough to be his legs rather than a rule.
+        ///
+        /// A second bar is a different man entirely -- see LoadedRunTrip, which is sixty.
+        /// </summary>
+        private const int BarsRunTrip = 7;
+        private const int BarsWalkTrip = 3;
 
         /// <summary>Loaded on bars or a shot: the odds of going over per look, running and walking, and what counts as walking.</summary>
         private const int LoadedRunTrip = 60;
@@ -1184,10 +1211,69 @@ namespace Hoodrich.Economy
         /// <summary>How long he is on the floor.</summary>
         private const int TripDownMs = 1400;
 
+        /// <summary>
+        /// Whether the drunk walk is on him this instant.
+        ///
+        /// ONE BAR IS A WOBBLE, NOT A CONDITION. A single xanax used to put the game's own
+        /// very-drunk walk on him and leave it there for the whole two and a half minutes,
+        /// which is not one bar -- it is a man who cannot stand up, permanently, off the
+        /// smallest dose in the mod. It reads as the drug having one setting.
+        ///
+        /// So on a single bar it comes and goes: two seconds of it every thirty, and ordinary
+        /// walking in between. He is fine, and then for a moment he is not.
+        ///
+        /// EVERYTHING ELSE IS UNCHANGED and holds its gait the whole time -- a second bar, a
+        /// shot, anything mixed with anything. Those are conditions.
+        /// </summary>
+        private bool Lurching(int now)
+        {
+            if (!OneBar()) return true;
+
+            if (now < _lurchUntil) return true;
+
+            if (now >= _lurchNext)
+            {
+                _lurchUntil = now + LurchForMs;
+                _lurchNext = now + LurchEveryMs;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>One bar and nothing else in him.</summary>
+        private bool OneBar()
+        {
+            if (_live.Count != 1) return false;
+
+            var one = _live[0];
+
+            return one.What != null && one.What.Drug == "xanax" && one.Doses < 2;
+        }
+
+        private int _lurchUntil;
+        private int _lurchNext;
+
+        /// <summary>How long a wobble lasts and how often it comes round.</summary>
+        private const int LurchForMs = 2000;
+        private const int LurchEveryMs = 30000;
+
         /// <summary>The per-frame half: the gait, the sway, and the sky.</summary>
         private void Hold(Ped me, string clipset, float shake, bool sunny)
         {
-            if (!string.IsNullOrEmpty(clipset) && _clip != clipset && Streamed(clipset))
+            // ASKED FOR NOTHING MEANS TAKE IT OFF. Every other caller passes a real clipset
+            // and this branch never runs for them; the single bar passes empty between its
+            // lurches, and without this he would put the drunk walk on once and keep it.
+            if (string.IsNullOrEmpty(clipset))
+            {
+                if (!string.IsNullOrEmpty(_clip))
+                {
+                    Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, me.Handle, 0.4f);
+                    _clip = "";
+                }
+            }
+            else if (_clip != clipset && Streamed(clipset))
             {
                 Function.Call(Hash.SET_PED_MOVEMENT_CLIPSET, me.Handle, clipset, 0.5f);
                 _clip = clipset;
