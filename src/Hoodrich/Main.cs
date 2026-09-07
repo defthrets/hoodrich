@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -706,6 +706,17 @@ namespace Hoodrich
 
                 Preflight.Step = "reading save.json";
                 SaveGame.Load(_state, _crew, _market, _stash, null, _blocks);
+
+                // THE ONE POINTER OUT. Nothing else in this mod is static, which is right --
+                // but it also means another script can find every type in here and none of
+                // the objects. Bare Minimum wants to show what you are carrying in its own
+                // pocket and cannot, so Api.Drugs holds the reference and answers questions
+                // about it in nothing but strings and floats.
+                //
+                // AFTER THE SAVE, not beside `new PlayerState()`. The stash is empty until
+                // the line above fills it, and being told "nothing" in that window is worse
+                // than being told to wait -- the caller has no way to tell the two apart.
+                Api.Drugs.Wire(_state, _drugs);
 
                 // Wired after the save is read, not before, or the first conversation of a
                 // session would decide nothing had ever been heard.
@@ -4488,6 +4499,13 @@ namespace Hoodrich
 
         private void OnAborted(object sender, EventArgs e)
         {
+            // FIRST, and before anything that can throw. Whoever is reading the stash through
+            // Api.Drugs is in a different assembly with its own lifetime, and a reload leaves
+            // it holding a PlayerState belonging to a script that no longer exists. Dropping
+            // the reference makes Ready false, which every caller already handles because it
+            // is the same answer they get before this mod has started.
+            try { Api.Drugs.Unwire(); } catch { /* teardown */ }
+
             TryRestore();
 
             try
