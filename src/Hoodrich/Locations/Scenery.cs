@@ -669,6 +669,21 @@ namespace Hoodrich.Locations
                 switch (item.What)
                 {
                     case Spooner.Kind.Ped:
+                        // ALREADY THERE. Somebody of this exact model stood within a metre of
+                        // this mark is this placement, standing, and putting a second one
+                        // inside him gives you the pair on the wall at Lamar's: two men in one
+                        // coat, both frozen, one of them impossible to account for.
+                        //
+                        // The cause is not in this file -- the scene holds one of each, every
+                        // save it absorbed is skipped, and the log builds it once per load --
+                        // so this is deliberately a check on the WORLD rather than on our own
+                        // bookkeeping. It answers "is there a man here already", which is the
+                        // question that actually matters, whoever put him there.
+                        //
+                        // On the model as well as the spot, so a passer-by walking over a mark
+                        // as the scene goes up does not quietly delete somebody from it.
+                        if (Twin(item, model)) return Verdict.No;
+
                         made = Person(item, model);
                         break;
 
@@ -749,6 +764,41 @@ namespace Hoodrich.Locations
             else Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
 
             return car;
+        }
+
+        /// <summary>How close another one of him has to be to count as him.</summary>
+        private const float TwinRange = 1.0f;
+
+        /// <summary>
+        /// Whether this placement is already up.
+        ///
+        /// Cheap on purpose: the ped list is only walked at the moment a scene is being built,
+        /// which is a handful of frames when you arrive somewhere, and never after.
+        /// </summary>
+        private static bool Twin(Spooner.Placed item, Model model)
+        {
+            try
+            {
+                var near = World.GetNearbyPeds(item.At, TwinRange);
+                if (near == null) return false;
+
+                foreach (var other in near)
+                {
+                    if (other == null || !other.Exists()) continue;
+                    if (other == Game.Player.Character) continue;
+
+                    if (other.Model.Hash != model.Hash) continue;
+
+                    Log.Debug("Scenery: " + Say(item) + " is already stood there; not making a second.");
+                    return true;
+                }
+            }
+            catch
+            {
+                // If the world cannot be asked, build it -- an empty mark is worse than a pair.
+            }
+
+            return false;
         }
 
         private static Ped Person(Spooner.Placed item, Model model)

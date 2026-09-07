@@ -641,7 +641,11 @@ namespace Hoodrich.Locations
                         var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, pair.Key);
                         if (many <= 0) continue;
 
-                        var index = pair.Value < 0 || pair.Value >= many ? many - 1 : pair.Value;
+                        // THROUGH Best, so "the last one" cannot be a wheelie bar. Slot 5 is
+                        // the one this matters on: it is the speakers on some bodies and the
+                        // roll cage and the drag bar on others, and asking for the end of it
+                        // blind is how a car parked at a house party grows a drag bar.
+                        var index = pair.Value < 0 || pair.Value >= many ? Best(pair.Key, many) : pair.Value;
                         Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, pair.Key, index, false);
                     }
                     catch

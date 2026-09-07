@@ -1,4 +1,39 @@
-﻿THE POLICE RADIO IS GONE.
+﻿THE ASBO HAS SPEAKERS IN THE BACK.
+
+It was asking for slots 36 and 37 -- the speaker rack and the boot lining --
+and it has neither of them, so the boot was held open over an empty well.
+A mod slot a car has not got does nothing at all and says nothing about it,
+which is why this looked like the speakers failing rather than never being
+asked for.
+
+This body files them under the chassis instead: Stock, Ghetto, Integrated,
+Upgraded and High-End Speakers, in the slot the mod menus label CHASSIS /
+CAGE. It asks for that now, and still asks for the other two because the
+cars it falls back to are different bodies.
+
+Asking for "the last option in a slot" also goes through the same rule the
+rest of the shop does, so it can never land on a wheelie bar. That slot is
+the speakers on one body and a roll cage and a drag bar on another.
+
+
+ONE OF EACH ON THE WALL AT LAMAR'S.
+
+Three of the yard's people -- the two men and the woman stood on the car
+wall -- were turning up in pairs, one inside the other.
+
+The scene holds exactly one of each: every spooner save it was built from
+is skipped as absorbed, the log stands it up once per load, and there is
+one copy of the mod running. So rather than guess at a cause that is not
+in the file, a placement now asks the world whether it is already standing
+there before it makes anybody. Same model, within a metre, and it does not
+build. That answers the question that actually matters -- is there a man
+here already -- whoever it was that put him there.
+
+Two dining chairs have come off the top of that wall as well. They sat
+four metres above the one they match on the concrete.
+
+
+THE POLICE RADIO IS GONE.
 
 An officer deciding to come and look at you played a recording of the call
 going out over a walkie-talkie. It is off: he walks over without it.

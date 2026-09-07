@@ -1116,10 +1116,25 @@ namespace Hoodrich
                         { 15, "Competition" }
                     },
 
+                    // SLOT 5, WHICH IS WHERE THIS BODY KEEPS ITS SPEAKERS. 36 and 37 are
+                    // the speaker rack and the boot lining on the bodies that have them, and
+                    // the Asbo has neither -- so the boot was held open over an empty well and
+                    // every one of these asks did nothing at all, silently, which is what a
+                    // slot a car has not got always does.
+                    //
+                    // On this one the shop files them under the chassis: Stock, Ghetto,
+                    // Integrated, Upgraded, High-End Speakers, all in the slot the mod menus
+                    // label CHASSIS / CAGE. Read off the car itself rather than assumed.
+                    //
+                    // All three are left in because the fallbacks are different bodies and one
+                    // of them may well use the other two. An ask on a slot that is not there
+                    // costs a lookup and nothing else.
+                    //
                     // Minus one is the last one the body owns, which in a speaker list is the
                     // biggest of them.
                     Mods = new System.Collections.Generic.Dictionary<int, int>
                     {
+                        { 5, -1 },
                         { 36, -1 },
                         { 37, -1 }
                     },
