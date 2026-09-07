@@ -232,15 +232,8 @@ namespace Hoodrich.Locations
 
                 _leaning = slow;
 
-                if (slow)
-                {
-                    Function.Call(Hash.SET_PED_IN_VEHICLE_CONTEXT, me.Handle,
-                                  Function.Call<int>(Hash.GET_HASH_KEY, LeanContext));
-                }
-                else
-                {
-                    Function.Call(Hash.RESET_PED_IN_VEHICLE_CONTEXT, me.Handle);
-                }
+                if (slow) Lean(me);
+                else Sit(me);
             }
             catch (Exception ex)
             {
@@ -256,13 +249,64 @@ namespace Hoodrich.Locations
 
             _leaning = false;
 
+            Sit(me);
+        }
+
+        /// <summary>
+        /// The arm out of the window.
+        ///
+        /// AN ANIMATION, NOT A VEHICLE CONTEXT, and the difference is that this one can be
+        /// checked. SET_PED_IN_VEHICLE_CONTEXT is the tidy way to ask for a different seated
+        /// pose and it takes a HASH -- so a name the game does not know is not an error, it is
+        /// nothing at all, and the list of names it does know is not shipped anywhere readable.
+        /// Two goes at guessing one produced a man sitting exactly as he had been.
+        ///
+        /// veh@low@front_ds@base is the driver's side of the game's own LOWRIDER seat, and
+        /// "sit" is the pose in it -- one hand on the wheel, the other arm along the door. It
+        /// is in the animation list that ships on this machine, so it is a thing that exists
+        /// rather than a thing that might.
+        ///
+        /// Played upper body only and as a secondary task, which is the same trick the handoff
+        /// uses on a seated man: the legs, the seat and the steering are left to the car's own
+        /// clipset and only the top half is replaced. Looped, because it is a pose rather than
+        /// a gesture.
+        /// </summary>
+        private void Lean(Ped me)
+        {
             try
             {
-                if (me != null && me.Exists()) Function.Call(Hash.RESET_PED_IN_VEHICLE_CONTEXT, me.Handle);
+                Function.Call(Hash.REQUEST_ANIM_DICT, LeanDict);
+
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, LeanDict))
+                {
+                    // Not in yet. _leaning is already true, so this would never ask again --
+                    // put it back and let the next tick have another go.
+                    _leaning = false;
+                    return;
+                }
+
+                Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, LeanDict, LeanClip,
+                              4f, -4f, -1, LeanFlags, 0f, false, false, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put his arm out: " + ex.Message);
+            }
+        }
+
+        /// <summary>And back in, when he gets going or gets out.</summary>
+        private static void Sit(Ped me)
+        {
+            try
+            {
+                if (me != null && me.Exists())
+                {
+                    Function.Call(Hash.STOP_ANIM_TASK, me.Handle, LeanDict, LeanClip, 4f);
+                }
             }
             catch
             {
-                // He is out of the car anyway.
+                // He is out of it either way.
             }
         }
 
@@ -302,13 +346,12 @@ namespace Hoodrich.Locations
         /// <summary>Under this, in metres a second, the arm goes out. About a jog.</summary>
         private const float LeanUnder = 6f;
 
-        /// <summary>
-        /// The game's own name for the pose. Unverified against a running game -- the context
-        /// list is not shipped anywhere readable, so this is the one thing here that has to be
-        /// looked at rather than reasoned about. An unknown context is a no-op, not a crash,
-        /// so the worst case is the window on its own.
-        /// </summary>
-        private const string LeanContext = "MINI_LOWRIDER_ARM";
+        /// <summary>The driver's side of the game's own lowrider seat, and the pose in it.</summary>
+        private const string LeanDict = "veh@low@front_ds@base";
+        private const string LeanClip = "sit";
+
+        /// <summary>1 loop, 16 upper body only, 32 secondary. See Lean.</summary>
+        private const int LeanFlags = 49;
 
         public void Update()
         {
