@@ -112,6 +112,20 @@ namespace Hoodrich.Gangs
         private readonly List<int> _restUntil = new List<int>();
         private readonly List<int> _restPick = new List<int>();
 
+        /// <summary>
+        /// How far a station wanders when it takes its break, or zero for one that stands still.
+        ///
+        /// THE BREAK IS THE MOVEMENT, WHICH IS THE WHOLE TRICK. Entourage's wander replaces the
+        /// scenario outright -- a wandering man has no clip and no pose by design -- so a
+        /// station cannot both wander and hold a drink. Running it as a break inverts that: the
+        /// pose is what he does, and every couple of minutes he stops doing it, takes a few
+        /// steps round the cars, and settles back onto it. Which is what standing about at a
+        /// car meet actually looks like.
+        /// </summary>
+        private readonly List<float> _drift = new List<float>();
+
+        private float Drift(int index) => index < _drift.Count ? _drift[index] : 0f;
+
         /// <summary>Its own, so a break never lands on the same frame as a line of dialogue.</summary>
         private readonly Random _rest = new Random();
 
@@ -408,7 +422,8 @@ namespace Hoodrich.Gangs
                                string[] anim = null, string weapon = null, bool nights = false,
                                float wander = 0f, bool party = false, bool sit = false,
                                bool onSpot = false, string held = null, bool leftHand = false,
-                               bool spray = false, bool seatNear = false, bool pinned = false)
+                               bool spray = false, bool seatNear = false, bool pinned = false,
+                               float drift = 0f)
         {
             _sits.Add(sit);
             _pinned.Add(pinned);
@@ -445,6 +460,7 @@ namespace Hoodrich.Gangs
             _restAt.Add(_rest.Next(RestEveryMinMs, RestEveryMaxMs));
             _restUntil.Add(0);
             _restPick.Add(_rest.Next(RestDoing.Length));
+            _drift.Add(drift);
 
             // Staggered at the door rather than at spawn: a fixed offset per station means the
             // yard never starts everybody's clock on the same frame, whatever order they got
@@ -935,7 +951,9 @@ namespace Hoodrich.Gangs
         /// </summary>
         private string Doing(int index)
         {
-            if (index < _restUntil.Count && _restUntil[index] != 0)
+            // A drifter's break is a walk, so his pose does not change for it -- he goes back
+            // to the same thing he was doing when he stops.
+            if (index < _restUntil.Count && _restUntil[index] != 0 && Drift(index) <= 0f)
             {
                 return RestDoing[_restPick[index] % RestDoing.Length];
             }
@@ -960,9 +978,13 @@ namespace Hoodrich.Gangs
         {
             if (index >= _restAt.Count) return false;
 
-            // Anybody already holding something, sitting, dancing or wandering has a break of
-            // his own by definition.
-            if (!Guarding(index)) return false;
+            // TWO KINDS OF STATION TAKE ONE. A guard puts the gun down and has a cigarette;
+            // somebody at a meet stops leaning on a car and walks round it. Everybody else --
+            // dancers, deejays, wanderers, anybody sat down -- is already doing something and
+            // is left alone.
+            var roam = Drift(index);
+
+            if (roam <= 0f && !Guarding(index)) return false;
             if (AnimAt(index) != null || WanderAt(index) > 0f || Sits(index) || Seated(index)) return false;
 
             var now = Game.GameTime;
@@ -975,8 +997,13 @@ namespace Hoodrich.Gangs
                 _restAt[index] = now + _rest.Next(RestEveryMinMs, RestEveryMaxMs);
                 _restPick[index] = _rest.Next(RestDoing.Length);
 
+                // BACK ON HIS MARK, and walked there rather than put there. A drifter has
+                // wandered off it by definition, so the pose alone would play wherever he
+                // happens to have stopped; the settle pass that follows walks him home.
                 Shoulder(index, ped, true);
-                Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
+
+                if (roam > 0f) Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                else Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
 
                 return true;
             }
@@ -986,7 +1013,20 @@ namespace Hoodrich.Gangs
             _restUntil[index] = now + _rest.Next(RestForMinMs, RestForMaxMs);
 
             Shoulder(index, ped, false);
-            Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
+
+            if (roam > 0f)
+            {
+                var mark = MarkAt(index);
+
+                Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                Function.Call(Hash.TASK_WANDER_IN_AREA, ped.Handle,
+                              mark.X, mark.Y, mark.Z, roam, WanderShortestWalk, WanderPause);
+                Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+            }
+            else
+            {
+                Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
+            }
 
             return true;
         }

@@ -1145,43 +1145,54 @@ namespace Hoodrich
                 _cars.Add(_meetOne);
                 _cars.Add(_meetTwo);
 
-                // And the people. A ring worked out from the midpoint of the two cars rather
-                // than ten marks typed one at a time -- people at a meet stand round the cars
-                // and face them, and five metres out clears both without anybody standing in a
-                // door. Nobody is flagged for the night watch, so at six in the morning the
-                // whole set simply is not made.
+                // And the people. NOT A RING ANY MORE.
+                //
+                // It was ten marks on a circle five metres out, evenly spaced, each facing
+                // dead at the middle -- which is a fence round two cars rather than a crowd
+                // at them. People arrive with somebody and stand with them: they clump in
+                // twos and threes, at different distances, and nobody stands on a spoke.
+                //
+                // So the radii run four to seven metres, the gaps between them are uneven,
+                // and each of them faces roughly back at the cars with a few degrees either
+                // way rather than exactly at the midpoint.
+                //
+                // AND THEY DRIFT. Five metres, as a break -- see Entourage.Drift. A wander
+                // replaces a scenario outright in this game, so a man cannot both walk about
+                // and hold a drink; running the walk as an occasional break means the drink
+                // is what he does and the walk is what he does instead of it, now and then,
+                // out of step with everybody else.
                 _meet = new Entourage(_gangs, "families",
                                       new Vector3(-225.310f, -1697.316f, 33.297f), 270f, "the meet")
 
-                    .Stand(new Vector3(-220.310f, -1697.316f, 33.297f), 270.000f,
-                           "WORLD_HUMAN_STAND_MOBILE", Fam(0), armed: false)
+                    .Stand(new Vector3(-226.173f, -1703.456f, 33.297f), 341.000f,
+                           "WORLD_HUMAN_SMOKING", Fam(0), armed: false, drift: 5f)
 
-                    .Stand(new Vector3(-221.264f, -1694.378f, 33.297f), 234.000f,
-                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false)
+                    .Stand(new Vector3(-227.882f, -1701.130f, 33.297f), 333.000f,
+                           "WORLD_HUMAN_STAND_MOBILE", Fam(1), armed: false, drift: 5f)
 
-                    .Stand(new Vector3(-223.764f, -1692.561f, 33.297f), 198.000f,
-                           "WORLD_HUMAN_DRINKING", Women, armed: false)
+                    .Stand(new Vector3(-230.016f, -1702.362f, 33.297f), 313.000f,
+                           "WORLD_HUMAN_DRINKING", Women, armed: false, drift: 5f)
 
-                    .Stand(new Vector3(-226.855f, -1692.561f, 33.297f), 162.000f,
-                           "WORLD_HUMAN_STAND_IMPATIENT", Fam(2), armed: false)
+                    .Stand(new Vector3(-230.405f, -1698.777f, 33.297f), 300.000f,
+                           "WORLD_HUMAN_LEANING", Fam(2), armed: false)
 
-                    .Stand(new Vector3(-229.355f, -1694.378f, 33.297f), 126.000f,
-                           "WORLD_HUMAN_SMOKING_POT", Fam(0), armed: false)
+                    .Stand(new Vector3(-231.893f, -1694.656f, 33.297f), 239.000f,
+                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false, drift: 5f)
 
-                    .Stand(new Vector3(-230.310f, -1697.316f, 33.297f), 90.000f,
-                           "WORLD_HUMAN_LEANING", Fam(1), armed: false)
+                    .Stand(new Vector3(-229.419f, -1694.647f, 33.297f), 242.000f,
+                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false, drift: 5f)
 
-                    .Stand(new Vector3(-229.355f, -1700.255f, 33.297f), 54.000f,
-                           "WORLD_HUMAN_DRINKING", Fam(2), armed: false)
+                    .Stand(new Vector3(-226.882f, -1691.009f, 33.297f), 178.000f,
+                           "WORLD_HUMAN_STAND_MOBILE", Women, armed: false, drift: 5f)
 
-                    .Stand(new Vector3(-226.855f, -1702.072f, 33.297f), 18.000f,
-                           "WORLD_HUMAN_PARTYING", Women, armed: false, anim: DancingAlt)
+                    .Stand(new Vector3(-223.561f, -1693.388f, 33.297f), 167.000f,
+                           "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false, drift: 5f)
 
-                    .Stand(new Vector3(-223.764f, -1702.072f, 33.297f), 342.000f,
-                           "WORLD_HUMAN_STAND_MOBILE", Fam(1), armed: false)
+                    .Stand(new Vector3(-220.027f, -1692.724f, 33.297f), 125.000f,
+                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false, drift: 5f)
 
-                    .Stand(new Vector3(-221.264f, -1700.255f, 33.297f), 306.000f,
-                           "WORLD_HUMAN_SMOKING", Fam(2), armed: false);
+                    .Stand(new Vector3(-220.523f, -1695.284f, 33.297f), 122.000f,
+                           "WORLD_HUMAN_STAND_MOBILE", Fam(2), armed: false, drift: 5f);
 
                 _meet.QuietFrom = 6;
                 _meet.QuietTo = 20;
