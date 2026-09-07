@@ -126,6 +126,36 @@ namespace Hoodrich.Gangs
 
         private float Drift(int index) => index < _drift.Count ? _drift[index] : 0f;
 
+        /// <summary>
+        /// Whether the people on this list use what is around them.
+        ///
+        /// THE FURNITURE WAS ALREADY THERE AND ALREADY REACHABLE. Entourage has always been
+        /// able to send somebody to the nearest scenario point -- a bench, a ledge, a wall, the
+        /// steps -- and it was an all-or-nothing property of a station: he used it, or he never
+        /// did. A yard where four men are permanently sat on the same three things is the same
+        /// diorama as a yard where nobody sits at all.
+        ///
+        /// Occasional is what makes it read. It is a third kind of break: instead of a
+        /// cigarette or a walk, he goes and finds the closest thing to sit or lean on, uses it
+        /// for a while, and comes back to his mark. Same clock, same stagger, so the yard fills
+        /// and empties its own furniture rather than everybody standing up at once.
+        /// </summary>
+        public bool Furniture;
+
+        /// <summary>How often a break is furniture rather than a cigarette or a walk.</summary>
+        private const int FurnitureChance = 45;
+
+        /// <summary>How long he stays on it. Longer than a smoke -- sitting down is a commitment.</summary>
+        private const int SatForMinMs = 26000;
+        private const int SatForMaxMs = 64000;
+
+        /// <summary>What kind of break each station is on. 0 a pose, 1 a walk, 2 the furniture.</summary>
+        private readonly List<int> _restKind = new List<int>();
+
+        private const int RestPose = 0;
+        private const int RestWalk = 1;
+        private const int RestSit = 2;
+
         /// <summary>Its own, so a break never lands on the same frame as a line of dialogue.</summary>
         private readonly Random _rest = new Random();
 
@@ -460,6 +490,7 @@ namespace Hoodrich.Gangs
             _restAt.Add(_rest.Next(RestEveryMinMs, RestEveryMaxMs));
             _restUntil.Add(0);
             _restPick.Add(_rest.Next(RestDoing.Length));
+            _restKind.Add(RestPose);
             _drift.Add(drift);
 
             // Staggered at the door rather than at spawn: a fixed offset per station means the
@@ -951,9 +982,10 @@ namespace Hoodrich.Gangs
         /// </summary>
         private string Doing(int index)
         {
-            // A drifter's break is a walk, so his pose does not change for it -- he goes back
-            // to the same thing he was doing when he stops.
-            if (index < _restUntil.Count && _restUntil[index] != 0 && Drift(index) <= 0f)
+            // Only a POSE break changes what he is doing. A walk and a sit are movements, and
+            // he goes back to the same thing he was doing when either of them ends.
+            if (index < _restUntil.Count && _restUntil[index] != 0 &&
+                index < _restKind.Count && _restKind[index] == RestPose)
             {
                 return RestDoing[_restPick[index] % RestDoing.Length];
             }
@@ -984,8 +1016,12 @@ namespace Hoodrich.Gangs
             // is left alone.
             var roam = Drift(index);
 
-            if (roam <= 0f && !Guarding(index)) return false;
+            if (roam <= 0f && !Guarding(index) && !Furniture) return false;
+
+            // Anybody already doing one of these is having his break by definition: a dancer is
+            // dancing, a wanderer is walking, and a man on a couch is already on the furniture.
             if (AnimAt(index) != null || WanderAt(index) > 0f || Sits(index) || Seated(index)) return false;
+            if (SeatNear(index)) return false;
 
             var now = Game.GameTime;
 
@@ -993,34 +1029,62 @@ namespace Hoodrich.Gangs
             {
                 if (now < _restUntil[index]) return false;
 
+                var was = _restKind[index];
+
                 _restUntil[index] = 0;
                 _restAt[index] = now + _rest.Next(RestEveryMinMs, RestEveryMaxMs);
                 _restPick[index] = _rest.Next(RestDoing.Length);
+                _restKind[index] = RestPose;
 
-                // BACK ON HIS MARK, and walked there rather than put there. A drifter has
-                // wandered off it by definition, so the pose alone would play wherever he
-                // happens to have stopped; the settle pass that follows walks him home.
+                // BACK ON HIS MARK, and walked there rather than put there. A man who walked
+                // off or sat down is not on his mark any more, so the pose alone would play
+                // wherever he happens to be; clearing is enough, because the settle pass that
+                // follows walks him home and re-poses him there.
                 Shoulder(index, ped, true);
 
-                if (roam > 0f) Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
-                else Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
+                if (was == RestPose)
+                {
+                    Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
+                }
+                else
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                }
 
                 return true;
             }
 
             if (now < _restAt[index]) return false;
 
-            _restUntil[index] = now + _rest.Next(RestForMinMs, RestForMaxMs);
+            var at = MarkAt(index);
+
+            // WHICH KIND OF BREAK. Furniture first, because it is the one that depends on
+            // there being something to use -- and the game answers that by simply not moving
+            // him, which the settle pass then tidies up on its own.
+            var kind = Furniture && _rest.Next(100) < FurnitureChance ? RestSit
+                     : roam > 0f ? RestWalk
+                     : RestPose;
+
+            _restKind[index] = kind;
+
+            _restUntil[index] = now + (kind == RestSit
+                                       ? _rest.Next(SatForMinMs, SatForMaxMs)
+                                       : _rest.Next(RestForMinMs, RestForMaxMs));
 
             Shoulder(index, ped, false);
 
-            if (roam > 0f)
+            if (kind == RestSit)
             {
-                var mark = MarkAt(index);
-
+                Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                Function.Call(Hash.TASK_USE_NEAREST_SCENARIO_TO_COORD, ped.Handle,
+                              at.X, at.Y, at.Z, SeatNearRange, -1);
+                Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+            }
+            else if (kind == RestWalk)
+            {
                 Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
                 Function.Call(Hash.TASK_WANDER_IN_AREA, ped.Handle,
-                              mark.X, mark.Y, mark.Z, roam, WanderShortestWalk, WanderPause);
+                              at.X, at.Y, at.Z, roam, WanderShortestWalk, WanderPause);
                 Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
             }
             else

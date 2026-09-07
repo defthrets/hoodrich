@@ -1603,6 +1603,13 @@ namespace Hoodrich
                 // Two till six the yard empties out. Everybody without a reason to be stood in
                 // it goes home, which is the one thing that makes the other twenty hours read
                 // as a party rather than as scenery that happens to be lit.
+                // EVERYBODY AT THIS ONE USES WHAT IS AROUND THEM. The yard has couches, a
+                // bar, walls, steps and a bench in it, and a party where all of that is
+                // scenery is a party nobody is actually at. See Entourage.Furniture: it is a
+                // kind of break, so they fill and empty it a few at a time rather than the
+                // whole yard standing up together.
+                _party.Furniture = true;
+
                 _party.QuietFrom = 2;
                 _party.QuietTo = 6;
 
