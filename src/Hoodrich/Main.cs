@@ -1097,12 +1097,35 @@ namespace Hoodrich
                 //
                 // Key out at two and back in at six, with the van and with the yard. It is one
                 // switch: somebody came out, turned everything off and went in.
-                _cars.Add(new ParkedCar(new Vector3(-198.2f, -1734.7f, 32.2f), 318.897f,
+                // AN ASBO ON THE PAD, turned round to face the other way. It was an FR36
+                // and it was pointing into the yard; both were asked for by eye, standing at
+                // it, which is the only place either question can be answered.
+                //
+                // Competition springs and the best speakers the body has, asked for by the
+                // shop's own words rather than by an index -- an index is a different part on
+                // every car and the whole reason Wants exists. The boot is held open over the
+                // speakers the same way the one by the decks is: see ParkedCar.Swing.
+                _cars.Add(new ParkedCar(new Vector3(-198.2f, -1734.7f, 32.2f), 138.897f,
                                         MetallicDarkGreen,
-                                        "fr36", "elegy2", "sultan")
+                                        "asbo", "fr36", "elegy2")
                 {
                     Stock = true,
-                    Lowered = true,
+
+                    Wants = new System.Collections.Generic.Dictionary<int, string>
+                    {
+                        { 15, "Competition" }
+                    },
+
+                    // Minus one is the last one the body owns, which in a speaker list is the
+                    // biggest of them.
+                    Mods = new System.Collections.Generic.Dictionary<int, int>
+                    {
+                        { 36, -1 },
+                        { 37, -1 }
+                    },
+
+                    BootOpen = true,
+
                     Running = true,
                     Radio = "RADIO_09_HIPHOP_OLD",
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),

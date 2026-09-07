@@ -180,6 +180,136 @@ namespace Hoodrich.Locations
         /// car where we think it is? If it is, remember where that actually was. If it is not,
         /// and we are close enough that it ought to be visible, stand it back up.
         /// </summary>
+        /// <summary>
+        /// How you sit in a car you paid for.
+        ///
+        /// THE WINDOW COMES DOWN AND THE ARM GOES OUT. Getting into a car somebody built for
+        /// you and sitting bolt upright behind glass is the one thing that stops it reading as
+        /// yours -- and the game already knows how to do both, it simply never does it unless
+        /// the car's own seat layout says so, which none of Hao's do.
+        ///
+        /// The window is asked for ONCE per car rather than every tick: rolling a window that
+        /// is already down is a request the game honours by re-running the animation, so on a
+        /// timer it would wind down forever. Cleared when you get out, so the next car you get
+        /// into gets its own.
+        ///
+        /// The lean is the game's own in-vehicle context, put on below a walking pace and
+        /// taken off above it -- an arm out of the window at fifty is not a lean, it is a
+        /// man about to lose an arm. Reset rather than left on, because the context outlives
+        /// the car otherwise and he sits in the next one still hanging out of it.
+        /// </summary>
+        private void Riding()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+
+                if (me == null || !me.Exists() || !me.IsAlive || !me.IsInVehicle())
+                {
+                    Unlean(me);
+                    return;
+                }
+
+                var car = me.CurrentVehicle;
+
+                if (car == null || !car.Exists() || car.Driver != me || !Mine(car))
+                {
+                    Unlean(me);
+                    return;
+                }
+
+                if (_windowFor != car.Handle)
+                {
+                    _windowFor = car.Handle;
+
+                    try { Function.Call(Hash.ROLL_DOWN_WINDOW, car.Handle, 0); }
+                    catch { /* a body with no window there */ }
+                }
+
+                var slow = Function.Call<float>(Hash.GET_ENTITY_SPEED, car.Handle) < LeanUnder;
+
+                if (slow == _leaning) return;
+
+                _leaning = slow;
+
+                if (slow)
+                {
+                    Function.Call(Hash.SET_PED_IN_VEHICLE_CONTEXT, me.Handle,
+                                  Function.Call<int>(Hash.GET_HASH_KEY, LeanContext));
+                }
+                else
+                {
+                    Function.Call(Hash.RESET_PED_IN_VEHICLE_CONTEXT, me.Handle);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not ride low: " + ex.Message);
+            }
+        }
+
+        private void Unlean(Ped me)
+        {
+            _windowFor = 0;
+
+            if (!_leaning) return;
+
+            _leaning = false;
+
+            try
+            {
+                if (me != null && me.Exists()) Function.Call(Hash.RESET_PED_IN_VEHICLE_CONTEXT, me.Handle);
+            }
+            catch
+            {
+                // He is out of the car anyway.
+            }
+        }
+
+        /// <summary>
+        /// Whether this is one of yours, by the plate.
+        ///
+        /// The plate rather than the handle, for the same reason Recovered uses it: a car you
+        /// own is respawned as a new entity every time the world reloads around it, so the
+        /// handle is different every session and the plate is the thing that is not.
+        /// </summary>
+        private bool Mine(Vehicle car)
+        {
+            if (_state == null || car == null || !car.Exists()) return false;
+
+            try
+            {
+                var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
+                if (plate.Length == 0) return false;
+
+                foreach (var owned in _state.Owned)
+                {
+                    if (string.Equals(owned.Plate.Trim(), plate, StringComparison.OrdinalIgnoreCase)) return true;
+                }
+            }
+            catch
+            {
+                // Not ours as far as anybody can tell.
+            }
+
+            return false;
+        }
+
+        /// <summary>Which car has had its window put down, so it is only asked for once.</summary>
+        private int _windowFor;
+        private bool _leaning;
+
+        /// <summary>Under this, in metres a second, the arm goes out. About a jog.</summary>
+        private const float LeanUnder = 6f;
+
+        /// <summary>
+        /// The game's own name for the pose. Unverified against a running game -- the context
+        /// list is not shipped anywhere readable, so this is the one thing here that has to be
+        /// looked at rather than reasoned about. An unknown context is a no-op, not a crash,
+        /// so the worst case is the window on its own.
+        /// </summary>
+        private const string LeanContext = "MINI_LOWRIDER_ARM";
+
         public void Update()
         {
             if (_state == null) return;
@@ -198,6 +328,8 @@ namespace Hoodrich.Locations
             // Every tick, not every scan: a car waiting for the road to load under it should
             // not have to wait two and a half seconds more to be told the road arrived.
             Settle(now);
+
+            Riding();
 
             // _next is a DEADLINE, so the test is against now, not against a gap.
             //

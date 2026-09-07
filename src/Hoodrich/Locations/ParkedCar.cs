@@ -663,6 +663,29 @@ namespace Hoodrich.Locations
             return "";
         }
 
+        /// <summary>
+        /// The best option in a slot, which is the last one -- unless the last one is a
+        /// wheelie bar.
+        ///
+        /// NOBODY AT THIS PARTY IS DRAG RACING. Benny's puts a wheelie bar at the end of the
+        /// chassis list on several of its bodies, and this takes the last option in every
+        /// slot, so the car parked outside a house with its boot up had a drag bar hanging off
+        /// the back of it. That is a different car at a different event.
+        ///
+        /// Asked of the shop's own label rather than by index, because which index it is
+        /// differs per body -- the same reason the suspension is asked for by name.
+        /// </summary>
+        private int Best(int slot, int many)
+        {
+            for (var i = many - 1; i >= 0; i--)
+            {
+                if (ModName(slot, i).IndexOf("Wheelie", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                return i;
+            }
+
+            return many - 1;
+        }
+
         private void BuildIt()
         {
             // 11 engine, 12 brakes, 13 transmission, 15 suspension, 16 armour -- and then the
@@ -675,15 +698,23 @@ namespace Hoodrich.Locations
             // 43 aerial, 44 trim, 45 tank, 46 glass. A car that has none of them reads none of
             // them and nothing happens, so the list costs a few dead lookups on an ordinary
             // saloon and gives a lowrider the interior it is supposed to have.
+            // AND 36 AND 37, THE SPEAKERS AND THE BOOT. They were not on the list, which is
+            // why a car built by this with its boot held open showed an empty carpeted well.
+            // On the bodies that have them, 36 is the rack of speakers and 37 is what the boot
+            // is lined and filled with -- the pumps and the batteries on a lowrider, the box
+            // on everything else. A boot open over nothing is the one thing worse than a boot
+            // shut.
             foreach (var kind in new[] { 11, 12, 13, 15, 16,
                                          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-                                         25, 27, 28, 30, 33, 34, 35, 38,
+                                         25, 27, 28, 30, 33, 34, 35, 36, 37, 38,
                                          39, 40, 41, 42, 43, 44, 45, 46 })
             {
                 try
                 {
                     var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, kind);
-                    if (many > 0) Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, kind, many - 1, false);
+                    if (many <= 0) continue;
+
+                    Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, kind, Best(kind, many), false);
                 }
                 catch { /* a slot this car has not got */ }
             }
