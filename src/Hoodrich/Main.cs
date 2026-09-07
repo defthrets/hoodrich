@@ -2065,6 +2065,18 @@ namespace Hoodrich
                 // The lowriders stay in for the same reasons the rollers do.
                 _cruise.Busy = _rollers.Busy;
 
+                // AND THE CREWS ON FOOT, WHICH HAD NEVER BEEN WIRED AT ALL.
+                //
+                // Walkers.Busy is declared, is read at the top of its own spawn check, and its
+                // comment says "wired by the house script" -- and the house script did not
+                // wire it. So the one system that could not be told to stand down was the one
+                // that puts three or four men on a pavement: they kept turning up through
+                // raids, through paybacks and through a takeover, when the rollers and the
+                // lowriders round the same corner had already gone in.
+                //
+                // The same rule as the rollers, because it is the same reason.
+                _walkers.Busy = _rollers.Busy;
+
                 // The law staying out of a raid, a job and a bust is now told to Precinct 88
                 // rather than to a patrol system of our own -- same rule, one layer out. See
                 // Bridge.Busy.

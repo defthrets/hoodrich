@@ -1024,6 +1024,31 @@ namespace Hoodrich.Missions
             _spraying = spot;
             _sprayingSince = Game.GameTime;
 
+            // WHAT IS ACTUALLY GOING ON THE WALL, WHICH NOTHING HAD EVER ASKED FOR.
+            //
+            // TagToWrite, TagLetters.CanWrite and TagLetters.Layout were all written, all
+            // correct, and all unreachable: nothing called any of them, so _tagPoints stayed
+            // null, so the guard in the paint pass was false every time and the wall always
+            // got the random splatter that is meant to be the FALLBACK for a tag nobody has
+            // drawn. Every tag in the game has been the fallback since the day the letters
+            // went in.
+            //
+            // Asked per wall rather than once, because the set can change under you and the
+            // tag is the set's. Null when the letters cannot be drawn, which is the signal the
+            // paint pass already reads to fall back -- so a tag with a character the glyph
+            // table has not got behaves exactly as it does today.
+            _tagText = TagToWrite();
+            _tagPoints = TagLetters.CanWrite(_tagText)
+                             ? TagLetters.Layout(_tagText, TagSpacing)
+                             : null;
+            _tagPlaced = 0;
+
+            if (_tagPoints != null)
+            {
+                Log.Debug("Tag run: writing \"" + _tagText + "\" as " +
+                          _tagPoints.Count + " marks.");
+            }
+
             // A DIFFERENT wall starts from nothing. The same one picks up where it left off.
             if (_bankedFor != spot.Id)
             {

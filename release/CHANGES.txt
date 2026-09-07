@@ -4,6 +4,46 @@
 
 
 -------------------------------------------------------------------------------
+  0.6.2  (7 September 2026)
+-------------------------------------------------------------------------------
+
+Three things an audit found that had never worked.
+
+
+===============================================================================
+  FIXED
+===============================================================================
+
+
+THE CREWS ON FOOT NEVER STOOD DOWN.
+
+Every ambient system in the mod can be told to stay in while something louder
+is happening -- the rollers, the lowriders, the tow truck, the taxi. Walkers
+has the same switch, its comment says the house script wires it, and the house
+script never did. So the one system that puts three or four men on a pavement
+kept putting them there through raids, through paybacks and through a
+takeover, while everything else round that corner had gone in.
+
+
+LAMAR'S TAG JOB NEVER WROTE A TAG.
+
+The letters were built: a glyph table, a layout that turns a word into points
+on a wall, and a routine that picks which word. All three were correct and none
+of them was ever called, so the wall always got the random splatter that is
+meant to be the fallback for a tag nobody has drawn. Every tag in the game has
+been the fallback since the letters went in. It writes the set's own tag now,
+and still falls back when a character has no glyph.
+
+
+TWO GANGS WERE DRAWN THE WRONG COLOUR ON THE MAP.
+
+The Aztecas call themselves a dark cyan and the Marabunta a lighter one, and
+both were on the blue blip -- so neither was its own colour and the two could
+not be told apart. They are on the two cyans now, which is what their own data
+says they are.
+
+
+-------------------------------------------------------------------------------
   0.6.1  (7 September 2026)
 -------------------------------------------------------------------------------
 

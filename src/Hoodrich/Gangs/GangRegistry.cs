@@ -288,8 +288,12 @@ namespace Hoodrich.Gangs
                 "Ginger Street, Little Seoul",
                 new[] { "g_m_y_korean_01", "g_m_y_korean_02", "g_m_y_korlieut_01", "g_m_m_korboss_01" }));
 
+            // BLIP 30 IS DARK CYAN, WHICH IS WHAT THIS GANG SAYS IT IS. It was 3, which is
+            // blue -- and so was the Marabunta's, so two gangs that both call themselves a
+            // shade of cyan were drawn in one colour that was neither of them. See the note
+            // on the Marabunta below.
             Register(Make("aztecas", "Varrios Los Aztecas", "VLA", "",
-                Color.FromArgb(0, 190, 185), 3,
+                Color.FromArgb(0, 190, 185), 30,
                 new[] { "weed", "coke" },
                 new[] { "vagos", "ballas", "families" },
                 new[] { "RANCHO" },
@@ -348,7 +352,7 @@ namespace Hoodrich.Gangs
                 new[] { "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03", "a_m_y_mexthug_01" }));
 
             Register(Make("marabunta", "Marabunta Grande", "MARA", "AMBIENT_GANG_MARABUNTE",
-                Color.FromArgb(70, 200, 200), 3,
+                Color.FromArgb(70, 200, 200), 15,
                 new[] { "meth", "coke" },
                 new[] { "vagos", "ballas", "lost" },
                 new[] { "CYPRE", "TEXTI" },
