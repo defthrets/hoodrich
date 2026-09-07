@@ -1667,7 +1667,30 @@ namespace Hoodrich
                     // And one on the near corner who does not go home either. Two is the number:
                     // one is a man forgotten in a yard, and three is the party still going.
                     .Stand(new Vector3(-196.532f, -1725.500f, 32.664f), 300.596f,
-                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false, nights: true);
+                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false, nights: true)
+
+                    // ---- the two on the gate ------------------------------------------
+                    //
+                    // THESE TWO WERE SCENERY AND ARE A STATION NOW. They stood in the scene
+                    // file doing nothing in particular, which is all a spooner placement can
+                    // be told to do: the weapon saved on one is thrown away when it is built,
+                    // because every ped saved in the editor comes out holding a rifle and a
+                    // scene that took that literally would be a yard of riflemen. Asking for
+                    // one named gun on two named men is a station, and this list is where
+                    // stations live.
+                    //
+                    // Marks are the ones read off the game, to the millimetre -- one on the
+                    // concrete by the Asbo, one up on the bus.
+                    .Stand(new Vector3(-195.944f, -1734.101f, 32.659f), 20.914f,
+                           "WORLD_HUMAN_GUARD_STAND", Fam(1),
+                           weapon: "WEAPON_CARBINERIFLE_MK2", nights: true)
+
+                    // PINNED, because he is stood on the roof of a bus. An unpinned mark is
+                    // dropped to the ground under it, and the ground under this one is four
+                    // metres down in the weeds.
+                    .Stand(new Vector3(-189.119f, -1731.704f, 34.911f), 97.293f,
+                           "WORLD_HUMAN_GUARD_STAND", Fam(2),
+                           weapon: "WEAPON_CARBINERIFLE_MK2", nights: true, pinned: true);
 
                 // Two till six the yard empties out. Everybody without a reason to be stood in
                 // it goes home, which is the one thing that makes the other twenty hours read

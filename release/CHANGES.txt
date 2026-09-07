@@ -1,4 +1,23 @@
-﻿TRIGGER KEEPS UP, AND SAYS WHAT HE WILL DO IN OUR OWN HAND.
+﻿TWO ON THE GATE AT LAMAR'S, ARMED.
+
+The pair by the Asbo and up on the bus were scene placements, standing
+about doing nothing in particular -- which is the most a spooner placement
+can be told to do. The weapon saved on one of them is thrown away when the
+scene is built, on purpose: every ped saved in the editor comes out holding
+a rifle, so what a scene ped carries is chosen by where he stands instead,
+and a scene that took the file literally would be a yard of riflemen.
+
+Asking for one named gun on two named men is a station, so that is what
+they are now -- on the same two marks, to the millimetre, on the guard
+scenario with a Carbine Rifle Mk II each. The one on the bus is pinned, or
+he would be dropped to the ground four metres below it.
+
+And every armed man on a station carries the bigger magazine now, the same
+one the player's guns come with off Stretch's counter. It is silent on the
+guns the game has no bigger box for.
+
+
+TRIGGER KEEPS UP, AND SAYS WHAT HE WILL DO IN OUR OWN HAND.
 
 HE RUNS WHEN YOU RUN. The group walks him after you and does it well at a
 walk, but the animations he moves on top out below a sprint -- so the

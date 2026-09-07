@@ -7,6 +7,7 @@ using Hoodrich.Core;
 using Hoodrich.Dealing;
 using Hoodrich.Locations;
 using Hoodrich.Social;
+using Hoodrich.Weapons;
 
 namespace Hoodrich.Gangs
 {
@@ -971,6 +972,15 @@ namespace Hoodrich.Gangs
 
                         Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle,
                                       Function.Call<uint>(Hash.GET_HASH_KEY, gun), 120, true, true);
+
+                        // AND THE BIG MAGAZINE ON IT. The same one the player's guns come
+                        // with off Stretch's counter -- a man stood on a gate holding the
+                        // stock ten-round box is a man who has never had to use it.
+                        //
+                        // Silent when the weapon has no bigger box: the helper looks the gun
+                        // up and does nothing if the game has none for it, which is most
+                        // pistols.
+                        ExtendedClips.GiveTo(ped, gun);
 
                         // In the hands, not on the back.
                         Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle,
