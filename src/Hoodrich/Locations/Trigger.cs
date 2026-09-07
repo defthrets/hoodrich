@@ -5,6 +5,7 @@ using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.State;
 using Hoodrich.UI;
+using Hud = Hoodrich.UI.Draw;
 
 namespace Hoodrich.Locations
 {
@@ -192,6 +193,7 @@ namespace Hoodrich.Locations
             Ride(player);
             Nose(player, now);
             Idle(player, now);
+            Pace(player);
             Mark();
         }
 
@@ -337,7 +339,7 @@ namespace Hoodrich.Locations
         /// How far he may get, how long he gets to fix it himself, and how long before he is
         /// moved even if you are looking straight at him.
         /// </summary>
-        private const float Leash = 45f;
+        private const float Leash = 28f;
         private const int FetchAfterMs = 4000;
         private const int ForceAfterMs = 12000;
 
@@ -725,6 +727,65 @@ namespace Hoodrich.Locations
             _inGroup = false;
         }
 
+        /// <summary>
+        /// How fast he is allowed to move, against the pace you are going at.
+        ///
+        /// A DOG'S TOP SPEED IS NOT A SPRINTING MAN'S. The group walks him after you and does
+        /// it well at a walk, but the animation set he moves on tops out below a sprint -- so
+        /// the moment you run he is losing ground every stride and there is nothing in the
+        /// follow that can ever win it back. He arrives when you stop, which is the wrong
+        /// half of a dog.
+        ///
+        /// The override is a multiplier on his own movement, so he is still running rather
+        /// than sliding along the pavement: at a walk he is left alone entirely, at a jog he
+        /// gets a little, and flat out he gets enough to sit at your heel instead of behind
+        /// your shoulder. Numbers arrived at by walking, jogging and sprinting the block.
+        /// </summary>
+        private const float TrotAbove = 1.4f;
+        private const float RunAbove = 3.6f;
+        private const float RateWalk = 1.0f;
+        private const float RateTrot = 1.16f;
+        private const float RateRun = 1.4f;
+
+        /// <summary>What he was last set to, so the native is not called every frame.</summary>
+        private float _rate = -1f;
+
+        /// <summary>
+        /// Match his pace to yours.
+        ///
+        /// Not while he is in a car -- the override applies to a ped on his feet and setting
+        /// it on a passenger is a number nobody reads.
+        /// </summary>
+        private void Pace(Ped player)
+        {
+            if (_dog == null || !_dog.Exists() || !_dog.IsAlive) return;
+
+            if (_dog.IsInVehicle())
+            {
+                _rate = -1f;
+                return;
+            }
+
+            float speed;
+
+            try { speed = player.Velocity.Length(); }
+            catch { return; }
+
+            var want = speed > RunAbove ? RateRun
+                     : speed > TrotAbove ? RateTrot
+                     : RateWalk;
+
+            if (Math.Abs(want - _rate) < 0.01f) return;
+
+            _rate = want;
+
+            try { Function.Call(Hash.SET_PED_MOVE_RATE_OVERRIDE, _dog.Handle, want); }
+            catch
+            {
+                // He walks at his own speed, which is what he did before.
+            }
+        }
+
         /// <summary>How long you have to stand there, how far he goes, and what counts as moving.</summary>
         private const int StoodAboutMs = 16000;
         private const float NoseRange = 9f;
@@ -754,8 +815,8 @@ namespace Hoodrich.Locations
 
             var now = Game.GameTime;
 
-            if (now < _petUntil) return;
-            if (_dog.Position.DistanceTo(player.Position) > PetRange) return;
+            if (now < _petUntil) { _promptSince = 0; return; }
+            if (_dog.Position.DistanceTo(player.Position) > PetRange) { _promptSince = 0; return; }
 
             // AND YOU HAVE TO BE FACING HIM.
             //
@@ -768,12 +829,9 @@ namespace Hoodrich.Locations
             // something with the dog". You turn to him and it appears; you turn away and it is
             // gone, which is also how you dismiss it. He spends the whole time at your heel and
             // says nothing until you look at him.
-            if (!Facing(player)) return;
+            if (!Facing(player)) { _promptSince = 0; return; }
 
-            Help.ShowThisFrame(Yours
-                ? "Hold ~INPUT_CELLPHONE_RIGHT~ to pet " + Name + ", or ~INPUT_CELLPHONE_LEFT~ "
-                  + "to send him back to the yard."
-                : "Hold ~INPUT_CELLPHONE_RIGHT~ to pet him.");
+            Prompt(Yours, now);
 
             // SENDING HIM HOME IS A TAP, not a hold. It is the opposite of the pet in every
             // way that matters and it wants to feel like it: one is a thing you lean on him
@@ -788,6 +846,78 @@ namespace Hoodrich.Locations
             if (now < _petAgainAt) return;
 
             Pet(player, now);
+        }
+
+        // ---- what he will do, in our own hand ---------------------------------------
+
+        /// <summary>Where the bar sits, how big it is, and how long it takes to arrive.</summary>
+        private const float PromptY = 0.898f;
+        private const float PromptScale = 0.24f;
+        private const float PromptIcon = 0.011f;
+        private const float PromptGap = 0.016f;
+        private const float PromptPad = 0.010f;
+        private const int PromptFadeMs = 160;
+
+        /// <summary>When the bar came up, for the fade. Zero means it is not up.</summary>
+        private int _promptSince;
+
+        /// <summary>
+        /// The line that says what he will do.
+        ///
+        /// THE GAME'S HELP BOX WAS THE WRONG SHAPE FOR THIS. It is a paragraph in a white
+        /// pane in the top left, which is where the game puts things it wants you to stop and
+        /// read -- and this is not that. It is a dog at your knee, and the whole of what it
+        /// has to say is which way to lean on the stick.
+        ///
+        /// So: one line, along the bottom, in the mod's own type. An arrow for each thing he
+        /// can do and two words for what it does, laid out by measuring rather than by padding
+        /// with spaces, and centred on the screen from that measurement. Same helper the gun
+        /// counter and the car list draw their controls with, so it is recognisably a Posted
+        /// Up control line rather than a second notification system.
+        ///
+        /// It fades in over a sixth of a second. Instant is a flicker every time you glance
+        /// down at him; anything slower and it has not arrived by the time you have read it.
+        /// </summary>
+        private void Prompt(bool yours, int now)
+        {
+            if (_promptSince == 0) _promptSince = now;
+
+            var age = now - _promptSince;
+            var fade = age >= PromptFadeMs ? 1f : age / (float)PromptFadeMs;
+
+            var who = Name.ToUpperInvariant();
+            var pet = "PET";
+            var home = "SEND HOME";
+
+            var iconW = Hud.ToX(PromptIcon) + 0.004f;
+
+            var width = iconW + Hud.MeasureText(who, PromptScale, Hud.FontLabel) + PromptGap
+                      + iconW + Hud.MeasureText(pet, PromptScale, Hud.FontLabel);
+
+            if (yours) width += PromptGap + iconW + Hud.MeasureText(home, PromptScale, Hud.FontLabel);
+
+            var left = 0.5f - width * 0.5f;
+
+            Hud.RoundRect(left - PromptPad, PromptY - 0.007f,
+                          width + PromptPad * 2f, 0.027f, 0.0135f,
+                          Dim(Backdrop, fade), steps: 10);
+
+            var x = Hud.Hint("dog.png", who, left, PromptY, PromptScale, Dim(Palette.Text, fade));
+
+            x = Hud.Hint("arrow_right.png", pet, x, PromptY, PromptScale, Dim(Palette.TextDim, fade));
+
+            if (yours) Hud.Hint("arrow_left.png", home, x, PromptY, PromptScale, Dim(Palette.TextDim, fade));
+        }
+
+        /// <summary>The bar's own backdrop. Darker and thinner than a panel -- it is a caption.</summary>
+        private static readonly System.Drawing.Color Backdrop = System.Drawing.Color.FromArgb(185, 8, 9, 11);
+
+        /// <summary>A colour at a fraction of its own alpha.</summary>
+        private static System.Drawing.Color Dim(System.Drawing.Color c, float by)
+        {
+            var a = (int)(c.A * (by < 0f ? 0f : by > 1f ? 1f : by));
+
+            return System.Drawing.Color.FromArgb(a < 0 ? 0 : a > 255 ? 255 : a, c.R, c.G, c.B);
         }
 
         /// <summary>

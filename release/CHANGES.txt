@@ -1,4 +1,25 @@
-﻿THE THREE ON THE CAR WALL ARE WHERE THEY WERE PUT.
+﻿TRIGGER KEEPS UP, AND SAYS WHAT HE WILL DO IN OUR OWN HAND.
+
+HE RUNS WHEN YOU RUN. The group walks him after you and does it well at a
+walk, but the animations he moves on top out below a sprint -- so the
+moment you ran he lost ground every stride with nothing in the follow able
+to win it back, and he arrived when you stopped. His movement is scaled to
+your pace now: left alone at a walk, a little at a jog, and enough flat out
+to sit at your heel rather than behind your shoulder. He is also fetched
+from twenty-eight metres rather than forty-five, so the gap never opens
+that far in the first place.
+
+AND THE HELP BOX IS GONE. What he can do was a paragraph in a white pane in
+the top left -- where the game puts things it wants you to stop and read,
+which is not what this is. It is one line along the bottom now, in the
+mod's own type, with an arrow for each thing and two words for what it
+does: PET, and SEND HOME once he is yours. Laid out by measuring and
+centred from that, drawn with the same helper the gun counter and the car
+list use, and faded in over a sixth of a second so glancing down at him
+does not flicker.
+
+
+THE THREE ON THE CAR WALL ARE WHERE THEY WERE PUT.
 
 Two of them have come down off the wall -- one to the concrete by the
 lowrider and one over by the barrel -- and the third stays up there. Marks
