@@ -677,7 +677,6 @@ namespace Hoodrich
                 // of its own -- see the Changed handler below, which pushes them again.
                 Core.Voice.Enabled = _cfg.VoiceEnabled;
                 Core.Voice.Volume = _cfg.VoiceVolume;
-                Core.Voice.RadioScale = _cfg.PoliceRadioLoudness;
                 Core.Voice.Repeat = _cfg.VoiceRepeat;
                 Social.Inbox.Chime = _cfg.PlaySounds;
 
@@ -2506,8 +2505,7 @@ namespace Hoodrich
 
                     Core.Voice.Enabled = _cfg.VoiceEnabled;
                     Core.Voice.Volume = _cfg.VoiceVolume;
-                    Core.Voice.RadioScale = _cfg.PoliceRadioLoudness;
-                    Core.Voice.Repeat = _cfg.VoiceRepeat;
+                        Core.Voice.Repeat = _cfg.VoiceRepeat;
                     Social.Inbox.Chime = _cfg.PlaySounds;
 
                     if (_social != null) _social.Speaks = _cfg.FeedOnScreen;

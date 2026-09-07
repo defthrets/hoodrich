@@ -42,14 +42,6 @@ namespace Hoodrich.Core
         public static float Volume = 0.9f;
 
         /// <summary>
-        /// How loud the police radio is against that. Set by Main from the settings.
-        ///
-        /// It lives here rather than at the call site because the call site is a police
-        /// investigation deciding to happen, and a number about audio has no business in it.
-        /// </summary>
-        public static float RadioScale = 0.4f;
-
-        /// <summary>
         /// Whether a line you have already heard plays again.
         ///
         /// Off, because a recording is a performance rather than a sound effect: the first time

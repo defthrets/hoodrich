@@ -415,10 +415,6 @@ namespace Hoodrich.UI
             Slide("How loud", "Voice", "VoiceVolume",
                   () => c.VoiceVolume, v => c.VoiceVolume = v, 0f, 1f, 0.05f, "0.00",
                   note: "Against the game's own dialogue, not against the music");
-            Slide("Police radio", "Voice", "PoliceRadioLoudness",
-                  () => c.PoliceRadioLoudness, v => c.PoliceRadioLoudness = v, 0f, 1f, 0.05f, "0.00",
-                  note: "The call that goes out when an officer comes to look at you, as a " +
-                        "fraction of the above");
 
             Head("Lamar's list");
             Slide("He rests between jobs", "Jobs", "LamarRestMinutes",

@@ -1,4 +1,17 @@
-﻿===============================================================================
+﻿THE POLICE RADIO IS GONE.
+
+An officer deciding to come and look at you played a recording of the call
+going out over a walkie-talkie. It is off: he walks over without it.
+
+Everything that existed to tune it went with it, because none of it had
+another job. Voice.RadioScale was passed by that one call and read by
+nothing else, so the field, the two pushes into it from Main, the
+PoliceRadioLoudness setting, its ini key and its slider on the settings
+screen were all a dial for a sound that can no longer play. The recording
+itself is out of the download as well.
+
+
+===============================================================================
   POSTED UP  --  CHANGES
 ===============================================================================
 
