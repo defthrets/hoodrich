@@ -1,4 +1,28 @@
-﻿TRIGGER IS A ROTTWEILER AGAIN, AND HE IS SMALLER.
+﻿THE ROOM SWEEP ASKS FOR THE IPLS BEFORE IT ASKS WHERE THE ROOMS ARE.
+
+The last sweep asked 34,506 points under the map and found nothing at all,
+and that was read as the business interiors not being in this build. That
+reading cannot be made from that test. A DLC interior is not in the map
+until its own ipl has been requested, and the question the sweep asks is
+about the map -- so a room that is present but not asked for and a room
+that does not exist both answer zero, and the sweep could not tell them
+apart.
+
+It now requests every ipl any door in the mod names, waits up to six
+seconds for them, and writes down which ones went active. Nothing found
+after that is a real nothing.
+
+It also asks about the exact coordinate each door would put somebody at,
+by name, and reports whether there is an interior there and whether it is
+valid and ready. A grid can step over a small room; the door's own mark is
+the question that actually matters, and it is the one that has never been
+asked directly.
+
+This is a diagnostic, not a fix. It exists to tell us which of three
+things is wrong with the grow room and the pill press.
+
+
+TRIGGER IS A ROTTWEILER AGAIN, AND HE IS SMALLER.
 
 Three quarters of his own size, from TriggerScale in the ini.
 

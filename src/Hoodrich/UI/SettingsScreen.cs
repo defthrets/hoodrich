@@ -774,7 +774,38 @@ namespace Hoodrich.UI
                         return;
                     }
 
-                    Core.Rooms.Start();
+                    // THE DOORS' OWN NAMES AND MARKS, so the sweep asks for exactly what
+                    // this install is configured to open and reports on the coordinates it
+                    // would actually put somebody at.
+                    var ipls = new System.Collections.Generic.List<string>();
+                    var marks = new System.Collections.Generic.List<
+                        System.Collections.Generic.KeyValuePair<string, GTA.Math.Vector3>>();
+
+                    if (c.Doors != null)
+                    {
+                        foreach (var door in c.Doors)
+                        {
+                            if (door == null) continue;
+
+                            if (!string.IsNullOrEmpty(door.Ipl)) ipls.Add(door.Ipl);
+
+                            // Extra is the second and later names, comma separated.
+                            if (!string.IsNullOrEmpty(door.Extra))
+                            {
+                                foreach (var one in door.Extra.Split(','))
+                                {
+                                    var name = one.Trim();
+                                    if (name.Length > 0) ipls.Add(name);
+                                }
+                            }
+
+                            marks.Add(new System.Collections.Generic.KeyValuePair<string, GTA.Math.Vector3>(
+                                door.Name + "  (ipl " + (string.IsNullOrEmpty(door.Ipl) ? "none" : door.Ipl) + ")",
+                                new GTA.Math.Vector3(door.InsideX, door.InsideY, door.InsideZ)));
+                        }
+                    }
+
+                    Core.Rooms.Start(ipls, marks);
                     Notify.Important("Sweeping. Back out and it writes rooms.txt in a moment.");
                 }
             });
