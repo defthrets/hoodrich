@@ -1,4 +1,29 @@
-﻿ONE BAR PUTS HIM ON THE FLOOR, AND ONLY NOW AND THEN.
+﻿THE FREEZE ON THE WAY OUT OF A ROOM.
+
+A player sent the log that named it, which is the only reason this was
+findable:
+
+    Blocking script! Hoodrich.Main was terminated because it caused the
+    game to freeze too long
+      SHVDN.Script.Wait
+      InteriorDoor.Wait
+      InteriorDoor.Leave
+
+The wait between fading out and fading back in was a loop on the game's
+own clock and nothing else. That clock stops when the game is paused -- so
+a pause during the fade, or anything else that stalls it, left the loop
+spinning on a condition that could never become true. ScriptHookVDotNet
+kills a script that does not come back, and killing it is the freeze.
+
+It is bounded by the real clock now as well, which cannot stop. Worst case
+is a fade half a second longer than intended instead of a dead script.
+
+The grow room and the pill press are gone from this build anyway, so the
+two doors people hit this on are not there to hit -- but every door added
+through the ini went through the same wait, and now none of them can hang.
+
+
+ONE BAR PUTS HIM ON THE FLOOR, AND ONLY NOW AND THEN.
 
 Two things were wrong with a single xanax, and they were opposite ends of
 the same fault: it never dropped him, and it never let go of him.

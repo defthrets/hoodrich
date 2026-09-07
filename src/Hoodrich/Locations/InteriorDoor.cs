@@ -1440,11 +1440,34 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// Wait, bounded by the wall clock as well as by the game's.
+        ///
+        /// THIS IS THE FREEZE PEOPLE REPORTED ON THE WAY OUT OF A ROOM. GET_GAME_TIMER stops
+        /// while the game is paused, and this loop tested nothing else -- so a pause during
+        /// the fade, or anything else that stalls that clock, left it spinning with no
+        /// condition that could ever become true. ScriptHookVDotNet kills a script that never
+        /// comes back, and the trace ends exactly here:
+        ///
+        ///     Blocking script! Hoodrich.Main was terminated because it caused the game to
+        ///     freeze too long -- SHVDN.Script.Wait, InteriorDoor.Wait, InteriorDoor.Leave
+        ///
+        /// The real clock cannot stop, so it is the backstop. Subtracted rather than compared,
+        /// because Environment.TickCount wraps every seven weeks and a plain less-than would
+        /// spin for the rest of the session on the frame it did.
+        /// </summary>
         private static void Wait(int ms)
         {
+            if (ms <= 0) return;
+
             var until = Game.GameTime + ms;
-            while (Game.GameTime < until) Script.Yield();
+            var stop = Environment.TickCount + ms + WaitSlackMs;
+
+            while (Game.GameTime < until && Environment.TickCount - stop < 0) Script.Yield();
         }
+
+        /// <summary>How much longer than asked the real clock will allow before it gives up.</summary>
+        private const int WaitSlackMs = 750;
 
         private void EnsureBlip()
         {
