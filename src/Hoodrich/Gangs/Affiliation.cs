@@ -235,6 +235,18 @@ namespace Hoodrich.Gangs
                     var him = Entity.FromHandle(target) as Ped;
                     if (him == null || !him.Exists() || !Law(him)) continue;
 
+                    // HIT FIRST IS A DIFFERENT FIGHT, and this is the whole of the rule.
+                    //
+                    // Not starting one with the police is what somebody stood on a corner
+                    // does. Standing there being shot at and running anyway is not -- it is a
+                    // man walking away from a gun already pointed at him, which reads as the
+                    // mod taking the fight off him rather than as him choosing not to have it.
+                    //
+                    // So the question is only ever asked about a fight he started. Once an
+                    // officer has actually put a round in him he is off this rule for good and
+                    // the game has him back.
+                    if (Struck(ped, him)) continue;
+
                     Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
                     Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, true);
                     Function.Call(Hash.TASK_SMART_FLEE_PED, ped.Handle, him.Handle, 120f, -1, false, false);
@@ -261,6 +273,40 @@ namespace Hoodrich.Gangs
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Whether the law has actually hit him, and whether it ever did.
+        ///
+        /// REMEMBERED RATHER THAN ASKED FRESH. The game's own record is per PAIR -- has this
+        /// ped been damaged by THAT one -- so a second officer arriving at a man already
+        /// bleeding would read as unprovoked and send him running mid-gunfight. Once anybody
+        /// wearing a badge has hit him, he is out of this rule entirely.
+        ///
+        /// Handles are reused by the game, so this is emptied with everything else on teardown
+        /// -- see RestoreWorld. A stale handle only ever costs one man one flee.
+        /// </summary>
+        private readonly HashSet<int> _struck = new HashSet<int>();
+
+        private bool Struck(Ped ped, Ped law)
+        {
+            if (ped == null || !ped.Exists()) return false;
+
+            if (_struck.Contains(ped.Handle)) return true;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY,
+                                         ped.Handle, law.Handle, true)) return false;
+            }
+            catch
+            {
+                return false;
+            }
+
+            _struck.Add(ped.Handle);
+
+            return true;
         }
 
         private int _lastLawful;
@@ -655,6 +701,9 @@ namespace Hoodrich.Gangs
                 }
             }
             _touchedGroups.Clear();
+
+            // Handles are reused, so who had been shot at goes with the session.
+            _struck.Clear();
         }
 
         // ---- per-tick ----------------------------------------------------------

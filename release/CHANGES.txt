@@ -1,4 +1,22 @@
-﻿THE ROOM SWEEP ASKS FOR THE IPLS BEFORE IT ASKS WHERE THE ROOMS ARE.
+﻿THEY DO NOT START ONE WITH THE POLICE, BUT THEY FINISH ONE.
+
+Everybody of ours already left rather than shoot at an officer. That was
+right for a man on a corner deciding not to have a fight and wrong for a
+man already being shot at: he walked away from a gun pointed at him, which
+reads as the mod taking the fight off him rather than as him choosing not
+to have it.
+
+The rule now only ever applies to a fight he started. The moment an
+officer actually puts a round in him he is off it for good and the game
+has him back, and he defends himself like anybody would.
+
+Remembered per man rather than asked fresh, because the game's own record
+is per pair -- has this one been damaged by THAT one -- so a second
+officer arriving at a man already bleeding would have read as unprovoked
+and sent him running in the middle of a gunfight.
+
+
+THE ROOM SWEEP ASKS FOR THE IPLS BEFORE IT ASKS WHERE THE ROOMS ARE.
 
 The last sweep asked 34,506 points under the map and found nothing at all,
 and that was read as the business interiors not being in this build. That
