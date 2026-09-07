@@ -513,7 +513,7 @@ namespace Hoodrich.Core
         ///
         /// One is his own size and turns the call off entirely.
         /// </summary>
-        public float TriggerScale = 0.75f;
+        public float TriggerScale = 0.5f;
 
         public string FranklinsBike = "sanchez";
         public int FranklinsBikeLivery = 0;

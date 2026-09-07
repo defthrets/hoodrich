@@ -1224,8 +1224,35 @@ namespace Hoodrich.Gangs
         {
             if (crew.Leash != -1)
             {
-                try { Function.Call(Hash.DELETE_ROPE, new OutputArgument(crew.Leash)); }
-                catch { /* it goes with the session */ }
+                // AND IT SAYS SO IF IT DID NOT GO.
+                //
+                // A rope outlives whatever it was tied to: delete the dog and the man and the
+                // lead is still there, hanging in the street with nothing on either end, until
+                // the session ends. There is no native that lists ropes and no way to find one
+                // again once its id is lost, so a lead that fails to delete here is a lead
+                // nobody can ever remove -- which makes this the one place it is worth
+                // checking the answer rather than assuming it.
+                //
+                // Info rather than Debug for the same reason: it should never happen, and if
+                // it does the log is the only evidence there will be.
+                try
+                {
+                    var id = new OutputArgument(crew.Leash);
+                    Function.Call(Hash.DELETE_ROPE, id);
+
+                    var still = new OutputArgument(crew.Leash);
+
+                    if (Function.Call<bool>(Hash.DOES_ROPE_EXIST, still))
+                    {
+                        Function.Call(Hash.DELETE_ROPE, still);
+
+                        Log.Info("Walkers: lead " + crew.Leash + " would not delete first time.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Info("Walkers: could not take lead " + crew.Leash + " down: " + ex.Message);
+                }
 
                 crew.Leash = -1;
             }
