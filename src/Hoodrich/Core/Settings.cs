@@ -446,7 +446,7 @@ namespace Hoodrich.Core
         /// -- the difference between the green somebody wants and the one beside it is a single
         /// number, and finding it should not cost a rebuild.
         /// </summary>
-        public int RollerPearl = 53;
+        public int RollerPearl = 4;
 
         /// <summary>
         /// Which of the game's ropes a dog lead is made of.

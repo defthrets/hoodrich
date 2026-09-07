@@ -133,8 +133,21 @@ namespace Hoodrich.Gangs
         /// three cars somebody owns rather than a fleet. Racing, bright, gasoline, lime,
         /// hunter, dark -- the game's own names for them.
         /// </summary>
-        private static readonly int[] Greens = { 50, 53, 54, 55, 139, 49 };
-        private static readonly int[] Pearls = { 53, 55, 50 };
+        /// <summary>
+        /// The greens, and the flake over them.
+        ///
+        /// TWO GREENS AND ONE SILVER, DOWN FROM SIX AND THREE, and the ones that went were the
+        /// ones nobody had checked. This list carried 50, 54, 55 and 139 on the strength of
+        /// somebody having called them greens once; the two that are left are the two the
+        /// game's own table names -- 49 is the dark metallic green the whole set is painted
+        /// in and 53 is the bright one. A colour index nobody has looked up is a car that
+        /// turns out to be red on somebody else's install.
+        ///
+        /// The pearl is silver on all of them. A green flake in green paint does nothing; a
+        /// silver one catches the light as the car turns, which is the entire effect.
+        /// </summary>
+        private static readonly int[] Greens = { 49, 53 };
+        private static readonly int[] Pearls = { 4 };
 
         private const string Female = "g_f_y_families_01";
 

@@ -376,7 +376,10 @@ namespace Hoodrich.Gangs
         /// Overridable in the ini and deliberately so -- see the note in Paint. If this one is
         /// not the green it should be it is one line to change and nothing is rebuilt.
         /// </summary>
-        private const int DefaultPearl = 53;
+        private const int DefaultPearl = Silver;
+
+        /// <summary>Metallic silver. The flake, on everything the set owns.</summary>
+        private const int Silver = 4;
 
         private readonly Settings _cfg;
         private readonly GangRegistry _gangs;
@@ -1559,11 +1562,20 @@ namespace Hoodrich.Gangs
                 // we can check and the difference between "green" and the wrong green is one
                 // number. The body is not: that is the set's own colour and it belongs to the
                 // set, not to a taste.
-                // AND THE PEARL ONLY ON THE GREEN ONES. A bright green flake suspended in
-                // black is not a black car, it is a green car that has gone wrong under a
-                // street light. Black gets its own index over itself, which is a plain
-                // metallic black and is the whole point of picking it.
-                var pearl = black ? MetallicBlack : (_cfg == null ? DefaultPearl : _cfg.RollerPearl);
+                // SILVER OVER BOTH OF THEM.
+                //
+                // The pearl was a bright green over the green, which is the flake matching the
+                // paint it is suspended in -- and then black cars got their own black, which is
+                // no flake at all. Neither of those is what a pearl does. Silver is: it is
+                // colourless in the shade and catches the light as the car turns, so the green
+                // shifts and the black lifts, and it is the one flake that suits both.
+                //
+                // The index is in the ini and the DEFAULT is what changed. It is the only
+                // number here anybody should be turning, and every other paint value in this
+                // file is now one of two things that have been checked against the game's own
+                // table: metallic black and the set's dark green. Nothing picks a colour
+                // nobody has looked up.
+                var pearl = _cfg == null ? DefaultPearl : _cfg.RollerPearl;
 
                 Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, paint, paint);
                 Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, pearl, 0);
