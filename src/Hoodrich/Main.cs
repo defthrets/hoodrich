@@ -716,7 +716,7 @@ namespace Hoodrich
                 // AFTER THE SAVE, not beside `new PlayerState()`. The stash is empty until
                 // the line above fills it, and being told "nothing" in that window is worse
                 // than being told to wait -- the caller has no way to tell the two apart.
-                Api.Drugs.Wire(_state, _drugs);
+                Api.Drugs.Wire(_state, _drugs, _highs);
 
                 // Wired after the save is read, not before, or the first conversation of a
                 // session would decide nothing had ever been heard.

@@ -47,18 +47,21 @@ namespace Hoodrich.Api
 
         private static State.PlayerState _state;
         private static Economy.Drugs _catalogue;
+        private static Economy.Highs _highs;
 
         /// <summary>Called by Main once the state and the catalogue exist. Not for outside use.</summary>
-        internal static void Wire(State.PlayerState state, Economy.Drugs catalogue)
+        internal static void Wire(State.PlayerState state, Economy.Drugs catalogue, Economy.Highs highs)
         {
             _state = state;
             _catalogue = catalogue;
+            _highs = highs;
         }
 
         internal static void Unwire()
         {
             _state = null;
             _catalogue = null;
+            _highs = null;
         }
 
         /// <summary>Whether Hoodrich is here AND has finished starting up.</summary>
@@ -66,7 +69,7 @@ namespace Hoodrich.Api
         {
             get
             {
-                try { return _state != null && _state.Stash != null && _catalogue != null; }
+                try { return _state != null && _state.Stash != null && _catalogue != null && _highs != null; }
                 catch { return false; }
             }
         }
@@ -114,6 +117,49 @@ namespace Hoodrich.Api
             catch { return id ?? ""; }
         }
 
+        /// <summary>
+        /// Counted rather than weighed -- pills against powder.
+        ///
+        /// The other side needs it to write a number on a tile. Three pills is "3"; three
+        /// grams of anything is "3g", and a pill measured in grams reads like a mistake.
+        /// </summary>
+        public static bool CountedOf(string id)
+        {
+            try
+            {
+                if (!Ready) return false;
+                var def = _catalogue.Get(id);
+                return def != null && def.Counted;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>That much of it, spelled the way this drug counts itself. "" if unknown.</summary>
+        public static string AmountOf(string id, float quantity)
+        {
+            try
+            {
+                if (!Ready) return "";
+                var def = _catalogue.Get(id);
+                return def == null ? "" : def.Amount(quantity);
+            }
+            catch { return ""; }
+        }
+
+        /// <summary>One of whatever it counts itself in -- a gram, or a pill.</summary>
+        public static float Unit => UseUnit;
+
+        /// <summary>Everything on you against what you can carry, in grams.</summary>
+        public static float Carried
+        {
+            get { try { return Ready ? _state.Stash.Total : 0f; } catch { return 0f; } }
+        }
+
+        public static float Capacity
+        {
+            get { try { return Ready ? _state.Stash.Capacity : 0f; } catch { return 0f; } }
+        }
+
         /// <summary>How pure it is, 0 to 1. One when holding none, which is what Stash says.</summary>
         public static float PurityOf(string id)
         {
@@ -121,25 +167,67 @@ namespace Hoodrich.Api
             catch { return 1f; }
         }
 
+        /// <summary>One of whatever it counts itself in. The same unit Hoodrich's own pocket uses.</summary>
+        private const float UseUnit = 1f;
+
         /// <summary>
-        /// Takes product OUT of the stash and says how much it actually got.
-        ///
-        /// THE CALLER DOES NOT DECIDE WHAT IT DOES. This removes weight and nothing else --
-        /// no high, no animation, no wanted level. Bare Minimum wants a gram gone so it can
-        /// feed its own hunger and sleep meters with it, and Hoodrich's own high is a
-        /// different thing that its own phone starts. Two mods writing one effect is how you
-        /// get a player who is high twice.
-        ///
-        /// Returns 0 if there was none, if Hoodrich has not started, or if anything failed.
+        /// Actually takes it: the refusal, the weight, the ritual and the high.
         /// </summary>
-        public static float Take(string id, float grams)
+        ///
+        /// <remarks>
+        /// THE WHOLE ACT, not a piece of it. The first version of this only removed weight and
+        /// left the effect to the caller, and that is wrong in the one way a player would
+        /// notice -- a bag taken from Bare Minimum's pocket would move a hunger bar and do
+        /// nothing else, while the same bag taken from Hoodrich's own pocket stopped him,
+        /// played the ritual and changed the walk. Two doors into one act, and one of them a
+        /// worse room. So this is the same act, reached from somewhere else.
+        ///
+        /// THE ORDER IS UI/PocketScreen'S ORDER because that order is the part that was
+        /// thought about. Refuse before charging, so a man who has had enough is not charged
+        /// for being told so. Remove before landing, so a rounding error cannot leave him high
+        /// on a gram he still has. And put it back if the landing fails, which is the one thing
+        /// PocketScreen does not do -- there the refusal was checked a line earlier so nothing
+        /// could change in between, whereas here the caller is another mod and the gap is real.
+        ///
+        /// WHAT COMES BACK IS FOR A HUMAN. Null means it happened; anything else is Hoodrich's
+        /// own sentence for why it did not, already written for a screen -- "You've had enough
+        /// of that" -- so the other mod can show it without inventing wording of its own.
+        /// </remarks>
+        public static string Use(string id)
         {
             try
             {
-                if (!Ready || string.IsNullOrEmpty(id) || grams <= 0f) return 0f;
-                return _state.Stash.RemovePackaged(id, grams);
+                if (!Ready) return "Not ready";
+                if (string.IsNullOrEmpty(id)) return "Nothing to take";
+
+                var def = _catalogue.Get(id);
+                if (def == null) return "Never heard of it";
+
+                var no = _highs.Refusal(id);
+                if (no != null) return no;
+
+                var got = _state.Stash.RemovePackaged(id, UseUnit);
+                if (got <= 0.001f) return "You have none of that";
+
+                var late = _highs.Take(id, def.Amount(got));
+
+                if (late != null)
+                {
+                    // It refused after being charged. Put it back at the purity it left at,
+                    // which is what PurityOf still reports for the rest of the bag.
+                    try { _state.Stash.AddPackaged(id, got, _state.Stash.PurityOf(id)); }
+                    catch { /* better to lose a gram than to double it */ }
+
+                    return late;
+                }
+
+                return null;
             }
-            catch { return 0f; }
+            catch (Exception ex)
+            {
+                Core.Log.Debug("Api.Drugs.Use failed: " + ex.Message);
+                return "Could not";
+            }
         }
     }
 }
