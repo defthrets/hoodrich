@@ -29,15 +29,6 @@ straight it read "uncut from 999x". A rule that says never is better said by
 saying nothing.
 
 
-AND THE ARM ACTUALLY GOES OUT. The first go at this asked for a different
-seated pose by name, which takes a hash -- so a name the game does not know is
-not an error, it is nothing at all, and the list of names it does know is not
-shipped anywhere you can read. Two guesses produced a man sitting exactly as he
-had been. It is an animation now: the driver's side of the game's own lowrider
-seat, played on his upper body over the top of the car's own steering, which is
-a thing that demonstrably exists rather than a thing that might.
-
-
 NOBODY OF OURS SHOOTS AT THE POLICE. Everyone of the set carries now, so one
 patrol rolling past a hangout was the whole night gone -- a corner man letting
 off at a squad car turns a block into a siege. Anybody wearing one of the mod's
@@ -52,11 +43,6 @@ GERALD IS OFF THE ECSTASY. He was texting discounts on it.
 
 THE ASBO SAYS LOTABASS.
 
-
-YOUR OWN CARS RIDE LOW. Get into one you paid Hao for and the driver's window
-winds down, once, on the way in. Under about a jogging pace the arm goes out of
-it, and it comes back in when you get going. Only cars that are actually yours,
-and only when you are the one driving.
 
 AN ASBO ON THE PAD AT LAMAR'S, facing the other way. Competition springs and
 the biggest speakers the body owns, asked for by the shop's own words rather
