@@ -146,6 +146,54 @@ namespace Hoodrich.Api
             catch { return ""; }
         }
 
+        /// <summary>
+        /// The full path of that drug's picture, or "" when there is not one.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// A PATH, NOT A NAME, which is the same choice Api/Pantry made coming the other way.
+        /// The caller's icons live in the caller's folder and it has no reason to know where
+        /// ours are -- and both mods build an icon by Path.Combine against their own folder,
+        /// which hands a rooted path straight back. So an absolute path from here draws over
+        /// there with no change to anything over there.
+        ///
+        /// The files are named for what they are pictures of rather than for the drug, which
+        /// is why this is a list and not id + ".png": weed's picture is a bong and crack's is
+        /// a crystal. Kept beside UI/Icons.ForDrug, which makes the same choices for our own
+        /// screens; if one grows a drug the other should too.
+        /// </remarks>
+        public static string IconOf(string id)
+        {
+            try
+            {
+                string file;
+
+                switch ((id ?? "").ToLowerInvariant())
+                {
+                    case "weed": file = "bong.png"; break;
+                    case "coke":
+                    case "cocaine": file = "coke.png"; break;
+                    case "crack": file = "crystal.png"; break;
+                    case "meth": file = "meth.png"; break;
+                    case "heroin": file = "heroin.png"; break;
+                    case "ecstasy":
+                    case "pills": file = "pills.png"; break;
+                    case "xanax": file = "xanax.png"; break;
+
+                    // A drug added to drugs.json without art still gets a tile rather than a
+                    // hole. Our own screens fall back to a text glyph, which another mod's
+                    // grid has no way to draw.
+                    default: file = "baggie.png"; break;
+                }
+
+                var path = System.IO.Path.Combine(
+                    System.IO.Path.Combine(Core.Paths.Data, "icons"), file);
+
+                return System.IO.File.Exists(path) ? path : "";
+            }
+            catch { return ""; }
+        }
+
         /// <summary>One of whatever it counts itself in -- a gram, or a pill.</summary>
         public static float Unit => UseUnit;
 
